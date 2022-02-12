@@ -1,15 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 
-// The YieldBox
-// The original BentoBox is owned by the Sushi team to set strategies for each token. Abracadabra wanted different strategies, which led to
-// them launching their own DegenBox. The YieldBox solves this by allowing an unlimited number of strategies for each token in a fully
-// permissionless manner. The YieldBox has no owner and operates fully permissionless.
-
-// Other improvements:
-// Better system to make sure the token to share ratio doesn't reset.
-// Full support for rebasing tokens.
-
-// This contract stores funds, handles their transfers, approvals and strategies.
+// TapiocaBar - TapiocaBar modifier
 
 // Copyright (c) 2021, 2022 BoringCrypto - All rights reserved
 // Twitter: @Boring_Crypto
@@ -36,12 +27,13 @@ struct Asset {
     uint256 tokenId;
 }
 
-/// @title YieldBox
+/// @title TapiocaBar
 /// @author BoringCrypto, Keno
-/// @notice The YieldBox is a vault for tokens. The stored tokens can assigned to strategies.
+/// modifier by Tapioca
+/// @notice TapiocaBar is a vault for tokens. The stored tokens can assigned to strategies.
 /// Yield from this will go to the token depositors.
-/// Any funds transfered directly onto the YieldBox will be lost, use the deposit function instead.
-contract YieldBox is Domain, BoringBatchable, BoringFactory, IERC1155TokenReceiver {
+/// Any funds transfered directly onto TapiocaBar will be lost, use the deposit function instead.
+contract TapiocaBar is Domain, BoringBatchable, IERC1155TokenReceiver {
     using BoringMath for uint256;
     using BoringAddress for address;
     using BoringERC20 for IERC20;
@@ -102,12 +94,8 @@ contract YieldBox is Domain, BoringBatchable, BoringFactory, IERC1155TokenReceiv
     /// Modifier to check if the msg.sender is allowed to use funds belonging to the 'from' address.
     /// If 'from' is msg.sender, it's allowed.
     /// If 'msg.sender' is an address (an operator) that is approved by 'from', it's allowed.
-    /// If 'msg.sender' is a clone of a masterContract that is approved by 'from', it's allowed.
     modifier allowed(address from) {
-        if (from != msg.sender && !isApprovedForAll[from][msg.sender]) {
-            address masterContract = masterContractOf[msg.sender];
-            require(masterContract != address(0) && isApprovedForAll[masterContract][from], 'YieldBox: Not approved');
-        }
+        require(from == msg.sender && isApprovedForAll[from][msg.sender], 'TapiocaBar: Not approved');
         _;
     }
 
@@ -222,11 +210,11 @@ contract YieldBox is Domain, BoringBatchable, BoringFactory, IERC1155TokenReceiv
         assetId = ids[standard][contractAddress][strategy][tokenId];
         if (assetId == 0) {
             // Only do these checks if a new asset needs to be created
-            require(tokenId == 0 || standard != EIP20, 'YieldBox: No tokenId for ERC20');
+            require(tokenId == 0 || standard != EIP20, 'TapiocaBar: No tokenId for ERC20');
             require(
                 strategy == IStrategy(0) ||
                     (standard == strategy.standard() && contractAddress == strategy.contractAddress() && tokenId == strategy.tokenId()),
-                'YieldBox: Strategy mismatch'
+                'TapiocaBar: Strategy mismatch'
             );
 
             // Effects
@@ -269,7 +257,7 @@ contract YieldBox is Domain, BoringBatchable, BoringFactory, IERC1155TokenReceiv
         uint256 share
     ) public allowed(from) returns (uint256 amountOut, uint256 shareOut) {
         // Checks
-        require(to != address(0), 'YieldBox: to not set'); // To avoid a bad UI from burning funds
+        require(to != address(0), 'TapiocaBar: to not set'); // To avoid a bad UI from burning funds
 
         // Effects
         Asset storage asset = assets[assetId];
@@ -280,7 +268,7 @@ contract YieldBox is Domain, BoringBatchable, BoringFactory, IERC1155TokenReceiv
         // in the mempool
         if (totalAmount == 0) {
             if (asset.standard == EIP20) {
-                require(asset.contractAddress.isContract(), 'YieldBox: Not a token');
+                require(asset.contractAddress.isContract(), 'TapiocaBar: Not a token');
             }
         }
 
@@ -318,9 +306,9 @@ contract YieldBox is Domain, BoringBatchable, BoringFactory, IERC1155TokenReceiv
 
     function depositETHAsset(uint256 assetId, address to) public payable returns (uint256 amountOut, uint256 shareOut) {
         // Checks
-        require(to != address(0), "YieldBox: 'to' not set"); // To avoid a bad UI from burning funds
+        require(to != address(0), "TapiocaBar: 'to' not set"); // To avoid a bad UI from burning funds
         Asset storage asset = assets[assetId];
-        require(asset.standard == EIP20 && IERC20(asset.contractAddress) == wethToken, 'YieldBox: not WETH');
+        require(asset.standard == EIP20 && IERC20(asset.contractAddress) == wethToken, 'TapiocaBar: not WETH');
 
         // Effects
         uint256 amount = msg.value;
@@ -353,7 +341,7 @@ contract YieldBox is Domain, BoringBatchable, BoringFactory, IERC1155TokenReceiv
         uint256 share
     ) public allowed(from) returns (uint256 amountOut, uint256 shareOut) {
         // Checks
-        require(to != address(0), 'YieldBox: to not set'); // To avoid a bad UI from burning funds
+        require(to != address(0), 'TapiocaBar: to not set'); // To avoid a bad UI from burning funds
 
         // Effects
         Asset storage asset = assets[assetId];
@@ -393,9 +381,9 @@ contract YieldBox is Domain, BoringBatchable, BoringFactory, IERC1155TokenReceiv
         uint256 share
     ) public allowed(from) returns (uint256 amountOut, uint256 shareOut) {
         // Checks
-        require(to != address(0), 'YieldBox: to not set'); // To avoid a bad UI from burning funds
+        require(to != address(0), 'TapiocaBar: to not set'); // To avoid a bad UI from burning funds
         Asset storage asset = assets[assetId];
-        require(asset.standard == EIP20 && IERC20(asset.contractAddress) == wethToken, 'YieldBox: not WETH');
+        require(asset.standard == EIP20 && IERC20(asset.contractAddress) == wethToken, 'TapiocaBar: not WETH');
 
         // Effects
         uint256 totalAmount = _tokenBalanceOf(asset);
@@ -415,7 +403,7 @@ contract YieldBox is Domain, BoringBatchable, BoringFactory, IERC1155TokenReceiv
             IWETH(address(wethToken)).withdraw(amount);
             // solhint-disable-next-line avoid-low-level-calls
             (bool success, ) = to.call{value: amount}('');
-            require(success, 'YieldBox: ETH transfer failed');
+            require(success, 'TapiocaBar: ETH transfer failed');
         } else {
             asset.strategy.withdrawETH(amount, to);
         }
@@ -437,7 +425,7 @@ contract YieldBox is Domain, BoringBatchable, BoringFactory, IERC1155TokenReceiv
         uint256 share
     ) public allowed(from) {
         // Checks
-        require(to != address(0), 'YieldBox: to not set'); // To avoid a bad UI from burning funds
+        require(to != address(0), 'TapiocaBar: to not set'); // To avoid a bad UI from burning funds
 
         // Effects
         shares[assetId][from] = shares[assetId][from].sub(share);
@@ -453,7 +441,7 @@ contract YieldBox is Domain, BoringBatchable, BoringFactory, IERC1155TokenReceiv
         uint256[] calldata shares_
     ) public allowed(from) {
         // Checks
-        require(to != address(0), 'YieldBox: to not set'); // To avoid a bad UI from burning funds
+        require(to != address(0), 'TapiocaBar: to not set'); // To avoid a bad UI from burning funds
 
         // Effects
         uint256 len = assetIds_.length;
@@ -479,7 +467,7 @@ contract YieldBox is Domain, BoringBatchable, BoringFactory, IERC1155TokenReceiv
         uint256[] calldata share
     ) public allowed(from) {
         // Checks
-        require(tos[0] != address(0), 'YieldBox: tos[0] not set'); // To avoid a bad UI from burning funds
+        require(tos[0] != address(0), 'TapiocaBar: tos[0] not set'); // To avoid a bad UI from burning funds
 
         // Effects
         uint256 totalAmount;
@@ -545,8 +533,7 @@ contract YieldBox is Domain, BoringBatchable, BoringFactory, IERC1155TokenReceiv
 
     function setApprovalForAll(address operator, bool approved) external {
         // Checks
-        require(operator != address(0), 'YieldBox: operator not set'); // Important for security
-        require(masterContractOf[msg.sender] == address(0), 'YieldBox: user is clone');
+        require(operator != address(0), 'TapiocaBar: operator not set'); // Important for security
 
         // Effects
         isApprovedForAll[msg.sender][operator] = approved;
@@ -576,17 +563,16 @@ contract YieldBox is Domain, BoringBatchable, BoringFactory, IERC1155TokenReceiv
         bytes32 s
     ) public {
         // Checks
-        require(operator != address(0), 'YieldBox: operator not set'); // Important for security
-        require(masterContractOf[user] == address(0), 'YieldBox: user is clone');
+        require(operator != address(0), 'TapiocaBar: operator not set'); // Important for security
 
         // Important for security - any address without masterContract has address(0) as masterContract
         // So approving address(0) would approve every address, leading to full loss of funds
         // Also, ecrecover returns address(0) on failure. So we check this:
-        require(user != address(0), 'YieldBox: User cannot be 0');
+        require(user != address(0), 'TapiocaBar: User cannot be 0');
 
         bytes32 digest = _getDigest(keccak256(abi.encode(APPROVAL_SIGNATURE_HASH, user, operator, approved, nonces[user]++)));
         address recoveredAddress = ecrecover(digest, v, r, s);
-        require(recoveredAddress == user, 'YieldBox: Invalid Signature');
+        require(recoveredAddress == user, 'TapiocaBar: Invalid Signature');
 
         // Effects
         isApprovedForAll[user][operator] = approved;
