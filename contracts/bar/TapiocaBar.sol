@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 
-// TapiocaBar - TapiocaBar modifier
+// YieldBox - TapiocaBar modified
 
 // Copyright (c) 2021, 2022 BoringCrypto - All rights reserved
 // Twitter: @Boring_Crypto
