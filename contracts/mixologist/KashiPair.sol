@@ -23,7 +23,7 @@ import '@boringcrypto/boring-solidity/contracts/ERC20.sol';
 import '@boringcrypto/boring-solidity/contracts/interfaces/IMasterContract.sol';
 import '@boringcrypto/boring-solidity/contracts/libraries/BoringRebase.sol';
 import '@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol';
-import '../bar/YieldBox.sol';
+import '../bar/TapiocaBar.sol';
 import './interfaces/IOracle.sol';
 import './interfaces/ISwapper.sol';
 
@@ -51,7 +51,7 @@ contract KashiPair is ERC20, BoringOwnable, IMasterContract {
     event LogWithdrawFees(address indexed feeTo, uint256 feesEarnedFraction);
 
     // Immutables (for MasterContract and all clones)
-    YieldBox public immutable yieldBox;
+    TapiocaBar public immutable yieldBox;
     KashiPair public immutable masterContract;
 
     // MasterContract variables
@@ -62,6 +62,8 @@ contract KashiPair is ERC20, BoringOwnable, IMasterContract {
     // Clone init settings
     IERC20 public collateral;
     IERC20 public asset;
+    uint256 public collateralId;
+    uint256 public assetId;
     IOracle public oracle;
     bytes public oracleData;
 
@@ -101,7 +103,7 @@ contract KashiPair is ERC20, BoringOwnable, IMasterContract {
     }
 
     // totalSupply for ERC20 compatibility
-    function totalSupply() public view returns (uint256) {
+    function totalSupply() public view override returns (uint256) {
         return totalAsset.base;
     }
 
@@ -133,7 +135,7 @@ contract KashiPair is ERC20, BoringOwnable, IMasterContract {
     uint256 private constant BORROW_OPENING_FEE_PRECISION = 1e5;
 
     /// @notice The constructor is only used for the initial master contract. Subsequent clones are initialised via `init`.
-    constructor(YieldBox yieldBox_) public {
+    constructor(TapiocaBar yieldBox_) public {
         yieldBox = yieldBox_;
         masterContract = this;
     }
@@ -176,7 +178,7 @@ contract KashiPair is ERC20, BoringOwnable, IMasterContract {
         // Accrue interest
         extraAmount = uint256(_totalBorrow.elastic).mul(_accrueInfo.interestPerSecond).mul(elapsedTime) / 1e18;
         _totalBorrow.elastic = _totalBorrow.elastic.add(extraAmount.to128());
-        uint256 fullAssetAmount = yieldBox.toAmount(asset, _totalAsset.elastic, false).add(_totalBorrow.elastic);
+        uint256 fullAssetAmount = yieldBox.toAmount(assetId, _totalAsset.elastic, false).add(_totalBorrow.elastic);
 
         uint256 feeAmount = extraAmount.mul(PROTOCOL_FEE) / PROTOCOL_FEE_DIVISOR; // % of interest paid goes to fee
         feeFraction = feeAmount.mul(_totalAsset.base) / fullAssetAmount;
@@ -225,7 +227,7 @@ contract KashiPair is ERC20, BoringOwnable, IMasterContract {
 
         return
             yieldBox.toAmount(
-                collateral,
+                collateralId,
                 collateralShare.mul(EXCHANGE_RATE_PRECISION / COLLATERIZATION_RATE_PRECISION).mul(
                     open ? OPEN_COLLATERIZATION_RATE : CLOSED_COLLATERIZATION_RATE
                 ),
@@ -258,22 +260,22 @@ contract KashiPair is ERC20, BoringOwnable, IMasterContract {
     }
 
     /// @dev Helper function to move tokens.
-    /// @param token The ERC-20 token.
+    /// @param _assetId The ERC-20 token asset ID in YieldBox.
     /// @param share The amount in shares to add.
     /// @param total Grand total amount to deduct from this contract's balance. Only applicable if `skim` is True.
     /// Only used for accounting checks.
     /// @param skim If True, only does a balance check on this contract.
     /// False if tokens from msg.sender in `yieldBox` should be transferred.
     function _addTokens(
-        IERC20 token,
+        uint256 _assetId,
         uint256 share,
         uint256 total,
         bool skim
     ) internal {
         if (skim) {
-            require(share <= yieldBox.balanceOf(token, address(this)).sub(total), 'KashiPair: Skim too much');
+            require(share <= yieldBox.balanceOf(address(this), _assetId).sub(total), 'KashiPair: Skim too much');
         } else {
-            yieldBox.transfer(token, msg.sender, address(this), share);
+            yieldBox.transfer(_assetId, msg.sender, address(this), share);
         }
     }
 
@@ -290,7 +292,7 @@ contract KashiPair is ERC20, BoringOwnable, IMasterContract {
         userCollateralShare[to] = userCollateralShare[to].add(share);
         uint256 oldTotalCollateralShare = totalCollateralShare;
         totalCollateralShare = oldTotalCollateralShare.add(share);
-        _addTokens(collateral, share, oldTotalCollateralShare, skim);
+        _addTokens(collateralId, share, oldTotalCollateralShare, skim);
         emit LogAddCollateral(skim ? address(yieldBox) : msg.sender, to, share);
     }
 
@@ -299,7 +301,7 @@ contract KashiPair is ERC20, BoringOwnable, IMasterContract {
         userCollateralShare[msg.sender] = userCollateralShare[msg.sender].sub(share);
         totalCollateralShare = totalCollateralShare.sub(share);
         emit LogRemoveCollateral(msg.sender, to, share);
-        yieldBox.transfer(collateral, address(this), to, share);
+        yieldBox.transfer(collateralId, address(this), to, share);
     }
 
     /// @notice Removes `share` amount of collateral and transfers it to `to`.
@@ -319,7 +321,7 @@ contract KashiPair is ERC20, BoringOwnable, IMasterContract {
     ) internal returns (uint256 fraction) {
         Rebase memory _totalAsset = totalAsset;
         uint256 totalAssetShare = _totalAsset.elastic;
-        uint256 allShare = _totalAsset.elastic + yieldBox.toShare(asset, totalBorrow.elastic, true);
+        uint256 allShare = _totalAsset.elastic + yieldBox.toShare(assetId, totalBorrow.elastic, true);
         fraction = allShare == 0 ? share : share.mul(_totalAsset.base) / allShare;
         if (_totalAsset.base.add(fraction.to128()) < 1000) {
             return 0;
@@ -327,7 +329,7 @@ contract KashiPair is ERC20, BoringOwnable, IMasterContract {
         totalAsset = _totalAsset.add(share, fraction);
         balanceOf[to] = balanceOf[to].add(fraction);
         emit Transfer(address(0), to, fraction);
-        _addTokens(asset, share, totalAssetShare, skim);
+        _addTokens(assetId, share, totalAssetShare, skim);
         emit LogAddAsset(skim ? address(yieldBox) : msg.sender, to, share, fraction);
     }
 
@@ -349,7 +351,7 @@ contract KashiPair is ERC20, BoringOwnable, IMasterContract {
     /// @dev Concrete implementation of `removeAsset`.
     function _removeAsset(address to, uint256 fraction) internal returns (uint256 share) {
         Rebase memory _totalAsset = totalAsset;
-        uint256 allShare = _totalAsset.elastic + yieldBox.toShare(asset, totalBorrow.elastic, true);
+        uint256 allShare = _totalAsset.elastic + yieldBox.toShare(assetId, totalBorrow.elastic, true);
         share = fraction.mul(allShare) / _totalAsset.base;
         balanceOf[msg.sender] = balanceOf[msg.sender].sub(fraction);
         emit Transfer(msg.sender, address(0), fraction);
@@ -358,7 +360,7 @@ contract KashiPair is ERC20, BoringOwnable, IMasterContract {
         require(_totalAsset.base >= 1000, 'Kashi: below minimum');
         totalAsset = _totalAsset;
         emit LogRemoveAsset(msg.sender, to, share, fraction);
-        yieldBox.transfer(asset, address(this), to, share);
+        yieldBox.transfer(assetId, address(this), to, share);
     }
 
     /// @notice Removes an asset from msg.sender and transfers it to `to`.
@@ -378,12 +380,12 @@ contract KashiPair is ERC20, BoringOwnable, IMasterContract {
         userBorrowPart[msg.sender] = userBorrowPart[msg.sender].add(part);
         emit LogBorrow(msg.sender, to, amount, feeAmount, part);
 
-        share = yieldBox.toShare(asset, amount, false);
+        share = yieldBox.toShare(assetId, amount, false);
         Rebase memory _totalAsset = totalAsset;
         require(_totalAsset.base >= 1000, 'Kashi: below minimum');
         _totalAsset.elastic = _totalAsset.elastic.sub(share.to128());
         totalAsset = _totalAsset;
-        yieldBox.transfer(asset, address(this), to, share);
+        yieldBox.transfer(assetId, address(this), to, share);
     }
 
     /// @notice Sender borrows `amount` and transfers it to `to`.
@@ -403,9 +405,9 @@ contract KashiPair is ERC20, BoringOwnable, IMasterContract {
         (totalBorrow, amount) = totalBorrow.sub(part, true);
         userBorrowPart[to] = userBorrowPart[to].sub(part);
 
-        uint256 share = yieldBox.toShare(asset, amount, true);
+        uint256 share = yieldBox.toShare(assetId, amount, true);
         uint128 totalShare = totalAsset.elastic;
-        _addTokens(asset, share, uint256(totalShare), skim);
+        _addTokens(assetId, share, uint256(totalShare), skim);
         totalAsset.elastic = totalShare.add(share.to128());
         emit LogRepay(skim ? address(yieldBox) : msg.sender, to, amount, part);
     }
@@ -468,10 +470,14 @@ contract KashiPair is ERC20, BoringOwnable, IMasterContract {
         uint256 value1,
         uint256 value2
     ) internal returns (uint256, uint256) {
-        (IERC20 token, address to, int256 amount, int256 share) = abi.decode(data, (IERC20, address, int256, int256));
+        (uint256 _assetId, address to, int256 amount, int256 share) = abi.decode(data, (uint256, address, int256, int256));
         amount = int256(_num(amount, value1, value2)); // Done this way to avoid stack too deep errors
         share = int256(_num(share, value1, value2));
-        return yieldBox.deposit{value: value}(token, msg.sender, to, uint256(amount), uint256(share));
+        if (msg.value > 0) {
+            return yieldBox.depositETH{value: value}(_assetId, to);
+        } else {
+            return yieldBox.deposit(_assetId, msg.sender, to, uint256(amount), uint256(share));
+        }
     }
 
     /// @dev Helper function to withdraw from the `yieldBox`.
@@ -480,8 +486,8 @@ contract KashiPair is ERC20, BoringOwnable, IMasterContract {
         uint256 value1,
         uint256 value2
     ) internal returns (uint256, uint256) {
-        (IERC20 token, address to, int256 amount, int256 share) = abi.decode(data, (IERC20, address, int256, int256));
-        return yieldBox.withdraw(token, msg.sender, to, _num(amount, value1, value2), _num(share, value1, value2));
+        (uint256 _assetId, address to, int256 amount, int256 share) = abi.decode(data, (uint256, address, int256, int256));
+        return yieldBox.withdraw(_assetId, msg.sender, to, _num(amount, value1, value2), _num(share, value1, value2));
     }
 
     /// @dev Helper function to perform a contract call and eventually extracting revert messages on failure.
