@@ -568,21 +568,21 @@ contract KashiPair is ERC20, BoringOwnable, IMasterContract {
                 (bool updated, uint256 rate) = updateExchangeRate();
                 require((!must_update || updated) && rate > minRate && (maxRate == 0 || rate > maxRate), 'KashiPair: rate not ok');
             } else if (action == ACTION_BENTO_SETAPPROVAL) {
-                (address user, address _masterContract, bool approved, uint8 v, bytes32 r, bytes32 s) = abi.decode(
+                (address user, address operator, bool approved, uint8 v, bytes32 r, bytes32 s) = abi.decode(
                     datas[i],
                     (address, address, bool, uint8, bytes32, bytes32)
                 );
-                yieldBox.setMasterContractApproval(user, _masterContract, approved, v, r, s);
+                yieldBox.setApprovalForAllWithPermit(user, operator, approved, v, r, s);
             } else if (action == ACTION_BENTO_DEPOSIT) {
                 (value1, value2) = _bentoDeposit(datas[i], values[i], value1, value2);
             } else if (action == ACTION_BENTO_WITHDRAW) {
                 (value1, value2) = _bentoWithdraw(datas[i], value1, value2);
             } else if (action == ACTION_BENTO_TRANSFER) {
-                (IERC20 token, address to, int256 share) = abi.decode(datas[i], (IERC20, address, int256));
-                yieldBox.transfer(token, msg.sender, to, _num(share, value1, value2));
+                (uint256 _assetId, address to, int256 share) = abi.decode(datas[i], (uint256, address, int256));
+                yieldBox.transfer(_assetId, msg.sender, to, _num(share, value1, value2));
             } else if (action == ACTION_BENTO_TRANSFER_MULTIPLE) {
-                (IERC20 token, address[] memory tos, uint256[] memory shares) = abi.decode(datas[i], (IERC20, address[], uint256[]));
-                yieldBox.transferMultiple(token, msg.sender, tos, shares);
+                (uint256 _assetId, address[] memory tos, uint256[] memory shares) = abi.decode(datas[i], (uint256, address[], uint256[]));
+                yieldBox.transferMultiple(_assetId, msg.sender, tos, shares);
             } else if (action == ACTION_CALL) {
                 (bytes memory returnData, uint8 returnValues) = _call(values[i], datas[i], value1, value2);
 
@@ -593,7 +593,7 @@ contract KashiPair is ERC20, BoringOwnable, IMasterContract {
                 }
             } else if (action == ACTION_GET_REPAY_SHARE) {
                 int256 part = abi.decode(datas[i], (int256));
-                value1 = yieldBox.toShare(asset, totalBorrow.toElastic(_num(part, value1, value2), true), true);
+                value1 = yieldBox.toShare(assetId, totalBorrow.toElastic(_num(part, value1, value2), true), true);
             } else if (action == ACTION_GET_REPAY_PART) {
                 int256 amount = abi.decode(datas[i], (int256));
                 value1 = totalBorrow.toBase(_num(amount, value1, value2), false);
