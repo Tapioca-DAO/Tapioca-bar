@@ -78,6 +78,8 @@ contract TapiocaBar is Domain, BoringBatchable, IERC1155TokenReceiver {
     // Approved operators per user. If the operator is a master contract, it will also approve all clones.
     mapping(address => mapping(address => bool)) public isApprovedForAll;
 
+    address owner = msg.sender;
+
     // ******************* //
     // *** CONSTRUCTOR *** //
     // ******************* //
@@ -97,6 +99,19 @@ contract TapiocaBar is Domain, BoringBatchable, IERC1155TokenReceiver {
     modifier allowed(address from) {
         require(from == msg.sender && isApprovedForAll[from][msg.sender], 'TapiocaBar: Not approved');
         _;
+    }
+
+    modifier onlyOwner() {
+        require(msg.sender == owner, 'TapiocaBar: Only owner');
+        _;
+    }
+
+    // ************************** //
+    // *** OWNER FUNCTIONS *** //
+    // ************************** //
+
+    function updateOwner() external onlyOwner {
+        owner = msg.sender;
     }
 
     // ************************** //
@@ -205,7 +220,7 @@ contract TapiocaBar is Domain, BoringBatchable, IERC1155TokenReceiver {
         address contractAddress,
         IStrategy strategy,
         uint256 tokenId
-    ) public returns (uint256 assetId) {
+    ) public onlyOwner returns (uint256 assetId) {
         // Checks
         assetId = ids[standard][contractAddress][strategy][tokenId];
         if (assetId == 0) {
@@ -225,20 +240,17 @@ contract TapiocaBar is Domain, BoringBatchable, IERC1155TokenReceiver {
     }
 
     function deposit(
-        uint96 standard,
-        address contractAddress,
-        IStrategy strategy,
-        uint256 tokenId,
+        uint256 _assetId,
         address from,
         address to,
         uint256 amount,
         uint256 share
     ) public returns (uint256 amountOut, uint256 shareOut) {
-        return depositAsset(registerAsset(standard, contractAddress, strategy, tokenId), from, to, amount, share);
+        return depositAsset(_assetId, from, to, amount, share);
     }
 
-    function depositETH(IStrategy strategy, address to) public payable returns (uint256 amountOut, uint256 shareOut) {
-        return depositETHAsset(registerAsset(EIP20, address(wethToken), strategy, 0), to);
+    function depositETH(uint256 _assetId, address to) public payable returns (uint256 amountOut, uint256 shareOut) {
+        return depositETHAsset(_assetId, to);
     }
 
     /// @notice Deposit an amount of `token` represented in either `amount` or `share`.
