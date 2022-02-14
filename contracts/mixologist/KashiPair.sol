@@ -626,7 +626,6 @@ contract KashiPair is ERC20, BoringOwnable, IMasterContract {
         uint256 allBorrowAmount;
         uint256 allBorrowPart;
         Rebase memory _totalBorrow = totalBorrow;
-        Rebase memory tapiocaBarTotals = tapiocaBar.totals(collateral);
         for (uint256 i = 0; i < users.length; i++) {
             address user = users[i];
             if (!_isSolvent(user, open, _exchangeRate)) {
@@ -637,7 +636,8 @@ contract KashiPair is ERC20, BoringOwnable, IMasterContract {
                     userBorrowPart[user] = availableBorrowPart.sub(borrowPart);
                 }
                 uint256 borrowAmount = _totalBorrow.toElastic(borrowPart, false);
-                uint256 collateralShare = tapiocaBarTotals.toBase(
+                uint256 collateralShare = tapiocaBar.toShare(
+                    collateralId,
                     borrowAmount.mul(LIQUIDATION_MULTIPLIER).mul(_exchangeRate) /
                         (LIQUIDATION_MULTIPLIER_PRECISION * EXCHANGE_RATE_PRECISION),
                     false
@@ -659,32 +659,32 @@ contract KashiPair is ERC20, BoringOwnable, IMasterContract {
         totalBorrow = _totalBorrow;
         totalCollateralShare = totalCollateralShare.sub(allCollateralShare);
 
-        uint256 allBorrowShare = tapiocaBar.toShare(asset, allBorrowAmount, true);
+        uint256 allBorrowShare = tapiocaBar.toShare(assetId, allBorrowAmount, true);
 
         if (!open) {
             // Closed liquidation using a pre-approved swapper for the benefit of the LPs
             require(masterContract.swappers(swapper), 'KashiPair: Invalid swapper');
 
             // Swaps the users' collateral for the borrowed asset
-            tapiocaBar.transfer(collateral, address(this), address(swapper), allCollateralShare);
+            tapiocaBar.transfer(collateralId, address(this), address(swapper), allCollateralShare);
             swapper.swap(collateral, asset, address(this), allBorrowShare, allCollateralShare);
 
-            uint256 returnedShare = tapiocaBar.balanceOf(asset, address(this)).sub(uint256(totalAsset.elastic));
+            uint256 returnedShare = tapiocaBar.balanceOf(address(this), assetId).sub(uint256(totalAsset.elastic));
             uint256 extraShare = returnedShare.sub(allBorrowShare);
             uint256 feeShare = extraShare.mul(PROTOCOL_FEE) / PROTOCOL_FEE_DIVISOR; // % of profit goes to fee
             // solhint-disable-next-line reentrancy
-            tapiocaBar.transfer(asset, address(this), masterContract.feeTo(), feeShare);
+            tapiocaBar.transfer(assetId, address(this), masterContract.feeTo(), feeShare);
             totalAsset.elastic = totalAsset.elastic.add(returnedShare.sub(feeShare).to128());
             emit LogAddAsset(address(swapper), address(this), extraShare.sub(feeShare), 0);
         } else {
             // Swap using a swapper freely chosen by the caller
             // Open (flash) liquidation: get proceeds first and provide the borrow after
-            tapiocaBar.transfer(collateral, address(this), swapper == ISwapper(0) ? to : address(swapper), allCollateralShare);
+            tapiocaBar.transfer(collateralId, address(this), swapper == ISwapper(0) ? to : address(swapper), allCollateralShare);
             if (swapper != ISwapper(0)) {
                 swapper.swap(collateral, asset, msg.sender, allBorrowShare, allCollateralShare);
             }
 
-            tapiocaBar.transfer(asset, msg.sender, address(this), allBorrowShare);
+            tapiocaBar.transfer(assetId, msg.sender, address(this), allBorrowShare);
             totalAsset.elastic = totalAsset.elastic.add(allBorrowShare.to128());
         }
     }
