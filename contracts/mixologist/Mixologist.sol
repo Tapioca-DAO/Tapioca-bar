@@ -136,9 +136,9 @@ contract Mixologist is ERC20, BoringOwnable {
     /// @notice The constructor is only used for the initial master contract. Subsequent clones are initialised via `init`.
     constructor(
         TapiocaBar tapiocaBar_,
-        IERC20 _collateral,
         IERC20 _asset,
         uint256 _assetId,
+        IERC20 _collateral,
         uint256 _collateralId
     ) public {
         tapiocaBar = tapiocaBar_;

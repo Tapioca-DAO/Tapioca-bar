@@ -2,10 +2,10 @@
 
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
-import "@boringcrypto/boring-solidity/contracts/interfaces/IERC20.sol";
-import "@sushiswap/bentobox-sdk/contracts/IBentoBoxV1.sol";
-import "./IOracle.sol";
-import "./ISwapper.sol";
+import '@boringcrypto/boring-solidity/contracts/interfaces/IERC20.sol';
+import '../../bar/TapiocaBar.sol';
+import './IOracle.sol';
+import './ISwapper.sol';
 
 interface IKashiPair {
     event Approval(address indexed _owner, address indexed _spender, uint256 _value);
@@ -55,7 +55,7 @@ interface IKashiPair {
 
     function balanceOf(address) external view returns (uint256);
 
-    function bentoBox() external view returns (IBentoBoxV1);
+    function tapiocaBar() external view returns (TapiocaBar);
 
     function borrow(address to, uint256 amount) external returns (uint256 part, uint256 share);
 
