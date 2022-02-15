@@ -17,7 +17,7 @@ import '@boringcrypto/boring-solidity/contracts/libraries/BoringAddress.sol';
 import '@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol';
 import '@boringcrypto/boring-solidity/contracts/Domain.sol';
 import '@boringcrypto/boring-solidity/contracts/BoringBatchable.sol';
-import '@boringcrypto/boring-solidity/contracts/BoringFactory.sol';
+import '@boringcrypto/boring-solidity/contracts/BoringOwnable.sol';
 
 // An asset is a token + a strategy
 struct Asset {
@@ -33,7 +33,7 @@ struct Asset {
 /// @notice TapiocaBar is a vault for tokens. The stored tokens can assigned to strategies.
 /// Yield from this will go to the token depositors.
 /// Any funds transfered directly onto TapiocaBar will be lost, use the deposit function instead.
-contract TapiocaBar is Domain, BoringBatchable, IERC1155TokenReceiver {
+contract TapiocaBar is Domain, BoringBatchable, IERC1155TokenReceiver, BoringOwnable {
     using BoringMath for uint256;
     using BoringAddress for address;
     using BoringERC20 for IERC20;
@@ -78,13 +78,11 @@ contract TapiocaBar is Domain, BoringBatchable, IERC1155TokenReceiver {
     // Approved operators per user. If the operator is a master contract, it will also approve all clones.
     mapping(address => mapping(address => bool)) public isApprovedForAll;
 
-    address owner = msg.sender;
-
     // ******************* //
     // *** CONSTRUCTOR *** //
     // ******************* //
 
-    constructor(IERC20 wethToken_) public {
+    constructor(IERC20 wethToken_) public BoringOwnable() {
         wethToken = wethToken_;
         assets.push(Asset(EIP20, address(0), IStrategy(0), 0));
     }
@@ -99,19 +97,6 @@ contract TapiocaBar is Domain, BoringBatchable, IERC1155TokenReceiver {
     modifier allowed(address from) {
         require(from == msg.sender && isApprovedForAll[from][msg.sender], 'TapiocaBar: Not approved');
         _;
-    }
-
-    modifier onlyOwner() {
-        require(msg.sender == owner, 'TapiocaBar: Only owner');
-        _;
-    }
-
-    // ************************** //
-    // *** OWNER FUNCTIONS *** //
-    // ************************** //
-
-    function updateOwner() external onlyOwner {
-        owner = msg.sender;
     }
 
     // ************************** //
