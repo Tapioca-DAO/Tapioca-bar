@@ -29,10 +29,10 @@ import './interfaces/ISwapper.sol';
 // solhint-disable avoid-low-level-calls
 // solhint-disable no-inline-assembly
 
-/// @title KashiPair
+/// @title Mixologist
 /// @dev This contract allows contract calls to any contract (except tapiocaBar)
 /// from arbitrary callers thus, don't trust calls from this contract in any circumstances.
-contract KashiPair is ERC20, BoringOwnable {
+contract Mixologist is ERC20, BoringOwnable {
     using BoringMath for uint256;
     using BoringMath128 for uint128;
     using RebaseLibrary for Rebase;
@@ -51,7 +51,7 @@ contract KashiPair is ERC20, BoringOwnable {
 
     // Immutables (for MasterContract and all clones)
     TapiocaBar public immutable tapiocaBar;
-    KashiPair public immutable masterContract;
+    Mixologist public immutable masterContract;
 
     // MasterContract variables
     address public feeTo;
@@ -68,7 +68,7 @@ contract KashiPair is ERC20, BoringOwnable {
 
     // Total amounts
     uint256 public totalCollateralShare; // Total collateral supplied
-    Rebase public totalAsset; // elastic = tapiocaBar shares held by the KashiPair, base = Total fractions held by asset suppliers
+    Rebase public totalAsset; // elastic = tapiocaBar shares held by the Mixologist, base = Total fractions held by asset suppliers
     Rebase public totalBorrow; // elastic = Total token amount to be repayed by borrowers, base = Total parts of the debt held by borrowers
 
     // User balances
@@ -106,7 +106,7 @@ contract KashiPair is ERC20, BoringOwnable {
         return totalAsset.base;
     }
 
-    // Settings for the Medium Risk KashiPair
+    // Settings for the Medium Risk Mixologist
     uint256 private constant CLOSED_COLLATERIZATION_RATE = 75000; // 75%
     uint256 private constant OPEN_COLLATERIZATION_RATE = 77000; // 77%
     uint256 private constant COLLATERIZATION_RATE_PRECISION = 1e5; // Must be less than EXCHANGE_RATE_PRECISION (due to optimization in math)
@@ -144,7 +144,7 @@ contract KashiPair is ERC20, BoringOwnable {
         tapiocaBar = tapiocaBar_;
         masterContract = this;
 
-        require(address(_collateral) != address(0) && address(_asset) != address(0), 'KashiPair: bad pair');
+        require(address(_collateral) != address(0) && address(_asset) != address(0), 'Mixologist: bad pair');
         asset = _asset;
         collateral = _collateral;
         assetId = _assetId;
@@ -243,7 +243,7 @@ contract KashiPair is ERC20, BoringOwnable {
     /// @dev Checks if the user is solvent in the closed liquidation case at the end of the function body.
     modifier solvent() {
         _;
-        require(_isSolvent(msg.sender, false, exchangeRate), 'KashiPair: user insolvent');
+        require(_isSolvent(msg.sender, false, exchangeRate), 'Mixologist: user insolvent');
     }
 
     /// @notice Gets the exchange rate. I.e how much collateral to buy 1e18 asset.
@@ -276,7 +276,7 @@ contract KashiPair is ERC20, BoringOwnable {
         bool skim
     ) internal {
         if (skim) {
-            require(share <= tapiocaBar.balanceOf(address(this), _assetId).sub(total), 'KashiPair: Skim too much');
+            require(share <= tapiocaBar.balanceOf(address(this), _assetId).sub(total), 'Mixologist: Skim too much');
         } else {
             tapiocaBar.transfer(_assetId, msg.sender, address(this), share);
         }
@@ -515,10 +515,10 @@ contract KashiPair is ERC20, BoringOwnable {
             callData = abi.encodePacked(callData, value1, value2);
         }
 
-        require(callee != address(tapiocaBar) && callee != address(this), "KashiPair: can't call");
+        require(callee != address(tapiocaBar) && callee != address(this), "Mixologist: can't call");
 
         (bool success, bytes memory returnData) = callee.call{value: value}(callData);
-        require(success, 'KashiPair: call failed');
+        require(success, 'Mixologist: call failed');
         return (returnData, returnValues);
     }
 
@@ -569,7 +569,7 @@ contract KashiPair is ERC20, BoringOwnable {
             } else if (action == ACTION_UPDATE_EXCHANGE_RATE) {
                 (bool must_update, uint256 minRate, uint256 maxRate) = abi.decode(datas[i], (bool, uint256, uint256));
                 (bool updated, uint256 rate) = updateExchangeRate();
-                require((!must_update || updated) && rate > minRate && (maxRate == 0 || rate > maxRate), 'KashiPair: rate not ok');
+                require((!must_update || updated) && rate > minRate && (maxRate == 0 || rate > maxRate), 'Mixologist: rate not ok');
             } else if (action == ACTION_BENTO_SETAPPROVAL) {
                 (address user, address operator, bool approved, uint8 v, bytes32 r, bytes32 s) = abi.decode(
                     datas[i],
@@ -604,7 +604,7 @@ contract KashiPair is ERC20, BoringOwnable {
         }
 
         if (status.needsSolvencyCheck) {
-            require(_isSolvent(msg.sender, false, exchangeRate), 'KashiPair: user insolvent');
+            require(_isSolvent(msg.sender, false, exchangeRate), 'Mixologist: user insolvent');
         }
     }
 
@@ -654,7 +654,7 @@ contract KashiPair is ERC20, BoringOwnable {
                 allBorrowPart = allBorrowPart.add(borrowPart);
             }
         }
-        require(allBorrowAmount != 0, 'KashiPair: all are solvent');
+        require(allBorrowAmount != 0, 'Mixologist: all are solvent');
         _totalBorrow.elastic = _totalBorrow.elastic.sub(allBorrowAmount.to128());
         _totalBorrow.base = _totalBorrow.base.sub(allBorrowPart.to128());
         totalBorrow = _totalBorrow;
@@ -663,7 +663,7 @@ contract KashiPair is ERC20, BoringOwnable {
         uint256 allBorrowShare = tapiocaBar.toShare(assetId, allBorrowAmount, true);
 
         // Closed liquidation using a pre-approved swapper for the benefit of the LPs
-        require(masterContract.swappers(swapper), 'KashiPair: Invalid swapper');
+        require(masterContract.swappers(swapper), 'Mixologist: Invalid swapper');
 
         // Swaps the users' collateral for the borrowed asset
         tapiocaBar.transfer(collateralId, address(this), address(swapper), allCollateralShare);
