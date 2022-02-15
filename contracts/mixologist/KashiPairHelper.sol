@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
-import "@boringcrypto/boring-solidity/contracts/libraries/BoringMath.sol";
-import "@boringcrypto/boring-solidity/contracts/libraries/BoringRebase.sol";
-import "@sushiswap/bentobox-sdk/contracts/IBentoBoxV1.sol";
-import "./KashiPair.sol";
+import '@boringcrypto/boring-solidity/contracts/libraries/BoringMath.sol';
+import '@boringcrypto/boring-solidity/contracts/libraries/BoringRebase.sol';
+import '../bar/TapiocaBar.sol';
+import './KashiPair.sol';
 
 /// @dev This contract provides useful helper functions for `KashiPair`.
 contract KashiPairHelper {
@@ -25,8 +25,8 @@ contract KashiPairHelper {
         uint256 borrowAmount = totalBorrow.toElastic(borrowPart, false);
 
         return
-            kashiPair.bentoBox().toShare(
-                kashiPair.collateral(),
+            kashiPair.tapiocaBar().toShare(
+                kashiPair.collateralId(),
                 borrowAmount.mul(LIQUIDATION_MULTIPLIER).mul(kashiPair.exchangeRate()) /
                     (LIQUIDATION_MULTIPLIER_PRECISION * EXCHANGE_RATE_PRECISION),
                 false
