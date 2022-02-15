@@ -20,7 +20,6 @@ pragma experimental ABIEncoderV2;
 import '@boringcrypto/boring-solidity/contracts/libraries/BoringMath.sol';
 import '@boringcrypto/boring-solidity/contracts/BoringOwnable.sol';
 import '@boringcrypto/boring-solidity/contracts/ERC20.sol';
-import '@boringcrypto/boring-solidity/contracts/interfaces/IMasterContract.sol';
 import '@boringcrypto/boring-solidity/contracts/libraries/BoringRebase.sol';
 import '@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol';
 import '../bar/TapiocaBar.sol';
@@ -33,7 +32,7 @@ import './interfaces/ISwapper.sol';
 /// @title KashiPair
 /// @dev This contract allows contract calls to any contract (except tapiocaBar)
 /// from arbitrary callers thus, don't trust calls from this contract in any circumstances.
-contract KashiPair is ERC20, BoringOwnable, IMasterContract {
+contract KashiPair is ERC20, BoringOwnable {
     using BoringMath for uint256;
     using BoringMath128 for uint128;
     using RebaseLibrary for Rebase;
@@ -135,17 +134,21 @@ contract KashiPair is ERC20, BoringOwnable, IMasterContract {
     uint256 private constant BORROW_OPENING_FEE_PRECISION = 1e5;
 
     /// @notice The constructor is only used for the initial master contract. Subsequent clones are initialised via `init`.
-    constructor(TapiocaBar tapiocaBar_) public {
+    constructor(
+        TapiocaBar tapiocaBar_,
+        IERC20 _collateral,
+        IERC20 _asset,
+        uint256 _assetId,
+        uint256 _collateralId
+    ) public {
         tapiocaBar = tapiocaBar_;
         masterContract = this;
-    }
 
-    /// @notice Serves as the constructor for clones, as clones can't have a regular constructor
-    /// @dev `data` is abi encoded in the format: (IERC20 collateral, IERC20 asset, IOracle oracle, bytes oracleData)
-    function init(bytes calldata data) public payable override {
-        require(address(collateral) == address(0), 'KashiPair: already initialized');
-        (collateral, asset, oracle, oracleData) = abi.decode(data, (IERC20, IERC20, IOracle, bytes));
-        require(address(collateral) != address(0), 'KashiPair: bad pair');
+        require(address(_collateral) != address(0) && address(_asset) != address(0), 'KashiPair: bad pair');
+        asset = _asset;
+        collateral = _collateral;
+        assetId = _assetId;
+        collateralId = _collateralId;
 
         accrueInfo.interestPerSecond = uint64(STARTING_INTEREST_PER_SECOND); // 1% APR, with 1e18 being 100%
     }
