@@ -447,15 +447,16 @@ contract Mixologist is ERC20, BoringOwnable {
     // Functions that don't need accrue to be called
     uint8 internal constant ACTION_ADD_COLLATERAL = 10;
     uint8 internal constant ACTION_UPDATE_EXCHANGE_RATE = 11;
+    uint8 internal constant ACTION_FLASHLOAN = 12;
 
-    // Function on tapiocaBar
-    uint8 internal constant ACTION_BENTO_DEPOSIT = 20;
-    uint8 internal constant ACTION_BENTO_WITHDRAW = 21;
-    uint8 internal constant ACTION_BENTO_TRANSFER = 22;
-    uint8 internal constant ACTION_BENTO_TRANSFER_MULTIPLE = 23;
-    uint8 internal constant ACTION_BENTO_SETAPPROVAL = 24;
+    // Function on TapiocaBar
+    uint8 internal constant ACTION_BAR_DEPOSIT = 20;
+    uint8 internal constant ACTION_BAR_WITHDRAW = 21;
+    uint8 internal constant ACTION_BAR_TRANSFER = 22;
+    uint8 internal constant ACTION_BAR_TRANSFER_MULTIPLE = 23;
+    uint8 internal constant ACTION_BAR_SETAPPROVAL = 24;
 
-    // Any external call (except to tapiocaBar)
+    // Any external call (except to TapiocaBar)
     uint8 internal constant ACTION_CALL = 30;
 
     int256 internal constant USE_VALUE1 = -1;
@@ -526,7 +527,7 @@ contract Mixologist is ERC20, BoringOwnable {
         return (returnData, returnValues);
     }
 
-    struct CookStatus {
+    struct MixStatus {
         bool needsSolvencyCheck;
         bool hasAccrued;
     }
@@ -534,16 +535,16 @@ contract Mixologist is ERC20, BoringOwnable {
     /// @notice Executes a set of actions and allows composability (contract calls) to other contracts.
     /// @param actions An array with a sequence of actions to execute (see ACTION_ declarations).
     /// @param values A one-to-one mapped array to `actions`. ETH amounts to send along with the actions.
-    /// Only applicable to `ACTION_CALL`, `ACTION_BENTO_DEPOSIT`.
+    /// Only applicable to `ACTION_CALL`, `ACTION_BAR_DEPOSIT`.
     /// @param datas A one-to-one mapped array to `actions`. Contains abi encoded data of function arguments.
     /// @return value1 May contain the first positioned return value of the last executed action (if applicable).
     /// @return value2 May contain the second positioned return value of the last executed action which returns 2 values (if applicable).
-    function cook(
+    function mix(
         uint8[] calldata actions,
         uint256[] calldata values,
         bytes[] calldata datas
     ) external payable returns (uint256 value1, uint256 value2) {
-        CookStatus memory status;
+        MixStatus memory status;
         for (uint256 i = 0; i < actions.length; i++) {
             uint8 action = actions[i];
             if (!status.hasAccrued && action < 10) {
@@ -574,20 +575,26 @@ contract Mixologist is ERC20, BoringOwnable {
                 (bool must_update, uint256 minRate, uint256 maxRate) = abi.decode(datas[i], (bool, uint256, uint256));
                 (bool updated, uint256 rate) = updateExchangeRate();
                 require((!must_update || updated) && rate > minRate && (maxRate == 0 || rate > maxRate), 'Mixologist: rate not ok');
-            } else if (action == ACTION_BENTO_SETAPPROVAL) {
+            } else if (action == ACTION_FLASHLOAN) {
+                (IFlashBorrower borrower, address receiver, uint256 amount, bytes memory data) = abi.decode(
+                    datas[i],
+                    (IFlashBorrower, address, uint256, bytes)
+                );
+                flashLoan(borrower, receiver, amount, data);
+            } else if (action == ACTION_BAR_SETAPPROVAL) {
                 (address user, address operator, bool approved, uint8 v, bytes32 r, bytes32 s) = abi.decode(
                     datas[i],
                     (address, address, bool, uint8, bytes32, bytes32)
                 );
                 tapiocaBar.setApprovalForAllWithPermit(user, operator, approved, v, r, s);
-            } else if (action == ACTION_BENTO_DEPOSIT) {
+            } else if (action == ACTION_BAR_DEPOSIT) {
                 (value1, value2) = _bentoDeposit(datas[i], values[i], value1, value2);
-            } else if (action == ACTION_BENTO_WITHDRAW) {
+            } else if (action == ACTION_BAR_WITHDRAW) {
                 (value1, value2) = _bentoWithdraw(datas[i], value1, value2);
-            } else if (action == ACTION_BENTO_TRANSFER) {
+            } else if (action == ACTION_BAR_TRANSFER) {
                 (uint256 _assetId, address to, int256 share) = abi.decode(datas[i], (uint256, address, int256));
                 tapiocaBar.transfer(_assetId, msg.sender, to, _num(share, value1, value2));
-            } else if (action == ACTION_BENTO_TRANSFER_MULTIPLE) {
+            } else if (action == ACTION_BAR_TRANSFER_MULTIPLE) {
                 (uint256 _assetId, address[] memory tos, uint256[] memory shares) = abi.decode(datas[i], (uint256, address[], uint256[]));
                 tapiocaBar.transferMultiple(_assetId, msg.sender, tos, shares);
             } else if (action == ACTION_CALL) {
@@ -692,7 +699,7 @@ contract Mixologist is ERC20, BoringOwnable {
         IFlashBorrower borrower,
         address receiver,
         uint256 amount,
-        bytes calldata data
+        bytes memory data
     ) public {
         Rebase memory _totalAsset = totalAsset;
         uint256 feeAmount = amount.mul(FLASHLOAN_FEE) / FLASHLOAN_FEE_PRECISION;
