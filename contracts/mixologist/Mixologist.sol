@@ -25,6 +25,7 @@ import '@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol';
 import '../bar/TapiocaBar.sol';
 import './interfaces/IOracle.sol';
 import './interfaces/ISwapper.sol';
+import './interfaces/IFlashLoan.sol';
 
 // solhint-disable avoid-low-level-calls
 // solhint-disable no-inline-assembly
@@ -48,6 +49,7 @@ contract Mixologist is ERC20, BoringOwnable {
     event LogRepay(address indexed from, address indexed to, uint256 amount, uint256 part);
     event LogFeeTo(address indexed newFeeTo);
     event LogWithdrawFees(address indexed feeTo, uint256 feesEarnedFraction);
+    event LogFlashLoan(address indexed borrower, uint256 amount, uint256 feeAmount, address indexed receiver);
 
     // Immutables (for MasterContract and all clones)
     TapiocaBar public immutable tapiocaBar;
@@ -132,6 +134,8 @@ contract Mixologist is ERC20, BoringOwnable {
     uint256 private constant PROTOCOL_FEE_DIVISOR = 1e5;
     uint256 private constant BORROW_OPENING_FEE = 50; // 0.05%
     uint256 private constant BORROW_OPENING_FEE_PRECISION = 1e5;
+    uint256 private constant FLASHLOAN_FEE = 90; // 0.09%
+    uint256 private constant FLASHLOAN_FEE_PRECISION = 1e5;
 
     /// @notice The constructor is only used for the initial master contract. Subsequent clones are initialised via `init`.
     constructor(
@@ -676,6 +680,33 @@ contract Mixologist is ERC20, BoringOwnable {
         tapiocaBar.transfer(assetId, address(this), masterContract.feeTo(), feeShare);
         totalAsset.elastic = totalAsset.elastic.add(returnedShare.sub(feeShare).to128());
         emit LogAddAsset(address(swapper), address(this), extraShare.sub(feeShare), 0);
+    }
+
+    /// @notice Flashloan ability.
+    //  @dev The contract expect the `borrower` to have at the end of `onFlashLoan` `amount` + the incured fees
+    /// @param borrower The address of the contract that implements and conforms to `IFlashBorrower` and handles the flashloan.
+    /// @param receiver Address of the token receiver.
+    /// @param amount of the tokens to receive.
+    /// @param data The calldata to pass to the `borrower` contract.
+    function flashLoan(
+        IFlashBorrower borrower,
+        address receiver,
+        uint256 amount,
+        bytes calldata data
+    ) public {
+        Rebase memory _totalAsset = totalAsset;
+        uint256 feeAmount = amount.mul(FLASHLOAN_FEE) / FLASHLOAN_FEE_PRECISION;
+        uint256 feeFraction = feeAmount.mul(_totalAsset.base) / _totalAsset.elastic;
+        totalAsset.base = _totalAsset.base.add(feeFraction.to128());
+        accrueInfo.feesEarnedFraction = accrueInfo.feesEarnedFraction.add(feeFraction.to128());
+
+        tapiocaBar.withdraw(assetId, address(this), receiver, amount, 0);
+
+        borrower.onFlashLoan(msg.sender, asset, amount, feeAmount, data);
+
+        tapiocaBar.deposit(assetId, address(borrower), address(this), amount.add(feeAmount), 0);
+
+        emit LogFlashLoan(address(borrower), amount, feeAmount, receiver);
     }
 
     /// @notice Withdraws the fees accumulated.
