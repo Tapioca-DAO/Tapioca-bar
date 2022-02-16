@@ -3,7 +3,7 @@ import * as dotenv from 'dotenv';
 import { HardhatUserConfig } from 'hardhat/config';
 import '@nomiclabs/hardhat-waffle';
 import '@typechain/hardhat';
-// import '@nomiclabs/hardhat-etherscan';
+import '@nomiclabs/hardhat-etherscan';
 import 'hardhat-deploy';
 import '@nomiclabs/hardhat-ethers';
 import 'hardhat-gas-reporter';
@@ -43,6 +43,12 @@ const config: HardhatUserConfig = {
       chainId: 28,
       accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
     },
+    rinkeby: {
+      gasMultiplier: 2,
+      url: process.env.RINKEBY,
+      chainId: 4,
+      accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+    },
     mainnet: {
       gasMultiplier: 2,
       live: true,
@@ -51,9 +57,11 @@ const config: HardhatUserConfig = {
       accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
     },
   },
-  // etherscan: {
-  //   apiKey: process.env.BLOCKSCAN_KEY,
-  // },
+  etherscan: {
+    apiKey: {
+      rinkeby: process.env.RINKEBY_KEY
+    }
+  },
   gasReporter: {
     currency: 'USD',
     token: 'BOBA',
