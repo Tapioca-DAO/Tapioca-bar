@@ -131,16 +131,21 @@ contract Mixologist is ERC20, BoringOwnable {
         IERC20 _asset,
         uint256 _assetId,
         IERC20 _collateral,
-        uint256 _collateralId
+        uint256 _collateralId,
+        IOracle _oracle
     ) public {
         tapiocaBar = tapiocaBar_;
         masterContract = this;
 
-        require(address(_collateral) != address(0) && address(_asset) != address(0), 'Mixologist: bad pair');
+        require(
+            address(_collateral) != address(0) && address(_asset) != address(0) && address(_oracle) != address(0),
+            'Mixologist: bad pair'
+        );
         asset = _asset;
         collateral = _collateral;
         assetId = _assetId;
         collateralId = _collateralId;
+        oracle = _oracle;
 
         accrueInfo.interestPerSecond = uint64(STARTING_INTEREST_PER_SECOND); // 1% APR, with 1e18 being 100%
     }
