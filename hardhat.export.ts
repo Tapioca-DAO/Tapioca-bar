@@ -48,6 +48,7 @@ const config: HardhatUserConfig = {
       url: process.env.RINKEBY,
       chainId: 4,
       accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+      tags: ["testnet"],
     },
     mainnet: {
       gasMultiplier: 2,
