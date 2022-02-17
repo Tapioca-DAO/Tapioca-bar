@@ -15,5 +15,7 @@ module.exports = {
         'comma-dangle': [2, 'always-multiline'],
         semi: ['error', 'always'],
         indent: [2, 4, { SwitchCase: 1 }],
+        'comma-spacing':['error', {'before':false, 'after':true}],
+        'quotes':['error', 'single'],
     },
 };
