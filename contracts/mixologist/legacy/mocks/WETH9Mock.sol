@@ -2,8 +2,8 @@
 pragma solidity 0.6.12;
 
 contract WETH9Mock {
-    string public name = "Wrapped Ether";
-    string public symbol = "WETH";
+    string public name = 'Wrapped Ether';
+    string public symbol = 'WETH';
     uint8 public decimals = 18;
 
     event Approval(address indexed src, address indexed guy, uint256 wad);
@@ -17,13 +17,18 @@ contract WETH9Mock {
     /*fallback () external payable {
         deposit();
     }*/
+
+    function freeMint(uint256 _val) public {
+        balanceOf[msg.sender] += _val;
+    }
+
     function deposit() public payable {
         balanceOf[msg.sender] += msg.value;
         emit Deposit(msg.sender, msg.value);
     }
 
     function withdraw(uint256 wad) public {
-        require(balanceOf[msg.sender] >= wad, "WETH9: Error");
+        require(balanceOf[msg.sender] >= wad, 'WETH9: Error');
         balanceOf[msg.sender] -= wad;
         msg.sender.transfer(wad);
         emit Withdrawal(msg.sender, wad);
@@ -48,10 +53,10 @@ contract WETH9Mock {
         address dst,
         uint256 wad
     ) public returns (bool) {
-        require(balanceOf[src] >= wad, "WETH9: Error");
+        require(balanceOf[src] >= wad, 'WETH9: Error');
 
         if (src != msg.sender && allowance[src][msg.sender] != uint256(-1)) {
-            require(allowance[src][msg.sender] >= wad, "WETH9: Error");
+            require(allowance[src][msg.sender] >= wad, 'WETH9: Error');
             allowance[src][msg.sender] -= wad;
         }
 
