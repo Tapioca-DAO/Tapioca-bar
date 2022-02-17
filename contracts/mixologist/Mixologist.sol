@@ -357,7 +357,7 @@ contract Mixologist is ERC20, BoringOwnable {
         emit Transfer(msg.sender, address(0), fraction);
         _totalAsset.elastic = _totalAsset.elastic.sub(share.to128());
         _totalAsset.base = _totalAsset.base.sub(fraction.to128());
-        require(_totalAsset.base >= 1000, 'Kashi: below minimum');
+        require(_totalAsset.base >= 1000, 'Mixologist: below minimum');
         totalAsset = _totalAsset;
         emit LogRemoveAsset(msg.sender, to, share, fraction);
         tapiocaBar.transfer(assetId, address(this), to, share);
@@ -382,7 +382,7 @@ contract Mixologist is ERC20, BoringOwnable {
 
         share = tapiocaBar.toShare(assetId, amount, false);
         Rebase memory _totalAsset = totalAsset;
-        require(_totalAsset.base >= 1000, 'Kashi: below minimum');
+        require(_totalAsset.base >= 1000, 'Mixologist: below minimum');
         _totalAsset.elastic = _totalAsset.elastic.sub(share.to128());
         totalAsset = _totalAsset;
         tapiocaBar.transfer(assetId, address(this), to, share);
