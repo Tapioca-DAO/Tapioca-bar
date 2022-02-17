@@ -95,7 +95,7 @@ contract TapiocaBar is Domain, BoringBatchable, IERC1155TokenReceiver, BoringOwn
     /// If 'from' is msg.sender, it's allowed.
     /// If 'msg.sender' is an address (an operator) that is approved by 'from', it's allowed.
     modifier allowed(address from) {
-        require(from == msg.sender && isApprovedForAll[from][msg.sender], 'TapiocaBar: Not approved');
+        require(from == msg.sender || isApprovedForAll[from][msg.sender], 'TapiocaBar: Not approved');
         _;
     }
 
@@ -117,7 +117,7 @@ contract TapiocaBar is Domain, BoringBatchable, IERC1155TokenReceiver, BoringOwn
         totalAmount = totalAmount.add(1);
         totalShares_ = totalShares_.add(1e8);
 
-        // Calculte the shares using te current amount to share ratio
+        // Calculte the shares using the current amount to share ratio
         share = amount.mul(totalShares_) / totalAmount;
 
         // Default is to round down (Solidity), round up if required

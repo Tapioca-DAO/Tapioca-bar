@@ -1,19 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 
-// Kashi Lending Medium Risk
-
-//  __  __             __    __      _____                  __ __
-// |  |/  .---.-.-----|  |--|__|    |     |_.-----.-----.--|  |__.-----.-----.
-// |     <|  _  |__ --|     |  |    |       |  -__|     |  _  |  |     |  _  |
-// |__|\__|___._|_____|__|__|__|    |_______|_____|__|__|_____|__|__|__|___  |
-//                                                                     |_____|
-
 // Copyright (c) 2021 BoringCrypto - All rights reserved
 // Twitter: @Boring_Crypto
-
-// Special thanks to:
-// @0xKeno - for all his invaluable contributions
-// @burger_crypto - for the idea of trying to let the LPs benefit from liquidations
 
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
@@ -92,11 +80,11 @@ contract Mixologist is ERC20, BoringOwnable {
 
     // ERC20 'variables'
     function symbol() external view returns (string memory) {
-        return string(abi.encodePacked('km', collateral.safeSymbol(), '/', asset.safeSymbol(), '-', oracle.symbol(oracleData)));
+        return string(abi.encodePacked('tm', collateral.safeSymbol(), '/', asset.safeSymbol(), '-', oracle.symbol(oracleData)));
     }
 
     function name() external view returns (string memory) {
-        return string(abi.encodePacked('Kashi Medium Risk ', collateral.safeName(), '/', asset.safeName(), '-', oracle.name(oracleData)));
+        return string(abi.encodePacked('Tapioca Mixologist ', collateral.safeName(), '/', asset.safeName(), '-', oracle.name(oracleData)));
     }
 
     function decimals() external view returns (uint8) {
