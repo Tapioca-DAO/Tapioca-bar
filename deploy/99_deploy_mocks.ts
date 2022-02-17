@@ -10,7 +10,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         await deploy('ERC20Mock', {
             from: deployer,
             log: true,
-            args: [hre.ethers.BigNumber.from(1e18).mul(1e6)]
+            args: [hre.ethers.BigNumber.from(1e18).mul(1e6)],
         });
 
         await deploy('WETH9Mock', {

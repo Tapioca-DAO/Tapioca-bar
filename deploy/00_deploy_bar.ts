@@ -9,7 +9,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     await deploy('TapiocaBar', {
         from: deployer,
         log: true,
-        args: ["0xDeadDeAddeAddEAddeadDEaDDEAdDeaDDeAD0000"]
+        args: ['0xDeadDeAddeAddEAddeadDEaDDEAdDeaDDeAD0000'],
     });
 };
 export default func;
