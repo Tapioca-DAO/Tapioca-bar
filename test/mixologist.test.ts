@@ -8,7 +8,6 @@ describe('Mixologist test', () => {
 
         const mintVal = ethers.BigNumber.from(1e18.toString()).mul(1e5);
         usdc.freeMint(mintVal);
-        weth.freeMint(mintVal);
 
         const balanceBefore = await usdc.balanceOf(deployer.address);
         // Deposit assets to bar
@@ -29,5 +28,16 @@ describe('Mixologist test', () => {
         // Check the value of the asset
         const balanceAfter = await usdc.balanceOf(deployer.address);
         expect(balanceAfter).to.equal(balanceBefore);
+    });
+
+    it('Should deposit USDC, deposit WETH and borrow USDC', async () => {
+        const { usdc, weth, bar, wethUsdcMixologist, deployer, mixologistHelper, eoa1} = await register();
+
+        const mintVal = ethers.BigNumber.from(1e18.toString()).mul(1e5);
+        usdc.freeMint(mintVal);
+        weth.freeMint(mintVal);
+
+
+        
     });
 });
