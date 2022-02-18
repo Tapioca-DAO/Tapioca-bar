@@ -10,6 +10,15 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         from: deployer,
         log: true,
     });
+
+    if (hre.network.live || hre.network.tags['rinkeby']) {
+        try {
+            const helper = await deployments.get('MixologistHelper');
+            await hre.run('verify', { address: helper.address });
+        } catch (err) {
+            console.log(err);
+        }
+    }
 };
 export default func;
 func.tags = ['MixologistHelper'];

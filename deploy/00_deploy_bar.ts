@@ -11,6 +11,15 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         log: true,
         args: ['0xDeadDeAddeAddEAddeadDEaDDEAdDeaDDeAD0000'],
     });
+
+    if (hre.network.live || hre.network.tags['rinkeby']) {
+        try {
+            const bar = await deployments.get('TapiocaBar');
+            await hre.run('verify', {address: bar.address, constructorArgsParams: ['0xDeadDeAddeAddEAddeadDEaDDEAdDeaDDeAD0000'] });
+        } catch (err) {
+            console.log(err);
+        }
+    }
 };
 export default func;
 func.tags = ['TapiocaBar'];
