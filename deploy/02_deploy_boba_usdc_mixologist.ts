@@ -4,8 +4,8 @@ import { DeployFunction } from 'hardhat-deploy/types';
 type TapiocaBar = string;
 type Collateral = string;
 type Asset = string;
-type AssetId = number;
-type CollateralId = number;
+type AssetId = string;
+type CollateralId = string;
 type Address = string;
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
@@ -36,9 +36,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const deployArgs: [TapiocaBar, Asset, AssetId, Collateral, CollateralId, Address] = [
         bar.address,
         boba,
-        bobaAssetId.toNumber(),
+        bobaAssetId.toNumber().toString(),
         usdc,
-        usdcAssetId.toNumber(),
+        usdcAssetId.toNumber().toString(),
         oracle.address,
 
     ];
@@ -52,11 +52,15 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     if (hre.network.live || hre.network.tags['rinkeby']) {
         try {
             const oracle = await deployments.get('OracleMock');
-            const mixologist = await deployments.get('Mixologist');
             await hre.run('verify', { address: oracle.address });
+        } catch (err) {
+            console.log(String(err).split('\n')[0]);
+        }
+        try {
+            const mixologist = await deployments.get('Mixologist');
             await hre.run('verify', { address: mixologist.address, constructorArgsParams: deployArgs });
         } catch (err) {
-            console.log(err);
+            console.log(String(err).split('\n')[0]);
         }
     }
 };
