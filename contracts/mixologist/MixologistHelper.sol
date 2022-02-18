@@ -24,6 +24,7 @@ contract MixologistHelper {
         Rebase memory totalBorrow = Rebase(elastic, base);
         uint256 borrowAmount = totalBorrow.toElastic(borrowPart, false);
 
+        // TODO test with number
         return
             mixologist.tapiocaBar().toShare(
                 mixologist.collateralId(),

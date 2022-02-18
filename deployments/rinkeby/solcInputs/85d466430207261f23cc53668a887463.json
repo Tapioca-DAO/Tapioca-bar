@@ -1,0 +1,36 @@
+{
+  "language": "Solidity",
+  "sources": {
+    "contracts/mixologist/legacy/mocks/WETH9Mock.sol": {
+      "content": "// SPDX-License-Identifier: GPL-3.0-only\r\npragma solidity 0.6.12;\r\n\r\ncontract WETH9Mock {\r\n    string public name = 'Wrapped Ether';\r\n    string public symbol = 'WETH';\r\n    uint8 public decimals = 18;\r\n\r\n    event Approval(address indexed src, address indexed guy, uint256 wad);\r\n    event Transfer(address indexed src, address indexed dst, uint256 wad);\r\n    event Deposit(address indexed dst, uint256 wad);\r\n    event Withdrawal(address indexed src, uint256 wad);\r\n\r\n    mapping(address => uint256) public balanceOf;\r\n    mapping(address => mapping(address => uint256)) public allowance;\r\n\r\n    /*fallback () external payable {\r\n        deposit();\r\n    }*/\r\n\r\n    function freeMint(uint256 _val) public {\r\n        balanceOf[msg.sender] += _val;\r\n    }\r\n\r\n    function deposit() public payable {\r\n        balanceOf[msg.sender] += msg.value;\r\n        emit Deposit(msg.sender, msg.value);\r\n    }\r\n\r\n    function withdraw(uint256 wad) public {\r\n        require(balanceOf[msg.sender] >= wad, 'WETH9: Error');\r\n        balanceOf[msg.sender] -= wad;\r\n        msg.sender.transfer(wad);\r\n        emit Withdrawal(msg.sender, wad);\r\n    }\r\n\r\n    function totalSupply() public view returns (uint256) {\r\n        return address(this).balance;\r\n    }\r\n\r\n    function approve(address guy, uint256 wad) public returns (bool) {\r\n        allowance[msg.sender][guy] = wad;\r\n        emit Approval(msg.sender, guy, wad);\r\n        return true;\r\n    }\r\n\r\n    function transfer(address dst, uint256 wad) public returns (bool) {\r\n        return transferFrom(msg.sender, dst, wad);\r\n    }\r\n\r\n    function transferFrom(\r\n        address src,\r\n        address dst,\r\n        uint256 wad\r\n    ) public returns (bool) {\r\n        require(balanceOf[src] >= wad, 'WETH9: Error');\r\n\r\n        if (src != msg.sender && allowance[src][msg.sender] != uint256(-1)) {\r\n            require(allowance[src][msg.sender] >= wad, 'WETH9: Error');\r\n            allowance[src][msg.sender] -= wad;\r\n        }\r\n\r\n        balanceOf[src] -= wad;\r\n        balanceOf[dst] += wad;\r\n\r\n        emit Transfer(src, dst, wad);\r\n\r\n        return true;\r\n    }\r\n}\r\n"
+    }
+  },
+  "settings": {
+    "optimizer": {
+      "enabled": true,
+      "runs": 200
+    },
+    "outputSelection": {
+      "*": {
+        "*": [
+          "abi",
+          "evm.bytecode",
+          "evm.deployedBytecode",
+          "evm.methodIdentifiers",
+          "metadata",
+          "devdoc",
+          "userdoc",
+          "storageLayout",
+          "evm.gasEstimates"
+        ],
+        "": [
+          "ast"
+        ]
+      }
+    },
+    "metadata": {
+      "useLiteralContent": true
+    },
+    "libraries": {}
+  }
+}
