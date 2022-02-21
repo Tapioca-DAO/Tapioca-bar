@@ -212,11 +212,7 @@ contract Mixologist is ERC20, BoringOwnable {
 
     /// @notice Concrete implementation of `isSolvent`. Includes a third parameter to allow caching `exchangeRate`.
     /// @param _exchangeRate The exchange rate. Used to cache the `exchangeRate` between calls.
-    function _isSolvent(
-        address user,
-        bool open,
-        uint256 _exchangeRate
-    ) internal view returns (bool) {
+    function _isSolvent(address user, uint256 _exchangeRate) internal view returns (bool) {
         // accrue must have already been called!
         uint256 borrowPart = userBorrowPart[user];
         if (borrowPart == 0) return true;
@@ -228,9 +224,7 @@ contract Mixologist is ERC20, BoringOwnable {
         return
             tapiocaBar.toAmount(
                 collateralId,
-                collateralShare.mul(EXCHANGE_RATE_PRECISION / COLLATERIZATION_RATE_PRECISION).mul(
-                    open ? OPEN_COLLATERIZATION_RATE : CLOSED_COLLATERIZATION_RATE
-                ),
+                collateralShare.mul(EXCHANGE_RATE_PRECISION / COLLATERIZATION_RATE_PRECISION).mul(CLOSED_COLLATERIZATION_RATE),
                 false
             ) >=
             // Moved exchangeRate here instead of dividing the other side to preserve more precision
@@ -240,7 +234,7 @@ contract Mixologist is ERC20, BoringOwnable {
     /// @dev Checks if the user is solvent in the closed liquidation case at the end of the function body.
     modifier solvent() {
         _;
-        require(_isSolvent(msg.sender, false, exchangeRate), 'Mixologist: user insolvent');
+        require(_isSolvent(msg.sender, exchangeRate), 'Mixologist: user insolvent');
     }
 
     /// @notice Gets the exchange rate. I.e how much collateral to buy 1e18 asset.
@@ -608,7 +602,7 @@ contract Mixologist is ERC20, BoringOwnable {
         }
 
         if (status.needsSolvencyCheck) {
-            require(_isSolvent(msg.sender, false, exchangeRate), 'Mixologist: user insolvent');
+            require(_isSolvent(msg.sender, exchangeRate), 'Mixologist: user insolvent');
         }
     }
 
@@ -633,7 +627,7 @@ contract Mixologist is ERC20, BoringOwnable {
         Rebase memory _totalBorrow = totalBorrow;
         for (uint256 i = 0; i < users.length; i++) {
             address user = users[i];
-            if (!_isSolvent(user, false, _exchangeRate)) {
+            if (!_isSolvent(user, _exchangeRate)) {
                 uint256 borrowPart;
                 {
                     uint256 availableBorrowPart = userBorrowPart[user];
