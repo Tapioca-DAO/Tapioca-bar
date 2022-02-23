@@ -28,14 +28,14 @@ const config: HardhatUserConfig = {
     networks: {
         hardhat: {
             accounts:
-        process.env.PRIVATE_KEY !== undefined
-            ? [
-                {
-                    privateKey: process.env.PRIVATE_KEY,
-                    balance: '1000000000000000000000000',
-                },
-            ]
-            : [],
+                process.env.PRIVATE_KEY !== undefined
+                    ? [
+                          {
+                              privateKey: process.env.PRIVATE_KEY,
+                              balance: '1000000000000000000000000',
+                          },
+                      ]
+                    : [],
         },
         testnet: {
             gasMultiplier: 2,
