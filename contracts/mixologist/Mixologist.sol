@@ -98,7 +98,6 @@ contract Mixologist is ERC20, BoringOwnable {
 
     // Settings for the Medium Risk Mixologist
     uint256 private constant CLOSED_COLLATERIZATION_RATE = 75000; // 75%
-    uint256 private constant OPEN_COLLATERIZATION_RATE = 77000; // 77%
     uint256 private constant COLLATERIZATION_RATE_PRECISION = 1e5; // Must be less than EXCHANGE_RATE_PRECISION (due to optimization in math)
     uint256 private constant MINIMUM_TARGET_UTILIZATION = 7e17; // 70%
     uint256 private constant MAXIMUM_TARGET_UTILIZATION = 8e17; // 80%
@@ -607,6 +606,7 @@ contract Mixologist is ERC20, BoringOwnable {
     }
 
     /// @notice Handles the liquidation of users' balances, once the users' amount of collateral is too low.
+    /// @dev Only closed liquidations
     /// @param users An array of user addresses.
     /// @param maxBorrowParts A one-to-one mapping to `users`, contains maximum (partial) borrow amounts (to liquidate) of the respective user.
     /// @param to Address of the receiver in open liquidations if `swapper` is zero.
@@ -641,7 +641,6 @@ contract Mixologist is ERC20, BoringOwnable {
                         (LIQUIDATION_MULTIPLIER_PRECISION * EXCHANGE_RATE_PRECISION),
                     false
                 );
-
                 userCollateralShare[user] = userCollateralShare[user].sub(collateralShare);
                 emit LogRemoveCollateral(user, swapper == ISwapper(0) ? to : address(swapper), collateralShare);
                 emit LogRepay(swapper == ISwapper(0) ? msg.sender : address(swapper), user, borrowAmount, borrowPart);
