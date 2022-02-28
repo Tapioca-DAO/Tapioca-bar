@@ -55,7 +55,7 @@ contract Mixologist is ERC20, BoringOwnable {
     uint256 public assetId;
     IOracle public oracle;
     bytes public oracleData;
-    address[] public swapPath;
+    address[] public collateralSwapPath;
 
     // Total amounts
     uint256 public totalCollateralShare; // Total collateral supplied
@@ -134,7 +134,7 @@ contract Mixologist is ERC20, BoringOwnable {
         uint256 _collateralId,
         IOracle _oracle,
         MultiSwapper _swapper,
-        address[] memory _swapPath
+        address[] memory _collateralSwapPath
     ) public {
         tapiocaBar = tapiocaBar_;
         masterContract = this;
@@ -148,7 +148,7 @@ contract Mixologist is ERC20, BoringOwnable {
         assetId = _assetId;
         collateralId = _collateralId;
         oracle = _oracle;
-        swapPath = _swapPath;
+        collateralSwapPath = _collateralSwapPath;
 
         swappers[_swapper] = true;
         accrueInfo.interestPerSecond = uint64(STARTING_INTEREST_PER_SECOND); // 1% APR, with 1e18 being 100%
@@ -667,7 +667,7 @@ contract Mixologist is ERC20, BoringOwnable {
 
         // Swaps the users' collateral for the borrowed asset
         tapiocaBar.transfer(collateralId, address(this), address(swapper), allCollateralShare);
-        swapper.swap(collateralId, assetId, 0, swapPath, allCollateralShare);
+        swapper.swap(collateralId, assetId, 0, collateralSwapPath, allCollateralShare);
 
         uint256 returnedShare = tapiocaBar.balanceOf(address(this), assetId).sub(uint256(totalAsset.elastic));
         uint256 extraShare = returnedShare.sub(allBorrowShare);
@@ -726,9 +726,9 @@ contract Mixologist is ERC20, BoringOwnable {
     }
 
     /// @notice Used to set the swap path of closed liquidations
-    /// @param _swapPath The Uniswap path .
-    function setSwapper(address[] calldata _swapPath) public onlyOwner {
-        swapPath = _swapPath;
+    /// @param _collateralSwapPath The Uniswap path .
+    function setCollateralSwapPath(address[] calldata _collateralSwapPath) public onlyOwner {
+        collateralSwapPath = _collateralSwapPath;
     }
 
     /// @notice Sets the beneficiary of fees accrued in liquidations.
