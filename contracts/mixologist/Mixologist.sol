@@ -11,8 +11,8 @@ import '@boringcrypto/boring-solidity/contracts/ERC20.sol';
 import '@boringcrypto/boring-solidity/contracts/libraries/BoringRebase.sol';
 import '@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol';
 import '../bar/TapiocaBar.sol';
+import '../swappers/MultiSwapper.sol';
 import './interfaces/IOracle.sol';
-import './interfaces/ISwapper.sol';
 import './interfaces/IFlashLoan.sol';
 
 // solhint-disable avoid-low-level-calls
@@ -45,7 +45,7 @@ contract Mixologist is ERC20, BoringOwnable {
 
     // MasterContract variables
     address public feeTo;
-    mapping(ISwapper => bool) public swappers;
+    mapping(MultiSwapper => bool) public swappers;
 
     // Per clone variables
     // Clone init settings
@@ -55,6 +55,7 @@ contract Mixologist is ERC20, BoringOwnable {
     uint256 public assetId;
     IOracle public oracle;
     bytes public oracleData;
+    address[] public swapPath;
 
     // Total amounts
     uint256 public totalCollateralShare; // Total collateral supplied
@@ -131,7 +132,9 @@ contract Mixologist is ERC20, BoringOwnable {
         uint256 _assetId,
         IERC20 _collateral,
         uint256 _collateralId,
-        IOracle _oracle
+        IOracle _oracle,
+        MultiSwapper _swapper,
+        address[] memory _swapPath
     ) public {
         tapiocaBar = tapiocaBar_;
         masterContract = this;
@@ -145,7 +148,9 @@ contract Mixologist is ERC20, BoringOwnable {
         assetId = _assetId;
         collateralId = _collateralId;
         oracle = _oracle;
+        swapPath = _swapPath;
 
+        swappers[_swapper] = true;
         accrueInfo.interestPerSecond = uint64(STARTING_INTEREST_PER_SECOND); // 1% APR, with 1e18 being 100%
     }
 
@@ -609,13 +614,11 @@ contract Mixologist is ERC20, BoringOwnable {
     /// @dev Only closed liquidations
     /// @param users An array of user addresses.
     /// @param maxBorrowParts A one-to-one mapping to `users`, contains maximum (partial) borrow amounts (to liquidate) of the respective user.
-    /// @param to Address of the receiver in open liquidations if `swapper` is zero.
-    /// @param swapper Contract address of the `ISwapper` implementation. Swappers are restricted for closed liquidations. See `setSwapper`.
+    /// @param swapper Contract address of the `MultiSwapper` implementation. See `setSwapper`.
     function liquidate(
         address[] calldata users,
         uint256[] calldata maxBorrowParts,
-        address to,
-        ISwapper swapper
+        MultiSwapper swapper
     ) public {
         // Oracle can fail but we still need to allow liquidations
         (, uint256 _exchangeRate) = updateExchangeRate();
@@ -642,8 +645,8 @@ contract Mixologist is ERC20, BoringOwnable {
                     false
                 );
                 userCollateralShare[user] = userCollateralShare[user].sub(collateralShare);
-                emit LogRemoveCollateral(user, swapper == ISwapper(0) ? to : address(swapper), collateralShare);
-                emit LogRepay(swapper == ISwapper(0) ? msg.sender : address(swapper), user, borrowAmount, borrowPart);
+                emit LogRemoveCollateral(user, address(swapper), collateralShare);
+                emit LogRepay(address(swapper), user, borrowAmount, borrowPart);
 
                 // Keep totals
                 allCollateralShare = allCollateralShare.add(collateralShare);
@@ -664,7 +667,7 @@ contract Mixologist is ERC20, BoringOwnable {
 
         // Swaps the users' collateral for the borrowed asset
         tapiocaBar.transfer(collateralId, address(this), address(swapper), allCollateralShare);
-        swapper.swap(collateral, asset, address(this), allBorrowShare, allCollateralShare);
+        swapper.swap(collateralId, assetId, 0, swapPath, allCollateralShare);
 
         uint256 returnedShare = tapiocaBar.balanceOf(address(this), assetId).sub(uint256(totalAsset.elastic));
         uint256 extraShare = returnedShare.sub(allBorrowShare);
@@ -718,8 +721,14 @@ contract Mixologist is ERC20, BoringOwnable {
     /// MasterContract Only Admin function.
     /// @param swapper The address of the swapper contract that conforms to `ISwapper`.
     /// @param enable True to enable the swapper. To disable use False.
-    function setSwapper(ISwapper swapper, bool enable) public onlyOwner {
+    function setSwapper(MultiSwapper swapper, bool enable) public onlyOwner {
         swappers[swapper] = enable;
+    }
+
+    /// @notice Used to set the swap path of closed liquidations
+    /// @param _swapPath The Uniswap path .
+    function setSwapper(address[] calldata _swapPath) public onlyOwner {
+        swapPath = _swapPath;
     }
 
     /// @notice Sets the beneficiary of fees accrued in liquidations.
