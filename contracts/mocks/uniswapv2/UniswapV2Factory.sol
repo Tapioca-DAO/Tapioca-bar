@@ -13,13 +13,13 @@ contract UniswapV2Factory is IUniswapV2Factory {
     mapping(address => mapping(address => address)) public override getPair;
     address[] public override allPairs;
 
-    event PairCreated(address indexed token0, address indexed token1, address pair, uint);
+    event PairCreated(address indexed token0, address indexed token1, address pair, uint256);
 
     constructor(address _feeToSetter) public {
         feeToSetter = _feeToSetter;
     }
 
-    function allPairsLength() external override view returns (uint) {
+    function allPairsLength() external view override returns (uint256) {
         return allPairs.length;
     }
 
@@ -58,5 +58,4 @@ contract UniswapV2Factory is IUniswapV2Factory {
         require(msg.sender == feeToSetter, 'UniswapV2: FORBIDDEN');
         feeToSetter = _feeToSetter;
     }
-
 }
