@@ -6,6 +6,10 @@ import '../interfaces/IUniswapV2Pair.sol';
 
 import './SafeMath.sol';
 
+interface IUniswapV2FactoryExtend {
+    function pairCodeHash() external pure returns (bytes32);
+}
+
 library UniswapV2Library {
     using SafeMathUniswap for uint256;
 
@@ -30,7 +34,7 @@ library UniswapV2Library {
                         hex'ff',
                         factory,
                         keccak256(abi.encodePacked(token0, token1)),
-                        hex'e18a34eb0e04b04f7a0ac29a6e80748dca96319b42c54d679cb821dca90c6303' // init code hash
+                        IUniswapV2FactoryExtend(factory).pairCodeHash() // init code hash
                     )
                 )
             )
