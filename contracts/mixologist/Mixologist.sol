@@ -665,9 +665,11 @@ contract Mixologist is ERC20, BoringOwnable {
         // Closed liquidation using a pre-approved swapper for the benefit of the LPs
         require(masterContract.swappers(swapper), 'Mixologist: Invalid swapper');
 
+        // TODO liquidations should go to distribution contract
+        // TODO Incentivize caller?
         // Swaps the users' collateral for the borrowed asset
         tapiocaBar.transfer(collateralId, address(this), address(swapper), allCollateralShare);
-        swapper.swap(collateralId, assetId, 0, collateralSwapPath, allCollateralShare);
+        swapper.swap(collateralId, assetId, 0, address(this), collateralSwapPath, allCollateralShare);
 
         uint256 returnedShare = tapiocaBar.balanceOf(address(this), assetId).sub(uint256(totalAsset.elastic));
         uint256 extraShare = returnedShare.sub(allBorrowShare);
