@@ -6,8 +6,8 @@ import '@typechain/hardhat';
 import '@nomiclabs/hardhat-etherscan';
 import 'hardhat-deploy';
 import '@nomiclabs/hardhat-ethers';
-import 'hardhat-gas-reporter';
-import 'solidity-coverage';
+// import 'hardhat-gas-reporter';
+// import 'solidity-coverage';
 
 dotenv.config();
 
@@ -63,11 +63,11 @@ const config: HardhatUserConfig = {
             rinkeby: process.env.RINKEBY_KEY,
         },
     },
-    gasReporter: {
-        currency: 'USD',
-        token: 'BOBA',
-        coinmarketcap: process.env.COINMARKETCAP_API ?? '',
-    },
+    // gasReporter: {
+    //     currency: 'USD',
+    //     token: 'BOBA',
+    //     coinmarketcap: process.env.COINMARKETCAP_API ?? '',
+    // },
     mocha: {
         timeout: 4000000,
     },
