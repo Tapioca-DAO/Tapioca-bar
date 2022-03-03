@@ -5,11 +5,25 @@ export async function setBalance(addr: string, ether: number) {
     await ethers.provider.send('hardhat_setBalance', [addr, ethers.utils.hexStripZeros(ethers.utils.parseEther(String(ether))._hex)]);
 }
 
+async function registerUniswapV2() {
+    const __uniFactoryFee = ethers.Wallet.createRandom();
+    const __uniFactory = await (await ethers.getContractFactory('UniswapV2Factory')).deploy(__uniFactoryFee.address);
+    await __uniFactory.deployed();
+    const __uniRouter = await (
+        await ethers.getContractFactory('UniswapV2Router02')
+    ).deploy(__uniFactory.address, ethers.constants.AddressZero);
+    await __uniRouter.deployed();
+
+    return { __uniFactory, __uniFactoryFee, __uniRouter };
+}
+
 export async function register() {
     /**
      * INITIAL SETUP
      */
     const deployer = (await ethers.getSigners())[0];
+
+    const __wethUsdcPrice = BN(2980).mul((1e18).toString());
 
     // Deploy USDC and WETH
     const usdc = await (await ethers.getContractFactory('ERC20Mock')).deploy(ethers.BigNumber.from((1e18).toString()).mul(1e9));
@@ -20,7 +34,7 @@ export async function register() {
     // Deploy WethUSDC mock oracle
     const wethUsdcOracle = await (await ethers.getContractFactory('OracleMock')).deploy();
     await wethUsdcOracle.deployed();
-    await (await wethUsdcOracle.set(ethers.BigNumber.from(2980).mul((1e18).toString()))).wait();
+    await (await wethUsdcOracle.set(__wethUsdcPrice)).wait();
 
     // Deploy Bar
     const bar = await (await ethers.getContractFactory('TapiocaBar')).deploy(weth.address);
@@ -32,11 +46,47 @@ export async function register() {
     await (await bar.registerAsset(0, usdc.address, ethers.constants.AddressZero, 0)).wait();
     const usdcAssetId = await bar.ids(0, usdc.address, ethers.constants.AddressZero, 0);
 
+    // Deploy Uni factory, create pair and add liquidity
+    const { __uniFactory, __uniRouter } = await registerUniswapV2();
+    await __uniFactory.createPair(weth.address, usdc.address);
+    const __wethUsdcMockPair = await __uniFactory.getPair(weth.address, usdc.address);
+
+    const wethPairAmount = ethers.BigNumber.from(1e6).mul((1e18).toString());
+    const usdcPairAmount = wethPairAmount.mul(__wethUsdcPrice.div((1e18).toString()));
+    await weth.freeMint(wethPairAmount);
+    await usdc.freeMint(usdcPairAmount);
+
+    await weth.approve(__uniRouter.address, wethPairAmount);
+    await usdc.approve(__uniRouter.address, usdcPairAmount);
+    await __uniRouter.addLiquidity(
+        weth.address,
+        usdc.address,
+        wethPairAmount,
+        usdcPairAmount,
+        wethPairAmount,
+        usdcPairAmount,
+        deployer.address,
+        Math.floor(Date.now() / 1000) + 1000 * 60, // 1min margin
+    );
+
+    // Deploy MultiSwapper
+    const multiSwapper = await (
+        await ethers.getContractFactory('MultiSwapper')
+    ).deploy(__uniFactory.address, bar.address, await __uniFactory.pairCodeHash());
+    await multiSwapper.deployed();
+
     // Deploy WethUSDC isolated Mixologist pair
+    const mixologistFeeTo = ethers.Wallet.createRandom();
     const wethUsdcMixologist = await (
         await ethers.getContractFactory('Mixologist')
-    ).deploy(bar.address, weth.address, wethAssetId, usdc.address, usdcAssetId, wethUsdcOracle.address);
+    ).deploy(bar.address, weth.address, wethAssetId, usdc.address, usdcAssetId, wethUsdcOracle.address, multiSwapper.address, [
+        usdc.address,
+        weth.address,
+    ]);
     await wethUsdcMixologist.deployed();
+
+    // Set feeTo
+    await (await wethUsdcMixologist.setFeeTo(mixologistFeeTo.address)).wait();
 
     // Deploy an EOA
     const eoa1 = new ethers.Wallet(ethers.Wallet.createRandom().privateKey, ethers.provider);
@@ -47,6 +97,7 @@ export async function register() {
     await mixologistHelper.deployed();
 
     const initialSetup = {
+        __wethUsdcPrice,
         deployer,
         usdc,
         weth,
@@ -55,12 +106,17 @@ export async function register() {
         wethUsdcMixologist,
         mixologistHelper,
         eoa1,
+        multiSwapper,
+        __uniFactory,
+        __wethUsdcMockPair,
     };
 
     /**
      * UTIL FUNCS
      */
-    const BN = (n: number | string) => ethers.BigNumber.from(n);
+    function BN(n: number | string) {
+        return ethers.BigNumber.from(n);
+    }
 
     const mine = async (blocks: number) => {
         for (let i = 0; i < blocks; i++) {
