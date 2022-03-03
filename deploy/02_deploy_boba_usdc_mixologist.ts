@@ -1,7 +1,7 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { DeployFunction } from 'hardhat-deploy/types';
 
-type TapiocaBar = string;
+type BeachBar = string;
 type Collateral = string;
 type Asset = string;
 type AssetId = string;
@@ -24,7 +24,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const boba = '0xa18bF3994C0Cc6E3b63ac420308E5383f53120D7';
     const usdc = '0x66a2A913e447d6b4BF33EFbec43aAeF87890FBbc';
 
-    const bar = await hre.ethers.getContractAt('TapiocaBar', (await deployments.get('TapiocaBar')).address);
+    const bar = await hre.ethers.getContractAt('BeachBar', (await deployments.get('BeachBar')).address);
     await bar.registerAsset(0, boba, hre.ethers.constants.AddressZero, 0);
     await bar.registerAsset(0, usdc, hre.ethers.constants.AddressZero, 0);
 
@@ -33,7 +33,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
     
     await (await hre.ethers.getSigners())[0].getTransactionCount();
-    const deployArgs: [TapiocaBar, Asset, AssetId, Collateral, CollateralId, Address] = [
+    const deployArgs: [BeachBar, Asset, AssetId, Collateral, CollateralId, Address] = [
         bar.address,
         boba,
         bobaAssetId.toNumber().toString(),
@@ -66,4 +66,4 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 };
 export default func;
 func.tags = ['Mixologist', 'OracleMock'];
-func.dependencies = ['TapiocaBar'];
+func.dependencies = ['BeachBar'];

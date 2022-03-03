@@ -3,7 +3,7 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 import '@boringcrypto/boring-solidity/contracts/interfaces/IERC20.sol';
-import '../../bar/TapiocaBar.sol';
+import '../../bar/BeachBar.sol';
 import './IOracle.sol';
 import './ISwapper.sol';
 
@@ -55,7 +55,7 @@ interface IKashiPair {
 
     function balanceOf(address) external view returns (uint256);
 
-    function tapiocaBar() external view returns (TapiocaBar);
+    function beachBar() external view returns (BeachBar);
 
     function borrow(address to, uint256 amount) external returns (uint256 part, uint256 share);
 

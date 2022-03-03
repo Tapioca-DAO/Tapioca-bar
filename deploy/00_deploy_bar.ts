@@ -6,7 +6,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const { deploy } = deployments;
     const { deployer } = await getNamedAccounts();
 
-    await deploy('TapiocaBar', {
+    await deploy('BeachBar', {
         from: deployer,
         log: true,
         args: ['0xDeadDeAddeAddEAddeadDEaDDEAdDeaDDeAD0000'],
@@ -14,7 +14,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
     if (hre.network.live || hre.network.tags['rinkeby']) {
         try {
-            const bar = await deployments.get('TapiocaBar');
+            const bar = await deployments.get('BeachBar');
             await hre.run('verify', {address: bar.address, constructorArgsParams: ['0xDeadDeAddeAddEAddeadDEaDDEAdDeaDDeAD0000'] });
         } catch (err) {
             console.log(err);
@@ -22,4 +22,4 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     }
 };
 export default func;
-func.tags = ['TapiocaBar'];
+func.tags = ['BeachBar'];

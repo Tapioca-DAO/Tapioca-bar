@@ -10,7 +10,7 @@ import '@boringcrypto/boring-solidity/contracts/BoringOwnable.sol';
 import '@boringcrypto/boring-solidity/contracts/ERC20.sol';
 import '@boringcrypto/boring-solidity/contracts/libraries/BoringRebase.sol';
 import '@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol';
-import '../bar/TapiocaBar.sol';
+import '../bar/BeachBar.sol';
 import '../swappers/MultiSwapper.sol';
 import './interfaces/IOracle.sol';
 import './interfaces/IFlashLoan.sol';
@@ -19,7 +19,7 @@ import './interfaces/IFlashLoan.sol';
 // solhint-disable no-inline-assembly
 
 /// @title Mixologist
-/// @dev This contract allows contract calls to any contract (except tapiocaBar)
+/// @dev This contract allows contract calls to any contract (except beachBar)
 /// from arbitrary callers thus, don't trust calls from this contract in any circumstances.
 contract Mixologist is ERC20, BoringOwnable {
     using BoringMath for uint256;
@@ -40,7 +40,7 @@ contract Mixologist is ERC20, BoringOwnable {
     event LogFlashLoan(address indexed borrower, uint256 amount, uint256 feeAmount, address indexed receiver);
 
     // Immutables (for MasterContract and all clones)
-    TapiocaBar public immutable tapiocaBar;
+    BeachBar public immutable beachBar;
     Mixologist public immutable masterContract;
 
     // MasterContract variables
@@ -59,7 +59,7 @@ contract Mixologist is ERC20, BoringOwnable {
 
     // Total amounts
     uint256 public totalCollateralShare; // Total collateral supplied
-    Rebase public totalAsset; // elastic = tapiocaBar shares held by the Mixologist, base = Total fractions held by asset suppliers
+    Rebase public totalAsset; // elastic = beachBar shares held by the Mixologist, base = Total fractions held by asset suppliers
     Rebase public totalBorrow; // elastic = Total token amount to be repayed by borrowers, base = Total parts of the debt held by borrowers
 
     // User balances
@@ -127,7 +127,7 @@ contract Mixologist is ERC20, BoringOwnable {
 
     /// @notice The constructor is only used for the initial master contract. Subsequent clones are initialised via `init`.
     constructor(
-        TapiocaBar tapiocaBar_,
+        BeachBar tapiocaBar_,
         IERC20 _asset,
         uint256 _assetId,
         IERC20 _collateral,
@@ -136,7 +136,7 @@ contract Mixologist is ERC20, BoringOwnable {
         MultiSwapper _swapper,
         address[] memory _collateralSwapPath
     ) public {
-        tapiocaBar = tapiocaBar_;
+        beachBar = tapiocaBar_;
         masterContract = this;
 
         require(
@@ -182,7 +182,7 @@ contract Mixologist is ERC20, BoringOwnable {
         // Accrue interest
         extraAmount = uint256(_totalBorrow.elastic).mul(_accrueInfo.interestPerSecond).mul(elapsedTime) / 1e18;
         _totalBorrow.elastic = _totalBorrow.elastic.add(extraAmount.to128());
-        uint256 fullAssetAmount = tapiocaBar.toAmount(assetId, _totalAsset.elastic, false).add(_totalBorrow.elastic);
+        uint256 fullAssetAmount = beachBar.toAmount(assetId, _totalAsset.elastic, false).add(_totalBorrow.elastic);
 
         uint256 feeAmount = extraAmount.mul(PROTOCOL_FEE) / PROTOCOL_FEE_DIVISOR; // % of interest paid goes to fee
         feeFraction = feeAmount.mul(_totalAsset.base) / fullAssetAmount;
@@ -226,7 +226,7 @@ contract Mixologist is ERC20, BoringOwnable {
         Rebase memory _totalBorrow = totalBorrow;
 
         return
-            tapiocaBar.toAmount(
+            beachBar.toAmount(
                 collateralId,
                 collateralShare.mul(EXCHANGE_RATE_PRECISION / COLLATERIZATION_RATE_PRECISION).mul(CLOSED_COLLATERIZATION_RATE),
                 false
@@ -258,12 +258,12 @@ contract Mixologist is ERC20, BoringOwnable {
     }
 
     /// @dev Helper function to move tokens.
-    /// @param _assetId The ERC-20 token asset ID in tapiocaBar.
+    /// @param _assetId The ERC-20 token asset ID in beachBar.
     /// @param share The amount in shares to add.
     /// @param total Grand total amount to deduct from this contract's balance. Only applicable if `skim` is True.
     /// Only used for accounting checks.
     /// @param skim If True, only does a balance check on this contract.
-    /// False if tokens from msg.sender in `tapiocaBar` should be transferred.
+    /// False if tokens from msg.sender in `beachBar` should be transferred.
     function _addTokens(
         uint256 _assetId,
         uint256 share,
@@ -271,16 +271,16 @@ contract Mixologist is ERC20, BoringOwnable {
         bool skim
     ) internal {
         if (skim) {
-            require(share <= tapiocaBar.balanceOf(address(this), _assetId).sub(total), 'Mixologist: Skim too much');
+            require(share <= beachBar.balanceOf(address(this), _assetId).sub(total), 'Mixologist: Skim too much');
         } else {
-            tapiocaBar.transfer(_assetId, msg.sender, address(this), share);
+            beachBar.transfer(_assetId, msg.sender, address(this), share);
         }
     }
 
     /// @notice Adds `collateral` from msg.sender to the account `to`.
     /// @param to The receiver of the tokens.
     /// @param skim True if the amount should be skimmed from the deposit balance of msg.sender.
-    /// False if tokens from msg.sender in `tapiocaBar` should be transferred.
+    /// False if tokens from msg.sender in `beachBar` should be transferred.
     /// @param share The amount of shares to add for `to`.
     function addCollateral(
         address to,
@@ -291,7 +291,7 @@ contract Mixologist is ERC20, BoringOwnable {
         uint256 oldTotalCollateralShare = totalCollateralShare;
         totalCollateralShare = oldTotalCollateralShare.add(share);
         _addTokens(collateralId, share, oldTotalCollateralShare, skim);
-        emit LogAddCollateral(skim ? address(tapiocaBar) : msg.sender, to, share);
+        emit LogAddCollateral(skim ? address(beachBar) : msg.sender, to, share);
     }
 
     /// @dev Concrete implementation of `removeCollateral`.
@@ -299,7 +299,7 @@ contract Mixologist is ERC20, BoringOwnable {
         userCollateralShare[msg.sender] = userCollateralShare[msg.sender].sub(share);
         totalCollateralShare = totalCollateralShare.sub(share);
         emit LogRemoveCollateral(msg.sender, to, share);
-        tapiocaBar.transfer(collateralId, address(this), to, share);
+        beachBar.transfer(collateralId, address(this), to, share);
     }
 
     /// @notice Removes `share` amount of collateral and transfers it to `to`.
@@ -319,7 +319,7 @@ contract Mixologist is ERC20, BoringOwnable {
     ) internal returns (uint256 fraction) {
         Rebase memory _totalAsset = totalAsset;
         uint256 totalAssetShare = _totalAsset.elastic;
-        uint256 allShare = _totalAsset.elastic + tapiocaBar.toShare(assetId, totalBorrow.elastic, true);
+        uint256 allShare = _totalAsset.elastic + beachBar.toShare(assetId, totalBorrow.elastic, true);
         fraction = allShare == 0 ? share : share.mul(_totalAsset.base) / allShare;
         if (_totalAsset.base.add(fraction.to128()) < 1000) {
             return 0;
@@ -328,13 +328,13 @@ contract Mixologist is ERC20, BoringOwnable {
         balanceOf[to] = balanceOf[to].add(fraction);
         emit Transfer(address(0), to, fraction);
         _addTokens(assetId, share, totalAssetShare, skim);
-        emit LogAddAsset(skim ? address(tapiocaBar) : msg.sender, to, share, fraction);
+        emit LogAddAsset(skim ? address(beachBar) : msg.sender, to, share, fraction);
     }
 
     /// @notice Adds assets to the lending pair.
     /// @param to The address of the user to receive the assets.
     /// @param skim True if the amount should be skimmed from the deposit balance of msg.sender.
-    /// False if tokens from msg.sender in `tapiocaBar` should be transferred.
+    /// False if tokens from msg.sender in `beachBar` should be transferred.
     /// @param share The amount of shares to add.
     /// @return fraction Total fractions added.
     function addAsset(
@@ -349,7 +349,7 @@ contract Mixologist is ERC20, BoringOwnable {
     /// @dev Concrete implementation of `removeAsset`.
     function _removeAsset(address to, uint256 fraction) internal returns (uint256 share) {
         Rebase memory _totalAsset = totalAsset;
-        uint256 allShare = _totalAsset.elastic + tapiocaBar.toShare(assetId, totalBorrow.elastic, true);
+        uint256 allShare = _totalAsset.elastic + beachBar.toShare(assetId, totalBorrow.elastic, true);
         share = fraction.mul(allShare) / _totalAsset.base;
         balanceOf[msg.sender] = balanceOf[msg.sender].sub(fraction);
         emit Transfer(msg.sender, address(0), fraction);
@@ -358,7 +358,7 @@ contract Mixologist is ERC20, BoringOwnable {
         require(_totalAsset.base >= 1000, 'Mixologist: below minimum');
         totalAsset = _totalAsset;
         emit LogRemoveAsset(msg.sender, to, share, fraction);
-        tapiocaBar.transfer(assetId, address(this), to, share);
+        beachBar.transfer(assetId, address(this), to, share);
     }
 
     /// @notice Removes an asset from msg.sender and transfers it to `to`.
@@ -378,12 +378,12 @@ contract Mixologist is ERC20, BoringOwnable {
         userBorrowPart[msg.sender] = userBorrowPart[msg.sender].add(part);
         emit LogBorrow(msg.sender, to, amount, feeAmount, part);
 
-        share = tapiocaBar.toShare(assetId, amount, false);
+        share = beachBar.toShare(assetId, amount, false);
         Rebase memory _totalAsset = totalAsset;
         require(_totalAsset.base >= 1000, 'Mixologist: below minimum');
         _totalAsset.elastic = _totalAsset.elastic.sub(share.to128());
         totalAsset = _totalAsset;
-        tapiocaBar.transfer(assetId, address(this), to, share);
+        beachBar.transfer(assetId, address(this), to, share);
     }
 
     /// @notice Sender borrows `amount` and transfers it to `to`.
@@ -403,17 +403,17 @@ contract Mixologist is ERC20, BoringOwnable {
         (totalBorrow, amount) = totalBorrow.sub(part, true);
         userBorrowPart[to] = userBorrowPart[to].sub(part);
 
-        uint256 share = tapiocaBar.toShare(assetId, amount, true);
+        uint256 share = beachBar.toShare(assetId, amount, true);
         uint128 totalShare = totalAsset.elastic;
         _addTokens(assetId, share, uint256(totalShare), skim);
         totalAsset.elastic = totalShare.add(share.to128());
-        emit LogRepay(skim ? address(tapiocaBar) : msg.sender, to, amount, part);
+        emit LogRepay(skim ? address(beachBar) : msg.sender, to, amount, part);
     }
 
     /// @notice Repays a loan.
     /// @param to Address of the user this payment should go.
     /// @param skim True if the amount should be skimmed from the deposit balance of msg.sender.
-    /// False if tokens from msg.sender in `tapiocaBar` should be transferred.
+    /// False if tokens from msg.sender in `beachBar` should be transferred.
     /// @param part The amount to repay. See `userBorrowPart`.
     /// @return amount The total amount repayed.
     function repay(
@@ -440,14 +440,14 @@ contract Mixologist is ERC20, BoringOwnable {
     uint8 internal constant ACTION_UPDATE_EXCHANGE_RATE = 11;
     uint8 internal constant ACTION_FLASHLOAN = 12;
 
-    // Function on TapiocaBar
+    // Function on BeachBar
     uint8 internal constant ACTION_BAR_DEPOSIT = 20;
     uint8 internal constant ACTION_BAR_WITHDRAW = 21;
     uint8 internal constant ACTION_BAR_TRANSFER = 22;
     uint8 internal constant ACTION_BAR_TRANSFER_MULTIPLE = 23;
     uint8 internal constant ACTION_BAR_SETAPPROVAL = 24;
 
-    // Any external call (except to TapiocaBar)
+    // Any external call (except to BeachBar)
     uint8 internal constant ACTION_CALL = 30;
 
     int256 internal constant USE_VALUE1 = -1;
@@ -462,7 +462,7 @@ contract Mixologist is ERC20, BoringOwnable {
         outNum = inNum >= 0 ? uint256(inNum) : (inNum == USE_VALUE1 ? value1 : value2);
     }
 
-    /// @dev Helper function for depositing into `tapiocaBar`.
+    /// @dev Helper function for depositing into `beachBar`.
     function _bentoDeposit(
         bytes memory data,
         uint256 value,
@@ -473,24 +473,24 @@ contract Mixologist is ERC20, BoringOwnable {
         amount = int256(_num(amount, value1, value2)); // Done this way to avoid stack too deep errors
         share = int256(_num(share, value1, value2));
         if (msg.value > 0) {
-            return tapiocaBar.depositETH{value: value}(_assetId, to);
+            return beachBar.depositETH{value: value}(_assetId, to);
         } else {
-            return tapiocaBar.deposit(_assetId, msg.sender, to, uint256(amount), uint256(share));
+            return beachBar.deposit(_assetId, msg.sender, to, uint256(amount), uint256(share));
         }
     }
 
-    /// @dev Helper function to withdraw from the `tapiocaBar`.
+    /// @dev Helper function to withdraw from the `beachBar`.
     function _bentoWithdraw(
         bytes memory data,
         uint256 value1,
         uint256 value2
     ) internal returns (uint256, uint256) {
         (uint256 _assetId, address to, int256 amount, int256 share) = abi.decode(data, (uint256, address, int256, int256));
-        return tapiocaBar.withdraw(_assetId, msg.sender, to, _num(amount, value1, value2), _num(share, value1, value2));
+        return beachBar.withdraw(_assetId, msg.sender, to, _num(amount, value1, value2), _num(share, value1, value2));
     }
 
     /// @dev Helper function to perform a contract call and eventually extracting revert messages on failure.
-    /// Calls to `tapiocaBar` are not allowed for obvious security reasons.
+    /// Calls to `beachBar` are not allowed for obvious security reasons.
     /// This also means that calls made from this contract shall *not* be trusted.
     function _call(
         uint256 value,
@@ -511,7 +511,7 @@ contract Mixologist is ERC20, BoringOwnable {
             callData = abi.encodePacked(callData, value1, value2);
         }
 
-        require(callee != address(tapiocaBar) && callee != address(this), "Mixologist: can't call");
+        require(callee != address(beachBar) && callee != address(this), "Mixologist: can't call");
 
         (bool success, bytes memory returnData) = callee.call{value: value}(callData);
         require(success, 'Mixologist: call failed');
@@ -577,17 +577,17 @@ contract Mixologist is ERC20, BoringOwnable {
                     datas[i],
                     (address, address, bool, uint8, bytes32, bytes32)
                 );
-                tapiocaBar.setApprovalForAllWithPermit(user, operator, approved, v, r, s);
+                beachBar.setApprovalForAllWithPermit(user, operator, approved, v, r, s);
             } else if (action == ACTION_BAR_DEPOSIT) {
                 (value1, value2) = _bentoDeposit(datas[i], values[i], value1, value2);
             } else if (action == ACTION_BAR_WITHDRAW) {
                 (value1, value2) = _bentoWithdraw(datas[i], value1, value2);
             } else if (action == ACTION_BAR_TRANSFER) {
                 (uint256 _assetId, address to, int256 share) = abi.decode(datas[i], (uint256, address, int256));
-                tapiocaBar.transfer(_assetId, msg.sender, to, _num(share, value1, value2));
+                beachBar.transfer(_assetId, msg.sender, to, _num(share, value1, value2));
             } else if (action == ACTION_BAR_TRANSFER_MULTIPLE) {
                 (uint256 _assetId, address[] memory tos, uint256[] memory shares) = abi.decode(datas[i], (uint256, address[], uint256[]));
-                tapiocaBar.transferMultiple(_assetId, msg.sender, tos, shares);
+                beachBar.transferMultiple(_assetId, msg.sender, tos, shares);
             } else if (action == ACTION_CALL) {
                 (bytes memory returnData, uint8 returnValues) = _call(values[i], datas[i], value1, value2);
 
@@ -598,7 +598,7 @@ contract Mixologist is ERC20, BoringOwnable {
                 }
             } else if (action == ACTION_GET_REPAY_SHARE) {
                 int256 part = abi.decode(datas[i], (int256));
-                value1 = tapiocaBar.toShare(assetId, totalBorrow.toElastic(_num(part, value1, value2), true), true);
+                value1 = beachBar.toShare(assetId, totalBorrow.toElastic(_num(part, value1, value2), true), true);
             } else if (action == ACTION_GET_REPAY_PART) {
                 int256 amount = abi.decode(datas[i], (int256));
                 value1 = totalBorrow.toBase(_num(amount, value1, value2), false);
@@ -638,7 +638,7 @@ contract Mixologist is ERC20, BoringOwnable {
                     userBorrowPart[user] = availableBorrowPart.sub(borrowPart);
                 }
                 uint256 borrowAmount = _totalBorrow.toElastic(borrowPart, false);
-                uint256 collateralShare = tapiocaBar.toShare(
+                uint256 collateralShare = beachBar.toShare(
                     collateralId,
                     borrowAmount.mul(LIQUIDATION_MULTIPLIER).mul(_exchangeRate) /
                         (LIQUIDATION_MULTIPLIER_PRECISION * EXCHANGE_RATE_PRECISION),
@@ -660,7 +660,7 @@ contract Mixologist is ERC20, BoringOwnable {
         totalBorrow = _totalBorrow;
         totalCollateralShare = totalCollateralShare.sub(allCollateralShare);
 
-        uint256 allBorrowShare = tapiocaBar.toShare(assetId, allBorrowAmount, true);
+        uint256 allBorrowShare = beachBar.toShare(assetId, allBorrowAmount, true);
 
         // Closed liquidation using a pre-approved swapper for the benefit of the LPs
         require(masterContract.swappers(swapper), 'Mixologist: Invalid swapper');
@@ -668,14 +668,14 @@ contract Mixologist is ERC20, BoringOwnable {
         // TODO liquidations should go to distribution contract
         // TODO Incentivize caller?
         // Swaps the users' collateral for the borrowed asset
-        tapiocaBar.transfer(collateralId, address(this), address(swapper), allCollateralShare);
+        beachBar.transfer(collateralId, address(this), address(swapper), allCollateralShare);
         swapper.swap(collateralId, assetId, 0, address(this), collateralSwapPath, allCollateralShare);
 
-        uint256 returnedShare = tapiocaBar.balanceOf(address(this), assetId).sub(uint256(totalAsset.elastic));
+        uint256 returnedShare = beachBar.balanceOf(address(this), assetId).sub(uint256(totalAsset.elastic));
         uint256 extraShare = returnedShare.sub(allBorrowShare);
         uint256 feeShare = extraShare.mul(PROTOCOL_FEE) / PROTOCOL_FEE_DIVISOR; // % of profit goes to fee
         // solhint-disable-next-line reentrancy
-        tapiocaBar.transfer(assetId, address(this), masterContract.feeTo(), feeShare);
+        beachBar.transfer(assetId, address(this), masterContract.feeTo(), feeShare);
         totalAsset.elastic = totalAsset.elastic.add(returnedShare.sub(feeShare).to128());
         emit LogAddAsset(address(swapper), address(this), extraShare.sub(feeShare), 0);
     }
@@ -698,11 +698,11 @@ contract Mixologist is ERC20, BoringOwnable {
         totalAsset.base = _totalAsset.base.add(feeFraction.to128());
         accrueInfo.feesEarnedFraction = accrueInfo.feesEarnedFraction.add(feeFraction.to128());
 
-        tapiocaBar.withdraw(assetId, address(this), receiver, amount, 0);
+        beachBar.withdraw(assetId, address(this), receiver, amount, 0);
 
         borrower.onFlashLoan(msg.sender, asset, amount, feeAmount, data);
 
-        tapiocaBar.deposit(assetId, address(borrower), address(this), amount.add(feeAmount), 0);
+        beachBar.deposit(assetId, address(borrower), address(this), amount.add(feeAmount), 0);
 
         emit LogFlashLoan(address(borrower), amount, feeAmount, receiver);
     }

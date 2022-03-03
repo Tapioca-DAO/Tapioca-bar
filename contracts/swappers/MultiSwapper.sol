@@ -6,7 +6,7 @@ import '../libraries/IUniswapV2Factory.sol';
 import '../libraries/UniswapV2Library.sol';
 import '../libraries/IUniswapV2Pair.sol';
 import './ISwapper.sol';
-import '../bar/TapiocaBar.sol';
+import '../bar/BeachBar.sol';
 
 /// Modified from https://github.com/sushiswap/kashi-lending/blob/master/contracts/swappers/SushiSwapMultiSwapper.sol
 
@@ -16,17 +16,17 @@ contract MultiSwapper {
 
     address private immutable factory;
 
-    TapiocaBar private immutable tapiocaBar;
+    BeachBar private immutable beachBar;
 
     bytes32 private immutable pairCodeHash;
 
     constructor(
         address _factory,
-        TapiocaBar _tapiocaBar,
+        BeachBar _tapiocaBar,
         bytes32 _pairCodeHash
     ) public {
         factory = _factory;
-        tapiocaBar = _tapiocaBar;
+        beachBar = _tapiocaBar;
         pairCodeHash = _pairCodeHash;
     }
 
@@ -35,7 +35,7 @@ contract MultiSwapper {
         address[] calldata path,
         uint256 shareIn
     ) external view returns (uint256 amountOut) {
-        uint256 amountIn = tapiocaBar.toAmount(tokenInId, shareIn, false);
+        uint256 amountIn = beachBar.toAmount(tokenInId, shareIn, false);
         uint256[] memory amounts = UniswapV2Library.getAmountsOut(factory, amountIn, path, pairCodeHash);
         amountOut = amounts[amounts.length - 1];
     }
@@ -48,10 +48,10 @@ contract MultiSwapper {
         address[] calldata path,
         uint256 shareIn
     ) external returns (uint256 amountOut, uint256 shareOut) {
-        (uint256 amountIn, ) = tapiocaBar.withdraw(tokenInId, address(this), address(this), 0, shareIn);
+        (uint256 amountIn, ) = beachBar.withdraw(tokenInId, address(this), address(this), 0, shareIn);
         amountOut = _swapExactTokensForTokens(amountIn, amountMinOut, path, address(this));
-        IERC20(path[path.length - 1]).approve(address(tapiocaBar), amountOut);
-        (, shareOut) = tapiocaBar.deposit(tokenOutId, address(this), to, amountOut, 0);
+        IERC20(path[path.length - 1]).approve(address(beachBar), amountOut);
+        (, shareOut) = beachBar.deposit(tokenOutId, address(this), to, amountOut, 0);
     }
 
     // Swaps an exact amount of tokens for another token through the path passed as an argument

@@ -3,7 +3,7 @@ pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 import '@boringcrypto/boring-solidity/contracts/libraries/BoringMath.sol';
 import '@boringcrypto/boring-solidity/contracts/libraries/BoringRebase.sol';
-import '../bar/TapiocaBar.sol';
+import '../bar/BeachBar.sol';
 import './Mixologist.sol';
 
 /// @dev This contract provides useful helper functions for `Mixologist`.
@@ -26,7 +26,7 @@ contract MixologistHelper {
 
         // TODO test with number
         return
-            mixologist.tapiocaBar().toShare(
+            mixologist.beachBar().toShare(
                 mixologist.collateralId(),
                 borrowAmount.mul(LIQUIDATION_MULTIPLIER).mul(mixologist.exchangeRate()) /
                     (LIQUIDATION_MULTIPLIER_PRECISION * EXCHANGE_RATE_PRECISION),

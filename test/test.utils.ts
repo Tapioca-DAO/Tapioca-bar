@@ -37,7 +37,7 @@ export async function register() {
     await (await wethUsdcOracle.set(__wethUsdcPrice)).wait();
 
     // Deploy Bar
-    const bar = await (await ethers.getContractFactory('TapiocaBar')).deploy(weth.address);
+    const bar = await (await ethers.getContractFactory('BeachBar')).deploy(weth.address);
     await bar.deployed();
 
     await (await bar.registerAsset(0, weth.address, ethers.constants.AddressZero, 0)).wait();

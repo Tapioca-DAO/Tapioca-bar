@@ -4,7 +4,7 @@ import '@boringcrypto/boring-solidity/contracts/libraries/BoringMath.sol';
 import '../libraries/IUniswapV2Factory.sol';
 import '../libraries/IUniswapV2Pair.sol';
 import './ISwapper.sol';
-import '../bar/TapiocaBar.sol';
+import '../bar/BeachBar.sol';
 
 /// Modified from https://github.com/sushiswap/kashi-lending/blob/master/contracts/swappers/SushiSwapSwapper.sol
 
@@ -12,16 +12,16 @@ contract Swapper is ISwapper {
     using BoringMath for uint256;
 
     // Local variables
-    TapiocaBar public immutable tapiocaBar;
+    BeachBar public immutable beachBar;
     IUniswapV2Factory public immutable factory;
     bytes32 public immutable pairCodeHash;
 
     constructor(
-        TapiocaBar tapiocaBar_,
+        BeachBar tapiocaBar_,
         IUniswapV2Factory factory_,
         bytes32 pairCodeHash_
     ) public {
-        tapiocaBar = tapiocaBar_;
+        beachBar = tapiocaBar_;
         factory = factory_;
         pairCodeHash = pairCodeHash_;
     }
@@ -67,18 +67,18 @@ contract Swapper is ISwapper {
             )
         );
 
-        (uint256 amountFrom, ) = tapiocaBar.withdraw(fromTokenId, address(this), address(pair), 0, shareFrom);
+        (uint256 amountFrom, ) = beachBar.withdraw(fromTokenId, address(this), address(pair), 0, shareFrom);
 
         (uint256 reserve0, uint256 reserve1, ) = pair.getReserves();
         uint256 amountTo;
         if (toToken > fromToken) {
             amountTo = getAmountOut(amountFrom, reserve0, reserve1);
-            pair.swap(0, amountTo, address(tapiocaBar), new bytes(0));
+            pair.swap(0, amountTo, address(beachBar), new bytes(0));
         } else {
             amountTo = getAmountOut(amountFrom, reserve1, reserve0);
-            pair.swap(amountTo, 0, address(tapiocaBar), new bytes(0));
+            pair.swap(amountTo, 0, address(beachBar), new bytes(0));
         }
-        (, shareReturned) = tapiocaBar.deposit(toTokenId, address(tapiocaBar), recipient, amountTo, 0);
+        (, shareReturned) = beachBar.deposit(toTokenId, address(beachBar), recipient, amountTo, 0);
         extraShare = shareReturned.sub(shareToMin);
     }
 
@@ -107,22 +107,22 @@ contract Swapper is ISwapper {
         }
         (uint256 reserve0, uint256 reserve1, ) = pair.getReserves();
 
-        uint256 amountToExact = tapiocaBar.toAmount(fromTokenId, shareToExact, true);
+        uint256 amountToExact = beachBar.toAmount(fromTokenId, shareToExact, true);
 
         uint256 amountFrom;
         if (toToken > fromToken) {
             amountFrom = getAmountIn(amountToExact, reserve0, reserve1);
-            (, shareUsed) = tapiocaBar.withdraw(fromTokenId, address(this), address(pair), amountFrom, 0);
-            pair.swap(0, amountToExact, address(tapiocaBar), '');
+            (, shareUsed) = beachBar.withdraw(fromTokenId, address(this), address(pair), amountFrom, 0);
+            pair.swap(0, amountToExact, address(beachBar), '');
         } else {
             amountFrom = getAmountIn(amountToExact, reserve1, reserve0);
-            (, shareUsed) = tapiocaBar.withdraw(fromTokenId, address(this), address(pair), amountFrom, 0);
-            pair.swap(amountToExact, 0, address(tapiocaBar), '');
+            (, shareUsed) = beachBar.withdraw(fromTokenId, address(this), address(pair), amountFrom, 0);
+            pair.swap(amountToExact, 0, address(beachBar), '');
         }
-        tapiocaBar.deposit(toTokenId, address(tapiocaBar), recipient, 0, shareToExact);
+        beachBar.deposit(toTokenId, address(beachBar), recipient, 0, shareToExact);
         shareReturned = shareFromSupplied.sub(shareUsed);
         if (shareReturned > 0) {
-            tapiocaBar.transfer(fromTokenId, address(this), refundTo, shareReturned);
+            beachBar.transfer(fromTokenId, address(this), refundTo, shareReturned);
         }
     }
 }
