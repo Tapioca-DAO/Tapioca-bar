@@ -39,16 +39,10 @@ contract Mixologist is ERC20, BoringOwnable {
     event LogWithdrawFees(address indexed feeTo, uint256 feesEarnedFraction);
     event LogFlashLoan(address indexed borrower, uint256 amount, uint256 feeAmount, address indexed receiver);
 
-    // Immutables (for MasterContract and all clones)
-    BeachBar public immutable beachBar;
-    Mixologist public immutable masterContract;
-
-    // MasterContract variables
     address public feeTo;
-    mapping(MultiSwapper => bool) public swappers;
 
-    // Per clone variables
-    // Clone init settings
+    // Constructor settings
+    BeachBar public immutable beachBar;
     IERC20 public collateral;
     IERC20 public asset;
     uint256 public collateralId;
@@ -56,6 +50,7 @@ contract Mixologist is ERC20, BoringOwnable {
     IOracle public oracle;
     bytes public oracleData;
     address[] public collateralSwapPath;
+    mapping(MultiSwapper => bool) public swappers;
 
     // Total amounts
     uint256 public totalCollateralShare; // Total collateral supplied
@@ -137,7 +132,6 @@ contract Mixologist is ERC20, BoringOwnable {
         address[] memory _collateralSwapPath
     ) public {
         beachBar = tapiocaBar_;
-        masterContract = this;
 
         require(
             address(_collateral) != address(0) && address(_asset) != address(0) && address(_oracle) != address(0),
@@ -663,7 +657,7 @@ contract Mixologist is ERC20, BoringOwnable {
         uint256 allBorrowShare = beachBar.toShare(assetId, allBorrowAmount, true);
 
         // Closed liquidation using a pre-approved swapper for the benefit of the LPs
-        require(masterContract.swappers(swapper), 'Mixologist: Invalid swapper');
+        require(swappers[swapper], 'Mixologist: Invalid swapper');
 
         // TODO liquidations should go to distribution contract
         // TODO Incentivize caller?
@@ -675,7 +669,7 @@ contract Mixologist is ERC20, BoringOwnable {
         uint256 extraShare = returnedShare.sub(allBorrowShare);
         uint256 feeShare = extraShare.mul(PROTOCOL_FEE) / PROTOCOL_FEE_DIVISOR; // % of profit goes to fee
         // solhint-disable-next-line reentrancy
-        beachBar.transfer(assetId, address(this), masterContract.feeTo(), feeShare);
+        beachBar.transfer(assetId, address(this), feeTo, feeShare);
         totalAsset.elastic = totalAsset.elastic.add(returnedShare.sub(feeShare).to128());
         emit LogAddAsset(address(swapper), address(this), extraShare.sub(feeShare), 0);
     }
@@ -710,7 +704,7 @@ contract Mixologist is ERC20, BoringOwnable {
     /// @notice Withdraws the fees accumulated.
     function withdrawFees() public {
         accrue();
-        address _feeTo = masterContract.feeTo();
+        address _feeTo = feeTo;
         uint256 _feesEarnedFraction = accrueInfo.feesEarnedFraction;
         balanceOf[_feeTo] = balanceOf[_feeTo].add(_feesEarnedFraction);
         emit Transfer(address(0), _feeTo, _feesEarnedFraction);
