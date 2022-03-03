@@ -44,12 +44,14 @@ contract MultiSwapper {
         uint256 tokenInId,
         uint256 tokenOutId,
         uint256 amountMinOut,
+        address to,
         address[] calldata path,
         uint256 shareIn
     ) external returns (uint256 amountOut, uint256 shareOut) {
         (uint256 amountIn, ) = tapiocaBar.withdraw(tokenInId, address(this), address(this), 0, shareIn);
-        amountOut = _swapExactTokensForTokens(amountIn, amountMinOut, path, address(tapiocaBar));
-        (, shareOut) = tapiocaBar.deposit(tokenOutId, address(tapiocaBar), msg.sender, amountOut, 0);
+        amountOut = _swapExactTokensForTokens(amountIn, amountMinOut, path, address(this));
+        IERC20(path[path.length - 1]).approve(address(tapiocaBar), amountOut);
+        (, shareOut) = tapiocaBar.deposit(tokenOutId, address(this), to, amountOut, 0);
     }
 
     // Swaps an exact amount of tokens for another token through the path passed as an argument
