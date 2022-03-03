@@ -161,15 +161,15 @@ export async function register() {
     };
 
     const initContracts = async () => {
-        await (await usdc.freeMint(1000)).wait();
+        await (await weth.freeMint(1000)).wait();
         const mintValShare = await bar.toShare(await wethUsdcMixologist.assetId(), 1000, false);
-        await (await usdc.approve(bar.address, 1000)).wait();
+        await (await weth.approve(bar.address, 1000)).wait();
         await (await bar.deposit(await wethUsdcMixologist.assetId(), deployer.address, deployer.address, 0, mintValShare)).wait();
         await (await bar.setApprovalForAll(wethUsdcMixologist.address, true)).wait();
         await (await wethUsdcMixologist.addAsset(deployer.address, false, mintValShare)).wait();
     };
 
-    const utilFuncs = { BN, jumpTime, approveTokensAndSetBarApproval, wethDepositAndAddAsset, usdcDepositAndAddCollateral };
+    const utilFuncs = { BN, jumpTime, approveTokensAndSetBarApproval, wethDepositAndAddAsset, usdcDepositAndAddCollateral, initContracts };
 
     return { ...initialSetup, ...utilFuncs };
 }
