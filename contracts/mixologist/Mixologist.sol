@@ -146,6 +146,8 @@ contract Mixologist is ERC20, BoringOwnable {
 
         swappers[_swapper] = true;
         accrueInfo.interestPerSecond = uint64(STARTING_INTEREST_PER_SECOND); // 1% APR, with 1e18 being 100%
+
+        updateExchangeRate();
     }
 
     /// @notice Accrues the interest on the borrowed tokens and handles the accumulation of fees.

@@ -31,7 +31,7 @@ describe('Mixologist test', () => {
         expect(balanceAfter).to.equal(balanceBefore);
     });
 
-    it('Should lend Weth, deposit Usdc collateral and borrow Weth', async () => {
+    it('Should lend Weth, deposit Usdc collateral and borrow Weth and be liquidated for price drop', async () => {
         const {
             usdc,
             weth,
@@ -42,7 +42,6 @@ describe('Mixologist test', () => {
             approveTokensAndSetBarApproval,
             deployer,
             wethUsdcMixologist,
-            jumpTime,
             multiSwapper,
             wethUsdcOracle,
             __wethUsdcPrice,
@@ -82,7 +81,92 @@ describe('Mixologist test', () => {
         const priceDrop = __wethUsdcPrice.mul(2).div(100);
         await wethUsdcOracle.set(__wethUsdcPrice.add(priceDrop));
 
-        await wethUsdcMixologist.accrue();
         await expect(wethUsdcMixologist.liquidate([eoa1.address], [wethBorrowVal], multiSwapper.address)).to.not.be.reverted;
+    });
+
+    it('Should accumulate fees for lender', async () => {
+        const {
+            usdc,
+            weth,
+            bar,
+            eoa1,
+            wethUsdcMixologist,
+            deployer,
+            initContracts,
+            approveTokensAndSetBarApproval,
+            usdcDepositAndAddCollateral,
+            mixologistHelper,
+            BN,
+            __wethUsdcPrice,
+        } = await register();
+
+        await initContracts(); // To prevent `Mixologist: below minimum`
+
+        const lendVal = ethers.BigNumber.from((1e18).toString()).mul(10);
+        const collateralVal = lendVal.mul(__wethUsdcPrice.div((1e18).toString()));
+        const borrowVal = collateralVal.mul(50).div(100).div(__wethUsdcPrice.div((1e18).toString()));
+        weth.freeMint(lendVal);
+        usdc.connect(eoa1).freeMint(collateralVal);
+
+        /**
+         * LEND
+         */
+        const balanceBefore = await weth.balanceOf(deployer.address);
+        // Deposit assets to bar
+        const lendValShare = await bar.toShare(await wethUsdcMixologist.assetId(), lendVal, false);
+        await (await weth.approve(bar.address, lendVal)).wait();
+        await (await bar.deposit(await wethUsdcMixologist.assetId(), deployer.address, deployer.address, 0, lendValShare)).wait();
+
+        // Add asset to Mixologist
+        await (await bar.setApprovalForAll(wethUsdcMixologist.address, true)).wait();
+        await (await wethUsdcMixologist.addAsset(deployer.address, false, lendValShare)).wait();
+
+        /**
+         * BORROW
+         */
+        const collateralId = await wethUsdcMixologist.collateralId();
+
+        // We approve external operators
+        await approveTokensAndSetBarApproval();
+        await approveTokensAndSetBarApproval(eoa1);
+
+        // We deposit USDC collateral
+        await usdcDepositAndAddCollateral(collateralVal, eoa1);
+        expect(await wethUsdcMixologist.userCollateralShare(eoa1.address)).equal(await bar.toShare(collateralId, collateralVal, false));
+
+        // We borrow
+        await wethUsdcMixologist.connect(eoa1).borrow(eoa1.address, borrowVal);
+
+        // Validate fees
+        const userBorrowPart = await wethUsdcMixologist.userBorrowPart(eoa1.address);
+        const minCollateralShareRepay = await mixologistHelper.getCollateralSharesForBorrowPart(
+            wethUsdcMixologist.address,
+            borrowVal.mul(50).div(100000).add(borrowVal),
+        );
+        const userCollateralShareToRepay = await mixologistHelper.getCollateralSharesForBorrowPart(
+            wethUsdcMixologist.address,
+            userBorrowPart,
+        );
+
+        expect(userCollateralShareToRepay).to.be.eq(minCollateralShareRepay);
+
+        // Repay borrow
+        const assetId = await wethUsdcMixologist.assetId();
+
+        await weth.connect(eoa1).freeMint(userBorrowPart);
+        await bar.connect(eoa1).deposit(assetId, eoa1.address, eoa1.address, userBorrowPart, 0);
+        await wethUsdcMixologist.connect(eoa1).repay(eoa1.address, false, userBorrowPart);
+
+        expect(await wethUsdcMixologist.userBorrowPart(eoa1.address)).to.be.eq(BN(0));
+
+        // Withdraw collateral
+        await (await wethUsdcMixologist.removeAsset(deployer.address, lendValShare)).wait();
+
+        // Withdraw from bar
+        await (await bar.withdraw(assetId, deployer.address, deployer.address, 0, await bar.balanceOf(deployer.address, assetId))).wait();
+
+        // Check that the lender has an increased amount
+        const balanceAfter = await weth.balanceOf(deployer.address);
+        expect(balanceAfter.gt(balanceBefore)).to.be.true;
     });
 });
