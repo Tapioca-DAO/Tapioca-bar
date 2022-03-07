@@ -36,10 +36,12 @@ contract Mixologist is ERC20, BoringOwnable {
     event LogBorrow(address indexed from, address indexed to, uint256 amount, uint256 feeAmount, uint256 part);
     event LogRepay(address indexed from, address indexed to, uint256 amount, uint256 part);
     event LogFeeTo(address indexed newFeeTo);
+    event LogFeeVeTap(address indexed newFeeVeTap);
     event LogWithdrawFees(address indexed feeTo, uint256 feesEarnedFraction);
     event LogFlashLoan(address indexed borrower, uint256 amount, uint256 feeAmount, address indexed receiver);
 
     address public feeTo;
+    address public feeVeTap;
 
     // Constructor settings
     BeachBar public immutable beachBar;
@@ -661,9 +663,7 @@ contract Mixologist is ERC20, BoringOwnable {
         // Closed liquidation using a pre-approved swapper for the benefit of the LPs
         require(swappers[swapper], 'Mixologist: Invalid swapper');
 
-        // TODO liquidations should go to distribution contract
-        // TODO Incentivize caller?
-        // Swaps the users' collateral for the borrowed asset
+        // Swaps the users collateral for the borrowed asset
         beachBar.transfer(collateralId, address(this), address(swapper), allCollateralShare);
         swapper.swap(collateralId, assetId, 0, address(this), collateralSwapPath, allCollateralShare);
 
@@ -703,15 +703,24 @@ contract Mixologist is ERC20, BoringOwnable {
         emit LogFlashLoan(address(borrower), amount, feeAmount, receiver);
     }
 
-    /// @notice Withdraws the fees accumulated.
+    /// @notice Withdraws half the fees accumulated to `feeTo` and half to `feeVeTap`.
     function withdrawFees() public {
         accrue();
+        address _feeVeTap = feeVeTap;
         address _feeTo = feeTo;
         uint256 _feesEarnedFraction = accrueInfo.feesEarnedFraction;
-        balanceOf[_feeTo] = balanceOf[_feeTo].add(_feesEarnedFraction);
-        emit Transfer(address(0), _feeTo, _feesEarnedFraction);
+
+        uint256 _feesEarnedVeTap = _feesEarnedFraction.mul(50) / 100;
+        uint256 _feesEarnedTo = _feesEarnedFraction - _feesEarnedVeTap;
+
+        balanceOf[_feeVeTap] = balanceOf[_feeVeTap].add(_feesEarnedVeTap);
+        balanceOf[_feeTo] = balanceOf[_feeTo].add(_feesEarnedTo);
+
+        emit Transfer(address(0), _feeVeTap, _feesEarnedVeTap);
+        emit Transfer(address(0), _feeTo, _feesEarnedTo);
         accrueInfo.feesEarnedFraction = 0;
 
+        emit LogWithdrawFees(_feeVeTap, _feesEarnedVeTap);
         emit LogWithdrawFees(_feeTo, _feesEarnedFraction);
     }
 
@@ -729,11 +738,17 @@ contract Mixologist is ERC20, BoringOwnable {
         collateralSwapPath = _collateralSwapPath;
     }
 
-    /// @notice Sets the beneficiary of fees accrued in liquidations.
-    /// MasterContract Only Admin function.
+    /// @notice Sets the beneficiary of half oh the fees accrued in liquidations.
     /// @param newFeeTo The address of the receiver.
     function setFeeTo(address newFeeTo) public onlyOwner {
         feeTo = newFeeTo;
         emit LogFeeTo(newFeeTo);
+    }
+
+    /// @notice Sets the beneficiary of half of fees accrued in liquidations.
+    /// @param newFeeVeTap The address of the receiver.
+    function setFeeVeTap(address newFeeVeTap) public onlyOwner {
+        feeVeTap = newFeeVeTap;
+        emit LogFeeVeTap(newFeeVeTap);
     }
 }
