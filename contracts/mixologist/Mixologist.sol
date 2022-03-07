@@ -609,7 +609,7 @@ contract Mixologist is ERC20, BoringOwnable {
     }
 
     /// @notice Handles the liquidation of users' balances, once the users' amount of collateral is too low.
-    /// @dev Only closed liquidations
+    /// @dev Closed liquidations Only, 90% of extra shares goes to called and 10% to protocol
     /// @param users An array of user addresses.
     /// @param maxBorrowParts A one-to-one mapping to `users`, contains maximum (partial) borrow amounts (to liquidate) of the respective user.
     /// @param swapper Contract address of the `MultiSwapper` implementation. See `setSwapper`.
@@ -669,11 +669,16 @@ contract Mixologist is ERC20, BoringOwnable {
 
         uint256 returnedShare = beachBar.balanceOf(address(this), assetId).sub(uint256(totalAsset.elastic));
         uint256 extraShare = returnedShare.sub(allBorrowShare);
-        uint256 feeShare = extraShare.mul(PROTOCOL_FEE) / PROTOCOL_FEE_DIVISOR; // % of profit goes to fee
-        // solhint-disable-next-line reentrancy
+        uint256 feeShare = extraShare.mul(PROTOCOL_FEE) / PROTOCOL_FEE_DIVISOR; // 10% of profit goes to fee
+        uint256 callerShare = extraShare.sub(feeShare);
+
         beachBar.transfer(assetId, address(this), feeTo, feeShare);
-        totalAsset.elastic = totalAsset.elastic.add(returnedShare.sub(feeShare).to128());
-        emit LogAddAsset(address(swapper), address(this), extraShare.sub(feeShare), 0);
+        beachBar.transfer(assetId, address(this), msg.sender, callerShare);
+
+        balanceOf[feeTo] = balanceOf[feeTo].add(feeShare);
+
+        totalAsset.elastic = totalAsset.elastic.add(returnedShare.sub(feeShare).sub(callerShare).to128());
+        emit LogAddAsset(address(swapper), address(this), extraShare.sub(feeShare).sub(callerShare), 0);
     }
 
     /// @notice Flashloan ability.
