@@ -675,8 +675,6 @@ contract Mixologist is ERC20, BoringOwnable {
         beachBar.transfer(assetId, address(this), feeTo, feeShare);
         beachBar.transfer(assetId, address(this), msg.sender, callerShare);
 
-        balanceOf[feeTo] = balanceOf[feeTo].add(feeShare);
-
         totalAsset.elastic = totalAsset.elastic.add(returnedShare.sub(feeShare).sub(callerShare).to128());
         emit LogAddAsset(address(swapper), address(this), extraShare.sub(feeShare).sub(callerShare), 0);
     }
@@ -711,21 +709,11 @@ contract Mixologist is ERC20, BoringOwnable {
     /// @notice Withdraws half the fees accumulated to `feeTo` and half to `feeVeTap`.
     function withdrawFees() public {
         accrue();
-        address _feeVeTap = feeVeTap;
         address _feeTo = feeTo;
         uint256 _feesEarnedFraction = accrueInfo.feesEarnedFraction;
-
-        uint256 _feesEarnedVeTap = _feesEarnedFraction.mul(50) / 100;
-        uint256 _feesEarnedTo = _feesEarnedFraction - _feesEarnedVeTap;
-
-        balanceOf[_feeVeTap] = balanceOf[_feeVeTap].add(_feesEarnedVeTap);
-        balanceOf[_feeTo] = balanceOf[_feeTo].add(_feesEarnedTo);
-
-        emit Transfer(address(0), _feeVeTap, _feesEarnedVeTap);
-        emit Transfer(address(0), _feeTo, _feesEarnedTo);
+        balanceOf[_feeTo] = balanceOf[_feeTo].add(_feesEarnedFraction);
+        emit Transfer(address(0), _feeTo, _feesEarnedFraction);
         accrueInfo.feesEarnedFraction = 0;
-
-        emit LogWithdrawFees(_feeVeTap, _feesEarnedVeTap);
         emit LogWithdrawFees(_feeTo, _feesEarnedFraction);
     }
 
