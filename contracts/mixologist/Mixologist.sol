@@ -41,7 +41,6 @@ contract Mixologist is ERC20, BoringOwnable {
     event LogFlashLoan(address indexed borrower, uint256 amount, uint256 feeAmount, address indexed receiver);
 
     address public feeTo;
-    address public feeVeTap;
 
     // Constructor settings
     BeachBar public immutable beachBar;
@@ -51,7 +50,8 @@ contract Mixologist is ERC20, BoringOwnable {
     uint256 public assetId;
     IOracle public oracle;
     bytes public oracleData;
-    address[] public collateralSwapPath;
+    address[] public collateralSwapPath; // Collateral -> Asset
+    address[] public tapSwapPath; // Asset -> Tap
     mapping(MultiSwapper => bool) public swappers;
 
     // Total amounts
@@ -131,7 +131,8 @@ contract Mixologist is ERC20, BoringOwnable {
         uint256 _collateralId,
         IOracle _oracle,
         MultiSwapper _swapper,
-        address[] memory _collateralSwapPath
+        address[] memory _collateralSwapPath,
+        address[] memory _tapSwapPath
     ) public {
         beachBar = tapiocaBar_;
 
@@ -145,6 +146,7 @@ contract Mixologist is ERC20, BoringOwnable {
         collateralId = _collateralId;
         oracle = _oracle;
         collateralSwapPath = _collateralSwapPath;
+        tapSwapPath = _tapSwapPath;
 
         swappers[_swapper] = true;
         accrueInfo.interestPerSecond = uint64(STARTING_INTEREST_PER_SECOND); // 1% APR, with 1e18 being 100%
@@ -731,17 +733,16 @@ contract Mixologist is ERC20, BoringOwnable {
         collateralSwapPath = _collateralSwapPath;
     }
 
+    /// @notice Used to set the swap path of Asset -> TAP
+    /// @param _tapSwapPath The Uniswap path .
+    function setTapSwapPath(address[] calldata _tapSwapPath) public onlyOwner {
+        tapSwapPath = _tapSwapPath;
+    }
+
     /// @notice Sets the beneficiary of half oh the fees accrued in liquidations.
     /// @param newFeeTo The address of the receiver.
     function setFeeTo(address newFeeTo) public onlyOwner {
         feeTo = newFeeTo;
         emit LogFeeTo(newFeeTo);
-    }
-
-    /// @notice Sets the beneficiary of half of fees accrued in liquidations.
-    /// @param newFeeVeTap The address of the receiver.
-    function setFeeVeTap(address newFeeVeTap) public onlyOwner {
-        feeVeTap = newFeeVeTap;
-        emit LogFeeVeTap(newFeeVeTap);
     }
 }
