@@ -56,6 +56,9 @@ contract BeachBar is Domain, BoringBatchable, IERC1155TokenReceiver, BoringOwnab
     // ******************************** //
 
     IERC20 private immutable wethToken;
+    IERC20 private immutable tapToken;
+
+    uint96 private immutable tapAssetId;
 
     uint96 private constant EIP20 = 0;
     uint96 private constant EIP721 = 1;
@@ -82,9 +85,12 @@ contract BeachBar is Domain, BoringBatchable, IERC1155TokenReceiver, BoringOwnab
     // *** CONSTRUCTOR *** //
     // ******************* //
 
-    constructor(IERC20 wethToken_) public BoringOwnable() {
+    constructor(IERC20 wethToken_, IERC20 tapToken_) public BoringOwnable() {
         wethToken = wethToken_;
+        tapToken = tapToken_;
+
         assets.push(Asset(EIP20, address(0), IStrategy(0), 0));
+        tapAssetId = uint96(registerAsset(EIP20, address(tapToken_), IStrategy(0), 0));
     }
 
     // ***************** //
