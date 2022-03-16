@@ -40,7 +40,8 @@ contract Mixologist is ERC20, BoringOwnable {
     event LogWithdrawFees(address indexed feeTo, uint256 feesEarnedFraction);
     event LogFlashLoan(address indexed borrower, uint256 amount, uint256 feeAmount, address indexed receiver);
 
-    address public feeTo;
+    address public feeTo; // Protocol rewards
+    address public feeVeTap; // veTAP distributor
 
     // Constructor settings
     BeachBar public immutable beachBar;
@@ -347,11 +348,16 @@ contract Mixologist is ERC20, BoringOwnable {
     }
 
     /// @dev Concrete implementation of `removeAsset`.
-    function _removeAsset(address to, uint256 fraction) internal returns (uint256 share) {
+    /// @param from The account to remove from. Should always be msg.sender except for `depositFeesToBeachBar()`.
+    function _removeAsset(
+        address from,
+        address to,
+        uint256 fraction
+    ) internal returns (uint256 share) {
         Rebase memory _totalAsset = totalAsset;
         uint256 allShare = _totalAsset.elastic + beachBar.toShare(assetId, totalBorrow.elastic, true);
         share = fraction.mul(allShare) / _totalAsset.base;
-        balanceOf[msg.sender] = balanceOf[msg.sender].sub(fraction);
+        balanceOf[from] = balanceOf[from].sub(fraction);
         emit Transfer(msg.sender, address(0), fraction);
         _totalAsset.elastic = _totalAsset.elastic.sub(share.to128());
         _totalAsset.base = _totalAsset.base.sub(fraction.to128());
@@ -367,7 +373,7 @@ contract Mixologist is ERC20, BoringOwnable {
     /// @return share The amount of shares transferred to `to`.
     function removeAsset(address to, uint256 fraction) public returns (uint256 share) {
         accrue();
-        share = _removeAsset(to, fraction);
+        share = _removeAsset(msg.sender, to, fraction);
     }
 
     /// @dev Concrete implementation of `borrow`.
@@ -553,7 +559,7 @@ contract Mixologist is ERC20, BoringOwnable {
                 _repay(to, skim, _num(part, value1, value2));
             } else if (action == ACTION_REMOVE_ASSET) {
                 (int256 fraction, address to) = abi.decode(datas[i], (int256, address));
-                value1 = _removeAsset(to, _num(fraction, value1, value2));
+                value1 = _removeAsset(msg.sender, to, _num(fraction, value1, value2));
             } else if (action == ACTION_REMOVE_COLLATERAL) {
                 (int256 share, address to) = abi.decode(datas[i], (int256, address));
                 _removeCollateral(to, _num(share, value1, value2));
@@ -708,8 +714,8 @@ contract Mixologist is ERC20, BoringOwnable {
         emit LogFlashLoan(address(borrower), amount, feeAmount, receiver);
     }
 
-    /// @notice Withdraws half the fees accumulated to `feeTo` and half to `feeVeTap`.
-    function withdrawFees() public {
+    /// @notice Withdraw the fees accumulated in `accrueInfo.feesEarnedFraction` to the balance of `feeTo`.
+    function withdrawFeesEarned() public {
         accrue();
         address _feeTo = feeTo;
         uint256 _feesEarnedFraction = accrueInfo.feesEarnedFraction;
@@ -717,6 +723,18 @@ contract Mixologist is ERC20, BoringOwnable {
         emit Transfer(address(0), _feeTo, _feesEarnedFraction);
         accrueInfo.feesEarnedFraction = 0;
         emit LogWithdrawFees(_feeTo, _feesEarnedFraction);
+    }
+
+    /// @notice Withdraw the balance of `feeTo`, swap it and deposit it to BeachBar of `feeTo`
+    function depositFeesToBeachBar(MultiSwapper swapper) public {
+        if (accrueInfo.feesEarnedFraction > 0) {
+            withdrawFeesEarned();
+        }
+        require(swappers[swapper], 'Mixologist: Invalid swapper');
+
+        uint256 feeShares = _removeAsset(feeTo, address(this), balanceOf[feeTo]);
+        swapper.swap(assetId, beachBar.tapAssetId(), 0, feeTo, collateralSwapPath, feeShares);
+        
     }
 
     /// @notice Used to register and enable or disable swapper contracts used in closed liquidations.
@@ -739,10 +757,17 @@ contract Mixologist is ERC20, BoringOwnable {
         tapSwapPath = _tapSwapPath;
     }
 
-    /// @notice Sets the beneficiary of half oh the fees accrued in liquidations.
+    /// @notice Sets the beneficiary of half oh the fees accrued.
     /// @param newFeeTo The address of the receiver.
     function setFeeTo(address newFeeTo) public onlyOwner {
         feeTo = newFeeTo;
         emit LogFeeTo(newFeeTo);
+    }
+
+    /// @notice Sets the beneficiary of half oh the fees accrued.
+    /// @param newFeeVeTap The address of the receiver.
+    function setFeeVeTap(address newFeeVeTap) public onlyOwner {
+        feeVeTap = newFeeVeTap;
+        emit LogFeeVeTap(newFeeVeTap);
     }
 }

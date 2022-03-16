@@ -56,9 +56,9 @@ contract BeachBar is Domain, BoringBatchable, IERC1155TokenReceiver, BoringOwnab
     // ******************************** //
 
     IERC20 private immutable wethToken;
-    IERC20 private immutable tapToken;
+    IERC20 public immutable tapToken;
 
-    uint96 private immutable tapAssetId;
+    uint96 public immutable tapAssetId;
 
     uint96 private constant EIP20 = 0;
     uint96 private constant EIP721 = 1;
