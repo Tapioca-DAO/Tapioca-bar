@@ -35,13 +35,9 @@ contract Mixologist is ERC20, BoringOwnable {
     event LogRemoveAsset(address indexed from, address indexed to, uint256 share, uint256 fraction);
     event LogBorrow(address indexed from, address indexed to, uint256 amount, uint256 feeAmount, uint256 part);
     event LogRepay(address indexed from, address indexed to, uint256 amount, uint256 part);
-    event LogFeeTo(address indexed newFeeTo);
-    event LogFeeVeTap(address indexed newFeeVeTap);
     event LogWithdrawFees(address indexed feeTo, uint256 feesEarnedFraction);
     event LogFlashLoan(address indexed borrower, uint256 amount, uint256 feeAmount, address indexed receiver);
 
-    address public feeTo; // Protocol rewards
-    address public feeVeTap; // veTAP distributor
 
     // Constructor settings
     BeachBar public immutable beachBar;
@@ -680,7 +676,7 @@ contract Mixologist is ERC20, BoringOwnable {
         uint256 feeShare = extraShare.mul(PROTOCOL_FEE) / PROTOCOL_FEE_DIVISOR; // 10% of profit goes to fee
         uint256 callerShare = extraShare.sub(feeShare);
 
-        beachBar.transfer(assetId, address(this), feeTo, feeShare);
+        beachBar.transfer(assetId, address(this), beachBar.feeTo(), feeShare);
         beachBar.transfer(assetId, address(this), msg.sender, callerShare);
 
         totalAsset.elastic = totalAsset.elastic.add(returnedShare.sub(feeShare).sub(callerShare).to128());
@@ -717,7 +713,7 @@ contract Mixologist is ERC20, BoringOwnable {
     /// @notice Withdraw the fees accumulated in `accrueInfo.feesEarnedFraction` to the balance of `feeTo`.
     function withdrawFeesEarned() public {
         accrue();
-        address _feeTo = feeTo;
+        address _feeTo = beachBar.feeTo();
         uint256 _feesEarnedFraction = accrueInfo.feesEarnedFraction;
         balanceOf[_feeTo] = balanceOf[_feeTo].add(_feesEarnedFraction);
         emit Transfer(address(0), _feeTo, _feesEarnedFraction);
@@ -731,9 +727,10 @@ contract Mixologist is ERC20, BoringOwnable {
             withdrawFeesEarned();
         }
         require(swappers[swapper], 'Mixologist: Invalid swapper');
+        address _feeTo = beachBar.feeTo();
 
-        uint256 feeShares = _removeAsset(feeTo, address(this), balanceOf[feeTo]);
-        swapper.swap(assetId, beachBar.tapAssetId(), 0, feeTo, collateralSwapPath, feeShares);
+        uint256 feeShares = _removeAsset(_feeTo, address(this), balanceOf[_feeTo]);
+        swapper.swap(assetId, beachBar.tapAssetId(), 0, _feeTo, collateralSwapPath, feeShares);
         
     }
 
@@ -755,19 +752,5 @@ contract Mixologist is ERC20, BoringOwnable {
     /// @param _tapSwapPath The Uniswap path .
     function setTapSwapPath(address[] calldata _tapSwapPath) public onlyOwner {
         tapSwapPath = _tapSwapPath;
-    }
-
-    /// @notice Sets the beneficiary of half oh the fees accrued.
-    /// @param newFeeTo The address of the receiver.
-    function setFeeTo(address newFeeTo) public onlyOwner {
-        feeTo = newFeeTo;
-        emit LogFeeTo(newFeeTo);
-    }
-
-    /// @notice Sets the beneficiary of half oh the fees accrued.
-    /// @param newFeeVeTap The address of the receiver.
-    function setFeeVeTap(address newFeeVeTap) public onlyOwner {
-        feeVeTap = newFeeVeTap;
-        emit LogFeeVeTap(newFeeVeTap);
     }
 }

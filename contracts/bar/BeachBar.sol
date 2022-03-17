@@ -44,6 +44,8 @@ contract BeachBar is Domain, BoringBatchable, IERC1155TokenReceiver, BoringOwnab
     // ************** //
 
     // TODO: Add events
+    event LogFeeTo(address indexed newFeeTo);
+    event LogFeeVeTap(address indexed newFeeVeTap);
 
     // EIP-1155 events
     event TransferSingle(address indexed _operator, address indexed _from, address indexed _to, uint256 _id, uint256 _value);
@@ -67,6 +69,9 @@ contract BeachBar is Domain, BoringBatchable, IERC1155TokenReceiver, BoringOwnab
     // ***************** //
     // *** VARIABLES *** //
     // ***************** //
+
+    address public feeTo; // Protocol rewards
+    address public feeVeTap; // veTAP distributor
 
     // ids start at 1 so that id 0 means it's not yet registered
     mapping(uint96 => mapping(address => mapping(IStrategy => mapping(uint256 => uint256)))) public ids;
@@ -598,6 +603,21 @@ contract BeachBar is Domain, BoringBatchable, IERC1155TokenReceiver, BoringOwnab
                     '}'
                 )
                 .encode();
+    }
+
+    
+    /// @notice Sets the beneficiary of half oh the fees accrued.
+    /// @param newFeeTo The address of the receiver.
+    function setFeeTo(address newFeeTo) public onlyOwner {
+        feeTo = newFeeTo;
+        emit LogFeeTo(newFeeTo);
+    }
+
+    /// @notice Sets the beneficiary of half oh the fees accrued.
+    /// @param newFeeVeTap The address of the receiver.
+    function setFeeVeTap(address newFeeVeTap) public onlyOwner {
+        feeVeTap = newFeeVeTap;
+        emit LogFeeVeTap(newFeeVeTap);
     }
 
     // ERC1155 bloat we have to include to be able to receive ERC1155 tokens.
