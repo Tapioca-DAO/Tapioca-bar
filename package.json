@@ -5,7 +5,7 @@
     "deploy:mainnet": "npx hardhat deploy --network mainnet"
   },
   "devDependencies": {
-    "@boringcrypto/boring-solidity": "boringcrypto/BoringSolidity#ccb743d4c3363ca37491b87c6c9b24b1f5fa25dc",
+    "@boringcrypto/boring-solidity": "boringcrypto/BoringSolidity#21beaec5c9383c6e9312e4464ad5755fda69e09b",
     "@nomiclabs/hardhat-ethers": "^2.0.2",
     "@nomiclabs/hardhat-etherscan": "^3.0.1",
     "@nomiclabs/hardhat-waffle": "^2.0.1",

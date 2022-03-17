@@ -37,9 +37,9 @@
   dependencies:
     regenerator-runtime "^0.13.4"
 
-"@boringcrypto/boring-solidity@boringcrypto/BoringSolidity#ccb743d4c3363ca37491b87c6c9b24b1f5fa25dc":
-  version "1.2.4"
-  resolved "https://codeload.github.com/boringcrypto/BoringSolidity/tar.gz/ccb743d4c3363ca37491b87c6c9b24b1f5fa25dc"
+"@boringcrypto/boring-solidity@boringcrypto/BoringSolidity#21beaec5c9383c6e9312e4464ad5755fda69e09b":
+  version "2.0.1"
+  resolved "https://codeload.github.com/boringcrypto/BoringSolidity/tar.gz/21beaec5c9383c6e9312e4464ad5755fda69e09b"
 
 "@cspotcode/source-map-consumer@0.8.0":
   version "0.8.0"
