@@ -38,6 +38,36 @@ contract BeachBar is BoringOwnable, YieldBox {
         tapAssetId = uint96(registerAsset(TokenType.ERC20, address(tapToken_), IStrategy(address(0)), 0));
     }
 
+    // ************************ //
+    // *** PUBLIC FUNCTIONS *** //
+    // ************************ //
+
+    /// @notice Uses `assetId` to call `YieldBox.deposit()`
+    function deposit(
+        uint256 assetId,
+        address from,
+        address to,
+        uint256 amount,
+        uint256 share
+    ) public returns (uint256 amountOut, uint256 shareOut) {
+        Asset storage asset = assets[assetId];
+        return deposit(asset.tokenType, asset.contractAddress, asset.strategy, asset.tokenId, from, to, amount, share);
+    }
+
+    /// @notice Uses `assetId` to call `YieldBox.depositETH()`
+    function depositETH(
+        uint256 assetId,
+        address to,
+        uint256 amount
+    ) public payable returns (uint256 amountOut, uint256 shareOut) {
+        Asset storage asset = assets[assetId];
+        return depositETH(asset.strategy, to, amount);
+    }
+
+    // *********************** //
+    // *** OWNER FUNCTIONS *** //
+    // *********************** //
+
     /// @notice Register a master contract
     /// @param masterContract_ The address of the contract
     /// @param contractType_ The risk type of the contract
@@ -63,6 +93,18 @@ contract BeachBar is BoringOwnable, YieldBox {
         deploy(masterContract_, data, useCreate2);
     }
 
+    function setFeeTo(address feeTo_) external onlyOwner {
+        feeTo = feeTo_;
+    }
+
+    function setFeeVeTap(address feeVeTap_) external onlyOwner {
+        feeVeTap = feeVeTap_;
+    }
+
+    // ************************** //
+    // *** OVERRIDE FUNCTIONS *** //
+    // ************************** //
+
     /// @inheritdoc AssetRegister
     function registerAsset(
         TokenType tokenType,
@@ -71,13 +113,5 @@ contract BeachBar is BoringOwnable, YieldBox {
         uint256 tokenId
     ) public override onlyOwner returns (uint256 assetId) {
         assetId = super.registerAsset(tokenType, contractAddress, strategy, tokenId);
-    }
-
-    function setFeeTo(address feeTo_) external onlyOwner {
-        feeTo = feeTo_;
-    }
-
-    function setFeeVeTap(address feeVeTap_) external onlyOwner {
-        feeVeTap = feeVeTap_;
     }
 }
