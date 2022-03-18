@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.9;
-import "./AssetRegister.sol";
-import "@boringcrypto/boring-solidity/contracts/BoringFactory.sol";
+import './AssetRegister.sol';
+import '@boringcrypto/boring-solidity/contracts/BoringFactory.sol';
 
 struct NativeToken {
     string name;
@@ -19,11 +19,11 @@ struct NativeToken {
 /// TODO: MintBatch? BurnBatch?
 contract NativeTokenFactory is AssetRegister, BoringFactory {
     mapping(uint256 => NativeToken) public nativeTokens;
-    mapping(uint256 => address) public owner;
-    mapping(uint256 => address) public pendingOwner;
+    mapping(uint256 => address) public tokenOwner;
+    mapping(uint256 => address) public pendingTokenOwner;
 
     event TokenCreated(address indexed creator, string name, string symbol, uint8 decimals, uint256 tokenId);
-    event OwnershipTransferred(uint256 indexed tokenId, address indexed previousOwner, address indexed newOwner);
+    event OwnershipTransferred(uint256 indexed tokenId, address indexed previousTokenOwner, address indexed newTokenOwner);
 
     // ***************** //
     // *** MODIFIERS *** //
@@ -36,56 +36,56 @@ contract NativeTokenFactory is AssetRegister, BoringFactory {
     modifier allowed(address from) {
         if (from != msg.sender && !isApprovedForAll[from][msg.sender]) {
             address masterContract = masterContractOf[msg.sender];
-            require(masterContract != address(0) && isApprovedForAll[from][masterContract], "YieldBox: Not approved");
+            require(masterContract != address(0) && isApprovedForAll[from][masterContract], 'YieldBox: Not approved');
         }
         _;
     }
 
     /// @notice Only allows the `owner` to execute the function.
     /// @param tokenId The `tokenId` that the sender has to be owner of.
-    modifier onlyOwner(uint256 tokenId) {
-        require(msg.sender == owner[tokenId], "NTF: caller is not the owner");
+    modifier onlyTokenOwner(uint256 tokenId) {
+        require(msg.sender == tokenOwner[tokenId], 'NTF: caller is not the owner');
         _;
     }
 
-    /// @notice Transfers ownership to `newOwner`. Either directly or claimable by the new pending owner.
-    /// Can only be invoked by the current `owner`.
+    /// @notice Transfers ownership to `newTokenOwner`. Either directly or claimable by the new pending tokenOwner.
+    /// Can only be invoked by the current `tokenOwner`.
     /// @param tokenId The `tokenId` of the token that ownership whose ownership will be transferred/renounced.
-    /// @param newOwner Address of the new owner.
-    /// @param direct True if `newOwner` should be set immediately. False if `newOwner` needs to use `claimOwnership`.
-    /// @param renounce Allows the `newOwner` to be `address(0)` if `direct` and `renounce` is True. Has no effect otherwise.
+    /// @param newTokenOwner Address of the new tokenOwner.
+    /// @param direct True if `newTokenOwner` should be set immediately. False if `newTokenOwner` needs to use `claimOwnership`.
+    /// @param renounce Allows the `newTokenOwner` to be `address(0)` if `direct` and `renounce` is True. Has no effect otherwise.
     function transferOwnership(
         uint256 tokenId,
-        address newOwner,
+        address newTokenOwner,
         bool direct,
         bool renounce
-    ) public onlyOwner(tokenId) {
+    ) public onlyTokenOwner(tokenId) {
         if (direct) {
             // Checks
-            require(newOwner != address(0) || renounce, "NTF: zero address");
+            require(newTokenOwner != address(0) || renounce, 'NTF: zero address');
 
             // Effects
-            emit OwnershipTransferred(tokenId, owner[tokenId], newOwner);
-            owner[tokenId] = newOwner;
-            pendingOwner[tokenId] = address(0);
+            emit OwnershipTransferred(tokenId, tokenOwner[tokenId], newTokenOwner);
+            tokenOwner[tokenId] = newTokenOwner;
+            pendingTokenOwner[tokenId] = address(0);
         } else {
             // Effects
-            pendingOwner[tokenId] = newOwner;
+            pendingTokenOwner[tokenId] = newTokenOwner;
         }
     }
 
-    /// @notice Needs to be called by `pendingOwner` to claim ownership.
+    /// @notice Needs to be called by `pendingTokenOwner` to claim ownership.
     /// @param tokenId The `tokenId` of the token that ownership is claimed for.
     function claimOwnership(uint256 tokenId) public {
-        address _pendingOwner = pendingOwner[tokenId];
+        address _pendingTokenOwner = pendingTokenOwner[tokenId];
 
         // Checks
-        require(msg.sender == _pendingOwner, "NTF: caller != pending owner");
+        require(msg.sender == _pendingTokenOwner, 'NTF: caller != pending owner');
 
         // Effects
-        emit OwnershipTransferred(tokenId, owner[tokenId], _pendingOwner);
-        owner[tokenId] = _pendingOwner;
-        pendingOwner[tokenId] = address(0);
+        emit OwnershipTransferred(tokenId, tokenOwner[tokenId], _pendingTokenOwner);
+        tokenOwner[tokenId] = _pendingTokenOwner;
+        pendingTokenOwner[tokenId] = address(0);
     }
 
     /// @notice Create a new native token. This will be an ERC1155 token. If later it's needed as an ERC20 token it can
@@ -104,14 +104,14 @@ contract NativeTokenFactory is AssetRegister, BoringFactory {
         // Initial supply is 0, use owner can mint. For a fixed supply the owner can mint and revoke ownership.
         // The msg.sender is the initial owner, can be changed after.
         nativeTokens[tokenId] = NativeToken(name, symbol, decimals);
-        owner[tokenId] = msg.sender;
+        tokenOwner[tokenId] = msg.sender;
 
         emit TokenCreated(msg.sender, name, symbol, decimals, tokenId);
         emit TransferSingle(msg.sender, address(0), address(0), tokenId, 0);
         emit OwnershipTransferred(tokenId, address(0), msg.sender);
     }
 
-    /// @notice The `owner` can mint tokens. If a fixed supply is needed, the `owner` should mint the totalSupply and renounce ownership.
+    /// @notice The `tokenOwner` can mint tokens. If a fixed supply is needed, the `tokenOwner` should mint the totalSupply and renounce ownership.
     /// @param tokenId The token to be minted.
     /// @param to The account to transfer the minted tokens to.
     /// @param amount The amount of tokens to mint.
@@ -119,7 +119,7 @@ contract NativeTokenFactory is AssetRegister, BoringFactory {
         uint256 tokenId,
         address to,
         uint256 amount
-    ) public onlyOwner(tokenId) {
+    ) public onlyTokenOwner(tokenId) {
         _mint(to, tokenId, amount);
     }
 
@@ -131,7 +131,7 @@ contract NativeTokenFactory is AssetRegister, BoringFactory {
         address from,
         uint256 amount
     ) public allowed(from) {
-        require(assets[tokenId].tokenType == TokenType.Native, "NTF: Not native");
+        require(assets[tokenId].tokenType == TokenType.Native, 'NTF: Not native');
         _burn(msg.sender, tokenId, amount);
     }
 }
