@@ -266,7 +266,7 @@ contract Mixologist is ERC20, BoringOwnable {
         if (skim) {
             require(share <= beachBar.balanceOf(address(this), _assetId) - total, 'Mixologist: Skim too much');
         } else {
-            beachBar.transfer(_assetId, msg.sender, address(this), share);
+            beachBar.transfer(msg.sender, address(this), _assetId, share);
         }
     }
 
@@ -292,7 +292,7 @@ contract Mixologist is ERC20, BoringOwnable {
         userCollateralShare[msg.sender] -= share;
         totalCollateralShare -= share;
         emit LogRemoveCollateral(msg.sender, to, share);
-        beachBar.transfer(collateralId, address(this), to, share);
+        beachBar.transfer(address(this), to, collateralId, share);
     }
 
     /// @notice Removes `share` amount of collateral and transfers it to `to`.
@@ -356,7 +356,7 @@ contract Mixologist is ERC20, BoringOwnable {
         require(_totalAsset.base >= 1000, 'Mixologist: below minimum');
         totalAsset = _totalAsset;
         emit LogRemoveAsset(msg.sender, to, share, fraction);
-        beachBar.transfer(assetId, address(this), to, share);
+        beachBar.transfer(address(this), to, assetId, share);
     }
 
     /// @notice Removes an asset from msg.sender and transfers it to `to`.
@@ -381,7 +381,7 @@ contract Mixologist is ERC20, BoringOwnable {
         require(_totalAsset.base >= 1000, 'Mixologist: below minimum');
         _totalAsset.elastic -= uint128(share);
         totalAsset = _totalAsset;
-        beachBar.transfer(assetId, address(this), to, share);
+        beachBar.transfer(address(this), to, assetId, share);
     }
 
     /// @notice Sender borrows `amount` and transfers it to `to`.
@@ -471,7 +471,7 @@ contract Mixologist is ERC20, BoringOwnable {
         amount = int256(_num(amount, value1, value2)); // Done this way to avoid stack too deep errors
         share = int256(_num(share, value1, value2));
         if (msg.value > 0) {
-            return beachBar.depositETH{value: value}(_assetId, to);
+            return beachBar.depositETH(_assetId, to, value);
         } else {
             return beachBar.deposit(_assetId, msg.sender, to, uint256(amount), uint256(share));
         }
@@ -571,21 +571,18 @@ contract Mixologist is ERC20, BoringOwnable {
                 );
                 flashLoan(borrower, receiver, amount, data);
             } else if (action == ACTION_BAR_SETAPPROVAL) {
-                (address user, address operator, bool approved, uint8 v, bytes32 r, bytes32 s) = abi.decode(
-                    datas[i],
-                    (address, address, bool, uint8, bytes32, bytes32)
-                );
-                beachBar.setApprovalForAllWithPermit(user, operator, approved, v, r, s);
+                (address operator, bool approved) = abi.decode(datas[i], (address, bool));
+                beachBar.setApprovalForAll(operator, approved);
             } else if (action == ACTION_BAR_DEPOSIT) {
                 (value1, value2) = _bentoDeposit(datas[i], values[i], value1, value2);
             } else if (action == ACTION_BAR_WITHDRAW) {
                 (value1, value2) = _bentoWithdraw(datas[i], value1, value2);
             } else if (action == ACTION_BAR_TRANSFER) {
                 (uint256 _assetId, address to, int256 share) = abi.decode(datas[i], (uint256, address, int256));
-                beachBar.transfer(_assetId, msg.sender, to, _num(share, value1, value2));
+                beachBar.transfer(msg.sender, to, _assetId, _num(share, value1, value2));
             } else if (action == ACTION_BAR_TRANSFER_MULTIPLE) {
                 (uint256 _assetId, address[] memory tos, uint256[] memory shares) = abi.decode(datas[i], (uint256, address[], uint256[]));
-                beachBar.transferMultiple(_assetId, msg.sender, tos, shares);
+                beachBar.transferMultiple(msg.sender, tos, _assetId, shares);
             } else if (action == ACTION_CALL) {
                 (bytes memory returnData, uint8 returnValues) = _call(values[i], datas[i], value1, value2);
 
