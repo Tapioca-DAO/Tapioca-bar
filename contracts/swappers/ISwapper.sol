@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.6.12;
+pragma solidity 0.8.9;
 import '@boringcrypto/boring-solidity/contracts/interfaces/IERC20.sol';
 
 /// Modified from https://github.com/sushiswap/kashi-lending/blob/master/contracts/interfaces/ISwapper.sol

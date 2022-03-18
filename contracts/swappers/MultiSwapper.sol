@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.6.12;
+pragma solidity 0.8.9;
 
-import '@boringcrypto/boring-solidity/contracts/libraries/BoringMath.sol';
 import '../libraries/IUniswapV2Factory.sol';
 import '../libraries/UniswapV2Library.sol';
 import '../libraries/IUniswapV2Pair.sol';
@@ -12,7 +11,6 @@ import '../bar/BeachBar.sol';
 
 contract MultiSwapper {
     using BoringERC20 for IERC20;
-    using BoringMath for uint256;
 
     address private immutable factory;
 

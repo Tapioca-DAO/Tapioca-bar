@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.6.12;
-import '@boringcrypto/boring-solidity/contracts/libraries/BoringMath.sol';
+pragma solidity 0.8.9;
 import '../libraries/IUniswapV2Factory.sol';
 import '../libraries/IUniswapV2Pair.sol';
 import './ISwapper.sol';
@@ -9,8 +8,6 @@ import '../bar/BeachBar.sol';
 /// Modified from https://github.com/sushiswap/kashi-lending/blob/master/contracts/swappers/SushiSwapSwapper.sol
 
 contract Swapper is ISwapper {
-    using BoringMath for uint256;
-
     // Local variables
     BeachBar public immutable beachBar;
     IUniswapV2Factory public immutable factory;

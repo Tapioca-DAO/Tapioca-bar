@@ -1,11 +1,8 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.6.12;
-import '@boringcrypto/boring-solidity/contracts/libraries/BoringMath.sol';
+pragma solidity 0.8.9;
 import '../../interfaces/IOracle.sol';
 
 contract OracleMock is IOracle {
-    using BoringMath for uint256;
-
     uint256 public rate;
     bool public success;
 
