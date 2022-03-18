@@ -1,28 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
 
-// The YieldBox
-// The original BentoBox is owned by the Sushi team to set strategies for each token. Abracadabra wanted different strategies, which led to
-// them launching their own DegenBox. The YieldBox solves this by allowing an unlimited number of strategies for each token in a fully
-// permissionless manner. The YieldBox has no owner and operates fully permissionless.
-
-// Other improvements:
-// Better system to make sure the token to share ratio doesn't reset.
-// Full support for rebasing tokens.
-
-// This contract stores funds, handles their transfers, approvals and strategies.
-
 // Copyright (c) 2021, 2022 BoringCrypto - All rights reserved
 // Twitter: @Boring_Crypto
 
-// Since the contract is permissionless, only one deployment per chain is needed. If it's not yet deployed
-// on a chain or if you want to make a derivative work, contact @BoringCrypto. The core of YieldBox is
-// copyrighted. Most of the contracts that it builds on are open source though.
-
-// BEWARE: Still under active development
-// Security review not done yet
-
 pragma solidity 0.8.9;
-pragma experimental ABIEncoderV2;
+pragma abicoder v2;
 import './interfaces/IWrappedNative.sol';
 import './interfaces/IStrategy.sol';
 import '@boringcrypto/boring-solidity/contracts/interfaces/IERC1155.sol';
@@ -31,6 +13,7 @@ import '@boringcrypto/boring-solidity/contracts/Domain.sol';
 import './ERC1155TokenReceiver.sol';
 import './ERC1155.sol';
 import '@boringcrypto/boring-solidity/contracts/BoringBatchable.sol';
+import '@boringcrypto/boring-solidity/contracts/BoringOwnable.sol';
 import '@openzeppelin/contracts/utils/Strings.sol';
 import './AssetRegister.sol';
 import './NativeTokenFactory.sol';
@@ -39,12 +22,12 @@ import './YieldBoxURIBuilder.sol';
 
 // solhint-disable no-empty-blocks
 
-/// @title YieldBox
+/// @title BeachBar
 /// @author BoringCrypto, Keno
-/// @notice The YieldBox is a vault for tokens. The stored tokens can assigned to strategies.
+/// @notice The BeachBar is a vault for tokens. The stored tokens can assigned to strategies.
 /// Yield from this will go to the token depositors.
-/// Any funds transfered directly onto the YieldBox will be lost, use the deposit function instead.
-contract YieldBox is BoringBatchable, NativeTokenFactory, ERC1155TokenReceiver {
+/// Any funds transfered directly onto the BeachBar will be lost, use the deposit function instead.
+contract BeachBar is BoringBatchable, NativeTokenFactory, ERC1155TokenReceiver {
     using BoringAddress for address;
     using BoringERC20 for IERC20;
     using BoringERC20 for IWrappedNative;
@@ -108,7 +91,7 @@ contract YieldBox is BoringBatchable, NativeTokenFactory, ERC1155TokenReceiver {
     ) public allowed(from) returns (uint256 amountOut, uint256 shareOut) {
         // Checks
         Asset storage asset = assets[assetId];
-        require(asset.tokenType != TokenType.Native, "YieldBox: can't deposit Native");
+        require(asset.tokenType != TokenType.Native, "BeachBar: can't deposit Native");
 
         // Effects
         uint256 totalAmount = _tokenBalanceOf(asset);
@@ -129,7 +112,7 @@ contract YieldBox is BoringBatchable, NativeTokenFactory, ERC1155TokenReceiver {
             IERC20(asset.contractAddress).safeTransferFrom(from, destination, amount);
         } else {
             // ERC1155
-            // When depositing yieldBox tokens into the yieldBox, things can be simplified
+            // When depositing BeachBar tokens into the BeachBar, things can be simplified
             if (asset.contractAddress == address(this)) {
                 _transferSingle(from, destination, asset.tokenId, amount);
             } else {
@@ -159,7 +142,7 @@ contract YieldBox is BoringBatchable, NativeTokenFactory, ERC1155TokenReceiver {
     {
         // Checks
         Asset storage asset = assets[assetId];
-        require(asset.tokenType == TokenType.ERC20 && asset.contractAddress == address(wrappedNative), 'YieldBox: not wrappedNative');
+        require(asset.tokenType == TokenType.ERC20 && asset.contractAddress == address(wrappedNative), 'BeachBar: not wrappedNative');
 
         // Effects
         uint256 share = amount._toShares(totalSupply[assetId], _tokenBalanceOf(asset), false);
@@ -195,7 +178,7 @@ contract YieldBox is BoringBatchable, NativeTokenFactory, ERC1155TokenReceiver {
     ) public allowed(from) returns (uint256 amountOut, uint256 shareOut) {
         // Checks
         Asset storage asset = assets[assetId];
-        require(asset.tokenType != TokenType.Native, "YieldBox: can't withdraw Native");
+        require(asset.tokenType != TokenType.Native, "BeachBar: can't withdraw Native");
 
         // Effects
         uint256 totalAmount = _tokenBalanceOf(asset);
@@ -269,7 +252,7 @@ contract YieldBox is BoringBatchable, NativeTokenFactory, ERC1155TokenReceiver {
         // Checks
         uint256 len = tos.length;
         for (uint256 i = 0; i < len; i++) {
-            require(tos[i] != address(0), 'YieldBox: to not set'); // To avoid a bad UI from burning funds
+            require(tos[i] != address(0), 'BeachBar: to not set'); // To avoid a bad UI from burning funds
         }
 
         // Effects
@@ -286,9 +269,9 @@ contract YieldBox is BoringBatchable, NativeTokenFactory, ERC1155TokenReceiver {
 
     function setApprovalForAll(address operator, bool approved) external override {
         // Checks
-        require(operator != address(0), 'YieldBox: operator not set'); // Important for security
-        require(masterContractOf[msg.sender] == address(0), 'YieldBox: user is clone');
-        require(operator != address(this), "YieldBox: can't approve yieldBox");
+        require(operator != address(0), 'BeachBar: operator not set'); // Important for security
+        require(masterContractOf[msg.sender] == address(0), 'BeachBar: user is clone');
+        require(operator != address(this), "BeachBar: can't approve BeachBar");
 
         // Effects
         isApprovedForAll[msg.sender][operator] = approved;
@@ -297,7 +280,7 @@ contract YieldBox is BoringBatchable, NativeTokenFactory, ERC1155TokenReceiver {
     }
 
     // This functionality has been split off into a separate contract. This is only a view function, so gas usage isn't a huge issue.
-    // This keeps the YieldBox contract smaller, so it can be optimized more.
+    // This keeps the BeachBar contract smaller, so it can be optimized more.
     function uri(uint256 assetId) external view override returns (string memory) {
         return uriBuilder.uri(assetId);
     }
