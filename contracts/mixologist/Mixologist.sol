@@ -660,7 +660,7 @@ contract Mixologist is ERC20, BoringOwnable {
         require(swappers[swapper], 'Mixologist: Invalid swapper');
 
         // Swaps the users collateral for the borrowed asset
-        beachBar.transfer(collateralId, address(this), address(swapper), allCollateralShare);
+        beachBar.transfer(address(this), address(swapper), collateralId, allCollateralShare);
         swapper.swap(collateralId, assetId, 0, address(this), collateralSwapPath, allCollateralShare);
 
         uint256 returnedShare = beachBar.balanceOf(address(this), assetId) - uint256(totalAsset.elastic);
@@ -668,8 +668,8 @@ contract Mixologist is ERC20, BoringOwnable {
         uint256 feeShare = (extraShare * PROTOCOL_FEE) / PROTOCOL_FEE_DIVISOR; // 10% of profit goes to fee
         uint256 callerShare = extraShare - feeShare;
 
-        beachBar.transfer(assetId, address(this), beachBar.feeTo(), feeShare);
-        beachBar.transfer(assetId, address(this), msg.sender, callerShare);
+        beachBar.transfer(address(this), beachBar.feeTo(), assetId, feeShare);
+        beachBar.transfer(address(this), msg.sender, assetId, callerShare);
 
         totalAsset.elastic += uint128(returnedShare - feeShare - callerShare);
         emit LogAddAsset(address(swapper), address(this), extraShare - feeShare - callerShare, 0);

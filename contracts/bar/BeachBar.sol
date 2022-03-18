@@ -20,14 +20,14 @@ struct MasterContract {
 }
 
 contract BeachBar is BoringOwnable, YieldBox {
-    IERC20 private immutable tapToken;
-    uint96 private immutable tapAssetId;
+    IERC20 public immutable tapToken;
+    uint256 public immutable tapAssetId;
 
     MasterContract[] masterContracts;
     mapping(address => bool) isMasterContractRegistered;
 
-    address feeTo; // Protocol
-    address feeVeTap; // TAP distributors
+    address public feeTo; // Protocol
+    address public feeVeTap; // TAP distributors
 
     constructor(
         IWrappedNative wrappedNative_,
