@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.6.12;
+pragma solidity 0.8.9;
 pragma experimental ABIEncoderV2;
 import '@boringcrypto/boring-solidity/contracts/interfaces/IERC20.sol';
 import '../../bar/BeachBar.sol';
 import './IOracle.sol';
-import './ISwapper.sol';
+import '../../swappers/MultiSwapper.sol';
 
-interface IKashiPair {
+interface IMixologist {
     event Approval(address indexed _owner, address indexed _spender, uint256 _value);
     event LogAccrue(uint256 accruedAmount, uint256 feeFraction, uint64 rate, uint256 utilization);
     event LogAddAsset(address indexed from, address indexed to, uint256 share, uint256 fraction);
@@ -90,7 +90,7 @@ interface IKashiPair {
         address[] calldata users,
         uint256[] calldata borrowParts,
         address to,
-        ISwapper swapper,
+        MultiSwapper swapper,
         bool open
     ) external;
 
@@ -130,9 +130,9 @@ interface IKashiPair {
 
     function setFeeTo(address newFeeTo) external;
 
-    function setSwapper(ISwapper swapper, bool enable) external;
+    function setSwapper(MultiSwapper swapper, bool enable) external;
 
-    function swappers(ISwapper) external view returns (bool);
+    function swappers(MultiSwapper) external view returns (bool);
 
     function symbol() external view returns (string memory);
 
