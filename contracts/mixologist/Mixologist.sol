@@ -679,7 +679,8 @@ contract Mixologist is ERC20, BoringOwnable {
     }
 
     /// @notice Flashloan ability.
-    //  @dev The contract expect the `borrower` to have at the end of `onFlashLoan` `amount` + the incurred fees
+    /// @dev The contract expect the `borrower` to have at the end of `onFlashLoan` `amount` + the incurred fees.
+    /// The borrower is expected to `approve()` BeachBar for this number at the end of its `onFlashLoan()`.
     /// @param borrower The address of the contract that implements and conforms to `IFlashBorrower` and handles the flashloan.
     /// @param receiver Address of the token receiver.
     /// @param amount of the tokens to receive.
