@@ -23,6 +23,15 @@ const config: HardhatUserConfig = {
                     },
                 },
             },
+            {
+                version: '0.6.12',
+                settings: {
+                    optimizer: {
+                        enabled: true,
+                        runs: 200,
+                    },
+                },
+            },
         ],
     },
     namedAccounts: {
@@ -49,7 +58,7 @@ const config: HardhatUserConfig = {
         },
         rinkeby: {
             gasMultiplier: 2,
-            url: process.env.RINKEBY,
+            url: process.env.RINKEBY ?? '',
             chainId: 4,
             accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
             tags: ['testnet'],
