@@ -13,13 +13,17 @@ dotenv.config();
 
 const config: HardhatUserConfig = {
     solidity: {
-        version: '0.6.12',
-        settings: {
-            optimizer: {
-                enabled: true,
-                runs: 5,
+        compilers: [
+            {
+                version: '0.8.9',
+                settings: {
+                    optimizer: {
+                        enabled: true,
+                        runs: 200,
+                    },
+                },
             },
-        },
+        ],
     },
     namedAccounts: {
         deployer: 0,
