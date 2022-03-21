@@ -10,7 +10,6 @@ import '@boringcrypto/boring-solidity/contracts/ERC20.sol';
 import '@boringcrypto/boring-solidity/contracts/libraries/BoringRebase.sol';
 import '@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol';
 import '../bar/BeachBar.sol';
-import '../swappers/MultiSwapper.sol';
 import './interfaces/IOracle.sol';
 import './interfaces/IFlashLoan.sol';
 
@@ -45,7 +44,6 @@ contract Mixologist is ERC20, BoringOwnable {
     bytes public oracleData;
     address[] public collateralSwapPath; // Collateral -> Asset
     address[] public tapSwapPath; // Asset -> Tap
-    mapping(MultiSwapper => bool) public swappers;
 
     // Total amounts
     uint256 public totalCollateralShare; // Total collateral supplied
@@ -123,7 +121,6 @@ contract Mixologist is ERC20, BoringOwnable {
         IERC20 _collateral,
         uint256 _collateralId,
         IOracle _oracle,
-        MultiSwapper _swapper,
         address[] memory _collateralSwapPath,
         address[] memory _tapSwapPath
     ) public {
@@ -141,7 +138,6 @@ contract Mixologist is ERC20, BoringOwnable {
         collateralSwapPath = _collateralSwapPath;
         tapSwapPath = _tapSwapPath;
 
-        swappers[_swapper] = true;
         accrueInfo.interestPerSecond = uint64(STARTING_INTEREST_PER_SECOND); // 1% APR, with 1e18 being 100%
 
         updateExchangeRate();
@@ -657,7 +653,7 @@ contract Mixologist is ERC20, BoringOwnable {
         uint256 allBorrowShare = beachBar.toShare(assetId, allBorrowAmount, true);
 
         // Closed liquidation using a pre-approved swapper for the benefit of the LPs
-        require(swappers[swapper], 'Mixologist: Invalid swapper');
+        require(beachBar.swappers(swapper), 'Mixologist: Invalid swapper');
 
         // Swaps the users collateral for the borrowed asset
         beachBar.transfer(address(this), address(swapper), collateralId, allCollateralShare);
@@ -718,19 +714,11 @@ contract Mixologist is ERC20, BoringOwnable {
         if (accrueInfo.feesEarnedFraction > 0) {
             withdrawFeesEarned();
         }
-        require(swappers[swapper], 'Mixologist: Invalid swapper');
+        require(beachBar.swappers(swapper), 'Mixologist: Invalid swapper');
         address _feeTo = beachBar.feeTo();
 
         uint256 feeShares = _removeAsset(_feeTo, address(this), balanceOf[_feeTo]);
         swapper.swap(assetId, beachBar.tapAssetId(), 0, _feeTo, collateralSwapPath, feeShares);
-    }
-
-    /// @notice Used to register and enable or disable swapper contracts used in closed liquidations.
-    /// MasterContract Only Admin function.
-    /// @param swapper The address of the swapper contract that conforms to `ISwapper`.
-    /// @param enable True to enable the swapper. To disable use False.
-    function setSwapper(MultiSwapper swapper, bool enable) public onlyOwner {
-        swappers[swapper] = enable;
     }
 
     /// @notice Used to set the swap path of closed liquidations

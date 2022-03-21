@@ -6,6 +6,7 @@ import './YieldBox.sol';
 import './interfaces/IWrappedNative.sol';
 import './interfaces/IStrategy.sol';
 import './enums/YieldBoxTokenType.sol';
+import '../swappers/MultiSwapper.sol';
 import '@boringcrypto/boring-solidity/contracts/BoringOwnable.sol';
 
 enum ContractType {
@@ -28,6 +29,8 @@ contract BeachBar is BoringOwnable, YieldBox {
 
     address public feeTo; // Protocol
     address public feeVeTap; // TAP distributors
+
+    mapping(MultiSwapper => bool) public swappers;
 
     constructor(
         IWrappedNative wrappedNative_,
@@ -99,6 +102,14 @@ contract BeachBar is BoringOwnable, YieldBox {
 
     function setFeeVeTap(address feeVeTap_) external onlyOwner {
         feeVeTap = feeVeTap_;
+    }
+
+    /// @notice Used to register and enable or disable swapper contracts used in closed liquidations.
+    /// MasterContract Only Admin function.
+    /// @param swapper The address of the swapper contract that conforms to `ISwapper`.
+    /// @param enable True to enable the swapper. To disable use False.
+    function setSwapper(MultiSwapper swapper, bool enable) public onlyOwner {
+        swappers[swapper] = enable;
     }
 
     // ************************** //
