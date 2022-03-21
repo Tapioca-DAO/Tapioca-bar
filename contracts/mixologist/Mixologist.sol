@@ -35,7 +35,7 @@ contract Mixologist is ERC20, BoringOwnable {
     event LogFlashLoan(address indexed borrower, uint256 amount, uint256 feeAmount, address indexed receiver);
 
     // Constructor settings
-    BeachBar public immutable beachBar;
+    BeachBar public beachBar;
     IERC20 public collateral;
     IERC20 public asset;
     uint256 public collateralId;
@@ -66,6 +66,13 @@ contract Mixologist is ERC20, BoringOwnable {
     }
 
     AccrueInfo public accrueInfo;
+
+    bool private initialized;
+    modifier onlyOnce() {
+        require(!initialized, 'Mixologist: initialized');
+        _;
+        initialized = true;
+    }
 
     // ERC20 'variables'
     function symbol() external view returns (string memory) {
@@ -113,8 +120,8 @@ contract Mixologist is ERC20, BoringOwnable {
     uint256 private constant FLASHLOAN_FEE = 90; // 0.09%
     uint256 private constant FLASHLOAN_FEE_PRECISION = 1e5;
 
-    /// @notice The constructor is only used for the initial master contract. Subsequent clones are initialised via `init`.
-    constructor(
+    /// @notice The init function that acts as a constructor
+    function init(
         BeachBar tapiocaBar_,
         IERC20 _asset,
         uint256 _assetId,
@@ -123,7 +130,7 @@ contract Mixologist is ERC20, BoringOwnable {
         IOracle _oracle,
         address[] memory _collateralSwapPath,
         address[] memory _tapSwapPath
-    ) public {
+    ) external onlyOnce {
         beachBar = tapiocaBar_;
 
         require(
