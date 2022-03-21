@@ -10,6 +10,7 @@ import '@boringcrypto/boring-solidity/contracts/ERC20.sol';
 import '@boringcrypto/boring-solidity/contracts/libraries/BoringRebase.sol';
 import '@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol';
 import '../bar/BeachBar.sol';
+import '../swappers/MultiSwapper.sol';
 import './interfaces/IOracle.sol';
 import './interfaces/IFlashLoan.sol';
 

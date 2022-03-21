@@ -7,7 +7,7 @@ import './interfaces/IWrappedNative.sol';
 import './interfaces/IStrategy.sol';
 import './enums/YieldBoxTokenType.sol';
 import '../swappers/MultiSwapper.sol';
-import '../mixologist/Mixologist.sol';
+import '../mixologist/interfaces/IMixologist.sol';
 import '@boringcrypto/boring-solidity/contracts/BoringOwnable.sol';
 
 enum ContractType {
@@ -48,7 +48,7 @@ contract BeachBar is BoringOwnable, YieldBox {
     // *** MODIFIERS *** //
     // ***************** //
 
-    modifier registeredMasterContract(MasterContract mc) {
+    modifier registeredMasterContract(address mc) {
         require(isMasterContractRegistered[mc] == true, 'BeachBar: MC not registered');
         _;
     }
@@ -82,7 +82,7 @@ contract BeachBar is BoringOwnable, YieldBox {
     /// @notice Loop through the master contracts and call `depositFeesToBeachBar()` to each one of their clones.
     /// @dev `swappers_` can have one element that'll be used for all clones. Or one swapper per MasterContract.
     /// @param swappers_ One or more swappers to convert the asset to TAP.
-    function withdrawAllProtocolFees(MultiSwapper[] swappers_) public {
+    function withdrawAllProtocolFees(MultiSwapper[] calldata swappers_) public {
         require(address(swappers_[0]) != address(0), 'BeachBar: zero address');
 
         uint256 masterContractLength = masterContracts.length;
@@ -91,10 +91,10 @@ contract BeachBar is BoringOwnable, YieldBox {
         address[] memory clonesOf_;
         // Loop through master contracts.
         for (uint256 i = 0; i < masterContractLength; ) {
-            clonesOf_ = clonesOf[address(masterContracts[i])];
+            clonesOf_ = clonesOf[address(masterContracts[i].location)];
             // Loop through clones of the current MC.
             for (uint256 j = 0; j < clonesOf_.length; ) {
-                Mixologist(clonesOf_[j]).depositFeesToBeachBar(singleSwapper ? swappers_[0] : swappers_[i]);
+                IMixologist(clonesOf_[j]).depositFeesToBeachBar(singleSwapper ? swappers_[0] : swappers_[i]);
                 ++j;
             }
             ++i;
@@ -109,6 +109,8 @@ contract BeachBar is BoringOwnable, YieldBox {
     /// @param mcAddress The address of the contract
     /// @param contractType_ The risk type of the contract
     function registerMasterContract(address mcAddress, ContractType contractType_) external onlyOwner {
+        require(isMasterContractRegistered[mcAddress] == false, 'BeachBar: MC registered');
+
         MasterContract memory mc;
         mc.location = mcAddress;
         mc.risk = contractType_;
