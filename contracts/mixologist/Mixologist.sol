@@ -716,7 +716,7 @@ contract Mixologist is ERC20, BoringOwnable {
         emit LogWithdrawFees(_feeTo, _feesEarnedFraction);
     }
 
-    /// @notice Withdraw the balance of `feeTo`, swap it and deposit it to BeachBar of `feeTo`
+    /// @notice Withdraw the balance of `feeTo`, swap asset into TAP and deposit it to BeachBar of `feeTo`
     function depositFeesToBeachBar(MultiSwapper swapper) public {
         if (accrueInfo.feesEarnedFraction > 0) {
             withdrawFeesEarned();
@@ -725,7 +725,7 @@ contract Mixologist is ERC20, BoringOwnable {
         address _feeTo = beachBar.feeTo();
 
         uint256 feeShares = _removeAsset(_feeTo, address(this), balanceOf[_feeTo]);
-        swapper.swap(assetId, beachBar.tapAssetId(), 0, _feeTo, collateralSwapPath, feeShares);
+        swapper.swap(assetId, beachBar.tapAssetId(), 0, _feeTo, tapSwapPath, feeShares);
     }
 
     /// @notice Used to set the swap path of closed liquidations
