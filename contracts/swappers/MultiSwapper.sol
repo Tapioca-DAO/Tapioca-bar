@@ -5,7 +5,6 @@ import '@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol';
 import '../libraries/IUniswapV2Factory.sol';
 import '../libraries/UniswapV2Library.sol';
 import '../libraries/IUniswapV2Pair.sol';
-import './ISwapper.sol';
 import '../bar/BeachBar.sol';
 
 /// Modified from https://github.com/sushiswap/kashi-lending/blob/master/contracts/swappers/SushiSwapMultiSwapper.sol

@@ -24,13 +24,15 @@ library UniswapV2Library {
     ) internal pure returns (address pair) {
         (address token0, address token1) = sortTokens(tokenA, tokenB);
         pair = address(
-            uint256(
-                keccak256(
-                    abi.encodePacked(
-                        hex'ff',
-                        factory,
-                        keccak256(abi.encodePacked(token0, token1)),
-                        pairCodeHash // init code hash
+            uint160(
+                uint256(
+                    keccak256(
+                        abi.encodePacked(
+                            hex'ff',
+                            factory,
+                            keccak256(abi.encodePacked(token0, token1)),
+                            pairCodeHash // init code hash
+                        )
                     )
                 )
             )

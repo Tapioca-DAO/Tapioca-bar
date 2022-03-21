@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.9;
-import '@boringcrypto/boring-solidity/contracts/interfaces/IERC20.sol';
+
+import '@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol';
 
 /// Modified from https://github.com/sushiswap/kashi-lending/blob/master/contracts/interfaces/ISwapper.sol
 interface ISwapper {

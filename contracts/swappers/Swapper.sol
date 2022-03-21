@@ -2,12 +2,13 @@
 pragma solidity 0.8.9;
 import '../libraries/IUniswapV2Factory.sol';
 import '../libraries/IUniswapV2Pair.sol';
-import './ISwapper.sol';
+import '../libraries/SafeMath.sol';
 import '../bar/BeachBar.sol';
+import './ISwapper.sol';
 
 /// Modified from https://github.com/sushiswap/kashi-lending/blob/master/contracts/swappers/SushiSwapSwapper.sol
-
 contract Swapper is ISwapper {
+    using SafeMath for uint256;
     // Local variables
     BeachBar public immutable beachBar;
     IUniswapV2Factory public immutable factory;
@@ -59,8 +60,14 @@ contract Swapper is ISwapper {
     ) public override returns (uint256 extraShare, uint256 shareReturned) {
         (IERC20 token0, IERC20 token1) = fromToken < toToken ? (fromToken, toToken) : (toToken, fromToken);
         IUniswapV2Pair pair = IUniswapV2Pair(
-            uint256(
-                keccak256(abi.encodePacked(hex'ff', factory, keccak256(abi.encodePacked(address(token0), address(token1))), pairCodeHash))
+            address(
+                uint160(
+                    uint256(
+                        keccak256(
+                            abi.encodePacked(hex'ff', factory, keccak256(abi.encodePacked(address(token0), address(token1))), pairCodeHash)
+                        )
+                    )
+                )
             )
         );
 
@@ -95,9 +102,18 @@ contract Swapper is ISwapper {
         {
             (IERC20 token0, IERC20 token1) = fromToken < toToken ? (fromToken, toToken) : (toToken, fromToken);
             pair = IUniswapV2Pair(
-                uint256(
-                    keccak256(
-                        abi.encodePacked(hex'ff', factory, keccak256(abi.encodePacked(address(token0), address(token1))), pairCodeHash)
+                address(
+                    uint160(
+                        uint256(
+                            keccak256(
+                                abi.encodePacked(
+                                    hex'ff',
+                                    factory,
+                                    keccak256(abi.encodePacked(address(token0), address(token1))),
+                                    pairCodeHash
+                                )
+                            )
+                        )
                     )
                 )
             );
@@ -119,7 +135,9 @@ contract Swapper is ISwapper {
         beachBar.deposit(toTokenId, address(beachBar), recipient, 0, shareToExact);
         shareReturned = shareFromSupplied.sub(shareUsed);
         if (shareReturned > 0) {
-            beachBar.transfer(fromTokenId, address(this), refundTo, shareReturned);
+            // stack too deep bypass
+            uint256 _fromTokenId = fromTokenId;
+            beachBar.transfer(address(this), refundTo, _fromTokenId, shareReturned);
         }
     }
 }
