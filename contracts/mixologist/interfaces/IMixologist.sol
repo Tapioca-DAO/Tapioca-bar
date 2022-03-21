@@ -165,4 +165,6 @@ interface IMixologist {
     function userCollateralShare(address) external view returns (uint256);
 
     function withdrawFees() external;
+
+    function depositFeesToBeachBar(MultiSwapper) external;
 }
