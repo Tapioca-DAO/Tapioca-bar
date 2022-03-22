@@ -122,16 +122,18 @@ contract Mixologist is ERC20, BoringOwnable {
     uint256 private constant FLASHLOAN_FEE_PRECISION = 1e5;
 
     /// @notice The init function that acts as a constructor
-    function init(
-        BeachBar tapiocaBar_,
-        IERC20 _asset,
-        uint256 _assetId,
-        IERC20 _collateral,
-        uint256 _collateralId,
-        IOracle _oracle,
-        address[] memory _collateralSwapPath,
-        address[] memory _tapSwapPath
-    ) external onlyOnce {
+    function init(bytes calldata data) external onlyOnce {
+        (
+            BeachBar tapiocaBar_,
+            IERC20 _asset,
+            uint256 _assetId,
+            IERC20 _collateral,
+            uint256 _collateralId,
+            IOracle _oracle,
+            address[] memory _collateralSwapPath,
+            address[] memory _tapSwapPath
+        ) = abi.decode(data, (BeachBar, IERC20, uint256, IERC20, uint256, IOracle, address[], address[]));
+
         beachBar = tapiocaBar_;
 
         require(

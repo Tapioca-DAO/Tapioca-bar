@@ -51,11 +51,11 @@ async function registerBeachBar(wethAddress: string, tapAddress: string) {
 }
 
 async function setBeachBarAssets(bar: BeachBar, wethAddress: string, usdcAddress: string) {
-    await (await bar.registerAsset(0, wethAddress, ethers.constants.AddressZero, 0)).wait();
-    const wethAssetId = await bar.ids(0, wethAddress, ethers.constants.AddressZero, 0);
+    await (await bar.registerAsset(1, wethAddress, ethers.constants.AddressZero, 0)).wait();
+    const wethAssetId = await bar.ids(1, wethAddress, ethers.constants.AddressZero, 0);
 
-    await (await bar.registerAsset(0, usdcAddress, ethers.constants.AddressZero, 0)).wait();
-    const usdcAssetId = await bar.ids(0, usdcAddress, ethers.constants.AddressZero, 0);
+    await (await bar.registerAsset(1, usdcAddress, ethers.constants.AddressZero, 0)).wait();
+    const usdcAssetId = await bar.ids(1, usdcAddress, ethers.constants.AddressZero, 0);
 
     return { wethAssetId, usdcAssetId };
 }
@@ -116,24 +116,15 @@ async function registerMixologist(
     collateralSwapPath: string[],
     tapSwapPath: string[],
 ) {
-    const mixologistContract = await ethers.getContractAt('Mixologist', mediumRiskMC);
-    const data = mixologistContract.interface.encodeFunctionData('init', [
-        bar.address,
-        weth.address,
-        wethAssetId,
-        usdc.address,
-        usdcAssetId,
-        wethUsdcOracle.address,
-        collateralSwapPath,
-        tapSwapPath,
-    ]);
-
+    const data = new ethers.utils.AbiCoder().encode(
+        ['address', 'address', 'uint256', 'address', 'uint256', 'address', 'address[]', 'address[]'],
+        [bar.address, weth.address, wethAssetId, usdc.address, usdcAssetId, wethUsdcOracle.address, collateralSwapPath, tapSwapPath],
+    );
     await bar.registerMixologist(mediumRiskMC, data, true);
     const wethUsdcMixologist = await ethers.getContractAt(
         'Mixologist',
         await bar.clonesOf(mediumRiskMC, (await bar.clonesOfCount(mediumRiskMC)).sub(1)),
     );
-
     return { wethUsdcMixologist };
 }
 
