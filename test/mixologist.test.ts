@@ -2,7 +2,7 @@ import { ethers } from 'hardhat';
 import { expect } from 'chai';
 import { register } from './test.utils';
 describe('Mixologist test', () => {
-    it('Should deposit to bar, add asset to mixologist, remove asset and withdraw', async () => {
+    it.only('Should deposit to bar, add asset to mixologist, remove asset and withdraw', async () => {
         const { weth, bar, wethUsdcMixologist, deployer, initContracts } = await register();
 
         await initContracts(); // To prevent `Mixologist: below minimum`
@@ -14,7 +14,15 @@ describe('Mixologist test', () => {
         // Deposit assets to bar
         const mintValShare = await bar.toShare(await wethUsdcMixologist.assetId(), mintVal, false);
         await (await weth.approve(bar.address, mintVal)).wait();
-        await (await bar.deposit(await wethUsdcMixologist.assetId(), deployer.address, deployer.address, 0, mintValShare)).wait();
+        await (
+            await bar['deposit(uint256,address,address,uint256,uint256)'](
+                await wethUsdcMixologist.assetId(),
+                deployer.address,
+                deployer.address,
+                0,
+                mintValShare,
+            )
+        ).wait();
 
         // Add asset to Mixologist
         await (await bar.setApprovalForAll(wethUsdcMixologist.address, true)).wait();
@@ -115,7 +123,15 @@ describe('Mixologist test', () => {
         // Deposit assets to bar
         const lendValShare = await bar.toShare(await wethUsdcMixologist.assetId(), lendVal, false);
         await (await weth.approve(bar.address, lendVal)).wait();
-        await (await bar.deposit(await wethUsdcMixologist.assetId(), deployer.address, deployer.address, 0, lendValShare)).wait();
+        await (
+            await bar['deposit(uint256,address,address,uint256,uint256)'](
+                await wethUsdcMixologist.assetId(),
+                deployer.address,
+                deployer.address,
+                0,
+                lendValShare,
+            )
+        ).wait();
 
         // Add asset to Mixologist
         await (await bar.setApprovalForAll(wethUsdcMixologist.address, true)).wait();
@@ -154,7 +170,7 @@ describe('Mixologist test', () => {
         const assetId = await wethUsdcMixologist.assetId();
 
         await weth.connect(eoa1).freeMint(userBorrowPart);
-        await bar.connect(eoa1).deposit(assetId, eoa1.address, eoa1.address, userBorrowPart, 0);
+        await bar.connect(eoa1)['deposit(uint256,address,address,uint256,uint256)'](assetId, eoa1.address, eoa1.address, userBorrowPart, 0);
         await wethUsdcMixologist.connect(eoa1).repay(eoa1.address, false, userBorrowPart);
 
         expect(await wethUsdcMixologist.userBorrowPart(eoa1.address)).to.be.eq(BN(0));
