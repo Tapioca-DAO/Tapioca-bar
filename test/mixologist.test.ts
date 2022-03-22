@@ -1,8 +1,9 @@
 import { ethers } from 'hardhat';
 import { expect } from 'chai';
 import { register } from './test.utils';
+
 describe('Mixologist test', () => {
-    it.only('Should deposit to bar, add asset to mixologist, remove asset and withdraw', async () => {
+    it('Should deposit to bar, add asset to mixologist, remove asset and withdraw', async () => {
         const { weth, bar, wethUsdcMixologist, deployer, initContracts } = await register();
 
         await initContracts(); // To prevent `Mixologist: below minimum`
@@ -32,7 +33,16 @@ describe('Mixologist test', () => {
         await (await wethUsdcMixologist.removeAsset(deployer.address, mintValShare)).wait();
 
         // Withdraw from bar
-        await (await bar.withdraw(await wethUsdcMixologist.assetId(), deployer.address, deployer.address, 0, mintValShare)).wait();
+        await (
+            await bar['withdraw(uint256,address,address,uint256,uint256,bool)'](
+                await wethUsdcMixologist.assetId(),
+                deployer.address,
+                deployer.address,
+                0,
+                mintValShare,
+                false,
+            )
+        ).wait();
 
         // Check the value of the asset
         const balanceAfter = await weth.balanceOf(deployer.address);
@@ -80,7 +90,9 @@ describe('Mixologist test', () => {
         const wethBorrowVal = usdcMintVal.mul(74).div(100).div(__wethUsdcPrice.div((1e18).toString()));
 
         await wethUsdcMixologist.connect(eoa1).borrow(eoa1.address, wethBorrowVal);
-        await bar.connect(eoa1).withdraw(assetId, eoa1.address, eoa1.address, wethBorrowVal, 0);
+        await bar
+            .connect(eoa1)
+            ['withdraw(uint256,address,address,uint256,uint256,bool)'](assetId, eoa1.address, eoa1.address, wethBorrowVal, 0, false);
 
         // Can't liquidate
         await expect(wethUsdcMixologist.liquidate([eoa1.address], [wethBorrowVal], multiSwapper.address)).to.be.reverted;
@@ -179,7 +191,16 @@ describe('Mixologist test', () => {
         await (await wethUsdcMixologist.removeAsset(deployer.address, lendValShare)).wait();
 
         // Withdraw from bar
-        await (await bar.withdraw(assetId, deployer.address, deployer.address, 0, await bar.balanceOf(deployer.address, assetId))).wait();
+        await (
+            await bar['withdraw(uint256,address,address,uint256,uint256,bool)'](
+                assetId,
+                deployer.address,
+                deployer.address,
+                0,
+                await bar.balanceOf(deployer.address, assetId),
+                false,
+            )
+        ).wait();
 
         // Check that the lender has an increased amount
         const balanceAfter = await weth.balanceOf(deployer.address);

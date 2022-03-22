@@ -89,11 +89,13 @@ async function uniV2EnvironnementSetup(deployerAddress: string, weth: WETH9Mock,
     return { __wethUsdcMockPair, __uniFactory, __uniRouter };
 }
 
-async function registerMultiSwapper(__uniFactoryAddress: string, barAddress: string, __uniFactoryPairCodeHash: string) {
+async function registerMultiSwapper(bar: BeachBar, __uniFactoryAddress: string, __uniFactoryPairCodeHash: string) {
     const multiSwapper = await (
         await ethers.getContractFactory('MultiSwapper')
-    ).deploy(__uniFactoryAddress, barAddress, __uniFactoryPairCodeHash);
+    ).deploy(__uniFactoryAddress, bar.address, __uniFactoryPairCodeHash);
     await multiSwapper.deployed();
+
+    await bar.setSwapper(multiSwapper.address, true);
 
     return { multiSwapper };
 }
@@ -150,7 +152,7 @@ export async function register() {
     // 4 Deploy UNIV2 env
     const { __wethUsdcMockPair, __uniFactory, __uniRouter } = await uniV2EnvironnementSetup(deployer.address, weth, usdc);
     // 5 Deploy MultiSwapper
-    const { multiSwapper } = await registerMultiSwapper(__uniFactory.address, bar.address, await __uniFactory.pairCodeHash());
+    const { multiSwapper } = await registerMultiSwapper(bar, __uniFactory.address, await __uniFactory.pairCodeHash());
     // 6  Deploy MediumRisk master contract
     const { mediumRiskMC } = await deployMediumRiskMC(bar);
     // 7 Deploy WethUSDC medium risk MC clone
