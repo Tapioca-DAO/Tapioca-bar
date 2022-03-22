@@ -18,8 +18,7 @@ contract WETH9Mock {
         deposit();
     }*/
 
-    function mint(uint256 _val) public payable {
-        require(msg.value == _val, 'WETH9Mock: insufficient value');
+    function freeMint(uint256 _val) public {
         balanceOf[msg.sender] += _val;
     }
 
