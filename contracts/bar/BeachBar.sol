@@ -22,6 +22,11 @@ struct MasterContract {
 }
 
 contract BeachBar is BoringOwnable, YieldBox {
+    using BoringAddress for address;
+    using BoringERC20 for IERC20;
+    using BoringERC20 for IWrappedNative;
+    using YieldBoxRebase for uint256;
+
     IERC20 public immutable tapToken;
     uint256 public immutable tapAssetId;
 
@@ -65,8 +70,7 @@ contract BeachBar is BoringOwnable, YieldBox {
         uint256 amount,
         uint256 share
     ) public returns (uint256 amountOut, uint256 shareOut) {
-        Asset storage asset = assets[assetId];
-        return deposit(asset.tokenType, asset.contractAddress, asset.strategy, asset.tokenId, from, to, amount, share);
+        return depositAsset(assetId, from, to, amount, share);
     }
 
     /// @notice Uses `assetId` to call `YieldBox.depositETH()`
@@ -75,8 +79,7 @@ contract BeachBar is BoringOwnable, YieldBox {
         address to,
         uint256 amount
     ) public payable returns (uint256 amountOut, uint256 shareOut) {
-        Asset storage asset = assets[assetId];
-        return depositETH(asset.strategy, to, amount);
+        return depositETHAsset(assetId, to, amount);
     }
 
     /// @notice Loop through the master contracts and call `depositFeesToBeachBar()` to each one of their clones.
@@ -158,5 +161,58 @@ contract BeachBar is BoringOwnable, YieldBox {
         uint256 tokenId
     ) public override onlyOwner returns (uint256 assetId) {
         assetId = super.registerAsset(tokenType, contractAddress, strategy, tokenId);
+    }
+
+    /// @notice Withdraws an amount of `token` from a user account.
+    /// @dev Same as `YieldBox.withdraw()` except for `withdrawNative()` addition.
+    /// @param assetId The id of the asset.
+    /// @param from which user to pull the tokens.
+    /// @param to which user to push the tokens.
+    /// @param amount of tokens. Either one of `amount` or `share` needs to be supplied.
+    /// @param share Like above, but `share` takes precedence over `amount`.
+    /// @param withdrawNative Specifies if the wrapped native should be withdrawn as is or unwrapped native.
+    function withdraw(
+        uint256 assetId,
+        address from,
+        address to,
+        uint256 amount,
+        uint256 share,
+        bool withdrawNative
+    ) public allowed(from) returns (uint256 amountOut, uint256 shareOut) {
+        // Checks
+        Asset storage asset = assets[assetId];
+        require(asset.tokenType != TokenType.Native, "YieldBox: can't withdraw Native");
+
+        // Effects
+        uint256 totalAmount = _tokenBalanceOf(asset);
+        if (share == 0) {
+            // value of the share paid could be lower than the amount paid due to rounding, in that case, add a share (Always round up)
+            share = amount._toShares(totalSupply[assetId], totalAmount, true);
+        } else {
+            // amount may be lower than the value of share due to rounding, that's ok
+            amount = share._toAmount(totalSupply[assetId], totalAmount, false);
+        }
+
+        _burn(from, assetId, share);
+
+        // Interactions
+        if (asset.strategy == NO_STRATEGY) {
+            if (asset.tokenType == TokenType.ERC20) {
+                // Native tokens are always unwrapped when withdrawn
+                if (asset.contractAddress == address(wrappedNative) && withdrawNative) {
+                    wrappedNative.withdraw(amount);
+                    to.sendNative(amount);
+                } else {
+                    IERC20(asset.contractAddress).safeTransfer(to, amount);
+                }
+            } else {
+                // IERC1155
+                IERC1155(asset.contractAddress).safeTransferFrom(address(this), to, asset.tokenId, amount, '');
+            }
+        } else {
+            asset.strategy.withdraw(to, amount);
+        }
+
+        return (amount, share);
     }
 }
