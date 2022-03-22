@@ -2,6 +2,8 @@ import { BigNumberish } from 'ethers';
 import { ethers } from 'hardhat';
 import { BeachBar, ERC20Mock, OracleMock, WETH9Mock } from '../typechain';
 
+ethers.utils.Logger.setLogLevel(ethers.utils.Logger.levels.ERROR);
+
 function BN(n: number | string) {
     return ethers.BigNumber.from(n);
 }
