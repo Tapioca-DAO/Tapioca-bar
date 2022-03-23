@@ -34,6 +34,7 @@ contract Mixologist is ERC20, BoringOwnable {
     event LogRepay(address indexed from, address indexed to, uint256 amount, uint256 part);
     event LogWithdrawFees(address indexed feeTo, uint256 feesEarnedFraction);
     event LogFlashLoan(address indexed borrower, uint256 amount, uint256 feeAmount, address indexed receiver);
+    event LogBeachBarFeesDeposit(uint256 feeShares, uint256 tapAmount);
 
     // Constructor settings
     BeachBar public beachBar;
@@ -729,7 +730,8 @@ contract Mixologist is ERC20, BoringOwnable {
         address _feeTo = beachBar.feeTo();
 
         uint256 feeShares = _removeAsset(_feeTo, address(this), balanceOf[_feeTo]);
-        swapper.swap(assetId, beachBar.tapAssetId(), 0, _feeTo, tapSwapPath, feeShares);
+        (uint256 tapAmount, ) = swapper.swap(assetId, beachBar.tapAssetId(), 0, _feeTo, tapSwapPath, feeShares);
+        emit LogBeachBarFeesDeposit(feeShares, tapAmount);
     }
 
     /// @notice Used to set the swap path of closed liquidations
