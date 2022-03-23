@@ -62,17 +62,18 @@ async function setBeachBarAssets(bar: BeachBar, wethAddress: string, usdcAddress
     return { wethAssetId, usdcAssetId };
 }
 
-async function uniV2EnvironnementSetup(deployerAddress: string, weth: WETH9Mock, usdc: ERC20Mock) {
+async function uniV2EnvironnementSetup(deployerAddress: string, weth: WETH9Mock, usdc: ERC20Mock, tap: ERC20Mock) {
     // Deploy Uni factory, create pair and add liquidity
     const { __uniFactory, __uniRouter } = await registerUniswapV2();
     await __uniFactory.createPair(weth.address, usdc.address);
-    const __wethUsdcMockPair = await __uniFactory.getPair(weth.address, usdc.address);
 
+    // Free mint test WETH & USDC
     const wethPairAmount = ethers.BigNumber.from(1e6).mul((1e18).toString());
     const usdcPairAmount = wethPairAmount.mul(__wethUsdcPrice.div((1e18).toString()));
     await weth.freeMint(wethPairAmount);
     await usdc.freeMint(usdcPairAmount);
 
+    // Create WETH/USDC LP
     await weth.approve(__uniRouter.address, wethPairAmount);
     await usdc.approve(__uniRouter.address, usdcPairAmount);
     await __uniRouter.addLiquidity(
@@ -85,8 +86,28 @@ async function uniV2EnvironnementSetup(deployerAddress: string, weth: WETH9Mock,
         deployerAddress,
         Math.floor(Date.now() / 1000) + 1000 * 60, // 1min margin
     );
+    const __wethUsdcMockPair = await __uniFactory.getPair(weth.address, usdc.address);
 
-    return { __wethUsdcMockPair, __uniFactory, __uniRouter };
+    // Free mint test TAP & WETH with a 1:1 ratio
+    await weth.freeMint(wethPairAmount);
+    await tap.freeMint(wethPairAmount);
+
+    // Create WETH/TAP LP
+    await weth.approve(__uniRouter.address, wethPairAmount);
+    await tap.approve(__uniRouter.address, wethPairAmount);
+    await __uniRouter.addLiquidity(
+        weth.address,
+        tap.address,
+        wethPairAmount,
+        wethPairAmount,
+        wethPairAmount,
+        wethPairAmount,
+        deployerAddress,
+        Math.floor(Date.now() / 1000) + 1000 * 60, // 1min margin
+    );
+    const __wethTapMockPair = await __uniFactory.getPair(weth.address, tap.address);
+
+    return { __wethUsdcMockPair, __wethTapMockPair, __uniFactory, __uniRouter };
 }
 
 async function registerMultiSwapper(bar: BeachBar, __uniFactoryAddress: string, __uniFactoryPairCodeHash: string) {
@@ -150,7 +171,12 @@ export async function register() {
     // 3 Add asset types to BeachBar
     const { usdcAssetId, wethAssetId } = await setBeachBarAssets(bar, weth.address, usdc.address);
     // 4 Deploy UNIV2 env
-    const { __wethUsdcMockPair, __uniFactory, __uniRouter } = await uniV2EnvironnementSetup(deployer.address, weth, usdc);
+    const { __wethUsdcMockPair, __wethTapMockPair, __uniFactory, __uniRouter } = await uniV2EnvironnementSetup(
+        deployer.address,
+        weth,
+        usdc,
+        tap,
+    );
     // 5 Deploy MultiSwapper
     const { multiSwapper } = await registerMultiSwapper(bar, __uniFactory.address, await __uniFactory.pairCodeHash());
     // 6  Deploy MediumRisk master contract
@@ -198,7 +224,9 @@ export async function register() {
         eoa1,
         multiSwapper,
         __uniFactory,
+        __uniRouter,
         __wethUsdcMockPair,
+        __wethTapMockPair,
     };
 
     /**
