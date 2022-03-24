@@ -663,11 +663,10 @@ contract Mixologist is ERC20, BoringOwnable {
 
         uint256 allBorrowShare = beachBar.toShare(assetId, allBorrowAmount, true);
 
-        // Closed liquidation using a pre-approved swapper for the benefit of the LPs
+        // Closed liquidation using a pre-approved swapper
         require(beachBar.swappers(swapper), 'Mixologist: Invalid swapper');
 
         // Swaps the users collateral for the borrowed asset
-        beachBar.transfer(address(this), address(swapper), collateralId, allCollateralShare);
         swapper.swap(collateralId, assetId, 0, address(this), collateralSwapPath, allCollateralShare);
 
         uint256 returnedShare = beachBar.balanceOf(address(this), assetId) - uint256(totalAsset.elastic);

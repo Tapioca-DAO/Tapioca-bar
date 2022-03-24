@@ -49,6 +49,25 @@ contract BeachBar is BoringOwnable, YieldBox {
         tapAssetId = uint96(registerAsset(TokenType.ERC20, address(tapToken_), IStrategy(address(0)), 0));
     }
 
+    // ************************** //
+    // *** OVERRIDE MODIFIERS *** //
+    // ************************** //
+
+    // TODO test
+    /// @inheritdoc NativeTokenFactory
+    modifier allowed(address from) override {
+        if ((from != msg.sender && !isApprovedForAll[from][msg.sender])) {
+            address masterContractSender = masterContractOf[msg.sender];
+            bool isSenderApprovedMixologist = masterContractSender != address(0) && isApprovedForAll[from][masterContractSender];
+
+            address masterContractFrom = masterContractOf[from];
+            // Careful of what MultiSwapper can do
+            bool isSenderSwapperAndFromMixologist = swappers[MultiSwapper(msg.sender)] && masterContractFrom != address(0);
+            require(isSenderApprovedMixologist || isSenderSwapperAndFromMixologist, 'YieldBox: Not approved');
+        }
+        _;
+    }
+
     // ******************//
     // *** MODIFIERS *** //
     // ***************** //

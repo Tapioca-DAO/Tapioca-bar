@@ -33,7 +33,7 @@ contract NativeTokenFactory is AssetRegister, BoringFactory {
     /// If 'from' is msg.sender, it's allowed.
     /// If 'msg.sender' is an address (an operator) that is approved by 'from', it's allowed.
     /// If 'msg.sender' is a clone of a masterContract that is approved by 'from', it's allowed.
-    modifier allowed(address from) {
+    modifier allowed(address from) virtual {
         if (from != msg.sender && !isApprovedForAll[from][msg.sender]) {
             address masterContract = masterContractOf[msg.sender];
             require(masterContract != address(0) && isApprovedForAll[from][masterContract], 'YieldBox: Not approved');

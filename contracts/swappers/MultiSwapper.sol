@@ -46,7 +46,7 @@ contract MultiSwapper {
         address[] calldata path,
         uint256 shareIn
     ) external returns (uint256 amountOut, uint256 shareOut) {
-        (uint256 amountIn, ) = beachBar.withdraw(tokenInId, address(this), address(this), 0, shareIn);
+        (uint256 amountIn, ) = beachBar.withdraw(tokenInId, msg.sender, address(this), 0, shareIn, false);
         amountOut = _swapExactTokensForTokens(amountIn, amountMinOut, path, address(this));
         IERC20(path[path.length - 1]).approve(address(beachBar), amountOut);
         (, shareOut) = beachBar.deposit(tokenOutId, address(this), to, amountOut, 0);
