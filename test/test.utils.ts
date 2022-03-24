@@ -196,9 +196,11 @@ export async function register() {
         tapSwapPath,
     );
 
-    // 8 Set feeTo
+    // 8 Set feeTo & feeVeTap
     const mixologistFeeTo = ethers.Wallet.createRandom();
+    const mixologistFeeVeTap = ethers.Wallet.createRandom();
     await bar.setFeeTo(mixologistFeeTo.address);
+    await bar.setFeeVeTap(mixologistFeeVeTap.address);
 
     /**
      * OTHERS
@@ -223,6 +225,8 @@ export async function register() {
         mixologistHelper,
         eoa1,
         multiSwapper,
+        mixologistFeeTo,
+        mixologistFeeVeTap,
         __uniFactory,
         __uniRouter,
         __wethUsdcMockPair,
@@ -239,8 +243,8 @@ export async function register() {
         }
     };
 
-    const jumpTime = async (ms: number) => {
-        await ethers.provider.send('evm_increaseTime', [ms]);
+    const jumpTime = async (seconds: number) => {
+        await ethers.provider.send('evm_increaseTime', [seconds]);
         await ethers.provider.send('evm_mine', []);
     };
 
