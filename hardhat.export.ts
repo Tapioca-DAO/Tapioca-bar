@@ -33,6 +33,17 @@ const config: HardhatUserConfig = {
                 },
             },
         ],
+        overrides: {
+            'contracts/mixologist/Mixologist.sol': {
+                version: '0.8.9',
+                settings: {
+                    optimizer: {
+                        enabled: true,
+                        runs: 5,
+                    },
+                },
+            },
+        },
     },
     namedAccounts: {
         deployer: 0,
