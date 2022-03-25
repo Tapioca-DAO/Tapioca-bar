@@ -42,10 +42,10 @@ contract Mixologist is ERC20, BoringOwnable {
     IERC20 public asset;
     uint256 public collateralId;
     uint256 public assetId;
-    IOracle public oracle;
-    bytes public oracleData;
-    address[] public collateralSwapPath; // Collateral -> Asset
-    address[] public tapSwapPath; // Asset -> Tap
+    IOracle oracle;
+    bytes oracleData;
+    address[] collateralSwapPath; // Collateral -> Asset
+    address[] tapSwapPath; // Asset -> Tap
 
     // Total amounts
     uint256 public totalCollateralShare; // Total collateral supplied
@@ -90,6 +90,7 @@ contract Mixologist is ERC20, BoringOwnable {
     }
 
     // totalSupply for ERC20 compatibility
+    // BalanceOf[user] represent a fraction
     function totalSupply() public view override returns (uint256) {
         return totalAsset.base;
     }
@@ -727,9 +728,10 @@ contract Mixologist is ERC20, BoringOwnable {
         }
         require(beachBar.swappers(swapper), 'Mixologist: Invalid swapper');
         address _feeTo = beachBar.feeTo();
+        address _feeVeTap = beachBar.feeVeTap();
 
         uint256 feeShares = _removeAsset(_feeTo, address(this), balanceOf[_feeTo]);
-        (uint256 tapAmount, ) = swapper.swap(assetId, beachBar.tapAssetId(), 0, _feeTo, tapSwapPath, feeShares);
+        (uint256 tapAmount, ) = swapper.swap(assetId, beachBar.tapAssetId(), 0, _feeVeTap, tapSwapPath, feeShares);
         emit LogBeachBarFeesDeposit(feeShares, tapAmount);
     }
 
