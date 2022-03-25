@@ -4,7 +4,7 @@ import { BeachBar, ERC20Mock, OracleMock, WETH9Mock } from '../typechain';
 
 ethers.utils.Logger.setLogLevel(ethers.utils.Logger.levels.ERROR);
 
-function BN(n: number | string) {
+function BN(n: BigNumberish) {
     return ethers.BigNumber.from(n);
 }
 
@@ -219,6 +219,7 @@ export async function register() {
         deployer,
         usdc,
         weth,
+        tap,
         wethUsdcOracle,
         bar,
         wethUsdcMixologist,

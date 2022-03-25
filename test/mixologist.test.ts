@@ -206,4 +206,79 @@ describe('Mixologist test', () => {
         const balanceAfter = await weth.balanceOf(deployer.address);
         expect(balanceAfter.gt(balanceBefore)).to.be.true;
     });
+
+    it('Should accumulate fees and harvest them as $Tap to feeVeTap', async () => {
+        const {
+            usdc,
+            weth,
+            bar,
+            eoa1,
+            wethUsdcMixologist,
+            deployer,
+            approveTokensAndSetBarApproval,
+            usdcDepositAndAddCollateral,
+            jumpTime,
+            wethDepositAndAddAsset,
+            multiSwapper,
+            mixologistFeeVeTap,
+            mixologistHelper,
+            __wethUsdcPrice,
+        } = await register();
+
+        const assetId = await wethUsdcMixologist.assetId();
+        const collateralId = await wethUsdcMixologist.collateralId();
+        const wethMintVal = ethers.BigNumber.from((1e18).toString()).mul(10);
+        const usdcMintVal = wethMintVal.mul(__wethUsdcPrice.div((1e18).toString()));
+
+        // We get asset
+        weth.freeMint(wethMintVal);
+        usdc.connect(eoa1).freeMint(usdcMintVal);
+
+        // We approve external operators
+        await approveTokensAndSetBarApproval();
+        await approveTokensAndSetBarApproval(eoa1);
+
+        // We lend WETH as deployer
+        await wethDepositAndAddAsset(wethMintVal);
+        expect(await wethUsdcMixologist.balanceOf(deployer.address)).to.be.equal(await bar.toShare(assetId, wethMintVal, false));
+
+        // We deposit USDC collateral
+        await usdcDepositAndAddCollateral(usdcMintVal, eoa1);
+        expect(await wethUsdcMixologist.userCollateralShare(eoa1.address)).equal(await bar.toShare(collateralId, usdcMintVal, false));
+
+        // We borrow 74% collateral, max is 75%
+        const wethBorrowVal = usdcMintVal.mul(74).div(100).div(__wethUsdcPrice.div((1e18).toString()));
+        await wethUsdcMixologist.connect(eoa1).borrow(eoa1.address, wethBorrowVal);
+
+        // We jump time to accumulate fees
+        const day = 86400;
+        await jumpTime(180 * day);
+
+        // Repay
+        const userBorrowPart = await wethUsdcMixologist.userBorrowPart(eoa1.address);
+        await weth.connect(eoa1).freeMint(userBorrowPart);
+        await bar.connect(eoa1)['deposit(uint256,address,address,uint256,uint256)'](assetId, eoa1.address, eoa1.address, userBorrowPart, 0);
+        await wethUsdcMixologist.connect(eoa1).repay(eoa1.address, false, userBorrowPart);
+
+        const feesAmountInAsset = await mixologistHelper.getAmountForAssetFraction(
+            wethUsdcMixologist.address,
+            (
+                await wethUsdcMixologist.accrueInfo()
+            ).feesEarnedFraction,
+        );
+
+        // Confirm fees accumulation
+        expect(userBorrowPart.gt(wethBorrowVal));
+        // Withdraw fees from BeachBar
+        await expect(bar.withdrawAllProtocolFees([multiSwapper.address])).to.emit(wethUsdcMixologist, 'LogBeachBarFeesDeposit');
+
+        const tapAmountHarvested = await bar.toAmount(
+            await bar.tapAssetId(),
+            await bar.balanceOf(mixologistFeeVeTap.address, await bar.tapAssetId()),
+            false,
+        );
+        // 0.31%
+        const acceptableHarvestMargin = feesAmountInAsset.sub(feesAmountInAsset.mul(31).div(10000));
+        expect(tapAmountHarvested.gte(acceptableHarvestMargin)).to.be.true;
+    });
 });
