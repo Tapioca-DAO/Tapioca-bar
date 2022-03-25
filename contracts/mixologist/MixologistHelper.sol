@@ -29,4 +29,11 @@ contract MixologistHelper {
                 false
             );
     }
+
+    /// @dev Compute the amount of `mixologist.assetId` from `fraction`
+    /// `fraction` can be `mixologist.accrueInfo.feeFraction` or `mixologist.balanceOf`
+    function getAmountForAssetFraction(Mixologist mixologist, uint256 fraction) public view returns (uint256) {
+        (uint128 elastic, uint128 base) = mixologist.totalAsset();
+        return mixologist.beachBar().toAmount(mixologist.assetId(), (fraction * elastic) / base, false);
+    }
 }
