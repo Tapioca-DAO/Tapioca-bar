@@ -63,6 +63,7 @@ contract MultiSwapper {
         uint256[] memory amounts = UniswapV2Library.getAmountsOut(factory, amountIn, path, pairCodeHash);
         amountOut = amounts[amounts.length - 1];
         require(amountOut >= amountOutMin, 'insufficient-amount-out');
+        // Required for the next step
         IERC20(path[0]).safeTransfer(UniswapV2Library.pairFor(factory, path[0], path[1], pairCodeHash), amountIn);
         _swap(amounts, path, to);
     }
