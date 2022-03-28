@@ -4,6 +4,10 @@ import { BeachBar, ERC20Mock, OracleMock, WETH9Mock } from '../typechain';
 
 ethers.utils.Logger.setLogLevel(ethers.utils.Logger.levels.ERROR);
 
+async function resetVM() {
+    await ethers.provider.send('hardhat_reset', []);
+}
+
 function BN(n: BigNumberish) {
     return ethers.BigNumber.from(n);
 }
@@ -154,6 +158,7 @@ async function registerMixologist(
 }
 
 export async function register() {
+    await resetVM();
     /**
      * INITIAL SETUP
      */
