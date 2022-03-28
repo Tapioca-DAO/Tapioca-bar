@@ -281,4 +281,37 @@ describe('Mixologist test', () => {
         const acceptableHarvestMargin = feesAmountInAsset.sub(feesAmountInAsset.mul(31).div(10000));
         expect(tapAmountHarvested.gte(acceptableHarvestMargin)).to.be.true;
     });
+
+    it('Should not allow whitelisted MultiSwapper to access funds other than of Mixologist', async () => {
+        const { usdc, bar, eoa1, wethUsdcMixologist, approveTokensAndSetBarApproval, BN } = await register();
+
+        const vulnMultiSwapper = await (await ethers.getContractFactory('VulnMultiSwapper')).deploy();
+        await vulnMultiSwapper.deployed();
+
+        const assetId = await wethUsdcMixologist.collateralId();
+        const usdcMintVal = BN(1000).mul(BN(10).pow(18));
+
+        // We get asset
+        await usdc.connect(eoa1).freeMint(usdcMintVal);
+
+        // We approve external operators
+        await approveTokensAndSetBarApproval(eoa1);
+
+        await bar.connect(eoa1).depositAsset(assetId, eoa1.address, eoa1.address, usdcMintVal, 0);
+
+        // Check that MultiSwapper can not deal with user assets
+        await expect(vulnMultiSwapper.counterfeitSwap(bar.address, assetId, eoa1.address)).to.be.revertedWith('YieldBox: Not approved');
+
+        await bar.connect(eoa1)['withdraw(uint256,address,address,uint256,uint256)'](assetId, eoa1.address, eoa1.address, usdcMintVal, 0);
+        await usdc.connect(eoa1).transfer(wethUsdcMixologist.address, usdcMintVal);
+
+        // Check that MultiSwapper can not deal with Mixologist funds if not whitelisted
+        await expect(vulnMultiSwapper.counterfeitSwap(bar.address, assetId, wethUsdcMixologist.address)).to.be.revertedWith(
+            'YieldBox: Not approved',
+        );
+
+        await bar.setSwapper(vulnMultiSwapper.address, true);
+        // Check that MultiSwapper can deal with Mixologist assets if whitelisted
+        await expect(vulnMultiSwapper.counterfeitSwap(bar.address, assetId, wethUsdcMixologist.address)).to.not.be.reverted;
+    });
 });

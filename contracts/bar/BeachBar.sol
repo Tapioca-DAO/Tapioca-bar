@@ -53,7 +53,9 @@ contract BeachBar is BoringOwnable, YieldBox {
     // *** OVERRIDE MODIFIERS *** //
     // ************************** //
 
-    // TODO test
+    /// Allows a whitelisted MultiSwapper from an existing MasterContract to have access to
+    /// a Mixologist funds
+    /// Or an approved sender to access From funds
     /// @inheritdoc NativeTokenFactory
     modifier allowed(address from) override {
         if ((from != msg.sender && !isApprovedForAll[from][msg.sender])) {
