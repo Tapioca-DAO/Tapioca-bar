@@ -66,13 +66,19 @@ const config: HardhatUserConfig = {
             gasMultiplier: 2,
             url: 'https://rinkeby.boba.network/',
             chainId: 28,
-            accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+            accounts:
+                process.env.PRIVATE_KEY !== undefined
+                    ? [process.env.PRIVATE_KEY]
+                    : [],
         },
         rinkeby: {
             gasMultiplier: 2,
             url: process.env.RINKEBY ?? '',
             chainId: 4,
-            accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+            accounts:
+                process.env.PRIVATE_KEY !== undefined
+                    ? [process.env.PRIVATE_KEY]
+                    : [],
             tags: ['testnet'],
         },
         mainnet: {
@@ -80,7 +86,10 @@ const config: HardhatUserConfig = {
             live: true,
             url: 'https://mainnet.boba.network/',
             chainId: 288,
-            accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+            accounts:
+                process.env.PRIVATE_KEY !== undefined
+                    ? [process.env.PRIVATE_KEY]
+                    : [],
         },
     },
     etherscan: {
