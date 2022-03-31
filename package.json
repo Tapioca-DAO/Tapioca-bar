@@ -2,7 +2,8 @@
   "name": "tapioca-bar",
   "scripts": {
     "deploy": "npx hardhat deploy",
-    "deploy:mainnet": "npx hardhat deploy --network mainnet"
+    "deploy:mainnet": "npx hardhat deploy --network mainnet",
+    "sdk-gen":"npx hardhat run scripts/exportSDK.ts"
   },
   "devDependencies": {
     "@boringcrypto/boring-solidity": "boringcrypto/BoringSolidity#21beaec5c9383c6e9312e4464ad5755fda69e09b",
