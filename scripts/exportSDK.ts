@@ -10,15 +10,21 @@ async function main() {
 
     // We are looking at
     // BeachBar, Mixologist, MixologistHelper;
-    const allFiles = glob(cwd, [`${hre.config.paths.artifacts}/contracts/**/!(*.dbg).json`])
+    const allFiles = glob(cwd, [
+        `${hre.config.paths.artifacts}/contracts/**/!(*.dbg).json`,
+    ])
         .filter((e) => !e.includes('interfaces'))
-        .filter((e) => ['beachbar', 'mixologist'].some((v) => e.split('/').slice(-1)[0].toLowerCase().includes(v)));
+        .filter((e) =>
+            ['beachbar', 'mixologist'].some((v) =>
+                e.split('/').slice(-1)[0].toLowerCase().includes(v),
+            ),
+        );
 
     await runTypeChain({
         cwd,
         filesToProcess: allFiles,
         allFiles,
-        outDir: 'tapioca-sdk/typechain',
+        outDir: 'tapioca-sdk/src/typechain',
         target: 'ethers-v5',
     });
 }
