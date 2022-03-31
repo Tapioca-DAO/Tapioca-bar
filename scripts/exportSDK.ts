@@ -18,7 +18,7 @@ async function main() {
         cwd,
         filesToProcess: allFiles,
         allFiles,
-        outDir: 'sdk',
+        outDir: 'tapioca-sdk/typechain',
         target: 'ethers-v5',
     });
 }
