@@ -3,7 +3,7 @@
   "scripts": {
     "deploy": "npx hardhat deploy",
     "deploy:mainnet": "npx hardhat deploy --network mainnet",
-    "sdk-gen":"npx hardhat run scripts/exportSDK.ts"
+    "sdk-gen": "npx hardhat run scripts/exportSDK.ts"
   },
   "devDependencies": {
     "@boringcrypto/boring-solidity": "boringcrypto/BoringSolidity#21beaec5c9383c6e9312e4464ad5755fda69e09b",
@@ -37,8 +37,9 @@
     "solc": "^0.8.4",
     "solhint": "^3.3.6",
     "solidity-coverage": "^0.7.17",
-    "ts-node": "^10.2.1",
+    "ts-node": "^10.7.0",
     "typechain": "^5.1.2",
-    "typescript": "^4.4.3"
+    "typescript": "^4.4.3",
+    "write-json-file": "4.3.0"
   }
 }
