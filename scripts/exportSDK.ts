@@ -1,5 +1,30 @@
-import { runTypeChain, glob } from 'typechain';
 import hre from 'hardhat';
+import { glob, runTypeChain } from 'typechain';
+import { test_staging } from '../test/test.utils';
+import writeJsonFile = require('write-json-file');
+
+const getStagingAddresses = async () => {
+    const all = await test_staging();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const filtered_objects: any = {};
+
+    Object.keys(all)
+        .map((e) => {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const obj = all[e as keyof typeof all] as any;
+            if (obj?.address) {
+                return { name: e, address: obj.address };
+            }
+        })
+        .forEach((e) => {
+            if (e) {
+                filtered_objects[e.name] = e.address;
+            }
+        });
+
+    console.log(filtered_objects);
+    return filtered_objects;
+};
 
 /**
  * Script used to generate typings for the tapioca-sdk
@@ -7,6 +32,7 @@ import hre from 'hardhat';
  */
 async function main() {
     const cwd = process.cwd();
+    const deployments = await getStagingAddresses();
 
     // We are looking at
     // BeachBar, Mixologist, MixologistHelper;
@@ -20,6 +46,7 @@ async function main() {
             ),
         );
 
+    await writeJsonFile('tapioca-sdk/src/addresses.json', deployments);
     await runTypeChain({
         cwd,
         filesToProcess: allFiles,

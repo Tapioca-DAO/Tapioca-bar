@@ -454,3 +454,85 @@ export async function register() {
 
     return { ...initialSetup, ...utilFuncs };
 }
+
+export async function test_staging() {
+    /**
+     * INITIAL SETUP
+     */
+    const deployer = (await ethers.getSigners())[0];
+
+    // Deploy WethUSDC mock oracle
+    const wethUsdcOracle = await (
+        await ethers.getContractFactory('OracleMock')
+    ).deploy();
+    await wethUsdcOracle.deployed();
+    await (await wethUsdcOracle.set(__wethUsdcPrice)).wait();
+
+    // 1 Deploy tokens
+    const { tap, usdc, weth } = await registerERC20Tokens();
+    // 2 Deploy BeachBar
+    const { bar, uriBuilder } = await registerBeachBar(
+        weth.address,
+        tap.address,
+    );
+    // 3 Add asset types to BeachBar
+    const { usdcAssetId, wethAssetId } = await setBeachBarAssets(
+        bar,
+        weth.address,
+        usdc.address,
+    );
+    // 4 Deploy UNIV2 env
+    const { __wethUsdcMockPair, __wethTapMockPair, __uniFactory, __uniRouter } =
+        await uniV2EnvironnementSetup(deployer.address, weth, usdc, tap);
+    // 5 Deploy MultiSwapper
+    const { multiSwapper } = await registerMultiSwapper(
+        bar,
+        __uniFactory.address,
+        await __uniFactory.pairCodeHash(),
+    );
+    // 6  Deploy MediumRisk master contract
+    const { mediumRiskMC } = await deployMediumRiskMC(bar);
+    // 7 Deploy WethUSDC medium risk MC clone
+    const collateralSwapPath = [usdc.address, weth.address];
+    const tapSwapPath = [weth.address, tap.address];
+    const { wethUsdcMixologist } = await registerMixologist(
+        mediumRiskMC.address,
+        bar,
+        weth,
+        wethAssetId,
+        usdc,
+        usdcAssetId,
+        wethUsdcOracle,
+        collateralSwapPath,
+        tapSwapPath,
+    );
+
+    // 8 Set feeTo & feeVeTap
+    const mixologistFeeTo = ethers.Wallet.createRandom();
+    const mixologistFeeVeTap = ethers.Wallet.createRandom();
+    await bar.setFeeTo(mixologistFeeTo.address);
+    await bar.setFeeVeTap(mixologistFeeVeTap.address);
+
+    // Helper
+    const mixologistHelper = await (
+        await ethers.getContractFactory('MixologistHelper')
+    ).deploy();
+    await mixologistHelper.deployed();
+
+    return {
+        usdc,
+        weth,
+        tap,
+        wethUsdcOracle,
+        bar,
+        wethUsdcMixologist,
+        mixologistHelper,
+        multiSwapper,
+        mixologistFeeTo,
+        mixologistFeeVeTap,
+        __uniFactory,
+        __uniRouter,
+        __wethUsdcMockPair,
+        __wethTapMockPair,
+    };
+}
