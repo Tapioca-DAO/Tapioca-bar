@@ -3,6 +3,7 @@
   "scripts": {
     "deploy": "npx hardhat deploy",
     "deploy:mainnet": "npx hardhat deploy --network mainnet",
+    "deploy:testnet": "npx hardhat run scripts/exportSDK.ts --network rinkeby",
     "sdk-gen": "npx hardhat run scripts/exportSDK.ts"
   },
   "devDependencies": {
