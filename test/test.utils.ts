@@ -105,51 +105,55 @@ async function uniV2EnvironnementSetup(
 ) {
     // Deploy Uni factory, create pair and add liquidity
     const { __uniFactory, __uniRouter } = await registerUniswapV2();
-    await __uniFactory.createPair(weth.address, usdc.address);
+    await (await __uniFactory.createPair(weth.address, usdc.address)).wait();
 
     // Free mint test WETH & USDC
     const wethPairAmount = ethers.BigNumber.from(1e6).mul((1e18).toString());
     const usdcPairAmount = wethPairAmount.mul(
         __wethUsdcPrice.div((1e18).toString()),
     );
-    await weth.freeMint(wethPairAmount);
-    await usdc.freeMint(usdcPairAmount);
+    await (await weth.freeMint(wethPairAmount)).wait();
+    await (await usdc.freeMint(usdcPairAmount)).wait();
 
     // Create WETH/USDC LP
-    await weth.approve(__uniRouter.address, wethPairAmount);
-    await usdc.approve(__uniRouter.address, usdcPairAmount);
-    await __uniRouter.addLiquidity(
-        weth.address,
-        usdc.address,
-        wethPairAmount,
-        usdcPairAmount,
-        wethPairAmount,
-        usdcPairAmount,
-        deployerAddress,
-        Math.floor(Date.now() / 1000) + 1000 * 60, // 1min margin
-    );
+    await (await weth.approve(__uniRouter.address, wethPairAmount)).wait();
+    await (await usdc.approve(__uniRouter.address, usdcPairAmount)).wait();
+    await (
+        await __uniRouter.addLiquidity(
+            weth.address,
+            usdc.address,
+            wethPairAmount,
+            usdcPairAmount,
+            wethPairAmount,
+            usdcPairAmount,
+            deployerAddress,
+            Math.floor(Date.now() / 1000) + 1000 * 60, // 1min margin
+        )
+    ).wait();
     const __wethUsdcMockPair = await __uniFactory.getPair(
         weth.address,
         usdc.address,
     );
 
     // Free mint test TAP & WETH with a 1:1 ratio
-    await weth.freeMint(wethPairAmount);
-    await tap.freeMint(wethPairAmount);
+    await (await weth.freeMint(wethPairAmount)).wait();
+    await (await tap.freeMint(wethPairAmount)).wait();
 
     // Create WETH/TAP LP
-    await weth.approve(__uniRouter.address, wethPairAmount);
-    await tap.approve(__uniRouter.address, wethPairAmount);
-    await __uniRouter.addLiquidity(
-        weth.address,
-        tap.address,
-        wethPairAmount,
-        wethPairAmount,
-        wethPairAmount,
-        wethPairAmount,
-        deployerAddress,
-        Math.floor(Date.now() / 1000) + 1000 * 60, // 1min margin
-    );
+    await (await weth.approve(__uniRouter.address, wethPairAmount)).wait();
+    await (await tap.approve(__uniRouter.address, wethPairAmount)).wait();
+    await (
+        await __uniRouter.addLiquidity(
+            weth.address,
+            tap.address,
+            wethPairAmount,
+            wethPairAmount,
+            wethPairAmount,
+            wethPairAmount,
+            deployerAddress,
+            Math.floor(Date.now() / 1000) + 1000 * 60, // 1min margin
+        )
+    ).wait();
     const __wethTapMockPair = await __uniFactory.getPair(
         weth.address,
         tap.address,
@@ -168,7 +172,7 @@ async function registerMultiSwapper(
     ).deploy(__uniFactoryAddress, bar.address, __uniFactoryPairCodeHash);
     await multiSwapper.deployed();
 
-    await bar.setSwapper(multiSwapper.address, true);
+    await (await bar.setSwapper(multiSwapper.address, true)).wait();
 
     return { multiSwapper };
 }
@@ -179,7 +183,7 @@ async function deployMediumRiskMC(bar: BeachBar) {
     ).deploy();
     await mediumRiskMC.deployed();
 
-    await bar.registerMasterContract(mediumRiskMC.address, 1);
+    await (await bar.registerMasterContract(mediumRiskMC.address, 1)).wait();
 
     return { mediumRiskMC };
 }
@@ -217,7 +221,7 @@ async function registerMixologist(
             tapSwapPath,
         ],
     );
-    await bar.registerMixologist(mediumRiskMC, data, true);
+    await (await bar.registerMixologist(mediumRiskMC, data, true)).wait();
     const wethUsdcMixologist = await ethers.getContractAt(
         'Mixologist',
         await bar.clonesOf(
@@ -469,30 +473,37 @@ export async function test_staging() {
     await (await wethUsdcOracle.set(__wethUsdcPrice)).wait();
 
     // 1 Deploy tokens
+    console.info('Deploying token');
     const { tap, usdc, weth } = await registerERC20Tokens();
     // 2 Deploy BeachBar
+    console.info('Deploying Beachbar');
     const { bar, uriBuilder } = await registerBeachBar(
         weth.address,
         tap.address,
     );
     // 3 Add asset types to BeachBar
+    console.info('Setting assets to Beachbar');
     const { usdcAssetId, wethAssetId } = await setBeachBarAssets(
         bar,
         weth.address,
         usdc.address,
     );
     // 4 Deploy UNIV2 env
+    console.info('Deploying UniV2');
     const { __wethUsdcMockPair, __wethTapMockPair, __uniFactory, __uniRouter } =
         await uniV2EnvironnementSetup(deployer.address, weth, usdc, tap);
     // 5 Deploy MultiSwapper
+    console.info('Deploying Multiswapper');
     const { multiSwapper } = await registerMultiSwapper(
         bar,
         __uniFactory.address,
         await __uniFactory.pairCodeHash(),
     );
     // 6  Deploy MediumRisk master contract
+    console.info('Deploying MediumRiskMC');
     const { mediumRiskMC } = await deployMediumRiskMC(bar);
     // 7 Deploy WethUSDC medium risk MC clone
+    console.info('Registering WethUSDC');
     const collateralSwapPath = [usdc.address, weth.address];
     const tapSwapPath = [weth.address, tap.address];
     const { wethUsdcMixologist } = await registerMixologist(
@@ -508,12 +519,14 @@ export async function test_staging() {
     );
 
     // 8 Set feeTo & feeVeTap
+    console.info('Setting feeTO & feeVeTAP');
     const mixologistFeeTo = ethers.Wallet.createRandom();
     const mixologistFeeVeTap = ethers.Wallet.createRandom();
-    await bar.setFeeTo(mixologistFeeTo.address);
-    await bar.setFeeVeTap(mixologistFeeVeTap.address);
+    await (await bar.setFeeTo(mixologistFeeTo.address)).wait();
+    await (await bar.setFeeVeTap(mixologistFeeVeTap.address)).wait();
 
     // Helper
+    console.info('Deploying MixologistHelper');
     const mixologistHelper = await (
         await ethers.getContractFactory('MixologistHelper')
     ).deploy();
