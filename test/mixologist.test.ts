@@ -266,13 +266,34 @@ describe('Mixologist test', () => {
         expect(await wethUsdcMixologist.userBorrowPart(eoa1.address)).to.be.eq(
             BN(0),
         );
-
         // Withdraw collateral
+        await (
+            await wethUsdcMixologist
+                .connect(eoa1)
+                .removeCollateral(
+                    eoa1.address,
+                    await wethUsdcMixologist.userCollateralShare(eoa1.address),
+                )
+        ).wait();
+
+        await (
+            await bar
+                .connect(eoa1)
+                ['withdraw(uint256,address,address,uint256,uint256,bool)'](
+                    collateralId,
+                    eoa1.address,
+                    eoa1.address,
+                    0,
+                    await bar.balanceOf(eoa1.address, collateralId),
+                    false,
+                )
+        ).wait();
+
+        // Withdraw assets
         await (
             await wethUsdcMixologist.removeAsset(deployer.address, lendValShare)
         ).wait();
 
-        // Withdraw from bar
         await (
             await bar['withdraw(uint256,address,address,uint256,uint256,bool)'](
                 assetId,
