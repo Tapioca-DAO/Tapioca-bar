@@ -40,14 +40,12 @@ async function main() {
     // We are looking at
     // BeachBar, Mixologist, MixologistHelper;
     const allFiles = glob(cwd, [
-        `${hre.config.paths.artifacts}/contracts/**/!(*.dbg).json`,
-    ])
-        .filter((e) => !e.includes('interfaces'))
-        .filter((e) =>
-            ['beachbar', 'mixologist'].some((v) =>
-                e.split('/').slice(-1)[0].toLowerCase().includes(v),
-            ),
-        );
+        `${hre.config.paths.artifacts}/**/!(*.dbg).json`,
+    ]).filter((e) =>
+        ['BeachBar', 'Mixologist', 'MixologistHelper', 'ERC20'].some(
+            (v) => e.split('/').slice(-1)[0] === v.concat('.json'),
+        ),
+    );
 
     await writeJsonFile('tapioca-sdk/src/addresses.json', deployments);
     await runTypeChain({
@@ -56,6 +54,10 @@ async function main() {
         allFiles,
         outDir: 'tapioca-sdk/src/typechain',
         target: 'ethers-v5',
+        flags: {
+            alwaysGenerateOverloads: true,
+            environment: 'hardhat',
+        },
     });
 }
 
