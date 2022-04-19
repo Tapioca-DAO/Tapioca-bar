@@ -215,7 +215,7 @@ contract Mixologist is ERC20, BoringOwnable {
         accrueInfo = _accrueInfo;
     }
 
-    /// @notice Concrete implementation of `isSolvent`. Includes a third parameter to allow caching `exchangeRate`.
+    /// @notice Concrete implementation of `isSolvent`. Includes a parameter to allow caching `exchangeRate`.
     /// @param _exchangeRate The exchange rate. Used to cache the `exchangeRate` between calls.
     function _isSolvent(address user, uint256 _exchangeRate) internal view returns (bool) {
         // accrue must have already been called!
