@@ -42,9 +42,13 @@ async function main() {
     const allFiles = glob(cwd, [
         `${hre.config.paths.artifacts}/**/!(*.dbg).json`,
     ]).filter((e) =>
-        ['BeachBar', 'Mixologist', 'MixologistHelper', 'ERC20'].some(
-            (v) => e.split('/').slice(-1)[0] === v.concat('.json'),
-        ),
+        [
+            'BeachBar',
+            'Mixologist',
+            'MixologistHelper',
+            'ERC20',
+            'ERC20Mock',
+        ].some((v) => e.split('/').slice(-1)[0] === v.concat('.json')),
     );
 
     await writeJsonFile('tapioca-sdk/src/addresses.json', deployments);
