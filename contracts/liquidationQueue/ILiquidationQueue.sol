@@ -13,14 +13,8 @@ struct OrderBookPoolEntry {
 
 struct OrderBookPoolInfo {
     uint32 poolId;
-    // Used to determine the last element in the array.
-    // Used to determine the size of the array, array slicing and epoch related computations.
-    uint32 lastArrayElement;
     uint32 nextBidPull; // Next position in `entries` to start pulling bids from
     uint32 nextBidPush; // Next position in `entries` to start pushing bids to
-    uint32 utilization; // Utilization of the pool over an epoch.
-    uint32 epochs; // Number of epochs.
-    uint256 lastEpochTimestamp; // Timestamp of the last epoch.
 }
 
 struct LiquidationQueueMeta {

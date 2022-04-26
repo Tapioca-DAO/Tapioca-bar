@@ -18,15 +18,14 @@ contract LiquidationQueue {
     mapping(uint256 => mapping(address => Bidder)) public bidPools;
 
     // The actual order book. Entries are stored only once a bid has been activated
-    mapping(uint256 => OrderBookPoolEntry[1_000_000_000]) orderBookEntries;
+    // poolId => bidIndex => bidEntry)
+    mapping(uint256 => mapping(uint256 => OrderBookPoolEntry)) orderBookEntries;
     // Meta-data about the order book pool
     // Check `_isEpochRecycling` to see if the epoch is currently being recycled.
     mapping(uint256 => OrderBookPoolInfo) orderBookInfos;
 
     bool onlyOnce; // Contract init variable
     uint256 constant MAX_BID_POOLS = 30; // Maximum amount of pools
-
-    uint256 constant EPOCH_MIN_LENGTH = 1 weeks; // Minimum length of an epoch
 
     /// @notice Acts as a 'constructor', should be called by a Mixologist market.
     /// @param  _liquidationQueueMeta Info about the liquidations.
@@ -79,49 +78,33 @@ contract LiquidationQueue {
         return mixologist.name();
     }
 
-    function getOrderBookSize(uint256 pool) public view returns (uint256 x) {
+    function getOrderBookSize(uint256 pool) public view returns (uint256) {
         OrderBookPoolInfo memory poolInfo = orderBookInfos[pool];
-
-        if (_isEpochRecycling(poolInfo)) {
-            x =
-                poolInfo.lastArrayElement -
-                poolInfo.nextBidPull +
-                poolInfo.nextBidPush;
-        } else {
-            x = poolInfo.nextBidPush - poolInfo.nextBidPull;
-        }
+        return poolInfo.nextBidPush - 1 - poolInfo.nextBidPull;
     }
 
+    // /!\ GAS COST /!\
     function getOrderBookPoolEntries(uint256 pool)
-        public
+        external
         view
         returns (OrderBookPoolEntry[] memory x)
     {
-        uint256 orderBookSize = getOrderBookSize(pool);
+        OrderBookPoolInfo memory poolInfo = orderBookInfos[pool];
+        uint256 orderBookSize = poolInfo.nextBidPush - 1 - poolInfo.nextBidPull;
+
         x = new OrderBookPoolEntry[](orderBookSize); // Initialize the return array
 
-        OrderBookPoolEntry[1_000_000_000] storage entries = orderBookEntries[
-            pool
-        ]; // Pointer to the entries
-
-        OrderBookPoolInfo memory poolInfo = orderBookInfos[pool]; // Info about the pool array indexes
-
-        // We iterate from the next bid to pull to the next bid to push.
+        mapping(uint256 => OrderBookPoolEntry)
+            storage entries = orderBookEntries[pool];
         for (
             (uint256 i, uint256 j) = (poolInfo.nextBidPull, 0);
-            j != orderBookSize - 1;
+            i < poolInfo.nextBidPush;
 
         ) {
             x[j] = entries[i]; // Copy the entry to the return array
 
-            // If we reached the upper band and there are still bids to pull.
-            if (i == poolInfo.lastArrayElement) {
-                // Go back to start of array.
-                i = 0;
-            } else {
-                ++i;
-            }
-            ++j; // Follow the inserted elements
+            ++i;
+            ++j;
         }
     }
 
@@ -139,7 +122,7 @@ contract LiquidationQueue {
         uint256 pool,
         uint256 amount
     ) external {
-        require(pool < MAX_BID_POOLS, 'LQ: premium too high');
+        require(pool <= MAX_BID_POOLS, 'LQ: premium too high');
 
         Bidder memory bidder;
         bidder.amount = amount;
@@ -173,7 +156,7 @@ contract LiquidationQueue {
         delete bidPools[pool][msg.sender];
 
         // Update the `orderBookInfos`
-        _updatePoolInfo(poolInfo, true);
+        ++poolInfo.nextBidPush;
         orderBookInfos[pool] = poolInfo;
 
         emit Bid(
@@ -207,77 +190,6 @@ contract LiquidationQueue {
     function _initOrderBookPoolInfo(uint256 pool) internal {
         OrderBookPoolInfo memory poolInfo;
         poolInfo.poolId = uint32(pool);
-        poolInfo.lastEpochTimestamp = block.timestamp;
-        poolInfo.utilization = 10_000;
         orderBookInfos[pool] = poolInfo;
-    }
-
-    function _updatePoolInfo(OrderBookPoolInfo memory poolInfo, bool push)
-        internal
-    {
-        if (push) {
-            _setNextBidPush(poolInfo);
-        } else {}
-    }
-
-    function _setNextBidPush(OrderBookPoolInfo memory poolInfo) internal {
-        if (!_epochHandler(poolInfo)) {
-            ++poolInfo.nextBidPush;
-
-            // Update `lastArrayElement` only if the epoch is not recycling.
-            if (!_isEpochRecycling(poolInfo)) {
-                poolInfo.lastArrayElement = poolInfo.nextBidPush - 1;
-            }
-        }
-    }
-
-    /// @notice If the pool is ready for a new epoch, increment its epoch.
-    /// @dev WARNING: Modifies the state of the passed memory `poolInfo`.
-    /// @param poolInfo The pool info
-    function _epochHandler(OrderBookPoolInfo memory poolInfo)
-        internal
-        returns (bool isNextEpoch)
-    {
-        if (_isNextEpochReady(poolInfo)) {
-            poolInfo.nextBidPush = 0;
-            poolInfo.lastEpochTimestamp = block.timestamp;
-            poolInfo.utilization = poolInfo.nextBidPush - poolInfo.nextBidPull;
-            ++poolInfo.epochs;
-            orderBookInfos[poolInfo.poolId] = poolInfo;
-            return true;
-        }
-    }
-
-    /// 0 ... 1_000_000_000
-    /// Epoch recycling happens when the next pushes indexes comes before the next pulls indexes.
-    /// false array => 0 ... nextBidPull ... nextBidPush ... lastArrayElement ... 1_000_000_000
-    /// true array => 0 ... nextBidPush ... nextBidPull ... lastArrayElement ... 1_000_000_000
-    function _isEpochRecycling(OrderBookPoolInfo memory poolInfo)
-        internal
-        pure
-        returns (bool arrType)
-    {
-        if (poolInfo.nextBidPull > poolInfo.nextBidPush) {
-            arrType = true;
-        }
-    }
-
-    /// @notice Check if an epoch is over.
-    /// @dev An epoch is just the adjustment of the OrderBookPoolInfo
-    /// @param poolInfo The pool info to check.
-    /// @return True if the epoch is over.
-    function _isNextEpochReady(OrderBookPoolInfo memory poolInfo)
-        internal
-        view
-        returns (bool)
-    {
-        // Check if the EPOCH_MIN_LENGTH has passed since the last epoch.
-        // Check that the `nextBidPool` is greater than the `utilization`.
-        // Validate invariant of the indexes for a new epoch.
-        return
-            (block.timestamp - poolInfo.lastEpochTimestamp >
-                EPOCH_MIN_LENGTH) &&
-            (poolInfo.nextBidPull > poolInfo.utilization) &&
-            (!_isEpochRecycling(poolInfo));
     }
 }
