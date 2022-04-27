@@ -18,7 +18,8 @@ struct OrderBookPoolInfo {
 }
 
 struct LiquidationQueueMeta {
-    uint16 activationTime; // Time needed before a bid can be activated for execution
+    uint256 activationTime; // Time needed before a bid can be activated for execution
+    uint256 minBidAmount; // Minimum bid amount
 }
 
 interface ILiquidationQueue {

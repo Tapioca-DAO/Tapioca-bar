@@ -2,6 +2,7 @@
 pragma solidity 0.8.9;
 
 import '@boringcrypto/boring-solidity/contracts/ERC20.sol';
+import '@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol';
 import '../mixologist/Mixologist.sol';
 import '../bar/BeachBar.sol';
 import './ILiquidationQueue.sol';
@@ -10,22 +11,29 @@ import './ILiquidationQueue.sol';
 /// @author @0xRektora, TapiocaDAO
 // TODO: Capital efficiency? (register assets to strategies)
 contract LiquidationQueue {
-    LiquidationQueueMeta liquidationQueueMeta; // Meta-data for this contract
-    Mixologist mixologist; // The target market
+    using BoringERC20 for ERC20;
+
+    LiquidationQueueMeta liquidationQueueMeta; // Meta-data for this contract.
+    Mixologist mixologist; // The target market.
+    BeachBar beachBar; // The asset registry.
+
+    uint256 public lqAssetId; // The liquidation queue BeachBar asset id.
+    uint256 public marketAssetId; // The mixologist asset id.
 
     // Bid pools, x% premium => bid pool
     // 0 ... 30 range
+    // poolId => userAddress => userBidInfo.
     mapping(uint256 => mapping(address => Bidder)) public bidPools;
 
     // The actual order book. Entries are stored only once a bid has been activated
-    // poolId => bidIndex => bidEntry)
+    // poolId => bidIndex => bidEntry).
     mapping(uint256 => mapping(uint256 => OrderBookPoolEntry)) orderBookEntries;
     // Meta-data about the order book pool
-    // Check `_isEpochRecycling` to see if the epoch is currently being recycled.
+    // poolId => poolInfo.
     mapping(uint256 => OrderBookPoolInfo) orderBookInfos;
 
-    bool onlyOnce; // Contract init variable
-    uint256 constant MAX_BID_POOLS = 30; // Maximum amount of pools
+    bool onlyOnce; // Contract init variable.
+    uint256 constant MAX_BID_POOLS = 30; // Maximum amount of pools.
 
     /// @notice Acts as a 'constructor', should be called by a Mixologist market.
     /// @param  _liquidationQueueMeta Info about the liquidations.
@@ -34,12 +42,16 @@ contract LiquidationQueue {
     {
         require(!onlyOnce, 'LQ: Initialized');
 
-        // We create the BeachBar vault to store the assets
+        // We create the BeachBar vault to store the assets.
         liquidationQueueMeta = _liquidationQueueMeta;
         Mixologist _mixologist = Mixologist(msg.sender);
-        _registerAsset(_mixologist);
 
-        // We initialize the pools to save gas on conditionals later on
+        uint256 _marketAssetId = mixologist.assetId();
+        beachBar = mixologist.beachBar();
+        lqAssetId = _registerAsset(_mixologist, _marketAssetId);
+        marketAssetId = _marketAssetId;
+
+        // We initialize the pools to save gas on conditionals later on.
         for (uint256 i = 0; i < MAX_BID_POOLS; ) {
             _initOrderBookPoolInfo(i);
             ++i;
@@ -68,7 +80,7 @@ contract LiquidationQueue {
     // *** MODIFIERS *** //
     // ***************** //
 
-    // instead use min bid amount + fees + 10min cdr to counter denial of service attacks
+    // instead use min bid amount + fees + 10min cdr to counter denial of service attacks.
 
     // ************* //
     // *** VIEWS *** //
@@ -92,7 +104,7 @@ contract LiquidationQueue {
         OrderBookPoolInfo memory poolInfo = orderBookInfos[pool];
         uint256 orderBookSize = poolInfo.nextBidPush - 1 - poolInfo.nextBidPull;
 
-        x = new OrderBookPoolEntry[](orderBookSize); // Initialize the return array
+        x = new OrderBookPoolEntry[](orderBookSize); // Initialize the return array.
 
         mapping(uint256 => OrderBookPoolEntry)
             storage entries = orderBookEntries[pool];
@@ -101,7 +113,7 @@ contract LiquidationQueue {
             i < poolInfo.nextBidPush;
 
         ) {
-            x[j] = entries[i]; // Copy the entry to the return array
+            x[j] = entries[i]; // Copy the entry to the return array.
 
             ++i;
             ++j;
@@ -113,7 +125,7 @@ contract LiquidationQueue {
     // *********** //
 
     /// @notice Add a bid to a bid pool.
-    /// @dev Create an entry in `bidPools`
+    /// @dev Create an entry in `bidPools`.
     /// @param user Who will be able to execute the bid.
     /// @param pool To which pool the bid should go.
     /// @param amount The amount in asset to bid.
@@ -123,6 +135,8 @@ contract LiquidationQueue {
         uint256 amount
     ) external {
         require(pool <= MAX_BID_POOLS, 'LQ: premium too high');
+
+        _handleBid(amount);
 
         Bidder memory bidder;
         bidder.amount = amount;
@@ -135,27 +149,28 @@ contract LiquidationQueue {
     /// @notice Activate a bid by putting it in the order book.
     /// @dev Create an entry in `orderBook` and remove it from `bidPools`.
     /// @dev Spam vector attack is mitigated the min amount req., 10min CD + activation fees.
+    /// @param user The bidder.
     /// @param pool The target pool.
-    function activateBid(uint256 pool) external {
-        Bidder memory bidder = bidPools[pool][msg.sender];
+    function activateBid(address user, uint256 pool) external {
+        Bidder memory bidder = bidPools[pool][user];
         require(
             block.timestamp + liquidationQueueMeta.activationTime >
                 bidder.timestamp,
             'LQ: too soon'
         );
 
-        OrderBookPoolInfo memory poolInfo = orderBookInfos[pool]; // Info about the pool array indexes
+        OrderBookPoolInfo memory poolInfo = orderBookInfos[pool]; // Info about the pool array indexes.
 
-        // Create a new order book entry
+        // Create a new order book entry.
         OrderBookPoolEntry memory orderBookEntry;
-        orderBookEntry.bidder = msg.sender;
+        orderBookEntry.bidder = user;
         orderBookEntry.bidInfo = bidder;
 
-        // Insert the order book entry and delete the bid entry from the given pool
+        // Insert the order book entry and delete the bid entry from the given pool.
         orderBookEntries[pool][poolInfo.nextBidPush] = orderBookEntry;
-        delete bidPools[pool][msg.sender];
+        delete bidPools[pool][user];
 
-        // Update the `orderBookInfos`
+        // Update the `orderBookInfos`.
         ++poolInfo.nextBidPush;
         orderBookInfos[pool] = poolInfo;
 
@@ -171,25 +186,43 @@ contract LiquidationQueue {
     // *** INTERNAL *** //
     // **************** //
 
-    /// @notice Create an asset inside of BeachBar that will hold the funds
-    /// @param _mixologist The address of Mixologist
-    function _registerAsset(Mixologist _mixologist) internal {
+    /// @notice Create an asset inside of BeachBar that will hold the funds.
+    /// @param _mixologist The address of Mixologist.
+    function _registerAsset(Mixologist _mixologist, uint256 _marketAssetId)
+        internal
+        returns (uint256)
+    {
         BeachBar bar = _mixologist.beachBar();
 
-        (, address contractAddress, , ) = bar.assets(_mixologist.assetId());
-        bar.registerAsset(
-            TokenType.ERC20,
-            contractAddress,
-            IStrategy(address(0)),
-            1
-        );
+        (, address contractAddress, , ) = bar.assets(_marketAssetId);
+        return
+            bar.registerAsset(
+                TokenType.ERC20,
+                contractAddress,
+                IStrategy(address(0)),
+                1
+            );
     }
 
     /// @notice Called with `init`, setup the initial pool info values.
-    /// @param pool The targeted pool
+    /// @param pool The targeted pool.
     function _initOrderBookPoolInfo(uint256 pool) internal {
         OrderBookPoolInfo memory poolInfo;
         poolInfo.poolId = uint32(pool);
         orderBookInfos[pool] = poolInfo;
+    }
+
+    /// @dev This function is called by `bid`. It transfer the BeachBar asset from the msg.sender to the LQ contract.
+    /// @param amount The amount in asset to bid.
+    function _handleBid(uint256 amount) internal {
+        require(amount >= liquidationQueueMeta.minBidAmount, 'LQ: bid too low');
+
+        uint256 assetId = lqAssetId;
+        beachBar.transfer(
+            msg.sender,
+            address(this),
+            assetId,
+            beachBar.toShare(assetId, amount, false)
+        );
     }
 }
