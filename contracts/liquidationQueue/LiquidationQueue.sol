@@ -64,15 +64,24 @@ contract LiquidationQueue {
 
     event Bid(
         address indexed bidder,
-        uint256 pool,
+        uint256 indexed pool,
         uint256 amount,
         uint256 timestamp
     );
 
     event ActivateBid(
         address indexed bidder,
-        uint256 pool,
+        uint256 indexed pool,
         uint256 amount,
+        uint256 timestamp
+    );
+
+    event ExecuteBid(
+        address indexed bidder,
+        uint256 indexed pool,
+        address indexed debtor,
+        uint256 amountExecuted,
+        uint256 collateralLiquidated,
         uint256 timestamp
     );
 
@@ -182,6 +191,49 @@ contract LiquidationQueue {
         );
     }
 
+    /// @notice Explain to an end user what this does
+    /// @dev Should only be called from Mixologist.
+    /// Tx will fail if it can't transfer allowed BeachBar asset from Mixologist.
+    /// @param debtor The market borrower who's being liquidated.
+    /// @param collateralAmountToLiquidate The amount of collateral to liquidate.
+    /// @return amountExecuted The amount of asset that was executed.
+    /// @return collateralLiquidated The amount of collateral that was liquidated.
+    function executeBid(address debtor, uint256 collateralAmountToLiquidate)
+        external
+        returns (uint256 amountExecuted, uint256 collateralLiquidated)
+    {
+        // Look up for the next available bid pool.
+        (uint256 pool, bool available) = getNextAvailBidPool();
+        require(available, 'LQ: No available bid to fill');
+
+        OrderBookPoolInfo memory poolInfo = orderBookInfos[pool];
+        // Get the next bid to execute in the order book.
+        OrderBookPoolEntry memory orderBookEntry = orderBookEntries[pool][
+            poolInfo.nextBidPull
+        ];
+
+        // Execute the bid.
+        (uint256 amountExecuted, uint256 collateralLiquidated) = _executeBid(
+            orderBookEntry
+        );
+
+        // Remove the order book entry and update the `orderBookInfos` if the full bid amount has been used.
+        if (orderBookEntry.bidInfo.amount == 0) {
+            delete orderBookEntries[pool][poolInfo.nextBidPull];
+            ++poolInfo.nextBidPull;
+            orderBookInfos[pool] = poolInfo;
+        }
+
+        emit ExecuteBid(
+            orderBookEntry.bidder,
+            pool,
+            debtor,
+            amountExecuted,
+            collateralLiquidated,
+            block.timestamp
+        );
+    }
+
     // **************** //
     // *** INTERNAL *** //
     // **************** //
@@ -225,4 +277,30 @@ contract LiquidationQueue {
             beachBar.toShare(assetId, amount, false)
         );
     }
+
+    /// @notice Get the next not empty bid pool in ASC order.
+    /// @return i The bid pool id.
+    /// @return available True if there is at least 1 bid available across all the order books.
+    function getNextAvailBidPool()
+        public
+        view
+        returns (uint256 i, bool available)
+    {
+        for (; i <= MAX_BID_POOLS + 1; ) {
+            if (getOrderBookSize(i) != 0) {
+                available = true;
+                break;
+            }
+            ++i;
+        }
+    }
+
+    /// @notice Handle the execution of a bid, this includes primarily the transfer of assets.
+    /// @param orderBookEntry The order book entry to execute.
+    /// @return amountExecuted The amount of LiquidityQueue asset amount that has been executed.
+    /// @return collateralLiquidated The amount of market collateral asset amount that has been liquidated.
+    function _executeBid(OrderBookPoolEntry memory orderBookEntry)
+        internal
+        returns (uint256 amountExecuted, uint256 collateralLiquidated)
+    {}
 }
