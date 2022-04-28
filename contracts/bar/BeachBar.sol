@@ -21,6 +21,8 @@ struct MasterContract {
     ContractType risk;
 }
 
+// TODO: Permissionless market deployment
+///     + asset registration? (toggle to renounce ownership so users can call)
 contract BeachBar is BoringOwnable, YieldBox {
     using BoringAddress for address;
     using BoringERC20 for IERC20;
@@ -46,7 +48,14 @@ contract BeachBar is BoringOwnable, YieldBox {
         IERC20 tapToken_
     ) YieldBox(wrappedNative_, uriBuilder_) {
         tapToken = tapToken_;
-        tapAssetId = uint96(registerAsset(TokenType.ERC20, address(tapToken_), IStrategy(address(0)), 0));
+        tapAssetId = uint96(
+            registerAsset(
+                TokenType.ERC20,
+                address(tapToken_),
+                IStrategy(address(0)),
+                0
+            )
+        );
     }
 
     // ************************** //
@@ -60,12 +69,19 @@ contract BeachBar is BoringOwnable, YieldBox {
     modifier allowed(address from) override {
         if ((from != msg.sender && !isApprovedForAll[from][msg.sender])) {
             address masterContractSender = masterContractOf[msg.sender];
-            bool isSenderApprovedMixologist = masterContractSender != address(0) && isApprovedForAll[from][masterContractSender];
+            bool isSenderApprovedMixologist = masterContractSender !=
+                address(0) &&
+                isApprovedForAll[from][masterContractSender];
 
             address masterContractFrom = masterContractOf[from];
             // Careful of what MultiSwapper can do
-            bool isSenderSwapperAndFromMixologist = swappers[MultiSwapper(msg.sender)] && masterContractFrom != address(0);
-            require(isSenderApprovedMixologist || isSenderSwapperAndFromMixologist, 'YieldBox: Not approved');
+            bool isSenderSwapperAndFromMixologist = swappers[
+                MultiSwapper(msg.sender)
+            ] && masterContractFrom != address(0);
+            require(
+                isSenderApprovedMixologist || isSenderSwapperAndFromMixologist,
+                'YieldBox: Not approved'
+            );
         }
         _;
     }
@@ -75,7 +91,10 @@ contract BeachBar is BoringOwnable, YieldBox {
     // ***************** //
 
     modifier registeredMasterContract(address mc) {
-        require(isMasterContractRegistered[mc] == true, 'BeachBar: MC not registered');
+        require(
+            isMasterContractRegistered[mc] == true,
+            'BeachBar: MC not registered'
+        );
         _;
     }
 
@@ -118,7 +137,9 @@ contract BeachBar is BoringOwnable, YieldBox {
             clonesOf_ = clonesOf[address(masterContracts[i].location)];
             // Loop through clones of the current MC.
             for (uint256 j = 0; j < clonesOf_.length; ) {
-                IMixologist(clonesOf_[j]).depositFeesToBeachBar(singleSwapper ? swappers_[0] : swappers_[i]);
+                IMixologist(clonesOf_[j]).depositFeesToBeachBar(
+                    singleSwapper ? swappers_[0] : swappers_[i]
+                );
                 ++j;
             }
             ++i;
@@ -132,8 +153,14 @@ contract BeachBar is BoringOwnable, YieldBox {
     /// @notice Register a master contract
     /// @param mcAddress The address of the contract
     /// @param contractType_ The risk type of the contract
-    function registerMasterContract(address mcAddress, ContractType contractType_) external onlyOwner {
-        require(isMasterContractRegistered[mcAddress] == false, 'BeachBar: MC registered');
+    function registerMasterContract(
+        address mcAddress,
+        ContractType contractType_
+    ) external onlyOwner {
+        require(
+            isMasterContractRegistered[mcAddress] == false,
+            'BeachBar: MC registered'
+        );
 
         MasterContract memory mc;
         mc.location = mcAddress;
@@ -152,6 +179,16 @@ contract BeachBar is BoringOwnable, YieldBox {
         bool useCreate2
     ) external payable onlyOwner registeredMasterContract(mc) {
         deploy(mc, data, useCreate2);
+    }
+
+    /// @notice Execute an only owner function inside of a Mixologist market
+    function executeMixologistFn(address mc, bytes calldata data)
+        external
+        onlyOwner
+        registeredMasterContract(mc)
+        returns (bool success, bytes memory result)
+    {
+        (success, result) = mc.call(data);
     }
 
     function setFeeTo(address feeTo_) external onlyOwner {
@@ -181,7 +218,12 @@ contract BeachBar is BoringOwnable, YieldBox {
         IStrategy strategy,
         uint256 tokenId
     ) public override onlyOwner returns (uint256 assetId) {
-        assetId = super.registerAsset(tokenType, contractAddress, strategy, tokenId);
+        assetId = super.registerAsset(
+            tokenType,
+            contractAddress,
+            strategy,
+            tokenId
+        );
     }
 
     /// @notice Withdraws an amount of `token` from a user account.
@@ -202,7 +244,10 @@ contract BeachBar is BoringOwnable, YieldBox {
     ) public allowed(from) returns (uint256 amountOut, uint256 shareOut) {
         // Checks
         Asset storage asset = assets[assetId];
-        require(asset.tokenType != TokenType.Native, "YieldBox: can't withdraw Native");
+        require(
+            asset.tokenType != TokenType.Native,
+            "YieldBox: can't withdraw Native"
+        );
 
         // Effects
         uint256 totalAmount = _tokenBalanceOf(asset);
@@ -220,7 +265,10 @@ contract BeachBar is BoringOwnable, YieldBox {
         if (asset.strategy == NO_STRATEGY) {
             if (asset.tokenType == TokenType.ERC20) {
                 // Native tokens are always unwrapped when withdrawn
-                if (asset.contractAddress == address(wrappedNative) && withdrawNative) {
+                if (
+                    asset.contractAddress == address(wrappedNative) &&
+                    withdrawNative
+                ) {
                     wrappedNative.withdraw(amount);
                     to.sendNative(amount);
                 } else {
@@ -228,7 +276,13 @@ contract BeachBar is BoringOwnable, YieldBox {
                 }
             } else {
                 // IERC1155
-                IERC1155(asset.contractAddress).safeTransferFrom(address(this), to, asset.tokenId, amount, '');
+                IERC1155(asset.contractAddress).safeTransferFrom(
+                    address(this),
+                    to,
+                    asset.tokenId,
+                    amount,
+                    ''
+                );
             }
         } else {
             asset.strategy.withdraw(to, amount);
