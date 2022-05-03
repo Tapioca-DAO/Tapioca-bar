@@ -122,6 +122,7 @@ contract BeachBar is BoringOwnable, YieldBox {
         return depositETHAsset(assetId, to, amount);
     }
 
+    // TODO: Add parameter to choose to convert fees to TAP or get it as is.
     /// @notice Loop through the master contracts and call `depositFeesToBeachBar()` to each one of their clones.
     /// @dev `swappers_` can have one element that'll be used for all clones. Or one swapper per MasterContract.
     /// @param swappers_ One or more swappers to convert the asset to TAP.

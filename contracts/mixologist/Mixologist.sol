@@ -159,6 +159,7 @@ contract Mixologist is ERC20, BoringOwnable {
 
     // Settings for the Medium Risk Mixologist
     uint256 private constant CLOSED_COLLATERIZATION_RATE = 75000; // 75%
+    uint256 private constant HEALTHY_COLLATERIZATION_RATE = 80000; // 80%
     uint256 private constant COLLATERIZATION_RATE_PRECISION = 1e5; // Must be less than EXCHANGE_RATE_PRECISION (due to optimization in math)
     uint256 private constant MINIMUM_TARGET_UTILIZATION = 7e17; // 70%
     uint256 private constant MAXIMUM_TARGET_UTILIZATION = 8e17; // 80%
@@ -179,6 +180,8 @@ contract Mixologist is ERC20, BoringOwnable {
     uint256 private constant LIQUIDATION_MULTIPLIER_PRECISION = 1e5;
 
     // Fees
+    uint256 private constant LIQUIDATION_QUEUE_CALLER_FEE = 1000; // 1%
+    uint256 private constant LIQUIDATION_QUEUE_CALLER_FEE_DIVISOR = 1e5;
     uint256 private constant PROTOCOL_FEE = 10000; // 10%
     uint256 private constant PROTOCOL_FEE_DIVISOR = 1e5;
     uint256 private constant BORROW_OPENING_FEE = 50; // 0.05%
@@ -341,6 +344,41 @@ contract Mixologist is ERC20, BoringOwnable {
             // Moved exchangeRate here instead of dividing the other side to preserve more precision
             (borrowPart * _totalBorrow.elastic * _exchangeRate) /
                 _totalBorrow.base;
+    }
+
+    /// @notice Return the amount of collateral for a `user` to be solvent. Returns 0 if user already solvent.
+    /// @param user The user to check solvency.
+    /// @param _exchangeRate The exchange rate asset/collateral.
+    /// @return The amount of collateral to be solvent.
+    function computeBorrowAmountToSolvency(address user, uint256 _exchangeRate)
+        public
+        view
+        returns (uint256)
+    {
+        // accrue must have already been called!
+        uint256 borrowPart = userBorrowPart[user];
+        if (borrowPart == 0) return true;
+        uint256 collateralShare = userCollateralShare[user];
+        if (collateralShare == 0) return false;
+
+        Rebase memory _totalBorrow = totalBorrow;
+
+        uint256 collateralAmountInAsset = beachBar.toAmount(
+            collateralId,
+            collateralShare *
+                (EXCHANGE_RATE_PRECISION / COLLATERIZATION_RATE_PRECISION) *
+                HEALTHY_COLLATERIZATION_RATE,
+            false
+        );
+        // Moved exchangeRate here instead of dividing the other side to preserve more precision
+        uint256 borrowedAmount = (borrowPart *
+            _totalBorrow.elastic *
+            _exchangeRate) / _totalBorrow.base;
+
+        return
+            borrowedAmount >= collateralAmountInAsset
+                ? (borrowedAmount - collateralAmountInAsset)
+                : 0;
     }
 
     /// @dev Checks if the user is solvent in the closed liquidation case at the end of the function body.
@@ -841,28 +879,24 @@ contract Mixologist is ERC20, BoringOwnable {
     /// @dev Will call `closedLiquidation()` if not LQ exists or no LQ bid avail exists. Otherwise use LQ.
     /// @param users An array of user addresses.
     /// @param maxBorrowParts A one-to-one mapping to `users`, contains maximum (partial) borrow amounts (to liquidate) of the respective user.
+    ///        Ignore for `orderBookLiquidation()`
     /// @param swapper Contract address of the `MultiSwapper` implementation. See `setSwapper`.
-    /// @param runs Number of iterations to run the `executeBid()` on LQ (0 = no limit).
+    ///        Ignore for `orderBookLiquidation()`
     function liquidate(
         address[] calldata users,
         uint256[] calldata maxBorrowParts,
-        MultiSwapper swapper,
-        uint256 runs
+        MultiSwapper swapper
     ) external {
         if (address(liquidationQueue) != address(0)) {
             (, bool bidAvail) = liquidationQueue.getNextAvailBidPool();
             if (bidAvail) {
-                orderBookLiquidation(users, maxBorrowParts, runs);
+                orderBookLiquidation(users);
             }
         }
         closedLiquidation(users, maxBorrowParts, swapper);
     }
 
-    function orderBookLiquidation(
-        address[] calldata users,
-        uint256[] calldata maxBorrowParts,
-        uint256 runs
-    ) internal {
+    function orderBookLiquidation(address[] calldata users) internal {
         (, uint256 _exchangeRate) = updateExchangeRate();
         accrue();
 
@@ -874,18 +908,22 @@ contract Mixologist is ERC20, BoringOwnable {
         for (uint256 i = 0; i < users.length; i++) {
             address user = users[i];
             if (!_isSolvent(user, _exchangeRate)) {
+                uint256 borrowAmount = computeBorrowAmountToSolvency(
+                    user,
+                    _exchangeRate
+                );
+                if (borrowAmount == 0) {
+                    continue;
+                }
+
                 uint256 borrowPart;
                 {
                     uint256 availableBorrowPart = userBorrowPart[user];
-                    borrowPart = maxBorrowParts[i] > availableBorrowPart
-                        ? availableBorrowPart
-                        : maxBorrowParts[i];
+                    borrowPart =
+                        availableBorrowPart -
+                        _totalBorrow.toBase(borrowAmount, false);
                     userBorrowPart[user] = availableBorrowPart - borrowPart;
                 }
-                uint256 borrowAmount = _totalBorrow.toElastic(
-                    borrowPart,
-                    false
-                );
                 uint256 collateralShare = beachBar.toShare(
                     collateralId,
                     (borrowAmount * LIQUIDATION_MULTIPLIER * _exchangeRate) /
@@ -896,10 +934,15 @@ contract Mixologist is ERC20, BoringOwnable {
                 userCollateralShare[user] -= collateralShare;
                 emit LogRemoveCollateral(
                     user,
-                    address(swapper),
+                    address(liquidationQueue),
                     collateralShare
                 );
-                emit LogRepay(address(swapper), user, borrowAmount, borrowPart);
+                emit LogRepay(
+                    address(liquidationQueue),
+                    user,
+                    borrowAmount,
+                    borrowPart
+                );
 
                 // Keep totals
                 allCollateralShare += collateralShare;
@@ -919,39 +962,36 @@ contract Mixologist is ERC20, BoringOwnable {
             true
         );
 
-        // Closed liquidation using a pre-approved swapper
-        // require(beachBar.swappers(swapper), 'Mx: Invalid swapper');
-
-        // Swaps the users collateral for the borrowed asset
-        // swapper.swap(
-        //     collateralId,
-        //     assetId,
-        //     0,
-        //     address(this),
-        //     collateralSwapPath,
-        //     allCollateralShare
-        // );
+        // Transfer collateral to be liquidated
+        beachBar.transfer(
+            address(this),
+            address(liquidationQueue),
+            collateralId,
+            totalCollateralShare
+        );
+        // LiquidationQueue pay debt
+        liquidationQueue.executeBid(
+            beachBar.toAmount(collateralId, totalCollateralShare, true)
+        );
 
         uint256 returnedShare = beachBar.balanceOf(address(this), assetId) -
             uint256(totalAsset.elastic);
         uint256 extraShare = returnedShare - allBorrowShare;
         uint256 feeShare = (extraShare * PROTOCOL_FEE) / PROTOCOL_FEE_DIVISOR; // 10% of profit goes to fee
-        uint256 callerShare = extraShare - feeShare;
+        uint256 callerShare = (extraShare * LIQUIDATION_QUEUE_CALLER_FEE) /
+            LIQUIDATION_QUEUE_CALLER_FEE_DIVISOR; // 1% goes to caller
 
         beachBar.transfer(address(this), beachBar.feeTo(), assetId, feeShare);
         beachBar.transfer(address(this), msg.sender, assetId, callerShare);
 
         totalAsset.elastic += uint128(returnedShare - feeShare - callerShare);
         emit LogAddAsset(
-            address(swapper),
+            address(liquidationQueue),
             address(this),
             extraShare - feeShare - callerShare,
             0
         );
     }
-
-    // TODO: If LiquidationQueue exists, we'll use the getNextBid address
-    // if not then the caller gets it
 
     /// @notice Handles the liquidation of users' balances, once the users' amount of collateral is too low.
     /// @dev Closed liquidations Only, 90% of extra shares goes to caller and 10% to protocol
