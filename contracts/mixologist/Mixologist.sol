@@ -99,6 +99,7 @@ contract Mixologist is ERC20, BoringOwnable {
 
     /// @notice Exchange and interest rate tracking.
     /// This is 'cached' here because calls to Oracles can be very expensive.
+    /// Asset -> collateral = assetAmount * exchangeRate.
     uint256 public exchangeRate;
 
     ILiquidationQueue public liquidationQueue;
@@ -357,9 +358,9 @@ contract Mixologist is ERC20, BoringOwnable {
     {
         // accrue must have already been called!
         uint256 borrowPart = userBorrowPart[user];
-        if (borrowPart == 0) return true;
+        if (borrowPart == 0) return 0;
         uint256 collateralShare = userCollateralShare[user];
-        if (collateralShare == 0) return false;
+        if (collateralShare == 0) return 0;
 
         Rebase memory _totalBorrow = totalBorrow;
 
@@ -887,19 +888,23 @@ contract Mixologist is ERC20, BoringOwnable {
         uint256[] calldata maxBorrowParts,
         MultiSwapper swapper
     ) external {
-        if (address(liquidationQueue) != address(0)) {
-            (, bool bidAvail) = liquidationQueue.getNextAvailBidPool();
-            if (bidAvail) {
-                orderBookLiquidation(users);
-            }
-        }
-        closedLiquidation(users, maxBorrowParts, swapper);
-    }
-
-    function orderBookLiquidation(address[] calldata users) internal {
+        // Oracle can fail but we still need to allow liquidations
         (, uint256 _exchangeRate) = updateExchangeRate();
         accrue();
 
+        if (address(liquidationQueue) != address(0)) {
+            (, bool bidAvail) = liquidationQueue.getNextAvailBidPool();
+            if (bidAvail) {
+                orderBookLiquidation(users, _exchangeRate);
+            }
+        }
+        closedLiquidation(users, maxBorrowParts, swapper, _exchangeRate);
+    }
+
+    function orderBookLiquidation(
+        address[] calldata users,
+        uint256 _exchangeRate
+    ) internal {
         uint256 allCollateralShare;
         uint256 allBorrowAmount;
         uint256 allBorrowPart;
@@ -1001,7 +1006,8 @@ contract Mixologist is ERC20, BoringOwnable {
     function closedLiquidation(
         address[] calldata users,
         uint256[] calldata maxBorrowParts,
-        MultiSwapper swapper
+        MultiSwapper swapper,
+        uint256 _exchangeRate
     ) public {
         if (address(liquidationQueue) != address(0)) {
             (, bool bidAvail) = liquidationQueue.getNextAvailBidPool();
@@ -1009,10 +1015,6 @@ contract Mixologist is ERC20, BoringOwnable {
         } else {
             revert('MX: Liquidation queue exist');
         }
-
-        // Oracle can fail but we still need to allow liquidations
-        (, uint256 _exchangeRate) = updateExchangeRate();
-        accrue();
 
         uint256 allCollateralShare;
         uint256 allBorrowAmount;
