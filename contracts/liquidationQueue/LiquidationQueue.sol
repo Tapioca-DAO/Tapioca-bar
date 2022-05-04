@@ -10,8 +10,17 @@ import './ILiquidationQueue.sol';
 /// @title LiquidationQueue
 /// @author @0xRektora, TapiocaDAO
 // TODO: Capital efficiency? (register assets to strategies)
+// TODO: ERC20 impl?
 contract LiquidationQueue {
     using BoringERC20 for ERC20;
+
+    // ************ //
+    // *** VARS *** //
+    // ************ //
+
+    /**
+     * General information about the LiquidationQueue contract.
+     */
 
     LiquidationQueueMeta liquidationQueueMeta; // Meta-data for this contract.
     Mixologist mixologist; // The target market.
@@ -19,6 +28,11 @@ contract LiquidationQueue {
 
     uint256 public lqAssetId; // The liquidation queue BeachBar asset id.
     uint256 public marketAssetId; // The mixologist asset id.
+    bool onlyOnce; // Contract init variable.
+
+    /**
+     * Pools & order books information.
+     */
 
     // Bid pools, x% premium => bid pool
     // 0 ... 30 range
@@ -32,8 +46,27 @@ contract LiquidationQueue {
     // poolId => poolInfo.
     mapping(uint256 => OrderBookPoolInfo) orderBookInfos;
 
-    bool onlyOnce; // Contract init variable.
+    /**
+     * Ledger.
+     */
+
+    // user => amountDue.
+    mapping(address => uint256) public balancesDue; // Due balance of users.
+
+    // ***************** //
+    // *** CONSTANTS *** //
+    // ***************** //
+
     uint256 constant MAX_BID_POOLS = 30; // Maximum amount of pools.
+    // `amount` * ((`bidPool` * `PREMIUM_FACTOR`) / `PREMIUM_FACTOR_PRECISION`) = premium.
+    uint256 constant PREMIUM_FACTOR = 100; // Premium factor.
+    uint256 constant PREMIUM_FACTOR_PRECISION = 10000; // Precision of the premium factor.
+
+    uint256 private constant EXCHANGE_RATE_PRECISION = 1e18;
+
+    // ************ //
+    // *** INIT *** //
+    // ************ //
 
     /// @notice Acts as a 'constructor', should be called by a Mixologist market.
     /// @param  _liquidationQueueMeta Info about the liquidations.
@@ -64,23 +97,28 @@ contract LiquidationQueue {
 
     event Bid(
         address indexed bidder,
-        uint256 pool,
+        uint256 indexed pool,
         uint256 amount,
         uint256 timestamp
     );
 
     event ActivateBid(
         address indexed bidder,
-        uint256 pool,
+        uint256 indexed pool,
         uint256 amount,
+        uint256 timestamp
+    );
+
+    event ExecuteBids(
+        uint256 indexed pool,
+        uint256 amountExecuted,
+        uint256 collateralLiquidated,
         uint256 timestamp
     );
 
     // ***************** //
     // *** MODIFIERS *** //
     // ***************** //
-
-    // instead use min bid amount + fees + 10min cdr to counter denial of service attacks.
 
     // ************* //
     // *** VIEWS *** //
@@ -182,6 +220,137 @@ contract LiquidationQueue {
         );
     }
 
+    /// @notice Explain to an end user what this does
+    /// @dev Should only be called from Mixologist.
+    ///      Mixologist should send the `collateralAmountToLiquidate` to this contract before calling this function.
+    /// Tx will fail if it can't transfer allowed BeachBar asset from Mixologist.
+    /// @param collateralAmountToLiquidate The amount of collateral to liquidate.
+    /// @return totalAmountExecuted The amount of asset that was executed.
+    /// @return totalCollateralLiquidated The amount of collateral that was liquidated.
+    function executeBids(uint256 collateralAmountToLiquidate)
+        external
+        returns (uint256 totalAmountExecuted, uint256 totalCollateralLiquidated)
+    {
+        require(msg.sender == address(mixologist), 'LQ: Only Mixologist');
+
+        // Loop vars.
+        uint256 curPoolId;
+        bool isBidAvail;
+        OrderBookPoolInfo memory poolInfo;
+        OrderBookPoolEntry storage orderBookEntry;
+        OrderBookPoolEntry memory orderBookEntryCopy;
+
+        uint256 totalPoolAmountExecuted;
+        uint256 totalPoolCollateralLiquidated;
+        uint256 exchangeRate = mixologist.exchangeRate();
+        uint256 discountedBidderAssetAmount;
+        uint256 discountedBidderCollateralAmount;
+
+        // We loop through all the bids for each pools until all the collateral is liquidated.
+        while (totalCollateralLiquidated != collateralAmountToLiquidate) {
+            // Look up for the next available bid pool.
+            (curPoolId, isBidAvail) = getNextAvailBidPool();
+            require(isBidAvail, 'LQ: No available bid to fill');
+
+            poolInfo = orderBookInfos[curPoolId];
+
+            // Reset pool vars.
+            totalPoolAmountExecuted = 0;
+            totalPoolCollateralLiquidated = 0;
+
+            // While bid pool is not empty and we haven't liquidated enough collateral.
+            while (
+                totalCollateralLiquidated != collateralAmountToLiquidate &&
+                poolInfo.nextBidPull != poolInfo.nextBidPush - 1
+            ) {
+                // Get the next bid.
+                orderBookEntry = orderBookEntries[curPoolId][
+                    poolInfo.nextBidPull
+                ];
+                orderBookEntryCopy = orderBookEntry;
+
+                // Get the total amount of asset with the pool discount applied of the bidder.
+                discountedBidderCollateralAmount = _getDiscountAmount(
+                    _bidToCollateral(
+                        orderBookEntryCopy.bidInfo.amount,
+                        exchangeRate
+                    ),
+                    curPoolId
+                );
+                // Check if the bidder can pay the remaining collateral to liquidate `collateralAmountToLiquidate`.
+                if (
+                    discountedBidderCollateralAmount >
+                    collateralAmountToLiquidate
+                ) {
+                    // Execute the bid.
+                    balancesDue[
+                        orderBookEntryCopy.bidder
+                    ] += collateralAmountToLiquidate; // Write balance.
+                    discountedBidderAssetAmount = _collateralToBid(
+                        collateralAmountToLiquidate,
+                        exchangeRate
+                    );
+                    orderBookEntry
+                        .bidInfo
+                        .amount -= discountedBidderAssetAmount; // Update bid entry amount.
+
+                    // Update the total amount executed, the total collateral liquidated and collateral to liquidate.
+                    totalPoolAmountExecuted += discountedBidderAssetAmount;
+                    totalPoolCollateralLiquidated += collateralAmountToLiquidate;
+                    collateralAmountToLiquidate = 0; // Since we have liquidated all the collateral.
+
+                    break; // Break the loop to avoid unnecessary conditional check.
+                } else {
+                    // Execute the bid.
+                    balancesDue[
+                        orderBookEntryCopy.bidder
+                    ] += discountedBidderCollateralAmount; // Write balance.
+                    orderBookEntry.bidInfo.amount = 0; // Update bid entry amount.
+
+                    // Update the total amount executed, the total collateral liquidated and collateral to liquidate.
+                    totalPoolAmountExecuted += orderBookEntryCopy
+                        .bidInfo
+                        .amount;
+                    totalPoolCollateralLiquidated += discountedBidderCollateralAmount;
+                    collateralAmountToLiquidate -= discountedBidderCollateralAmount;
+
+                    // Since the current bid was fulfilled, get the next one.
+                    ++poolInfo.nextBidPull;
+                }
+            }
+
+            // Update the totals.
+            totalAmountExecuted += totalPoolAmountExecuted;
+            totalCollateralLiquidated += totalPoolCollateralLiquidated;
+
+            orderBookInfos[curPoolId] = poolInfo; // Update the pool info for the current pool.
+
+            emit ExecuteBids(
+                curPoolId,
+                totalPoolAmountExecuted,
+                totalPoolCollateralLiquidated,
+                block.timestamp
+            );
+        }
+    }
+
+    /// @notice Get the next not empty bid pool in ASC order.
+    /// @return i The bid pool id.
+    /// @return available True if there is at least 1 bid available across all the order books.
+    function getNextAvailBidPool()
+        public
+        view
+        returns (uint256 i, bool available)
+    {
+        for (; i <= MAX_BID_POOLS + 1; ) {
+            if (getOrderBookSize(i) != 0) {
+                available = true;
+                break;
+            }
+            ++i;
+        }
+    }
+
     // **************** //
     // *** INTERNAL *** //
     // **************** //
@@ -224,5 +393,40 @@ contract LiquidationQueue {
             assetId,
             beachBar.toShare(assetId, amount, false)
         );
+    }
+
+    /// @notice Get the discount gained from a bid in a `poolId` given an `collateralAmount`.
+    /// @param collateralAmount The amount of collateral to get the discount from.
+    /// @param poolId The targeted pool.
+    function _getDiscountAmount(uint256 collateralAmount, uint256 poolId)
+        internal
+        pure
+        returns (uint256)
+    {
+        return
+            collateralAmount *
+            ((poolId * PREMIUM_FACTOR) / PREMIUM_FACTOR_PRECISION);
+    }
+
+    /// @notice Convert a bid amount to a collateral amount.
+    /// @param amount The amount of bid to convert.
+    /// @param exchangeRate The exchange rate to use.
+    function _bidToCollateral(uint256 amount, uint256 exchangeRate)
+        internal
+        pure
+        returns (uint256)
+    {
+        return (amount * exchangeRate) / EXCHANGE_RATE_PRECISION;
+    }
+
+    /// @notice Convert a collateral amount to a bid amount.
+    /// @param collateralAmount The amount of collateral to convert.
+    /// @param exchangeRate The exchange rate to use.
+    function _collateralToBid(uint256 collateralAmount, uint256 exchangeRate)
+        internal
+        pure
+        returns (uint256)
+    {
+        return (collateralAmount * EXCHANGE_RATE_PRECISION) / exchangeRate;
     }
 }

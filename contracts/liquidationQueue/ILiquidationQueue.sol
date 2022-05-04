@@ -23,5 +23,15 @@ struct LiquidationQueueMeta {
 }
 
 interface ILiquidationQueue {
-    function init(LiquidationQueueMeta calldata) external;
+    function init(LiquidationQueueMeta calldata, uint256 exchangeRatePrecision)
+        external;
+
+    function getNextAvailBidPool()
+        external
+        view
+        returns (uint256 i, bool available);
+
+    function executeBid(uint256 collateralAmountToLiquidate)
+        external
+        returns (uint256 amountExecuted, uint256 collateralLiquidated);
 }
