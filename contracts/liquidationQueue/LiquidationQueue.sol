@@ -9,7 +9,7 @@ import './ILiquidationQueue.sol';
 
 /// @title LiquidationQueue
 /// @author @0xRektora, TapiocaDAO
-// TODO: Capital efficiency? (register assets to strategies)
+// TODO: Capital efficiency? (register assets to strategies) (farm strat for TAP)
 // TODO: ERC20 impl?
 contract LiquidationQueue {
     using BoringERC20 for ERC20;
@@ -50,6 +50,9 @@ contract LiquidationQueue {
      * Ledger.
      */
 
+    // user => poolId => orderBookEntries[poolId][bidIndex]
+    mapping(address => mapping(uint256 => uint256[])) public userBidIndexes; // User current bids.
+
     // user => amountDue.
     mapping(address => uint256) public balancesDue; // Due balance of users.
 
@@ -85,7 +88,7 @@ contract LiquidationQueue {
         marketAssetId = _marketAssetId;
 
         // We initialize the pools to save gas on conditionals later on.
-        for (uint256 i = 0; i < MAX_BID_POOLS; ) {
+        for (uint256 i = 0; i <= MAX_BID_POOLS; ) {
             _initOrderBookPoolInfo(i);
             ++i;
         }
@@ -96,6 +99,7 @@ contract LiquidationQueue {
     // ************** //
 
     event Bid(
+        address indexed caller,
         address indexed bidder,
         uint256 indexed pool,
         uint256 amount,
@@ -103,18 +107,29 @@ contract LiquidationQueue {
     );
 
     event ActivateBid(
+        address indexed caller,
         address indexed bidder,
         uint256 indexed pool,
         uint256 amount,
         uint256 timestamp
     );
 
+    event RemoveBid(
+        address indexed caller,
+        address indexed bidder,
+        uint256 indexed pool,
+        uint256 amount
+    );
+
     event ExecuteBids(
+        address indexed caller,
         uint256 indexed pool,
         uint256 amountExecuted,
         uint256 collateralLiquidated,
         uint256 timestamp
     );
+
+    event Redeem(address indexed redeemer, address indexed to, uint256 amount);
 
     // ***************** //
     // *** MODIFIERS *** //
@@ -164,7 +179,8 @@ contract LiquidationQueue {
 
     /// @notice Add a bid to a bid pool.
     /// @dev Create an entry in `bidPools`.
-    /// @param user Who will be able to execute the bid.
+    ///      Clean the userBidIndex here instead of the `executeBids()` function to save on gas.
+    /// @param user The bidder.
     /// @param pool To which pool the bid should go.
     /// @param amount The amount in asset to bid.
     function bid(
@@ -173,6 +189,7 @@ contract LiquidationQueue {
         uint256 amount
     ) external {
         require(pool <= MAX_BID_POOLS, 'LQ: premium too high');
+        require(amount >= liquidationQueueMeta.minBidAmount, 'LQ: bid too low');
 
         _handleBid(amount);
 
@@ -181,13 +198,25 @@ contract LiquidationQueue {
         bidder.timestamp = block.timestamp;
 
         bidPools[pool][user] = bidder;
-        emit Bid(user, pool, amount, block.timestamp);
+        emit Bid(msg.sender, user, pool, amount, block.timestamp);
+
+        // Clean the userBidIndex.
+        uint256[] storage bidIndexes = userBidIndexes[msg.sender][pool];
+        uint256 bidIndexesLen = bidIndexes.length;
+        OrderBookPoolInfo memory poolInfo = orderBookInfos[pool];
+        for (uint256 i = 0; i < bidIndexesLen; ) {
+            if (bidIndexes[i] >= poolInfo.nextBidPull) {
+                bidIndexes[i] = bidIndexes[bidIndexesLen - 1];
+                bidIndexes.pop();
+            }
+            ++i;
+        }
     }
 
     /// @notice Activate a bid by putting it in the order book.
     /// @dev Create an entry in `orderBook` and remove it from `bidPools`.
     /// @dev Spam vector attack is mitigated the min amount req., 10min CD + activation fees.
-    /// @param user The bidder.
+    /// @param user The user to activate the bid for.
     /// @param pool The target pool.
     function activateBid(address user, uint256 pool) external {
         Bidder memory bidder = bidPools[pool][user];
@@ -214,13 +243,92 @@ contract LiquidationQueue {
 
         emit Bid(
             msg.sender,
+            user,
             pool,
             orderBookEntry.bidInfo.amount,
             block.timestamp
         );
     }
 
-    /// @notice Explain to an end user what this does
+    /// @notice Remove a not yet activated bid from the bid pool.
+    /// @param user The user to send the funds to.
+    /// @param pool The pool to remove the bid from.
+    /// @return amountRemoved The amount of the bid.
+    function removeInactivatedBid(address user, uint256 pool)
+        external
+        returns (uint256 amountRemoved)
+    {
+        Bidder memory bidder = bidPools[pool][user];
+        amountRemoved = bidder.amount;
+
+        delete bidPools[pool][msg.sender];
+
+        _handleRedeem(user, amountRemoved);
+
+        emit RemoveBid(msg.sender, user, pool, bidder.amount);
+    }
+
+    /// @notice Remove the last activated bid of a given pool.
+    /// @dev Clean the userBidIndex here instead of the `executeBids()` function to save on gas.
+    ///      To prevent DoS attacks on `executeBids()` and gas costs, the last activated bid
+    ///      will take the position of the removed bid.
+    /// @param user The user to send the funds to.
+    /// @param pool The target pool.
+    /// @param bidPosition The position of the bid index inside the `userBidIndexes[msg.sender][pool]`.
+    /// @return amountRemoved The amount of the bid removed.
+    function removeBid(
+        address user,
+        uint256 pool,
+        uint256 bidPosition
+    ) external returns (uint256 amountRemoved) {
+        Bidder memory bidder = bidPools[pool][msg.sender];
+
+        uint256[] storage bidIndexes = userBidIndexes[msg.sender][pool];
+        uint256 bidIndexesLen = bidIndexes.length;
+        OrderBookPoolInfo memory poolInfo = orderBookInfos[pool];
+
+        // Clean expired bids.
+        for (uint256 i = 0; i < bidIndexesLen; ) {
+            if (bidIndexes[i] >= poolInfo.nextBidPull) {
+                bidIndexesLen = bidIndexes.length;
+                bidIndexes[i] = bidIndexes[bidIndexesLen - 1];
+                bidIndexes.pop();
+            }
+
+            ++i;
+        }
+        // Remove bid from the order book by replacing it with the last activated bid.
+        uint256 orderBookIndex = bidIndexes[bidPosition];
+        amountRemoved = orderBookEntries[pool][orderBookIndex].bidInfo.amount;
+        orderBookEntries[pool][orderBookIndex] = orderBookEntries[pool][
+            poolInfo.nextBidPush - 1
+        ];
+
+        // Remove userBidIndex
+        bidIndexesLen = bidIndexes.length;
+        bidIndexes[bidPosition] = bidIndexes[bidIndexesLen - 1];
+        bidIndexes.pop();
+
+        _handleRedeem(user, amountRemoved);
+
+        emit RemoveBid(msg.sender, user, pool, amountRemoved);
+    }
+
+    /// @notice Redeem a balance.
+    /// @dev `msg.sender` is used as the redeemer.
+    /// @param user The user to redeem to.
+    function redeem(address user) external {
+        require(balancesDue[msg.sender] > 0, 'LQ: No balance due');
+
+        uint256 amount = balancesDue[msg.sender];
+        balancesDue[msg.sender] = 0;
+
+        _handleRedeem(user, amount);
+
+        emit Redeem(msg.sender, user, amount);
+    }
+
+    /// @notice Execute the liquidation call by executing the bids placed in the pools in ASC order.
     /// @dev Should only be called from Mixologist.
     ///      Mixologist should send the `collateralAmountToLiquidate` to this contract before calling this function.
     /// Tx will fail if it can't transfer allowed BeachBar asset from Mixologist.
@@ -326,6 +434,7 @@ contract LiquidationQueue {
             orderBookInfos[curPoolId] = poolInfo; // Update the pool info for the current pool.
 
             emit ExecuteBids(
+                msg.sender,
                 curPoolId,
                 totalPoolAmountExecuted,
                 totalPoolCollateralLiquidated,
@@ -342,7 +451,7 @@ contract LiquidationQueue {
         view
         returns (uint256 i, bool available)
     {
-        for (; i <= MAX_BID_POOLS + 1; ) {
+        for (; i <= MAX_BID_POOLS; ) {
             if (getOrderBookSize(i) != 0) {
                 available = true;
                 break;
@@ -381,15 +490,26 @@ contract LiquidationQueue {
         orderBookInfos[pool] = poolInfo;
     }
 
-    /// @dev This function is called by `bid`. It transfer the BeachBar asset from the msg.sender to the LQ contract.
+    /// @dev This function is called by `bid`. It transfer the market collateral from the msg.sender to the LQ contract.
     /// @param amount The amount in asset to bid.
     function _handleBid(uint256 amount) internal {
-        require(amount >= liquidationQueueMeta.minBidAmount, 'LQ: bid too low');
-
         uint256 assetId = lqAssetId;
         beachBar.transfer(
             msg.sender,
             address(this),
+            assetId,
+            beachBar.toShare(assetId, amount, false)
+        );
+    }
+
+    /// @dev Transfer the market asset from the LQ contract to the `user`.
+    /// @param user The user who gets the assets.
+    /// @param amount The amount in asset to redeem.
+    function _handleRedeem(address user, uint256 amount) internal {
+        uint256 assetId = marketAssetId;
+        beachBar.transfer(
+            address(this),
+            user,
             assetId,
             beachBar.toShare(assetId, amount, false)
         );

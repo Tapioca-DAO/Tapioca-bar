@@ -1193,7 +1193,7 @@ contract Mixologist is ERC20, BoringOwnable {
         ILiquidationQueue _liquidationQueue,
         LiquidationQueueMeta calldata _liquidationQueueMeta
     ) public onlyOwner {
-        _liquidationQueue.init(_liquidationQueueMeta);
+        _liquidationQueue.init(_liquidationQueueMeta, EXCHANGE_RATE_PRECISION);
         liquidationQueue = _liquidationQueue;
     }
 }

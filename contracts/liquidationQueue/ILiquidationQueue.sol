@@ -3,7 +3,7 @@ pragma solidity 0.8.9;
 
 struct Bidder {
     uint256 amount; // Amount bid.
-    uint256 timestamp; // Timestamp in second of the bid.
+    uint256 timestamp; // Timestamp in second of the last bid.
 }
 
 struct OrderBookPoolEntry {
