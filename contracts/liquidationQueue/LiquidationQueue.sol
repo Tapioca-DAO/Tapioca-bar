@@ -143,9 +143,11 @@ contract LiquidationQueue {
         return mixologist.name();
     }
 
-    function getOrderBookSize(uint256 pool) public view returns (uint256) {
+    function getOrderBookSize(uint256 pool) public view returns (uint256 size) {
         OrderBookPoolInfo memory poolInfo = orderBookInfos[pool];
-        return poolInfo.nextBidPush - 1 - poolInfo.nextBidPull;
+        unchecked {
+            size = poolInfo.nextBidPush - 1 - poolInfo.nextBidPull;
+        }
     }
 
     // /!\ GAS COST /!\
@@ -168,8 +170,10 @@ contract LiquidationQueue {
         ) {
             x[j] = entries[i]; // Copy the entry to the return array.
 
-            ++i;
-            ++j;
+            unchecked {
+                ++i;
+                ++j;
+            }
         }
     }
 
@@ -209,7 +213,9 @@ contract LiquidationQueue {
                 bidIndexes[i] = bidIndexes[bidIndexesLen - 1];
                 bidIndexes.pop();
             }
-            ++i;
+            unchecked {
+                ++i;
+            }
         }
     }
 
@@ -238,7 +244,9 @@ contract LiquidationQueue {
         delete bidPools[pool][user];
 
         // Update the `orderBookInfos`.
-        ++poolInfo.nextBidPush;
+        unchecked {
+            ++poolInfo.nextBidPush;
+        }
         orderBookInfos[pool] = poolInfo;
 
         emit Bid(
@@ -281,8 +289,6 @@ contract LiquidationQueue {
         uint256 pool,
         uint256 bidPosition
     ) external returns (uint256 amountRemoved) {
-        Bidder memory bidder = bidPools[pool][msg.sender];
-
         uint256[] storage bidIndexes = userBidIndexes[msg.sender][pool];
         uint256 bidIndexesLen = bidIndexes.length;
         OrderBookPoolInfo memory poolInfo = orderBookInfos[pool];
@@ -294,8 +300,9 @@ contract LiquidationQueue {
                 bidIndexes[i] = bidIndexes[bidIndexesLen - 1];
                 bidIndexes.pop();
             }
-
-            ++i;
+            unchecked {
+                ++i;
+            }
         }
         // Remove bid from the order book by replacing it with the last activated bid.
         uint256 orderBookIndex = bidIndexes[bidPosition];
@@ -423,7 +430,9 @@ contract LiquidationQueue {
                     collateralAmountToLiquidate -= discountedBidderCollateralAmount;
 
                     // Since the current bid was fulfilled, get the next one.
-                    ++poolInfo.nextBidPull;
+                    unchecked {
+                        ++poolInfo.nextBidPull;
+                    }
                 }
             }
 
