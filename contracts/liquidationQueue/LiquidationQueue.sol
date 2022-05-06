@@ -135,6 +135,11 @@ contract LiquidationQueue {
     // *** MODIFIERS *** //
     // ***************** //
 
+    modifier Active() {
+        require(onlyOnce, 'LQ: Not initialized');
+        _;
+    }
+
     // ************* //
     // *** VIEWS *** //
     // ************* //
@@ -191,7 +196,7 @@ contract LiquidationQueue {
         address user,
         uint256 pool,
         uint256 amount
-    ) external {
+    ) external Active {
         require(pool <= MAX_BID_POOLS, 'LQ: premium too high');
         require(amount >= liquidationQueueMeta.minBidAmount, 'LQ: bid too low');
 
