@@ -192,6 +192,9 @@ contract Mixologist is ERC20, BoringOwnable {
 
     /// @notice The init function that acts as a constructor
     function init(bytes calldata data) external onlyOnce {
+        if (owner == address(0)) {
+            owner = msg.sender;
+        }
         (
             BeachBar tapiocaBar_,
             IERC20 _asset,
@@ -1041,7 +1044,7 @@ contract Mixologist is ERC20, BoringOwnable {
         ILiquidationQueue _liquidationQueue,
         LiquidationQueueMeta calldata _liquidationQueueMeta
     ) public onlyOwner {
-        _liquidationQueue.init(_liquidationQueueMeta, EXCHANGE_RATE_PRECISION);
+        _liquidationQueue.init(_liquidationQueueMeta);
         liquidationQueue = _liquidationQueue;
     }
 }
