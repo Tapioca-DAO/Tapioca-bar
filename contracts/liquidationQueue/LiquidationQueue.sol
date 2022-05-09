@@ -80,18 +80,19 @@ contract LiquidationQueue {
 
         // We create the BeachBar vault to store the assets.
         liquidationQueueMeta = _liquidationQueueMeta;
-        Mixologist _mixologist = Mixologist(msg.sender);
 
-        uint256 _marketAssetId = mixologist.assetId();
+        mixologist = Mixologist(msg.sender);
+        marketAssetId = mixologist.assetId();
         beachBar = mixologist.beachBar();
-        lqAssetId = _registerAsset(_mixologist, _marketAssetId);
-        marketAssetId = _marketAssetId;
+
+        lqAssetId = _registerAsset();
 
         // We initialize the pools to save gas on conditionals later on.
         for (uint256 i = 0; i <= MAX_BID_POOLS; ) {
             _initOrderBookPoolInfo(i);
             ++i;
         }
+        onlyOnce = true; // We set the init flag.
     }
 
     // ************** //
@@ -479,20 +480,15 @@ contract LiquidationQueue {
     // **************** //
 
     /// @notice Create an asset inside of BeachBar that will hold the funds.
-    /// @param _mixologist The address of Mixologist.
-    function _registerAsset(Mixologist _mixologist, uint256 _marketAssetId)
-        internal
-        returns (uint256)
-    {
-        BeachBar bar = _mixologist.beachBar();
-
-        (, address contractAddress, , ) = bar.assets(_marketAssetId);
+    function _registerAsset() internal returns (uint256) {
+        (, address contractAddress, , ) = beachBar.assets(marketAssetId);
+        console.log(contractAddress);
         return
-            bar.registerAsset(
+            beachBar.registerAsset(
                 TokenType.ERC20,
                 contractAddress,
                 IStrategy(address(0)),
-                1
+                2
             );
     }
 
