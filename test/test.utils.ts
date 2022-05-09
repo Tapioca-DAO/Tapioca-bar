@@ -1,6 +1,12 @@
 import { BigNumberish } from 'ethers';
 import { ethers } from 'hardhat';
-import { BeachBar, ERC20Mock, OracleMock, WETH9Mock } from '../typechain';
+import {
+    BeachBar,
+    ERC20Mock,
+    Mixologist,
+    OracleMock,
+    WETH9Mock,
+} from '../typechain';
 
 ethers.utils.Logger.setLogLevel(ethers.utils.Logger.levels.ERROR);
 
@@ -232,6 +238,30 @@ async function registerMixologist(
     return { wethUsdcMixologist };
 }
 
+async function registerLiquidationQueue(bar: BeachBar, mixologist: Mixologist) {
+    const liquidationQueue = await (
+        await ethers.getContractFactory('LiquidationQueue')
+    ).deploy();
+    await liquidationQueue.deployed();
+
+    const payload = mixologist.interface.encodeFunctionData(
+        'setLiquidationQueue',
+        [
+            liquidationQueue.address,
+            {
+                activationTime: 600, // 10min
+                minBidAmount: ethers.BigNumber.from((1e18).toString()).mul(200), // 200 USDC
+            },
+        ],
+    );
+
+    await (
+        await bar.executeMixologistFn([mixologist.address], [payload])
+    ).wait();
+
+    return { liquidationQueue };
+}
+
 export async function register() {
     await resetVM();
     /**
@@ -270,6 +300,7 @@ export async function register() {
     );
     // 6  Deploy MediumRisk master contract
     const { mediumRiskMC } = await deployMediumRiskMC(bar);
+
     // 7 Deploy WethUSDC medium risk MC clone
     const collateralSwapPath = [usdc.address, weth.address];
     const tapSwapPath = [weth.address, tap.address];
@@ -290,6 +321,13 @@ export async function register() {
     const mixologistFeeVeTap = ethers.Wallet.createRandom();
     await bar.setFeeTo(mixologistFeeTo.address);
     await bar.setFeeVeTap(mixologistFeeVeTap.address);
+
+    // 9 Deploy & set LiquidationQueue
+
+    const { liquidationQueue } = await registerLiquidationQueue(
+        bar,
+        wethUsdcMixologist,
+    );
 
     /**
      * OTHERS
@@ -322,6 +360,7 @@ export async function register() {
         multiSwapper,
         mixologistFeeTo,
         mixologistFeeVeTap,
+        liquidationQueue,
         __uniFactory,
         __uniRouter,
         __wethUsdcMockPair,

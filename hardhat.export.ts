@@ -29,7 +29,7 @@ const config: HardhatUserConfig = {
                 settings: {
                     optimizer: {
                         enabled: true,
-                        runs: 200,
+                        runs: 100,
                     },
                 },
             },
@@ -52,6 +52,7 @@ const config: HardhatUserConfig = {
     defaultNetwork: 'hardhat',
     networks: {
         hardhat: {
+            allowUnlimitedContractSize: true,
             accounts:
                 process.env.PRIVATE_KEY !== undefined
                     ? [
