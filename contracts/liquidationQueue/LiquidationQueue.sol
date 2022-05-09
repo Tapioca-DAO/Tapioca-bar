@@ -482,7 +482,6 @@ contract LiquidationQueue {
     /// @notice Create an asset inside of BeachBar that will hold the funds.
     function _registerAsset() internal returns (uint256) {
         (, address contractAddress, , ) = beachBar.assets(marketAssetId);
-        console.log(contractAddress);
         return
             beachBar.registerAsset(
                 TokenType.ERC20,
