@@ -21,6 +21,7 @@ struct MasterContract {
     ContractType risk;
 }
 
+// TODO: AddAsset with ERC20 id
 // TODO: Permissionless market deployment
 ///     + asset registration? (toggle to renounce ownership so users can call)
 contract BeachBar is BoringOwnable, YieldBox {
@@ -183,13 +184,22 @@ contract BeachBar is BoringOwnable, YieldBox {
     }
 
     /// @notice Execute an only owner function inside of a Mixologist market
-    function executeMixologistFn(address mc, bytes calldata data)
+    function executeMixologistFn(address[] calldata mc, bytes[] memory data)
         external
         onlyOwner
-        registeredMasterContract(mc)
-        returns (bool success, bytes memory result)
+        returns (bool[] memory success, bytes[] memory result)
     {
-        (success, result) = mc.call(data);
+        uint256 len = mc.length;
+        success = new bool[](len);
+        result = new bytes[](len);
+        for (uint256 i = 0; i < len; ) {
+            require(
+                isMasterContractRegistered[masterContractOf[mc[i]]],
+                'BeachBar: MC not registered'
+            );
+            (success[i], result[i]) = mc[i].call(data[i]);
+            ++i;
+        }
     }
 
     function setFeeTo(address feeTo_) external onlyOwner {
@@ -212,19 +222,50 @@ contract BeachBar is BoringOwnable, YieldBox {
     // *** OVERRIDE FUNCTIONS *** //
     // ************************** //
 
-    /// @inheritdoc AssetRegister
-    function registerAsset(
+    /// @notice Override of `AssetRegister._registerAsset()`
+    function _registerAsset(
         TokenType tokenType,
         address contractAddress,
         IStrategy strategy,
         uint256 tokenId
-    ) public override onlyOwner returns (uint256 assetId) {
-        assetId = super.registerAsset(
-            tokenType,
-            contractAddress,
-            strategy,
-            tokenId
-        );
+    ) internal override returns (uint256 assetId) {
+        // Checks
+        assetId = ids[tokenType][contractAddress][strategy][tokenId];
+
+        // If assetId is 0, this is a new asset that needs to be registered
+        if (assetId == 0) {
+            require(
+                strategy == NO_STRATEGY ||
+                    (tokenType == strategy.tokenType() &&
+                        contractAddress == strategy.contractAddress() &&
+                        tokenId == strategy.tokenId()),
+                'YieldBox: Strategy mismatch'
+            );
+            // If a new token gets added, the isContract checks that this is a deployed contract. Needed for security.
+            // Prevents getting shares for a future token whose address is known in advance. For instance a token that will be deployed with CREATE2 in the future or while the contract creation is
+            // in the mempool
+            require(
+                (tokenType == TokenType.Native &&
+                    contractAddress == address(0)) ||
+                    contractAddress.isContract(),
+                'YieldBox: Not a token'
+            );
+
+            // Effects
+            assetId = assets.length;
+            assets.push(Asset(tokenType, contractAddress, strategy, tokenId));
+            ids[tokenType][contractAddress][strategy][tokenId] = assetId;
+
+            // The actual URI isn't emitted here as per EIP1155, because that would make this call super expensive.
+            emit URI('', assetId);
+            emit AssetRegistered(
+                tokenType,
+                contractAddress,
+                strategy,
+                tokenId,
+                assetId
+            );
+        }
     }
 
     /// @notice Withdraws an amount of `token` from a user account.

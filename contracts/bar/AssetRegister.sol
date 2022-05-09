@@ -24,7 +24,8 @@ contract AssetRegister is ERC1155 {
     );
 
     // ids start at 1 so that id 0 means it's not yet registered
-    mapping(TokenType => mapping(address => mapping(IStrategy => mapping(uint256 => uint256)))) public ids;
+    mapping(TokenType => mapping(address => mapping(IStrategy => mapping(uint256 => uint256))))
+        public ids;
     Asset[] public assets;
 
     constructor() {
@@ -40,24 +41,31 @@ contract AssetRegister is ERC1155 {
         address contractAddress,
         IStrategy strategy,
         uint256 tokenId
-    ) internal returns (uint256 assetId) {
+    ) internal virtual returns (uint256 assetId) {
         // Checks
         assetId = ids[tokenType][contractAddress][strategy][tokenId];
 
         // If assetId is 0, this is a new asset that needs to be registered
         if (assetId == 0) {
             // Only do these checks if a new asset needs to be created
-            require(tokenId == 0 || tokenType != TokenType.ERC20, 'YieldBox: No tokenId for ERC20');
+            require(
+                tokenId == 0 || tokenType != TokenType.ERC20,
+                'YieldBox: No tokenId for ERC20'
+            );
             require(
                 strategy == NO_STRATEGY ||
-                    (tokenType == strategy.tokenType() && contractAddress == strategy.contractAddress() && tokenId == strategy.tokenId()),
+                    (tokenType == strategy.tokenType() &&
+                        contractAddress == strategy.contractAddress() &&
+                        tokenId == strategy.tokenId()),
                 'YieldBox: Strategy mismatch'
             );
             // If a new token gets added, the isContract checks that this is a deployed contract. Needed for security.
             // Prevents getting shares for a future token whose address is known in advance. For instance a token that will be deployed with CREATE2 in the future or while the contract creation is
             // in the mempool
             require(
-                (tokenType == TokenType.Native && contractAddress == address(0)) || contractAddress.isContract(),
+                (tokenType == TokenType.Native &&
+                    contractAddress == address(0)) ||
+                    contractAddress.isContract(),
                 'YieldBox: Not a token'
             );
 
@@ -68,7 +76,13 @@ contract AssetRegister is ERC1155 {
 
             // The actual URI isn't emitted here as per EIP1155, because that would make this call super expensive.
             emit URI('', assetId);
-            emit AssetRegistered(tokenType, contractAddress, strategy, tokenId, assetId);
+            emit AssetRegistered(
+                tokenType,
+                contractAddress,
+                strategy,
+                tokenId,
+                assetId
+            );
         }
     }
 
@@ -77,9 +91,12 @@ contract AssetRegister is ERC1155 {
         address contractAddress,
         IStrategy strategy,
         uint256 tokenId
-    ) public virtual returns (uint256 assetId) {
+    ) public returns (uint256 assetId) {
         // Native assets can only be added internally by the NativeTokenFactory
-        require(tokenType == TokenType.ERC20 || tokenType == TokenType.ERC1155, 'AssetManager: cannot add Native');
+        require(
+            tokenType == TokenType.ERC20 || tokenType == TokenType.ERC1155,
+            'AssetManager: cannot add Native'
+        );
         assetId = _registerAsset(tokenType, contractAddress, strategy, tokenId);
     }
 }
