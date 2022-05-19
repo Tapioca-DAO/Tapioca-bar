@@ -41,16 +41,17 @@ contract LiquidationQueue {
 
     // The actual order book. Entries are stored only once a bid has been activated
     // poolId => bidIndex => bidEntry).
-    mapping(uint256 => mapping(uint256 => OrderBookPoolEntry)) orderBookEntries;
+    mapping(uint256 => mapping(uint256 => OrderBookPoolEntry))
+        public orderBookEntries;
     // Meta-data about the order book pool
     // poolId => poolInfo.
-    mapping(uint256 => OrderBookPoolInfo) orderBookInfos;
+    mapping(uint256 => OrderBookPoolInfo) public orderBookInfos;
 
     /**
      * Ledger.
      */
 
-    // user => poolId => orderBookEntries[poolId][bidIndex]
+    // user => orderBookEntries[poolId][bidIndex]
     mapping(address => mapping(uint256 => uint256[])) public userBidIndexes; // User current bids.
 
     // user => amountDue.
@@ -201,7 +202,16 @@ contract LiquidationQueue {
         require(pool <= MAX_BID_POOLS, 'LQ: premium too high');
         require(amount >= liquidationQueueMeta.minBidAmount, 'LQ: bid too low');
 
-        _handleBid(amount);
+        // Transfer assets to the LQ contract.
+        {
+            uint256 assetId = lqAssetId;
+            beachBar.transfer(
+                msg.sender,
+                address(this),
+                assetId,
+                beachBar.toShare(assetId, amount, false)
+            );
+        }
 
         Bidder memory bidder;
         bidder.amount = amount;
@@ -233,8 +243,8 @@ contract LiquidationQueue {
     function activateBid(address user, uint256 pool) external {
         Bidder memory bidder = bidPools[pool][user];
         require(
-            block.timestamp + liquidationQueueMeta.activationTime >
-                bidder.timestamp,
+            block.timestamp >=
+                bidder.timestamp + liquidationQueueMeta.activationTime,
             'LQ: too soon'
         );
 
@@ -255,7 +265,7 @@ contract LiquidationQueue {
         }
         orderBookInfos[pool] = poolInfo;
 
-        emit Bid(
+        emit ActivateBid(
             msg.sender,
             user,
             pool,
@@ -277,7 +287,13 @@ contract LiquidationQueue {
 
         delete bidPools[pool][msg.sender];
 
-        _handleRedeem(user, amountRemoved);
+        uint256 assetId = lqAssetId;
+        beachBar.transfer(
+            address(this),
+            user,
+            assetId,
+            beachBar.toShare(assetId, amountRemoved, false)
+        );
 
         emit RemoveBid(msg.sender, user, pool, bidder.amount);
     }
@@ -475,6 +491,19 @@ contract LiquidationQueue {
         }
     }
 
+    // ************* //
+    // *** VIEWS *** //
+    // ************* //
+
+    function userBidIndexLength(address user, uint256 pool)
+        external
+        view
+        returns (uint256)
+    {
+        uint256[] storage bidIndexes = userBidIndexes[user][pool];
+        return bidIndexes.length;
+    }
+
     // **************** //
     // *** INTERNAL *** //
     // **************** //
@@ -497,18 +526,6 @@ contract LiquidationQueue {
         OrderBookPoolInfo memory poolInfo;
         poolInfo.poolId = uint32(pool);
         orderBookInfos[pool] = poolInfo;
-    }
-
-    /// @dev This function is called by `bid`. It transfer the market collateral from the msg.sender to the LQ contract.
-    /// @param amount The amount in asset to bid.
-    function _handleBid(uint256 amount) internal {
-        uint256 assetId = lqAssetId;
-        beachBar.transfer(
-            msg.sender,
-            address(this),
-            assetId,
-            beachBar.toShare(assetId, amount, false)
-        );
     }
 
     /// @dev Transfer the market asset from the LQ contract to the `user`.
