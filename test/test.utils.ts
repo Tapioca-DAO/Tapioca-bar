@@ -244,22 +244,20 @@ async function registerLiquidationQueue(bar: BeachBar, mixologist: Mixologist) {
     ).deploy();
     await liquidationQueue.deployed();
 
+    const LQ_META = {
+        activationTime: 600, // 10min
+        minBidAmount: ethers.BigNumber.from((1e18).toString()).mul(200), // 200 USDC
+    };
     const payload = mixologist.interface.encodeFunctionData(
         'setLiquidationQueue',
-        [
-            liquidationQueue.address,
-            {
-                activationTime: 600, // 10min
-                minBidAmount: ethers.BigNumber.from((1e18).toString()).mul(200), // 200 USDC
-            },
-        ],
+        [liquidationQueue.address, LQ_META],
     );
 
     await (
         await bar.executeMixologistFn([mixologist.address], [payload])
     ).wait();
 
-    return { liquidationQueue };
+    return { liquidationQueue, LQ_META };
 }
 
 export async function register() {
@@ -324,7 +322,7 @@ export async function register() {
 
     // 9 Deploy & set LiquidationQueue
 
-    const { liquidationQueue } = await registerLiquidationQueue(
+    const { liquidationQueue, LQ_META } = await registerLiquidationQueue(
         bar,
         wethUsdcMixologist,
     );
@@ -361,6 +359,7 @@ export async function register() {
         mixologistFeeTo,
         mixologistFeeVeTap,
         liquidationQueue,
+        LQ_META,
         __uniFactory,
         __uniRouter,
         __wethUsdcMockPair,
