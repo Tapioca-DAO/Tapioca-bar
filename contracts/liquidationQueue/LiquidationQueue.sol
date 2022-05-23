@@ -221,7 +221,7 @@ contract LiquidationQueue {
         emit Bid(msg.sender, user, pool, amount, block.timestamp);
 
         // Clean the userBidIndex.
-        uint256[] storage bidIndexes = userBidIndexes[msg.sender][pool];
+        uint256[] storage bidIndexes = userBidIndexes[user][pool];
         uint256 bidIndexesLen = bidIndexes.length;
         OrderBookPoolInfo memory poolInfo = orderBookInfos[pool];
         for (uint256 i = 0; i < bidIndexesLen; ) {
@@ -259,6 +259,9 @@ contract LiquidationQueue {
         orderBookEntries[pool][poolInfo.nextBidPush] = orderBookEntry;
         delete bidPools[pool][user];
 
+        // Add the index to the user bid index.
+        userBidIndexes[user][pool].push(poolInfo.nextBidPush);
+
         // Update the `orderBookInfos`.
         unchecked {
             ++poolInfo.nextBidPush;
@@ -275,6 +278,7 @@ contract LiquidationQueue {
     }
 
     /// @notice Remove a not yet activated bid from the bid pool.
+    /// @dev Remove `msg.sender` funds.
     /// @param user The user to send the funds to.
     /// @param pool The pool to remove the bid from.
     /// @return amountRemoved The amount of the bid.
@@ -282,11 +286,12 @@ contract LiquidationQueue {
         external
         returns (uint256 amountRemoved)
     {
-        Bidder memory bidder = bidPools[pool][user];
+        Bidder memory bidder = bidPools[pool][msg.sender];
         amountRemoved = bidder.amount;
 
         delete bidPools[pool][msg.sender];
 
+        // Transfer assets
         uint256 assetId = lqAssetId;
         beachBar.transfer(
             address(this),
@@ -298,7 +303,7 @@ contract LiquidationQueue {
         emit RemoveBid(msg.sender, user, pool, bidder.amount);
     }
 
-    /// @notice Remove the last activated bid of a given pool.
+    /// @notice Remove an activated bid from a given pool.
     /// @dev Clean the userBidIndex here instead of the `executeBids()` function to save on gas.
     ///      To prevent DoS attacks on `executeBids()` and gas costs, the last activated bid
     ///      will take the position of the removed bid.
@@ -317,7 +322,7 @@ contract LiquidationQueue {
 
         // Clean expired bids.
         for (uint256 i = 0; i < bidIndexesLen; ) {
-            if (bidIndexes[i] >= poolInfo.nextBidPull) {
+            if (bidIndexes[i] > poolInfo.nextBidPull) {
                 bidIndexesLen = bidIndexes.length;
                 bidIndexes[i] = bidIndexes[bidIndexesLen - 1];
                 bidIndexes.pop();
@@ -326,6 +331,7 @@ contract LiquidationQueue {
                 ++i;
             }
         }
+
         // Remove bid from the order book by replacing it with the last activated bid.
         uint256 orderBookIndex = bidIndexes[bidPosition];
         amountRemoved = orderBookEntries[pool][orderBookIndex].bidInfo.amount;
@@ -338,7 +344,14 @@ contract LiquidationQueue {
         bidIndexes[bidPosition] = bidIndexes[bidIndexesLen - 1];
         bidIndexes.pop();
 
-        _handleRedeem(user, amountRemoved);
+        // Transfer assets
+        uint256 assetId = lqAssetId;
+        beachBar.transfer(
+            address(this),
+            user,
+            assetId,
+            beachBar.toShare(assetId, amountRemoved, false)
+        );
 
         emit RemoveBid(msg.sender, user, pool, amountRemoved);
     }

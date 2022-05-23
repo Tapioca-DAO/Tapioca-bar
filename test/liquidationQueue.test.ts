@@ -95,7 +95,7 @@ describe('LiquidationQueue test', () => {
         ).to.be.true;
     });
 
-    it.only('Should remove an inactivated bid', async () => {
+    it('Should remove an inactivated bid', async () => {
         const { liquidationQueue, deployer, weth, LQ_META, bar } =
             await register();
 
@@ -121,6 +121,61 @@ describe('LiquidationQueue test', () => {
 
         await expect(
             liquidationQueue.removeInactivatedBid(deployer.address, POOL),
+        ).to.emit(liquidationQueue, 'RemoveBid');
+
+        // Check for deleted bid pool entry queue
+        expect(
+            (await liquidationQueue.bidPools(POOL, deployer.address)).amount,
+        ).to.be.eq(0);
+
+        // Check for fund return
+        expect(
+            await bar.toAmount(
+                lqAssetId,
+                await bar.balanceOf(deployer.address, lqAssetId),
+                false,
+            ),
+        ).to.be.eq(LQ_META.minBidAmount);
+    });
+
+    it('Should remove an activated bid', async () => {
+        const { liquidationQueue, deployer, weth, LQ_META, bar } =
+            await register();
+
+        const POOL = 10;
+        const lqAssetId = await liquidationQueue.lqAssetId();
+
+        // Bid and activate
+        await (await weth.freeMint(LQ_META.minBidAmount)).wait();
+        await (await weth.approve(bar.address, LQ_META.minBidAmount)).wait();
+        await bar['deposit(uint256,address,address,uint256,uint256)'](
+            lqAssetId,
+            deployer.address,
+            deployer.address,
+            LQ_META.minBidAmount,
+            0,
+        );
+        await bar.setApprovalForAll(liquidationQueue.address, true);
+        await liquidationQueue.bid(
+            deployer.address,
+            POOL,
+            LQ_META.minBidAmount,
+        );
+        await hh.network.provider.send('evm_increaseTime', [10_000]);
+        await hh.network.provider.send('evm_mine');
+        await liquidationQueue.activateBid(deployer.address, POOL);
+
+        const bidIndexLen = await liquidationQueue.userBidIndexLength(
+            deployer.address,
+            POOL,
+        );
+
+        await expect(
+            liquidationQueue.removeBid(
+                deployer.address,
+                POOL,
+                bidIndexLen.sub(1),
+            ),
         ).to.emit(liquidationQueue, 'RemoveBid');
 
         // Check for deleted bid pool entry queue
