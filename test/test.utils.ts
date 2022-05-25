@@ -15,7 +15,7 @@ async function resetVM() {
 }
 
 function BN(n: BigNumberish) {
-    return ethers.BigNumber.from(n);
+    return ethers.BigNumber.from(n.toString());
 }
 
 const __wethUsdcPrice = BN(2980).mul((1e18).toString());
