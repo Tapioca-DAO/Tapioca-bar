@@ -30,7 +30,7 @@ interface ILiquidationQueue {
         view
         returns (uint256 i, bool available);
 
-    function executeBid(uint256 collateralAmountToLiquidate)
+    function executeBids(uint256 collateralAmountToLiquidate)
         external
         returns (uint256 amountExecuted, uint256 collateralLiquidated);
 }
