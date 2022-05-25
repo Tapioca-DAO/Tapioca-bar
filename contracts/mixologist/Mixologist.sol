@@ -160,7 +160,7 @@ contract Mixologist is ERC20, BoringOwnable {
 
     // Settings for the Medium Risk Mixologist
     uint256 private constant CLOSED_COLLATERIZATION_RATE = 75000; // 75%
-    uint256 private constant HEALTHY_COLLATERIZATION_RATE = 80000; // 80%
+    uint256 private constant HEALTHY_COLLATERIZATION_RATE = 70000; // 70%
     uint256 private constant COLLATERIZATION_RATE_PRECISION = 1e5; // Must be less than EXCHANGE_RATE_PRECISION (due to optimization in math)
     uint256 private constant MINIMUM_TARGET_UTILIZATION = 7e17; // 70%
     uint256 private constant MAXIMUM_TARGET_UTILIZATION = 8e17; // 80%
@@ -181,8 +181,8 @@ contract Mixologist is ERC20, BoringOwnable {
     uint256 private constant LIQUIDATION_MULTIPLIER_PRECISION = 1e5;
 
     // Fees
-    uint256 private constant LIQUIDATION_QUEUE_CALLER_FEE = 1000; // 1%
-    uint256 private constant LIQUIDATION_QUEUE_CALLER_FEE_DIVISOR = 1e5;
+    uint256 private constant CALLER_FEE = 1000; // 1%
+    uint256 private constant CALLER_FEE_DIVISOR = 1e5;
     uint256 private constant PROTOCOL_FEE = 10000; // 10%
     uint256 private constant PROTOCOL_FEE_DIVISOR = 1e5;
     uint256 private constant BORROW_OPENING_FEE = 50; // 0.05%
@@ -350,11 +350,12 @@ contract Mixologist is ERC20, BoringOwnable {
                 _totalBorrow.base;
     }
 
+    // TODO write test
     /// @notice Return the amount of collateral for a `user` to be solvent. Returns 0 if user already solvent.
     /// @param user The user to check solvency.
     /// @param _exchangeRate The exchange rate asset/collateral.
     /// @return The amount of collateral to be solvent.
-    function computeBorrowAmountToSolvency(address user, uint256 _exchangeRate)
+    function computeAssetAmountToSolvency(address user, uint256 _exchangeRate)
         public
         view
         returns (uint256)
@@ -365,23 +366,18 @@ contract Mixologist is ERC20, BoringOwnable {
         uint256 collateralShare = userCollateralShare[user];
         if (collateralShare == 0) return 0;
 
-        Rebase memory _totalBorrow = totalBorrow;
-
+        // We make sure to make the user solvent and add a safety buffer
         uint256 collateralAmountInAsset = beachBar.toAmount(
             collateralId,
-            collateralShare *
+            (collateralShare *
                 (EXCHANGE_RATE_PRECISION / COLLATERIZATION_RATE_PRECISION) *
-                HEALTHY_COLLATERIZATION_RATE,
+                HEALTHY_COLLATERIZATION_RATE) / _exchangeRate,
             false
         );
-        // Moved exchangeRate here instead of dividing the other side to preserve more precision
-        uint256 borrowedAmount = (borrowPart *
-            _totalBorrow.elastic *
-            _exchangeRate) / _totalBorrow.base;
 
         return
-            borrowedAmount >= collateralAmountInAsset
-                ? (borrowedAmount - collateralAmountInAsset)
+            borrowPart >= collateralAmountInAsset
+                ? (borrowPart - collateralAmountInAsset)
                 : 0;
     }
 
@@ -747,6 +743,7 @@ contract Mixologist is ERC20, BoringOwnable {
             (, bool bidAvail) = liquidationQueue.getNextAvailBidPool();
             if (bidAvail) {
                 orderBookLiquidation(users, _exchangeRate);
+                return;
             }
         }
         closedLiquidation(users, maxBorrowParts, swapper, _exchangeRate);
@@ -764,7 +761,7 @@ contract Mixologist is ERC20, BoringOwnable {
         for (uint256 i = 0; i < users.length; i++) {
             address user = users[i];
             if (!_isSolvent(user, _exchangeRate)) {
-                uint256 borrowAmount = computeBorrowAmountToSolvency(
+                uint256 borrowAmount = computeAssetAmountToSolvency(
                     user,
                     _exchangeRate
                 );
@@ -775,9 +772,7 @@ contract Mixologist is ERC20, BoringOwnable {
                 uint256 borrowPart;
                 {
                     uint256 availableBorrowPart = userBorrowPart[user];
-                    borrowPart =
-                        availableBorrowPart -
-                        _totalBorrow.toBase(borrowAmount, false);
+                    borrowPart = availableBorrowPart - borrowAmount;
                     userBorrowPart[user] = availableBorrowPart - borrowPart;
                 }
                 uint256 collateralShare = beachBar.toShare(
@@ -807,6 +802,7 @@ contract Mixologist is ERC20, BoringOwnable {
             }
         }
         require(allBorrowAmount != 0, 'Mx: all are solvent');
+
         _totalBorrow.elastic -= uint128(allBorrowAmount);
         _totalBorrow.base -= uint128(allBorrowPart);
         totalBorrow = _totalBorrow;
@@ -823,28 +819,26 @@ contract Mixologist is ERC20, BoringOwnable {
             address(this),
             address(liquidationQueue),
             collateralId,
-            totalCollateralShare
+            allCollateralShare
         );
+
         // LiquidationQueue pay debt
-        liquidationQueue.executeBid(
-            beachBar.toAmount(collateralId, totalCollateralShare, true)
+        liquidationQueue.executeBids(
+            beachBar.toAmount(collateralId, allCollateralShare, true)
         );
 
         uint256 returnedShare = beachBar.balanceOf(address(this), assetId) -
             uint256(totalAsset.elastic);
         uint256 extraShare = returnedShare - allBorrowShare;
-        uint256 feeShare = (extraShare * PROTOCOL_FEE) / PROTOCOL_FEE_DIVISOR; // 10% of profit goes to fee
-        uint256 callerShare = (extraShare * LIQUIDATION_QUEUE_CALLER_FEE) /
-            LIQUIDATION_QUEUE_CALLER_FEE_DIVISOR; // 1% goes to caller
+        uint256 callerShare = (extraShare * CALLER_FEE) / CALLER_FEE_DIVISOR; // 1% goes to caller
 
-        beachBar.transfer(address(this), beachBar.feeTo(), assetId, feeShare);
         beachBar.transfer(address(this), msg.sender, assetId, callerShare);
 
-        totalAsset.elastic += uint128(returnedShare - feeShare - callerShare);
+        totalAsset.elastic += uint128(returnedShare - callerShare);
         emit LogAddAsset(
             address(liquidationQueue),
             address(this),
-            extraShare - feeShare - callerShare,
+            extraShare - callerShare,
             0
         );
     }
@@ -935,8 +929,8 @@ contract Mixologist is ERC20, BoringOwnable {
         uint256 returnedShare = beachBar.balanceOf(address(this), assetId) -
             uint256(totalAsset.elastic);
         uint256 extraShare = returnedShare - allBorrowShare;
-        uint256 feeShare = (extraShare * PROTOCOL_FEE) / PROTOCOL_FEE_DIVISOR; // 10% of profit goes to fee
-        uint256 callerShare = extraShare - feeShare;
+        uint256 feeShare = (extraShare * PROTOCOL_FEE) / PROTOCOL_FEE_DIVISOR; // 10% of profit goes to fee.
+        uint256 callerShare = (extraShare * CALLER_FEE) / CALLER_FEE_DIVISOR; //  1%  of profit goes to caller.
 
         beachBar.transfer(address(this), beachBar.feeTo(), assetId, feeShare);
         beachBar.transfer(address(this), msg.sender, assetId, callerShare);
