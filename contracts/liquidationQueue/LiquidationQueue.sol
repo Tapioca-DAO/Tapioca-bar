@@ -6,10 +6,16 @@ import '../mixologist/Mixologist.sol';
 import '../bar/BeachBar.sol';
 import './ILiquidationQueue.sol';
 
+enum MODE {
+    ADD,
+    SUB
+}
+
 /// @title LiquidationQueue
 /// @author @0xRektora, TapiocaDAO
 // TODO: Capital efficiency? (register assets to strategies) (farm strat for TAP)
 // TODO: ERC20 impl?
+// TODO: withdrawal fees
 contract LiquidationQueue {
     // ************ //
     // *** VARS *** //
@@ -419,13 +425,14 @@ contract LiquidationQueue {
                 ];
                 orderBookEntryCopy = orderBookEntry;
 
-                // Get the total amount of asset with the pool discount applied of the bidder.
-                discountedBidderCollateralAmount = _getDiscountAmount(
+                // Get the total amount of asset with the pool discount applied for the bidder.
+                discountedBidderCollateralAmount = _getPremiumAmount(
                     _bidToCollateral(
                         orderBookEntryCopy.bidInfo.amount,
                         exchangeRate
                     ),
-                    curPoolId
+                    curPoolId,
+                    MODE.ADD
                 );
 
                 // Check if the bidder can pay the remaining collateral to liquidate `collateralAmountToLiquidate`.
@@ -437,10 +444,15 @@ contract LiquidationQueue {
                     balancesDue[
                         orderBookEntryCopy.bidder
                     ] += collateralAmountToLiquidate; // Write balance.
-                    discountedBidderAssetAmount = _collateralToBid(
-                        collateralAmountToLiquidate,
-                        exchangeRate
+                    discountedBidderAssetAmount = _getPremiumAmount(
+                        _collateralToBid(
+                            collateralAmountToLiquidate,
+                            exchangeRate
+                        ),
+                        curPoolId,
+                        MODE.SUB
                     );
+
                     orderBookEntry
                         .bidInfo
                         .amount -= discountedBidderAssetAmount; // Update bid entry amount.
@@ -533,9 +545,21 @@ contract LiquidationQueue {
     function userBidIndexLength(address user, uint256 pool)
         external
         view
-        returns (uint256)
+        returns (uint256 len)
     {
-        uint256[] storage bidIndexes = userBidIndexes[user][pool];
+        uint256[] memory bidIndexes = userBidIndexes[user][pool];
+
+        uint256 bidIndexesLen = bidIndexes.length;
+        OrderBookPoolInfo memory poolInfo = orderBookInfos[pool];
+        for (uint256 i = 0; i < bidIndexesLen; ) {
+            if (bidIndexes[i] >= poolInfo.nextBidPull) {
+                bidIndexesLen--;
+            }
+            unchecked {
+                ++i;
+            }
+        }
+
         return bidIndexes.length;
     }
 
@@ -576,17 +600,18 @@ contract LiquidationQueue {
         );
     }
 
-    /// @notice Get the discount gained from a bid in a `poolId` given an `collateralAmount`.
-    /// @param collateralAmount The amount of collateral to get the discount from.
+    /// @notice Get the discount gained from a bid in a `poolId` given a `amount`.
+    /// @param amount The amount of collateral to get the discount from.
     /// @param poolId The targeted pool.
-    function _getDiscountAmount(uint256 collateralAmount, uint256 poolId)
-        internal
-        pure
-        returns (uint256)
-    {
-        return
-            (collateralAmount * poolId * PREMIUM_FACTOR) /
+    /// @param mode 0 subtract - 1 add.
+    function _getPremiumAmount(
+        uint256 amount,
+        uint256 poolId,
+        MODE mode
+    ) internal pure returns (uint256) {
+        uint256 premium = (amount * poolId * PREMIUM_FACTOR) /
             PREMIUM_FACTOR_PRECISION;
+        return mode == MODE.ADD ? amount + premium : amount - premium;
     }
 
     /// @notice Convert a bid amount to a collateral amount.

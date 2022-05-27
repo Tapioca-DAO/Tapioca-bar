@@ -219,27 +219,29 @@ describe('LiquidationQueue test', () => {
         const lqAssetId = await liquidationQueue.lqAssetId();
 
         // Bid and activate
-        await (await weth.freeMint(LQ_META.minBidAmount)).wait();
-        await (await weth.approve(bar.address, LQ_META.minBidAmount)).wait();
+        await (await weth.freeMint(LQ_META.minBidAmount.mul(100))).wait();
+        await (
+            await weth.approve(bar.address, LQ_META.minBidAmount.mul(100))
+        ).wait();
         await bar['deposit(uint256,address,address,uint256,uint256)'](
             lqAssetId,
             deployer.address,
             deployer.address,
-            LQ_META.minBidAmount,
+            LQ_META.minBidAmount.mul(100),
             0,
         );
         await bar.setApprovalForAll(liquidationQueue.address, true);
         await liquidationQueue.bid(
             deployer.address,
             POOL,
-            LQ_META.minBidAmount,
+            LQ_META.minBidAmount.mul(100),
         );
         await hh.network.provider.send('evm_increaseTime', [10_000]);
         await hh.network.provider.send('evm_mine');
         await liquidationQueue.activateBid(deployer.address, POOL);
 
         // Mint some weth to deposit as asset with EOA1
-        const wethAmount = BN(1e18);
+        const wethAmount = BN(1e18).mul(100);
         await weth.connect(eoa1).freeMint(wethAmount);
         await weth.connect(eoa1).approve(bar.address, wethAmount);
         await bar
@@ -268,6 +270,7 @@ describe('LiquidationQueue test', () => {
             .mul(74)
             .div(100)
             .div(__wethUsdcPrice.div(BN(1e18)));
+
         await usdc.freeMint(usdcAmount);
         await usdc.approve(bar.address, usdcAmount);
         await bar['deposit(uint256,address,address,uint256,uint256)'](
@@ -295,8 +298,15 @@ describe('LiquidationQueue test', () => {
         ).to.be.revertedWith('Mx: all are solvent');
 
         // Make some price movement and liquidate
-        const priceDrop = __wethUsdcPrice.mul(15).div(100);
+        const priceDrop = __wethUsdcPrice.mul(10).div(100);
         await wethUsdcOracle.set(__wethUsdcPrice.add(priceDrop));
+        await wethUsdcMixologist.updateExchangeRate();
+
+        await wethUsdcMixologist.liquidate(
+            [deployer.address],
+            [await wethUsdcMixologist.userBorrowPart(deployer.address)],
+            multiSwapper.address,
+        );
 
         await expect(
             wethUsdcMixologist.liquidate(
@@ -305,5 +315,10 @@ describe('LiquidationQueue test', () => {
                 multiSwapper.address,
             ),
         ).to.not.be.reverted;
+
+        // Check that LQ balances has been added
+        expect(await liquidationQueue.balancesDue(deployer.address)).to.not.eq(
+            0,
+        );
     });
 });

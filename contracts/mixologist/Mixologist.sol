@@ -160,7 +160,6 @@ contract Mixologist is ERC20, BoringOwnable {
 
     // Settings for the Medium Risk Mixologist
     uint256 private constant CLOSED_COLLATERIZATION_RATE = 75000; // 75%
-    uint256 private constant HEALTHY_COLLATERIZATION_RATE = 70000; // 70%
     uint256 private constant COLLATERIZATION_RATE_PRECISION = 1e5; // Must be less than EXCHANGE_RATE_PRECISION (due to optimization in math)
     uint256 private constant MINIMUM_TARGET_UTILIZATION = 7e17; // 70%
     uint256 private constant MAXIMUM_TARGET_UTILIZATION = 8e17; // 80%
@@ -177,6 +176,7 @@ contract Mixologist is ERC20, BoringOwnable {
 
     uint256 private constant EXCHANGE_RATE_PRECISION = 1e18;
 
+    uint256 private constant ORDER_BOOK_LIQUIDATION_MULTIPLIER = 127000; // add 27%
     uint256 private constant LIQUIDATION_MULTIPLIER = 112000; // add 12%
     uint256 private constant LIQUIDATION_MULTIPLIER_PRECISION = 1e5;
 
@@ -350,8 +350,9 @@ contract Mixologist is ERC20, BoringOwnable {
                 _totalBorrow.base;
     }
 
-    // TODO write test
     /// @notice Return the amount of collateral for a `user` to be solvent. Returns 0 if user already solvent.
+    /// @dev We use a `CLOSED_COLLATERIZATION_RATE` that is a safety buffer when making the user solvent again,
+    ///      To prevent from being liquidated. This function is valid only if user is not solvent by `_isSolvent()`.
     /// @param user The user to check solvency.
     /// @param _exchangeRate The exchange rate asset/collateral.
     /// @return The amount of collateral to be solvent.
@@ -366,14 +367,16 @@ contract Mixologist is ERC20, BoringOwnable {
         uint256 collateralShare = userCollateralShare[user];
         if (collateralShare == 0) return 0;
 
-        // We make sure to make the user solvent and add a safety buffer
+        Rebase memory _totalBorrow = totalBorrow;
+
         uint256 collateralAmountInAsset = beachBar.toAmount(
             collateralId,
             (collateralShare *
                 (EXCHANGE_RATE_PRECISION / COLLATERIZATION_RATE_PRECISION) *
-                HEALTHY_COLLATERIZATION_RATE) / _exchangeRate,
+                CLOSED_COLLATERIZATION_RATE) / _exchangeRate,
             false
         );
+        borrowPart = (borrowPart * _totalBorrow.elastic) / _totalBorrow.base;
 
         return
             borrowPart >= collateralAmountInAsset
@@ -777,7 +780,9 @@ contract Mixologist is ERC20, BoringOwnable {
                 }
                 uint256 collateralShare = beachBar.toShare(
                     collateralId,
-                    (borrowAmount * LIQUIDATION_MULTIPLIER * _exchangeRate) /
+                    (borrowAmount *
+                        ORDER_BOOK_LIQUIDATION_MULTIPLIER *
+                        _exchangeRate) /
                         (LIQUIDATION_MULTIPLIER_PRECISION *
                             EXCHANGE_RATE_PRECISION),
                     false

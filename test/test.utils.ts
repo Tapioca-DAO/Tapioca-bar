@@ -18,7 +18,7 @@ function BN(n: BigNumberish) {
     return ethers.BigNumber.from(n.toString());
 }
 
-const __wethUsdcPrice = BN(2980).mul((1e18).toString());
+const __wethUsdcPrice = BN(1000).mul((1e18).toString());
 
 export async function setBalance(addr: string, ether: number) {
     await ethers.provider.send('hardhat_setBalance', [
