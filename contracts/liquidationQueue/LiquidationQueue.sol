@@ -15,7 +15,6 @@ enum MODE {
 /// @author @0xRektora, TapiocaDAO
 // TODO: Capital efficiency? (register assets to strategies) (farm strat for TAP)
 // TODO: ERC20 impl?
-// TODO: withdrawal fees
 contract LiquidationQueue {
     // ************ //
     // *** VARS *** //
@@ -67,9 +66,12 @@ contract LiquidationQueue {
     uint256 constant MAX_BID_POOLS = 30; // Maximum amount of pools.
     // `amount` * ((`bidPool` * `PREMIUM_FACTOR`) / `PREMIUM_FACTOR_PRECISION`) = premium.
     uint256 constant PREMIUM_FACTOR = 100; // Premium factor.
-    uint256 constant PREMIUM_FACTOR_PRECISION = 10000; // Precision of the premium factor.
+    uint256 constant PREMIUM_FACTOR_PRECISION = 10_000; // Precision of the premium factor.
 
     uint256 private constant EXCHANGE_RATE_PRECISION = 1e18;
+
+    uint256 private constant WITHDRAWAL_FEE = 50; // 0.5%
+    uint256 private constant WITHDRAWAL_FEE_PRECISION = 10_000;
 
     // ************ //
     // *** INIT *** //
@@ -371,12 +373,16 @@ contract LiquidationQueue {
     function redeem(address user) external {
         require(balancesDue[msg.sender] > 0, 'LQ: No balance due');
 
-        uint256 amount = balancesDue[msg.sender];
+        uint256 balance = balancesDue[msg.sender];
+        uint256 fee = (balance * WITHDRAWAL_FEE) / WITHDRAWAL_FEE_PRECISION;
+        uint256 redeemable = balance - fee;
+
         balancesDue[msg.sender] = 0;
+        balancesDue[liquidationQueueMeta.feeCollector] += fee;
 
-        _handleRedeem(user, amount);
+        _handleRedeem(user, redeemable);
 
-        emit Redeem(msg.sender, user, amount);
+        emit Redeem(msg.sender, user, redeemable);
     }
 
     /// @notice Execute the liquidation call by executing the bids placed in the pools in ASC order.
