@@ -238,7 +238,11 @@ async function registerMixologist(
     return { wethUsdcMixologist };
 }
 
-async function registerLiquidationQueue(bar: BeachBar, mixologist: Mixologist) {
+async function registerLiquidationQueue(
+    bar: BeachBar,
+    mixologist: Mixologist,
+    feeCollector: string,
+) {
     const liquidationQueue = await (
         await ethers.getContractFactory('LiquidationQueue')
     ).deploy();
@@ -247,6 +251,7 @@ async function registerLiquidationQueue(bar: BeachBar, mixologist: Mixologist) {
     const LQ_META = {
         activationTime: 600, // 10min
         minBidAmount: ethers.BigNumber.from((1e18).toString()).mul(200), // 200 USDC
+        feeCollector,
     };
     const payload = mixologist.interface.encodeFunctionData(
         'setLiquidationQueue',
@@ -321,10 +326,14 @@ export async function register() {
     await bar.setFeeVeTap(mixologistFeeVeTap.address);
 
     // 9 Deploy & set LiquidationQueue
-
+    const feeCollector = new ethers.Wallet(
+        ethers.Wallet.createRandom().privateKey,
+        ethers.provider,
+    );
     const { liquidationQueue, LQ_META } = await registerLiquidationQueue(
         bar,
         wethUsdcMixologist,
+        feeCollector.address,
     );
 
     /**
@@ -360,6 +369,7 @@ export async function register() {
         mixologistFeeVeTap,
         liquidationQueue,
         LQ_META,
+        feeCollector,
         __uniFactory,
         __uniRouter,
         __wethUsdcMockPair,

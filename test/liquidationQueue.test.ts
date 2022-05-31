@@ -201,6 +201,7 @@ describe('LiquidationQueue test', () => {
         const {
             deployer,
             eoa1,
+            feeCollector,
             __wethUsdcPrice,
             liquidationQueue,
             LQ_META,
@@ -213,7 +214,7 @@ describe('LiquidationQueue test', () => {
             BN,
         } = await register();
 
-        const POOL = 10;
+        const POOL = 5;
         const marketAssetId = await wethUsdcMixologist.assetId();
         const marketColId = await wethUsdcMixologist.collateralId();
         const lqAssetId = await liquidationQueue.lqAssetId();
@@ -298,15 +299,9 @@ describe('LiquidationQueue test', () => {
         ).to.be.revertedWith('Mx: all are solvent');
 
         // Make some price movement and liquidate
-        const priceDrop = __wethUsdcPrice.mul(10).div(100);
+        const priceDrop = __wethUsdcPrice.mul(5).div(100);
         await wethUsdcOracle.set(__wethUsdcPrice.add(priceDrop));
         await wethUsdcMixologist.updateExchangeRate();
-
-        await wethUsdcMixologist.liquidate(
-            [deployer.address],
-            [await wethUsdcMixologist.userBorrowPart(deployer.address)],
-            multiSwapper.address,
-        );
 
         await expect(
             wethUsdcMixologist.liquidate(
@@ -316,9 +311,22 @@ describe('LiquidationQueue test', () => {
             ),
         ).to.not.be.reverted;
 
+        await expect(
+            wethUsdcMixologist.liquidate(
+                [deployer.address],
+                [await wethUsdcMixologist.userBorrowPart(deployer.address)],
+                multiSwapper.address,
+            ),
+        ).to.be.revertedWith('Mx: all are solvent');
+
         // Check that LQ balances has been added
         expect(await liquidationQueue.balancesDue(deployer.address)).to.not.eq(
             0,
         );
+        await liquidationQueue.redeem(feeCollector.address);
+        // Check LQ fees has been added after withdrawal
+        expect(
+            await liquidationQueue.balancesDue(feeCollector.address),
+        ).to.not.eq(0);
     });
 });

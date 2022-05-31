@@ -160,6 +160,7 @@ contract Mixologist is ERC20, BoringOwnable {
 
     // Settings for the Medium Risk Mixologist
     uint256 private constant CLOSED_COLLATERIZATION_RATE = 75000; // 75%
+    uint256 private constant LQ_COLLATERIZATION_RATE = 25000; // 25%
     uint256 private constant COLLATERIZATION_RATE_PRECISION = 1e5; // Must be less than EXCHANGE_RATE_PRECISION (due to optimization in math)
     uint256 private constant MINIMUM_TARGET_UTILIZATION = 7e17; // 70%
     uint256 private constant MAXIMUM_TARGET_UTILIZATION = 8e17; // 80%
@@ -373,14 +374,15 @@ contract Mixologist is ERC20, BoringOwnable {
             collateralId,
             (collateralShare *
                 (EXCHANGE_RATE_PRECISION / COLLATERIZATION_RATE_PRECISION) *
-                CLOSED_COLLATERIZATION_RATE) / _exchangeRate,
+                LQ_COLLATERIZATION_RATE),
             false
-        );
+        ) / _exchangeRate;
+        // Obviously it's not `borrowPart` anymore but `borrowAmount`
         borrowPart = (borrowPart * _totalBorrow.elastic) / _totalBorrow.base;
 
         return
             borrowPart >= collateralAmountInAsset
-                ? (borrowPart - collateralAmountInAsset)
+                ? borrowPart - collateralAmountInAsset
                 : 0;
     }
 
@@ -775,16 +777,14 @@ contract Mixologist is ERC20, BoringOwnable {
                 uint256 borrowPart;
                 {
                     uint256 availableBorrowPart = userBorrowPart[user];
-                    borrowPart = availableBorrowPart - borrowAmount;
+                    borrowPart = _totalBorrow.toBase(borrowAmount, false);
                     userBorrowPart[user] = availableBorrowPart - borrowPart;
                 }
                 uint256 collateralShare = beachBar.toShare(
                     collateralId,
-                    (borrowAmount *
-                        ORDER_BOOK_LIQUIDATION_MULTIPLIER *
-                        _exchangeRate) /
-                        (LIQUIDATION_MULTIPLIER_PRECISION *
-                            EXCHANGE_RATE_PRECISION),
+                    (borrowAmount * _exchangeRate * LIQUIDATION_MULTIPLIER) /
+                        (EXCHANGE_RATE_PRECISION *
+                            LIQUIDATION_MULTIPLIER_PRECISION),
                     false
                 );
                 userCollateralShare[user] -= collateralShare;
@@ -843,7 +843,7 @@ contract Mixologist is ERC20, BoringOwnable {
         emit LogAddAsset(
             address(liquidationQueue),
             address(this),
-            extraShare - callerShare,
+            returnedShare - callerShare,
             0
         );
     }
@@ -858,14 +858,7 @@ contract Mixologist is ERC20, BoringOwnable {
         uint256[] calldata maxBorrowParts,
         MultiSwapper swapper,
         uint256 _exchangeRate
-    ) public {
-        if (address(liquidationQueue) != address(0)) {
-            (, bool bidAvail) = liquidationQueue.getNextAvailBidPool();
-            require(!bidAvail, 'Mx: LQ bids available');
-        } else {
-            revert('MX: Liquidation queue exist');
-        }
-
+    ) internal {
         uint256 allCollateralShare;
         uint256 allBorrowAmount;
         uint256 allBorrowPart;
