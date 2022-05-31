@@ -30,6 +30,7 @@ contract LiquidationQueue {
 
     uint256 public lqAssetId; // The liquidation queue BeachBar asset id.
     uint256 public marketAssetId; // The mixologist asset id.
+    uint256 public liquidatedAssetId; // The asset that is being liquidated.
     bool onlyOnce; // Contract init variable.
 
     /**
@@ -63,7 +64,7 @@ contract LiquidationQueue {
     // *** CONSTANTS *** //
     // ***************** //
 
-    uint256 constant MAX_BID_POOLS = 30; // Maximum amount of pools.
+    uint256 constant MAX_BID_POOLS = 10; // Maximum amount of pools.
     // `amount` * ((`bidPool` * `PREMIUM_FACTOR`) / `PREMIUM_FACTOR_PRECISION`) = premium.
     uint256 constant PREMIUM_FACTOR = 100; // Premium factor.
     uint256 constant PREMIUM_FACTOR_PRECISION = 10_000; // Precision of the premium factor.
@@ -88,6 +89,7 @@ contract LiquidationQueue {
         liquidationQueueMeta = _liquidationQueueMeta;
 
         mixologist = Mixologist(msg.sender);
+        liquidatedAssetId = mixologist.collateralId();
         marketAssetId = mixologist.assetId();
         beachBar = mixologist.beachBar();
 
@@ -380,7 +382,13 @@ contract LiquidationQueue {
         balancesDue[msg.sender] = 0;
         balancesDue[liquidationQueueMeta.feeCollector] += fee;
 
-        _handleRedeem(user, redeemable);
+        uint256 assetId = liquidatedAssetId;
+        beachBar.transfer(
+            address(this),
+            user,
+            assetId,
+            beachBar.toShare(assetId, redeemable, false)
+        );
 
         emit Redeem(msg.sender, user, redeemable);
     }
@@ -591,19 +599,6 @@ contract LiquidationQueue {
         OrderBookPoolInfo memory poolInfo;
         poolInfo.poolId = uint32(pool);
         orderBookInfos[pool] = poolInfo;
-    }
-
-    /// @dev Transfer the market asset from the LQ contract to the `user`.
-    /// @param user The user who gets the assets.
-    /// @param amount The amount in asset to redeem.
-    function _handleRedeem(address user, uint256 amount) internal {
-        uint256 assetId = marketAssetId;
-        beachBar.transfer(
-            address(this),
-            user,
-            assetId,
-            beachBar.toShare(assetId, amount, false)
-        );
     }
 
     /// @notice Get the discount gained from a bid in a `poolId` given a `amount`.
