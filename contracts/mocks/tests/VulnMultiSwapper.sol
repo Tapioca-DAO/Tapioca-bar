@@ -9,6 +9,12 @@ contract VulnMultiSwapper {
         uint256 assetId,
         address target
     ) public {
-        beachbar.withdraw(assetId, target, msg.sender, beachbar.balanceOf(target, assetId), 0, false);
+        beachbar.yieldBox().withdraw(
+            assetId,
+            target,
+            msg.sender,
+            beachbar.yieldBox().balanceOf(target, assetId),
+            0
+        );
     }
 }

@@ -3,7 +3,6 @@ pragma solidity 0.8.9;
 
 import '@boringcrypto/boring-solidity/contracts/ERC20.sol';
 import '../mixologist/Mixologist.sol';
-import '../bar/BeachBar.sol';
 import './ILiquidationQueue.sol';
 
 enum MODE {
@@ -26,7 +25,8 @@ contract LiquidationQueue {
 
     LiquidationQueueMeta liquidationQueueMeta; // Meta-data for this contract.
     Mixologist mixologist; // The target market.
-    BeachBar beachBar; // The asset registry.
+    BeachBar beachBar;
+    YieldBox yieldBox;
 
     uint256 public lqAssetId; // The liquidation queue BeachBar asset id.
     uint256 public marketAssetId; // The mixologist asset id.
@@ -85,21 +85,21 @@ contract LiquidationQueue {
     {
         require(!onlyOnce, 'LQ: Initialized');
 
-        // We create the BeachBar vault to store the assets.
         liquidationQueueMeta = _liquidationQueueMeta;
 
         mixologist = Mixologist(msg.sender);
         liquidatedAssetId = mixologist.collateralId();
         marketAssetId = mixologist.assetId();
         beachBar = mixologist.beachBar();
+        yieldBox = mixologist.yieldBox();
 
         lqAssetId = _registerAsset();
 
         IERC20(mixologist.asset()).approve(
-            address(beachBar),
+            address(yieldBox),
             type(uint256).max
         );
-        beachBar.setApprovalForAll(address(mixologist), true);
+        yieldBox.setApprovalForAll(address(mixologist), true);
 
         // We initialize the pools to save gas on conditionals later on.
         for (uint256 i = 0; i <= MAX_BID_POOLS; ) {
@@ -218,11 +218,11 @@ contract LiquidationQueue {
         // Transfer assets to the LQ contract.
         {
             uint256 assetId = lqAssetId;
-            beachBar.transfer(
+            yieldBox.transfer(
                 msg.sender,
                 address(this),
                 assetId,
-                beachBar.toShare(assetId, amount, false)
+                yieldBox.toShare(assetId, amount, false)
             );
         }
 
@@ -306,11 +306,11 @@ contract LiquidationQueue {
 
         // Transfer assets
         uint256 assetId = lqAssetId;
-        beachBar.transfer(
+        yieldBox.transfer(
             address(this),
             user,
             assetId,
-            beachBar.toShare(assetId, amountRemoved, false)
+            yieldBox.toShare(assetId, amountRemoved, false)
         );
 
         emit RemoveBid(msg.sender, user, pool, bidder.amount);
@@ -359,11 +359,11 @@ contract LiquidationQueue {
 
         // Transfer assets
         uint256 assetId = lqAssetId;
-        beachBar.transfer(
+        yieldBox.transfer(
             address(this),
             user,
             assetId,
-            beachBar.toShare(assetId, amountRemoved, false)
+            yieldBox.toShare(assetId, amountRemoved, false)
         );
 
         emit RemoveBid(msg.sender, user, pool, amountRemoved);
@@ -371,8 +371,8 @@ contract LiquidationQueue {
 
     /// @notice Redeem a balance.
     /// @dev `msg.sender` is used as the redeemer.
-    /// @param user The user to redeem to.
-    function redeem(address user) external {
+    /// @param to The address to redeem to.
+    function redeem(address to) external {
         require(balancesDue[msg.sender] > 0, 'LQ: No balance due');
 
         uint256 balance = balancesDue[msg.sender];
@@ -383,14 +383,14 @@ contract LiquidationQueue {
         balancesDue[liquidationQueueMeta.feeCollector] += fee;
 
         uint256 assetId = liquidatedAssetId;
-        beachBar.transfer(
+        yieldBox.transfer(
             address(this),
-            user,
+            to,
             assetId,
-            beachBar.toShare(assetId, redeemable, false)
+            yieldBox.toShare(assetId, redeemable, false)
         );
 
-        emit Redeem(msg.sender, user, redeemable);
+        emit Redeem(msg.sender, to, redeemable);
     }
 
     /// @notice Execute the liquidation call by executing the bids placed in the pools in ASC order.
@@ -517,15 +517,14 @@ contract LiquidationQueue {
         {
             uint256 toSend = totalAmountExecuted;
             // Transfer the assets to the Mixologist.
-            beachBar.withdraw(
+            yieldBox.withdraw(
                 lqAssetId,
                 address(this),
                 address(this),
                 toSend,
-                0,
-                false
+                0
             );
-            beachBar.deposit(
+            yieldBox.depositAsset(
                 marketAssetId,
                 address(this),
                 address(mixologist),
@@ -583,13 +582,13 @@ contract LiquidationQueue {
 
     /// @notice Create an asset inside of BeachBar that will hold the funds.
     function _registerAsset() internal returns (uint256) {
-        (, address contractAddress, , ) = beachBar.assets(marketAssetId);
+        (, address contractAddress, , ) = yieldBox.assets(marketAssetId);
         return
-            beachBar.registerAsset(
+            yieldBox.registerAsset(
                 TokenType.ERC20,
                 contractAddress,
                 IStrategy(address(0)),
-                2
+                0
             );
     }
 

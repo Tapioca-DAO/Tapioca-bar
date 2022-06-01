@@ -6,6 +6,7 @@ import '../libraries/IUniswapV2Factory.sol';
 import '../libraries/UniswapV2Library.sol';
 import '../libraries/IUniswapV2Pair.sol';
 import '../bar/BeachBar.sol';
+import '../bar/YieldBox.sol';
 
 /// Modified from https://github.com/sushiswap/kashi-lending/blob/master/contracts/swappers/SushiSwapMultiSwapper.sol
 
@@ -15,6 +16,7 @@ contract MultiSwapper {
     address private immutable factory;
 
     BeachBar private immutable beachBar;
+    YieldBox private immutable yieldBox;
 
     bytes32 private immutable pairCodeHash;
 
@@ -22,9 +24,10 @@ contract MultiSwapper {
         address _factory,
         BeachBar _tapiocaBar,
         bytes32 _pairCodeHash
-    ) public {
+    ) {
         factory = _factory;
         beachBar = _tapiocaBar;
+        yieldBox = _tapiocaBar.yieldBox();
         pairCodeHash = _pairCodeHash;
     }
 
@@ -33,8 +36,13 @@ contract MultiSwapper {
         address[] calldata path,
         uint256 shareIn
     ) external view returns (uint256 amountOut) {
-        uint256 amountIn = beachBar.toAmount(tokenInId, shareIn, false);
-        uint256[] memory amounts = UniswapV2Library.getAmountsOut(factory, amountIn, path, pairCodeHash);
+        uint256 amountIn = yieldBox.toAmount(tokenInId, shareIn, false);
+        uint256[] memory amounts = UniswapV2Library.getAmountsOut(
+            factory,
+            amountIn,
+            path,
+            pairCodeHash
+        );
         amountOut = amounts[amounts.length - 1];
     }
 
@@ -46,10 +54,27 @@ contract MultiSwapper {
         address[] calldata path,
         uint256 shareIn
     ) external returns (uint256 amountOut, uint256 shareOut) {
-        (uint256 amountIn, ) = beachBar.withdraw(tokenInId, msg.sender, address(this), 0, shareIn, false);
-        amountOut = _swapExactTokensForTokens(amountIn, amountMinOut, path, address(this));
+        (uint256 amountIn, ) = yieldBox.withdraw(
+            tokenInId,
+            msg.sender,
+            address(this),
+            0,
+            shareIn
+        );
+        amountOut = _swapExactTokensForTokens(
+            amountIn,
+            amountMinOut,
+            path,
+            address(this)
+        );
         IERC20(path[path.length - 1]).approve(address(beachBar), amountOut);
-        (, shareOut) = beachBar.deposit(tokenOutId, address(this), to, amountOut, 0);
+        (, shareOut) = yieldBox.depositAsset(
+            tokenOutId,
+            address(this),
+            to,
+            amountOut,
+            0
+        );
     }
 
     // Swaps an exact amount of tokens for another token through the path passed as an argument
@@ -60,11 +85,19 @@ contract MultiSwapper {
         address[] memory path,
         address to
     ) internal returns (uint256 amountOut) {
-        uint256[] memory amounts = UniswapV2Library.getAmountsOut(factory, amountIn, path, pairCodeHash);
+        uint256[] memory amounts = UniswapV2Library.getAmountsOut(
+            factory,
+            amountIn,
+            path,
+            pairCodeHash
+        );
         amountOut = amounts[amounts.length - 1];
         require(amountOut >= amountOutMin, 'insufficient-amount-out');
         // Required for the next step
-        IERC20(path[0]).safeTransfer(UniswapV2Library.pairFor(factory, path[0], path[1], pairCodeHash), amountIn);
+        IERC20(path[0]).safeTransfer(
+            UniswapV2Library.pairFor(factory, path[0], path[1], pairCodeHash),
+            amountIn
+        );
         _swap(amounts, path, to);
     }
 
@@ -78,9 +111,20 @@ contract MultiSwapper {
             (address input, address output) = (path[i], path[i + 1]);
             (address token0, ) = UniswapV2Library.sortTokens(input, output);
             uint256 amountOut = amounts[i + 1];
-            (uint256 amount0Out, uint256 amount1Out) = input == token0 ? (uint256(0), amountOut) : (amountOut, uint256(0));
-            address to = i < path.length - 2 ? UniswapV2Library.pairFor(factory, output, path[i + 2], pairCodeHash) : _to;
-            IUniswapV2Pair(UniswapV2Library.pairFor(factory, input, output, pairCodeHash)).swap(amount0Out, amount1Out, to, new bytes(0));
+            (uint256 amount0Out, uint256 amount1Out) = input == token0
+                ? (uint256(0), amountOut)
+                : (amountOut, uint256(0));
+            address to = i < path.length - 2
+                ? UniswapV2Library.pairFor(
+                    factory,
+                    output,
+                    path[i + 2],
+                    pairCodeHash
+                )
+                : _to;
+            IUniswapV2Pair(
+                UniswapV2Library.pairFor(factory, input, output, pairCodeHash)
+            ).swap(amount0Out, amount1Out, to, new bytes(0));
         }
     }
 }

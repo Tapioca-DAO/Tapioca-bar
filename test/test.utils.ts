@@ -6,6 +6,7 @@ import {
     Mixologist,
     OracleMock,
     WETH9Mock,
+    YieldBox,
 } from '../typechain';
 
 ethers.utils.Logger.setLogLevel(ethers.utils.Logger.levels.ERROR);
@@ -59,31 +60,41 @@ async function registerERC20Tokens() {
     return { usdc, weth, tap };
 }
 
-async function registerBeachBar(wethAddress: string, tapAddress: string) {
+async function registerYieldBox(wethAddress: string) {
     // Deploy URIBuilder
     const uriBuilder = await (
         await ethers.getContractFactory('YieldBoxURIBuilder')
     ).deploy();
     await uriBuilder.deployed();
 
-    // Deploy Bar
+    // Deploy yieldBox
+    const yieldBox = await (
+        await ethers.getContractFactory('YieldBox')
+    ).deploy(ethers.constants.AddressZero, uriBuilder.address);
+    await yieldBox.deployed();
+
+    return { uriBuilder, yieldBox };
+}
+
+async function registerBeachBar(yieldBox: string, tapAddress: string) {
     const bar = await (
         await ethers.getContractFactory('BeachBar')
-    ).deploy(wethAddress, uriBuilder.address, tapAddress);
+    ).deploy(yieldBox, tapAddress);
     await bar.deployed();
 
-    return { uriBuilder, bar };
+    return { bar };
 }
 
 async function setBeachBarAssets(
+    yieldBox: YieldBox,
     bar: BeachBar,
     wethAddress: string,
     usdcAddress: string,
 ) {
     await (
-        await bar.registerAsset(1, wethAddress, ethers.constants.AddressZero, 0)
+        await bar.registerAsset(wethAddress, ethers.constants.AddressZero, 0)
     ).wait();
-    const wethAssetId = await bar.ids(
+    const wethAssetId = await yieldBox.ids(
         1,
         wethAddress,
         ethers.constants.AddressZero,
@@ -91,9 +102,9 @@ async function setBeachBarAssets(
     );
 
     await (
-        await bar.registerAsset(1, usdcAddress, ethers.constants.AddressZero, 0)
+        await bar.registerAsset(usdcAddress, ethers.constants.AddressZero, 0)
     ).wait();
-    const usdcAssetId = await bar.ids(
+    const usdcAssetId = await yieldBox.ids(
         1,
         usdcAddress,
         ethers.constants.AddressZero,
@@ -196,6 +207,7 @@ async function deployMediumRiskMC(bar: BeachBar) {
 
 async function registerMixologist(
     mediumRiskMC: string,
+    yieldBox: YieldBox,
     bar: BeachBar,
     weth: WETH9Mock,
     wethAssetId: BigNumberish,
@@ -230,9 +242,9 @@ async function registerMixologist(
     await (await bar.registerMixologist(mediumRiskMC, data, true)).wait();
     const wethUsdcMixologist = await ethers.getContractAt(
         'Mixologist',
-        await bar.clonesOf(
+        await yieldBox.clonesOf(
             mediumRiskMC,
-            (await bar.clonesOfCount(mediumRiskMC)).sub(1),
+            (await yieldBox.clonesOfCount(mediumRiskMC)).sub(1),
         ),
     );
     return { wethUsdcMixologist };
@@ -281,13 +293,14 @@ export async function register() {
 
     // 1 Deploy tokens
     const { tap, usdc, weth } = await registerERC20Tokens();
-    // 2 Deploy BeachBar
-    const { bar, uriBuilder } = await registerBeachBar(
-        weth.address,
-        tap.address,
-    );
+    // 2 Deploy Yieldbox
+    const { yieldBox, uriBuilder } = await registerYieldBox(weth.address);
+    // 2.1 Deploy Yieldbox
+    const { bar } = await registerBeachBar(yieldBox.address, tap.address);
+
     // 3 Add asset types to BeachBar
     const { usdcAssetId, wethAssetId } = await setBeachBarAssets(
+        yieldBox,
         bar,
         weth.address,
         usdc.address,
@@ -309,6 +322,7 @@ export async function register() {
     const tapSwapPath = [weth.address, tap.address];
     const { wethUsdcMixologist } = await registerMixologist(
         mediumRiskMC.address,
+        yieldBox,
         bar,
         weth,
         wethAssetId,
@@ -360,6 +374,7 @@ export async function register() {
         weth,
         tap,
         wethUsdcOracle,
+        yieldBox,
         bar,
         wethUsdcMixologist,
         mixologistHelper,
@@ -394,7 +409,7 @@ export async function register() {
     const approveTokensAndSetBarApproval = async (account?: typeof eoa1) => {
         const _usdc = account ? usdc.connect(account) : usdc;
         const _weth = account ? weth.connect(account) : weth;
-        const _bar = account ? bar.connect(account) : bar;
+        const _yieldBox = account ? yieldBox.connect(account) : yieldBox;
         await (
             await _usdc.approve(bar.address, ethers.constants.MaxUint256)
         ).wait();
@@ -402,7 +417,7 @@ export async function register() {
             await _weth.approve(bar.address, ethers.constants.MaxUint256)
         ).wait();
         await (
-            await _bar.setApprovalForAll(wethUsdcMixologist.address, true)
+            await _yieldBox.setApprovalForAll(wethUsdcMixologist.address, true)
         ).wait();
     };
 
@@ -411,15 +426,15 @@ export async function register() {
         account?: typeof eoa1,
     ) => {
         const _account = account ?? deployer;
-        const _bar = account ? bar.connect(account) : bar;
+        const _yieldBox = account ? yieldBox.connect(account) : yieldBox;
         const _wethUsdcMixologist = account
             ? wethUsdcMixologist.connect(account)
             : wethUsdcMixologist;
 
         const id = await _wethUsdcMixologist.assetId();
-        const _valShare = await _bar.toShare(id, amount, false);
+        const _valShare = await _yieldBox.toShare(id, amount, false);
         await (
-            await _bar['deposit(uint256,address,address,uint256,uint256)'](
+            await _yieldBox.depositAsset(
                 id,
                 _account.address,
                 _account.address,
@@ -441,14 +456,14 @@ export async function register() {
         account?: typeof eoa1,
     ) => {
         const _account = account ?? deployer;
-        const _bar = account ? bar.connect(account) : bar;
+        const _yieldBox = account ? yieldBox.connect(account) : yieldBox;
         const _wethUsdcMixologist = account
             ? wethUsdcMixologist.connect(account)
             : wethUsdcMixologist;
 
         const id = await _wethUsdcMixologist.collateralId();
         await (
-            await _bar['deposit(uint256,address,address,uint256,uint256)'](
+            await _yieldBox.depositAsset(
                 id,
                 _account.address,
                 _account.address,
@@ -456,7 +471,7 @@ export async function register() {
                 0,
             )
         ).wait();
-        const _valShare = await _bar.balanceOf(_account.address, id);
+        const _valShare = await _yieldBox.balanceOf(_account.address, id);
         await (
             await _wethUsdcMixologist.addCollateral(
                 _account.address,
@@ -468,14 +483,14 @@ export async function register() {
 
     const initContracts = async () => {
         await (await weth.freeMint(1000)).wait();
-        const mintValShare = await bar.toShare(
+        const mintValShare = await yieldBox.toShare(
             await wethUsdcMixologist.assetId(),
             1000,
             false,
         );
-        await (await weth.approve(bar.address, 1000)).wait();
+        await (await weth.approve(yieldBox.address, 1000)).wait();
         await (
-            await bar['deposit(uint256,address,address,uint256,uint256)'](
+            await yieldBox.depositAsset(
                 await wethUsdcMixologist.assetId(),
                 deployer.address,
                 deployer.address,
@@ -484,7 +499,7 @@ export async function register() {
             )
         ).wait();
         await (
-            await bar.setApprovalForAll(wethUsdcMixologist.address, true)
+            await yieldBox.setApprovalForAll(wethUsdcMixologist.address, true)
         ).wait();
         await (
             await wethUsdcMixologist.addAsset(
@@ -525,13 +540,15 @@ export async function test_staging() {
     const { tap, usdc, weth } = await registerERC20Tokens();
     // 2 Deploy BeachBar
     console.info('Deploying Beachbar');
-    const { bar, uriBuilder } = await registerBeachBar(
-        weth.address,
-        tap.address,
-    );
+    const { yieldBox, uriBuilder } = await registerYieldBox(weth.address);
+    // 2.1 Deploy BeachBar
+    console.info('Deploying Beachbar');
+    const { bar } = await registerBeachBar(yieldBox.address, tap.address);
+
     // 3 Add asset types to BeachBar
     console.info('Setting assets to Beachbar');
     const { usdcAssetId, wethAssetId } = await setBeachBarAssets(
+        yieldBox,
         bar,
         weth.address,
         usdc.address,
@@ -556,6 +573,7 @@ export async function test_staging() {
     const tapSwapPath = [weth.address, tap.address];
     const { wethUsdcMixologist } = await registerMixologist(
         mediumRiskMC.address,
+        yieldBox,
         bar,
         weth,
         wethAssetId,
