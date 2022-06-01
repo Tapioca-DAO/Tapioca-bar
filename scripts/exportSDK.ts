@@ -1,13 +1,13 @@
 import hre from 'hardhat';
 import { glob, runTypeChain } from 'typechain';
-import { test_staging } from '../test/test.utils';
+import { register } from '../test/test.utils';
 import writeJsonFile = require('write-json-file');
 
 const getStagingAddresses = async () => {
     if (!hre.network.tags['testnet']) {
         throw 'Not a testnet';
     }
-    const all = await test_staging();
+    const all = await register(true);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const filtered_objects: any = {};
 

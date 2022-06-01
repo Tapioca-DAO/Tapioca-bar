@@ -277,13 +277,18 @@ async function registerLiquidationQueue(
     return { liquidationQueue, LQ_META };
 }
 
-export async function register() {
-    await resetVM();
+const log = (message: string, staging?: boolean) =>
+    staging && console.log(message);
+export async function register(staging?: boolean) {
+    if (!staging) {
+        await resetVM();
+    }
     /**
      * INITIAL SETUP
      */
     const deployer = (await ethers.getSigners())[0];
 
+    log('Deploying WETH9Mock', staging);
     // Deploy WethUSDC mock oracle
     const wethUsdcOracle = await (
         await ethers.getContractFactory('OracleMock')
@@ -291,13 +296,17 @@ export async function register() {
     await wethUsdcOracle.deployed();
     await (await wethUsdcOracle.set(__wethUsdcPrice)).wait();
 
+    log('Deploying Tokens', staging);
     // 1 Deploy tokens
     const { tap, usdc, weth } = await registerERC20Tokens();
+    log('Deploying YieldBox', staging);
     // 2 Deploy Yieldbox
     const { yieldBox, uriBuilder } = await registerYieldBox(weth.address);
-    // 2.1 Deploy Yieldbox
+    log('Deploying BeachBar', staging);
+    // 2.1 Deploy BeachBar
     const { bar } = await registerBeachBar(yieldBox.address, tap.address);
 
+    log('Deploying UniFactory', staging);
     // 3 Add asset types to BeachBar
     const { usdcAssetId, wethAssetId } = await setBeachBarAssets(
         yieldBox,
@@ -308,15 +317,20 @@ export async function register() {
     // 4 Deploy UNIV2 env
     const { __wethUsdcMockPair, __wethTapMockPair, __uniFactory, __uniRouter } =
         await uniV2EnvironnementSetup(deployer.address, weth, usdc, tap);
+
+    log('Registering MultiSwapper', staging);
     // 5 Deploy MultiSwapper
     const { multiSwapper } = await registerMultiSwapper(
         bar,
         __uniFactory.address,
         await __uniFactory.pairCodeHash(),
     );
+
+    log('Deploying MediumRiskMC', staging);
     // 6  Deploy MediumRisk master contract
     const { mediumRiskMC } = await deployMediumRiskMC(bar);
 
+    log('Registering Mixologist', staging);
     // 7 Deploy WethUSDC medium risk MC clone
     const collateralSwapPath = [usdc.address, weth.address];
     const tapSwapPath = [weth.address, tap.address];
@@ -339,6 +353,7 @@ export async function register() {
     await bar.setFeeTo(mixologistFeeTo.address);
     await bar.setFeeVeTap(mixologistFeeVeTap.address);
 
+    log('Registering LiquidationQueue', staging);
     // 9 Deploy & set LiquidationQueue
     const feeCollector = new ethers.Wallet(
         ethers.Wallet.createRandom().privateKey,
@@ -359,7 +374,10 @@ export async function register() {
         ethers.Wallet.createRandom().privateKey,
         ethers.provider,
     );
-    await setBalance(eoa1.address, 100000);
+
+    if (!staging) {
+        await setBalance(eoa1.address, 100000);
+    }
 
     // Helper
     const mixologistHelper = await (
@@ -520,98 +538,4 @@ export async function register() {
     };
 
     return { ...initialSetup, ...utilFuncs };
-}
-
-export async function test_staging() {
-    /**
-     * INITIAL SETUP
-     */
-    const deployer = (await ethers.getSigners())[0];
-
-    // Deploy WethUSDC mock oracle
-    const wethUsdcOracle = await (
-        await ethers.getContractFactory('OracleMock')
-    ).deploy();
-    await wethUsdcOracle.deployed();
-    await (await wethUsdcOracle.set(__wethUsdcPrice)).wait();
-
-    // 1 Deploy tokens
-    console.info('Deploying token');
-    const { tap, usdc, weth } = await registerERC20Tokens();
-    // 2 Deploy BeachBar
-    console.info('Deploying Beachbar');
-    const { yieldBox, uriBuilder } = await registerYieldBox(weth.address);
-    // 2.1 Deploy BeachBar
-    console.info('Deploying Beachbar');
-    const { bar } = await registerBeachBar(yieldBox.address, tap.address);
-
-    // 3 Add asset types to BeachBar
-    console.info('Setting assets to Beachbar');
-    const { usdcAssetId, wethAssetId } = await setBeachBarAssets(
-        yieldBox,
-        bar,
-        weth.address,
-        usdc.address,
-    );
-    // 4 Deploy UNIV2 env
-    console.info('Deploying UniV2');
-    const { __wethUsdcMockPair, __wethTapMockPair, __uniFactory, __uniRouter } =
-        await uniV2EnvironnementSetup(deployer.address, weth, usdc, tap);
-    // 5 Deploy MultiSwapper
-    console.info('Deploying Multiswapper');
-    const { multiSwapper } = await registerMultiSwapper(
-        bar,
-        __uniFactory.address,
-        await __uniFactory.pairCodeHash(),
-    );
-    // 6  Deploy MediumRisk master contract
-    console.info('Deploying MediumRiskMC');
-    const { mediumRiskMC } = await deployMediumRiskMC(bar);
-    // 7 Deploy WethUSDC medium risk MC clone
-    console.info('Registering WethUSDC');
-    const collateralSwapPath = [usdc.address, weth.address];
-    const tapSwapPath = [weth.address, tap.address];
-    const { wethUsdcMixologist } = await registerMixologist(
-        mediumRiskMC.address,
-        yieldBox,
-        bar,
-        weth,
-        wethAssetId,
-        usdc,
-        usdcAssetId,
-        wethUsdcOracle,
-        collateralSwapPath,
-        tapSwapPath,
-    );
-
-    // 8 Set feeTo & feeVeTap
-    console.info('Setting feeTO & feeVeTAP');
-    const mixologistFeeTo = ethers.Wallet.createRandom();
-    const mixologistFeeVeTap = ethers.Wallet.createRandom();
-    await (await bar.setFeeTo(mixologistFeeTo.address)).wait();
-    await (await bar.setFeeVeTap(mixologistFeeVeTap.address)).wait();
-
-    // Helper
-    console.info('Deploying MixologistHelper');
-    const mixologistHelper = await (
-        await ethers.getContractFactory('MixologistHelper')
-    ).deploy();
-    await mixologistHelper.deployed();
-
-    return {
-        usdc,
-        weth,
-        tap,
-        wethUsdcOracle,
-        bar,
-        wethUsdcMixologist,
-        mixologistHelper,
-        multiSwapper,
-        mixologistFeeTo,
-        mixologistFeeVeTap,
-        __uniFactory,
-        __uniRouter,
-        __wethUsdcMockPair,
-        __wethTapMockPair,
-    };
 }
