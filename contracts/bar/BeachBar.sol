@@ -74,7 +74,7 @@ contract BeachBar is BoringOwnable {
     // ************************ //
 
     // TODO: Add parameter to choose to convert fees to TAP or get it as is.
-    /// @notice Loop through the master contracts and call `depositFeesToBeachBar()` to each one of their clones.
+    /// @notice Loop through the master contracts and call `depositFeesToYieldBox()` to each one of their clones.
     /// @dev `swappers_` can have one element that'll be used for all clones. Or one swapper per MasterContract.
     /// @param swappers_ One or more swappers to convert the asset to TAP.
     function withdrawAllProtocolFees(MultiSwapper[] calldata swappers_) public {
@@ -92,7 +92,7 @@ contract BeachBar is BoringOwnable {
             // Loop through clones of the current MC.
             for (uint256 j = 0; j < clonesOfLength; ) {
                 IMixologist(yieldBox.clonesOf(masterContracts[i].location, j))
-                    .depositFeesToBeachBar(
+                    .depositFeesToYieldBox(
                         singleSwapper ? swappers_[0] : swappers_[i]
                     );
                 ++j;

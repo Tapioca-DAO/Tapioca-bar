@@ -13,7 +13,7 @@ contract VulnMultiSwapper {
             assetId,
             target,
             msg.sender,
-            beachbar.yieldBox().balanceOf(target, assetId),
+            beachbar.yieldBox().amountOf(target, assetId),
             0
         );
     }

@@ -3,8 +3,8 @@ import { expect } from 'chai';
 import { register } from './test.utils';
 
 describe('Mixologist test', () => {
-    it('Should deposit to bar, add asset to mixologist, remove asset and withdraw', async () => {
-        const { weth, bar, wethUsdcMixologist, deployer, initContracts } =
+    it('Should deposit to yieldBox, add asset to mixologist, remove asset and withdraw', async () => {
+        const { weth, yieldBox, wethUsdcMixologist, deployer, initContracts } =
             await register();
 
         await initContracts(); // To prevent `Mixologist: below minimum`
@@ -14,14 +14,14 @@ describe('Mixologist test', () => {
 
         const balanceBefore = await weth.balanceOf(deployer.address);
         // Deposit assets to bar
-        const mintValShare = await bar.toShare(
+        const mintValShare = await yieldBox.toShare(
             await wethUsdcMixologist.assetId(),
             mintVal,
             false,
         );
-        await (await weth.approve(bar.address, mintVal)).wait();
+        await (await weth.approve(yieldBox.address, mintVal)).wait();
         await (
-            await bar['deposit(uint256,address,address,uint256,uint256)'](
+            await yieldBox.depositAsset(
                 await wethUsdcMixologist.assetId(),
                 deployer.address,
                 deployer.address,
@@ -32,7 +32,7 @@ describe('Mixologist test', () => {
 
         // Add asset to Mixologist
         await (
-            await bar.setApprovalForAll(wethUsdcMixologist.address, true)
+            await yieldBox.setApprovalForAll(wethUsdcMixologist.address, true)
         ).wait();
         await (
             await wethUsdcMixologist.addAsset(
@@ -49,13 +49,12 @@ describe('Mixologist test', () => {
 
         // Withdraw from bar
         await (
-            await bar['withdraw(uint256,address,address,uint256,uint256,bool)'](
+            await yieldBox.withdraw(
                 await wethUsdcMixologist.assetId(),
                 deployer.address,
                 deployer.address,
                 0,
                 mintValShare,
-                false,
             )
         ).wait();
 
@@ -68,7 +67,7 @@ describe('Mixologist test', () => {
         const {
             usdc,
             weth,
-            bar,
+            yieldBox,
             wethDepositAndAddAsset,
             usdcDepositAndAddCollateral,
             eoa1,
@@ -99,13 +98,13 @@ describe('Mixologist test', () => {
         await wethDepositAndAddAsset(wethMintVal);
         expect(
             await wethUsdcMixologist.balanceOf(deployer.address),
-        ).to.be.equal(await bar.toShare(assetId, wethMintVal, false));
+        ).to.be.equal(await yieldBox.toShare(assetId, wethMintVal, false));
 
         // We deposit USDC collateral
         await usdcDepositAndAddCollateral(usdcMintVal, eoa1);
         expect(
             await wethUsdcMixologist.userCollateralShare(eoa1.address),
-        ).equal(await bar.toShare(collateralId, usdcMintVal, false));
+        ).equal(await yieldBox.toShare(collateralId, usdcMintVal, false));
 
         // We borrow 74% collateral, max is 75%
         const wethBorrowVal = usdcMintVal
@@ -116,16 +115,9 @@ describe('Mixologist test', () => {
         await wethUsdcMixologist
             .connect(eoa1)
             .borrow(eoa1.address, wethBorrowVal);
-        await bar
+        await yieldBox
             .connect(eoa1)
-            ['withdraw(uint256,address,address,uint256,uint256,bool)'](
-                assetId,
-                eoa1.address,
-                eoa1.address,
-                wethBorrowVal,
-                0,
-                false,
-            );
+            .withdraw(assetId, eoa1.address, eoa1.address, wethBorrowVal, 0);
 
         // Can't liquidate
         await expect(
@@ -153,7 +145,7 @@ describe('Mixologist test', () => {
         const {
             usdc,
             weth,
-            bar,
+            yieldBox,
             eoa1,
             wethUsdcMixologist,
             deployer,
@@ -183,14 +175,14 @@ describe('Mixologist test', () => {
          */
         const balanceBefore = await weth.balanceOf(deployer.address);
         // Deposit assets to bar
-        const lendValShare = await bar.toShare(
+        const lendValShare = await yieldBox.toShare(
             await wethUsdcMixologist.assetId(),
             lendVal,
             false,
         );
-        await (await weth.approve(bar.address, lendVal)).wait();
+        await (await weth.approve(yieldBox.address, lendVal)).wait();
         await (
-            await bar['deposit(uint256,address,address,uint256,uint256)'](
+            await yieldBox.depositAsset(
                 await wethUsdcMixologist.assetId(),
                 deployer.address,
                 deployer.address,
@@ -201,7 +193,7 @@ describe('Mixologist test', () => {
 
         // Add asset to Mixologist
         await (
-            await bar.setApprovalForAll(wethUsdcMixologist.address, true)
+            await yieldBox.setApprovalForAll(wethUsdcMixologist.address, true)
         ).wait();
         await (
             await wethUsdcMixologist.addAsset(
@@ -224,7 +216,7 @@ describe('Mixologist test', () => {
         await usdcDepositAndAddCollateral(collateralVal, eoa1);
         expect(
             await wethUsdcMixologist.userCollateralShare(eoa1.address),
-        ).equal(await bar.toShare(collateralId, collateralVal, false));
+        ).equal(await yieldBox.toShare(collateralId, collateralVal, false));
 
         // We borrow
         await wethUsdcMixologist.connect(eoa1).borrow(eoa1.address, borrowVal);
@@ -250,9 +242,10 @@ describe('Mixologist test', () => {
         const assetId = await wethUsdcMixologist.assetId();
 
         await weth.connect(eoa1).freeMint(userBorrowPart);
-        await bar
+
+        await yieldBox
             .connect(eoa1)
-            ['deposit(uint256,address,address,uint256,uint256)'](
+            .depositAsset(
                 assetId,
                 eoa1.address,
                 eoa1.address,
@@ -277,15 +270,14 @@ describe('Mixologist test', () => {
         ).wait();
 
         await (
-            await bar
+            await yieldBox
                 .connect(eoa1)
-                ['withdraw(uint256,address,address,uint256,uint256,bool)'](
+                .withdraw(
                     collateralId,
                     eoa1.address,
                     eoa1.address,
                     0,
-                    await bar.balanceOf(eoa1.address, collateralId),
-                    false,
+                    await yieldBox.balanceOf(eoa1.address, collateralId),
                 )
         ).wait();
 
@@ -295,13 +287,12 @@ describe('Mixologist test', () => {
         ).wait();
 
         await (
-            await bar['withdraw(uint256,address,address,uint256,uint256,bool)'](
+            await yieldBox.withdraw(
                 assetId,
                 deployer.address,
                 deployer.address,
                 0,
-                await bar.balanceOf(deployer.address, assetId),
-                false,
+                await yieldBox.balanceOf(deployer.address, assetId),
             )
         ).wait();
 
@@ -315,6 +306,7 @@ describe('Mixologist test', () => {
             usdc,
             weth,
             bar,
+            yieldBox,
             eoa1,
             wethUsdcMixologist,
             deployer,
@@ -347,13 +339,13 @@ describe('Mixologist test', () => {
         await wethDepositAndAddAsset(wethMintVal);
         expect(
             await wethUsdcMixologist.balanceOf(deployer.address),
-        ).to.be.equal(await bar.toShare(assetId, wethMintVal, false));
+        ).to.be.equal(await yieldBox.toShare(assetId, wethMintVal, false));
 
         // We deposit USDC collateral
         await usdcDepositAndAddCollateral(usdcMintVal, eoa1);
         expect(
             await wethUsdcMixologist.userCollateralShare(eoa1.address),
-        ).equal(await bar.toShare(collateralId, usdcMintVal, false));
+        ).equal(await yieldBox.toShare(collateralId, usdcMintVal, false));
 
         // We borrow 74% collateral, max is 75%
         const wethBorrowVal = usdcMintVal
@@ -373,9 +365,10 @@ describe('Mixologist test', () => {
             eoa1.address,
         );
         await weth.connect(eoa1).freeMint(userBorrowPart);
-        await bar
+
+        await yieldBox
             .connect(eoa1)
-            ['deposit(uint256,address,address,uint256,uint256)'](
+            .depositAsset(
                 assetId,
                 eoa1.address,
                 eoa1.address,
@@ -399,11 +392,11 @@ describe('Mixologist test', () => {
         // Withdraw fees from BeachBar
         await expect(
             bar.withdrawAllProtocolFees([multiSwapper.address]),
-        ).to.emit(wethUsdcMixologist, 'LogBeachBarFeesDeposit');
+        ).to.emit(wethUsdcMixologist, 'LogYieldBoxFeesDeposit');
 
-        const tapAmountHarvested = await bar.toAmount(
+        const tapAmountHarvested = await yieldBox.toAmount(
             await bar.tapAssetId(),
-            await bar.balanceOf(
+            await yieldBox.balanceOf(
                 mixologistFeeVeTap.address,
                 await bar.tapAssetId(),
             ),
@@ -414,75 +407,5 @@ describe('Mixologist test', () => {
             feesAmountInAsset.mul(31).div(10000),
         );
         expect(tapAmountHarvested.gte(acceptableHarvestMargin)).to.be.true;
-    });
-
-    it('Should not allow whitelisted MultiSwapper to access funds other than of Mixologist', async () => {
-        const {
-            usdc,
-            bar,
-            eoa1,
-            wethUsdcMixologist,
-            approveTokensAndSetBarApproval,
-            BN,
-        } = await register();
-
-        const vulnMultiSwapper = await (
-            await ethers.getContractFactory('VulnMultiSwapper')
-        ).deploy();
-        await vulnMultiSwapper.deployed();
-
-        const assetId = await wethUsdcMixologist.collateralId();
-        const usdcMintVal = BN(1000).mul(BN(10).pow(18));
-
-        // We get asset
-        await usdc.connect(eoa1).freeMint(usdcMintVal);
-
-        // We approve external operators
-        await approveTokensAndSetBarApproval(eoa1);
-
-        await bar
-            .connect(eoa1)
-            .depositAsset(assetId, eoa1.address, eoa1.address, usdcMintVal, 0);
-
-        // Check that MultiSwapper can not deal with user assets
-        await expect(
-            vulnMultiSwapper.counterfeitSwap(
-                bar.address,
-                assetId,
-                eoa1.address,
-            ),
-        ).to.be.revertedWith('YieldBox: Not approved');
-
-        await bar
-            .connect(eoa1)
-            ['withdraw(uint256,address,address,uint256,uint256)'](
-                assetId,
-                eoa1.address,
-                eoa1.address,
-                usdcMintVal,
-                0,
-            );
-        await usdc
-            .connect(eoa1)
-            .transfer(wethUsdcMixologist.address, usdcMintVal);
-
-        // Check that MultiSwapper can not deal with Mixologist funds if not whitelisted
-        await expect(
-            vulnMultiSwapper.counterfeitSwap(
-                bar.address,
-                assetId,
-                wethUsdcMixologist.address,
-            ),
-        ).to.be.revertedWith('YieldBox: Not approved');
-
-        await bar.setSwapper(vulnMultiSwapper.address, true);
-        // Check that MultiSwapper can deal with Mixologist assets if whitelisted
-        await expect(
-            vulnMultiSwapper.counterfeitSwap(
-                bar.address,
-                assetId,
-                wethUsdcMixologist.address,
-            ),
-        ).to.not.be.reverted;
     });
 });

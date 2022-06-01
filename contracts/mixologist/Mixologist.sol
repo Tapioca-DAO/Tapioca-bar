@@ -872,7 +872,12 @@ contract Mixologist is ERC20, BoringOwnable {
         require(beachBar.swappers(swapper), 'Mx: Invalid swapper');
 
         // Swaps the users collateral for the borrowed asset
-        yieldBox.setApprovalForAll(address(swapper), true);
+        yieldBox.transfer(
+            address(this),
+            address(swapper),
+            collateralId,
+            allCollateralShare
+        );
         swapper.swap(
             collateralId,
             assetId,
@@ -881,7 +886,6 @@ contract Mixologist is ERC20, BoringOwnable {
             collateralSwapPath,
             allCollateralShare
         );
-        yieldBox.setApprovalForAll(address(swapper), false);
 
         uint256 returnedShare = yieldBox.balanceOf(address(this), assetId) -
             uint256(totalAsset.elastic);
@@ -961,7 +965,8 @@ contract Mixologist is ERC20, BoringOwnable {
             address(this),
             balanceOf[_feeTo]
         );
-        yieldBox.setApprovalForAll(address(swapper), true);
+
+        yieldBox.transfer(address(this), address(swapper), assetId, feeShares);
         (uint256 tapAmount, ) = swapper.swap(
             assetId,
             beachBar.tapAssetId(),
@@ -970,7 +975,7 @@ contract Mixologist is ERC20, BoringOwnable {
             tapSwapPath,
             feeShares
         );
-        yieldBox.setApprovalForAll(address(swapper), false);
+
         emit LogYieldBoxFeesDeposit(feeShares, tapAmount);
     }
 

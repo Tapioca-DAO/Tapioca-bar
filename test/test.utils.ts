@@ -411,10 +411,10 @@ export async function register() {
         const _weth = account ? weth.connect(account) : weth;
         const _yieldBox = account ? yieldBox.connect(account) : yieldBox;
         await (
-            await _usdc.approve(bar.address, ethers.constants.MaxUint256)
+            await _usdc.approve(yieldBox.address, ethers.constants.MaxUint256)
         ).wait();
         await (
-            await _weth.approve(bar.address, ethers.constants.MaxUint256)
+            await _weth.approve(yieldBox.address, ethers.constants.MaxUint256)
         ).wait();
         await (
             await _yieldBox.setApprovalForAll(wethUsdcMixologist.address, true)

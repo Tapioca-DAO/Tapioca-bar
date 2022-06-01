@@ -56,7 +56,7 @@ contract MultiSwapper {
     ) external returns (uint256 amountOut, uint256 shareOut) {
         (uint256 amountIn, ) = yieldBox.withdraw(
             tokenInId,
-            msg.sender,
+            address(this),
             address(this),
             0,
             shareIn
@@ -67,7 +67,8 @@ contract MultiSwapper {
             path,
             address(this)
         );
-        IERC20(path[path.length - 1]).approve(address(beachBar), amountOut);
+
+        IERC20(path[path.length - 1]).approve(address(yieldBox), amountOut);
         (, shareOut) = yieldBox.depositAsset(
             tokenOutId,
             address(this),
