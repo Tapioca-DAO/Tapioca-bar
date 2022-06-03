@@ -922,20 +922,18 @@ contract Mixologist is ERC20, BoringOwnable {
         uint256 feeAmount = (amount * FLASHLOAN_FEE) / FLASHLOAN_FEE_PRECISION;
         uint256 feeFraction = (yieldBox.toShare(assetId, feeAmount, false) *
             _totalAsset.base) / _totalAsset.elastic;
-        totalAsset.base = _totalAsset.base + uint128(feeFraction);
-        accrueInfo.feesEarnedFraction += uint128(feeFraction);
 
         yieldBox.withdraw(assetId, address(this), receiver, amount, 0);
 
         borrower.onFlashLoan(msg.sender, asset, amount, feeAmount, data);
 
-        yieldBox.depositAsset(
-            assetId,
-            address(borrower),
-            address(this),
-            amount + feeAmount,
-            0
+        require(
+            yieldBox.amountOf(address(this), assetId) >= amount + feeAmount,
+            'Mx: flashloan insufficient funds'
         );
+
+        totalAsset.base = _totalAsset.base + uint128(feeFraction);
+        accrueInfo.feesEarnedFraction += uint128(feeFraction);
 
         emit LogFlashLoan(address(borrower), amount, feeAmount, receiver);
     }

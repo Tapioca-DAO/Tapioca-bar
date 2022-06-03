@@ -408,4 +408,63 @@ describe('Mixologist test', () => {
         );
         expect(tapAmountHarvested.gte(acceptableHarvestMargin)).to.be.true;
     });
+
+    it.only('Should make a flashloan', async () => {
+        const {
+            weth,
+            wethUsdcMixologist,
+            approveTokensAndSetBarApproval,
+            wethDepositAndAddAsset,
+        } = await register();
+
+        const wethMintVal = ethers.BigNumber.from((1e18).toString()).mul(10);
+
+        // We get asset
+        weth.freeMint(wethMintVal);
+
+        // We approve external operators
+        await approveTokensAndSetBarApproval();
+
+        // We lend WETH as deployer
+        await wethDepositAndAddAsset(wethMintVal);
+
+        // We deploy flashloan operator contracts
+        const maliciousOperator = await (
+            await ethers.getContractFactory('FlashLoanMockAttacker')
+        ).deploy();
+        const operator = await (
+            await ethers.getContractFactory('FlashLoanMockSuccess')
+        ).deploy();
+
+        // Malicious operator
+        await expect(
+            wethUsdcMixologist.flashLoan(
+                maliciousOperator.address,
+                maliciousOperator.address,
+                wethMintVal,
+                ethers.utils.hexlify(0),
+            ),
+        ).to.be.revertedWith('Mx: flashloan insufficient funds');
+
+        // Insufficient funds
+        await expect(
+            wethUsdcMixologist.flashLoan(
+                maliciousOperator.address,
+                maliciousOperator.address,
+                wethMintVal,
+                ethers.utils.hexlify(0),
+            ),
+        ).to.be.revertedWith('Mx: flashloan insufficient funds');
+
+        await weth.freeMint(wethMintVal.mul(90).div(100_000)); // 0.09% fee
+        await weth.transfer(operator.address, wethMintVal.mul(90).div(100_000));
+        await expect(
+            wethUsdcMixologist.flashLoan(
+                operator.address,
+                operator.address,
+                wethMintVal,
+                ethers.utils.hexlify(0),
+            ),
+        ).to.emit(wethUsdcMixologist, 'LogFlashLoan');
+    });
 });
