@@ -53,6 +53,17 @@ contract BeachBar is BoringOwnable {
         );
     }
 
+    // **************//
+    // *** EVENTS *** //
+    // ************** //
+
+    event ProtocolWithdrawal(address[] markets, uint256 timestamp);
+    event RegisterMasterContract(address location, ContractType risk);
+    event RegisterMixologist(address location, address masterContract);
+    event FeeToUpdate(address newFeeTo);
+    event FeeVeTapUpdate(address newFeeVeTap);
+    event SwapperUpdate(address swapper, bool isRegistered);
+
     // ******************//
     // *** MODIFIERS *** //
     // ***************** //
@@ -90,6 +101,11 @@ contract BeachBar is BoringOwnable {
         }
     }
 
+    /// @notice Get the length of `masterContracts`
+    function masterContractLength() public view returns (uint256) {
+        return masterContracts.length;
+    }
+
     // ************************ //
     // *** PUBLIC FUNCTIONS *** //
     // ************************ //
@@ -113,6 +129,8 @@ contract BeachBar is BoringOwnable {
             );
             ++i;
         }
+
+        emit ProtocolWithdrawal(markets, block.timestamp);
     }
 
     // *********************** //
@@ -136,6 +154,8 @@ contract BeachBar is BoringOwnable {
         mc.risk = contractType_;
         masterContracts.push(mc);
         isMasterContractRegistered[mcAddress] = true;
+
+        emit RegisterMasterContract(mcAddress, contractType_);
     }
 
     /// @notice Register a Mixologist
@@ -146,8 +166,15 @@ contract BeachBar is BoringOwnable {
         address mc,
         bytes calldata data,
         bool useCreate2
-    ) external payable onlyOwner registeredMasterContract(mc) {
-        yieldBox.deploy(mc, data, useCreate2);
+    )
+        external
+        payable
+        onlyOwner
+        registeredMasterContract(mc)
+        returns (address _contract)
+    {
+        _contract = yieldBox.deploy(mc, data, useCreate2);
+        emit RegisterMixologist(_contract, mc);
     }
 
     /// @notice Execute an only owner function inside of a Mixologist market
@@ -171,10 +198,12 @@ contract BeachBar is BoringOwnable {
 
     function setFeeTo(address feeTo_) external onlyOwner {
         feeTo = feeTo_;
+        emit FeeToUpdate(feeTo_);
     }
 
     function setFeeVeTap(address feeVeTap_) external onlyOwner {
         feeVeTap = feeVeTap_;
+        emit FeeVeTapUpdate(feeVeTap_);
     }
 
     /// @notice Used to register and enable or disable swapper contracts used in closed liquidations.
@@ -183,19 +212,6 @@ contract BeachBar is BoringOwnable {
     /// @param enable True to enable the swapper. To disable use False.
     function setSwapper(MultiSwapper swapper, bool enable) public onlyOwner {
         swappers[swapper] = enable;
-    }
-
-    function registerAsset(
-        address contractAddress,
-        IStrategy strategy,
-        uint256 id
-    ) external returns (uint256 assetId) {
-        return
-            yieldBox.registerAsset(
-                TokenType.ERC20,
-                contractAddress,
-                strategy,
-                id
-            );
+        emit SwapperUpdate(address(swapper), enable);
     }
 }
