@@ -43,6 +43,7 @@ async function main() {
         `${hre.config.paths.artifacts}/**/!(*.dbg).json`,
     ]).filter((e) =>
         [
+            'YieldBox',
             'BeachBar',
             'Mixologist',
             'MixologistHelper',
