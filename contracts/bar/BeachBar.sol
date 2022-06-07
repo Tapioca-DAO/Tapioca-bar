@@ -69,6 +69,27 @@ contract BeachBar is BoringOwnable {
     // *** VIEW FUNCTIONS *** //
     // ********************** //
 
+    /// @notice Get all the Mixologist contract addresses
+    function tapiocaMarkets() public view returns (address[] memory markets) {
+        uint256 masterContractLength = masterContracts.length;
+        markets = new address[](masterContractLength);
+        uint256 clonesOfLength;
+
+        // Loop through master contracts.
+        for (uint256 i = 0; i < masterContractLength; ) {
+            clonesOfLength = yieldBox.clonesOfCount(
+                masterContracts[i].location
+            );
+
+            // Loop through clones of the current MC.
+            for (uint256 j = 0; j < clonesOfLength; ) {
+                markets[i] = yieldBox.clonesOf(masterContracts[i].location, j);
+                ++j;
+            }
+            ++i;
+        }
+    }
+
     // ************************ //
     // *** PUBLIC FUNCTIONS *** //
     // ************************ //
@@ -83,20 +104,13 @@ contract BeachBar is BoringOwnable {
         uint256 masterContractLength = masterContracts.length;
         bool singleSwapper = swappers_.length != masterContractLength;
 
-        uint256 clonesOfLength;
-        // Loop through master contracts.
-        for (uint256 i = 0; i < masterContractLength; ) {
-            clonesOfLength = yieldBox.clonesOfCount(
-                masterContracts[i].location
+        address[] memory markets = tapiocaMarkets();
+        uint256 length = markets.length;
+
+        for (uint256 i = 0; i < length; ) {
+            IMixologist(markets[i]).depositFeesToYieldBox(
+                singleSwapper ? swappers_[0] : swappers_[i]
             );
-            // Loop through clones of the current MC.
-            for (uint256 j = 0; j < clonesOfLength; ) {
-                IMixologist(yieldBox.clonesOf(masterContracts[i].location, j))
-                    .depositFeesToYieldBox(
-                        singleSwapper ? swappers_[0] : swappers_[i]
-                    );
-                ++j;
-            }
             ++i;
         }
     }
