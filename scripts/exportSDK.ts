@@ -33,9 +33,13 @@ const getStagingAddresses = async () => {
  * Script used to generate typings for the tapioca-sdk
  * https://github.com/Tapioca-DAO/tapioca-sdk
  */
-async function main() {
+export async function exportSDK(deploy: boolean) {
     const cwd = process.cwd();
-    const deployments = await getStagingAddresses();
+
+    if (deploy) {
+        const deployments = await getStagingAddresses();
+        await writeJsonFile('tapioca-sdk/src/addresses.json', deployments);
+    }
 
     // We are looking at
     // BeachBar, Mixologist, MixologistHelper;
@@ -52,7 +56,6 @@ async function main() {
         ].some((v) => e.split('/').slice(-1)[0] === v.concat('.json')),
     );
 
-    await writeJsonFile('tapioca-sdk/src/addresses.json', deployments);
     await runTypeChain({
         cwd,
         filesToProcess: allFiles,
@@ -65,10 +68,3 @@ async function main() {
         },
     });
 }
-
-main()
-    .then(() => process.exit(0))
-    .catch((error) => {
-        console.error(error);
-        process.exit(1);
-    });

@@ -92,7 +92,12 @@ async function setBeachBarAssets(
     usdcAddress: string,
 ) {
     await (
-        await bar.registerAsset(wethAddress, ethers.constants.AddressZero, 0)
+        await yieldBox.registerAsset(
+            1,
+            wethAddress,
+            ethers.constants.AddressZero,
+            0,
+        )
     ).wait();
     const wethAssetId = await yieldBox.ids(
         1,
@@ -102,7 +107,12 @@ async function setBeachBarAssets(
     );
 
     await (
-        await bar.registerAsset(usdcAddress, ethers.constants.AddressZero, 0)
+        await yieldBox.registerAsset(
+            1,
+            usdcAddress,
+            ethers.constants.AddressZero,
+            0,
+        )
     ).wait();
     const usdcAssetId = await yieldBox.ids(
         1,
