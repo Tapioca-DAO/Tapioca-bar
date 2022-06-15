@@ -1,11 +1,14 @@
 import hre from 'hardhat';
+import { HardhatRuntimeEnvironment } from 'hardhat/types';
+
+export const getDeployments = async (_hre: HardhatRuntimeEnvironment) => {
+    const { deployments } = _hre;
+    const all = await deployments.all();
+    return Object.keys(all).map(async (e) => ({ [e]: all[e].address }));
+};
 
 async function main() {
-    const { deployments } = hre;
-    const all = await deployments.all();
-    Object.keys(all).map(async (e) => {
-        console.log({ [e]: all[e].address });
-    });
+    (await getDeployments(hre)).map((e) => console.log(e));
 }
 
 main()
