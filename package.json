@@ -5,7 +5,7 @@
     "deploy:mainnet": "npx hardhat deploy --network mainnet",
     "deploy:testnet": "npx hardhat run scripts/exportSDK.ts --network rinkeby",
     "sdk-gen": "npx hardhat run scripts/exportSDK-deploy.ts",
-    "sdk-gen::no-deploy":"npx hardhat run scripts/exportSDK-no-deploy.ts"
+    "sdk-gen::no-deploy": "npx hardhat run scripts/exportSDK-no-deploy.ts"
   },
   "devDependencies": {
     "@boringcrypto/boring-solidity": "boringcrypto/BoringSolidity#21beaec5c9383c6e9312e4464ad5755fda69e09b",
@@ -43,5 +43,8 @@
     "typechain": "^5.1.2",
     "typescript": "^4.4.3",
     "write-json-file": "4.3.0"
+  },
+  "dependencies": {
+    "load-json-file": "^7.0.1"
   }
 }
