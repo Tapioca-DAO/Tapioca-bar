@@ -37,7 +37,9 @@ export async function exportSDK(deploy: boolean) {
     const cwd = process.cwd();
 
     if (deploy) {
-        const deployments = await getStagingAddresses();
+        const deployments = {
+            [await hre.getChainId()]: await getStagingAddresses(),
+        };
         await writeJsonFile('tapioca-sdk/src/addresses.json', deployments);
     }
 
