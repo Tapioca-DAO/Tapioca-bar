@@ -1,9 +1,11 @@
-import hre from 'hardhat';
+import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { glob, runTypeChain } from 'typechain';
+import writeJsonFile from 'write-json-file';
 import { register } from '../test/test.utils';
-import writeJsonFile = require('write-json-file');
+import { loadJsonFile } from 'load-json-file';
+import { getDeployments } from '../scripts/getDeployments';
 
-const getStagingAddresses = async () => {
+const getStagingAddresses = async (hre: HardhatRuntimeEnvironment) => {
     if (!hre.network.tags['testnet']) {
         throw 'Not a testnet';
     }
@@ -25,7 +27,10 @@ const getStagingAddresses = async () => {
             }
         });
 
+    console.log('=======STAGING ADDRESSES========');
     console.log(filtered_objects);
+    console.log('================================');
+
     return filtered_objects;
 };
 
@@ -33,14 +38,34 @@ const getStagingAddresses = async () => {
  * Script used to generate typings for the tapioca-sdk
  * https://github.com/Tapioca-DAO/tapioca-sdk
  */
-export async function exportSDK(deploy: boolean) {
+export const exportSDK__task = async (
+    taskArgs: { staging?: boolean; mainnet?: boolean },
+    hre: HardhatRuntimeEnvironment,
+) => {
     const cwd = process.cwd();
+    const { mainnet, staging } = taskArgs;
 
-    if (deploy) {
+    const __deployments = { prev: {} };
+    try {
+        __deployments.prev = await loadJsonFile(
+            'tapioca-sdk/src/addresses.json',
+        );
+    } catch (e) {}
+
+    if (staging) {
         const deployments = {
-            [await hre.getChainId()]: await getStagingAddresses(),
+            ...__deployments.prev,
+            [await hre.getChainId()]: await getStagingAddresses(hre),
         };
         await writeJsonFile('tapioca-sdk/src/addresses.json', deployments);
+    } else {
+        if (mainnet) {
+            const deployments = {
+                ...__deployments.prev,
+                [await hre.getChainId()]: await getDeployments(hre),
+            };
+            await writeJsonFile('tapioca-sdk/src/addresses.json', deployments);
+        }
     }
 
     // We are looking at
@@ -69,4 +94,4 @@ export async function exportSDK(deploy: boolean) {
             environment: 'hardhat',
         },
     });
-}
+};
