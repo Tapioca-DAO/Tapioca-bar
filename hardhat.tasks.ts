@@ -14,6 +14,4 @@ task(
     'exportSDK',
     'Generate and export the typings and/or addresses for the SDK. May deploy contracts.',
     exportSDK__task,
-)
-    .addFlag('staging', 'Deploy the staging contracts.')
-    .addFlag('deploy', 'Deploy the contracts.');
+).addFlag('mainnet', 'Using the current chain ID deployments.');
