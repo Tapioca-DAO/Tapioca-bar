@@ -1,5 +1,4 @@
 import hre from 'hardhat';
-import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { getDeployments } from './getDeployment-script';
 
 async function main() {
