@@ -30,7 +30,7 @@ contract BeachBar is BoringOwnable {
     IERC20 public immutable tapToken;
     uint256 public immutable tapAssetId;
 
-    MasterContract[] masterContracts;
+    MasterContract[] public masterContracts;
 
     // Used to check if a master contract is registered to be used as a Mixologist template
     mapping(address => bool) isMasterContractRegistered;
