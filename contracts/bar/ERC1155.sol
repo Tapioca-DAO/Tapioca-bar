@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.9;
+pragma solidity ^0.8.0;
 
-import "@boringcrypto/boring-solidity/contracts/interfaces/IERC1155.sol";
-import "@boringcrypto/boring-solidity/contracts/interfaces/IERC1155TokenReceiver.sol";
-import "@boringcrypto/boring-solidity/contracts/libraries/BoringAddress.sol";
+import '@boringcrypto/boring-solidity/contracts/interfaces/IERC1155.sol';
+import '@boringcrypto/boring-solidity/contracts/interfaces/IERC1155TokenReceiver.sol';
+import '@boringcrypto/boring-solidity/contracts/libraries/BoringAddress.sol';
 
 // Written by OreNoMochi (https://github.com/OreNoMochii), BoringCrypto
 
@@ -11,20 +11,32 @@ contract ERC1155 is IERC1155 {
     using BoringAddress for address;
 
     // mappings
-    mapping(address => mapping(address => bool)) public override isApprovedForAll; // map of operator approval
+    mapping(address => mapping(address => bool))
+        public
+        override isApprovedForAll; // map of operator approval
     mapping(address => mapping(uint256 => uint256)) public override balanceOf; // map of tokens owned by
     mapping(uint256 => uint256) public totalSupply; // totalSupply per token
 
-    function supportsInterface(bytes4 interfaceID) public pure override returns (bool) {
+    function supportsInterface(bytes4 interfaceID)
+        public
+        pure
+        override
+        returns (bool)
+    {
         return
             interfaceID == this.supportsInterface.selector || // EIP-165
             interfaceID == 0xd9b67a26 || // ERC-1155
             interfaceID == 0x0e89341c; // EIP-1155 Metadata
     }
 
-    function balanceOfBatch(address[] calldata owners, uint256[] calldata ids) external view override returns (uint256[] memory balances) {
+    function balanceOfBatch(address[] calldata owners, uint256[] calldata ids)
+        external
+        view
+        override
+        returns (uint256[] memory balances)
+    {
         uint256 len = owners.length;
-        require(len == ids.length, "ERC1155: Length mismatch");
+        require(len == ids.length, 'ERC1155: Length mismatch');
 
         balances = new uint256[](len);
 
@@ -38,7 +50,7 @@ contract ERC1155 is IERC1155 {
         uint256 id,
         uint256 value
     ) internal {
-        require(to != address(0), "No 0 address");
+        require(to != address(0), 'No 0 address');
 
         balanceOf[to][id] += value;
         totalSupply[id] += value;
@@ -51,7 +63,7 @@ contract ERC1155 is IERC1155 {
         uint256 id,
         uint256 value
     ) internal {
-        require(from != address(0), "No 0 address");
+        require(from != address(0), 'No 0 address');
 
         balanceOf[from][id] -= value;
         totalSupply[id] -= value;
@@ -65,7 +77,7 @@ contract ERC1155 is IERC1155 {
         uint256 id,
         uint256 value
     ) internal {
-        require(to != address(0), "No 0 address");
+        require(to != address(0), 'No 0 address');
 
         balanceOf[from][id] -= value;
         balanceOf[to][id] += value;
@@ -79,7 +91,7 @@ contract ERC1155 is IERC1155 {
         uint256[] calldata ids,
         uint256[] calldata values
     ) internal {
-        require(to != address(0), "No 0 address");
+        require(to != address(0), 'No 0 address');
 
         for (uint256 i = 0; i < ids.length; i++) {
             uint256 id = ids[i];
@@ -92,7 +104,10 @@ contract ERC1155 is IERC1155 {
     }
 
     function _requireTransferAllowed(address from) internal view virtual {
-        require(from == msg.sender || isApprovedForAll[from][msg.sender] == true, "Transfer not allowed");
+        require(
+            from == msg.sender || isApprovedForAll[from][msg.sender] == true,
+            'Transfer not allowed'
+        );
     }
 
     function safeTransferFrom(
@@ -108,9 +123,19 @@ contract ERC1155 is IERC1155 {
 
         if (to.isContract()) {
             require(
-                IERC1155TokenReceiver(to).onERC1155Received(msg.sender, from, id, value, data) ==
-                    bytes4(keccak256("onERC1155Received(address,address,uint256,uint256,bytes)")),
-                "Wrong return value"
+                IERC1155TokenReceiver(to).onERC1155Received(
+                    msg.sender,
+                    from,
+                    id,
+                    value,
+                    data
+                ) ==
+                    bytes4(
+                        keccak256(
+                            'onERC1155Received(address,address,uint256,uint256,bytes)'
+                        )
+                    ),
+                'Wrong return value'
             );
         }
     }
@@ -122,21 +147,35 @@ contract ERC1155 is IERC1155 {
         uint256[] calldata values,
         bytes calldata data
     ) external override {
-        require(ids.length == values.length, "ERC1155: Length mismatch");
+        require(ids.length == values.length, 'ERC1155: Length mismatch');
         _requireTransferAllowed(from);
 
         _transferBatch(from, to, ids, values);
 
         if (to.isContract()) {
             require(
-                IERC1155TokenReceiver(to).onERC1155BatchReceived(msg.sender, from, ids, values, data) ==
-                    bytes4(keccak256("onERC1155BatchReceived(address,address,uint256[],uint256[],bytes)")),
-                "Wrong return value"
+                IERC1155TokenReceiver(to).onERC1155BatchReceived(
+                    msg.sender,
+                    from,
+                    ids,
+                    values,
+                    data
+                ) ==
+                    bytes4(
+                        keccak256(
+                            'onERC1155BatchReceived(address,address,uint256[],uint256[],bytes)'
+                        )
+                    ),
+                'Wrong return value'
             );
         }
     }
 
-    function setApprovalForAll(address operator, bool approved) external virtual override {
+    function setApprovalForAll(address operator, bool approved)
+        external
+        virtual
+        override
+    {
         isApprovedForAll[msg.sender][operator] = approved;
 
         emit ApprovalForAll(msg.sender, operator, approved);
@@ -145,6 +184,6 @@ contract ERC1155 is IERC1155 {
     function uri(
         uint256 /*assetId*/
     ) external view virtual returns (string memory) {
-        return "";
+        return '';
     }
 }

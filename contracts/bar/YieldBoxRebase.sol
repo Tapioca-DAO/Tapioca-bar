@@ -1,17 +1,17 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.9;
+pragma solidity ^0.8.0;
 pragma experimental ABIEncoderV2;
-import "./interfaces/IStrategy.sol";
-import "@boringcrypto/boring-solidity/contracts/interfaces/IERC1155.sol";
-import "@boringcrypto/boring-solidity/contracts/libraries/Base64.sol";
-import "@boringcrypto/boring-solidity/contracts/libraries/BoringAddress.sol";
-import "@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol";
-import "@boringcrypto/boring-solidity/contracts/Domain.sol";
-import "./ERC1155TokenReceiver.sol";
-import "./ERC1155.sol";
-import "@boringcrypto/boring-solidity/contracts/BoringBatchable.sol";
-import "@boringcrypto/boring-solidity/contracts/BoringFactory.sol";
+import './interfaces/IStrategy.sol';
+import '@boringcrypto/boring-solidity/contracts/interfaces/IERC1155.sol';
+import '@boringcrypto/boring-solidity/contracts/libraries/Base64.sol';
+import '@boringcrypto/boring-solidity/contracts/libraries/BoringAddress.sol';
+import '@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol';
+import '@boringcrypto/boring-solidity/contracts/Domain.sol';
+import './ERC1155TokenReceiver.sol';
+import './ERC1155.sol';
+import '@boringcrypto/boring-solidity/contracts/BoringBatchable.sol';
+import '@boringcrypto/boring-solidity/contracts/BoringFactory.sol';
 
 library YieldBoxRebase {
     /// @notice Calculates the base value in relationship to `elastic` and `total`.

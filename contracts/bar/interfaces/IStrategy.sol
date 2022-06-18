@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.9;
+pragma solidity ^0.8.0;
 pragma experimental ABIEncoderV2;
 
-import "../enums/YieldBoxTokenType.sol";
-import "./IYieldBox.sol";
+import '../enums/YieldBoxTokenType.sol';
+import './IYieldBox.sol';
 
 interface IStrategy {
     /// Each strategy only works with a single asset. This should help make implementations simpler and more readable.

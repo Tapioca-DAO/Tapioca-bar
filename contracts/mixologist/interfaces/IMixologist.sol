@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.9;
+pragma solidity ^0.8.0;
 pragma experimental ABIEncoderV2;
 import '@boringcrypto/boring-solidity/contracts/interfaces/IERC20.sol';
 import '../../bar/BeachBar.sol';

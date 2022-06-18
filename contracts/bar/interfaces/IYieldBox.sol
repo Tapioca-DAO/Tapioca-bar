@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.9;
+pragma solidity ^0.8.0;
 pragma experimental ABIEncoderV2;
 
-import "../enums/YieldBoxTokenType.sol";
-import "./IStrategy.sol";
+import '../enums/YieldBoxTokenType.sol';
+import './IStrategy.sol';
 
 interface IYieldBox {
     function wrappedNative() external view returns (address wrappedNative);
@@ -29,5 +29,8 @@ interface IYieldBox {
 
     function owner(uint256 assetId) external view returns (address owner);
 
-    function totalSupply(uint256 assetId) external view returns (uint256 totalSupply);
+    function totalSupply(uint256 assetId)
+        external
+        view
+        returns (uint256 totalSupply);
 }

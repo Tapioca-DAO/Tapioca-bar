@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.9;
+pragma solidity ^0.8.0;
 import '../../interfaces/IOracle.sol';
 
 contract OracleMock is IOracle {
@@ -41,7 +41,12 @@ contract OracleMock is IOracle {
         return 'Test';
     }
 
-    function symbol(bytes calldata) public view override returns (string memory) {
+    function symbol(bytes calldata)
+        public
+        view
+        override
+        returns (string memory)
+    {
         return 'TEST';
     }
 }

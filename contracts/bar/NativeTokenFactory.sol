@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.9;
+pragma solidity ^0.8.0;
 import './AssetRegister.sol';
 import '@boringcrypto/boring-solidity/contracts/BoringFactory.sol';
 
@@ -22,8 +22,18 @@ contract NativeTokenFactory is AssetRegister, BoringFactory {
     mapping(uint256 => address) public tokenOwner;
     mapping(uint256 => address) public pendingTokenOwner;
 
-    event TokenCreated(address indexed creator, string name, string symbol, uint8 decimals, uint256 tokenId);
-    event OwnershipTransferred(uint256 indexed tokenId, address indexed previousTokenOwner, address indexed newTokenOwner);
+    event TokenCreated(
+        address indexed creator,
+        string name,
+        string symbol,
+        uint8 decimals,
+        uint256 tokenId
+    );
+    event OwnershipTransferred(
+        uint256 indexed tokenId,
+        address indexed previousTokenOwner,
+        address indexed newTokenOwner
+    );
 
     // ***************** //
     // *** MODIFIERS *** //
@@ -36,7 +46,11 @@ contract NativeTokenFactory is AssetRegister, BoringFactory {
     modifier allowed(address from) virtual {
         if (from != msg.sender && !isApprovedForAll[from][msg.sender]) {
             address masterContract = masterContractOf[msg.sender];
-            require(masterContract != address(0) && isApprovedForAll[from][masterContract], 'YieldBox: Not approved');
+            require(
+                masterContract != address(0) &&
+                    isApprovedForAll[from][masterContract],
+                'YieldBox: Not approved'
+            );
         }
         _;
     }
@@ -44,7 +58,10 @@ contract NativeTokenFactory is AssetRegister, BoringFactory {
     /// @notice Only allows the `owner` to execute the function.
     /// @param tokenId The `tokenId` that the sender has to be owner of.
     modifier onlyTokenOwner(uint256 tokenId) {
-        require(msg.sender == tokenOwner[tokenId], 'NTF: caller is not the owner');
+        require(
+            msg.sender == tokenOwner[tokenId],
+            'NTF: caller is not the owner'
+        );
         _;
     }
 
@@ -62,10 +79,17 @@ contract NativeTokenFactory is AssetRegister, BoringFactory {
     ) public onlyTokenOwner(tokenId) {
         if (direct) {
             // Checks
-            require(newTokenOwner != address(0) || renounce, 'NTF: zero address');
+            require(
+                newTokenOwner != address(0) || renounce,
+                'NTF: zero address'
+            );
 
             // Effects
-            emit OwnershipTransferred(tokenId, tokenOwner[tokenId], newTokenOwner);
+            emit OwnershipTransferred(
+                tokenId,
+                tokenOwner[tokenId],
+                newTokenOwner
+            );
             tokenOwner[tokenId] = newTokenOwner;
             pendingTokenOwner[tokenId] = address(0);
         } else {
@@ -80,10 +104,17 @@ contract NativeTokenFactory is AssetRegister, BoringFactory {
         address _pendingTokenOwner = pendingTokenOwner[tokenId];
 
         // Checks
-        require(msg.sender == _pendingTokenOwner, 'NTF: caller != pending owner');
+        require(
+            msg.sender == _pendingTokenOwner,
+            'NTF: caller != pending owner'
+        );
 
         // Effects
-        emit OwnershipTransferred(tokenId, tokenOwner[tokenId], _pendingTokenOwner);
+        emit OwnershipTransferred(
+            tokenId,
+            tokenOwner[tokenId],
+            _pendingTokenOwner
+        );
         tokenOwner[tokenId] = _pendingTokenOwner;
         pendingTokenOwner[tokenId] = address(0);
     }
@@ -131,7 +162,10 @@ contract NativeTokenFactory is AssetRegister, BoringFactory {
         address from,
         uint256 amount
     ) public allowed(from) {
-        require(assets[tokenId].tokenType == TokenType.Native, 'NTF: Not native');
+        require(
+            assets[tokenId].tokenType == TokenType.Native,
+            'NTF: Not native'
+        );
         _burn(msg.sender, tokenId, amount);
     }
 }
