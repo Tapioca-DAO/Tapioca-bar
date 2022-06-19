@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.9;
+pragma solidity ^0.8.0;
 pragma experimental ABIEncoderV2;
 import '@boringcrypto/boring-solidity/contracts/libraries/BoringRebase.sol';
 import '../bar/BeachBar.sol';

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.9;
+pragma solidity ^0.8.0;
 
-import "@boringcrypto/boring-solidity/contracts/interfaces/IERC1155TokenReceiver.sol";
+import '@boringcrypto/boring-solidity/contracts/interfaces/IERC1155TokenReceiver.sol';
 
 contract ERC1155TokenReceiver is IERC1155TokenReceiver {
     // ERC1155 receivers that simple accept the transfer

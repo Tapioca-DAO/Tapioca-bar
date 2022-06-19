@@ -21,7 +21,7 @@
 // BEWARE: Still under active development
 // Security review not done yet
 
-pragma solidity 0.8.9;
+pragma solidity ^0.8.0;
 pragma experimental ABIEncoderV2;
 import './interfaces/IWrappedNative.sol';
 import './interfaces/IStrategy.sol';
@@ -75,12 +75,21 @@ contract YieldBox is BoringBatchable, NativeTokenFactory, ERC1155TokenReceiver {
 
     /// @dev Returns the total balance of `token` this contracts holds,
     /// plus the total amount this contract thinks the strategy holds.
-    function _tokenBalanceOf(Asset storage asset) internal view returns (uint256 amount) {
+    function _tokenBalanceOf(Asset storage asset)
+        internal
+        view
+        returns (uint256 amount)
+    {
         if (asset.strategy == NO_STRATEGY) {
             if (asset.tokenType == TokenType.ERC20) {
-                return IERC20(asset.contractAddress).safeBalanceOf(address(this));
+                return
+                    IERC20(asset.contractAddress).safeBalanceOf(address(this));
             } else {
-                return IERC1155(asset.contractAddress).balanceOf(address(this), asset.tokenId);
+                return
+                    IERC1155(asset.contractAddress).balanceOf(
+                        address(this),
+                        asset.tokenId
+                    );
             }
         } else {
             return asset.strategy.currentBalance();
@@ -108,7 +117,10 @@ contract YieldBox is BoringBatchable, NativeTokenFactory, ERC1155TokenReceiver {
     ) public allowed(from) returns (uint256 amountOut, uint256 shareOut) {
         // Checks
         Asset storage asset = assets[assetId];
-        require(asset.tokenType != TokenType.Native, "YieldBox: can't deposit Native");
+        require(
+            asset.tokenType != TokenType.Native,
+            "YieldBox: can't deposit Native"
+        );
 
         // Effects
         uint256 totalAmount = _tokenBalanceOf(asset);
@@ -122,18 +134,30 @@ contract YieldBox is BoringBatchable, NativeTokenFactory, ERC1155TokenReceiver {
 
         _mint(to, assetId, share);
 
-        address destination = asset.strategy == NO_STRATEGY ? address(this) : address(asset.strategy);
+        address destination = asset.strategy == NO_STRATEGY
+            ? address(this)
+            : address(asset.strategy);
 
         // Interactions
         if (asset.tokenType == TokenType.ERC20) {
-            IERC20(asset.contractAddress).safeTransferFrom(from, destination, amount);
+            IERC20(asset.contractAddress).safeTransferFrom(
+                from,
+                destination,
+                amount
+            );
         } else {
             // ERC1155
             // When depositing yieldBox tokens into the yieldBox, things can be simplified
             if (asset.contractAddress == address(this)) {
                 _transferSingle(from, destination, asset.tokenId, amount);
             } else {
-                IERC1155(asset.contractAddress).safeTransferFrom(from, destination, asset.tokenId, amount, '');
+                IERC1155(asset.contractAddress).safeTransferFrom(
+                    from,
+                    destination,
+                    asset.tokenId,
+                    amount,
+                    ''
+                );
             }
         }
 
@@ -159,10 +183,18 @@ contract YieldBox is BoringBatchable, NativeTokenFactory, ERC1155TokenReceiver {
     {
         // Checks
         Asset storage asset = assets[assetId];
-        require(asset.tokenType == TokenType.ERC20 && asset.contractAddress == address(wrappedNative), 'YieldBox: not wrappedNative');
+        require(
+            asset.tokenType == TokenType.ERC20 &&
+                asset.contractAddress == address(wrappedNative),
+            'YieldBox: not wrappedNative'
+        );
 
         // Effects
-        uint256 share = amount._toShares(totalSupply[assetId], _tokenBalanceOf(asset), false);
+        uint256 share = amount._toShares(
+            totalSupply[assetId],
+            _tokenBalanceOf(asset),
+            false
+        );
 
         _mint(to, assetId, share);
 
@@ -195,7 +227,10 @@ contract YieldBox is BoringBatchable, NativeTokenFactory, ERC1155TokenReceiver {
     ) public allowed(from) returns (uint256 amountOut, uint256 shareOut) {
         // Checks
         Asset storage asset = assets[assetId];
-        require(asset.tokenType != TokenType.Native, "YieldBox: can't withdraw Native");
+        require(
+            asset.tokenType != TokenType.Native,
+            "YieldBox: can't withdraw Native"
+        );
 
         // Effects
         uint256 totalAmount = _tokenBalanceOf(asset);
@@ -221,7 +256,13 @@ contract YieldBox is BoringBatchable, NativeTokenFactory, ERC1155TokenReceiver {
                 }
             } else {
                 // IERC1155
-                IERC1155(asset.contractAddress).safeTransferFrom(address(this), to, asset.tokenId, amount, '');
+                IERC1155(asset.contractAddress).safeTransferFrom(
+                    address(this),
+                    to,
+                    asset.tokenId,
+                    amount,
+                    ''
+                );
             }
         } else {
             asset.strategy.withdraw(to, amount);
@@ -230,7 +271,12 @@ contract YieldBox is BoringBatchable, NativeTokenFactory, ERC1155TokenReceiver {
         return (amount, share);
     }
 
-    function _requireTransferAllowed(address from) internal view override allowed(from) {}
+    function _requireTransferAllowed(address from)
+        internal
+        view
+        override
+        allowed(from)
+    {}
 
     /// @notice Transfer shares from a user account to another one.
     /// @param from which user to pull the tokens.
@@ -284,10 +330,16 @@ contract YieldBox is BoringBatchable, NativeTokenFactory, ERC1155TokenReceiver {
         balanceOf[from][assetId] -= totalAmount;
     }
 
-    function setApprovalForAll(address operator, bool approved) external override {
+    function setApprovalForAll(address operator, bool approved)
+        external
+        override
+    {
         // Checks
         require(operator != address(0), 'YieldBox: operator not set'); // Important for security
-        require(masterContractOf[msg.sender] == address(0), 'YieldBox: user is clone');
+        require(
+            masterContractOf[msg.sender] == address(0),
+            'YieldBox: user is clone'
+        );
         require(operator != address(this), "YieldBox: can't approve yieldBox");
 
         // Effects
@@ -298,7 +350,12 @@ contract YieldBox is BoringBatchable, NativeTokenFactory, ERC1155TokenReceiver {
 
     // This functionality has been split off into a separate contract. This is only a view function, so gas usage isn't a huge issue.
     // This keeps the YieldBox contract smaller, so it can be optimized more.
-    function uri(uint256 assetId) external view override returns (string memory) {
+    function uri(uint256 assetId)
+        external
+        view
+        override
+        returns (string memory)
+    {
         return uriBuilder.uri(assetId);
     }
 
@@ -332,7 +389,11 @@ contract YieldBox is BoringBatchable, NativeTokenFactory, ERC1155TokenReceiver {
         if (assets[assetId].tokenType == TokenType.Native) {
             share = amount;
         } else {
-            share = amount._toShares(totalSupply[assetId], _tokenBalanceOf(assets[assetId]), roundUp);
+            share = amount._toShares(
+                totalSupply[assetId],
+                _tokenBalanceOf(assets[assetId]),
+                roundUp
+            );
         }
     }
 
@@ -349,18 +410,30 @@ contract YieldBox is BoringBatchable, NativeTokenFactory, ERC1155TokenReceiver {
         if (assets[assetId].tokenType == TokenType.Native) {
             amount = share;
         } else {
-            amount = share._toAmount(totalSupply[assetId], _tokenBalanceOf(assets[assetId]), roundUp);
+            amount = share._toAmount(
+                totalSupply[assetId],
+                _tokenBalanceOf(assets[assetId]),
+                roundUp
+            );
         }
     }
 
     /// @dev Helper function represent the balance in `token` amount for a `user` for an `asset`.
     /// @param user The `user` to get the amount for.
     /// @param assetId The id of the asset.
-    function amountOf(address user, uint256 assetId) external view returns (uint256 amount) {
+    function amountOf(address user, uint256 assetId)
+        external
+        view
+        returns (uint256 amount)
+    {
         if (assets[assetId].tokenType == TokenType.Native) {
             amount = balanceOf[user][assetId];
         } else {
-            amount = balanceOf[user][assetId]._toAmount(totalSupply[assetId], _tokenBalanceOf(assets[assetId]), false);
+            amount = balanceOf[user][assetId]._toAmount(
+                totalSupply[assetId],
+                _tokenBalanceOf(assets[assetId]),
+                false
+            );
         }
     }
 
@@ -376,9 +449,33 @@ contract YieldBox is BoringBatchable, NativeTokenFactory, ERC1155TokenReceiver {
     ) public returns (uint256 amountOut, uint256 shareOut) {
         if (tokenType == TokenType.Native) {
             // If native token, register it as an ERC1155 asset (as that's what it is)
-            return depositAsset(registerAsset(TokenType.ERC1155, address(this), strategy, tokenId), from, to, amount, share);
+            return
+                depositAsset(
+                    registerAsset(
+                        TokenType.ERC1155,
+                        address(this),
+                        strategy,
+                        tokenId
+                    ),
+                    from,
+                    to,
+                    amount,
+                    share
+                );
         } else {
-            return depositAsset(registerAsset(tokenType, contractAddress, strategy, tokenId), from, to, amount, share);
+            return
+                depositAsset(
+                    registerAsset(
+                        tokenType,
+                        contractAddress,
+                        strategy,
+                        tokenId
+                    ),
+                    from,
+                    to,
+                    amount,
+                    share
+                );
         }
     }
 
@@ -387,6 +484,16 @@ contract YieldBox is BoringBatchable, NativeTokenFactory, ERC1155TokenReceiver {
         address to,
         uint256 amount
     ) public payable returns (uint256 amountOut, uint256 shareOut) {
-        return depositETHAsset(registerAsset(TokenType.ERC20, address(wrappedNative), strategy, 0), to, amount);
+        return
+            depositETHAsset(
+                registerAsset(
+                    TokenType.ERC20,
+                    address(wrappedNative),
+                    strategy,
+                    0
+                ),
+                to,
+                amount
+            );
     }
 }

@@ -3,7 +3,7 @@
 // Copyright (c) 2021 BoringCrypto - All rights reserved
 // Twitter: @Boring_Crypto
 
-pragma solidity 0.8.9;
+pragma solidity ^0.8.0;
 pragma experimental ABIEncoderV2;
 import '@boringcrypto/boring-solidity/contracts/BoringOwnable.sol';
 import '@boringcrypto/boring-solidity/contracts/ERC20.sol';

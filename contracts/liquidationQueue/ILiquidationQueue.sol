@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.9;
+pragma solidity ^0.8.0;
 
 struct Bidder {
     uint256 amount; // Amount bid.
