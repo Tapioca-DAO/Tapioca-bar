@@ -4,7 +4,7 @@ import { register } from './test.utils';
 import { LiquidationQueue } from '../typechain';
 
 describe('LiquidationQueue integration test', () => {
-    it('should allow bidding flow', async () => {
+    it('should allow successful contract interactions', async () => {
         const accounts = await ethers.getSigners();
         const { yieldBox, liquidationQueue, weth, LQ_META, BN, jumpTime } =
             await register();
@@ -12,7 +12,7 @@ describe('LiquidationQueue integration test', () => {
         const assetId = await liquidationQueue.lqAssetId();
 
         for (let i = 0; i < accounts.length; i++) {
-            // deposit yieldBox
+            // Deposit yieldBox
             await weth.connect(accounts[i]).freeMint(LQ_META.minBidAmount);
             await weth
                 .connect(accounts[i])
@@ -36,7 +36,7 @@ describe('LiquidationQueue integration test', () => {
                 assetId,
             );
 
-            // bid
+            // Bid
             await yieldBox
                 .connect(accounts[i])
                 .setApprovalForAll(liquidationQueue.address, true);
@@ -70,11 +70,73 @@ describe('LiquidationQueue integration test', () => {
             ).to.equal(BN(LQ_META.minBidAmount));
         }
 
-        // removeInactiveBid
+        // Size of user groups
+        const groupLength = accounts.length / 4;
 
-        // activate bid after 10min
+        // First group: users periodically remove their inactivated bids
+        for (let i = 0; i < groupLength; i++) {
+            const initialAccShare = await yieldBox.balanceOf(
+                accounts[i].address,
+                assetId,
+            );
+            const initialLQBalance = await yieldBox.balanceOf(
+                liquidationQueue.address,
+                assetId,
+            );
 
-        // remove bid
+            await liquidationQueue
+                .connect(accounts[i])
+                .removeInactivatedBid(accounts[i].address, POOL);
+
+            const finalAccShare = await yieldBox.balanceOf(
+                accounts[i].address,
+                assetId,
+            );
+            const finalLQBalance = await yieldBox.balanceOf(
+                liquidationQueue.address,
+                assetId,
+            );
+
+            // Check for asset transfer
+            expect(
+                await yieldBox.toAmount(
+                    assetId,
+                    finalAccShare.sub(initialAccShare),
+                    false,
+                ),
+            ).to.equal(BN(LQ_META.minBidAmount));
+            expect(
+                await yieldBox.toAmount(
+                    assetId,
+                    initialLQBalance.sub(finalLQBalance),
+                    false,
+                ),
+            ).to.equal(BN(LQ_META.minBidAmount));
+
+            // **add interval / timeout
+        }
+
+        jumpTime(LQ_META.activationTime);
+
+        // Rest of accounts activate their bid
+        for (let i = groupLength; i < accounts.length; i++) {
+            await liquidationQueue
+                .connect(accounts[i])
+                .activateBid(accounts[i].address, POOL);
+            // ** add interval / timeout
+        }
+
+        // Second group removes their activated bid
+        for (let i = groupLength; i < 2 * groupLength; i++) {
+            await liquidationQueue
+                .connect(accounts[i])
+                .removeBid(accounts[i].address, POOL, 1);
+            // ** add interval / timeout
+            // Check transfer of assets
+        }
+
+        // executeBids
+        // redeem
     });
 });
 
@@ -84,7 +146,7 @@ describe('LiquidationQueue integration test', () => {
  * external user functions:
  * X bid
  * - activateBid
- * - removeInactiveBid
+ * - removeInactivatedBid
  * - removeBid
  *
  * - redeem
