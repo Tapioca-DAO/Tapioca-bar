@@ -82,22 +82,39 @@ contract BeachBar is BoringOwnable {
 
     /// @notice Get all the Mixologist contract addresses
     function tapiocaMarkets() public view returns (address[] memory markets) {
-        uint256 masterContractLength = masterContracts.length;
-        markets = new address[](masterContractLength);
+        uint256 _masterContractLength = masterContracts.length;
+        uint256 marketsLength = 0;
+
+        unchecked {
+            // We first compute the length of the markets array
+            for (uint256 i = 0; i < _masterContractLength; ) {
+                marketsLength += yieldBox.clonesOfCount(
+                    masterContracts[i].location
+                );
+
+                ++i;
+            }
+        }
+
+        markets = new address[](marketsLength);
+
+        uint256 marketIndex;
         uint256 clonesOfLength;
 
-        // Loop through master contracts.
-        for (uint256 i = 0; i < masterContractLength; ) {
-            clonesOfLength = yieldBox.clonesOfCount(
-                masterContracts[i].location
-            );
+        unchecked {
+            // We populate the array
+            for (uint256 i = 0; i < _masterContractLength; ) {
+                address mcLocation = masterContracts[i].location;
+                clonesOfLength = yieldBox.clonesOfCount(mcLocation);
 
-            // Loop through clones of the current MC.
-            for (uint256 j = 0; j < clonesOfLength; ) {
-                markets[i] = yieldBox.clonesOf(masterContracts[i].location, j);
-                ++j;
+                // Loop through clones of the current MC.
+                for (uint256 j = 0; j < clonesOfLength; ) {
+                    markets[marketIndex] = yieldBox.clonesOf(mcLocation, j);
+                    ++marketIndex;
+                    ++j;
+                }
+                ++i;
             }
-            ++i;
         }
     }
 
@@ -123,11 +140,13 @@ contract BeachBar is BoringOwnable {
         address[] memory markets = tapiocaMarkets();
         uint256 length = markets.length;
 
-        for (uint256 i = 0; i < length; ) {
-            IMixologist(markets[i]).depositFeesToYieldBox(
-                singleSwapper ? swappers_[0] : swappers_[i]
-            );
-            ++i;
+        unchecked {
+            for (uint256 i = 0; i < length; ) {
+                IMixologist(markets[i]).depositFeesToYieldBox(
+                    singleSwapper ? swappers_[0] : swappers_[i]
+                );
+                ++i;
+            }
         }
 
         emit ProtocolWithdrawal(markets, block.timestamp);
