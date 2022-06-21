@@ -1,13 +1,21 @@
-import { ethers } from 'hardhat';
+import hh, { ethers } from 'hardhat';
 import { expect } from 'chai';
 import { register } from './test.utils';
-import { LiquidationQueue } from '../typechain';
 
 describe('LiquidationQueue integration test', () => {
     it('should allow successful contract interactions', async () => {
         const accounts = await ethers.getSigners();
-        const { yieldBox, liquidationQueue, weth, LQ_META, BN, jumpTime } =
-            await register();
+        const {
+            yieldBox,
+            liquidationQueue,
+            weth,
+            usdc,
+            __wethUsdcPrice,
+            LQ_META,
+            wethUsdcMixologist,
+            BN,
+            jumpTime,
+        } = await register();
         const POOL = 1;
         const assetId = await liquidationQueue.lqAssetId();
 
@@ -31,7 +39,7 @@ describe('LiquidationQueue integration test', () => {
                 accounts[i].address,
                 assetId,
             );
-            const initialLQBalance = await yieldBox.balanceOf(
+            const initialLQShare = await yieldBox.balanceOf(
                 liquidationQueue.address,
                 assetId,
             );
@@ -48,7 +56,7 @@ describe('LiquidationQueue integration test', () => {
                 accounts[i].address,
                 assetId,
             );
-            const finalLQBalance = await yieldBox.balanceOf(
+            const finalLQShare = await yieldBox.balanceOf(
                 liquidationQueue.address,
                 assetId,
             );
@@ -64,7 +72,7 @@ describe('LiquidationQueue integration test', () => {
             expect(
                 await yieldBox.toAmount(
                     assetId,
-                    finalLQBalance.sub(initialLQBalance),
+                    finalLQShare.sub(initialLQShare),
                     false,
                 ),
             ).to.equal(BN(LQ_META.minBidAmount));
@@ -73,13 +81,13 @@ describe('LiquidationQueue integration test', () => {
         // Size of user groups
         const groupLength = accounts.length / 4;
 
-        // First group: users periodically remove their inactivated bids
+        // First group: remove their inactivated bids
         for (let i = 0; i < groupLength; i++) {
             const initialAccShare = await yieldBox.balanceOf(
                 accounts[i].address,
                 assetId,
             );
-            const initialLQBalance = await yieldBox.balanceOf(
+            const initialLQShare = await yieldBox.balanceOf(
                 liquidationQueue.address,
                 assetId,
             );
@@ -92,7 +100,7 @@ describe('LiquidationQueue integration test', () => {
                 accounts[i].address,
                 assetId,
             );
-            const finalLQBalance = await yieldBox.balanceOf(
+            const finalLQShare = await yieldBox.balanceOf(
                 liquidationQueue.address,
                 assetId,
             );
@@ -108,12 +116,10 @@ describe('LiquidationQueue integration test', () => {
             expect(
                 await yieldBox.toAmount(
                     assetId,
-                    initialLQBalance.sub(finalLQBalance),
+                    initialLQShare.sub(finalLQShare),
                     false,
                 ),
             ).to.equal(BN(LQ_META.minBidAmount));
-
-            // **add interval / timeout
         }
 
         jumpTime(LQ_META.activationTime);
@@ -123,19 +129,86 @@ describe('LiquidationQueue integration test', () => {
             await liquidationQueue
                 .connect(accounts[i])
                 .activateBid(accounts[i].address, POOL);
-            // ** add interval / timeout
         }
 
         // Second group removes their activated bid
-        for (let i = groupLength; i < 2 * groupLength; i++) {
-            await liquidationQueue
-                .connect(accounts[i])
-                .removeBid(accounts[i].address, POOL, 1);
-            // ** add interval / timeout
+        // for (let i = groupLength; i < accounts.length; i++) {
+        for (let i = groupLength; i < groupLength + 2; i++) {
+            // const initialAccShare = await yieldBox.balanceOf(
+            //     accounts[i].address,
+            //     assetId,
+            // );
+            // const initialLQShare = await yieldBox.balanceOf(
+            //     liquidationQueue.address,
+            //     assetId,
+            // );
+            // console.log(
+            //     await liquidationQueue.bidPools(POOL, accounts[i].address),
+            // );
+            // console.log(await liquidationQueue.orderBookEntries(POOL, 0));
+            // console.log(await liquidationQueue.orderBookInfos(POOL));
+            // console.log(
+            //     await liquidationQueue.userBidIndexes(
+            //         accounts[i].address,
+            //         POOL,
+            //         0,
+            //     ),
+            // );
+            // const bidIndexLength = await liquidationQueue
+            //     .connect(accounts[i])
+            //     .userBidIndexLength(accounts[i].address, POOL);
+            // await liquidationQueue
+            //     .connect(accounts[i])
+            //     .removeBid(accounts[i].address, POOL, bidIndexLength.sub(1));
+            // await hh.network.provider.send('evm_mine', []);
+            // const finalAccShare = await yieldBox.balanceOf(
+            //     accounts[i].address,
+            //     assetId,
+            // );
+            // const finalLQShare = await yieldBox.balanceOf(
+            //     liquidationQueue.address,
+            //     assetId,
+            // );
             // Check transfer of assets
+            // expect(
+            //     await yieldBox.toAmount(
+            //         assetId,
+            //         finalAccShare.sub(initialAccShare),
+            //         false,
+            //     ),
+            // ).to.equal(BN(LQ_META.minBidAmount));
+            // expect(
+            //     await yieldBox.toAmount(
+            //         assetId,
+            //         initialLQShare.sub(finalLQShare),
+            //         false,
+            //     ),
+            // ).to.equal(BN(LQ_META.minBidAmount));
         }
 
-        // executeBids
+        // First group: lends their assets
+        for (let i = 0; i < groupLength; i++) {
+            await yieldBox
+                .connect(accounts[i])
+                .setApprovalForAll(wethUsdcMixologist.address, true);
+            await wethUsdcMixologist
+                .connect(accounts[i])
+                .addAsset(
+                    accounts[i].address,
+                    false,
+                    await yieldBox.toShare(
+                        assetId,
+                        BN(LQ_META.minBidAmount),
+                        false,
+                    ),
+                );
+        }
+
+        // Second group: borrow assets
+        for (let i = groupLength; i < 2 * groupLength; i++) {}
+
+        // liquidate the second group debt
+
         // redeem
     });
 });
@@ -145,9 +218,9 @@ describe('LiquidationQueue integration test', () => {
 /**
  * external user functions:
  * X bid
- * - activateBid
- * - removeInactivatedBid
- * - removeBid
+ * X activateBid
+ * X removeInactivatedBid
+ * - removeBid - BUG
  *
  * - redeem
  * - executeBids

@@ -346,6 +346,7 @@ contract LiquidationQueue {
         }
 
         // Remove bid from the order book by replacing it with the last activated bid.
+        // reverted with panic code 0x32 (Array accessed at an out-of-bounds or negative index)
         uint256 orderBookIndex = bidIndexes[bidPosition];
         amountRemoved = orderBookEntries[pool][orderBookIndex].bidInfo.amount;
         orderBookEntries[pool][orderBookIndex] = orderBookEntries[pool][
@@ -353,6 +354,7 @@ contract LiquidationQueue {
         ];
 
         // Remove userBidIndex
+        // reverted with panic code 0x11 (Arithmetic operation underflowed or overflowed outside of an unchecked block)
         bidIndexesLen = bidIndexes.length;
         bidIndexes[bidPosition] = bidIndexes[bidIndexesLen - 1];
         bidIndexes.pop();
