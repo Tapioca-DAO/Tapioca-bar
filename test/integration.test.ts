@@ -144,7 +144,7 @@ describe('LiquidationQueue integration test', () => {
                 liquidationQueue.address,
                 assetId,
             );
-            // activate bid
+
             const bidIndexLength = await liquidationQueue
                 .connect(accounts[i])
                 .userBidIndexLength(accounts[i].address, POOL);
@@ -160,6 +160,7 @@ describe('LiquidationQueue integration test', () => {
                 liquidationQueue.address,
                 assetId,
             );
+
             // Check transfer of assets
             expect(
                 await yieldBox.toAmount(
