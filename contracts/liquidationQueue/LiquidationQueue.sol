@@ -4,6 +4,7 @@ pragma solidity ^0.8.0;
 import '@boringcrypto/boring-solidity/contracts/ERC20.sol';
 import '../mixologist/Mixologist.sol';
 import './ILiquidationQueue.sol';
+import 'hardhat/console.sol';
 
 enum MODE {
     ADD,
@@ -49,6 +50,14 @@ contract LiquidationQueue {
     // Meta-data about the order book pool
     // poolId => poolInfo.
     mapping(uint256 => OrderBookPoolInfo) public orderBookInfos;
+
+    function getPoolInfo(uint256 pool)
+        external
+        view
+        returns (OrderBookPoolInfo memory)
+    {
+        return orderBookInfos[pool];
+    }
 
     /**
      * Ledger.
@@ -335,8 +344,8 @@ contract LiquidationQueue {
 
         // Clean expired bids.
         for (uint256 i = 0; i < bidIndexesLen; ) {
-            if (bidIndexes[i] > poolInfo.nextBidPull) {
-                bidIndexesLen = bidIndexes.length;
+            if (bidIndexes[i] < poolInfo.nextBidPull) {
+                // BUG: if bidIndex < poolInfo.nextBidPull, the bid has already been executed & ENHANCEMENT: bidIndexesLen was already declared
                 bidIndexes[i] = bidIndexes[bidIndexesLen - 1];
                 bidIndexes.pop();
             }
@@ -346,7 +355,6 @@ contract LiquidationQueue {
         }
 
         // Remove bid from the order book by replacing it with the last activated bid.
-        // reverted with panic code 0x32 (Array accessed at an out-of-bounds or negative index)
         uint256 orderBookIndex = bidIndexes[bidPosition];
         amountRemoved = orderBookEntries[pool][orderBookIndex].bidInfo.amount;
         orderBookEntries[pool][orderBookIndex] = orderBookEntries[pool][
@@ -354,7 +362,6 @@ contract LiquidationQueue {
         ];
 
         // Remove userBidIndex
-        // reverted with panic code 0x11 (Arithmetic operation underflowed or overflowed outside of an unchecked block)
         bidIndexesLen = bidIndexes.length;
         bidIndexes[bidPosition] = bidIndexes[bidIndexesLen - 1];
         bidIndexes.pop();
