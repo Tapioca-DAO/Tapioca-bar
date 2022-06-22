@@ -135,7 +135,7 @@ describe('LiquidationQueue integration test', () => {
 
         // Second group removes their activated bid
         // for (let i = groupLength; i < accounts.length; i++) {
-        // for (let i = groupLength; i < groupLength + 2; i++) {
+        // for (let i = groupLength; i < groupLength * 2; i++) {
         // const initialAccShare = await yieldBox.balanceOf(
         //     accounts[i].address,
         //     assetId,
@@ -261,14 +261,115 @@ describe('LiquidationQueue integration test', () => {
                 await wethUsdcMixologist.userBorrowPart(accounts[i].address),
             );
         }
-        // check mixologist & yieldBox for asset transfer
+
+        // check withdrawal
+        const initialShareLQ = await yieldBox.balanceOf(
+            liquidationQueue.address,
+            assetId,
+        );
+        const initialShareMixologist = await yieldBox.balanceOf(
+            wethUsdcMixologist.address,
+            assetId,
+        );
+
+        // liquidate
         await wethUsdcMixologist.liquidate(
             accountsToLiquidate,
             borrowParts,
             multiSwapper.address,
         );
 
+        // get the amount of bid executed
+        const event = liquidationQueue.filters.ExecuteBids(
+            wethUsdcMixologist.address,
+            POOL,
+        );
+        const ifaceLQ = liquidationQueue.interface;
+        const eventLog = await hh.network.provider.send('eth_getLogs', [
+            {
+                fromBlock: 'earliest',
+                toBlock: 'latest',
+                address: liquidationQueue.address,
+                topics: event.topics,
+            },
+        ]);
+        const decodedEvent = ifaceLQ.parseLog(eventLog[0]);
+        const bidAmountExecuted = decodedEvent.args.amountExecuted;
+
+        const finalShareLQ = await yieldBox.balanceOf(
+            liquidationQueue.address,
+            assetId,
+        );
+        const finalShareMixologist = await yieldBox.balanceOf(
+            wethUsdcMixologist.address,
+            assetId,
+        );
+        expect(initialShareLQ.sub(finalShareLQ)).to.equal(
+            await yieldBox.toShare(assetId, bidAmountExecuted, false),
+        );
+
+        // not exactly same number
+        // expect(finalShareMixologist.sub(initialShareMixologist)).to.equal(
+        //     await yieldBox.toShare(assetId, bidAmountExecuted, false),
+        // );
+
         // redeem
+        // correct group when removeBid fixed
+        // for (let i = groupLength * 2; i < accounts.length; i++) {
+        for (let i = groupLength; i < accounts.length; i++) {
+            const balanceDue = await liquidationQueue.balancesDue(
+                accounts[i].address,
+            );
+            if (balanceDue.gt(0)) {
+                // redeem & check transfer of asset
+                const initialShareLQ = await yieldBox.balanceOf(
+                    liquidationQueue.address,
+                    assetId,
+                );
+                const initialShareAccount = await yieldBox.balanceOf(
+                    accounts[i].address,
+                    assetId,
+                );
+                await liquidationQueue
+                    .connect(accounts[i])
+                    .redeem(accounts[i].address);
+                const finalShareLQ = await yieldBox.balanceOf(
+                    liquidationQueue.address,
+                    assetId,
+                );
+                const finalShareAccount = await yieldBox.balanceOf(
+                    accounts[i].address,
+                    assetId,
+                );
+
+                // get redeemable amount
+                const event = liquidationQueue.filters.Redeem(
+                    accounts[i].address,
+                    accounts[i].address,
+                );
+                const eventLog = await hh.network.provider.send('eth_getLogs', [
+                    {
+                        fromBlock: 'earliest',
+                        toBlock: 'latest',
+                        address: liquidationQueue.address,
+                        topics: event.topics,
+                    },
+                ]);
+                const decodedEvent = ifaceLQ.parseLog(eventLog[0]);
+                const redeemable = decodedEvent.args.amount;
+                // console.log(initialShareAccount);
+                // console.log(finalShareAccount);
+                console.log(await yieldBox.toShare(assetId, redeemable, false));
+
+                // transfer not made?
+                // expect(initialShareLQ.sub(finalShareLQ)).to.equal(
+                //     await yieldBox.toShare(assetId, redeemable, false),
+                // );
+                // expect(finalShareAccount.sub(initialShareAccount)).to.equal(
+                //     await yieldBox.toShare(assetId, redeemable, false),
+                // );
+            }
+        }
     });
 });
 
@@ -280,6 +381,6 @@ describe('LiquidationQueue integration test', () => {
  * X activateBid
  * X removeInactivatedBid
  * - removeBid - BUG
- * - executeBids
+ * - executeBids - BUG
  * - redeem
  */
