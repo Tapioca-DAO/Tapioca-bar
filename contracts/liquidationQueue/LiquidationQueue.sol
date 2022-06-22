@@ -4,7 +4,6 @@ pragma solidity ^0.8.0;
 import '@boringcrypto/boring-solidity/contracts/ERC20.sol';
 import '../mixologist/Mixologist.sol';
 import './ILiquidationQueue.sol';
-import 'hardhat/console.sol';
 
 enum MODE {
     ADD,
@@ -50,14 +49,6 @@ contract LiquidationQueue {
     // Meta-data about the order book pool
     // poolId => poolInfo.
     mapping(uint256 => OrderBookPoolInfo) public orderBookInfos;
-
-    function getPoolInfo(uint256 pool)
-        external
-        view
-        returns (OrderBookPoolInfo memory)
-    {
-        return orderBookInfos[pool];
-    }
 
     /**
      * Ledger.

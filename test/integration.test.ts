@@ -17,12 +17,13 @@ describe('LiquidationQueue integration test', () => {
             multiSwapper,
             BN,
             jumpTime,
+            deployer,
         } = await register();
         const POOL = 1;
         const assetId = await liquidationQueue.lqAssetId();
 
         for (let i = 0; i < accounts.length; i++) {
-            // Deposit yieldBox
+            // deposit yieldBox
             await weth.connect(accounts[i]).freeMint(LQ_META.minBidAmount);
             await weth
                 .connect(accounts[i])
@@ -46,7 +47,7 @@ describe('LiquidationQueue integration test', () => {
                 assetId,
             );
 
-            // Bid
+            // bid
             await yieldBox
                 .connect(accounts[i])
                 .setApprovalForAll(liquidationQueue.address, true);
@@ -63,7 +64,7 @@ describe('LiquidationQueue integration test', () => {
                 assetId,
             );
 
-            // Check for transfer of assets
+            // check for transfer of assets
             expect(
                 await yieldBox.toAmount(
                     assetId,
@@ -80,10 +81,10 @@ describe('LiquidationQueue integration test', () => {
             ).to.equal(BN(LQ_META.minBidAmount));
         }
 
-        // Size of user groups
+        // size of user groups
         const groupLength = accounts.length / 4;
 
-        // First group: remove their inactivated bids
+        // first group: remove their inactivated bids
         for (let i = 0; i < groupLength; i++) {
             const initialAccShare = await yieldBox.balanceOf(
                 accounts[i].address,
@@ -107,7 +108,7 @@ describe('LiquidationQueue integration test', () => {
                 assetId,
             );
 
-            // Check for asset transfer
+            // check for asset transfer
             expect(
                 await yieldBox.toAmount(
                     assetId,
@@ -126,14 +127,14 @@ describe('LiquidationQueue integration test', () => {
 
         jumpTime(LQ_META.activationTime);
 
-        // Rest of accounts activate their bid
+        // rest of accounts activate their bid
         for (let i = groupLength; i < accounts.length; i++) {
             await liquidationQueue
                 .connect(accounts[i])
                 .activateBid(accounts[i].address, POOL);
         }
 
-        // Second group removes their activated bid
+        // second group removes their activated bid
         for (let i = groupLength; i < groupLength * 2; i++) {
             const initialAccShare = await yieldBox.balanceOf(
                 accounts[i].address,
@@ -150,7 +151,7 @@ describe('LiquidationQueue integration test', () => {
             await liquidationQueue
                 .connect(accounts[i])
                 .removeBid(accounts[i].address, POOL, bidIndexLength.sub(1));
-            // await hh.network.provider.send('evm_mine', []);
+
             const finalAccShare = await yieldBox.balanceOf(
                 accounts[i].address,
                 assetId,
@@ -240,17 +241,6 @@ describe('LiquidationQueue integration test', () => {
         await wethUsdcOracle.set(__wethUsdcPrice.add(priceDrop));
         await wethUsdcMixologist.updateExchangeRate();
 
-        // liquidate the second group debt
-        let accountsToLiquidate = [];
-        let borrowParts = [];
-        for (let i = groupLength; i < 2 * groupLength; i++) {
-            accountsToLiquidate.push(accounts[i].address);
-            borrowParts.push(
-                await wethUsdcMixologist.userBorrowPart(accounts[i].address),
-            );
-        }
-
-        // check withdrawal
         const initialShareLQ = await yieldBox.balanceOf(
             liquidationQueue.address,
             assetId,
@@ -260,7 +250,15 @@ describe('LiquidationQueue integration test', () => {
             assetId,
         );
 
-        // liquidate
+        // liquidate the second group debt
+        let accountsToLiquidate = [];
+        let borrowParts = [];
+        for (let i = groupLength; i < 2 * groupLength; i++) {
+            accountsToLiquidate.push(accounts[i].address);
+            borrowParts.push(
+                await wethUsdcMixologist.userBorrowPart(accounts[i].address),
+            );
+        }
         await wethUsdcMixologist.liquidate(
             accountsToLiquidate,
             borrowParts,
@@ -268,21 +266,39 @@ describe('LiquidationQueue integration test', () => {
         );
 
         // get the amount of bid executed
-        const event = liquidationQueue.filters.ExecuteBids(
+        const eventEB = liquidationQueue.filters.ExecuteBids(
             wethUsdcMixologist.address,
             POOL,
         );
         const ifaceLQ = liquidationQueue.interface;
-        const eventLog = await hh.network.provider.send('eth_getLogs', [
+        const eventEBLog = await hh.network.provider.send('eth_getLogs', [
             {
                 fromBlock: 'earliest',
                 toBlock: 'latest',
                 address: liquidationQueue.address,
-                topics: event.topics,
+                topics: eventEB.topics,
             },
         ]);
-        const decodedEvent = ifaceLQ.parseLog(eventLog[0]);
-        const bidAmountExecuted = decodedEvent.args.amountExecuted;
+        const decodedEventEB = ifaceLQ.parseLog(eventEBLog[0]);
+        const bidAmountExecuted = decodedEventEB.args.amountExecuted;
+
+        // get the fee sent from the market to the caller of orderBookLiquidation()
+        const eventTS = yieldBox.filters.TransferSingle(
+            wethUsdcMixologist.address,
+            wethUsdcMixologist.address,
+            deployer.address,
+        );
+        const ifaceYB = yieldBox.interface;
+        const eventTSLog = await hh.network.provider.send('eth_getLogs', [
+            {
+                fromBlock: 'earliest',
+                toBlock: 'latest',
+                address: yieldBox.address,
+                topics: eventTS.topics,
+            },
+        ]);
+        const decodedEventTS = ifaceYB.parseLog(eventTSLog[0]);
+        const callerShare = decodedEventTS.args._value;
 
         const finalShareLQ = await yieldBox.balanceOf(
             liquidationQueue.address,
@@ -292,86 +308,69 @@ describe('LiquidationQueue integration test', () => {
             wethUsdcMixologist.address,
             assetId,
         );
-        // expect(initialShareLQ.sub(finalShareLQ)).to.equal(
-        //     await yieldBox.toShare(assetId, bidAmountExecuted, false),
-        // );
 
-        // not exactly same number
-        // expect(finalShareMixologist.sub(initialShareMixologist)).to.equal(
-        //     await yieldBox.toShare(assetId, bidAmountExecuted, false),
-        // );
+        // check asset transfer
+        expect(initialShareLQ.sub(finalShareLQ)).to.equal(
+            await yieldBox.toShare(assetId, bidAmountExecuted, false),
+        );
+
+        expect(
+            finalShareMixologist.sub(initialShareMixologist.sub(callerShare)),
+        ).to.equal(await yieldBox.toShare(assetId, bidAmountExecuted, false));
 
         // redeem
-        // correct group when removeBid fixed
-        // for (let i = groupLength * 2; i < accounts.length; i++) {
-        // for (let i = groupLength; i < accounts.length; i++) {
-        //     const balanceDue = await liquidationQueue.balancesDue(
-        //         accounts[i].address,
-        //     );
-        //     if (balanceDue.gt(0)) {
-        //         // redeem & check transfer of asset
-        //         const initialShareLQ = await yieldBox.balanceOf(
-        //             liquidationQueue.address,
-        //             assetId,
-        //         );
-        //         // const initialShareAccount = await yieldBox.balanceOf(
-        //         //     accounts[i].address,
-        //         //     assetId,
-        //         // );
+        for (let i = groupLength * 2; i < accounts.length; i++) {
+            const balanceDue = await liquidationQueue.balancesDue(
+                accounts[i].address,
+            );
+            if (balanceDue.gt(0)) {
+                const initialShareLQ = await yieldBox.balanceOf(
+                    liquidationQueue.address,
+                    marketColId,
+                );
+                const initialShareAccount = await yieldBox.balanceOf(
+                    accounts[i].address,
+                    marketColId,
+                );
 
-        //         await liquidationQueue
-        //             .connect(accounts[i])
-        //             .redeem(accounts[i].address);
+                // redeem
+                await liquidationQueue
+                    .connect(accounts[i])
+                    .redeem(accounts[i].address);
 
-        //         const finalShareLQ = await yieldBox.balanceOf(
-        //             liquidationQueue.address,
-        //             assetId,
-        //         );
+                const finalShareLQ = await yieldBox.balanceOf(
+                    liquidationQueue.address,
+                    marketColId,
+                );
+                const finalShareAccount = await yieldBox.balanceOf(
+                    accounts[i].address,
+                    marketColId,
+                );
 
-        //         // console.log(initialShareLQ);
-        //         // console.log(finalShareLQ);
-        //         // const finalShareAccount = await yieldBox.balanceOf(
-        //         //     accounts[i].address,
-        //         //     assetId,
-        //         // );
+                // get redeemable amount
+                const event = liquidationQueue.filters.Redeem(
+                    accounts[i].address,
+                    accounts[i].address,
+                );
+                const eventLog = await hh.network.provider.send('eth_getLogs', [
+                    {
+                        fromBlock: 'earliest',
+                        toBlock: 'latest',
+                        address: liquidationQueue.address,
+                        topics: event.topics,
+                    },
+                ]);
+                const decodedEvent = ifaceLQ.parseLog(eventLog[0]);
+                const redeemable = decodedEvent.args.amount;
 
-        //         // get redeemable amount
-        //         // const event = liquidationQueue.filters.Redeem(
-        //         //     accounts[i].address,
-        //         //     accounts[i].address,
-        //         // );
-        //         // const eventLog = await hh.network.provider.send('eth_getLogs', [
-        //         //     {
-        //         //         fromBlock: 'earliest',
-        //         //         toBlock: 'latest',
-        //         //         address: liquidationQueue.address,
-        //         //         topics: event.topics,
-        //         //     },
-        //         // ]);
-        //         // const decodedEvent = ifaceLQ.parseLog(eventLog[0]);
-        //         // const redeemable = decodedEvent.args.amount;
-        //         // console.log(await yieldBox.toShare(assetId, redeemable, false));
-
-        //         // transfer not made?
-        //         // expect(initialShareLQ.sub(finalShareLQ)).to.equal(
-        //         //     await yieldBox.toShare(assetId, redeemable, false),
-        //         // );
-        //         // expect(finalShareAccount.sub(initialShareAccount)).to.equal(
-        //         //     await yieldBox.toShare(assetId, redeemable, false),
-        //         // );
-        //     }
-        // }
+                // check transfer of assets
+                expect(initialShareLQ.sub(finalShareLQ)).to.equal(
+                    await yieldBox.toShare(marketColId, redeemable, false),
+                );
+                expect(finalShareAccount.sub(initialShareAccount)).to.equal(
+                    await yieldBox.toShare(marketColId, redeemable, false),
+                );
+            }
+        }
     });
 });
-
-//
-
-/**
- * external user functions:
- * X bid
- * X activateBid
- * X removeInactivatedBid
- * - removeBid - BUG
- * - executeBids - BUG
- * - redeem - BUG
- */

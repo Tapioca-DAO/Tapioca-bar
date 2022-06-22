@@ -62,7 +62,7 @@ const config: HardhatUserConfig = {
                           },
                       ]
                     : {
-                          count: 20,
+                          count: 1000,
                       },
         },
         rinkeby: {
