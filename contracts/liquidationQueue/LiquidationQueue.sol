@@ -353,7 +353,7 @@ contract LiquidationQueue {
         ];
 
         // Remove userBidIndex
-        bidIndexesLen = bidIndexes.length;
+        // ENHANCEMENT: bidIndexesLen was already declared
         bidIndexes[bidPosition] = bidIndexes[bidIndexesLen - 1];
         bidIndexes.pop();
 
