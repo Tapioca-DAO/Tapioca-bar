@@ -4,7 +4,7 @@
 // Twitter: @Boring_Crypto
 
 pragma solidity ^0.8.0;
-pragma experimental ABIEncoderV2;
+
 import '@boringcrypto/boring-solidity/contracts/BoringOwnable.sol';
 import '@boringcrypto/boring-solidity/contracts/ERC20.sol';
 import '@boringcrypto/boring-solidity/contracts/libraries/BoringRebase.sol';
@@ -17,6 +17,7 @@ import '../liquidationQueue/ILiquidationQueue.sol';
 
 // solhint-disable avoid-low-level-calls
 // solhint-disable no-inline-assembly
+// solhint-disable max-line-length
 
 /// @title Mixologist
 /// @dev This contract allows contract calls to any contract (except yieldBox)

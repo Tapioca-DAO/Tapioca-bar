@@ -19,44 +19,34 @@ describe('Mixologist test', () => {
             mintVal,
             false,
         );
-        await (await weth.approve(yieldBox.address, mintVal)).wait();
-        await (
-            await yieldBox.depositAsset(
-                await wethUsdcMixologist.assetId(),
-                deployer.address,
-                deployer.address,
-                0,
-                mintValShare,
-            )
-        ).wait();
+        await weth.approve(yieldBox.address, mintVal);
+        await yieldBox.depositAsset(
+            await wethUsdcMixologist.assetId(),
+            deployer.address,
+            deployer.address,
+            0,
+            mintValShare,
+        );
 
         // Add asset to Mixologist
-        await (
-            await yieldBox.setApprovalForAll(wethUsdcMixologist.address, true)
-        ).wait();
-        await (
-            await wethUsdcMixologist.addAsset(
-                deployer.address,
-                false,
-                mintValShare,
-            )
-        ).wait();
+        await yieldBox.setApprovalForAll(wethUsdcMixologist.address, true);
+        await wethUsdcMixologist.addAsset(
+            deployer.address,
+            false,
+            mintValShare,
+        );
 
         // Remove asset from Mixologist
-        await (
-            await wethUsdcMixologist.removeAsset(deployer.address, mintValShare)
-        ).wait();
+        await wethUsdcMixologist.removeAsset(deployer.address, mintValShare);
 
         // Withdraw from bar
-        await (
-            await yieldBox.withdraw(
-                await wethUsdcMixologist.assetId(),
-                deployer.address,
-                deployer.address,
-                0,
-                mintValShare,
-            )
-        ).wait();
+        await yieldBox.withdraw(
+            await wethUsdcMixologist.assetId(),
+            deployer.address,
+            deployer.address,
+            0,
+            mintValShare,
+        );
 
         // Check the value of the asset
         const balanceAfter = await weth.balanceOf(deployer.address);
@@ -180,28 +170,22 @@ describe('Mixologist test', () => {
             lendVal,
             false,
         );
-        await (await weth.approve(yieldBox.address, lendVal)).wait();
-        await (
-            await yieldBox.depositAsset(
-                await wethUsdcMixologist.assetId(),
-                deployer.address,
-                deployer.address,
-                0,
-                lendValShare,
-            )
-        ).wait();
+        await weth.approve(yieldBox.address, lendVal);
+        await yieldBox.depositAsset(
+            await wethUsdcMixologist.assetId(),
+            deployer.address,
+            deployer.address,
+            0,
+            lendValShare,
+        );
 
         // Add asset to Mixologist
-        await (
-            await yieldBox.setApprovalForAll(wethUsdcMixologist.address, true)
-        ).wait();
-        await (
-            await wethUsdcMixologist.addAsset(
-                deployer.address,
-                false,
-                lendValShare,
-            )
-        ).wait();
+        await yieldBox.setApprovalForAll(wethUsdcMixologist.address, true);
+        await wethUsdcMixologist.addAsset(
+            deployer.address,
+            false,
+            lendValShare,
+        );
 
         /**
          * BORROW
@@ -260,41 +244,33 @@ describe('Mixologist test', () => {
             BN(0),
         );
         // Withdraw collateral
-        await (
-            await wethUsdcMixologist
-                .connect(eoa1)
-                .removeCollateral(
-                    eoa1.address,
-                    await wethUsdcMixologist.userCollateralShare(eoa1.address),
-                )
-        ).wait();
+        await wethUsdcMixologist
+            .connect(eoa1)
+            .removeCollateral(
+                eoa1.address,
+                await wethUsdcMixologist.userCollateralShare(eoa1.address),
+            );
 
-        await (
-            await yieldBox
-                .connect(eoa1)
-                .withdraw(
-                    collateralId,
-                    eoa1.address,
-                    eoa1.address,
-                    0,
-                    await yieldBox.balanceOf(eoa1.address, collateralId),
-                )
-        ).wait();
+        await yieldBox
+            .connect(eoa1)
+            .withdraw(
+                collateralId,
+                eoa1.address,
+                eoa1.address,
+                0,
+                await yieldBox.balanceOf(eoa1.address, collateralId),
+            );
 
         // Withdraw assets
-        await (
-            await wethUsdcMixologist.removeAsset(deployer.address, lendValShare)
-        ).wait();
+        await wethUsdcMixologist.removeAsset(deployer.address, lendValShare);
 
-        await (
-            await yieldBox.withdraw(
-                assetId,
-                deployer.address,
-                deployer.address,
-                0,
-                await yieldBox.balanceOf(deployer.address, assetId),
-            )
-        ).wait();
+        await yieldBox.withdraw(
+            assetId,
+            deployer.address,
+            deployer.address,
+            0,
+            await yieldBox.balanceOf(deployer.address, assetId),
+        );
 
         // Check that the lender has an increased amount
         const balanceAfter = await weth.balanceOf(deployer.address);
@@ -409,7 +385,7 @@ describe('Mixologist test', () => {
         expect(tapAmountHarvested.gte(acceptableHarvestMargin)).to.be.true;
     });
 
-    it.only('Should make a flashloan', async () => {
+    it('Should make a flashloan', async () => {
         const {
             weth,
             wethUsdcMixologist,
@@ -444,7 +420,7 @@ describe('Mixologist test', () => {
                 wethMintVal,
                 ethers.utils.hexlify(0),
             ),
-        ).to.be.revertedWith('Mx: flashloan insufficient funds');
+        ).to.be.reverted;
 
         // Insufficient funds
         await expect(
@@ -454,7 +430,7 @@ describe('Mixologist test', () => {
                 wethMintVal,
                 ethers.utils.hexlify(0),
             ),
-        ).to.be.revertedWith('Mx: flashloan insufficient funds');
+        ).to.be.reverted;
 
         await weth.freeMint(wethMintVal.mul(90).div(100_000)); // 0.09% fee
         await weth.transfer(operator.address, wethMintVal.mul(90).div(100_000));

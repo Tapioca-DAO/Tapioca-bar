@@ -7,6 +7,8 @@ import '@boringcrypto/boring-solidity/contracts/libraries/BoringAddress.sol';
 
 // Written by OreNoMochi (https://github.com/OreNoMochii), BoringCrypto
 
+// solhint-disable max-line-length
+
 contract ERC1155 is IERC1155 {
     using BoringAddress for address;
 

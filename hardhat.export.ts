@@ -7,12 +7,13 @@ import '@nomiclabs/hardhat-etherscan';
 import 'hardhat-deploy';
 import '@nomiclabs/hardhat-ethers';
 import 'hardhat-contract-sizer';
+import '@primitivefi/hardhat-dodoc';
 // import 'hardhat-gas-reporter';
 // import 'solidity-coverage';
 
 dotenv.config();
 
-const config: HardhatUserConfig = {
+const config: any = {
     solidity: {
         compilers: [
             {
@@ -53,15 +54,9 @@ const config: HardhatUserConfig = {
     networks: {
         hardhat: {
             allowUnlimitedContractSize: true,
-            accounts:
-                process.env.PRIVATE_KEY !== undefined
-                    ? [
-                          {
-                              privateKey: process.env.PRIVATE_KEY,
-                              balance: '1000000000000000000000000',
-                          },
-                      ]
-                    : [],
+            accounts: {
+                count: 5,
+            },
         },
         rinkeby: {
             gasMultiplier: 2,
@@ -88,6 +83,10 @@ const config: HardhatUserConfig = {
     // },
     mocha: {
         timeout: 4000000,
+    },
+    dodoc: {
+        runOnCompile: true,
+        freshOutput: true,
     },
 };
 

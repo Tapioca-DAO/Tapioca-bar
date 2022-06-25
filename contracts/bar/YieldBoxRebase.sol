@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
-pragma experimental ABIEncoderV2;
+
 import './interfaces/IStrategy.sol';
 import '@boringcrypto/boring-solidity/contracts/interfaces/IERC1155.sol';
 import '@boringcrypto/boring-solidity/contracts/libraries/Base64.sol';

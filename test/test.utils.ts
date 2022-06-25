@@ -91,14 +91,12 @@ async function setBeachBarAssets(
     wethAddress: string,
     usdcAddress: string,
 ) {
-    await (
-        await yieldBox.registerAsset(
-            1,
-            wethAddress,
-            ethers.constants.AddressZero,
-            0,
-        )
-    ).wait();
+    await yieldBox.registerAsset(
+        1,
+        wethAddress,
+        ethers.constants.AddressZero,
+        0,
+    );
     const wethAssetId = await yieldBox.ids(
         1,
         wethAddress,
@@ -106,14 +104,12 @@ async function setBeachBarAssets(
         0,
     );
 
-    await (
-        await yieldBox.registerAsset(
-            1,
-            usdcAddress,
-            ethers.constants.AddressZero,
-            0,
-        )
-    ).wait();
+    await yieldBox.registerAsset(
+        1,
+        usdcAddress,
+        ethers.constants.AddressZero,
+        0,
+    );
     const usdcAssetId = await yieldBox.ids(
         1,
         usdcAddress,
@@ -132,55 +128,54 @@ async function uniV2EnvironnementSetup(
 ) {
     // Deploy Uni factory, create pair and add liquidity
     const { __uniFactory, __uniRouter } = await registerUniswapV2();
-    await (await __uniFactory.createPair(weth.address, usdc.address)).wait();
+    await __uniFactory.createPair(weth.address, usdc.address);
 
     // Free mint test WETH & USDC
     const wethPairAmount = ethers.BigNumber.from(1e6).mul((1e18).toString());
     const usdcPairAmount = wethPairAmount.mul(
         __wethUsdcPrice.div((1e18).toString()),
     );
-    await (await weth.freeMint(wethPairAmount)).wait();
-    await (await usdc.freeMint(usdcPairAmount)).wait();
+    await weth.freeMint(wethPairAmount);
+    await usdc.freeMint(usdcPairAmount);
 
     // Create WETH/USDC LP
-    await (await weth.approve(__uniRouter.address, wethPairAmount)).wait();
-    await (await usdc.approve(__uniRouter.address, usdcPairAmount)).wait();
-    await (
-        await __uniRouter.addLiquidity(
-            weth.address,
-            usdc.address,
-            wethPairAmount,
-            usdcPairAmount,
-            wethPairAmount,
-            usdcPairAmount,
-            deployerAddress,
-            Math.floor(Date.now() / 1000) + 1000 * 60, // 1min margin
-        )
-    ).wait();
+    await weth.approve(__uniRouter.address, wethPairAmount);
+    await usdc.approve(__uniRouter.address, usdcPairAmount);
+
+    await __uniRouter.addLiquidity(
+        weth.address,
+        usdc.address,
+        wethPairAmount,
+        usdcPairAmount,
+        wethPairAmount,
+        usdcPairAmount,
+        deployerAddress,
+        Math.floor(Date.now() / 1000) + 1000 * 60, // 1min margin
+    );
     const __wethUsdcMockPair = await __uniFactory.getPair(
         weth.address,
         usdc.address,
     );
 
     // Free mint test TAP & WETH with a 1:1 ratio
-    await (await weth.freeMint(wethPairAmount)).wait();
-    await (await tap.freeMint(wethPairAmount)).wait();
+    await weth.freeMint(wethPairAmount);
+    await tap.freeMint(wethPairAmount);
 
     // Create WETH/TAP LP
-    await (await weth.approve(__uniRouter.address, wethPairAmount)).wait();
-    await (await tap.approve(__uniRouter.address, wethPairAmount)).wait();
-    await (
-        await __uniRouter.addLiquidity(
-            weth.address,
-            tap.address,
-            wethPairAmount,
-            wethPairAmount,
-            wethPairAmount,
-            wethPairAmount,
-            deployerAddress,
-            Math.floor(Date.now() / 1000) + 1000 * 60, // 1min margin
-        )
-    ).wait();
+    await weth.approve(__uniRouter.address, wethPairAmount);
+    await tap.approve(__uniRouter.address, wethPairAmount);
+
+    await __uniRouter.addLiquidity(
+        weth.address,
+        tap.address,
+        wethPairAmount,
+        wethPairAmount,
+        wethPairAmount,
+        wethPairAmount,
+        deployerAddress,
+        Math.floor(Date.now() / 1000) + 1000 * 60, // 1min margin
+    );
+
     const __wethTapMockPair = await __uniFactory.getPair(
         weth.address,
         tap.address,
@@ -199,7 +194,7 @@ async function registerMultiSwapper(
     ).deploy(__uniFactoryAddress, bar.address, __uniFactoryPairCodeHash);
     await multiSwapper.deployed();
 
-    await (await bar.setSwapper(multiSwapper.address, true)).wait();
+    await bar.setSwapper(multiSwapper.address, true);
 
     return { multiSwapper };
 }
@@ -210,7 +205,7 @@ async function deployMediumRiskMC(bar: BeachBar) {
     ).deploy();
     await mediumRiskMC.deployed();
 
-    await (await bar.registerMasterContract(mediumRiskMC.address, 1)).wait();
+    await bar.registerMasterContract(mediumRiskMC.address, 1);
 
     return { mediumRiskMC };
 }
@@ -249,7 +244,7 @@ async function registerMixologist(
             tapSwapPath,
         ],
     );
-    await (await bar.registerMixologist(mediumRiskMC, data, true)).wait();
+    await bar.registerMixologist(mediumRiskMC, data, true);
     const wethUsdcMixologist = await ethers.getContractAt(
         'Mixologist',
         await yieldBox.clonesOf(
@@ -273,6 +268,7 @@ async function registerLiquidationQueue(
     const LQ_META = {
         activationTime: 600, // 10min
         minBidAmount: ethers.BigNumber.from((1e18).toString()).mul(200), // 200 USDC
+        defaultBidAmount: ethers.BigNumber.from((1e18).toString()).mul(400),
         feeCollector,
     };
     const payload = mixologist.interface.encodeFunctionData(
@@ -280,9 +276,7 @@ async function registerLiquidationQueue(
         [liquidationQueue.address, LQ_META],
     );
 
-    await (
-        await bar.executeMixologistFn([mixologist.address], [payload])
-    ).wait();
+    await bar.executeMixologistFn([mixologist.address], [payload]);
 
     return { liquidationQueue, LQ_META };
 }
@@ -304,7 +298,7 @@ export async function register(staging?: boolean) {
         await ethers.getContractFactory('OracleMock')
     ).deploy();
     await wethUsdcOracle.deployed();
-    await (await wethUsdcOracle.set(__wethUsdcPrice)).wait();
+    await wethUsdcOracle.set(__wethUsdcPrice);
 
     log('Deploying Tokens', staging);
     // 1 Deploy tokens
@@ -438,15 +432,9 @@ export async function register(staging?: boolean) {
         const _usdc = account ? usdc.connect(account) : usdc;
         const _weth = account ? weth.connect(account) : weth;
         const _yieldBox = account ? yieldBox.connect(account) : yieldBox;
-        await (
-            await _usdc.approve(yieldBox.address, ethers.constants.MaxUint256)
-        ).wait();
-        await (
-            await _weth.approve(yieldBox.address, ethers.constants.MaxUint256)
-        ).wait();
-        await (
-            await _yieldBox.setApprovalForAll(wethUsdcMixologist.address, true)
-        ).wait();
+        await _usdc.approve(yieldBox.address, ethers.constants.MaxUint256);
+        await _weth.approve(yieldBox.address, ethers.constants.MaxUint256);
+        await _yieldBox.setApprovalForAll(wethUsdcMixologist.address, true);
     };
 
     const wethDepositAndAddAsset = async (
@@ -461,22 +449,14 @@ export async function register(staging?: boolean) {
 
         const id = await _wethUsdcMixologist.assetId();
         const _valShare = await _yieldBox.toShare(id, amount, false);
-        await (
-            await _yieldBox.depositAsset(
-                id,
-                _account.address,
-                _account.address,
-                0,
-                _valShare,
-            )
-        ).wait();
-        await (
-            await _wethUsdcMixologist.addAsset(
-                _account.address,
-                false,
-                _valShare,
-            )
-        ).wait();
+        await _yieldBox.depositAsset(
+            id,
+            _account.address,
+            _account.address,
+            0,
+            _valShare,
+        );
+        await _wethUsdcMixologist.addAsset(_account.address, false, _valShare);
     };
 
     const usdcDepositAndAddCollateral = async (
@@ -490,52 +470,42 @@ export async function register(staging?: boolean) {
             : wethUsdcMixologist;
 
         const id = await _wethUsdcMixologist.collateralId();
-        await (
-            await _yieldBox.depositAsset(
-                id,
-                _account.address,
-                _account.address,
-                amount,
-                0,
-            )
-        ).wait();
+        await _yieldBox.depositAsset(
+            id,
+            _account.address,
+            _account.address,
+            amount,
+            0,
+        );
         const _valShare = await _yieldBox.balanceOf(_account.address, id);
-        await (
-            await _wethUsdcMixologist.addCollateral(
-                _account.address,
-                false,
-                _valShare,
-            )
-        ).wait();
+        await _wethUsdcMixologist.addCollateral(
+            _account.address,
+            false,
+            _valShare,
+        );
     };
 
     const initContracts = async () => {
-        await (await weth.freeMint(1000)).wait();
+        await weth.freeMint(1000);
         const mintValShare = await yieldBox.toShare(
             await wethUsdcMixologist.assetId(),
             1000,
             false,
         );
-        await (await weth.approve(yieldBox.address, 1000)).wait();
-        await (
-            await yieldBox.depositAsset(
-                await wethUsdcMixologist.assetId(),
-                deployer.address,
-                deployer.address,
-                0,
-                mintValShare,
-            )
-        ).wait();
-        await (
-            await yieldBox.setApprovalForAll(wethUsdcMixologist.address, true)
-        ).wait();
-        await (
-            await wethUsdcMixologist.addAsset(
-                deployer.address,
-                false,
-                mintValShare,
-            )
-        ).wait();
+        await weth.approve(yieldBox.address, 1000);
+        await yieldBox.depositAsset(
+            await wethUsdcMixologist.assetId(),
+            deployer.address,
+            deployer.address,
+            0,
+            mintValShare,
+        );
+        await yieldBox.setApprovalForAll(wethUsdcMixologist.address, true);
+        await wethUsdcMixologist.addAsset(
+            deployer.address,
+            false,
+            mintValShare,
+        );
     };
 
     const utilFuncs = {
