@@ -1,13 +1,6 @@
 {
     "extends": "solhint:default",
     "rules": {
-        "avoid-throw": "off",
-        "compiler-version": "off",
-        "avoid-suicide": "error",
-        "avoid-sha3": "warn",
-        "func-visibility": ["warn", { "ignoreConstructors": true }],
-        "not-rely-on-time": "off",
-        "reason-string": ["warn", { "maxLength": 140 }],
-        "max-line-length": ["warn", 120]
+        "max-line-length": ["warn", 140]
     }
 }

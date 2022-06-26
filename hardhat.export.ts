@@ -13,7 +13,7 @@ import '@primitivefi/hardhat-dodoc';
 
 dotenv.config();
 
-const config: any = {
+const config: HardhatUserConfig & { dodoc?: any } = {
     solidity: {
         compilers: [
             {

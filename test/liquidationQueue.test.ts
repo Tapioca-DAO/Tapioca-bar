@@ -21,8 +21,10 @@ describe('LiquidationQueue test', () => {
 
         const POOL = 10;
 
-        await weth.freeMint(LQ_META.minBidAmount);
-        await weth.approve(yieldBox.address, LQ_META.minBidAmount);
+        await (await weth.freeMint(LQ_META.minBidAmount)).wait();
+        await (
+            await weth.approve(yieldBox.address, LQ_META.minBidAmount)
+        ).wait();
         await yieldBox.depositAsset(
             await liquidationQueue.lqAssetId(),
             deployer.address,
@@ -48,8 +50,10 @@ describe('LiquidationQueue test', () => {
         const POOL = 10;
 
         // Bid
-        await weth.freeMint(LQ_META.minBidAmount);
-        await weth.approve(yieldBox.address, LQ_META.minBidAmount);
+        await (await weth.freeMint(LQ_META.minBidAmount)).wait();
+        await (
+            await weth.approve(yieldBox.address, LQ_META.minBidAmount)
+        ).wait();
         await yieldBox.depositAsset(
             await liquidationQueue.lqAssetId(),
             deployer.address,
@@ -108,8 +112,10 @@ describe('LiquidationQueue test', () => {
         const lqAssetId = await liquidationQueue.lqAssetId();
 
         // Bid
-        await weth.freeMint(LQ_META.minBidAmount);
-        await weth.approve(yieldBox.address, LQ_META.minBidAmount);
+        await (await weth.freeMint(LQ_META.minBidAmount)).wait();
+        await (
+            await weth.approve(yieldBox.address, LQ_META.minBidAmount)
+        ).wait();
         await yieldBox.depositAsset(
             lqAssetId,
             deployer.address,
@@ -151,8 +157,10 @@ describe('LiquidationQueue test', () => {
         const lqAssetId = await liquidationQueue.lqAssetId();
 
         // Bid and activate
-        await weth.freeMint(LQ_META.minBidAmount);
-        await weth.approve(yieldBox.address, LQ_META.minBidAmount);
+        await (await weth.freeMint(LQ_META.minBidAmount)).wait();
+        await (
+            await weth.approve(yieldBox.address, LQ_META.minBidAmount)
+        ).wait();
 
         await yieldBox.depositAsset(
             lqAssetId,
@@ -223,8 +231,10 @@ describe('LiquidationQueue test', () => {
         const lqAssetId = await liquidationQueue.lqAssetId();
 
         // Bid and activate
-        await weth.freeMint(LQ_META.minBidAmount.mul(100));
-        await weth.approve(yieldBox.address, LQ_META.minBidAmount.mul(100));
+        await (await weth.freeMint(LQ_META.minBidAmount.mul(100))).wait();
+        await (
+            await weth.approve(yieldBox.address, LQ_META.minBidAmount.mul(100))
+        ).wait();
         await yieldBox.depositAsset(
             lqAssetId,
             deployer.address,

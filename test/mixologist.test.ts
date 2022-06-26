@@ -19,34 +19,44 @@ describe('Mixologist test', () => {
             mintVal,
             false,
         );
-        await weth.approve(yieldBox.address, mintVal);
-        await yieldBox.depositAsset(
-            await wethUsdcMixologist.assetId(),
-            deployer.address,
-            deployer.address,
-            0,
-            mintValShare,
-        );
+        await (await weth.approve(yieldBox.address, mintVal)).wait();
+        await (
+            await yieldBox.depositAsset(
+                await wethUsdcMixologist.assetId(),
+                deployer.address,
+                deployer.address,
+                0,
+                mintValShare,
+            )
+        ).wait();
 
         // Add asset to Mixologist
-        await yieldBox.setApprovalForAll(wethUsdcMixologist.address, true);
-        await wethUsdcMixologist.addAsset(
-            deployer.address,
-            false,
-            mintValShare,
-        );
+        await (
+            await yieldBox.setApprovalForAll(wethUsdcMixologist.address, true)
+        ).wait();
+        await (
+            await wethUsdcMixologist.addAsset(
+                deployer.address,
+                false,
+                mintValShare,
+            )
+        ).wait();
 
         // Remove asset from Mixologist
-        await wethUsdcMixologist.removeAsset(deployer.address, mintValShare);
+        await (
+            await wethUsdcMixologist.removeAsset(deployer.address, mintValShare)
+        ).wait();
 
         // Withdraw from bar
-        await yieldBox.withdraw(
-            await wethUsdcMixologist.assetId(),
-            deployer.address,
-            deployer.address,
-            0,
-            mintValShare,
-        );
+        await (
+            await yieldBox.withdraw(
+                await wethUsdcMixologist.assetId(),
+                deployer.address,
+                deployer.address,
+                0,
+                mintValShare,
+            )
+        ).wait();
 
         // Check the value of the asset
         const balanceAfter = await weth.balanceOf(deployer.address);
@@ -170,22 +180,28 @@ describe('Mixologist test', () => {
             lendVal,
             false,
         );
-        await weth.approve(yieldBox.address, lendVal);
-        await yieldBox.depositAsset(
-            await wethUsdcMixologist.assetId(),
-            deployer.address,
-            deployer.address,
-            0,
-            lendValShare,
-        );
+        await (await weth.approve(yieldBox.address, lendVal)).wait();
+        await (
+            await yieldBox.depositAsset(
+                await wethUsdcMixologist.assetId(),
+                deployer.address,
+                deployer.address,
+                0,
+                lendValShare,
+            )
+        ).wait();
 
         // Add asset to Mixologist
-        await yieldBox.setApprovalForAll(wethUsdcMixologist.address, true);
-        await wethUsdcMixologist.addAsset(
-            deployer.address,
-            false,
-            lendValShare,
-        );
+        await (
+            await yieldBox.setApprovalForAll(wethUsdcMixologist.address, true)
+        ).wait();
+        await (
+            await wethUsdcMixologist.addAsset(
+                deployer.address,
+                false,
+                lendValShare,
+            )
+        ).wait();
 
         /**
          * BORROW
@@ -244,33 +260,41 @@ describe('Mixologist test', () => {
             BN(0),
         );
         // Withdraw collateral
-        await wethUsdcMixologist
-            .connect(eoa1)
-            .removeCollateral(
-                eoa1.address,
-                await wethUsdcMixologist.userCollateralShare(eoa1.address),
-            );
+        await (
+            await wethUsdcMixologist
+                .connect(eoa1)
+                .removeCollateral(
+                    eoa1.address,
+                    await wethUsdcMixologist.userCollateralShare(eoa1.address),
+                )
+        ).wait();
 
-        await yieldBox
-            .connect(eoa1)
-            .withdraw(
-                collateralId,
-                eoa1.address,
-                eoa1.address,
-                0,
-                await yieldBox.balanceOf(eoa1.address, collateralId),
-            );
+        await (
+            await yieldBox
+                .connect(eoa1)
+                .withdraw(
+                    collateralId,
+                    eoa1.address,
+                    eoa1.address,
+                    0,
+                    await yieldBox.balanceOf(eoa1.address, collateralId),
+                )
+        ).wait();
 
         // Withdraw assets
-        await wethUsdcMixologist.removeAsset(deployer.address, lendValShare);
+        await (
+            await wethUsdcMixologist.removeAsset(deployer.address, lendValShare)
+        ).wait();
 
-        await yieldBox.withdraw(
-            assetId,
-            deployer.address,
-            deployer.address,
-            0,
-            await yieldBox.balanceOf(deployer.address, assetId),
-        );
+        await (
+            await yieldBox.withdraw(
+                assetId,
+                deployer.address,
+                deployer.address,
+                0,
+                await yieldBox.balanceOf(deployer.address, assetId),
+            )
+        ).wait();
 
         // Check that the lender has an increased amount
         const balanceAfter = await weth.balanceOf(deployer.address);
