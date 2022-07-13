@@ -162,7 +162,8 @@ contract Mixologist is ERC20, BoringOwnable {
     // Settings for the Medium Risk Mixologist
     uint256 private constant CLOSED_COLLATERIZATION_RATE = 75000; // 75%
     uint256 private constant LQ_COLLATERIZATION_RATE = 25000; // 25%
-    uint256 private constant COLLATERIZATION_RATE_PRECISION = 1e5; // Must be less than EXCHANGE_RATE_PRECISION (due to optimization in math)
+    uint256 private constant COLLATERIZATION_RATE_PRECISION = 1e5; // Must be less than EXCHANGE_RATE_PRECISION
+    // (due to optimization in math)
     uint256 private constant MINIMUM_TARGET_UTILIZATION = 7e17; // 70%
     uint256 private constant MAXIMUM_TARGET_UTILIZATION = 8e17; // 80%
     uint256 private constant UTILIZATION_PRECISION = 1e18;
@@ -607,8 +608,8 @@ contract Mixologist is ERC20, BoringOwnable {
     /// @notice Entry point for liquidations.
     /// @dev Will call `closedLiquidation()` if not LQ exists or no LQ bid avail exists. Otherwise use LQ.
     /// @param users An array of user addresses.
-    /// @param maxBorrowParts A one-to-one mapping to `users`, contains maximum (partial) borrow amounts (to liquidate) of the respective user.
-    ///        Ignore for `orderBookLiquidation()`
+    /// @param maxBorrowParts A one-to-one mapping to `users`, contains maximum (partial) borrow amounts (to liquidate)
+    ///        of the respective user. Ignore for `orderBookLiquidation()`
     /// @param swapper Contract address of the `MultiSwapper` implementation. See `setSwapper`.
     ///        Ignore for `orderBookLiquidation()`
     function liquidate(
@@ -727,7 +728,8 @@ contract Mixologist is ERC20, BoringOwnable {
     /// @notice Handles the liquidation of users' balances, once the users' amount of collateral is too low.
     /// @dev Closed liquidations Only, 90% of extra shares goes to caller and 10% to protocol
     /// @param users An array of user addresses.
-    /// @param maxBorrowParts A one-to-one mapping to `users`, contains maximum (partial) borrow amounts (to liquidate) of the respective user.
+    /// @param maxBorrowParts A one-to-one mapping to `users`, contains maximum (partial) borrow amounts (to liquidate)
+    ///                        of the respective user.
     /// @param swapper Contract address of the `MultiSwapper` implementation. See `setSwapper`.
     function closedLiquidation(
         address[] calldata users,

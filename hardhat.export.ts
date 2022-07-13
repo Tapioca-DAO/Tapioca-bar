@@ -7,6 +7,7 @@ import '@nomiclabs/hardhat-etherscan';
 import 'hardhat-deploy';
 import '@nomiclabs/hardhat-ethers';
 import 'hardhat-contract-sizer';
+import '@primitivefi/hardhat-dodoc';
 // import 'hardhat-gas-reporter';
 // import 'solidity-coverage';
 
@@ -54,14 +55,13 @@ const config: HardhatUserConfig = {
         hardhat: {
             allowUnlimitedContractSize: true,
             accounts:
-                process.env.PRIVATE_KEY !== undefined
-                    ? [
-                          {
-                              privateKey: process.env.PRIVATE_KEY,
-                              balance: '1000000000000000000000000',
-                          },
-                      ]
-                    : [],
+                {
+                    // Default size of accounts is 1000, but can be changed in .env
+                    count:
+                        process.env.ACCOUNTS_NUMBER !== undefined
+                            ? parseInt(process.env.ACCOUNTS_NUMBER)
+                            : 1000,
+                },
         },
         rinkeby: {
             gasMultiplier: 2,
@@ -88,6 +88,10 @@ const config: HardhatUserConfig = {
     // },
     mocha: {
         timeout: 4000000,
+    },
+    dodoc: {
+        runOnCompile: true,
+        freshOutput: true,
     },
 };
 

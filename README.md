@@ -2,7 +2,7 @@
 ## The gist of it
 
 `YieldBox` : Serves as a vault to store assets/collaterals, strategies can later be used on those vaults to yield farm.
-* `deposit(uint256 assetId, address from, address to, uint256 amount, uint256 share)` Used to deposit, it’s the first step to enter a market.
+* `depositAsset(uint256 assetId, address from, address to, uint256 amount, uint256 share)` Used to deposit, it’s the first step to enter a market.
 * `withdraw(uint256 assetId, address from, address to, uint256 amount, uint256 share, bool withdrawNative)` Used to withdraw asset from `YieldBox` , if the asset if the wrapped native, the last parameter is to decide to unwrap or not the asset.
 * `setApprovalForAll(address operator, bool approved)` Used to allow a `Mixologist` market to use the user’s `YieldBox` assets.
 * `toShare(uint256 assetId, uint256 amount, roundUp)` Convert from an asset amount to a `YieldBox`  share.

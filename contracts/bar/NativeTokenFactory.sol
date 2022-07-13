@@ -129,7 +129,8 @@ contract NativeTokenFactory is AssetRegister, BoringFactory {
         string calldata symbol,
         uint8 decimals
     ) public returns (uint256 tokenId) {
-        // To keep each Token unique in the AssetRegister, we use the assetId as the tokenId. So for native assets, the tokenId is always equal to the assetId.
+        // To keep each Token unique in the AssetRegister, we use the assetId as the tokenId
+        // So for native assets, the tokenId is always equal to the assetId.
         tokenId = assets.length;
         _registerAsset(TokenType.Native, address(0), NO_STRATEGY, tokenId);
         // Initial supply is 0, use owner can mint. For a fixed supply the owner can mint and revoke ownership.
@@ -142,7 +143,8 @@ contract NativeTokenFactory is AssetRegister, BoringFactory {
         emit OwnershipTransferred(tokenId, address(0), msg.sender);
     }
 
-    /// @notice The `tokenOwner` can mint tokens. If a fixed supply is needed, the `tokenOwner` should mint the totalSupply and renounce ownership.
+    /// @notice The `tokenOwner` can mint tokens. If a fixed supply is needed, the `tokenOwner`
+    ///         should mint the totalSupply and renounce ownership.
     /// @param tokenId The token to be minted.
     /// @param to The account to transfer the minted tokens to.
     /// @param amount The amount of tokens to mint.
