@@ -303,6 +303,9 @@ describe('integration test for LiquidationQueue', () => {
             await liquidationQueue.balancesDue(liquidators[1].address),
         ).to.be.eq(0);
 
+        const info = await liquidationQueue.getNextAvailBidPool();
+        console.log(info.i, info.available);
+
         // todo no bidder available to liquidate
     });
 });
