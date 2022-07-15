@@ -331,6 +331,8 @@ contract LiquidationQueue {
     ) external returns (uint256 amountRemoved) {
         uint256[] storage bidIndexes = userBidIndexes[msg.sender][pool];
         uint256 bidIndexesLen = bidIndexes.length;
+        require(bidIndexesLen != 0, 'LQ: no bids found for this user and poolId');
+        require(bidIndexesLen > bidPosition, 'LQ: bidPosition out of range');
         OrderBookPoolInfo memory poolInfo = orderBookInfos[pool];
 
         // Clean expired bids.

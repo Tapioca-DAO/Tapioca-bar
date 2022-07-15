@@ -1,4 +1,4 @@
-import { BigNumberish } from 'ethers';
+import { BigNumberish, Wallet } from 'ethers';
 import { ethers } from 'hardhat';
 import {
     BeachBar,
@@ -288,6 +288,62 @@ async function registerLiquidationQueue(
 
 const log = (message: string, staging?: boolean) =>
     staging && console.log(message);
+
+export async function usdcDepositAndAddCollateral(
+    account: Wallet,
+    yieldBox: YieldBox,
+    wethUsdcMixologist: Mixologist,
+    amount: BigNumberish,
+) {
+    const _account = account;
+    const _yieldBox = yieldBox.connect(_account);
+    const _wethUsdcMixologist = wethUsdcMixologist.connect(_account);
+    const id = await _wethUsdcMixologist.collateralId();
+    await (
+        await _yieldBox.depositAsset(
+            id,
+            _account.address,
+            _account.address,
+            amount,
+            0,
+        )
+    ).wait();
+    const _valShare = await _yieldBox.balanceOf(_account.address, id);
+    await (
+        await _wethUsdcMixologist.addCollateral(
+            _account.address,
+            false,
+            _valShare,
+        )
+    ).wait();
+}
+
+export async function wethDepositAndAddAsset(
+    account: Wallet,
+    yieldBox: YieldBox,
+    wethUsdcMixologist: Mixologist,
+    amount: BigNumberish,
+) {
+    const _account = account;
+    const _yieldBox = yieldBox.connect(account);
+    const _wethUsdcMixologist = wethUsdcMixologist.connect(account);
+
+    const id = await _wethUsdcMixologist.assetId();
+    const _valShare = await _yieldBox.toShare(id, amount, false);
+    await (
+        await _yieldBox.depositAsset(
+            id,
+            _account.address,
+            _account.address,
+            0,
+            _valShare,
+        )
+    ).wait();
+    await (
+        await _wethUsdcMixologist.addAsset(_account.address, false, _valShare)
+    ).wait();
+}
+
 export async function register(staging?: boolean) {
     if (!staging) {
         await resetVM();
