@@ -234,7 +234,7 @@ describe('integration test for LiquidationQueue', () => {
         await wethUsdcOracle.set(__wethUsdcPrice.mul(105).div(100));
         await wethUsdcMixologist.updateExchangeRate();
         // check if eoa is still solvent
-        let assetAmountToSolvency = await getAmountToSolvency(
+        const assetAmountToSolvency = await getAmountToSolvency(
             borrowers[0],
             wethUsdcMixologist,
         );
@@ -271,7 +271,7 @@ describe('integration test for LiquidationQueue', () => {
         await wethUsdcOracle.set(__wethUsdcPrice.mul(102).div(100));
         await wethUsdcMixologist.updateExchangeRate();
 
-        // todo liquidation by multiple bidders with redeem
+        // liquidation by multiple bidders with redeem
         for (let i = 0; i < NUM_BIDDERS; i++) {
             await liquidationQueue
                 .connect(liquidators[i])
@@ -280,35 +280,29 @@ describe('integration test for LiquidationQueue', () => {
                 .connect(liquidators[i])
                 .activateBid(liquidators[i].address, i % 10);
         }
-        assetAmountToSolvency = await getAmountToSolvency(
-            borrowers[0],
-            wethUsdcMixologist,
-        );
-        console.log('assetAmountToSolvency', assetAmountToSolvency.toString());
+        expect(
+            await getAmountToSolvency(borrowers[0], wethUsdcMixologist),
+        ).to.be.gt(0);
         // liquidate
-        await wethUsdcMixologist.liquidate(
-            borrowerAddresses,
-            [],
-            ethers.constants.AddressZero,
-        );
-        // await expect(
-        //     wethUsdcMixologist.liquidate(
-        //         borrowerAddresses,
-        //         [],
-        //         ethers.constants.AddressZero,
-        //     ),
-        // ).to.not.be.reverted;
-
-        // todo test full liquidation by 1 bidder with redeem
+        await expect(
+            wethUsdcMixologist.liquidate(
+                borrowerAddresses,
+                [],
+                ethers.constants.AddressZero,
+            ),
+        ).to.emit(liquidationQueue, 'ExecuteBids');
+        expect(
+            await getAmountToSolvency(borrowers[0], wethUsdcMixologist),
+        ).to.be.gt(0);
+        expect(
+            await liquidationQueue
+                .connect(liquidators[1])
+                .redeem(liquidators[1].address),
+        ).to.emit(liquidationQueue, 'Redeem');
+        expect(
+            await liquidationQueue.balancesDue(liquidators[1].address),
+        ).to.be.eq(0);
 
         // todo no bidder available to liquidate
-
-        // expect(
-        //     await wethUsdcMixologist.liquidate(
-        //         [eoa1.address],
-        //         [],
-        //         ethers.constants.AddressZero,
-        //     ),
-        // ).to.emit(liquidationQueue, 'ExecuteBids');
     });
 });
