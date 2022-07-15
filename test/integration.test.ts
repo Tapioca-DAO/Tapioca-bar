@@ -200,13 +200,17 @@ describe('integration test for LiquidationQueue', () => {
         // add bids for all bidders for small amounts
         for (let i = 0; i < NUM_BIDDERS; i++) {
             const amount = LQ_META.minBidAmount.mul(120).div(100);
+            let poolId = i % 10;
+            if (poolId == 0) {
+                poolId += 1;
+            }
             await makeBid(
                 liquidators[i],
                 weth,
                 liquidationQueue,
                 yieldBox,
                 amount,
-                i % 10,
+                poolId,
             );
             await makeBid(
                 liquidators[i],
@@ -219,7 +223,7 @@ describe('integration test for LiquidationQueue', () => {
         }
 
         const liquidator = liquidators[0];
-        const poolId = 0 % 10;
+        const poolId = 1;
         expect(
             (await liquidationQueue.bidPools(poolId, liquidator.address))
                 .amount,
@@ -264,7 +268,7 @@ describe('integration test for LiquidationQueue', () => {
         expect(
             await liquidationQueue
                 .connect(liquidator)
-                .removeBid(liquidator.address, 0, 0),
+                .removeBid(liquidator.address, poolId, 0),
         ).to.emit(liquidationQueue, 'RemoveBid');
 
         // Make some price movement
@@ -273,12 +277,16 @@ describe('integration test for LiquidationQueue', () => {
 
         // liquidation by multiple bidders with redeem
         for (let i = 0; i < NUM_BIDDERS; i++) {
+            let poolId = i % 10;
+            if (poolId == 0) {
+                poolId += 1;
+            }
             await liquidationQueue
                 .connect(liquidators[i])
                 .activateBid(liquidators[i].address, (i % 10) + 1);
             await liquidationQueue
                 .connect(liquidators[i])
-                .activateBid(liquidators[i].address, i % 10);
+                .activateBid(liquidators[i].address, poolId);
         }
         expect(
             await getAmountToSolvency(borrowers[0], wethUsdcMixologist),
@@ -303,9 +311,11 @@ describe('integration test for LiquidationQueue', () => {
             await liquidationQueue.balancesDue(liquidators[1].address),
         ).to.be.eq(0);
 
-        const info = await liquidationQueue.getNextAvailBidPool();
-        console.log(info.i, info.available);
-
-        // todo no bidder available to liquidate
+        // const availablePoolInfo = await liquidationQueue.getNextAvailBidPool();
+        // console.log(availablePoolInfo.i, availablePoolInfo.available);
+        // const orderBookInfo = await liquidationQueue.orderBookInfos(
+        //     availablePoolInfo.i,
+        // );
+        // console.log(orderBookInfo.nextBidPull, orderBookInfo.nextBidPush);
     });
 });

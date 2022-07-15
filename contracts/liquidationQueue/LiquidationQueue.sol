@@ -212,6 +212,7 @@ contract LiquidationQueue {
         uint256 pool,
         uint256 amount
     ) external Active {
+        require(pool != 0, 'LQ: pool id cannot be 0');
         require(pool <= MAX_BID_POOLS, 'LQ: premium too high');
         require(amount >= liquidationQueueMeta.minBidAmount, 'LQ: bid too low');
 
