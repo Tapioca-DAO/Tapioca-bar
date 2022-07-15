@@ -231,22 +231,22 @@ describe('LiquidationQueue test', () => {
         const lqAssetId = await liquidationQueue.lqAssetId();
 
         // Bid and activate
-        await (await weth.freeMint(LQ_META.minBidAmount.mul(100))).wait();
+        await (await weth.freeMint(LQ_META.minBidAmount.mul(1000))).wait();
         await (
-            await weth.approve(yieldBox.address, LQ_META.minBidAmount.mul(100))
+            await weth.approve(yieldBox.address, LQ_META.minBidAmount.mul(1000))
         ).wait();
         await yieldBox.depositAsset(
             lqAssetId,
             deployer.address,
             deployer.address,
-            LQ_META.minBidAmount.mul(100),
+            LQ_META.minBidAmount.mul(1000),
             0,
         );
         await yieldBox.setApprovalForAll(liquidationQueue.address, true);
         await liquidationQueue.bid(
             deployer.address,
             POOL,
-            LQ_META.minBidAmount.mul(100),
+            LQ_META.minBidAmount.mul(1000),
         );
         await hh.network.provider.send('evm_increaseTime', [10_000]);
         await hh.network.provider.send('evm_mine');

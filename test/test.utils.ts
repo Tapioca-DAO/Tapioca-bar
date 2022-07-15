@@ -60,7 +60,7 @@ async function registerERC20Tokens() {
     return { usdc, weth, tap };
 }
 
-async function registerYieldBox(wethAddress: string) {
+async function registerYieldBox() {
     // Deploy URIBuilder
     const uriBuilder = await (
         await ethers.getContractFactory('YieldBoxURIBuilder')
@@ -85,9 +85,8 @@ async function registerBeachBar(yieldBox: string, tapAddress: string) {
     return { bar };
 }
 
-async function setBeachBarAssets(
+async function registerYieldBoxAssets(
     yieldBox: YieldBox,
-    bar: BeachBar,
     wethAddress: string,
     usdcAddress: string,
 ) {
@@ -272,7 +271,7 @@ async function registerLiquidationQueue(
 
     const LQ_META = {
         activationTime: 600, // 10min
-        minBidAmount: ethers.BigNumber.from((1e18).toString()).mul(200), // 200 USDC
+        minBidAmount: BN(1e18).div(2), // 0.5 WETH
         feeCollector,
     };
     const payload = mixologist.interface.encodeFunctionData(
@@ -311,16 +310,15 @@ export async function register(staging?: boolean) {
     const { tap, usdc, weth } = await registerERC20Tokens();
     log('Deploying YieldBox', staging);
     // 2 Deploy Yieldbox
-    const { yieldBox, uriBuilder } = await registerYieldBox(weth.address);
+    const { yieldBox, uriBuilder } = await registerYieldBox();
     log('Deploying BeachBar', staging);
     // 2.1 Deploy BeachBar
     const { bar } = await registerBeachBar(yieldBox.address, tap.address);
 
     log('Deploying UniFactory', staging);
     // 3 Add asset types to BeachBar
-    const { usdcAssetId, wethAssetId } = await setBeachBarAssets(
+    const { usdcAssetId, wethAssetId } = await registerYieldBoxAssets(
         yieldBox,
-        bar,
         weth.address,
         usdc.address,
     );
@@ -403,6 +401,7 @@ export async function register(staging?: boolean) {
         tap,
         wethUsdcOracle,
         yieldBox,
+        uriBuilder,
         bar,
         wethUsdcMixologist,
         mixologistHelper,
@@ -540,6 +539,7 @@ export async function register(staging?: boolean) {
 
     const utilFuncs = {
         BN,
+        mine,
         jumpTime,
         approveTokensAndSetBarApproval,
         wethDepositAndAddAsset,

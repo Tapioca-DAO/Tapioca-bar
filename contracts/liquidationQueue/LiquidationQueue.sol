@@ -512,6 +512,10 @@ contract LiquidationQueue {
                 block.timestamp
             );
         }
+        
+        // mixologist method orderBookLiquidation method relies on liquidation to be complete
+        // this is because the returnedShare is assumed to be greater than allBorrowerShare
+        require(collateralAmountToLiquidate == 0, 'LQ: Unable to fully liquidate');
 
         // Stack too deep
         {
