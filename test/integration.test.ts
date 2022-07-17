@@ -145,7 +145,7 @@ async function getAmountToSolvency(
 }
 
 describe('integration test for LiquidationQueue', () => {
-    it.only('should test different cases for loan liquidation using lq', async () => {
+    it('should test different cases for loan liquidation using lq', async () => {
         const {
             BN,
             usdc,
