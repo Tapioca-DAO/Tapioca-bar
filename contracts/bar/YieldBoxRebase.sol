@@ -28,7 +28,7 @@ library YieldBoxRebase {
         totalAmount++;
         totalShares_ += 1e8;
 
-        // Calculte the shares using te current amount to share ratio
+        // Calculate the shares using te current amount to share ratio
         share = (amount * totalShares_) / totalAmount;
 
         // Default is to round down (Solidity), round up if required
