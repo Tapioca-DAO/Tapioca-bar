@@ -15,9 +15,10 @@ import {
 } from '../typechain';
 import { BigNumber, BigNumberish, Wallet } from 'ethers';
 
-const NUM_LENDERS = 2;
-const NUM_BORROWERS = 2;
-const NUM_BIDDERS = 10;
+// can be set to higher values
+const NUM_LENDERS = 5;
+const NUM_BORROWERS = 5;
+const NUM_BIDDERS = 100;
 
 async function createEOAs(num: number) {
     const accounts = [];
