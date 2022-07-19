@@ -1024,6 +1024,26 @@ event ApprovalForAll(address indexed _owner, address indexed _operator, bool _ap
 | _operator `indexed` | address | undefined |
 | _approved  | bool | undefined |
 
+### AssetDeposited
+
+```solidity
+event AssetDeposited(uint256 indexed assetId, address indexed from, address indexed to, uint256 amount, uint256 shares)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| assetId `indexed` | uint256 | undefined |
+| from `indexed` | address | undefined |
+| to `indexed` | address | undefined |
+| amount  | uint256 | undefined |
+| shares  | uint256 | undefined |
+
 ### AssetRegistered
 
 ```solidity
@@ -1043,6 +1063,26 @@ event AssetRegistered(enum TokenType indexed tokenType, address indexed contract
 | strategy  | contract IStrategy | undefined |
 | tokenId `indexed` | uint256 | undefined |
 | assetId  | uint256 | undefined |
+
+### AssetWithdrawn
+
+```solidity
+event AssetWithdrawn(uint256 indexed assetId, address indexed from, address indexed to, uint256 amount, uint256 shares)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| assetId `indexed` | uint256 | undefined |
+| from `indexed` | address | undefined |
+| to `indexed` | address | undefined |
+| amount  | uint256 | undefined |
+| shares  | uint256 | undefined |
 
 ### LogDeploy
 

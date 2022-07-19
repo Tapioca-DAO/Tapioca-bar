@@ -1,4 +1,4 @@
-import { BigNumberish } from 'ethers';
+import { BigNumberish, Contract, EventFilter } from 'ethers';
 import { ethers } from 'hardhat';
 import {
     BeachBar,
@@ -8,6 +8,9 @@ import {
     WETH9Mock,
     YieldBox,
 } from '../typechain';
+import { TransactionReceipt } from '@ethersproject/abstract-provider';
+import { Log } from 'hardhat-deploy/types';
+import { LogDescription } from 'ethers/lib/utils';
 
 ethers.utils.Logger.setLogLevel(ethers.utils.Logger.levels.ERROR);
 
@@ -548,4 +551,24 @@ export async function register(staging?: boolean) {
     };
 
     return { ...initialSetup, ...utilFuncs };
+}
+
+// Gets the event info from the logs of a TransactionReceipt, given the event name and contract
+export function parseEvent(
+    txReceipt: TransactionReceipt,
+    contract: Contract,
+    eventName: string,
+): LogDescription | undefined {
+    const evFilter = contract.filters[eventName];
+    if (!evFilter) {
+        return undefined;
+    }
+    const unparsedEv: Log | undefined = txReceipt.logs.find(
+        (evInfo) => evInfo.topics[0] == evFilter().topics![0],
+    );
+    if (!unparsedEv) {
+        return undefined;
+    }
+    const parsedEv = contract.interface.parseLog(unparsedEv as Log);
+    return parsedEv;
 }

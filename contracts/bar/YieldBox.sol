@@ -54,7 +54,21 @@ contract YieldBox is BoringBatchable, NativeTokenFactory, ERC1155TokenReceiver {
     // *** EVENTS *** //
     // ************** //
 
-    // TODO: Add events
+    event AssetDeposited(
+        uint256 indexed assetId,
+        address indexed from,
+        address indexed to,
+        uint256 amount,
+        uint256 shares
+    );
+
+    event AssetWithdrawn(
+        uint256 indexed assetId,
+        address indexed from,
+        address indexed to,
+        uint256 amount,
+        uint256 shares
+    );
 
     // ******************* //
     // *** CONSTRUCTOR *** //
@@ -116,7 +130,7 @@ contract YieldBox is BoringBatchable, NativeTokenFactory, ERC1155TokenReceiver {
         uint256 share
     ) public allowed(from) returns (uint256 amountOut, uint256 shareOut) {
         // Checks
-        require(assetId <= assetCount(), "Asset id out of range");
+        require(assetId <= assetCount(), 'Asset id out of range');
         Asset storage asset = assets[assetId];
         require(
             asset.tokenType != TokenType.Native,
@@ -126,7 +140,7 @@ contract YieldBox is BoringBatchable, NativeTokenFactory, ERC1155TokenReceiver {
         // Effects
         uint256 totalAmount = _tokenBalanceOf(asset);
         if (share == 0) {
-            require(amount != 0, "YieldBox: share or amount must be non-zero");
+            require(amount != 0, 'YieldBox: share or amount must be non-zero');
             // value of the share may be lower than the amount due to rounding, that's ok
             share = amount._toShares(totalSupply[assetId], totalAmount, false);
         } else {
@@ -167,6 +181,8 @@ contract YieldBox is BoringBatchable, NativeTokenFactory, ERC1155TokenReceiver {
             asset.strategy.deposited(amount);
         }
 
+        emit AssetDeposited(assetId, from, to, amount, share);
+
         return (amount, share);
     }
 
@@ -184,14 +200,14 @@ contract YieldBox is BoringBatchable, NativeTokenFactory, ERC1155TokenReceiver {
         )
     {
         // Checks
-        require(assetId <= assetCount(), "Asset id out of range");
+        require(assetId <= assetCount(), 'Asset id out of range');
         Asset storage asset = assets[assetId];
         require(
             asset.tokenType == TokenType.ERC20 &&
                 asset.contractAddress == address(wrappedNative),
             'YieldBox: not wrappedNative'
         );
-        require(amount != 0, "YieldBox: amount must be non-zero");
+        require(amount != 0, 'YieldBox: amount must be non-zero');
 
         // Effects
         uint256 share = amount._toShares(
@@ -230,7 +246,7 @@ contract YieldBox is BoringBatchable, NativeTokenFactory, ERC1155TokenReceiver {
         uint256 share
     ) public allowed(from) returns (uint256 amountOut, uint256 shareOut) {
         // Checks
-        require(assetId <= assetCount(), "Asset id out of range");
+        require(assetId <= assetCount(), 'Asset id out of range');
         Asset storage asset = assets[assetId];
         require(
             asset.tokenType != TokenType.Native,
@@ -273,6 +289,7 @@ contract YieldBox is BoringBatchable, NativeTokenFactory, ERC1155TokenReceiver {
             asset.strategy.withdraw(to, amount);
         }
 
+        emit AssetWithdrawn(assetId, from, to, amount, share);
         return (amount, share);
     }
 
@@ -391,7 +408,7 @@ contract YieldBox is BoringBatchable, NativeTokenFactory, ERC1155TokenReceiver {
         uint256 amount,
         bool roundUp
     ) external view returns (uint256 share) {
-        require(assetId <= assetCount(), "Asset id out of range");
+        require(assetId <= assetCount(), 'Asset id out of range');
         if (assets[assetId].tokenType == TokenType.Native) {
             share = amount;
         } else {
@@ -413,7 +430,7 @@ contract YieldBox is BoringBatchable, NativeTokenFactory, ERC1155TokenReceiver {
         uint256 share,
         bool roundUp
     ) external view returns (uint256 amount) {
-        require(assetId <= assetCount(), "Asset id out of range");
+        require(assetId <= assetCount(), 'Asset id out of range');
         if (assets[assetId].tokenType == TokenType.Native) {
             amount = share;
         } else {
@@ -433,7 +450,7 @@ contract YieldBox is BoringBatchable, NativeTokenFactory, ERC1155TokenReceiver {
         view
         returns (uint256 amount)
     {
-        require(assetId <= assetCount(), "Asset id out of range");
+        require(assetId <= assetCount(), 'Asset id out of range');
         if (assets[assetId].tokenType == TokenType.Native) {
             amount = balanceOf[user][assetId];
         } else {

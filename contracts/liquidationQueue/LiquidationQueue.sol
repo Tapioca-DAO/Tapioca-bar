@@ -331,8 +331,12 @@ contract LiquidationQueue {
     ) external returns (uint256 amountRemoved) {
         uint256[] storage bidIndexes = userBidIndexes[msg.sender][pool];
         uint256 bidIndexesLen = bidIndexes.length;
+        require(bidPosition < bidIndexesLen, 'LQ: bid position out of range');
         OrderBookPoolInfo memory poolInfo = orderBookInfos[pool];
 
+        amountRemoved = orderBookEntries[pool][bidIndexes[bidPosition]]
+            .bidInfo
+            .amount;
         // Clean expired bids.
         for (uint256 i = 0; i < bidIndexesLen; ) {
             if (bidIndexes[i] > poolInfo.nextBidPull) {
@@ -345,17 +349,19 @@ contract LiquidationQueue {
             }
         }
 
-        // Remove bid from the order book by replacing it with the last activated bid.
-        uint256 orderBookIndex = bidIndexes[bidPosition];
-        amountRemoved = orderBookEntries[pool][orderBookIndex].bidInfo.amount;
-        orderBookEntries[pool][orderBookIndex] = orderBookEntries[pool][
-            poolInfo.nextBidPush - 1
-        ];
+        // Only if there are bids left in the pool.
+        if (bidIndexes.length > 0) {
+            // Remove bid from the order book by replacing it with the last activated bid.
+            uint256 orderBookIndex = bidIndexes[bidPosition];
+            orderBookEntries[pool][orderBookIndex] = orderBookEntries[pool][
+                poolInfo.nextBidPush - 1
+            ];
 
-        // Remove userBidIndex
-        bidIndexesLen = bidIndexes.length;
-        bidIndexes[bidPosition] = bidIndexes[bidIndexesLen - 1];
-        bidIndexes.pop();
+            // Remove userBidIndex
+            bidIndexesLen = bidIndexes.length;
+            bidIndexes[bidPosition] = bidIndexes[bidIndexesLen - 1];
+            bidIndexes.pop();
+        }
 
         // Transfer assets
         uint256 assetId = lqAssetId;

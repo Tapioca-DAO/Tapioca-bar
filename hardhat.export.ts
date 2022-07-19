@@ -56,11 +56,11 @@ const config: HardhatUserConfig = {
             allowUnlimitedContractSize: true,
             accounts:
                 {
-                    // Default size of accounts is 1000, but can be changed in .env
+                    // Default size of accounts is 100, but can be changed in .env
                     count:
                         process.env.ACCOUNTS_NUMBER !== undefined
                             ? parseInt(process.env.ACCOUNTS_NUMBER)
-                            : 1000,
+                            : 100,
                 },
         },
         rinkeby: {
