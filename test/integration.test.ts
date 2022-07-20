@@ -2,7 +2,7 @@ import hh, { ethers } from 'hardhat';
 import { expect } from 'chai';
 import { register } from './test.utils';
 
-describe('LiquidationQueue test', () => {
+describe.only('LiquidationQueue test 1000 users', () => {
     it('should revert on liquidate when price drop is reversed', async ()=> {
             const {
                 deployer,
@@ -28,7 +28,7 @@ describe('LiquidationQueue test', () => {
             const lqAssetId = await liquidationQueue.lqAssetId();
     
             // Bid ans ActivateBid
-            const users = (await ethers.getSigners());//.slice(0, 11)
+            const users = (await ethers.getSigners())//.slice(0, 11) // retreives 1000 users
             for(let i = 0; i < users.length ; i++) {
                 const signer = users[i];
     

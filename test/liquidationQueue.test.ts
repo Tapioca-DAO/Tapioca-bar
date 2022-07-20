@@ -2,7 +2,7 @@ import hh, { ethers } from 'hardhat';
 import { expect } from 'chai';
 import { register } from './test.utils';
 
-describe.only('LiquidationQueue test', () => {
+describe('LiquidationQueue test', () => {
     it('should throw if premium too high or amount too low', async () => {
         const { liquidationQueue, deployer } = await register();
 
