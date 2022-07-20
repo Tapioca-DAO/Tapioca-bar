@@ -6,7 +6,7 @@ contract OracleMock is IOracle {
     uint256 public rate;
     bool public success;
 
-    constructor() public {
+    constructor() {
         success = true;
     }
 

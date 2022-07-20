@@ -11,6 +11,16 @@ import '../mixologist/interfaces/IMixologist.sol';
 import '@boringcrypto/boring-solidity/contracts/BoringOwnable.sol';
 import '@boringcrypto/boring-solidity/contracts/ERC20.sol';
 
+/// @notice Custom Errors more gas efficient way to handle errors than require less expensive to deploy
+/// @notice emitted if zero address
+error BeachBar__ZeroAddress();
+
+/// @notice emitted if master contract is not registered
+error BeachBar__MasterContractNotRegistered();
+
+/// @notice emitted if masterContract is registered
+error BeachBar__MasterContractRegistered();
+
 enum ContractType {
     lowRisk,
     mediumRisk,
@@ -69,10 +79,9 @@ contract BeachBar is BoringOwnable {
     // ***************** //
 
     modifier registeredMasterContract(address mc) {
-        require(
-            isMasterContractRegistered[mc] == true,
-            'BeachBar: MC not registered'
-        );
+        if (isMasterContractRegistered[mc] != true) {
+            revert BeachBar__MasterContractNotRegistered();
+        }
         _;
     }
 
@@ -131,8 +140,12 @@ contract BeachBar is BoringOwnable {
     /// @notice Loop through the master contracts and call `depositFeesToYieldBox()` to each one of their clones.
     /// @dev `swappers_` can have one element that'll be used for all clones. Or one swapper per MasterContract.
     /// @param swappers_ One or more swappers to convert the asset to TAP.
-    function withdrawAllProtocolFees(MultiSwapper[] calldata swappers_) public {
-        require(address(swappers_[0]) != address(0), 'BeachBar: zero address');
+    function withdrawAllProtocolFees(MultiSwapper[] calldata swappers_)
+        external
+    {
+        if (address(swappers_[0]) == address(0)) {
+            revert BeachBar__ZeroAddress();
+        }
 
         uint256 masterContractLength = masterContracts.length;
         bool singleSwapper = swappers_.length != masterContractLength;
@@ -163,10 +176,9 @@ contract BeachBar is BoringOwnable {
         address mcAddress,
         ContractType contractType_
     ) external onlyOwner {
-        require(
-            isMasterContractRegistered[mcAddress] == false,
-            'BeachBar: MC registered'
-        );
+        if (isMasterContractRegistered[mcAddress] == true) {
+            revert BeachBar__MasterContractRegistered();
+        }
 
         MasterContract memory mc;
         mc.location = mcAddress;
@@ -206,10 +218,9 @@ contract BeachBar is BoringOwnable {
         success = new bool[](len);
         result = new bytes[](len);
         for (uint256 i = 0; i < len; ) {
-            require(
-                isMasterContractRegistered[yieldBox.masterContractOf(mc[i])],
-                'BeachBar: MC not registered'
-            );
+            if (!isMasterContractRegistered[yieldBox.masterContractOf(mc[i])]) {
+                revert BeachBar__MasterContractNotRegistered();
+            }
             (success[i], result[i]) = mc[i].call(data[i]);
             ++i;
         }
@@ -229,7 +240,7 @@ contract BeachBar is BoringOwnable {
     /// MasterContract Only Admin function.
     /// @param swapper The address of the swapper contract that conforms to `ISwapper`.
     /// @param enable True to enable the swapper. To disable use False.
-    function setSwapper(MultiSwapper swapper, bool enable) public onlyOwner {
+    function setSwapper(MultiSwapper swapper, bool enable) external onlyOwner {
         swappers[swapper] = enable;
         emit SwapperUpdate(address(swapper), enable);
     }

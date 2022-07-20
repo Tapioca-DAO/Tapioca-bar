@@ -2,7 +2,7 @@ import hh, { ethers } from 'hardhat';
 import { expect } from 'chai';
 import { register } from './test.utils';
 
-describe.only('LiquidationQueue test', () => {
+describe('LiquidationQueue test', () => {
     it('should revert on liquidate when price drop is reversed', async ()=> {
             const {
                 deployer,
@@ -145,7 +145,7 @@ describe.only('LiquidationQueue test', () => {
                         [userBorrowParts[i]],
                         multiSwapper.address,
                     ),
-                ).to.be.revertedWith('Mx: all are solvent')
+                ).to.be.revertedWith('Mixologist_AllAreSolvent')
             }
     })
     
@@ -174,7 +174,7 @@ describe.only('LiquidationQueue test', () => {
         const lqAssetId = await liquidationQueue.lqAssetId();
 
         // Bid ans ActivateBid
-        const users = (await ethers.getSigners());//.slice(0, 11)
+        const users = (await ethers.getSigners()).slice(0, 11)
         for(let i = 0; i < users.length ; i++) {
             const signer = users[i];
 
@@ -290,7 +290,7 @@ describe.only('LiquidationQueue test', () => {
                     [userBorrowParts[i]],
                     multiSwapper.address,
                 ),
-            ).to.be.revertedWith('Mx: all are solvent');
+            ).to.be.revertedWith('Mixologist_AllAreSolvent');
         }
 
     })

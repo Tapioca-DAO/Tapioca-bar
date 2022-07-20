@@ -18,7 +18,7 @@ contract ERC1155 is IERC1155 {
     mapping(uint256 => uint256) public totalSupply; // totalSupply per token
 
     function supportsInterface(bytes4 interfaceID)
-        public
+        external
         pure
         override
         returns (bool)

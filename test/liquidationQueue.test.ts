@@ -2,17 +2,17 @@ import hh, { ethers } from 'hardhat';
 import { expect } from 'chai';
 import { register } from './test.utils';
 
-describe('LiquidationQueue test', () => {
+describe.only('LiquidationQueue test', () => {
     it('should throw if premium too high or amount too low', async () => {
         const { liquidationQueue, deployer } = await register();
 
         await expect(
             liquidationQueue.bid(deployer.address, 40, 1),
-        ).to.be.revertedWith('LQ: premium too high');
+        ).to.be.revertedWith('LiquidationQueue__PremiumTooHigh');
 
         await expect(
             liquidationQueue.bid(deployer.address, 10, 1),
-        ).to.be.revertedWith('LQ: bid too low');
+        ).to.be.revertedWith('LiquidationQueue__BidTooLow');
     });
 
     it('Should make a bid', async () => {
@@ -309,7 +309,7 @@ describe('LiquidationQueue test', () => {
                 [await wethUsdcMixologist.userBorrowPart(deployer.address)],
                 ethers.constants.AddressZero,
             ),
-        ).to.be.revertedWith('Mx: all are solvent');
+        ).to.be.revertedWith('Mixologist_AllAreSolvent');
 
         // Make some price movement and liquidate
         const priceDrop = __wethUsdcPrice.mul(5).div(100);
@@ -330,7 +330,7 @@ describe('LiquidationQueue test', () => {
                 [await wethUsdcMixologist.userBorrowPart(deployer.address)],
                 multiSwapper.address,
             ),
-        ).to.be.revertedWith('Mx: all are solvent');
+        ).to.be.revertedWith('Mixologist_AllAreSolvent');
 
         // Check that LQ balances has been added
         expect(await liquidationQueue.balancesDue(deployer.address)).to.not.eq(

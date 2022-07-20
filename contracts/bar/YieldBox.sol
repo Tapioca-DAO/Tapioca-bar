@@ -39,6 +39,25 @@ import './YieldBoxURIBuilder.sol';
 
 // solhint-disable no-empty-blocks
 
+/// @notice emitted when caller tries to deposit native token
+error YieldBox__CannotDepositNative();
+
+/// @notice emitted when asset is not wrapped native
+error YieldBox__NotWrappedNative(address);
+
+/// @notice emitted when caller attempts to withdraw native asset
+error YieldBox__CannotWithdrawNative();
+
+/// @notice emitted when operator is not set
+error YieldBox__OperatorNotSet();
+
+/// @notice emitted if operator argument is YieldBox
+error YieldBox__YieldBoxCannottApproveYieldBox(address);
+
+error YieldBox__UserIsClone(address);
+
+error YieldBox__ToNotSet();
+
 /// @title YieldBox
 /// @author BoringCrypto, Keno
 /// @notice The YieldBox is a vault for tokens. The stored tokens can assigned to strategies.
@@ -117,10 +136,9 @@ contract YieldBox is BoringBatchable, NativeTokenFactory, ERC1155TokenReceiver {
     ) public allowed(from) returns (uint256 amountOut, uint256 shareOut) {
         // Checks
         Asset storage asset = assets[assetId];
-        require(
-            asset.tokenType != TokenType.Native,
-            "YieldBox: can't deposit Native"
-        );
+        if (asset.tokenType == TokenType.Native) {
+            revert YieldBox__CannotDepositNative();
+        }
 
         // Effects
         uint256 totalAmount = _tokenBalanceOf(asset);
@@ -183,11 +201,12 @@ contract YieldBox is BoringBatchable, NativeTokenFactory, ERC1155TokenReceiver {
     {
         // Checks
         Asset storage asset = assets[assetId];
-        require(
-            asset.tokenType == TokenType.ERC20 &&
-                asset.contractAddress == address(wrappedNative),
-            'YieldBox: not wrappedNative'
-        );
+        if (
+            asset.tokenType != TokenType.ERC20 &&
+            asset.contractAddress != address(wrappedNative)
+        ) {
+            revert YieldBox__NotWrappedNative(asset.contractAddress);
+        }
 
         // Effects
         uint256 share = amount._toShares(
@@ -224,13 +243,12 @@ contract YieldBox is BoringBatchable, NativeTokenFactory, ERC1155TokenReceiver {
         address to,
         uint256 amount,
         uint256 share
-    ) public allowed(from) returns (uint256 amountOut, uint256 shareOut) {
+    ) external allowed(from) returns (uint256 amountOut, uint256 shareOut) {
         // Checks
         Asset storage asset = assets[assetId];
-        require(
-            asset.tokenType != TokenType.Native,
-            "YieldBox: can't withdraw Native"
-        );
+        if (asset.tokenType == TokenType.Native) {
+            revert YieldBox__CannotWithdrawNative();
+        }
 
         // Effects
         uint256 totalAmount = _tokenBalanceOf(asset);
@@ -288,7 +306,7 @@ contract YieldBox is BoringBatchable, NativeTokenFactory, ERC1155TokenReceiver {
         address to,
         uint256 assetId,
         uint256 share
-    ) public allowed(from) {
+    ) external allowed(from) {
         _transferSingle(from, to, assetId, share);
     }
 
@@ -297,7 +315,7 @@ contract YieldBox is BoringBatchable, NativeTokenFactory, ERC1155TokenReceiver {
         address to,
         uint256[] calldata assetIds_,
         uint256[] calldata shares_
-    ) public allowed(from) {
+    ) external allowed(from) {
         _transferBatch(from, to, assetIds_, shares_);
     }
 
@@ -311,11 +329,13 @@ contract YieldBox is BoringBatchable, NativeTokenFactory, ERC1155TokenReceiver {
         address[] calldata tos,
         uint256 assetId,
         uint256[] calldata shares
-    ) public allowed(from) {
+    ) external allowed(from) {
         // Checks
         uint256 len = tos.length;
         for (uint256 i = 0; i < len; i++) {
-            require(tos[i] != address(0), 'YieldBox: to not set'); // To avoid a bad UI from burning funds
+            if (tos[i] == address(0)) {
+                revert YieldBox__ToNotSet();
+            } // To avoid a bad UI from burning funds
         }
 
         // Effects
@@ -335,12 +355,15 @@ contract YieldBox is BoringBatchable, NativeTokenFactory, ERC1155TokenReceiver {
         override
     {
         // Checks
-        require(operator != address(0), 'YieldBox: operator not set'); // Important for security
-        require(
-            masterContractOf[msg.sender] == address(0),
-            'YieldBox: user is clone'
-        );
-        require(operator != address(this), "YieldBox: can't approve yieldBox");
+        if (operator == address(0)) {
+            revert YieldBox__OperatorNotSet();
+        } // Important for security
+        if (masterContractOf[msg.sender] != address(0)) {
+            revert YieldBox__UserIsClone(msg.sender);
+        }
+        if (operator == address(this)) {
+            revert YieldBox__YieldBoxCannottApproveYieldBox(operator);
+        }
 
         // Effects
         isApprovedForAll[msg.sender][operator] = approved;
@@ -446,7 +469,7 @@ contract YieldBox is BoringBatchable, NativeTokenFactory, ERC1155TokenReceiver {
         address to,
         uint256 amount,
         uint256 share
-    ) public returns (uint256 amountOut, uint256 shareOut) {
+    ) external returns (uint256 amountOut, uint256 shareOut) {
         if (tokenType == TokenType.Native) {
             // If native token, register it as an ERC1155 asset (as that's what it is)
             return
@@ -483,7 +506,7 @@ contract YieldBox is BoringBatchable, NativeTokenFactory, ERC1155TokenReceiver {
         IStrategy strategy,
         address to,
         uint256 amount
-    ) public payable returns (uint256 amountOut, uint256 shareOut) {
+    ) external payable returns (uint256 amountOut, uint256 shareOut) {
         return
             depositETHAsset(
                 registerAsset(

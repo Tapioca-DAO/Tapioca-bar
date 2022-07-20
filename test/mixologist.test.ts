@@ -444,7 +444,7 @@ describe('Mixologist test', () => {
                 wethMintVal,
                 ethers.utils.hexlify(0),
             ),
-        ).to.be.revertedWith('Mx: flashloan insufficient funds');
+        ).to.be.revertedWith('Mixologist_FlashloanInsufficientFunds');
 
         // Insufficient funds
         await expect(
@@ -454,7 +454,7 @@ describe('Mixologist test', () => {
                 wethMintVal,
                 ethers.utils.hexlify(0),
             ),
-        ).to.be.revertedWith('Mx: flashloan insufficient funds');
+        ).to.be.revertedWith('Mixologist_FlashloanInsufficientFunds');
 
         await weth.freeMint(wethMintVal.mul(90).div(100_000)); // 0.09% fee
         await weth.transfer(operator.address, wethMintVal.mul(90).div(100_000));
