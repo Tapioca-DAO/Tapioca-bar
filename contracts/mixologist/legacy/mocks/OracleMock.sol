@@ -24,7 +24,7 @@ contract OracleMock is IOracle {
     }
 
     // Get the latest exchange rate
-    function get(bytes calldata) public override returns (bool, uint256) {
+    function get(bytes calldata) public view override returns (bool, uint256) {
         return (success, rate);
     }
 
@@ -37,13 +37,13 @@ contract OracleMock is IOracle {
         return rate;
     }
 
-    function name(bytes calldata) public view override returns (string memory) {
+    function name(bytes calldata) public pure override returns (string memory) {
         return 'Test';
     }
 
     function symbol(bytes calldata)
         public
-        view
+        pure
         override
         returns (string memory)
     {
