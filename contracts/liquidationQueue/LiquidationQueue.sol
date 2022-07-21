@@ -19,6 +19,7 @@ error LiquidationQueue__NoAvailableBidToFill();
 error LiquidationQueue__NotInitialized();
 error LiquidationQueue__PremiumTooHigh();
 error LiquidationQueue__BidTooLow();
+error LiquidationQueue_ActivationTooSoon();
 
 /// @title LiquidationQueue
 /// @author @0xRektora, TapiocaDAO
@@ -277,11 +278,9 @@ contract LiquidationQueue {
     /// @param pool The target pool.
     function activateBid(address user, uint256 pool) external {
         Bidder memory bidder = bidPools[pool][user];
-        require(
-            block.timestamp >=
-                bidder.timestamp + liquidationQueueMeta.activationTime,
-            'LQ: too soon'
-        );
+        if(block.timestamp < (bidder.timestamp + liquidationQueueMeta.activationTime)) {
+             revert LiquidationQueue_ActivationTooSoon();
+        }
 
         OrderBookPoolInfo memory poolInfo = orderBookInfos[pool]; // Info about the pool array indexes.
 
