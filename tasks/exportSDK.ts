@@ -47,7 +47,7 @@ export const exportSDK__task = async (
         cwd,
         filesToProcess: allFiles,
         allFiles,
-        outDir: 'tapioca-sdk/src/typechain',
+        outDir: 'tapioca-sdk/src/typechain/Tapioca-Bar',
         target: 'ethers-v5',
         flags: {
             alwaysGenerateOverloads: true,
