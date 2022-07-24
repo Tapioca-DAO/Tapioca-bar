@@ -52,29 +52,9 @@ const config: HardhatUserConfig = {
     defaultNetwork: 'hardhat',
     networks: {
         hardhat: {
-            allowUnlimitedContractSize: true,
-            accounts:
-                process.env.PRIVATE_KEY !== undefined
-                    ? [
-                          {
-                              privateKey: process.env.PRIVATE_KEY,
-                              balance: '1000000000000000000000000',
-                          },
-                      ]
-                    : [],
+            accounts : {count: 101}
         },
-        rinkeby: {
-            gasMultiplier: 2,
-            url:
-                process.env.RINKEBY ??
-                'https://rinkeby.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161',
-            chainId: 4,
-            accounts:
-                process.env.PRIVATE_KEY !== undefined
-                    ? [process.env.PRIVATE_KEY]
-                    : [],
-            tags: ['testnet'],
-        },
+
     },
     etherscan: {
         apiKey: {

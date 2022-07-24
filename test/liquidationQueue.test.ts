@@ -207,7 +207,7 @@ describe('LiquidationQueue test', () => {
         ).to.be.eq(LQ_META.minBidAmount);
     });
 
-    it('Should execute bids', async () => {
+    it.only('Should execute bids', async () => {
         const {
             deployer,
             eoa1,
