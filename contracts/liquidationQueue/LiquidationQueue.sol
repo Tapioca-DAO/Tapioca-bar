@@ -212,6 +212,7 @@ contract LiquidationQueue {
         uint256 pool,
         uint256 amount
     ) external Active {
+        require(pool != 0, 'LQ: pool id cannot be 0');
         require(pool <= MAX_BID_POOLS, 'LQ: premium too high');
         require(amount >= liquidationQueueMeta.minBidAmount, 'LQ: bid too low');
 
@@ -331,6 +332,8 @@ contract LiquidationQueue {
     ) external returns (uint256 amountRemoved) {
         uint256[] storage bidIndexes = userBidIndexes[msg.sender][pool];
         uint256 bidIndexesLen = bidIndexes.length;
+        require(bidIndexesLen != 0, 'LQ: no bids found for this user and poolId');
+        require(bidIndexesLen > bidPosition, 'LQ: bidPosition out of range');
         OrderBookPoolInfo memory poolInfo = orderBookInfos[pool];
 
         // Clean expired bids.
@@ -512,6 +515,10 @@ contract LiquidationQueue {
                 block.timestamp
             );
         }
+        
+        // mixologist method orderBookLiquidation method relies on liquidation to be complete
+        // this is because the returnedShare is assumed to be greater than allBorrowerShare
+        require(collateralAmountToLiquidate == 0, 'LQ: Unable to fully liquidate');
 
         // Stack too deep
         {

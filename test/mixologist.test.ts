@@ -409,7 +409,7 @@ describe('Mixologist test', () => {
         expect(tapAmountHarvested.gte(acceptableHarvestMargin)).to.be.true;
     });
 
-    it.only('Should make a flashloan', async () => {
+    it('Should make a flashloan', async () => {
         const {
             weth,
             wethUsdcMixologist,

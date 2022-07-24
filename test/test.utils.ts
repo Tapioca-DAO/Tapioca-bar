@@ -1,4 +1,4 @@
-import { BigNumberish } from 'ethers';
+import { BigNumberish, Wallet } from 'ethers';
 import { ethers } from 'hardhat';
 import {
     BeachBar,
@@ -60,7 +60,7 @@ async function registerERC20Tokens() {
     return { usdc, weth, tap };
 }
 
-async function registerYieldBox(wethAddress: string) {
+async function registerYieldBox() {
     // Deploy URIBuilder
     const uriBuilder = await (
         await ethers.getContractFactory('YieldBoxURIBuilder')
@@ -85,9 +85,8 @@ async function registerBeachBar(yieldBox: string, tapAddress: string) {
     return { bar };
 }
 
-async function setBeachBarAssets(
+async function registerYieldBoxAssets(
     yieldBox: YieldBox,
-    bar: BeachBar,
     wethAddress: string,
     usdcAddress: string,
 ) {
@@ -272,7 +271,7 @@ async function registerLiquidationQueue(
 
     const LQ_META = {
         activationTime: 600, // 10min
-        minBidAmount: ethers.BigNumber.from((1e18).toString()).mul(200), // 200 USDC
+        minBidAmount: BN(1e18).div(2), // 0.5 WETH
         feeCollector,
     };
     const payload = mixologist.interface.encodeFunctionData(
@@ -289,6 +288,62 @@ async function registerLiquidationQueue(
 
 const log = (message: string, staging?: boolean) =>
     staging && console.log(message);
+
+export async function usdcDepositAndAddCollateral(
+    account: Wallet,
+    yieldBox: YieldBox,
+    wethUsdcMixologist: Mixologist,
+    amount: BigNumberish,
+) {
+    const _account = account;
+    const _yieldBox = yieldBox.connect(_account);
+    const _wethUsdcMixologist = wethUsdcMixologist.connect(_account);
+    const id = await _wethUsdcMixologist.collateralId();
+    await (
+        await _yieldBox.depositAsset(
+            id,
+            _account.address,
+            _account.address,
+            amount,
+            0,
+        )
+    ).wait();
+    const _valShare = await _yieldBox.balanceOf(_account.address, id);
+    await (
+        await _wethUsdcMixologist.addCollateral(
+            _account.address,
+            false,
+            _valShare,
+        )
+    ).wait();
+}
+
+export async function wethDepositAndAddAsset(
+    account: Wallet,
+    yieldBox: YieldBox,
+    wethUsdcMixologist: Mixologist,
+    amount: BigNumberish,
+) {
+    const _account = account;
+    const _yieldBox = yieldBox.connect(account);
+    const _wethUsdcMixologist = wethUsdcMixologist.connect(account);
+
+    const id = await _wethUsdcMixologist.assetId();
+    const _valShare = await _yieldBox.toShare(id, amount, false);
+    await (
+        await _yieldBox.depositAsset(
+            id,
+            _account.address,
+            _account.address,
+            0,
+            _valShare,
+        )
+    ).wait();
+    await (
+        await _wethUsdcMixologist.addAsset(_account.address, false, _valShare)
+    ).wait();
+}
+
 export async function register(staging?: boolean) {
     if (!staging) {
         await resetVM();
@@ -311,16 +366,15 @@ export async function register(staging?: boolean) {
     const { tap, usdc, weth } = await registerERC20Tokens();
     log('Deploying YieldBox', staging);
     // 2 Deploy Yieldbox
-    const { yieldBox, uriBuilder } = await registerYieldBox(weth.address);
+    const { yieldBox, uriBuilder } = await registerYieldBox();
     log('Deploying BeachBar', staging);
     // 2.1 Deploy BeachBar
     const { bar } = await registerBeachBar(yieldBox.address, tap.address);
 
     log('Deploying UniFactory', staging);
     // 3 Add asset types to BeachBar
-    const { usdcAssetId, wethAssetId } = await setBeachBarAssets(
+    const { usdcAssetId, wethAssetId } = await registerYieldBoxAssets(
         yieldBox,
-        bar,
         weth.address,
         usdc.address,
     );
@@ -403,6 +457,7 @@ export async function register(staging?: boolean) {
         tap,
         wethUsdcOracle,
         yieldBox,
+        uriBuilder,
         bar,
         wethUsdcMixologist,
         mixologistHelper,
@@ -540,6 +595,7 @@ export async function register(staging?: boolean) {
 
     const utilFuncs = {
         BN,
+        mine,
         jumpTime,
         approveTokensAndSetBarApproval,
         wethDepositAndAddAsset,
