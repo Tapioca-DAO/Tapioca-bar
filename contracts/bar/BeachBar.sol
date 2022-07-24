@@ -119,7 +119,7 @@ contract BeachBar is BoringOwnable {
     }
 
     /// @notice Get the length of `masterContracts`
-    function masterContractLength() public view returns (uint256) {
+    function masterContractLength() external view returns (uint256) {
         return masterContracts.length;
     }
 
@@ -134,8 +134,8 @@ contract BeachBar is BoringOwnable {
     function withdrawAllProtocolFees(MultiSwapper[] calldata swappers_) public {
         require(address(swappers_[0]) != address(0), 'BeachBar: zero address');
 
-        uint256 masterContractLength = masterContracts.length;
-        bool singleSwapper = swappers_.length != masterContractLength;
+        uint256 _masterContractLength = masterContracts.length;
+        bool singleSwapper = swappers_.length != _masterContractLength;
 
         address[] memory markets = tapiocaMarkets();
         uint256 length = markets.length;

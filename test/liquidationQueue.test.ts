@@ -44,8 +44,15 @@ describe('LiquidationQueue test', () => {
     });
 
     it('Should make a bid, wait 10min and activate it', async () => {
-        const { liquidationQueue, deployer, weth, LQ_META, bar, yieldBox } =
-            await register();
+        const {
+            liquidationQueue,
+            deployer,
+            weth,
+            LQ_META,
+            bar,
+            yieldBox,
+            jumpTime,
+        } = await register();
 
         const POOL = 10;
 
@@ -74,8 +81,7 @@ describe('LiquidationQueue test', () => {
         ).to.be.revertedWith('LQ: too soon');
 
         // Wait 10min
-        await hh.network.provider.send('evm_increaseTime', [10_000]);
-        await hh.network.provider.send('evm_mine');
+        jumpTime(10_000);
 
         // Activate bid
         await expect(
@@ -150,8 +156,15 @@ describe('LiquidationQueue test', () => {
     });
 
     it('Should remove an activated bid', async () => {
-        const { liquidationQueue, deployer, weth, LQ_META, bar, yieldBox } =
-            await register();
+        const {
+            liquidationQueue,
+            deployer,
+            weth,
+            LQ_META,
+            bar,
+            yieldBox,
+            jumpTime,
+        } = await register();
 
         const POOL = 10;
         const lqAssetId = await liquidationQueue.lqAssetId();
@@ -175,8 +188,7 @@ describe('LiquidationQueue test', () => {
             POOL,
             LQ_META.minBidAmount,
         );
-        await hh.network.provider.send('evm_increaseTime', [10_000]);
-        await hh.network.provider.send('evm_mine');
+        jumpTime(10_000);
         await liquidationQueue.activateBid(deployer.address, POOL);
 
         const bidIndexLen = await liquidationQueue.userBidIndexLength(
@@ -223,6 +235,7 @@ describe('LiquidationQueue test', () => {
             wethUsdcOracle,
             multiSwapper,
             BN,
+            jumpTime,
         } = await register();
 
         const POOL = 5;
@@ -248,8 +261,7 @@ describe('LiquidationQueue test', () => {
             POOL,
             LQ_META.minBidAmount.mul(100),
         );
-        await hh.network.provider.send('evm_increaseTime', [10_000]);
-        await hh.network.provider.send('evm_mine');
+        jumpTime(10_000);
         await liquidationQueue.activateBid(deployer.address, POOL);
 
         // Mint some weth to deposit as asset with EOA1
