@@ -61,7 +61,9 @@ const config: HardhatUserConfig = {
                               balance: '1000000000000000000000000',
                           },
                       ]
-                    : [],
+                    : {
+                          count: 1000,
+                      },
         },
         rinkeby: {
             gasMultiplier: 2,
