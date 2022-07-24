@@ -10,6 +10,17 @@ enum MODE {
     SUB
 }
 
+/// @notice Custom Errors more gas efficient way to handle errors than require less expensive to deploy
+
+error LiquidationQueue__AlreadyInitialized();
+error LiquidationQueue__NoBalanceDue();
+error LiquidationQueue__OnlyMixologist();
+error LiquidationQueue__NoAvailableBidToFill();
+error LiquidationQueue__NotInitialized();
+error LiquidationQueue__PremiumTooHigh();
+error LiquidationQueue__BidTooLow();
+error LiquidationQueue_ActivationTooSoon();
+
 /// @title LiquidationQueue
 /// @author @0xRektora, TapiocaDAO
 // TODO: Capital efficiency? (register assets to strategies) (farm strat for TAP)
@@ -83,7 +94,12 @@ contract LiquidationQueue {
     function init(LiquidationQueueMeta calldata _liquidationQueueMeta)
         external
     {
-        require(!onlyOnce, 'LQ: Initialized');
+        // Custome error:
+        // more gas efficient way to handle errors than revert()
+        // less expensive to deploy
+        if (onlyOnce) {
+            revert LiquidationQueue__AlreadyInitialized();
+        }
 
         liquidationQueueMeta = _liquidationQueueMeta;
 
@@ -151,7 +167,9 @@ contract LiquidationQueue {
     // ***************** //
 
     modifier Active() {
-        require(onlyOnce, 'LQ: Not initialized');
+        if (!onlyOnce) {
+            revert LiquidationQueue__NotInitialized();
+        }
         _;
     }
 
@@ -212,8 +230,13 @@ contract LiquidationQueue {
         uint256 pool,
         uint256 amount
     ) external Active {
-        require(pool <= MAX_BID_POOLS, 'LQ: premium too high');
-        require(amount >= liquidationQueueMeta.minBidAmount, 'LQ: bid too low');
+        if (pool > MAX_BID_POOLS) {
+            revert LiquidationQueue__PremiumTooHigh();
+        }
+
+        if (amount < liquidationQueueMeta.minBidAmount) {
+            revert LiquidationQueue__BidTooLow();
+        }
 
         // Transfer assets to the LQ contract.
         {
@@ -255,11 +278,9 @@ contract LiquidationQueue {
     /// @param pool The target pool.
     function activateBid(address user, uint256 pool) external {
         Bidder memory bidder = bidPools[pool][user];
-        require(
-            block.timestamp >=
-                bidder.timestamp + liquidationQueueMeta.activationTime,
-            'LQ: too soon'
-        );
+        if(block.timestamp < (bidder.timestamp + liquidationQueueMeta.activationTime)) {
+             revert LiquidationQueue_ActivationTooSoon();
+        }
 
         OrderBookPoolInfo memory poolInfo = orderBookInfos[pool]; // Info about the pool array indexes.
 
@@ -373,7 +394,12 @@ contract LiquidationQueue {
     /// @dev `msg.sender` is used as the redeemer.
     /// @param to The address to redeem to.
     function redeem(address to) external {
-        require(balancesDue[msg.sender] > 0, 'LQ: No balance due');
+        // Custome error:
+        // more gas efficient way to handle errors than revert()
+        // less expensive to deploy
+        if (balancesDue[msg.sender] == 0) {
+            revert LiquidationQueue__NoBalanceDue();
+        }
 
         uint256 balance = balancesDue[msg.sender];
         uint256 fee = (balance * WITHDRAWAL_FEE) / WITHDRAWAL_FEE_PRECISION;
@@ -404,10 +430,15 @@ contract LiquidationQueue {
         external
         returns (uint256 totalAmountExecuted, uint256 totalCollateralLiquidated)
     {
-        require(msg.sender == address(mixologist), 'LQ: Only Mixologist');
+        if (msg.sender != address(mixologist)) {
+            revert LiquidationQueue__OnlyMixologist();
+        }
 
         (uint256 curPoolId, bool isBidAvail) = getNextAvailBidPool();
-        require(isBidAvail, 'LQ: No available bid to fill');
+
+        if (!isBidAvail) {
+            revert LiquidationQueue__NoAvailableBidToFill();
+        }
 
         OrderBookPoolInfo memory poolInfo;
         OrderBookPoolEntry storage orderBookEntry;

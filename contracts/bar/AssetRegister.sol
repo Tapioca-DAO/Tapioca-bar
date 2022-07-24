@@ -4,6 +4,10 @@ import './interfaces/IStrategy.sol';
 import '@boringcrypto/boring-solidity/contracts/libraries/BoringAddress.sol';
 import './ERC1155.sol';
 
+/// @notice Custom Errors more gas efficient way to handle errors than require less expensive to deploy
+/// @notice emitted if asset  is not native
+error AssetManager__CannotAddNative();
+
 // An asset is a token + a strategy
 struct Asset {
     TokenType tokenType;
@@ -32,7 +36,7 @@ contract AssetRegister is ERC1155 {
         assets.push(Asset(TokenType.None, address(0), NO_STRATEGY, 0));
     }
 
-    function assetCount() public view returns (uint256) {
+    function assetCount() external view returns (uint256) {
         return assets.length;
     }
 
@@ -93,10 +97,9 @@ contract AssetRegister is ERC1155 {
         uint256 tokenId
     ) public returns (uint256 assetId) {
         // Native assets can only be added internally by the NativeTokenFactory
-        require(
-            tokenType == TokenType.ERC20 || tokenType == TokenType.ERC1155,
-            'AssetManager: cannot add Native'
-        );
+        if (tokenType != TokenType.ERC20 && tokenType != TokenType.ERC1155) {
+            revert AssetManager__CannotAddNative();
+        }
         assetId = _registerAsset(tokenType, contractAddress, strategy, tokenId);
     }
 }

@@ -3,6 +3,19 @@ pragma solidity ^0.8.0;
 import './AssetRegister.sol';
 import '@boringcrypto/boring-solidity/contracts/BoringFactory.sol';
 
+/// @notice Custom Errors more gas efficient way to handle errors than require less expensive to deploy
+/// @notice emitted if caller is not owner
+error NativeTokenFactory__CallerIsNotOwner(address);
+
+/// @notice emitted if caller is not pendingOwner
+error NativeTokenFactory__CallerIsNotPendingOwner(address);
+
+/// notice emitted if token address is zero address and renounce (allows new token address to be zero) is false
+error NativeTokenFactory__ZeroAddress();
+
+/// @notice emitted if token is not native
+error NativeTokenFactory__NotNative(uint256);
+
 struct NativeToken {
     string name;
     string symbol;
@@ -58,10 +71,9 @@ contract NativeTokenFactory is AssetRegister, BoringFactory {
     /// @notice Only allows the `owner` to execute the function.
     /// @param tokenId The `tokenId` that the sender has to be owner of.
     modifier onlyTokenOwner(uint256 tokenId) {
-        require(
-            msg.sender == tokenOwner[tokenId],
-            'NTF: caller is not the owner'
-        );
+        if (msg.sender != tokenOwner[tokenId]) {
+            revert NativeTokenFactory__CallerIsNotOwner(msg.sender);
+        }
         _;
     }
 
@@ -76,13 +88,12 @@ contract NativeTokenFactory is AssetRegister, BoringFactory {
         address newTokenOwner,
         bool direct,
         bool renounce
-    ) public onlyTokenOwner(tokenId) {
+    ) external onlyTokenOwner(tokenId) {
         if (direct) {
             // Checks
-            require(
-                newTokenOwner != address(0) || renounce,
-                'NTF: zero address'
-            );
+            if (newTokenOwner == address(0) && !renounce) {
+                revert NativeTokenFactory__ZeroAddress();
+            }
 
             // Effects
             emit OwnershipTransferred(
@@ -100,14 +111,13 @@ contract NativeTokenFactory is AssetRegister, BoringFactory {
 
     /// @notice Needs to be called by `pendingTokenOwner` to claim ownership.
     /// @param tokenId The `tokenId` of the token that ownership is claimed for.
-    function claimOwnership(uint256 tokenId) public {
+    function claimOwnership(uint256 tokenId) external {
         address _pendingTokenOwner = pendingTokenOwner[tokenId];
 
         // Checks
-        require(
-            msg.sender == _pendingTokenOwner,
-            'NTF: caller != pending owner'
-        );
+        if (msg.sender != _pendingTokenOwner) {
+            revert NativeTokenFactory__CallerIsNotPendingOwner(msg.sender);
+        }
 
         // Effects
         emit OwnershipTransferred(
@@ -128,7 +138,7 @@ contract NativeTokenFactory is AssetRegister, BoringFactory {
         string calldata name,
         string calldata symbol,
         uint8 decimals
-    ) public returns (uint256 tokenId) {
+    ) external returns (uint256 tokenId) {
         // To keep each Token unique in the AssetRegister, we use the assetId as the tokenId. So for native assets, the tokenId is always equal to the assetId.
         tokenId = assets.length;
         _registerAsset(TokenType.Native, address(0), NO_STRATEGY, tokenId);
@@ -150,7 +160,7 @@ contract NativeTokenFactory is AssetRegister, BoringFactory {
         uint256 tokenId,
         address to,
         uint256 amount
-    ) public onlyTokenOwner(tokenId) {
+    ) external onlyTokenOwner(tokenId) {
         _mint(to, tokenId, amount);
     }
 
@@ -161,11 +171,10 @@ contract NativeTokenFactory is AssetRegister, BoringFactory {
         uint256 tokenId,
         address from,
         uint256 amount
-    ) public allowed(from) {
-        require(
-            assets[tokenId].tokenType == TokenType.Native,
-            'NTF: Not native'
-        );
+    ) external allowed(from) {
+        if (assets[tokenId].tokenType != TokenType.Native) {
+            revert NativeTokenFactory__NotNative(tokenId);
+        }
         _burn(msg.sender, tokenId, amount);
     }
 }

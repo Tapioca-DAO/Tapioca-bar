@@ -53,15 +53,21 @@ const config: HardhatUserConfig = {
     networks: {
         hardhat: {
             allowUnlimitedContractSize: true,
-            accounts:
-                process.env.PRIVATE_KEY !== undefined
-                    ? [
-                          {
-                              privateKey: process.env.PRIVATE_KEY,
-                              balance: '1000000000000000000000000',
-                          },
-                      ]
-                    : [],
+            accounts:  {
+                mnemonic: "test test test test test test test test test test test junk",
+                path: "m/44'/60'/0'/0",
+                initialIndex: 0,
+                count: 1001,
+                accountsBalance: '10000000000000000000000',
+            }
+                // process.env.PRIVATE_KEY !== undefined
+                //     ? [
+                //           {
+                //               privateKey: process.env.PRIVATE_KEY,
+                //               balance: '1000000000000000000000000',
+                //           },
+                //       ]
+                //     : [],
         },
         rinkeby: {
             gasMultiplier: 2,
