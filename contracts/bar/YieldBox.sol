@@ -1,5 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 
+// solhint-disable no-empty-blocks
+// solhint-disable max-line-length
+
 // The YieldBox
 // The original BentoBox is owned by the Sushi team to set strategies for each token. Abracadabra wanted different strategies, which led to
 // them launching their own DegenBox. The YieldBox solves this by allowing an unlimited number of strategies for each token in a fully
@@ -22,7 +25,7 @@
 // Security review not done yet
 
 pragma solidity ^0.8.0;
-pragma experimental ABIEncoderV2;
+
 import './interfaces/IWrappedNative.sol';
 import './interfaces/IStrategy.sol';
 import '@boringcrypto/boring-solidity/contracts/interfaces/IERC1155.sol';
@@ -36,8 +39,6 @@ import './AssetRegister.sol';
 import './NativeTokenFactory.sol';
 import './YieldBoxRebase.sol';
 import './YieldBoxURIBuilder.sol';
-
-// solhint-disable no-empty-blocks
 
 /// @title YieldBox
 /// @author BoringCrypto, Keno
@@ -56,12 +57,33 @@ contract YieldBox is BoringBatchable, NativeTokenFactory, ERC1155TokenReceiver {
 
     // TODO: Add events
 
+    /// @notice event emitted when an asset was deposited
+    event Deposit(
+        address indexed from,
+        address indexed to,
+        uint256 assetId,
+        uint256 amount,
+        uint256 share
+    );
+
+    /// @notice event emitted when an asset was withdrawn
+    event Withdraw(
+        address indexed from,
+        address indexed to,
+        uint256 assetId,
+        uint256 amount,
+        uint256 share
+    );
+
+    /// @notice the wrapped native contract
+    IWrappedNative public immutable wrappedNative;
+
+    /// @notice the uri builder contract
+    YieldBoxURIBuilder public immutable uriBuilder;
+
     // ******************* //
     // *** CONSTRUCTOR *** //
     // ******************* //
-
-    IWrappedNative public immutable wrappedNative;
-    YieldBoxURIBuilder public immutable uriBuilder;
 
     constructor(IWrappedNative wrappedNative_, YieldBoxURIBuilder uriBuilder_) {
         wrappedNative = wrappedNative_;
@@ -95,6 +117,14 @@ contract YieldBox is BoringBatchable, NativeTokenFactory, ERC1155TokenReceiver {
             return asset.strategy.currentBalance();
         }
     }
+
+    /// @dev Enforce transfer control
+    function _requireTransferAllowed(address from)
+        internal
+        view
+        override
+        allowed(from)
+    {}
 
     // ************************ //
     // *** PUBLIC FUNCTIONS *** //
@@ -165,9 +195,17 @@ contract YieldBox is BoringBatchable, NativeTokenFactory, ERC1155TokenReceiver {
             asset.strategy.deposited(amount);
         }
 
-        return (amount, share);
+        amountOut = amount;
+        shareOut = share;
+        emit Deposit(from, to, assetId, amountOut, shareOut);
     }
 
+    /// @notice Deposit an amount of native asset represented in `amount`.
+    /// @param assetId The id of the asset.
+    /// @param to which account to push the tokens.
+    /// @param amount Token amount in native representation to deposit.
+    /// @return amountOut The amount deposited.
+    /// @return shareOut The deposited amount repesented in shares.
     function depositETHAsset(
         uint256 assetId,
         address to,
@@ -209,7 +247,9 @@ contract YieldBox is BoringBatchable, NativeTokenFactory, ERC1155TokenReceiver {
             asset.strategy.deposited(amount);
         }
 
-        return (amount, share);
+        amountOut = amount;
+        shareOut = share;
+        emit Deposit(msg.sender, to, assetId, amountOut, shareOut);
     }
 
     /// @notice Withdraws an amount of `token` from a user account.
@@ -268,15 +308,10 @@ contract YieldBox is BoringBatchable, NativeTokenFactory, ERC1155TokenReceiver {
             asset.strategy.withdraw(to, amount);
         }
 
-        return (amount, share);
+        amountOut = amount;
+        shareOut = share;
+        emit Withdraw(from, to, assetId, amountOut, shareOut);
     }
-
-    function _requireTransferAllowed(address from)
-        internal
-        view
-        override
-        allowed(from)
-    {}
 
     /// @notice Transfer shares from a user account to another one.
     /// @param from which user to pull the tokens.
@@ -292,6 +327,11 @@ contract YieldBox is BoringBatchable, NativeTokenFactory, ERC1155TokenReceiver {
         _transferSingle(from, to, assetId, share);
     }
 
+    /// @notice Batch transfers shares from a user account to another one.
+    /// @param from which user to pull the tokens.
+    /// @param to which user to push the tokens.
+    /// @param assetIds_ Array of asset ids.
+    /// @param shares_ Array of shares for each `token`.
     function batchTransfer(
         address from,
         address to,
@@ -330,6 +370,9 @@ contract YieldBox is BoringBatchable, NativeTokenFactory, ERC1155TokenReceiver {
         balanceOf[from][assetId] -= totalAmount;
     }
 
+    /// @notice Sets/Unsets an approval for all operations for msg.sender against the operator.
+    /// @param operator The address which can act on behalf of msg.sender
+    /// @param approved The approved or denied status.
     function setApprovalForAll(address operator, bool approved)
         external
         override
@@ -359,14 +402,20 @@ contract YieldBox is BoringBatchable, NativeTokenFactory, ERC1155TokenReceiver {
         return uriBuilder.uri(assetId);
     }
 
+    // This functionality has been split off into a separate contract. This is only a view function, so gas usage isn't a huge issue.
+    // This keeps the YieldBox contract smaller, so it can be optimized more.
     function name(uint256 assetId) external view returns (string memory) {
         return uriBuilder.name(assetId);
     }
 
+    // This functionality has been split off into a separate contract. This is only a view function, so gas usage isn't a huge issue.
+    // This keeps the YieldBox contract smaller, so it can be optimized more.
     function symbol(uint256 assetId) external view returns (string memory) {
         return uriBuilder.symbol(assetId);
     }
 
+    // This functionality has been split off into a separate contract. This is only a view function, so gas usage isn't a huge issue.
+    // This keeps the YieldBox contract smaller, so it can be optimized more.
     function decimals(uint256 assetId) external view returns (uint8) {
         return uriBuilder.decimals(assetId);
     }

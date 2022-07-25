@@ -9,6 +9,9 @@ struct NativeToken {
     uint8 decimals;
 }
 
+// solhint-disable max-line-length
+
+
 /// @title NativeTokenFactory
 /// @author BoringCrypto (@Boring_Crypto)
 /// @notice The NativeTokenFactory is a token factory to create ERC1155 tokens. This is used by YieldBox to create

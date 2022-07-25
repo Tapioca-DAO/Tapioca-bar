@@ -5,6 +5,8 @@ pragma solidity >=0.5.0;
 import './IUniswapV2Pair.sol';
 import './SafeMath.sol';
 
+// solhint-disable max-line-length
+
 library UniswapV2Library {
     using SafeMath for uint256;
 

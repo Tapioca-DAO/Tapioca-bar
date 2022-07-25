@@ -273,6 +273,7 @@ async function registerLiquidationQueue(
     const LQ_META = {
         activationTime: 600, // 10min
         minBidAmount: ethers.BigNumber.from((1e18).toString()).mul(200), // 200 USDC
+        defaultBidAmount: ethers.BigNumber.from((1e18).toString()).mul(400), // 400 USDC
         feeCollector,
     };
     const payload = mixologist.interface.encodeFunctionData(

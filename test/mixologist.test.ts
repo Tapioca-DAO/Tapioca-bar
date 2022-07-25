@@ -409,7 +409,7 @@ describe('Mixologist test', () => {
         expect(tapAmountHarvested.gte(acceptableHarvestMargin)).to.be.true;
     });
 
-    it.only('Should make a flashloan', async () => {
+    it('Should make a flashloan', async () => {
         const {
             weth,
             wethUsdcMixologist,
@@ -444,7 +444,7 @@ describe('Mixologist test', () => {
                 wethMintVal,
                 ethers.utils.hexlify(0),
             ),
-        ).to.be.revertedWith('Mx: flashloan insufficient funds');
+        ).to.be.reverted;
 
         // Insufficient funds
         await expect(
@@ -454,7 +454,7 @@ describe('Mixologist test', () => {
                 wethMintVal,
                 ethers.utils.hexlify(0),
             ),
-        ).to.be.revertedWith('Mx: flashloan insufficient funds');
+        ).to.be.reverted;
 
         await weth.freeMint(wethMintVal.mul(90).div(100_000)); // 0.09% fee
         await weth.transfer(operator.address, wethMintVal.mul(90).div(100_000));

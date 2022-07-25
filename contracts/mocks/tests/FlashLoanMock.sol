@@ -17,11 +17,11 @@ contract FlashLoanMockAttacker is IFlashBorrower {
 
 contract FlashLoanMockSuccess is IFlashBorrower {
     function onFlashLoan(
-        address sender,
+        address,
         IERC20 token,
         uint256 amount,
         uint256 fee,
-        bytes calldata data
+        bytes calldata
     ) external {
         Mixologist mixologist = Mixologist(msg.sender);
         YieldBox yieldBox = mixologist.yieldBox();
