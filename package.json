@@ -1,6 +1,8 @@
 {
   "name": "tapioca-bar",
   "scripts": {
+    "compile": "npx hardhat compile",
+    "test": "npx hardhat test",
     "deploy": "npx hardhat deploy",
     "deploy:mainnet": "npx hardhat deploy --network mainnet",
     "deploy:testnet": "npx hardhat run scripts/exportStagingAddresses.ts --network rinkeby",
