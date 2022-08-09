@@ -3,6 +3,8 @@ pragma solidity ^0.8.0;
 import './AssetRegister.sol';
 import '@boringcrypto/boring-solidity/contracts/BoringFactory.sol';
 
+// solhint-disable max-line-length
+
 struct NativeToken {
     string name;
     string symbol;
@@ -16,7 +18,6 @@ struct NativeToken {
 /// - low and predictable gas usage
 /// - simplified approval
 /// - no hidden features, all these tokens behave the same
-/// TODO: MintBatch? BurnBatch?
 contract NativeTokenFactory is AssetRegister, BoringFactory {
     mapping(uint256 => NativeToken) public nativeTokens;
     mapping(uint256 => address) public tokenOwner;
@@ -62,6 +63,18 @@ contract NativeTokenFactory is AssetRegister, BoringFactory {
             msg.sender == tokenOwner[tokenId],
             'NTF: caller is not the owner'
         );
+        _;
+    }
+
+    /// @notice Only allows the `owner` to execute the function.
+    /// @param tokenIds The batch of `tokenId` that the sender has to be owner of.
+    modifier onlyTokenBatchOwner(uint256[] calldata tokenIds) {
+        for (uint256 i = 0; i < tokenIds.length; i++) {
+            require(
+                msg.sender == tokenOwner[tokenIds[i]],
+                'NTF: caller is not the owner'
+            );
+        }
         _;
     }
 
@@ -167,5 +180,35 @@ contract NativeTokenFactory is AssetRegister, BoringFactory {
             'NTF: Not native'
         );
         _burn(msg.sender, tokenId, amount);
+    }
+
+    /// @notice The `tokenOwner` can mint tokens. If a fixed supply is needed, the `tokenOwner` should mint the totalSupply and renounce ownership.
+    /// @param to The account to transfer the minted tokens to.
+    /// @param ids The tokens to be minted.
+    /// @param amounts The amounts of tokens to mint.
+    function mintBatch(
+        address to,
+        uint256[] calldata ids,
+        uint256[] calldata amounts
+    ) public onlyTokenBatchOwner(ids) {
+        _mintBatch(to, ids, amounts);
+    }
+
+    /// @notice Burns tokens. Only the holder of tokens can burn them.
+    /// @param from The account to brun from.
+    /// @param ids The tokens to be burned.
+    /// @param amounts The amounts of tokens to burn.
+    function burnBatch(
+        address from,
+        uint256[] calldata ids,
+        uint256[] calldata amounts
+    ) public allowed(from) {
+        for (uint256 i = 0; i < ids.length; i++) {
+            require(
+                assets[ids[i]].tokenType == TokenType.Native,
+                'NTF: Not native'
+            );
+        }
+        _burnBatch(from, ids, amounts);
     }
 }

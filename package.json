@@ -1,9 +1,13 @@
 {
   "name": "tapioca-bar",
+  "license": "MIT",
   "scripts": {
     "deploy": "npx hardhat deploy",
     "deploy:mainnet": "npx hardhat deploy --network mainnet",
     "deploy:testnet": "npx hardhat run scripts/exportStagingAddresses.ts --network rinkeby",
+    "compile": "NODE_ENV=compile hardhat compile --quiet && yarn solhint",
+    "solhint": "solhint contracts/**/*.sol --fix",
+    "test": "npx hardhat test",
     "sdk-gen": "npx hardhat exportSDK"
   },
   "devDependencies": {
@@ -44,6 +48,7 @@
     "write-json-file": "4.3.0"
   },
   "dependencies": {
+    "@primitivefi/hardhat-dodoc": "^0.2.3",
     "load-json-file": "^7.0.1"
   }
 }

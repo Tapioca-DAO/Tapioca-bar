@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+// solhint-disable max-line-length
+
 /// @title TokenType
 /// @author BoringCrypto (@Boring_Crypto)
 /// @notice The YieldBox can hold different types of tokens:

@@ -7,12 +7,13 @@ import '@nomiclabs/hardhat-etherscan';
 import 'hardhat-deploy';
 import '@nomiclabs/hardhat-ethers';
 import 'hardhat-contract-sizer';
+import '@primitivefi/hardhat-dodoc';
 // import 'hardhat-gas-reporter';
 // import 'solidity-coverage';
 
 dotenv.config();
 
-const config: HardhatUserConfig = {
+const config: HardhatUserConfig & { dodoc?: any } = {
     solidity: {
         compilers: [
             {
@@ -88,6 +89,10 @@ const config: HardhatUserConfig = {
     // },
     mocha: {
         timeout: 4000000,
+    },
+    dodoc: {
+        runOnCompile: true,
+        freshOutput: true,
     },
 };
 

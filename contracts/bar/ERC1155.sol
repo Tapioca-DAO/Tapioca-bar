@@ -45,6 +45,38 @@ contract ERC1155 is IERC1155 {
         }
     }
 
+    function _mintBatch(
+        address to,
+        uint256[] calldata ids,
+        uint256[] calldata amounts
+    ) internal {
+        require(to != address(0), 'No 0 address');
+        require(ids.length == amounts.length, 'Length mismatch');
+
+        for (uint256 i = 0; i < ids.length; i++) {
+            balanceOf[to][ids[i]] += amounts[i];
+            totalSupply[ids[i]] += amounts[i];
+        }
+
+        emit TransferBatch(msg.sender, address(0), to, ids, amounts);
+    }
+
+    function _burnBatch(
+        address from,
+        uint256[] calldata ids,
+        uint256[] calldata amounts
+    ) internal {
+        require(from != address(0), 'No 0 address');
+        require(ids.length == amounts.length, 'Length mismatch');
+
+        for (uint256 i = 0; i < ids.length; i++) {
+            balanceOf[from][ids[i]] -= amounts[i];
+            totalSupply[ids[i]] -= amounts[i];
+        }
+
+        emit TransferBatch(msg.sender, from, address(0), ids, amounts);
+    }
+
     function _mint(
         address to,
         uint256 id,
