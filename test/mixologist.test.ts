@@ -1,6 +1,6 @@
 import { ethers } from 'hardhat';
 import { expect } from 'chai';
-import { register } from './test.utils';
+import { register , time_travel} from './test.utils';
 
 describe('Mixologist test', () => {
     it('Should deposit to yieldBox, add asset to mixologist, remove asset and withdraw', async () => {
@@ -312,7 +312,6 @@ describe('Mixologist test', () => {
             deployer,
             approveTokensAndSetBarApproval,
             usdcDepositAndAddCollateral,
-            jumpTime,
             wethDepositAndAddAsset,
             multiSwapper,
             mixologistFeeVeTap,
@@ -358,7 +357,7 @@ describe('Mixologist test', () => {
 
         // We jump time to accumulate fees
         const day = 86400;
-        await jumpTime(180 * day);
+        await time_travel(180 * day);
 
         // Repay
         const userBorrowPart = await wethUsdcMixologist.userBorrowPart(
@@ -409,7 +408,7 @@ describe('Mixologist test', () => {
         expect(tapAmountHarvested.gte(acceptableHarvestMargin)).to.be.true;
     });
 
-    it.only('Should make a flashloan', async () => {
+    it('Should make a flashloan', async () => {
         const {
             weth,
             wethUsdcMixologist,

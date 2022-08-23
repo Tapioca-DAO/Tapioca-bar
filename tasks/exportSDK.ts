@@ -52,6 +52,7 @@ export const exportSDK__task = async (
         flags: {
             alwaysGenerateOverloads: true,
             environment: 'hardhat',
+            discriminateTypes: false,
         },
     });
 };
