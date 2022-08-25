@@ -1,3 +1,4 @@
+import { time } from '@nomicfoundation/hardhat-network-helpers';
 import { BigNumberish } from 'ethers';
 import { ethers } from 'hardhat';
 import {
@@ -287,6 +288,9 @@ async function registerLiquidationQueue(
     return { liquidationQueue, LQ_META };
 }
 
+export async function time_travel(seconds: number) {
+    await time.increase(seconds);
+}
 const log = (message: string, staging?: boolean) =>
     staging && console.log(message);
 export async function register(staging?: boolean) {
@@ -423,17 +427,6 @@ export async function register(staging?: boolean) {
      * UTIL FUNCS
      */
 
-    const mine = async (blocks: number) => {
-        for (let i = 0; i < blocks; i++) {
-            await ethers.provider.send('evm_mine', []);
-        }
-    };
-
-    const jumpTime = async (seconds: number) => {
-        await ethers.provider.send('evm_increaseTime', [seconds]);
-        await ethers.provider.send('evm_mine', []);
-    };
-
     const approveTokensAndSetBarApproval = async (account?: typeof eoa1) => {
         const _usdc = account ? usdc.connect(account) : usdc;
         const _weth = account ? weth.connect(account) : weth;
@@ -540,7 +533,6 @@ export async function register(staging?: boolean) {
 
     const utilFuncs = {
         BN,
-        jumpTime,
         approveTokensAndSetBarApproval,
         wethDepositAndAddAsset,
         usdcDepositAndAddCollateral,

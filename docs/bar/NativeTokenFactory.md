@@ -4,7 +4,7 @@
 
 > NativeTokenFactory
 
-The NativeTokenFactory is a token factory to create ERC1155 tokens. This is used by YieldBox to create native tokens in YieldBox. These have many benefits: - low and predictable gas usage - simplified approval - no hidden features, all these tokens behave the same
+The NativeTokenFactory is a token factory to create ERC1155 tokens. This is used by YieldBox to create native tokens in YieldBox. These have many benefits: - low and predictable gas usage - simplified approval - no hidden features, all these tokens behave the same TODO: MintBatch? BurnBatch?
 
 
 
@@ -115,24 +115,6 @@ Burns tokens. Only the holder of tokens can burn them.
 | tokenId | uint256 | The token to be burned. |
 | from | address | undefined |
 | amount | uint256 | The amount of tokens to burn. |
-
-### burnBatch
-
-```solidity
-function burnBatch(address from, uint256[] ids, uint256[] amounts) external nonpayable
-```
-
-Burns tokens. Only the holder of tokens can burn them.
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| from | address | The account to brun from. |
-| ids | uint256[] | The tokens to be burned. |
-| amounts | uint256[] | The amounts of tokens to burn. |
 
 ### claimOwnership
 
@@ -330,24 +312,6 @@ The `tokenOwner` can mint tokens. If a fixed supply is needed, the `tokenOwner` 
 | tokenId | uint256 | The token to be minted. |
 | to | address | The account to transfer the minted tokens to. |
 | amount | uint256 | The amount of tokens to mint. |
-
-### mintBatch
-
-```solidity
-function mintBatch(address to, uint256[] ids, uint256[] amounts) external nonpayable
-```
-
-The `tokenOwner` can mint tokens. If a fixed supply is needed, the `tokenOwner` should mint the totalSupply and renounce ownership.
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| to | address | The account to transfer the minted tokens to. |
-| ids | uint256[] | The tokens to be minted. |
-| amounts | uint256[] | The amounts of tokens to mint. |
 
 ### nativeTokens
 

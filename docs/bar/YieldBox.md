@@ -144,7 +144,7 @@ Allows batched call to self (this contract).
 function batchTransfer(address from, address to, uint256[] assetIds_, uint256[] shares_) external nonpayable
 ```
 
-Batch transfers shares from a user account to another one.
+
 
 
 
@@ -152,10 +152,10 @@ Batch transfers shares from a user account to another one.
 
 | Name | Type | Description |
 |---|---|---|
-| from | address | which user to pull the tokens. |
-| to | address | which user to push the tokens. |
-| assetIds_ | uint256[] | Array of asset ids. |
-| shares_ | uint256[] | Array of shares for each `token`. |
+| from | address | undefined |
+| to | address | undefined |
+| assetIds_ | uint256[] | undefined |
+| shares_ | uint256[] | undefined |
 
 ### burn
 
@@ -174,24 +174,6 @@ Burns tokens. Only the holder of tokens can burn them.
 | tokenId | uint256 | The token to be burned. |
 | from | address | undefined |
 | amount | uint256 | The amount of tokens to burn. |
-
-### burnBatch
-
-```solidity
-function burnBatch(address from, uint256[] ids, uint256[] amounts) external nonpayable
-```
-
-Burns tokens. Only the holder of tokens can burn them.
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| from | address | The account to brun from. |
-| ids | uint256[] | The tokens to be burned. |
-| amounts | uint256[] | The amounts of tokens to burn. |
 
 ### claimOwnership
 
@@ -412,7 +394,7 @@ function depositETH(contract IStrategy strategy, address to, uint256 amount) ext
 function depositETHAsset(uint256 assetId, address to, uint256 amount) external payable returns (uint256 amountOut, uint256 shareOut)
 ```
 
-Deposit an amount of native asset represented in `amount`.
+
 
 
 
@@ -420,16 +402,16 @@ Deposit an amount of native asset represented in `amount`.
 
 | Name | Type | Description |
 |---|---|---|
-| assetId | uint256 | The id of the asset. |
-| to | address | which account to push the tokens. |
-| amount | uint256 | Token amount in native representation to deposit. |
+| assetId | uint256 | undefined |
+| to | address | undefined |
+| amount | uint256 | undefined |
 
 #### Returns
 
 | Name | Type | Description |
 |---|---|---|
-| amountOut | uint256 | The amount deposited. |
-| shareOut | uint256 | The deposited amount repesented in shares. |
+| amountOut | uint256 | undefined |
+| shareOut | uint256 | undefined |
 
 ### ids
 
@@ -518,24 +500,6 @@ The `tokenOwner` can mint tokens. If a fixed supply is needed, the `tokenOwner` 
 | tokenId | uint256 | The token to be minted. |
 | to | address | The account to transfer the minted tokens to. |
 | amount | uint256 | The amount of tokens to mint. |
-
-### mintBatch
-
-```solidity
-function mintBatch(address to, uint256[] ids, uint256[] amounts) external nonpayable
-```
-
-The `tokenOwner` can mint tokens. If a fixed supply is needed, the `tokenOwner` should mint the totalSupply and renounce ownership.
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| to | address | The account to transfer the minted tokens to. |
-| ids | uint256[] | The tokens to be minted. |
-| amounts | uint256[] | The amounts of tokens to mint. |
 
 ### name
 
@@ -751,7 +715,7 @@ function safeTransferFrom(address from, address to, uint256 id, uint256 value, b
 function setApprovalForAll(address operator, bool approved) external nonpayable
 ```
 
-Sets/Unsets an approval for all operations for msg.sender against the operator.
+
 
 
 
@@ -759,8 +723,8 @@ Sets/Unsets an approval for all operations for msg.sender against the operator.
 
 | Name | Type | Description |
 |---|---|---|
-| operator | address | The address which can act on behalf of msg.sender |
-| approved | bool | The approved or denied status. |
+| operator | address | undefined |
+| approved | bool | undefined |
 
 ### supportsInterface
 
@@ -983,7 +947,7 @@ function uri(uint256 assetId) external view returns (string)
 function uriBuilder() external view returns (contract YieldBoxURIBuilder)
 ```
 
-the uri builder contract
+
 
 
 
@@ -1027,7 +991,7 @@ Withdraws an amount of `token` from a user account.
 function wrappedNative() external view returns (contract IWrappedNative)
 ```
 
-the wrapped native contract
+
 
 
 
@@ -1079,26 +1043,6 @@ event AssetRegistered(enum TokenType indexed tokenType, address indexed contract
 | strategy  | contract IStrategy | undefined |
 | tokenId `indexed` | uint256 | undefined |
 | assetId  | uint256 | undefined |
-
-### Deposit
-
-```solidity
-event Deposit(address indexed from, address indexed to, uint256 assetId, uint256 amount, uint256 share)
-```
-
-event emitted when an asset was deposited
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| from `indexed` | address | undefined |
-| to `indexed` | address | undefined |
-| assetId  | uint256 | undefined |
-| amount  | uint256 | undefined |
-| share  | uint256 | undefined |
 
 ### LogDeploy
 
@@ -1212,26 +1156,6 @@ event URI(string _value, uint256 indexed _id)
 |---|---|---|
 | _value  | string | undefined |
 | _id `indexed` | uint256 | undefined |
-
-### Withdraw
-
-```solidity
-event Withdraw(address indexed from, address indexed to, uint256 assetId, uint256 amount, uint256 share)
-```
-
-event emitted when an asset was withdrawn
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| from `indexed` | address | undefined |
-| to `indexed` | address | undefined |
-| assetId  | uint256 | undefined |
-| amount  | uint256 | undefined |
-| share  | uint256 | undefined |
 
 
 

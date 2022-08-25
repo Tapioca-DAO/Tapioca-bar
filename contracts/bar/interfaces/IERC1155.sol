@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.6.12;
 
-// solhint-disable max-line-length
-
 /* is ERC165 */
 interface IERC1155 {
     /**
