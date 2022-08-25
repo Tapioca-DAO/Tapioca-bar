@@ -77,6 +77,10 @@ const config: HardhatUserConfig & { dodoc?: any } = {
             rinkeby: process.env.RINKEBY_KEY ?? '',
         },
     },
+    typechain: {
+        outDir: 'typechain',
+        target: 'ethers-v5',
+    },
     // gasReporter: {
     //     currency: 'USD',
     //     token: 'BOBA',

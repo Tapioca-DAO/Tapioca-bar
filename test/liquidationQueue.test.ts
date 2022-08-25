@@ -1,6 +1,6 @@
 import hh, { ethers } from 'hardhat';
 import { expect } from 'chai';
-import { register } from './test.utils';
+import { register, time_travel } from './test.utils';
 
 describe('LiquidationQueue test', () => {
     it('should throw if premium too high or amount too low', async () => {
@@ -74,8 +74,7 @@ describe('LiquidationQueue test', () => {
         ).to.be.revertedWith('LQ: too soon');
 
         // Wait 10min
-        await hh.network.provider.send('evm_increaseTime', [10_000]);
-        await hh.network.provider.send('evm_mine');
+        await time_travel(10_000);
 
         // Activate bid
         await expect(
@@ -175,8 +174,7 @@ describe('LiquidationQueue test', () => {
             POOL,
             LQ_META.minBidAmount,
         );
-        await hh.network.provider.send('evm_increaseTime', [10_000]);
-        await hh.network.provider.send('evm_mine');
+        await time_travel(10_000);
         await liquidationQueue.activateBid(deployer.address, POOL);
 
         const bidIndexLen = await liquidationQueue.userBidIndexLength(
@@ -248,8 +246,7 @@ describe('LiquidationQueue test', () => {
             POOL,
             LQ_META.minBidAmount.mul(100),
         );
-        await hh.network.provider.send('evm_increaseTime', [10_000]);
-        await hh.network.provider.send('evm_mine');
+        await time_travel(10_000);
         await liquidationQueue.activateBid(deployer.address, POOL);
 
         // Mint some weth to deposit as asset with EOA1
