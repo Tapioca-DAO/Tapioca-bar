@@ -127,15 +127,15 @@ contract BeachBar is BoringOwnable {
     // *** PUBLIC FUNCTIONS *** //
     // ************************ //
 
-    // TODO: Add parameter to choose to convert fees to TAP or get it as is.
     /// @notice Loop through the master contracts and call `depositFeesToYieldBox()` to each one of their clones.
     /// @dev `swappers_` can have one element that'll be used for all clones. Or one swapper per MasterContract.
+    /// @dev Fees are withdrawn in TAP and sent to the FeeDistributor contract
     /// @param swappers_ One or more swappers to convert the asset to TAP.
     function withdrawAllProtocolFees(MultiSwapper[] calldata swappers_) public {
         require(address(swappers_[0]) != address(0), 'BeachBar: zero address');
 
-        uint256 masterContractLength = masterContracts.length;
-        bool singleSwapper = swappers_.length != masterContractLength;
+        uint256 _masterContractLength = masterContracts.length;
+        bool singleSwapper = swappers_.length != _masterContractLength;
 
         address[] memory markets = tapiocaMarkets();
         uint256 length = markets.length;

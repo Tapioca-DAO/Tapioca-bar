@@ -8,7 +8,7 @@ import 'hardhat-contract-sizer';
 
 dotenv.config();
 
-const config: HardhatUserConfig = {
+const config: HardhatUserConfig & { dodoc?: any } = {
     solidity: {
         compilers: [
             {
@@ -88,6 +88,14 @@ const config: HardhatUserConfig = {
     // },
     mocha: {
         timeout: 4000000,
+    },
+    dodoc: {
+        runOnCompile: true,
+        freshOutput: true,
+    },
+    typechain: {
+        outDir: 'typechain',
+        target: 'ethers-v5',
     },
 };
 

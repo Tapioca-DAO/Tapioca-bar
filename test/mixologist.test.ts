@@ -1,6 +1,6 @@
 import { ethers } from 'hardhat';
 import { expect } from 'chai';
-import { register , time_travel} from './test.utils';
+import { register, time_travel } from './test.utils';
 
 describe('Mixologist test', () => {
     it('Should deposit to yieldBox, add asset to mixologist, remove asset and withdraw', async () => {
