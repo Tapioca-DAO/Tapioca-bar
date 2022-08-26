@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
-
+import 'hardhat/console.sol'; //TODO: remove
 import '@boringcrypto/boring-solidity/contracts/ERC20.sol';
 import '../mixologist/Mixologist.sol';
 import './ILiquidationQueue.sol';
-
 enum MODE {
     ADD,
     SUB
@@ -239,6 +238,7 @@ contract LiquidationQueue {
         OrderBookPoolInfo memory poolInfo = orderBookInfos[pool];
         for (uint256 i = 0; i < bidIndexesLen; ) {
             if (bidIndexes[i] >= poolInfo.nextBidPull) {
+                bidIndexesLen = bidIndexes.length;
                 bidIndexes[i] = bidIndexes[bidIndexesLen - 1];
                 bidIndexes.pop();
             }
@@ -299,10 +299,12 @@ contract LiquidationQueue {
         external
         returns (uint256 amountRemoved)
     {
-        Bidder memory bidder = bidPools[pool][msg.sender];
-        amountRemoved = bidder.amount;
-
+        amountRemoved = bidPools[pool][msg.sender].amount;
         delete bidPools[pool][msg.sender];
+        require(
+            amountRemoved >= liquidationQueueMeta.minBidAmount,
+            'LQ: bid does not exist'
+        ); //save gas
 
         // Transfer assets
         uint256 assetId = lqAssetId;
@@ -313,7 +315,7 @@ contract LiquidationQueue {
             yieldBox.toShare(assetId, amountRemoved, false)
         );
 
-        emit RemoveBid(msg.sender, user, pool, bidder.amount);
+        emit RemoveBid(msg.sender, user, pool, amountRemoved);
     }
 
     /// @notice Remove an activated bid from a given pool.
@@ -333,6 +335,9 @@ contract LiquidationQueue {
         uint256 bidIndexesLen = bidIndexes.length;
         OrderBookPoolInfo memory poolInfo = orderBookInfos[pool];
 
+        uint256 orderBookIndex = bidIndexes[bidPosition];
+        amountRemoved = orderBookEntries[pool][orderBookIndex].bidInfo.amount;
+
         // Clean expired bids.
         for (uint256 i = 0; i < bidIndexesLen; ) {
             if (bidIndexes[i] > poolInfo.nextBidPull) {
@@ -345,18 +350,22 @@ contract LiquidationQueue {
             }
         }
 
-        // Remove bid from the order book by replacing it with the last activated bid.
-        uint256 orderBookIndex = bidIndexes[bidPosition];
-        amountRemoved = orderBookEntries[pool][orderBookIndex].bidInfo.amount;
-        orderBookEntries[pool][orderBookIndex] = orderBookEntries[pool][
-            poolInfo.nextBidPush - 1
-        ];
+        // There might be a case when all bids are expired
+        if (bidIndexes.length > 0) {
+            // Remove bid from the order book by replacing it with the last activated bid.
+            orderBookIndex = bidIndexes[bidPosition];
+            amountRemoved = orderBookEntries[pool][orderBookIndex]
+                .bidInfo
+                .amount;
+            orderBookEntries[pool][orderBookIndex] = orderBookEntries[pool][
+                poolInfo.nextBidPush - 1
+            ];
 
-        // Remove userBidIndex
-        bidIndexesLen = bidIndexes.length;
-        bidIndexes[bidPosition] = bidIndexes[bidIndexesLen - 1];
-        bidIndexes.pop();
-
+            // Remove latest userBidIndex
+            bidIndexesLen = bidIndexes.length;
+            bidIndexes[bidPosition] = bidIndexes[bidIndexesLen - 1];
+            bidIndexes.pop();
+        }
         // Transfer assets
         uint256 assetId = lqAssetId;
         yieldBox.transfer(
