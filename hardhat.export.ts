@@ -93,10 +93,6 @@ const config: HardhatUserConfig & { dodoc?: any } = {
         runOnCompile: true,
         freshOutput: true,
     },
-    typechain: {
-        outDir: 'typechain',
-        target: 'ethers-v5',
-    },
 };
 
 export default config;

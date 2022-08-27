@@ -2,13 +2,18 @@
     "name": "tapioca-bar",
     "license": "MIT",
     "scripts": {
-        "deploy": "npx hardhat deploy",
-        "deploy:mainnet": "npx hardhat deploy --network mainnet",
-        "deploy:testnet": "npx hardhat run scripts/exportStagingAddresses.ts --network rinkeby",
         "compile": "NODE_ENV=compile hardhat compile --quiet && yarn solhint",
         "solhint": "solhint contracts/**/*.sol --fix",
+        "clean": "rm -rf ./cache && rm -rf ./artifacts && rm -rf ./.openzeppelin",
+        "coverage": "yarn clean && NODE_ENV=compile hardhat coverage",
+        "contracts_size": "yarn compile && NODE_ENV=hardhat hardhat size-contracts",
+        "typechain": "npx hardhat typechain",
         "test": "npx hardhat test",
-        "sdk-gen": "npx hardhat exportSDK"
+        "sdk-gen": "npx hardhat exportSDK",
+        "@comment deploy": "Deploy scripts",
+        "deploy": "npx hardhat deploy",
+        "deploy:mainnet": "npx hardhat deploy --network mainnet",
+        "deploy:testnet": "npx hardhat run scripts/exportStagingAddresses.ts --network rinkeby"
     },
     "devDependencies": {
         "@boringcrypto/boring-solidity": "boringcrypto/BoringSolidity#21beaec5c9383c6e9312e4464ad5755fda69e09b",

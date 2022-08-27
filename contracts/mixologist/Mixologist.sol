@@ -366,7 +366,6 @@ contract Mixologist is ERC20, BoringOwnable {
         uint256 borrowPart = userBorrowPart[user];
         if (borrowPart == 0) return 0;
         uint256 collateralShare = userCollateralShare[user];
-        if (collateralShare == 0) return 0;
 
         Rebase memory _totalBorrow = totalBorrow;
 
