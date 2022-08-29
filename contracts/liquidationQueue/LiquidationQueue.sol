@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
-import 'hardhat/console.sol'; //TODO: remove
 import '@boringcrypto/boring-solidity/contracts/ERC20.sol';
 import '../mixologist/Mixologist.sol';
 import './ILiquidationQueue.sol';
+
 enum MODE {
     ADD,
     SUB
@@ -144,6 +144,7 @@ contract LiquidationQueue {
     );
 
     event Redeem(address indexed redeemer, address indexed to, uint256 amount);
+    event UsdoSwapPathUpdated();
 
     // ***************** //
     // *** MODIFIERS *** //
@@ -200,6 +201,48 @@ contract LiquidationQueue {
     // *** TXS *** //
     // *********** //
 
+    /// @notice Add a bid to a bid pool using USD0.
+    /// @dev Works the same way as `bid` but performs a swap from USD0 to liquidated asset
+    /// @param user The bidder.
+    /// @param pool To which pool the bid should go.
+    /// @param usdoAmount The USDO amount
+    /// @param swapper  Contract address of the `MultiSwapper` implementation. See `setSwapper`.
+    function bidWithUsdo(
+        address user,
+        uint256 pool,
+        uint256 usdoAmount,
+        MultiSwapper swapper, //TODO: move it as a property
+        uint256 liquidatedMinAmount
+    ) external Active {
+        require(pool <= MAX_BID_POOLS, 'LQ: premium too high');
+        require(
+            address(beachBar.usdoToken()) != address(0),
+            'LQ: USD0 not set'
+        );
+
+        uint256 usdoAssetId = beachBar.usdoAssetId();
+
+        //TODO: check if we want to do it directly without the yieldbox deposit
+        uint256 usdoShare = yieldBox.toShare(usdoAssetId, usdoAmount, false);
+        yieldBox.transfer(msg.sender, address(swapper), usdoAssetId, usdoShare);
+
+        //SWAP
+        (uint256 liquidatedAssetAmount, ) = swapper.swap(
+            usdoAssetId,
+            liquidatedAssetId,
+            liquidatedMinAmount,
+            address(this),
+            mixologist.getUsdoSwapPath(),
+            usdoShare
+        );
+        require(
+            liquidatedAssetAmount >= liquidationQueueMeta.minBidAmount,
+            'LQ: bid too low'
+        );
+
+        _bid(user, pool, liquidatedAssetAmount);
+    }
+
     /// @notice Add a bid to a bid pool.
     /// @dev Create an entry in `bidPools`.
     ///      Clean the userBidIndex here instead of the `executeBids()` function to save on gas.
@@ -224,28 +267,7 @@ contract LiquidationQueue {
                 yieldBox.toShare(assetId, amount, false)
             );
         }
-
-        Bidder memory bidder;
-        bidder.amount = amount;
-        bidder.timestamp = block.timestamp;
-
-        bidPools[pool][user] = bidder;
-        emit Bid(msg.sender, user, pool, amount, block.timestamp);
-
-        // Clean the userBidIndex.
-        uint256[] storage bidIndexes = userBidIndexes[user][pool];
-        uint256 bidIndexesLen = bidIndexes.length;
-        OrderBookPoolInfo memory poolInfo = orderBookInfos[pool];
-        for (uint256 i = 0; i < bidIndexesLen; ) {
-            if (bidIndexes[i] >= poolInfo.nextBidPull) {
-                bidIndexesLen = bidIndexes.length;
-                bidIndexes[i] = bidIndexes[bidIndexesLen - 1];
-                bidIndexes.pop();
-            }
-            unchecked {
-                ++i;
-            }
-        }
+        _bid(user, pool, amount);
     }
 
     /// @notice Activate a bid by putting it in the order book.
@@ -588,6 +610,33 @@ contract LiquidationQueue {
     // **************** //
     // *** INTERNAL *** //
     // **************** //
+    function _bid(
+        address user,
+        uint256 pool,
+        uint256 amount
+    ) internal {
+        Bidder memory bidder;
+        bidder.amount = amount;
+        bidder.timestamp = block.timestamp;
+
+        bidPools[pool][user] = bidder;
+        emit Bid(msg.sender, user, pool, amount, block.timestamp);
+
+        // Clean the userBidIndex.
+        uint256[] storage bidIndexes = userBidIndexes[user][pool];
+        uint256 bidIndexesLen = bidIndexes.length;
+        OrderBookPoolInfo memory poolInfo = orderBookInfos[pool];
+        for (uint256 i = 0; i < bidIndexesLen; ) {
+            if (bidIndexes[i] >= poolInfo.nextBidPull) {
+                bidIndexesLen = bidIndexes.length;
+                bidIndexes[i] = bidIndexes[bidIndexesLen - 1];
+                bidIndexes.pop();
+            }
+            unchecked {
+                ++i;
+            }
+        }
+    }
 
     /// @notice Create an asset inside of BeachBar that will hold the funds.
     function _registerAsset() internal returns (uint256) {

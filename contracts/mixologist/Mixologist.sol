@@ -25,6 +25,10 @@ contract Mixologist is ERC20, BoringOwnable {
     using RebaseLibrary for Rebase;
     using BoringERC20 for IERC20;
 
+    // ************ //
+    // *** EVENTS *** //
+    // ************ //
+
     event LogExchangeRate(uint256 rate);
     event LogAccrue(
         uint256 accruedAmount,
@@ -75,6 +79,11 @@ contract Mixologist is ERC20, BoringOwnable {
         address indexed receiver
     );
     event LogYieldBoxFeesDeposit(uint256 feeShares, uint256 tapAmount);
+    event UsdoSwapPathUpdated();
+
+    // ************ //
+    // *** VARS *** //
+    // ************ //
 
     // Constructor settings
     BeachBar public beachBar;
@@ -87,6 +96,7 @@ contract Mixologist is ERC20, BoringOwnable {
     bytes oracleData;
     address[] collateralSwapPath; // Collateral -> Asset
     address[] tapSwapPath; // Asset -> Tap
+    address[] public usdoSwapPath; // Asset -> USD0
 
     // Total amounts
     uint256 public totalCollateralShare; // Total collateral supplied
@@ -114,50 +124,6 @@ contract Mixologist is ERC20, BoringOwnable {
     AccrueInfo public accrueInfo;
 
     bool private initialized;
-    modifier onlyOnce() {
-        require(!initialized, 'Mx: initialized');
-        _;
-        initialized = true;
-    }
-
-    // ERC20 'variables'
-    function symbol() external view returns (string memory) {
-        return
-            string(
-                abi.encodePacked(
-                    'tm',
-                    collateral.safeSymbol(),
-                    '/',
-                    asset.safeSymbol(),
-                    '-',
-                    oracle.symbol(oracleData)
-                )
-            );
-    }
-
-    function name() external view returns (string memory) {
-        return
-            string(
-                abi.encodePacked(
-                    'Tapioca Mixologist ',
-                    collateral.safeName(),
-                    '/',
-                    asset.safeName(),
-                    '-',
-                    oracle.name(oracleData)
-                )
-            );
-    }
-
-    function decimals() external view returns (uint8) {
-        return asset.safeDecimals();
-    }
-
-    // totalSupply for ERC20 compatibility
-    // BalanceOf[user] represent a fraction
-    function totalSupply() public view override returns (uint256) {
-        return totalAsset.base;
-    }
 
     // Settings for the Medium Risk Mixologist
     uint256 private constant CLOSED_COLLATERIZATION_RATE = 75000; // 75%
@@ -191,6 +157,10 @@ contract Mixologist is ERC20, BoringOwnable {
     uint256 private constant BORROW_OPENING_FEE_PRECISION = 1e5;
     uint256 private constant FLASHLOAN_FEE = 90; // 0.09%
     uint256 private constant FLASHLOAN_FEE_PRECISION = 1e5;
+
+    // **************** //
+    // *** METHODS *** //
+    // *************** //
 
     /// @notice The init function that acts as a constructor
     function init(bytes calldata data) external onlyOnce {
@@ -238,6 +208,99 @@ contract Mixologist is ERC20, BoringOwnable {
         accrueInfo.interestPerSecond = uint64(STARTING_INTEREST_PER_SECOND); // 1% APR, with 1e18 being 100%
 
         updateExchangeRate();
+    }
+
+    // ERC20 'variables'
+    function symbol() external view returns (string memory) {
+        return
+            string(
+                abi.encodePacked(
+                    'tm',
+                    collateral.safeSymbol(),
+                    '/',
+                    asset.safeSymbol(),
+                    '-',
+                    oracle.symbol(oracleData)
+                )
+            );
+    }
+
+    function name() external view returns (string memory) {
+        return
+            string(
+                abi.encodePacked(
+                    'Tapioca Mixologist ',
+                    collateral.safeName(),
+                    '/',
+                    asset.safeName(),
+                    '-',
+                    oracle.name(oracleData)
+                )
+            );
+    }
+
+    function decimals() external view returns (uint8) {
+        return asset.safeDecimals();
+    }
+
+    // totalSupply for ERC20 compatibility
+    // BalanceOf[user] represent a fraction
+    function totalSupply() public view override returns (uint256) {
+        return totalAsset.base;
+    }
+
+    /// @notice Return the amount of collateral for a `user` to be solvent. Returns 0 if user already solvent.
+    /// @dev We use a `CLOSED_COLLATERIZATION_RATE` that is a safety buffer when making the user solvent again,
+    ///      To prevent from being liquidated. This function is valid only if user is not solvent by `_isSolvent()`.
+    /// @param user The user to check solvency.
+    /// @param _exchangeRate The exchange rate asset/collateral.
+    /// @return The amount of collateral to be solvent.
+    function computeAssetAmountToSolvency(address user, uint256 _exchangeRate)
+        public
+        view
+        returns (uint256)
+    {
+        // accrue must have already been called!
+        uint256 borrowPart = userBorrowPart[user];
+        if (borrowPart == 0) return 0;
+        uint256 collateralShare = userCollateralShare[user];
+
+        Rebase memory _totalBorrow = totalBorrow;
+
+        uint256 collateralAmountInAsset = yieldBox.toAmount(
+            collateralId,
+            (collateralShare *
+                (EXCHANGE_RATE_PRECISION / COLLATERIZATION_RATE_PRECISION) *
+                LQ_COLLATERIZATION_RATE),
+            false
+        ) / _exchangeRate;
+        // Obviously it's not `borrowPart` anymore but `borrowAmount`
+        borrowPart = (borrowPart * _totalBorrow.elastic) / _totalBorrow.base;
+
+        return
+            borrowPart >= collateralAmountInAsset
+                ? borrowPart - collateralAmountInAsset
+                : 0;
+    }
+
+    function getUsdoSwapPath() public view returns (address[] memory) {
+        return usdoSwapPath;
+    }
+
+    /// @notice Gets the exchange rate. I.e how much collateral to buy 1e18 asset.
+    /// This function is supposed to be invoked if needed because Oracle queries can be expensive.
+    /// @return updated True if `exchangeRate` was updated.
+    /// @return rate The new exchange rate.
+    function updateExchangeRate() public returns (bool updated, uint256 rate) {
+        (updated, rate) = oracle.get(oracleData);
+
+        if (updated) {
+            exchangeRate = rate;
+            emit LogExchangeRate(rate);
+        } else {
+            // Return the old rate if fetching wasn't successful
+            rate = exchangeRate;
+        }
     }
 
     /// @notice Accrues the interest on the borrowed tokens and handles the accumulation of fees.
@@ -323,113 +386,6 @@ contract Mixologist is ERC20, BoringOwnable {
         accrueInfo = _accrueInfo;
     }
 
-    /// @notice Concrete implementation of `isSolvent`. Includes a parameter to allow caching `exchangeRate`.
-    /// @param _exchangeRate The exchange rate. Used to cache the `exchangeRate` between calls.
-    function _isSolvent(address user, uint256 _exchangeRate)
-        internal
-        view
-        returns (bool)
-    {
-        // accrue must have already been called!
-        uint256 borrowPart = userBorrowPart[user];
-        if (borrowPart == 0) return true;
-        uint256 collateralShare = userCollateralShare[user];
-        if (collateralShare == 0) return false;
-
-        Rebase memory _totalBorrow = totalBorrow;
-
-        return
-            yieldBox.toAmount(
-                collateralId,
-                collateralShare *
-                    (EXCHANGE_RATE_PRECISION / COLLATERIZATION_RATE_PRECISION) *
-                    CLOSED_COLLATERIZATION_RATE,
-                false
-            ) >=
-            // Moved exchangeRate here instead of dividing the other side to preserve more precision
-            (borrowPart * _totalBorrow.elastic * _exchangeRate) /
-                _totalBorrow.base;
-    }
-
-    /// @notice Return the amount of collateral for a `user` to be solvent. Returns 0 if user already solvent.
-    /// @dev We use a `CLOSED_COLLATERIZATION_RATE` that is a safety buffer when making the user solvent again,
-    ///      To prevent from being liquidated. This function is valid only if user is not solvent by `_isSolvent()`.
-    /// @param user The user to check solvency.
-    /// @param _exchangeRate The exchange rate asset/collateral.
-    /// @return The amount of collateral to be solvent.
-    function computeAssetAmountToSolvency(address user, uint256 _exchangeRate)
-        public
-        view
-        returns (uint256)
-    {
-        // accrue must have already been called!
-        uint256 borrowPart = userBorrowPart[user];
-        if (borrowPart == 0) return 0;
-        uint256 collateralShare = userCollateralShare[user];
-
-        Rebase memory _totalBorrow = totalBorrow;
-
-        uint256 collateralAmountInAsset = yieldBox.toAmount(
-            collateralId,
-            (collateralShare *
-                (EXCHANGE_RATE_PRECISION / COLLATERIZATION_RATE_PRECISION) *
-                LQ_COLLATERIZATION_RATE),
-            false
-        ) / _exchangeRate;
-        // Obviously it's not `borrowPart` anymore but `borrowAmount`
-        borrowPart = (borrowPart * _totalBorrow.elastic) / _totalBorrow.base;
-
-        return
-            borrowPart >= collateralAmountInAsset
-                ? borrowPart - collateralAmountInAsset
-                : 0;
-    }
-
-    /// @dev Checks if the user is solvent in the closed liquidation case at the end of the function body.
-    modifier solvent() {
-        _;
-        require(_isSolvent(msg.sender, exchangeRate), 'Mx: user insolvent');
-    }
-
-    /// @notice Gets the exchange rate. I.e how much collateral to buy 1e18 asset.
-    /// This function is supposed to be invoked if needed because Oracle queries can be expensive.
-    /// @return updated True if `exchangeRate` was updated.
-    /// @return rate The new exchange rate.
-    function updateExchangeRate() public returns (bool updated, uint256 rate) {
-        (updated, rate) = oracle.get(oracleData);
-
-        if (updated) {
-            exchangeRate = rate;
-            emit LogExchangeRate(rate);
-        } else {
-            // Return the old rate if fetching wasn't successful
-            rate = exchangeRate;
-        }
-    }
-
-    /// @dev Helper function to move tokens.
-    /// @param _assetId The ERC-20 token asset ID in yieldBox.
-    /// @param share The amount in shares to add.
-    /// @param total Grand total amount to deduct from this contract's balance. Only applicable if `skim` is True.
-    /// Only used for accounting checks.
-    /// @param skim If True, only does a balance check on this contract.
-    /// False if tokens from msg.sender in `yieldBox` should be transferred.
-    function _addTokens(
-        uint256 _assetId,
-        uint256 share,
-        uint256 total,
-        bool skim
-    ) internal {
-        if (skim) {
-            require(
-                share <= yieldBox.balanceOf(address(this), _assetId) - total,
-                'Mx: Skim too much'
-            );
-        } else {
-            yieldBox.transfer(msg.sender, address(this), _assetId, share);
-        }
-    }
-
     /// @notice Adds `collateral` from msg.sender to the account `to`.
     /// @param to The receiver of the tokens.
     /// @param skim True if the amount should be skimmed from the deposit balance of msg.sender.
@@ -447,14 +403,6 @@ contract Mixologist is ERC20, BoringOwnable {
         emit LogAddCollateral(skim ? address(yieldBox) : msg.sender, to, share);
     }
 
-    /// @dev Concrete implementation of `removeCollateral`.
-    function _removeCollateral(address to, uint256 share) internal {
-        userCollateralShare[msg.sender] -= share;
-        totalCollateralShare -= share;
-        emit LogRemoveCollateral(msg.sender, to, share);
-        yieldBox.transfer(address(this), to, collateralId, share);
-    }
-
     /// @notice Removes `share` amount of collateral and transfers it to `to`.
     /// @param to The receiver of the shares.
     /// @param share Amount of shares to remove.
@@ -462,34 +410,6 @@ contract Mixologist is ERC20, BoringOwnable {
         // accrue must be called because we check solvency
         accrue();
         _removeCollateral(to, share);
-    }
-
-    /// @dev Concrete implementation of `addAsset`.
-    function _addAsset(
-        address to,
-        bool skim,
-        uint256 share
-    ) internal returns (uint256 fraction) {
-        Rebase memory _totalAsset = totalAsset;
-        uint256 totalAssetShare = _totalAsset.elastic;
-        uint256 allShare = _totalAsset.elastic +
-            yieldBox.toShare(assetId, totalBorrow.elastic, true);
-        fraction = allShare == 0
-            ? share
-            : (share * _totalAsset.base) / allShare;
-        if (_totalAsset.base + uint128(fraction) < 1000) {
-            return 0;
-        }
-        totalAsset = _totalAsset.add(share, fraction);
-        balanceOf[to] += fraction;
-        emit Transfer(address(0), to, fraction);
-        _addTokens(assetId, share, totalAssetShare, skim);
-        emit LogAddAsset(
-            skim ? address(yieldBox) : msg.sender,
-            to,
-            share,
-            fraction
-        );
     }
 
     /// @notice Adds assets to the lending pair.
@@ -507,27 +427,6 @@ contract Mixologist is ERC20, BoringOwnable {
         fraction = _addAsset(to, skim, share);
     }
 
-    /// @dev Concrete implementation of `removeAsset`.
-    /// @param from The account to remove from. Should always be msg.sender except for `depositFeesToyieldBox()`.
-    function _removeAsset(
-        address from,
-        address to,
-        uint256 fraction
-    ) internal returns (uint256 share) {
-        Rebase memory _totalAsset = totalAsset;
-        uint256 allShare = _totalAsset.elastic +
-            yieldBox.toShare(assetId, totalBorrow.elastic, true);
-        share = (fraction * allShare) / _totalAsset.base;
-        balanceOf[from] -= fraction;
-        emit Transfer(msg.sender, address(0), fraction);
-        _totalAsset.elastic -= uint128(share);
-        _totalAsset.base -= uint128(fraction);
-        require(_totalAsset.base >= 1000, 'Mx: below minimum');
-        totalAsset = _totalAsset;
-        emit LogRemoveAsset(msg.sender, to, share, fraction);
-        yieldBox.transfer(address(this), to, assetId, share);
-    }
-
     /// @notice Removes an asset from msg.sender and transfers it to `to`.
     /// @param to The user that receives the removed assets.
     /// @param fraction The amount/fraction of assets held to remove.
@@ -540,26 +439,6 @@ contract Mixologist is ERC20, BoringOwnable {
         share = _removeAsset(msg.sender, to, fraction);
     }
 
-    /// @dev Concrete implementation of `borrow`.
-    function _borrow(address to, uint256 amount)
-        internal
-        returns (uint256 part, uint256 share)
-    {
-        uint256 feeAmount = (amount * BORROW_OPENING_FEE) /
-            BORROW_OPENING_FEE_PRECISION; // A flat % fee is charged for any borrow
-
-        (totalBorrow, part) = totalBorrow.add(amount + feeAmount, true);
-        userBorrowPart[msg.sender] += part;
-        emit LogBorrow(msg.sender, to, amount, feeAmount, part);
-
-        share = yieldBox.toShare(assetId, amount, false);
-        Rebase memory _totalAsset = totalAsset;
-        require(_totalAsset.base >= 1000, 'Mx: below minimum');
-        _totalAsset.elastic -= uint128(share);
-        totalAsset = _totalAsset;
-        yieldBox.transfer(address(this), to, assetId, share);
-    }
-
     /// @notice Sender borrows `amount` and transfers it to `to`.
     /// @return part Total part of the debt held by borrowers.
     /// @return share Total amount in shares borrowed.
@@ -570,22 +449,6 @@ contract Mixologist is ERC20, BoringOwnable {
     {
         accrue();
         (part, share) = _borrow(to, amount);
-    }
-
-    /// @dev Concrete implementation of `repay`.
-    function _repay(
-        address to,
-        bool skim,
-        uint256 part
-    ) internal returns (uint256 amount) {
-        (totalBorrow, amount) = totalBorrow.sub(part, true);
-        userBorrowPart[to] -= part;
-
-        uint256 share = yieldBox.toShare(assetId, amount, true);
-        uint128 totalShare = totalAsset.elastic;
-        _addTokens(assetId, share, uint256(totalShare), skim);
-        totalAsset.elastic = totalShare + uint128(share);
-        emit LogRepay(skim ? address(yieldBox) : msg.sender, to, amount, part);
     }
 
     /// @notice Repays a loan.
@@ -627,6 +490,152 @@ contract Mixologist is ERC20, BoringOwnable {
             }
         }
         closedLiquidation(users, maxBorrowParts, swapper, _exchangeRate);
+    }
+
+    /// @notice Flashloan ability.
+    /// @dev The contract expect the `borrower` to have at the end of `onFlashLoan` `amount` + the incurred fees.
+    /// The borrower is expected to `approve()` yieldBox for this number at the end of its `onFlashLoan()`.
+    /// @param borrower The address of the contract that implements and conforms to `IFlashBorrower` and handles the flashloan.
+    /// @param receiver Address of the token receiver.
+    /// @param amount of the tokens to receive.
+    /// @param data The calldata to pass to the `borrower` contract.
+    function flashLoan(
+        IFlashBorrower borrower,
+        address receiver,
+        uint256 amount,
+        bytes memory data
+    ) public {
+        Rebase memory _totalAsset = totalAsset;
+        uint256 feeAmount = (amount * FLASHLOAN_FEE) / FLASHLOAN_FEE_PRECISION;
+        uint256 feeFraction = (yieldBox.toShare(assetId, feeAmount, false) *
+            _totalAsset.base) / _totalAsset.elastic;
+
+        yieldBox.withdraw(assetId, address(this), receiver, amount, 0);
+
+        borrower.onFlashLoan(msg.sender, asset, amount, feeAmount, data);
+
+        require(
+            yieldBox.amountOf(address(this), assetId) >= amount + feeAmount,
+            'Mx: flashloan insufficient funds'
+        );
+
+        totalAsset.base = _totalAsset.base + uint128(feeFraction);
+        accrueInfo.feesEarnedFraction += uint128(feeFraction);
+
+        emit LogFlashLoan(address(borrower), amount, feeAmount, receiver);
+    }
+
+    /// @notice Withdraw the fees accumulated in `accrueInfo.feesEarnedFraction` to the balance of `feeTo`.
+    function withdrawFeesEarned() public {
+        accrue();
+        address _feeTo = beachBar.feeTo();
+        uint256 _feesEarnedFraction = accrueInfo.feesEarnedFraction;
+        balanceOf[_feeTo] += _feesEarnedFraction;
+        emit Transfer(address(0), _feeTo, _feesEarnedFraction);
+        accrueInfo.feesEarnedFraction = 0;
+        emit LogWithdrawFees(_feeTo, _feesEarnedFraction);
+    }
+
+    /// @notice Withdraw the balance of `feeTo`, swap asset into TAP and deposit it to yieldBox of `feeTo`
+    function depositFeesToYieldBox(MultiSwapper swapper) public {
+        if (accrueInfo.feesEarnedFraction > 0) {
+            withdrawFeesEarned();
+        }
+        require(beachBar.swappers(swapper), 'Mx: Invalid swapper');
+        address _feeTo = beachBar.feeTo();
+        address _feeVeTap = beachBar.feeVeTap();
+
+        uint256 feeShares = _removeAsset(
+            _feeTo,
+            address(this),
+            balanceOf[_feeTo]
+        );
+        
+        yieldBox.transfer(address(this), address(swapper), assetId, feeShares);
+        (uint256 tapAmount, ) = swapper.swap(
+            assetId,
+            beachBar.tapAssetId(),
+            0,
+            _feeVeTap,
+            tapSwapPath,
+            feeShares
+        );
+
+        emit LogYieldBoxFeesDeposit(feeShares, tapAmount);
+    }
+
+    // Owner methods
+
+    /// @notice Used to set the swap path of closed liquidations
+    /// @param _collateralSwapPath The Uniswap path .
+    function setCollateralSwapPath(address[] calldata _collateralSwapPath)
+        external
+        onlyOwner
+    {
+        collateralSwapPath = _collateralSwapPath;
+    }
+
+    /// @notice Used to set the swap path of Asset -> TAP
+    /// @param _tapSwapPath The Uniswap path .
+    function setTapSwapPath(address[] calldata _tapSwapPath)
+        external
+        onlyOwner
+    {
+        tapSwapPath = _tapSwapPath;
+    }
+
+    /// @notice Used to set the swap path of USD0 -> Asset
+    /// @param _usdoSwapPath The Uniswap path .
+    function setUsdoSwapPath(address[] calldata _usdoSwapPath)
+        external
+        onlyOwner
+    {
+        usdoSwapPath = _usdoSwapPath;
+        emit UsdoSwapPathUpdated();
+    }
+
+    /// @notice Set a new LiquidationQueue.
+    /// @param _liquidationQueue The address of the new LiquidationQueue contract.
+    /// It should be a new contract as `init()` can be called only one time.
+    /// @param _liquidationQueueMeta The liquidation queue info.
+    function setLiquidationQueue(
+        ILiquidationQueue _liquidationQueue,
+        LiquidationQueueMeta calldata _liquidationQueueMeta
+    ) external onlyOwner {
+        _liquidationQueue.init(_liquidationQueueMeta);
+        liquidationQueue = _liquidationQueue;
+    }
+
+    // ***************** //
+    // *** INTERNAL *** //
+    // **************** //
+
+    /// @notice Concrete implementation of `isSolvent`. Includes a parameter to allow caching `exchangeRate`.
+    /// @param _exchangeRate The exchange rate. Used to cache the `exchangeRate` between calls.
+    function _isSolvent(address user, uint256 _exchangeRate)
+        private
+        view
+        returns (bool)
+    {
+        // accrue must have already been called!
+        uint256 borrowPart = userBorrowPart[user];
+        if (borrowPart == 0) return true;
+        uint256 collateralShare = userCollateralShare[user];
+        if (collateralShare == 0) return false;
+
+        Rebase memory _totalBorrow = totalBorrow;
+
+        return
+            yieldBox.toAmount(
+                collateralId,
+                collateralShare *
+                    (EXCHANGE_RATE_PRECISION / COLLATERIZATION_RATE_PRECISION) *
+                    CLOSED_COLLATERIZATION_RATE,
+                false
+            ) >=
+            // Moved exchangeRate here instead of dividing the other side to preserve more precision
+            (borrowPart * _totalBorrow.elastic * _exchangeRate) /
+                _totalBorrow.base;
     }
 
     function orderBookLiquidation(
@@ -823,102 +832,134 @@ contract Mixologist is ERC20, BoringOwnable {
         );
     }
 
-    /// @notice Flashloan ability.
-    /// @dev The contract expect the `borrower` to have at the end of `onFlashLoan` `amount` + the incurred fees.
-    /// The borrower is expected to `approve()` yieldBox for this number at the end of its `onFlashLoan()`.
-    /// @param borrower The address of the contract that implements and conforms to `IFlashBorrower` and handles the flashloan.
-    /// @param receiver Address of the token receiver.
-    /// @param amount of the tokens to receive.
-    /// @param data The calldata to pass to the `borrower` contract.
-    function flashLoan(
-        IFlashBorrower borrower,
-        address receiver,
-        uint256 amount,
-        bytes memory data
-    ) public {
-        Rebase memory _totalAsset = totalAsset;
-        uint256 feeAmount = (amount * FLASHLOAN_FEE) / FLASHLOAN_FEE_PRECISION;
-        uint256 feeFraction = (yieldBox.toShare(assetId, feeAmount, false) *
-            _totalAsset.base) / _totalAsset.elastic;
+    /// @dev Concrete implementation of `repay`.
+    function _repay(
+        address to,
+        bool skim,
+        uint256 part
+    ) private returns (uint256 amount) {
+        (totalBorrow, amount) = totalBorrow.sub(part, true);
+        userBorrowPart[to] -= part;
 
-        yieldBox.withdraw(assetId, address(this), receiver, amount, 0);
-
-        borrower.onFlashLoan(msg.sender, asset, amount, feeAmount, data);
-
-        require(
-            yieldBox.amountOf(address(this), assetId) >= amount + feeAmount,
-            'Mx: flashloan insufficient funds'
-        );
-
-        totalAsset.base = _totalAsset.base + uint128(feeFraction);
-        accrueInfo.feesEarnedFraction += uint128(feeFraction);
-
-        emit LogFlashLoan(address(borrower), amount, feeAmount, receiver);
+        uint256 share = yieldBox.toShare(assetId, amount, true);
+        uint128 totalShare = totalAsset.elastic;
+        _addTokens(assetId, share, uint256(totalShare), skim);
+        totalAsset.elastic = totalShare + uint128(share);
+        emit LogRepay(skim ? address(yieldBox) : msg.sender, to, amount, part);
     }
 
-    /// @notice Withdraw the fees accumulated in `accrueInfo.feesEarnedFraction` to the balance of `feeTo`.
-    function withdrawFeesEarned() public {
-        accrue();
-        address _feeTo = beachBar.feeTo();
-        uint256 _feesEarnedFraction = accrueInfo.feesEarnedFraction;
-        balanceOf[_feeTo] += _feesEarnedFraction;
-        emit Transfer(address(0), _feeTo, _feesEarnedFraction);
-        accrueInfo.feesEarnedFraction = 0;
-        emit LogWithdrawFees(_feeTo, _feesEarnedFraction);
-    }
-
-    /// @notice Withdraw the balance of `feeTo`, swap asset into TAP and deposit it to yieldBox of `feeTo`
-    function depositFeesToYieldBox(MultiSwapper swapper) public {
-        if (accrueInfo.feesEarnedFraction > 0) {
-            withdrawFeesEarned();
-        }
-        require(beachBar.swappers(swapper), 'Mx: Invalid swapper');
-        address _feeTo = beachBar.feeTo();
-        address _feeVeTap = beachBar.feeVeTap();
-
-        uint256 feeShares = _removeAsset(
-            _feeTo,
-            address(this),
-            balanceOf[_feeTo]
-        );
-
-        yieldBox.transfer(address(this), address(swapper), assetId, feeShares);
-        (uint256 tapAmount, ) = swapper.swap(
-            assetId,
-            beachBar.tapAssetId(),
-            0,
-            _feeVeTap,
-            tapSwapPath,
-            feeShares
-        );
-
-        emit LogYieldBoxFeesDeposit(feeShares, tapAmount);
-    }
-
-    /// @notice Used to set the swap path of closed liquidations
-    /// @param _collateralSwapPath The Uniswap path .
-    function setCollateralSwapPath(address[] calldata _collateralSwapPath)
-        public
-        onlyOwner
+    /// @dev Concrete implementation of `borrow`.
+    function _borrow(address to, uint256 amount)
+        private
+        returns (uint256 part, uint256 share)
     {
-        collateralSwapPath = _collateralSwapPath;
+        uint256 feeAmount = (amount * BORROW_OPENING_FEE) /
+            BORROW_OPENING_FEE_PRECISION; // A flat % fee is charged for any borrow
+
+        (totalBorrow, part) = totalBorrow.add(amount + feeAmount, true);
+        userBorrowPart[msg.sender] += part;
+        emit LogBorrow(msg.sender, to, amount, feeAmount, part);
+
+        share = yieldBox.toShare(assetId, amount, false);
+        Rebase memory _totalAsset = totalAsset;
+        require(_totalAsset.base >= 1000, 'Mx: below minimum');
+        _totalAsset.elastic -= uint128(share);
+        totalAsset = _totalAsset;
+        yieldBox.transfer(address(this), to, assetId, share);
     }
 
-    /// @notice Used to set the swap path of Asset -> TAP
-    /// @param _tapSwapPath The Uniswap path .
-    function setTapSwapPath(address[] calldata _tapSwapPath) public onlyOwner {
-        tapSwapPath = _tapSwapPath;
+    /// @dev Concrete implementation of `removeCollateral`.
+    function _removeCollateral(address to, uint256 share) private {
+        userCollateralShare[msg.sender] -= share;
+        totalCollateralShare -= share;
+        emit LogRemoveCollateral(msg.sender, to, share);
+        yieldBox.transfer(address(this), to, collateralId, share);
     }
 
-    /// @notice Set a new LiquidationQueue.
-    /// @param _liquidationQueue The address of the new LiquidationQueue contract.
-    /// It should be a new contract as `init()` can be called only one time.
-    /// @param _liquidationQueueMeta The liquidation queue info.
-    function setLiquidationQueue(
-        ILiquidationQueue _liquidationQueue,
-        LiquidationQueueMeta calldata _liquidationQueueMeta
-    ) public onlyOwner {
-        _liquidationQueue.init(_liquidationQueueMeta);
-        liquidationQueue = _liquidationQueue;
+    /// @dev Concrete implementation of `removeAsset`.
+    /// @param from The account to remove from. Should always be msg.sender except for `depositFeesToyieldBox()`.
+    function _removeAsset(
+        address from,
+        address to,
+        uint256 fraction
+    ) private returns (uint256 share) {
+        Rebase memory _totalAsset = totalAsset;
+        uint256 allShare = _totalAsset.elastic +
+            yieldBox.toShare(assetId, totalBorrow.elastic, true);
+        share = (fraction * allShare) / _totalAsset.base;
+        balanceOf[from] -= fraction;
+        emit Transfer(msg.sender, address(0), fraction);
+        _totalAsset.elastic -= uint128(share);
+        _totalAsset.base -= uint128(fraction);
+        require(_totalAsset.base >= 1000, 'Mx: below minimum');
+        totalAsset = _totalAsset;
+        emit LogRemoveAsset(msg.sender, to, share, fraction);
+        yieldBox.transfer(address(this), to, assetId, share);
+    }
+
+    /// @dev Concrete implementation of `addAsset`.
+    function _addAsset(
+        address to,
+        bool skim,
+        uint256 share
+    ) private returns (uint256 fraction) {
+        Rebase memory _totalAsset = totalAsset;
+        uint256 totalAssetShare = _totalAsset.elastic;
+        uint256 allShare = _totalAsset.elastic +
+            yieldBox.toShare(assetId, totalBorrow.elastic, true);
+        fraction = allShare == 0
+            ? share
+            : (share * _totalAsset.base) / allShare;
+        if (_totalAsset.base + uint128(fraction) < 1000) {
+            return 0;
+        }
+        totalAsset = _totalAsset.add(share, fraction);
+        balanceOf[to] += fraction;
+        emit Transfer(address(0), to, fraction);
+        _addTokens(assetId, share, totalAssetShare, skim);
+        emit LogAddAsset(
+            skim ? address(yieldBox) : msg.sender,
+            to,
+            share,
+            fraction
+        );
+    }
+
+    /// @dev Helper function to move tokens.
+    /// @param _assetId The ERC-20 token asset ID in yieldBox.
+    /// @param share The amount in shares to add.
+    /// @param total Grand total amount to deduct from this contract's balance. Only applicable if `skim` is True.
+    /// Only used for accounting checks.
+    /// @param skim If True, only does a balance check on this contract.
+    /// False if tokens from msg.sender in `yieldBox` should be transferred.
+    function _addTokens(
+        uint256 _assetId,
+        uint256 share,
+        uint256 total,
+        bool skim
+    ) private {
+        if (skim) {
+            require(
+                share <= yieldBox.balanceOf(address(this), _assetId) - total,
+                'Mx: Skim too much'
+            );
+        } else {
+            yieldBox.transfer(msg.sender, address(this), _assetId, share);
+        }
+    }
+
+    // ****************** //
+    // *** MODIFIERS *** //
+    // ***************** //
+
+    /// @dev Checks if the user is solvent in the closed liquidation case at the end of the function body.
+    modifier solvent() {
+        _;
+        require(_isSolvent(msg.sender, exchangeRate), 'Mx: user insolvent');
+    }
+    modifier onlyOnce() {
+        require(!initialized, 'Mx: initialized');
+        _;
+        initialized = true;
     }
 }
