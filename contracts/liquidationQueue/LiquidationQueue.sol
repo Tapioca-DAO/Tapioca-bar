@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
+import '@boringcrypto/boring-solidity/contracts/BoringOwnable.sol';
 import '@boringcrypto/boring-solidity/contracts/ERC20.sol';
 import '../mixologist/Mixologist.sol';
 import './ILiquidationQueue.sol';
+import './bidders/IUsdoBidder.sol';
 
 enum MODE {
     ADD,
@@ -22,10 +24,10 @@ contract LiquidationQueue {
      * General information about the LiquidationQueue contract.
      */
 
-    LiquidationQueueMeta liquidationQueueMeta; // Meta-data for this contract.
-    Mixologist mixologist; // The target market.
-    BeachBar beachBar;
-    YieldBox yieldBox;
+    LiquidationQueueMeta public liquidationQueueMeta; // Meta-data for this contract.
+    Mixologist public mixologist; // The target market.
+    BeachBar public beachBar;
+    YieldBox public yieldBox;
 
     uint256 public lqAssetId; // The liquidation queue BeachBar asset id.
     uint256 public marketAssetId; // The mixologist asset id.
@@ -105,6 +107,7 @@ contract LiquidationQueue {
             _initOrderBookPoolInfo(i);
             ++i;
         }
+
         onlyOnce = true; // We set the init flag.
     }
 
@@ -144,7 +147,7 @@ contract LiquidationQueue {
     );
 
     event Redeem(address indexed redeemer, address indexed to, uint256 amount);
-    event UsdoSwapPathUpdated();
+    event BidSwapperUpdated(address indexed _old, address indexed _new);
 
     // ***************** //
     // *** MODIFIERS *** //
@@ -206,13 +209,12 @@ contract LiquidationQueue {
     /// @param user The bidder.
     /// @param pool To which pool the bid should go.
     /// @param usdoAmount The USDO amount
-    /// @param swapper  Contract address of the `MultiSwapper` implementation. See `setSwapper`.
+    /// @param data Extra data for swap operations
     function bidWithUsdo(
         address user,
         uint256 pool,
         uint256 usdoAmount,
-        MultiSwapper swapper, //TODO: move it as a property
-        uint256 liquidatedMinAmount
+        bytes calldata data
     ) external Active {
         require(pool <= MAX_BID_POOLS, 'LQ: premium too high');
         require(
@@ -220,21 +222,9 @@ contract LiquidationQueue {
             'LQ: USD0 not set'
         );
 
-        uint256 usdoAssetId = beachBar.usdoAssetId();
-
-        //TODO: check if we want to do it directly without the yieldbox deposit
-        uint256 usdoShare = yieldBox.toShare(usdoAssetId, usdoAmount, false);
-        yieldBox.transfer(msg.sender, address(swapper), usdoAssetId, usdoShare);
-
-        //SWAP
-        (uint256 liquidatedAssetAmount, ) = swapper.swap(
-            usdoAssetId,
-            liquidatedAssetId,
-            liquidatedMinAmount,
-            address(this),
-            mixologist.getUsdoSwapPath(),
-            usdoShare
-        );
+        uint256 liquidatedAssetAmount = IUsdoBidder(
+            liquidationQueueMeta.bidSwapper
+        ).swap(msg.sender, usdoAmount, data);
         require(
             liquidatedAssetAmount >= liquidationQueueMeta.minBidAmount,
             'LQ: bid too low'
@@ -258,15 +248,13 @@ contract LiquidationQueue {
         require(amount >= liquidationQueueMeta.minBidAmount, 'LQ: bid too low');
 
         // Transfer assets to the LQ contract.
-        {
-            uint256 assetId = lqAssetId;
-            yieldBox.transfer(
-                msg.sender,
-                address(this),
-                assetId,
-                yieldBox.toShare(assetId, amount, false)
-            );
-        }
+        uint256 assetId = lqAssetId;
+        yieldBox.transfer(
+            msg.sender,
+            address(this),
+            assetId,
+            yieldBox.toShare(assetId, amount, false)
+        );
         _bid(user, pool, amount);
     }
 
@@ -438,7 +426,6 @@ contract LiquidationQueue {
         require(msg.sender == address(mixologist), 'LQ: Only Mixologist');
 
         (uint256 curPoolId, bool isBidAvail) = getNextAvailBidPool();
-        require(isBidAvail, 'LQ: No available bid to fill');
 
         OrderBookPoolInfo memory poolInfo;
         OrderBookPoolEntry storage orderBookEntry;
@@ -563,6 +550,14 @@ contract LiquidationQueue {
                 0
             );
         }
+    }
+
+    /// @notice updates the bid swapper address
+    /// @param _swapper thew new ICollateralSwaper contract address
+    function setBidSwapper(address _swapper) external {
+        require(msg.sender == address(mixologist), 'unauthorized');
+        emit BidSwapperUpdated(liquidationQueueMeta.bidSwapper, _swapper);
+        liquidationQueueMeta.bidSwapper = _swapper;
     }
 
     // ************* //

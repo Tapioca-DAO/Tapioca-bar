@@ -79,7 +79,6 @@ contract Mixologist is ERC20, BoringOwnable {
         address indexed receiver
     );
     event LogYieldBoxFeesDeposit(uint256 feeShares, uint256 tapAmount);
-    event UsdoSwapPathUpdated();
 
     // ************ //
     // *** VARS *** //
@@ -96,7 +95,6 @@ contract Mixologist is ERC20, BoringOwnable {
     bytes oracleData;
     address[] collateralSwapPath; // Collateral -> Asset
     address[] tapSwapPath; // Asset -> Tap
-    address[] public usdoSwapPath; // Asset -> USD0
 
     // Total amounts
     uint256 public totalCollateralShare; // Total collateral supplied
@@ -281,10 +279,6 @@ contract Mixologist is ERC20, BoringOwnable {
             borrowPart >= collateralAmountInAsset
                 ? borrowPart - collateralAmountInAsset
                 : 0;
-    }
-
-    function getUsdoSwapPath() public view returns (address[] memory) {
-        return usdoSwapPath;
     }
 
     /// @notice Gets the exchange rate. I.e how much collateral to buy 1e18 asset.
@@ -550,7 +544,7 @@ contract Mixologist is ERC20, BoringOwnable {
             address(this),
             balanceOf[_feeTo]
         );
-        
+
         yieldBox.transfer(address(this), address(swapper), assetId, feeShares);
         (uint256 tapAmount, ) = swapper.swap(
             assetId,
@@ -584,16 +578,6 @@ contract Mixologist is ERC20, BoringOwnable {
         tapSwapPath = _tapSwapPath;
     }
 
-    /// @notice Used to set the swap path of USD0 -> Asset
-    /// @param _usdoSwapPath The Uniswap path .
-    function setUsdoSwapPath(address[] calldata _usdoSwapPath)
-        external
-        onlyOwner
-    {
-        usdoSwapPath = _usdoSwapPath;
-        emit UsdoSwapPathUpdated();
-    }
-
     /// @notice Set a new LiquidationQueue.
     /// @param _liquidationQueue The address of the new LiquidationQueue contract.
     /// It should be a new contract as `init()` can be called only one time.
@@ -604,6 +588,14 @@ contract Mixologist is ERC20, BoringOwnable {
     ) external onlyOwner {
         _liquidationQueue.init(_liquidationQueueMeta);
         liquidationQueue = _liquidationQueue;
+    }
+
+    /// @notice Execute an only owner function inside of the LiquidationQueue
+    function updateLiquidationQueueSwapper(address _swapper)
+        external
+        onlyOwner
+    {
+        liquidationQueue.setBidSwapper(_swapper);
     }
 
     // ***************** //

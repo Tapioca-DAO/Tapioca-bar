@@ -901,7 +901,46 @@ describe('LiquidationQueue test', () => {
         ).to.be.revertedWith('LQ: Not initialized');
     });
 
-    it('should bid with USD0', async () => {
+    it('should not allow setting bid swapper from not authorized account ', async () => {
+        const { liquidationQueue } = await register();
+
+        await expect(
+            liquidationQueue.setBidSwapper(ethers.constants.AddressZero),
+        ).to.be.revertedWith('unauthorized');
+    });
+
+    it('should not allow initializing LQ twice', async () => {
+        const { liquidationQueue, deployer } = await register();
+
+        const LQ_META = {
+            activationTime: 600, // 10min
+            minBidAmount: ethers.BigNumber.from((1e18).toString()).mul(200), // 200 USDC
+            defaultBidAmount: ethers.BigNumber.from((1e18).toString()).mul(400), // 400 USDC
+            feeCollector: deployer.address,
+            bidSwapper: ethers.constants.AddressZero,
+        };
+        await expect(liquidationQueue.init(LQ_META)).to.be.revertedWith(
+            'LQ: Initialized',
+        );
+    });
+
+    it('sould not be able to redeem without a balance', async () => {
+        const { liquidationQueue, deployer } = await register();
+
+        await expect(
+            liquidationQueue.redeem(deployer.address),
+        ).to.be.revertedWith('LQ: No balance due');
+    });
+
+    it('should not allow bid execution from EOA', async () => {
+        const { liquidationQueue, BN } = await register();
+
+        await expect(
+            liquidationQueue.executeBids(BN(1e18).toString()),
+        ).to.be.revertedWith('LQ: Only Mixologist');
+    });
+
+    it('should bid with USD0 through external swapper', async () => {
         const {
             deployer,
             bar,
@@ -917,6 +956,42 @@ describe('LiquidationQueue test', () => {
         } = await register();
 
         /// --- Test setup ----
+        const bidSwapper = await (
+            await ethers.getContractFactory('ToUsdcBidder')
+        ).deploy(
+            multiSwapper.address,
+            multiSwapper.address,
+            wethUsdcMixologist.address,
+        );
+        await bidSwapper.deployed();
+
+        //register bid swapper
+        const updateLQSwapperFnInterface = new ethers.utils.Interface([
+            'function updateLiquidationQueueSwapper(address)',
+        ]);
+        const fnData = updateLQSwapperFnInterface.encodeFunctionData(
+            'updateLiquidationQueueSwapper',
+            [bidSwapper.address],
+        );
+        await bar.executeMixologistFn([wethUsdcMixologist.address], [fnData]);
+
+        await expect(
+            liquidationQueue.bidWithUsdo(
+                deployer.address,
+                10,
+                LQ_META.defaultBidAmount,
+                ethers.utils.toUtf8Bytes(''),
+            ),
+        ).to.be.revertedWith('LQ: USD0 not set');
+
+        await expect(
+            bidSwapper.swap(
+                deployer.address,
+                BN(1e18).toString(),
+                ethers.utils.toUtf8Bytes(''),
+            ),
+        ).to.be.revertedWith('only LQ');
+
         //deploy and register USD0
         const usdo = await (
             await ethers.getContractFactory('ERC20Mock')
@@ -936,25 +1011,10 @@ describe('LiquidationQueue test', () => {
         expect(assetsLengthAfter.sub(1).eq(assetsLengthBefore)).to.be.true;
         expect(usdoAssetId.add(1).eq(assetsLengthAfter)).to.be.true;
 
-        const usdoSwapPath = [usdo.address, usdc.address];
-        const setUsdoSwapPathInterface = new ethers.utils.Interface([
-            'function setUsdoSwapPath(address[])',
-        ]);
-        const usdoSwapCalldata = setUsdoSwapPathInterface.encodeFunctionData(
-            'setUsdoSwapPath',
-            [usdoSwapPath],
-        );
-        await bar.executeMixologistFn(
-            [wethUsdcMixologist.address],
-            [usdoSwapCalldata],
-        );
-
-        const savedSwapPath = await wethUsdcMixologist.getUsdoSwapPath();
-        expect(savedSwapPath[0].toLowerCase()).to.eq(
-            usdoSwapPath[0].toLowerCase(),
-        );
-        expect(savedSwapPath[1].toLowerCase()).to.eq(
-            usdoSwapPath[1].toLowerCase(),
+        const savedBidSwapper = (await liquidationQueue.liquidationQueueMeta())
+            .bidSwapper;
+        expect(savedBidSwapper.toLowerCase()).to.eq(
+            bidSwapper.address.toLowerCase(),
         );
 
         //setup univ2 enviroment for usdc <> usdo pair
@@ -976,24 +1036,32 @@ describe('LiquidationQueue test', () => {
             deployer.address,
             Math.floor(Date.now() / 1000) + 1000 * 60, // 1min margin
         );
-        const usdoUsdcMockPair = await __uniFactory.getPair(
-            usdo.address,
-            usdc.address,
-        );
 
         /// --- Acts ----
         const POOL = 10;
+        const lqMeta = await liquidationQueue.liquidationQueueMeta();
+        expect(lqMeta.bidSwapper).to.not.eq(ethers.constants.AddressZero);
+
+        const bidSwapperContract = await ethers.getContractAt(
+            'IUsdoBidder',
+            lqMeta.bidSwapper,
+        );
+
+        const bidSwapperName = await bidSwapperContract.name();
+        expect(bidSwapperName).to.eq(
+            'USD0 -> WETH (Curve) / WETH -> USDC (Uniswap V2)',
+        );
+
         const testShareAmount = await yieldBox.toShare(
             usdoAssetId,
-            LQ_META.defaultBidAmount,
+            BN(1e18).mul(10),
             false,
         );
-        const testAmountOut = await multiSwapper.getOutputAmount(
-            usdoAssetId,
-            usdoSwapPath,
+        const testOutputAmount = await bidSwapperContract.getOutputAmount(
             testShareAmount,
+            ethers.utils.toUtf8Bytes(''),
         );
-        expect(testAmountOut.gt(BN(1e18).mul(9))).to.be.true;
+        expect(testOutputAmount.gt(BN(1e18).mul(9))).to.be.true;
 
         let yieldBoxBalanceOfUsdoShare = await yieldBox.balanceOf(
             deployer.address,
@@ -1010,7 +1078,6 @@ describe('LiquidationQueue test', () => {
             LQ_META.defaultBidAmount,
             0,
         );
-
         yieldBoxBalanceOfUsdoShare = await yieldBox.balanceOf(
             deployer.address,
             usdoAssetId,
@@ -1022,16 +1089,35 @@ describe('LiquidationQueue test', () => {
         );
         expect(yieldBoxAmount.eq(LQ_META.defaultBidAmount)).to.be.true;
 
-        await yieldBox.setApprovalForAll(liquidationQueue.address, true);
+        await yieldBox.setApprovalForAll(lqMeta.bidSwapper, true);
+        const data = new ethers.utils.AbiCoder().encode(
+            ['uint256'],
+            [LQ_META.minBidAmount],
+        );
+        await expect(
+            liquidationQueue.bidWithUsdo(
+                deployer.address,
+                POOL,
+                LQ_META.minBidAmount,
+                new ethers.utils.AbiCoder().encode(['uint256'], [0]),
+            ),
+        ).to.be.revertedWith('LQ: bid too low');
         await expect(
             liquidationQueue.bidWithUsdo(
                 deployer.address,
                 POOL,
                 LQ_META.defaultBidAmount,
-                multiSwapper.address,
-                BN(1e18).mul(9).toString(),
+                data,
             ),
         ).to.emit(liquidationQueue, 'Bid');
+        await expect(
+            liquidationQueue.bidWithUsdo(
+                deployer.address,
+                9999999,
+                LQ_META.defaultBidAmount,
+                data,
+            ),
+        ).to.be.revertedWith('LQ: premium too high');
 
         const bidPoolInfo = await liquidationQueue.bidPools(
             POOL,

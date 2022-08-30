@@ -21,10 +21,13 @@ struct LiquidationQueueMeta {
     uint256 activationTime; // Time needed before a bid can be activated for execution
     uint256 minBidAmount; // Minimum bid amount
     address feeCollector; // Address of the fee collector
+    address bidSwapper;
 }
 
 interface ILiquidationQueue {
     function init(LiquidationQueueMeta calldata) external;
+
+    function setBidSwapper(address swapper) external;
 
     function getNextAvailBidPool()
         external
