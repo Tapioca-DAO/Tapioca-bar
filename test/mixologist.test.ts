@@ -37,6 +37,7 @@ describe('Mixologist test', () => {
         await (
             await wethUsdcMixologist.addAsset(
                 deployer.address,
+                deployer.address,
                 false,
                 mintValShare,
             )
@@ -44,7 +45,7 @@ describe('Mixologist test', () => {
 
         // Remove asset from Mixologist
         await (
-            await wethUsdcMixologist.removeAsset(deployer.address, mintValShare)
+            await wethUsdcMixologist.removeAsset(deployer.address, deployer.address, mintValShare)
         ).wait();
 
         // Withdraw from bar
@@ -114,7 +115,7 @@ describe('Mixologist test', () => {
 
         await wethUsdcMixologist
             .connect(eoa1)
-            .borrow(eoa1.address, wethBorrowVal);
+            .borrow(eoa1.address, eoa1.address, wethBorrowVal);
         await yieldBox
             .connect(eoa1)
             .withdraw(assetId, eoa1.address, eoa1.address, wethBorrowVal, 0);
@@ -198,6 +199,7 @@ describe('Mixologist test', () => {
         await (
             await wethUsdcMixologist.addAsset(
                 deployer.address,
+                deployer.address,
                 false,
                 lendValShare,
             )
@@ -219,7 +221,7 @@ describe('Mixologist test', () => {
         ).equal(await yieldBox.toShare(collateralId, collateralVal, false));
 
         // We borrow
-        await wethUsdcMixologist.connect(eoa1).borrow(eoa1.address, borrowVal);
+        await wethUsdcMixologist.connect(eoa1).borrow(eoa1.address, eoa1.address, borrowVal);
 
         // Validate fees
         const userBorrowPart = await wethUsdcMixologist.userBorrowPart(
@@ -254,7 +256,7 @@ describe('Mixologist test', () => {
             );
         await wethUsdcMixologist
             .connect(eoa1)
-            .repay(eoa1.address, false, userBorrowPart);
+            .repay(eoa1.address, eoa1.address, false, userBorrowPart);
 
         expect(await wethUsdcMixologist.userBorrowPart(eoa1.address)).to.be.eq(
             BN(0),
@@ -264,6 +266,7 @@ describe('Mixologist test', () => {
             await wethUsdcMixologist
                 .connect(eoa1)
                 .removeCollateral(
+                    eoa1.address,
                     eoa1.address,
                     await wethUsdcMixologist.userCollateralShare(eoa1.address),
                 )
@@ -283,7 +286,7 @@ describe('Mixologist test', () => {
 
         // Withdraw assets
         await (
-            await wethUsdcMixologist.removeAsset(deployer.address, lendValShare)
+            await wethUsdcMixologist.removeAsset(deployer.address, deployer.address, lendValShare)
         ).wait();
 
         await (
@@ -353,7 +356,7 @@ describe('Mixologist test', () => {
             .div(__wethUsdcPrice.div((1e18).toString()));
         await wethUsdcMixologist
             .connect(eoa1)
-            .borrow(eoa1.address, wethBorrowVal);
+            .borrow(eoa1.address, eoa1.address, wethBorrowVal);
 
         // We jump time to accumulate fees
         const day = 86400;
@@ -376,7 +379,7 @@ describe('Mixologist test', () => {
             );
         await wethUsdcMixologist
             .connect(eoa1)
-            .repay(eoa1.address, false, userBorrowPart);
+            .repay(eoa1.address, eoa1.address, false, userBorrowPart);
 
         const feesAmountInAsset =
             await mixologistHelper.getAmountForAssetFraction(
@@ -465,5 +468,75 @@ describe('Mixologist test', () => {
                 ethers.utils.hexlify(0),
             ),
         ).to.emit(wethUsdcMixologist, 'LogFlashLoan');
+    });
+
+
+    it('Should try to add asset to mixologist on behalf of another user and fail, then pass after approval', async () => {
+        const { weth, yieldBox, wethUsdcMixologist, deployer, initContracts, eoa1 } =
+            await register();
+
+        await initContracts(); // To prevent `Mixologist: below minimum`
+
+        const mintVal = ethers.BigNumber.from((1e18).toString()).mul(10);
+
+        weth.freeMint(mintVal);
+        weth.connect(eoa1).freeMint(mintVal);
+
+        // Deposit assets to bar
+        const mintValShare = await yieldBox.toShare(
+            await wethUsdcMixologist.assetId(),
+            mintVal,
+            false,
+        );
+        await (await weth.approve(yieldBox.address, mintVal)).wait();
+        await (await weth.connect(eoa1).approve(yieldBox.address, mintVal)).wait();
+
+        await (
+            await yieldBox.depositAsset(
+                await wethUsdcMixologist.assetId(),
+                deployer.address,
+                deployer.address,
+                0,
+                mintValShare,
+            )
+        ).wait();
+
+        await (
+            await yieldBox.connect(eoa1).depositAsset(
+                await wethUsdcMixologist.assetId(),
+                eoa1.address,
+                eoa1.address,
+                0,
+                mintValShare,
+            )
+        ).wait();
+
+        // Add asset to Mixologist
+        await (
+            await yieldBox.setApprovalForAll(wethUsdcMixologist.address, true)
+        ).wait();
+        await (
+            await yieldBox.connect(eoa1).setApprovalForAll(wethUsdcMixologist.address, true)
+        ).wait();
+
+        await expect(
+            wethUsdcMixologist.addAsset(
+                eoa1.address,
+                deployer.address,
+                false,
+                mintValShare,
+            )
+        ).to.be.revertedWithCustomError(wethUsdcMixologist, "NotApproved");
+
+        await expect(
+            await wethUsdcMixologist.connect(eoa1).setApprovalForAll(deployer.address, true)
+        ).to.emit(wethUsdcMixologist, "LogApprovalForAll")
+
+           await (await wethUsdcMixologist.addAsset(
+                eoa1.address,
+                deployer.address,
+                false,
+                mintValShare,
+            )).wait()
     });
 });
