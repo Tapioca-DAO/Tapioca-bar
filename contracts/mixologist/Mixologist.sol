@@ -75,6 +75,14 @@ contract Mixologist is ERC20, BoringOwnable {
         address indexed receiver
     );
     event LogYieldBoxFeesDeposit(uint256 feeShares, uint256 tapAmount);
+    event LogApprovalForAll(
+        address indexed _from,
+        address indexed _operator,
+        bool _approved
+    );
+
+    //errors
+    error NotApproved(address _from, address _operator);
 
     // Constructor settings
     BeachBar public beachBar;
@@ -100,6 +108,8 @@ contract Mixologist is ERC20, BoringOwnable {
     mapping(address => uint256) public userCollateralShare;
     // userAssetFraction is called balanceOf for ERC20 compatibility (it's in ERC20.sol)
     mapping(address => uint256) public userBorrowPart;
+    // map of operator approval
+    mapping(address => mapping(address => bool)) public isApprovedForAll;
 
     /// @notice Exchange and interest rate tracking.
     /// This is 'cached' here because calls to Oracles can be very expensive.
@@ -121,6 +131,28 @@ contract Mixologist is ERC20, BoringOwnable {
         require(!initialized, 'Mx: initialized');
         _;
         initialized = true;
+    }
+
+    /// Modifier to check if the msg.sender is allowed to use funds belonging to the 'from' address.
+    /// If 'from' is msg.sender, it's allowed.
+    /// If 'msg.sender' is an address (an operator) that is approved by 'from', it's allowed.
+    /// If 'msg.sender' is a clone of a masterContract that is approved by 'from', it's allowed.
+    modifier allowed(address from) virtual {
+        if (from != msg.sender && !isApprovedForAll[from][msg.sender]) {
+            revert NotApproved(from, msg.sender);
+        }
+        _;
+    }
+
+    function setApprovalForAll(address operator, bool approved) external {
+        // Checks
+        require(operator != address(0), 'YieldBox: operator not set'); // Important for security
+        require(operator != address(this), "YieldBox: can't approve yieldBox");
+
+        // Effects
+        isApprovedForAll[msg.sender][operator] = approved;
+
+        emit LogApprovalForAll(msg.sender, operator, approved);
     }
 
     // ERC20 'variables'
@@ -243,14 +275,6 @@ contract Mixologist is ERC20, BoringOwnable {
         updateExchangeRate();
     }
 
-    /**
-     * @notice Sets the Layer Zero relayer for cross-chain functionality.
-     * @param _relayer Layer Zero relayer address.
-     */
-    function setRelayer(address _relayer) onlyOwner public {
-        require(_relayer != address(0), "Mx: relayer cannot be zero address");
-    relayer = _relayer;
-    }
 
     /// @notice Accrues the interest on the borrowed tokens and handles the accumulation of fees.
     function accrue() public {
@@ -259,7 +283,6 @@ contract Mixologist is ERC20, BoringOwnable {
         uint256 elapsedTime = block.timestamp - _accrueInfo.lastAccrued;
         if (elapsedTime == 0) {
             return;
-            
         }
         _accrueInfo.lastAccrued = uint64(block.timestamp);
 
@@ -422,7 +445,7 @@ contract Mixologist is ERC20, BoringOwnable {
     }
 
     /// @dev Helper function to move tokens.
-    /// @param from Account to debit tokens from, in `yieldBox`. 
+    /// @param from Account to debit tokens from, in `yieldBox`.
     /// @param _assetId The ERC-20 token asset ID in yieldBox.
     /// @param share The amount in shares to add.
     /// @param total Grand total amount to deduct from this contract's balance. Only applicable if `skim` is True.
@@ -430,7 +453,7 @@ contract Mixologist is ERC20, BoringOwnable {
     /// @param skim If True, only does a balance check on this contract.
     /// False if tokens from msg.sender in `yieldBox` should be transferred.
     function _addTokens(
-        address from,  
+        address from,
         uint256 _assetId,
         uint256 share,
         uint256 total,
@@ -457,12 +480,7 @@ contract Mixologist is ERC20, BoringOwnable {
         address to,
         bool skim,
         uint256 share
-    ) public {
-        if(msg.sender == relayer){
-            from = relayer;
-        } else {
-            from = msg.sender;
-        }
+    ) public allowed(from) {
         userCollateralShare[to] += share;
         uint256 oldTotalCollateralShare = totalCollateralShare;
         totalCollateralShare = oldTotalCollateralShare + share;
@@ -471,7 +489,11 @@ contract Mixologist is ERC20, BoringOwnable {
     }
 
     /// @dev Concrete implementation of `removeCollateral`.
-    function _removeCollateral(address from, address to, uint256 share) internal {
+    function _removeCollateral(
+        address from,
+        address to,
+        uint256 share
+    ) internal {
         userCollateralShare[from] -= share;
         totalCollateralShare -= share;
         emit LogRemoveCollateral(from, to, share);
@@ -482,29 +504,24 @@ contract Mixologist is ERC20, BoringOwnable {
     /// @param from Account to debit collateral from.
     /// @param to The receiver of the shares.
     /// @param share Amount of shares to remove.
-    function removeCollateral(address from, address to, uint256 share) public solvent {
+    function removeCollateral(
+        address from,
+        address to,
+        uint256 share
+    ) public solvent allowed(from) {
         // accrue must be called because we check solvency
         accrue();
-        if(msg.sender == relayer){
-            to = relayer;
-        } else {
-            from = msg.sender;
-        }
+
         _removeCollateral(from, to, share);
     }
 
     /// @dev Concrete implementation of `addAsset`.
     function _addAsset(
+        address from,
         address to,
         bool skim,
         uint256 share
     ) internal returns (uint256 fraction) {
-        address from;
-        if(msg.sender == relayer){
-            from = relayer;
-        } else {
-            from = msg.sender;
-        }
         Rebase memory _totalAsset = totalAsset;
         uint256 totalAssetShare = _totalAsset.elastic;
         uint256 allShare = _totalAsset.elastic +
@@ -519,12 +536,7 @@ contract Mixologist is ERC20, BoringOwnable {
         balanceOf[to] += fraction;
         emit Transfer(address(0), to, fraction);
         _addTokens(from, assetId, share, totalAssetShare, skim);
-        emit LogAddAsset(
-            skim ? address(yieldBox) : from,
-            to,
-            share,
-            fraction
-        );
+        emit LogAddAsset(skim ? address(yieldBox) : from, to, share, fraction);
     }
 
     /// @notice Adds assets to the lending pair.
@@ -534,12 +546,13 @@ contract Mixologist is ERC20, BoringOwnable {
     /// @param share The amount of shares to add.
     /// @return fraction Total fractions added.
     function addAsset(
+        address from,
         address to,
         bool skim,
         uint256 share
-    ) public returns (uint256 fraction) {
+    ) public allowed(from) returns (uint256 fraction) {
         accrue();
-        fraction = _addAsset(to, skim, share);
+        fraction = _addAsset(from, to, skim, share);
     }
 
     /// @dev Concrete implementation of `removeAsset`.
@@ -568,23 +581,22 @@ contract Mixologist is ERC20, BoringOwnable {
     /// @param to The user that receives the removed assets.
     /// @param fraction The amount/fraction of assets held to remove.
     /// @return share The amount of shares transferred to `to`.
-    function removeAsset(address from, address to, uint256 fraction)
-        public
-        returns (uint256 share)
-    {
+    function removeAsset(
+        address from,
+        address to,
+        uint256 fraction
+    ) public allowed(from) returns (uint256 share) {
         accrue();
-        if(msg.sender == relayer){
-        } else {
-            from = msg.sender;
-        }
+
         share = _removeAsset(from, to, fraction);
     }
 
     /// @dev Concrete implementation of `borrow`.
-    function _borrow(address from, address to, uint256 amount)
-        internal
-        returns (uint256 part, uint256 share)
-    {
+    function _borrow(
+        address from,
+        address to,
+        uint256 amount
+    ) internal returns (uint256 part, uint256 share) {
         uint256 feeAmount = (amount * BORROW_OPENING_FEE) /
             BORROW_OPENING_FEE_PRECISION; // A flat % fee is charged for any borrow
 
@@ -606,18 +618,14 @@ contract Mixologist is ERC20, BoringOwnable {
     /// @param amount Amount to borrow.
     /// @return part Total part of the debt held by borrowers.
     /// @return share Total amount in shares borrowed.
-    function borrow(address from, address to, uint256 amount)
-        public
-        solvent
-        returns (uint256 part, uint256 share)
-    {
+    function borrow(
+        address from,
+        address to,
+        uint256 amount
+    ) public solvent allowed(from) returns (uint256 part, uint256 share) {
         accrue();
-        if(msg.sender == relayer){
-            to = relayer;
-        } else {
-            from = msg.sender;
-        }
-        (part, share) = _borrow(from ,to, amount);
+
+        (part, share) = _borrow(from, to, amount);
     }
 
     /// @dev Concrete implementation of `repay`.
@@ -644,17 +652,13 @@ contract Mixologist is ERC20, BoringOwnable {
     /// @param part The amount to repay. See `userBorrowPart`.
     /// @return amount The total amount repayed.
     function repay(
+        address from,
         address to,
         bool skim,
         uint256 part
-    ) public returns (uint256 amount) {
+    ) public allowed(from) returns (uint256 amount) {
         accrue();
-        address from;
-        if(msg.sender == relayer){
-            from = relayer;
-        } else {
-            from = msg.sender;
-        }
+
         amount = _repay(from, to, skim, part);
     }
 
