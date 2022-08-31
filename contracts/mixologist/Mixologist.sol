@@ -96,9 +96,6 @@ contract Mixologist is ERC20, BoringOwnable {
     address[] collateralSwapPath; // Collateral -> Asset
     address[] tapSwapPath; // Asset -> Tap
 
-    //Layer zero relayer address
-    address public relayer;
-
     // Total amounts
     uint256 public totalCollateralShare; // Total collateral supplied
     Rebase public totalAsset; // elastic = yieldBox shares held by the Mixologist, base = Total fractions held by asset suppliers
@@ -136,7 +133,6 @@ contract Mixologist is ERC20, BoringOwnable {
     /// Modifier to check if the msg.sender is allowed to use funds belonging to the 'from' address.
     /// If 'from' is msg.sender, it's allowed.
     /// If 'msg.sender' is an address (an operator) that is approved by 'from', it's allowed.
-    /// If 'msg.sender' is a clone of a masterContract that is approved by 'from', it's allowed.
     modifier allowed(address from) virtual {
         if (from != msg.sender && !isApprovedForAll[from][msg.sender]) {
             revert NotApproved(from, msg.sender);
@@ -144,6 +140,11 @@ contract Mixologist is ERC20, BoringOwnable {
         _;
     }
 
+    /**
+     * @notice Sets approval status for an `operator` to manage user account.
+     * @param operator Address of Operator.
+     * @param approved Status of approval.
+     */
     function setApprovalForAll(address operator, bool approved) external {
         // Checks
         require(operator != address(0), 'YieldBox: operator not set'); // Important for security
@@ -540,6 +541,7 @@ contract Mixologist is ERC20, BoringOwnable {
     }
 
     /// @notice Adds assets to the lending pair.
+    /// @param from Address to add asset from.
     /// @param to The address of the user to receive the assets.
     /// @param skim True if the amount should be skimmed from the deposit balance of msg.sender.
     /// False if tokens from msg.sender in `yieldBox` should be transferred.
@@ -646,6 +648,7 @@ contract Mixologist is ERC20, BoringOwnable {
     }
 
     /// @notice Repays a loan.
+    /// @param from Address to repay from.
     /// @param to Address of the user this payment should go.
     /// @param skim True if the amount should be skimmed from the deposit balance of msg.sender.
     /// False if tokens from msg.sender in `yieldBox` should be transferred.
