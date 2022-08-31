@@ -8,7 +8,6 @@ import '../libraries/IUniswapV2Pair.sol';
 import '../bar/BeachBar.sol';
 import '../bar/YieldBox.sol';
 
-
 /// Modified from https://github.com/sushiswap/kashi-lending/blob/master/contracts/swappers/SushiSwapMultiSwapper.sol
 
 contract MultiSwapper {
@@ -62,6 +61,7 @@ contract MultiSwapper {
             0,
             shareIn
         );
+
         amountOut = _swapExactTokensForTokens(
             amountIn,
             amountMinOut,

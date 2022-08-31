@@ -948,6 +948,8 @@ describe('LiquidationQueue test', () => {
             liquidationQueue,
             wethUsdcMixologist,
             usdc,
+            weth,
+            wethAssetId,
             LQ_META,
             multiSwapper,
             __uniFactory,
@@ -955,25 +957,7 @@ describe('LiquidationQueue test', () => {
             BN,
         } = await register();
 
-        /// --- Test setup ----
-        const bidSwapper = await (
-            await ethers.getContractFactory('ToUsdcBidder')
-        ).deploy(
-            multiSwapper.address,
-            multiSwapper.address,
-            wethUsdcMixologist.address,
-        );
-        await bidSwapper.deployed();
-
-        //register bid swapper
-        const updateLQSwapperFnInterface = new ethers.utils.Interface([
-            'function updateLiquidationQueueSwapper(address)',
-        ]);
-        const fnData = updateLQSwapperFnInterface.encodeFunctionData(
-            'updateLiquidationQueueSwapper',
-            [bidSwapper.address],
-        );
-        await bar.executeMixologistFn([wethUsdcMixologist.address], [fnData]);
+        /// --- Setup ----
 
         await expect(
             liquidationQueue.bidWithUsdo(
@@ -983,14 +967,6 @@ describe('LiquidationQueue test', () => {
                 ethers.utils.toUtf8Bytes(''),
             ),
         ).to.be.revertedWith('LQ: USD0 not set');
-
-        await expect(
-            bidSwapper.swap(
-                deployer.address,
-                BN(1e18).toString(),
-                ethers.utils.toUtf8Bytes(''),
-            ),
-        ).to.be.revertedWith('only LQ');
 
         //deploy and register USD0
         const usdo = await (
@@ -1007,6 +983,45 @@ describe('LiquidationQueue test', () => {
             0,
         );
 
+        //create USD0->USDC bidder
+        const curvePoolMock = await (
+            await ethers.getContractFactory('CurvePoolMock')
+        ).deploy(usdo.address, weth.address);
+        const curveSwapper = await (
+            await ethers.getContractFactory('CurveSwapper')
+        ).deploy(curvePoolMock.address, bar.address);
+
+        const toUsdcBidder = await (
+            await ethers.getContractFactory('ToUsdcBidder')
+        ).deploy(
+            multiSwapper.address,
+            curveSwapper.address,
+            wethUsdcMixologist.address,
+            0,
+            1,
+            wethAssetId,
+        );
+        await toUsdcBidder.deployed();
+
+        await expect(
+            toUsdcBidder.swap(
+                deployer.address,
+                BN(1e18).toString(),
+                ethers.utils.toUtf8Bytes(''),
+            ),
+        ).to.be.revertedWith('only LQ');
+
+        //register bid swapper
+        const updateLQSwapperFnInterface = new ethers.utils.Interface([
+            'function updateLiquidationQueueSwapper(address)',
+        ]);
+        const fnData = updateLQSwapperFnInterface.encodeFunctionData(
+            'updateLiquidationQueueSwapper',
+            [toUsdcBidder.address],
+        );
+        await bar.executeMixologistFn([wethUsdcMixologist.address], [fnData]);
+
+        //set swappers on ToUsdcBidder
         const assetsLengthAfter = await yieldBox.assetCount();
         expect(assetsLengthAfter.sub(1).eq(assetsLengthBefore)).to.be.true;
         expect(usdoAssetId.add(1).eq(assetsLengthAfter)).to.be.true;
@@ -1014,7 +1029,7 @@ describe('LiquidationQueue test', () => {
         const savedBidSwapper = (await liquidationQueue.liquidationQueueMeta())
             .bidSwapper;
         expect(savedBidSwapper.toLowerCase()).to.eq(
-            bidSwapper.address.toLowerCase(),
+            toUsdcBidder.address.toLowerCase(),
         );
 
         //setup univ2 enviroment for usdc <> usdo pair
@@ -1091,17 +1106,73 @@ describe('LiquidationQueue test', () => {
 
         await yieldBox.setApprovalForAll(lqMeta.bidSwapper, true);
         const data = new ethers.utils.AbiCoder().encode(
-            ['uint256'],
-            [LQ_META.minBidAmount],
+            ['uint256', 'uint256'],
+            [LQ_META.minBidAmount.div(1e3), LQ_META.minBidAmount],
         );
         await expect(
             liquidationQueue.bidWithUsdo(
                 deployer.address,
                 POOL,
                 LQ_META.minBidAmount,
-                new ethers.utils.AbiCoder().encode(['uint256'], [0]),
+                new ethers.utils.AbiCoder().encode(
+                    ['uint256', 'uint256'],
+                    [0, 0],
+                ),
             ),
         ).to.be.revertedWith('LQ: bid too low');
+
+        await expect(
+            liquidationQueue.bidWithUsdo(
+                deployer.address,
+                POOL,
+                LQ_META.defaultBidAmount,
+                new ethers.utils.AbiCoder().encode(
+                    ['uint256', 'uint256'],
+                    [
+                        LQ_META.defaultBidAmount.mul(10),
+                        LQ_META.defaultBidAmount.mul(10),
+                    ],
+                ),
+            ),
+        ).to.be.revertedWith('insufficient-amount-out');
+        await curvePoolMock.setDivider(0);
+        await expect(
+            liquidationQueue.bidWithUsdo(
+                deployer.address,
+                POOL,
+                LQ_META.defaultBidAmount,
+                new ethers.utils.AbiCoder().encode(
+                    ['uint256', 'uint256'],
+                    [0, 0],
+                ),
+            ),
+        ).to.be.revertedWith('swap failed');
+        await curvePoolMock.setDivider(1e3);
+        const wethShare = await yieldBox.toShare(
+            wethAssetId,
+            LQ_META.defaultBidAmount.div(1e3),
+            false,
+        );
+        const outAmount = await multiSwapper.getOutputAmount(
+            wethAssetId,
+            [weth.address, usdc.address],
+            wethShare,
+        );
+
+        const testingUsdoToUsdcAmount = await toUsdcBidder.getOutputAmount(
+            LQ_META.defaultBidAmount,
+            ethers.utils.toUtf8Bytes(''),
+        );
+        expect(testingUsdoToUsdcAmount.gt(LQ_META.minBidAmount));
+        expect(testingUsdoToUsdcAmount.lte(LQ_META.defaultBidAmount));
+
+        await expect(
+            toUsdcBidder.setCurveSwapper(curveSwapper.address),
+        ).to.emit(toUsdcBidder, 'CurveSwapperUpdated');
+        await expect(
+            toUsdcBidder.setUniswapSwapper(multiSwapper.address),
+        ).to.emit(toUsdcBidder, 'UniV2SwapperUpdated');
+
         await expect(
             liquidationQueue.bidWithUsdo(
                 deployer.address,
@@ -1124,7 +1195,7 @@ describe('LiquidationQueue test', () => {
             deployer.address,
         );
         expect(bidPoolInfo[0].gt(LQ_META.minBidAmount)).to.be.true;
-        expect(bidPoolInfo[0].lte(LQ_META.defaultBidAmount)).to.be.true;
+        expect(bidPoolInfo[0].lte(outAmount)).to.be.true;
     });
 });
 
