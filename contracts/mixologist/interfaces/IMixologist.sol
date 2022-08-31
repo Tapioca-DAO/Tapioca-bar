@@ -33,6 +33,7 @@ interface IMixologist {
         address indexed from,
         address indexed to,
         uint256 amount,
+        uint256 feeAmount,
         uint256 part
     );
     event LogExchangeRate(uint256 rate);
@@ -60,6 +61,19 @@ interface IMixologist {
         address indexed newOwner
     );
     event Transfer(address indexed _from, address indexed _to, uint256 _value);
+    event LogFlashLoan(
+        address indexed borrower,
+        uint256 amount,
+        uint256 feeAmount,
+        address indexed receiver
+    );
+    event LogYieldBoxFeesDeposit(uint256 feeShares, uint256 tapAmount);
+    event LogApprovalForAll(
+        address indexed _from,
+        address indexed _operator,
+        bool _approved
+    );
+    error NotApproved(address _from, address _operator);
 
     function DOMAIN_SEPARATOR() external view returns (bytes32);
 
@@ -74,13 +88,17 @@ interface IMixologist {
             uint128 feesEarnedFraction
         );
 
+    function setApprovalForAll(address operator, bool approved) external;
+
     function addAsset(
+        address from,
         address to,
         bool skim,
         uint256 share
     ) external returns (uint256 fraction);
 
     function addCollateral(
+        address from,
         address to,
         bool skim,
         uint256 share
@@ -96,9 +114,11 @@ interface IMixologist {
 
     function beachBar() external view returns (BeachBar);
 
-    function borrow(address to, uint256 amount)
-        external
-        returns (uint256 part, uint256 share);
+    function borrow(
+        address from,
+        address to,
+        uint256 amount
+    ) external returns (uint256 part, uint256 share);
 
     function claimOwnership() external;
 
@@ -159,13 +179,18 @@ interface IMixologist {
         bytes32 s
     ) external;
 
-    function removeAsset(address to, uint256 fraction)
+    function removeAsset(address from,
+        address to,
+        uint256 fraction)
         external
         returns (uint256 share);
 
-    function removeCollateral(address to, uint256 share) external;
+    function removeCollateral(address from,
+        address to,
+        uint256 share) external;
 
     function repay(
+        address from,
         address to,
         bool skim,
         uint256 part
