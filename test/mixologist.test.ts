@@ -536,11 +536,11 @@ describe('Mixologist test', () => {
         ).to.emit(wethUsdcMixologist, "LogApprovalForAll")
 
         // Add asset from eoa1 to deployer with approval
-           await (await wethUsdcMixologist.addAsset(
-                eoa1.address,
-                deployer.address,
-                false,
-                mintValShare,
-            )).wait()
+        await (await wethUsdcMixologist.addAsset(
+            eoa1.address,
+            deployer.address,
+            false,
+            mintValShare,
+        )).wait()
     });
 });

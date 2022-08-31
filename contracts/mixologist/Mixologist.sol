@@ -276,7 +276,6 @@ contract Mixologist is ERC20, BoringOwnable {
         updateExchangeRate();
     }
 
-
     /// @notice Accrues the interest on the borrowed tokens and handles the accumulation of fees.
     function accrue() public {
         AccrueInfo memory _accrueInfo = accrueInfo;
