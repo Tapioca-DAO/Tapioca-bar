@@ -212,5 +212,5 @@ interface IMixologist {
 
     function withdrawFees() external;
 
-    function depositFeesToYieldBox(MultiSwapper, bytes calldata) external;
+    function depositFeesToYieldBox(MultiSwapper, SwapData calldata) external;
 }

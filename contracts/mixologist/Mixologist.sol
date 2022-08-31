@@ -886,7 +886,7 @@ contract Mixologist is ERC20, BoringOwnable {
     /// @notice Withdraw the balance of `feeTo`, swap asset into TAP and deposit it to yieldBox of `feeTo`
     function depositFeesToYieldBox(
         MultiSwapper swapper,
-        bytes calldata swapData
+        SwapData calldata swapData
     ) public {
         if (accrueInfo.feesEarnedFraction > 0) {
             withdrawFeesEarned();
@@ -903,14 +903,10 @@ contract Mixologist is ERC20, BoringOwnable {
 
         yieldBox.transfer(address(this), address(swapper), assetId, feeShares);
 
-        uint256 minAssetMount = 0;
-        if (swapData.length > 0) {
-            minAssetMount = abi.decode(swapData, (uint256));
-        }
         (uint256 tapAmount, ) = swapper.swap(
             assetId,
             beachBar.tapAssetId(),
-            minAssetMount,
+            swapData.minAssetAmount,
             _feeVeTap,
             tapSwapPath,
             feeShares

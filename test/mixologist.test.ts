@@ -394,9 +394,11 @@ describe('Mixologist test', () => {
         // Confirm fees accumulation
         expect(userBorrowPart.gt(wethBorrowVal));
         // Withdraw fees from BeachBar
-        const data = new ethers.utils.AbiCoder().encode(['uint256'], [1]);
         await expect(
-            bar.withdrawAllProtocolFees([multiSwapper.address], [data]),
+            bar.withdrawAllProtocolFees(
+                [multiSwapper.address],
+                [{ minAssetAmount: 1 }],
+            ),
         ).to.emit(wethUsdcMixologist, 'LogYieldBoxFeesDeposit');
 
         const tapAmountHarvested = await yieldBox.toAmount(
@@ -612,12 +614,10 @@ describe('Mixologist test', () => {
     it('deposit fees to yieldbox should not work for inexistent swapper', async () => {
         const { wethUsdcMixologist } = await register();
 
-        const data = new ethers.utils.AbiCoder().encode(['uint256'], [1]);
-
         await expect(
             wethUsdcMixologist.depositFeesToYieldBox(
                 ethers.constants.AddressZero,
-                data,
+                { minAssetAmount: 1 },
             ),
         ).to.be.revertedWith('Mx: Invalid swapper');
     });

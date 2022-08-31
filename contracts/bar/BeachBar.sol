@@ -22,6 +22,10 @@ struct MasterContract {
     ContractType risk;
 }
 
+struct SwapData {
+    uint256 minAssetAmount;
+}
+
 // TODO: Permissionless market deployment
 ///     + asset registration? (toggle to renounce ownership so users can call)
 contract BeachBar is BoringOwnable {
@@ -133,7 +137,7 @@ contract BeachBar is BoringOwnable {
     /// @param swappers_ One or more swappers to convert the asset to TAP.
     function withdrawAllProtocolFees(
         MultiSwapper[] calldata swappers_,
-        bytes[] calldata swapData_
+        SwapData[] calldata swapData_
     ) public {
         require(address(swappers_[0]) != address(0), 'BeachBar: zero address');
 
