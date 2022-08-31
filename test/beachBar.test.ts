@@ -76,8 +76,9 @@ describe('BeachBar test', () => {
     it('should not withdraw for zero address swapper', async () => {
         const { bar } = await register();
 
+        const data = new ethers.utils.AbiCoder().encode(['uint256'], [1]);
         await expect(
-            bar.withdrawAllProtocolFees([ethers.constants.AddressZero]),
+            bar.withdrawAllProtocolFees([ethers.constants.AddressZero], [data]),
         ).to.be.revertedWith('BeachBar: zero address');
     });
 });

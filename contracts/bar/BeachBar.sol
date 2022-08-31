@@ -131,7 +131,10 @@ contract BeachBar is BoringOwnable {
     /// @dev `swappers_` can have one element that'll be used for all clones. Or one swapper per MasterContract.
     /// @dev Fees are withdrawn in TAP and sent to the FeeDistributor contract
     /// @param swappers_ One or more swappers to convert the asset to TAP.
-    function withdrawAllProtocolFees(MultiSwapper[] calldata swappers_) public {
+    function withdrawAllProtocolFees(
+        MultiSwapper[] calldata swappers_,
+        bytes[] calldata swapData_
+    ) public {
         require(address(swappers_[0]) != address(0), 'BeachBar: zero address');
 
         uint256 _masterContractLength = masterContracts.length;
@@ -143,7 +146,8 @@ contract BeachBar is BoringOwnable {
         unchecked {
             for (uint256 i = 0; i < length; ) {
                 IMixologist(markets[i]).depositFeesToYieldBox(
-                    singleSwapper ? swappers_[0] : swappers_[i]
+                    singleSwapper ? swappers_[0] : swappers_[i],
+                    singleSwapper ? swapData_[0] : swapData_[i]
                 );
                 ++i;
             }
