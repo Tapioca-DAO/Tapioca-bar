@@ -479,6 +479,7 @@ describe('Mixologist test', () => {
 
         const mintVal = ethers.BigNumber.from((1e18).toString()).mul(10);
 
+        // Mint WETH for both accounts
         weth.freeMint(mintVal);
         weth.connect(eoa1).freeMint(mintVal);
 
@@ -511,7 +512,7 @@ describe('Mixologist test', () => {
             )
         ).wait();
 
-        // Add asset to Mixologist
+        // Approve Mixologist in yieldBox
         await (
             await yieldBox.setApprovalForAll(wethUsdcMixologist.address, true)
         ).wait();
@@ -519,6 +520,7 @@ describe('Mixologist test', () => {
             await yieldBox.connect(eoa1).setApprovalForAll(wethUsdcMixologist.address, true)
         ).wait();
 
+        // Add asset from eoa1 to deployer without approval
         await expect(
             wethUsdcMixologist.addAsset(
                 eoa1.address,
@@ -528,10 +530,12 @@ describe('Mixologist test', () => {
             )
         ).to.be.revertedWithCustomError(wethUsdcMixologist, "NotApproved");
 
+        // Approve deployer as operator in Mixologist
         await expect(
             await wethUsdcMixologist.connect(eoa1).setApprovalForAll(deployer.address, true)
         ).to.emit(wethUsdcMixologist, "LogApprovalForAll")
 
+        // Add asset from eoa1 to deployer with approval
            await (await wethUsdcMixologist.addAsset(
                 eoa1.address,
                 deployer.address,
