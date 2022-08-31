@@ -316,11 +316,13 @@ describe('LiquidationQueue test', () => {
         await wethUsdcMixologist.borrow(deployer.address, borrowAmount);
 
         // Try to liquidate but with failure since price hasn't changed
+        const data = new ethers.utils.AbiCoder().encode(['uint256'], [1]);
         await expect(
             wethUsdcMixologist.liquidate(
                 [deployer.address],
                 [await wethUsdcMixologist.userBorrowPart(deployer.address)],
                 ethers.constants.AddressZero,
+                data,
             ),
         ).to.be.revertedWith('Mx: all are solvent');
 
@@ -334,6 +336,7 @@ describe('LiquidationQueue test', () => {
                 [deployer.address],
                 [await wethUsdcMixologist.userBorrowPart(deployer.address)],
                 multiSwapper.address,
+                data,
             ),
         ).to.not.be.reverted;
 
@@ -342,6 +345,7 @@ describe('LiquidationQueue test', () => {
                 [deployer.address],
                 [await wethUsdcMixologist.userBorrowPart(deployer.address)],
                 multiSwapper.address,
+                data,
             ),
         ).to.be.revertedWith('Mx: all are solvent');
 
@@ -766,6 +770,11 @@ describe('LiquidationQueue test', () => {
                     )} mixologist balance after lend operation is not right`,
                 ).to.eq(parseFloat(ethers.utils.formatEther(lendValShare)));
             }
+
+            const swapData = new ethers.utils.AbiCoder().encode(
+                ['uint256'],
+                [1],
+            );
             //second half borrows
             const borrowVal = usdcDepositVal
                 .mul(74)
@@ -808,6 +817,7 @@ describe('LiquidationQueue test', () => {
                         [account.address],
                         [borrowVal],
                         multiSwapper.address,
+                        swapData,
                     ),
                 ).to.be.reverted;
             }
@@ -836,6 +846,7 @@ describe('LiquidationQueue test', () => {
                     liqudatableAccounts,
                     liquidatebleAmonts,
                     multiSwapper.address,
+                    swapData,
                 );
             const shareForCallerAfter = await yieldBox.balanceOf(
                 accounts[0].address,

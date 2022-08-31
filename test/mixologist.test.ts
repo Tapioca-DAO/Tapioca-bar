@@ -119,12 +119,15 @@ describe('Mixologist test', () => {
             .connect(eoa1)
             .withdraw(assetId, eoa1.address, eoa1.address, wethBorrowVal, 0);
 
+        const data = new ethers.utils.AbiCoder().encode(['uint256'], [1]);
+
         // Can't liquidate
         await expect(
             wethUsdcMixologist.liquidate(
                 [eoa1.address],
                 [wethBorrowVal],
                 multiSwapper.address,
+                data,
             ),
         ).to.be.reverted;
 
@@ -137,6 +140,7 @@ describe('Mixologist test', () => {
                 [eoa1.address],
                 [wethBorrowVal],
                 multiSwapper.address,
+                data,
             ),
         ).to.not.be.reverted;
     });
@@ -391,7 +395,10 @@ describe('Mixologist test', () => {
         expect(userBorrowPart.gt(wethBorrowVal));
         // Withdraw fees from BeachBar
         await expect(
-            bar.withdrawAllProtocolFees([multiSwapper.address]),
+            bar.withdrawAllProtocolFees(
+                [multiSwapper.address],
+                [{ minAssetAmount: 1 }],
+            ),
         ).to.emit(wethUsdcMixologist, 'LogYieldBoxFeesDeposit');
 
         const tapAmountHarvested = await yieldBox.toAmount(
@@ -610,6 +617,7 @@ describe('Mixologist test', () => {
         await expect(
             wethUsdcMixologist.depositFeesToYieldBox(
                 ethers.constants.AddressZero,
+                { minAssetAmount: 1 },
             ),
         ).to.be.revertedWith('Mx: Invalid swapper');
     });
@@ -679,5 +687,4 @@ describe('Mixologist test', () => {
 
         await wethUsdcMixologist.accrue();
     });
-   
 });
