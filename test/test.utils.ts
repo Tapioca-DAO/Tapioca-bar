@@ -466,6 +466,7 @@ export async function register(staging?: boolean) {
         await (
             await _wethUsdcMixologist.addAsset(
                 _account.address,
+                _account.address,
                 false,
                 _valShare,
             )
@@ -496,6 +497,7 @@ export async function register(staging?: boolean) {
         await (
             await _wethUsdcMixologist.addCollateral(
                 _account.address,
+                _account.address,
                 false,
                 _valShare,
             )
@@ -524,6 +526,7 @@ export async function register(staging?: boolean) {
         ).wait();
         await (
             await wethUsdcMixologist.addAsset(
+                deployer.address,
                 deployer.address,
                 false,
                 mintValShare,
