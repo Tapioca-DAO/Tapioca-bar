@@ -4,7 +4,7 @@ import '@boringcrypto/boring-solidity/contracts/BoringOwnable.sol';
 import '@boringcrypto/boring-solidity/contracts/ERC20.sol';
 import '../mixologist/Mixologist.sol';
 import './ILiquidationQueue.sol';
-import './bidders/IUsdoBidder.sol';
+import './bidders/IStableBidder.sol';
 
 enum MODE {
     ADD,
@@ -204,27 +204,25 @@ contract LiquidationQueue {
     // *** TXS *** //
     // *********** //
 
-    /// @notice Add a bid to a bid pool using USD0.
-    /// @dev Works the same way as `bid` but performs a swap from USD0 to liquidated asset
-    /// @param user The bidder.
-    /// @param pool To which pool the bid should go.
-    /// @param usdoAmount The USDO amount
+    /// @notice Add a bid to a bid pool using stablecoins.
+    /// @dev Works the same way as `bid` but performs a swap from the stablecoin to the liquidated asset
+    /// @param user The bidder
+    /// @param pool To which pool the bid should go
+    /// @param stableAssetId Stablecoin YieldBox asset id
+    /// @param amountIn Stablecoin amount
     /// @param data Extra data for swap operations
-    function bidWithUsdo(
+    function bidWithStable(
         address user,
         uint256 pool,
-        uint256 usdoAmount,
+        uint256 stableAssetId,
+        uint256 amountIn,
         bytes calldata data
     ) external Active {
         require(pool <= MAX_BID_POOLS, 'LQ: premium too high');
-        require(
-            address(beachBar.usdoToken()) != address(0),
-            'LQ: USD0 not set'
-        );
 
-        uint256 liquidatedAssetAmount = IUsdoBidder(
+        uint256 liquidatedAssetAmount = IStableBidder(
             liquidationQueueMeta.bidSwapper
-        ).swap(msg.sender, usdoAmount, data);
+        ).swap(msg.sender, stableAssetId, amountIn, data);
         require(
             liquidatedAssetAmount >= liquidationQueueMeta.minBidAmount,
             'LQ: bid too low'

@@ -13,7 +13,7 @@ contract CurvePoolMock {
     constructor(address token0, address token1) {
         coins[0] = token0;
         coins[1] = token1;
-        divider = 10**3;
+        divider = 1;
     }
 
     function setDivider(uint256 div) external {
@@ -26,7 +26,7 @@ contract CurvePoolMock {
         uint256 dx
     ) external view returns (uint256) {
         if (divider == 0) return 0;
-        return dx / divider; //hardcoded for weth>usdc ratio
+        return dx / divider;
     }
 
     function exchange(
@@ -38,7 +38,7 @@ contract CurvePoolMock {
     ) external payable {
         if (divider == 0) return;
         address tokenOut = coins[j];
-        uint256 freeMintAmount = dx / divider; //hardcoded for weth>usdc ratio
+        uint256 freeMintAmount = dx / divider;
         ERC20Mock(tokenOut).freeMint(freeMintAmount);
         IERC20(tokenOut).safeTransfer(msg.sender, freeMintAmount);
     }
