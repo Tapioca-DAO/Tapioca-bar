@@ -34,6 +34,9 @@ contract BeachBar is BoringOwnable {
     IERC20 public immutable tapToken;
     uint256 public immutable tapAssetId;
 
+    IERC20 public usdoToken;
+    uint256 public usdoAssetId;
+
     MasterContract[] public masterContracts;
 
     // Used to check if a master contract is registered to be used as a Mixologist template
@@ -67,6 +70,7 @@ contract BeachBar is BoringOwnable {
     event FeeToUpdate(address newFeeTo);
     event FeeVeTapUpdate(address newFeeVeTap);
     event SwapperUpdate(address swapper, bool isRegistered);
+    event UsdoTokenUpdated(address indexed usdoToken, uint256 assetId);
 
     // ******************//
     // *** MODIFIERS *** //
@@ -164,6 +168,22 @@ contract BeachBar is BoringOwnable {
     // *** OWNER FUNCTIONS *** //
     // *********************** //
 
+    /// @notice Used to set the USD0 token
+    /// @dev sets usdoToken and usdoAssetId
+    /// @param _usdoToken the USD0 token address
+    function setUsdoToken(IERC20 _usdoToken) external onlyOwner {
+        usdoToken = _usdoToken;
+        usdoAssetId = uint96(
+            yieldBox.registerAsset(
+                TokenType.ERC20,
+                address(_usdoToken),
+                IStrategy(address(0)),
+                0
+            )
+        );
+        emit UsdoTokenUpdated(address(_usdoToken), usdoAssetId);
+    }
+
     /// @notice Register a master contract
     /// @param mcAddress The address of the contract
     /// @param contractType_ The risk type of the contract
@@ -237,7 +257,7 @@ contract BeachBar is BoringOwnable {
     /// MasterContract Only Admin function.
     /// @param swapper The address of the swapper contract that conforms to `ISwapper`.
     /// @param enable True to enable the swapper. To disable use False.
-    function setSwapper(MultiSwapper swapper, bool enable) public onlyOwner {
+    function setSwapper(MultiSwapper swapper, bool enable) external onlyOwner {
         swappers[swapper] = enable;
         emit SwapperUpdate(address(swapper), enable);
     }

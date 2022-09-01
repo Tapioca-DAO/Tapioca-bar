@@ -941,4 +941,12 @@ contract Mixologist is ERC20, BoringOwnable {
         _liquidationQueue.init(_liquidationQueueMeta);
         liquidationQueue = _liquidationQueue;
     }
+
+    /// @notice Execute an only owner function inside of the LiquidationQueue
+    function updateLiquidationQueueSwapper(address _swapper)
+        external
+        onlyOwner
+    {
+        liquidationQueue.setBidSwapper(_swapper);
+    }
 }

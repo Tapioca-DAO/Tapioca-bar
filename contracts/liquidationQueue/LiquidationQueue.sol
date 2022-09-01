@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
-import 'hardhat/console.sol'; //TODO: remove
+import '@boringcrypto/boring-solidity/contracts/BoringOwnable.sol';
 import '@boringcrypto/boring-solidity/contracts/ERC20.sol';
 import '../mixologist/Mixologist.sol';
 import './ILiquidationQueue.sol';
+import './bidders/IStableBidder.sol';
+
 enum MODE {
     ADD,
     SUB
@@ -22,10 +24,10 @@ contract LiquidationQueue {
      * General information about the LiquidationQueue contract.
      */
 
-    LiquidationQueueMeta liquidationQueueMeta; // Meta-data for this contract.
-    Mixologist mixologist; // The target market.
-    BeachBar beachBar;
-    YieldBox yieldBox;
+    LiquidationQueueMeta public liquidationQueueMeta; // Meta-data for this contract.
+    Mixologist public mixologist; // The target market.
+    BeachBar public beachBar;
+    YieldBox public yieldBox;
 
     uint256 public lqAssetId; // The liquidation queue BeachBar asset id.
     uint256 public marketAssetId; // The mixologist asset id.
@@ -105,6 +107,7 @@ contract LiquidationQueue {
             _initOrderBookPoolInfo(i);
             ++i;
         }
+
         onlyOnce = true; // We set the init flag.
     }
 
@@ -144,6 +147,7 @@ contract LiquidationQueue {
     );
 
     event Redeem(address indexed redeemer, address indexed to, uint256 amount);
+    event BidSwapperUpdated(address indexed _old, address indexed _new);
 
     // ***************** //
     // *** MODIFIERS *** //
@@ -200,6 +204,33 @@ contract LiquidationQueue {
     // *** TXS *** //
     // *********** //
 
+    /// @notice Add a bid to a bid pool using stablecoins.
+    /// @dev Works the same way as `bid` but performs a swap from the stablecoin to the liquidated asset
+    /// @param user The bidder
+    /// @param pool To which pool the bid should go
+    /// @param stableAssetId Stablecoin YieldBox asset id
+    /// @param amountIn Stablecoin amount
+    /// @param data Extra data for swap operations
+    function bidWithStable(
+        address user,
+        uint256 pool,
+        uint256 stableAssetId,
+        uint256 amountIn,
+        bytes calldata data
+    ) external Active {
+        require(pool <= MAX_BID_POOLS, 'LQ: premium too high');
+
+        uint256 liquidatedAssetAmount = IStableBidder(
+            liquidationQueueMeta.bidSwapper
+        ).swap(msg.sender, stableAssetId, amountIn, data);
+        require(
+            liquidatedAssetAmount >= liquidationQueueMeta.minBidAmount,
+            'LQ: bid too low'
+        );
+
+        _bid(user, pool, liquidatedAssetAmount);
+    }
+
     /// @notice Add a bid to a bid pool.
     /// @dev Create an entry in `bidPools`.
     ///      Clean the userBidIndex here instead of the `executeBids()` function to save on gas.
@@ -215,37 +246,14 @@ contract LiquidationQueue {
         require(amount >= liquidationQueueMeta.minBidAmount, 'LQ: bid too low');
 
         // Transfer assets to the LQ contract.
-        {
-            uint256 assetId = lqAssetId;
-            yieldBox.transfer(
-                msg.sender,
-                address(this),
-                assetId,
-                yieldBox.toShare(assetId, amount, false)
-            );
-        }
-
-        Bidder memory bidder;
-        bidder.amount = amount;
-        bidder.timestamp = block.timestamp;
-
-        bidPools[pool][user] = bidder;
-        emit Bid(msg.sender, user, pool, amount, block.timestamp);
-
-        // Clean the userBidIndex.
-        uint256[] storage bidIndexes = userBidIndexes[user][pool];
-        uint256 bidIndexesLen = bidIndexes.length;
-        OrderBookPoolInfo memory poolInfo = orderBookInfos[pool];
-        for (uint256 i = 0; i < bidIndexesLen; ) {
-            if (bidIndexes[i] >= poolInfo.nextBidPull) {
-                bidIndexesLen = bidIndexes.length;
-                bidIndexes[i] = bidIndexes[bidIndexesLen - 1];
-                bidIndexes.pop();
-            }
-            unchecked {
-                ++i;
-            }
-        }
+        uint256 assetId = lqAssetId;
+        yieldBox.transfer(
+            msg.sender,
+            address(this),
+            assetId,
+            yieldBox.toShare(assetId, amount, false)
+        );
+        _bid(user, pool, amount);
     }
 
     /// @notice Activate a bid by putting it in the order book.
@@ -416,7 +424,6 @@ contract LiquidationQueue {
         require(msg.sender == address(mixologist), 'LQ: Only Mixologist');
 
         (uint256 curPoolId, bool isBidAvail) = getNextAvailBidPool();
-        require(isBidAvail, 'LQ: No available bid to fill');
 
         OrderBookPoolInfo memory poolInfo;
         OrderBookPoolEntry storage orderBookEntry;
@@ -543,6 +550,14 @@ contract LiquidationQueue {
         }
     }
 
+    /// @notice updates the bid swapper address
+    /// @param _swapper thew new ICollateralSwaper contract address
+    function setBidSwapper(address _swapper) external {
+        require(msg.sender == address(mixologist), 'unauthorized');
+        emit BidSwapperUpdated(liquidationQueueMeta.bidSwapper, _swapper);
+        liquidationQueueMeta.bidSwapper = _swapper;
+    }
+
     // ************* //
     // *** VIEWS *** //
     // ************* //
@@ -588,6 +603,33 @@ contract LiquidationQueue {
     // **************** //
     // *** INTERNAL *** //
     // **************** //
+    function _bid(
+        address user,
+        uint256 pool,
+        uint256 amount
+    ) internal {
+        Bidder memory bidder;
+        bidder.amount = amount;
+        bidder.timestamp = block.timestamp;
+
+        bidPools[pool][user] = bidder;
+        emit Bid(msg.sender, user, pool, amount, block.timestamp);
+
+        // Clean the userBidIndex.
+        uint256[] storage bidIndexes = userBidIndexes[user][pool];
+        uint256 bidIndexesLen = bidIndexes.length;
+        OrderBookPoolInfo memory poolInfo = orderBookInfos[pool];
+        for (uint256 i = 0; i < bidIndexesLen; ) {
+            if (bidIndexes[i] >= poolInfo.nextBidPull) {
+                bidIndexesLen = bidIndexes.length;
+                bidIndexes[i] = bidIndexes[bidIndexesLen - 1];
+                bidIndexes.pop();
+            }
+            unchecked {
+                ++i;
+            }
+        }
+    }
 
     /// @notice Create an asset inside of BeachBar that will hold the funds.
     function _registerAsset() internal returns (uint256) {
