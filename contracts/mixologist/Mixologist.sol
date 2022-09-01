@@ -146,9 +146,6 @@ contract Mixologist is ERC20, BoringOwnable {
      * @param approved Status of approval.
      */
     function setApprovalForAll(address operator, bool approved) external {
-        // Checks
-        require(operator != address(0), 'YieldBox: operator not set'); // Important for security
-        require(operator != address(this), "YieldBox: can't approve yieldBox");
 
         // Effects
         isApprovedForAll[msg.sender][operator] = approved;
