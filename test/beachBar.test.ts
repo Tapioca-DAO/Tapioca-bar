@@ -77,7 +77,14 @@ describe('BeachBar test', () => {
         const { bar } = await register();
 
         await expect(
-            bar.withdrawAllProtocolFees([ethers.constants.AddressZero]),
+            bar.withdrawAllProtocolFees(
+                [ethers.constants.AddressZero],
+                [
+                    {
+                        minAssetAmount: 1,
+                    },
+                ],
+            ),
         ).to.be.revertedWith('BeachBar: zero address');
     });
 });
