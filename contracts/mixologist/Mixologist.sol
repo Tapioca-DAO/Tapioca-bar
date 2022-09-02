@@ -399,7 +399,6 @@ contract Mixologist is ERC20, BoringOwnable {
         uint256 borrowPart = userBorrowPart[user];
         if (borrowPart == 0) return 0;
         uint256 collateralShare = userCollateralShare[user];
-        if (collateralShare == 0) return 0;
 
         Rebase memory _totalBorrow = totalBorrow;
 
@@ -668,10 +667,13 @@ contract Mixologist is ERC20, BoringOwnable {
     ///        Ignore for `orderBookLiquidation()`
     /// @param swapper Contract address of the `MultiSwapper` implementation. See `setSwapper`.
     ///        Ignore for `orderBookLiquidation()`
+    /// @param swapData Extra swap data
+    ///        Ignore for `orderBookLiquidation()`
     function liquidate(
         address[] calldata users,
         uint256[] calldata maxBorrowParts,
-        MultiSwapper swapper
+        MultiSwapper swapper,
+        bytes calldata swapData
     ) external {
         // Oracle can fail but we still need to allow liquidations
         (, uint256 _exchangeRate) = updateExchangeRate();
@@ -684,7 +686,13 @@ contract Mixologist is ERC20, BoringOwnable {
                 return;
             }
         }
-        closedLiquidation(users, maxBorrowParts, swapper, _exchangeRate);
+        closedLiquidation(
+            users,
+            maxBorrowParts,
+            swapper,
+            _exchangeRate,
+            swapData
+        );
     }
 
     function orderBookLiquidation(
@@ -786,11 +794,13 @@ contract Mixologist is ERC20, BoringOwnable {
     /// @param users An array of user addresses.
     /// @param maxBorrowParts A one-to-one mapping to `users`, contains maximum (partial) borrow amounts (to liquidate) of the respective user.
     /// @param swapper Contract address of the `MultiSwapper` implementation. See `setSwapper`.
+    /// @param swapData Swap necessar data
     function closedLiquidation(
         address[] calldata users,
         uint256[] calldata maxBorrowParts,
         MultiSwapper swapper,
-        uint256 _exchangeRate
+        uint256 _exchangeRate,
+        bytes calldata swapData
     ) internal {
         uint256 allCollateralShare;
         uint256 allBorrowAmount;
@@ -854,10 +864,15 @@ contract Mixologist is ERC20, BoringOwnable {
             collateralId,
             allCollateralShare
         );
+
+        uint256 minAssetMount = 0;
+        if (swapData.length > 0) {
+            minAssetMount = abi.decode(swapData, (uint256));
+        }
         swapper.swap(
             collateralId,
             assetId,
-            0,
+            minAssetMount,
             address(this),
             collateralSwapPath,
             allCollateralShare
@@ -926,7 +941,10 @@ contract Mixologist is ERC20, BoringOwnable {
     }
 
     /// @notice Withdraw the balance of `feeTo`, swap asset into TAP and deposit it to yieldBox of `feeTo`
-    function depositFeesToYieldBox(MultiSwapper swapper) public {
+    function depositFeesToYieldBox(
+        MultiSwapper swapper,
+        SwapData calldata swapData
+    ) public {
         if (accrueInfo.feesEarnedFraction > 0) {
             withdrawFeesEarned();
         }
@@ -941,10 +959,11 @@ contract Mixologist is ERC20, BoringOwnable {
         );
 
         yieldBox.transfer(address(this), address(swapper), assetId, feeShares);
+
         (uint256 tapAmount, ) = swapper.swap(
             assetId,
             beachBar.tapAssetId(),
-            0,
+            swapData.minAssetAmount,
             _feeVeTap,
             tapSwapPath,
             feeShares
@@ -978,5 +997,13 @@ contract Mixologist is ERC20, BoringOwnable {
     ) public onlyOwner {
         _liquidationQueue.init(_liquidationQueueMeta);
         liquidationQueue = _liquidationQueue;
+    }
+
+    /// @notice Execute an only owner function inside of the LiquidationQueue
+    function updateLiquidationQueueSwapper(address _swapper)
+        external
+        onlyOwner
+    {
+        liquidationQueue.setBidSwapper(_swapper);
     }
 }

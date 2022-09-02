@@ -551,7 +551,6 @@ describe('Mixologist test', () => {
         )).wait()
     });
 
-
     it('should return ERC20 properties', async () => {
         const { wethUsdcMixologist } = await register();
         const name = await wethUsdcMixologist.name();
@@ -649,6 +648,7 @@ describe('Mixologist test', () => {
 
         await expect(
             wethUsdcMixologist.removeAsset(deployer.address, deployer.address, share),
+
         ).to.be.revertedWith('Mx: below minimum');
     });
 
@@ -765,3 +765,4 @@ describe('Mixologist test', () => {
         await wethUsdcMixologist.accrue();
     });
 });
+

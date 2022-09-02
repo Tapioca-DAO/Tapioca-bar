@@ -22,6 +22,10 @@ struct MasterContract {
     ContractType risk;
 }
 
+struct SwapData {
+    uint256 minAssetAmount;
+}
+
 // TODO: Permissionless market deployment
 ///     + asset registration? (toggle to renounce ownership so users can call)
 contract BeachBar is BoringOwnable {
@@ -29,6 +33,9 @@ contract BeachBar is BoringOwnable {
 
     IERC20 public immutable tapToken;
     uint256 public immutable tapAssetId;
+
+    IERC20 public usdoToken;
+    uint256 public usdoAssetId;
 
     MasterContract[] public masterContracts;
 
@@ -63,6 +70,7 @@ contract BeachBar is BoringOwnable {
     event FeeToUpdate(address newFeeTo);
     event FeeVeTapUpdate(address newFeeVeTap);
     event SwapperUpdate(address swapper, bool isRegistered);
+    event UsdoTokenUpdated(address indexed usdoToken, uint256 assetId);
 
     // ******************//
     // *** MODIFIERS *** //
@@ -131,7 +139,10 @@ contract BeachBar is BoringOwnable {
     /// @dev `swappers_` can have one element that'll be used for all clones. Or one swapper per MasterContract.
     /// @dev Fees are withdrawn in TAP and sent to the FeeDistributor contract
     /// @param swappers_ One or more swappers to convert the asset to TAP.
-    function withdrawAllProtocolFees(MultiSwapper[] calldata swappers_) public {
+    function withdrawAllProtocolFees(
+        MultiSwapper[] calldata swappers_,
+        SwapData[] calldata swapData_
+    ) public {
         require(address(swappers_[0]) != address(0), 'BeachBar: zero address');
 
         uint256 _masterContractLength = masterContracts.length;
@@ -143,7 +154,8 @@ contract BeachBar is BoringOwnable {
         unchecked {
             for (uint256 i = 0; i < length; ) {
                 IMixologist(markets[i]).depositFeesToYieldBox(
-                    singleSwapper ? swappers_[0] : swappers_[i]
+                    singleSwapper ? swappers_[0] : swappers_[i],
+                    singleSwapper ? swapData_[0] : swapData_[i]
                 );
                 ++i;
             }
@@ -155,6 +167,22 @@ contract BeachBar is BoringOwnable {
     // *********************** //
     // *** OWNER FUNCTIONS *** //
     // *********************** //
+
+    /// @notice Used to set the USD0 token
+    /// @dev sets usdoToken and usdoAssetId
+    /// @param _usdoToken the USD0 token address
+    function setUsdoToken(IERC20 _usdoToken) external onlyOwner {
+        usdoToken = _usdoToken;
+        usdoAssetId = uint96(
+            yieldBox.registerAsset(
+                TokenType.ERC20,
+                address(_usdoToken),
+                IStrategy(address(0)),
+                0
+            )
+        );
+        emit UsdoTokenUpdated(address(_usdoToken), usdoAssetId);
+    }
 
     /// @notice Register a master contract
     /// @param mcAddress The address of the contract
@@ -229,7 +257,7 @@ contract BeachBar is BoringOwnable {
     /// MasterContract Only Admin function.
     /// @param swapper The address of the swapper contract that conforms to `ISwapper`.
     /// @param enable True to enable the swapper. To disable use False.
-    function setSwapper(MultiSwapper swapper, bool enable) public onlyOwner {
+    function setSwapper(MultiSwapper swapper, bool enable) external onlyOwner {
         swappers[swapper] = enable;
         emit SwapperUpdate(address(swapper), enable);
     }
