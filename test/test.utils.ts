@@ -1,6 +1,7 @@
 import { time } from '@nomicfoundation/hardhat-network-helpers';
 import { BigNumberish } from 'ethers';
 import { ethers } from 'hardhat';
+import { string } from 'hardhat/internal/core/params/argumentTypes';
 import {
     BeachBar,
     ERC20Mock,
@@ -274,7 +275,9 @@ async function registerLiquidationQueue(
     const LQ_META = {
         activationTime: 600, // 10min
         minBidAmount: ethers.BigNumber.from((1e18).toString()).mul(200), // 200 USDC
+        defaultBidAmount: ethers.BigNumber.from((1e18).toString()).mul(400), // 400 USDC
         feeCollector,
+        bidSwapper: ethers.constants.AddressZero,
     };
     const payload = mixologist.interface.encodeFunctionData(
         'setLiquidationQueue',
@@ -288,9 +291,6 @@ async function registerLiquidationQueue(
     return { liquidationQueue, LQ_META };
 }
 
-export async function time_travel(seconds: number) {
-    await time.increase(seconds);
-}
 const log = (message: string, staging?: boolean) =>
     staging && console.log(message);
 export async function register(staging?: boolean) {
@@ -403,8 +403,12 @@ export async function register(staging?: boolean) {
         __wethUsdcPrice,
         deployer,
         usdc,
+        usdcAssetId,
         weth,
+        wethAssetId,
         tap,
+        tapSwapPath,
+        collateralSwapPath,
         wethUsdcOracle,
         yieldBox,
         bar,
@@ -417,6 +421,7 @@ export async function register(staging?: boolean) {
         liquidationQueue,
         LQ_META,
         feeCollector,
+        mediumRiskMC,
         __uniFactory,
         __uniRouter,
         __wethUsdcMockPair,
@@ -440,6 +445,10 @@ export async function register(staging?: boolean) {
         await (
             await _yieldBox.setApprovalForAll(wethUsdcMixologist.address, true)
         ).wait();
+    };
+
+    const timeTravel = async (seconds: number) => {
+        await time.increase(seconds);
     };
 
     const wethDepositAndAddAsset = async (
@@ -540,6 +549,7 @@ export async function register(staging?: boolean) {
         wethDepositAndAddAsset,
         usdcDepositAndAddCollateral,
         initContracts,
+        timeTravel,
     };
 
     return { ...initialSetup, ...utilFuncs };

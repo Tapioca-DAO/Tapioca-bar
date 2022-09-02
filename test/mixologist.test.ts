@@ -1,6 +1,6 @@
 import { ethers } from 'hardhat';
 import { expect } from 'chai';
-import { register, time_travel } from './test.utils';
+import { register } from './test.utils';
 
 describe('Mixologist test', () => {
     it('Should deposit to yieldBox, add asset to mixologist, remove asset and withdraw', async () => {
@@ -120,12 +120,15 @@ describe('Mixologist test', () => {
             .connect(eoa1)
             .withdraw(assetId, eoa1.address, eoa1.address, wethBorrowVal, 0);
 
+        const data = new ethers.utils.AbiCoder().encode(['uint256'], [1]);
+
         // Can't liquidate
         await expect(
             wethUsdcMixologist.liquidate(
                 [eoa1.address],
                 [wethBorrowVal],
                 multiSwapper.address,
+                data,
             ),
         ).to.be.reverted;
 
@@ -138,6 +141,7 @@ describe('Mixologist test', () => {
                 [eoa1.address],
                 [wethBorrowVal],
                 multiSwapper.address,
+                data,
             ),
         ).to.not.be.reverted;
     });
@@ -320,6 +324,7 @@ describe('Mixologist test', () => {
             mixologistFeeVeTap,
             mixologistHelper,
             __wethUsdcPrice,
+            timeTravel,
         } = await register();
 
         const assetId = await wethUsdcMixologist.assetId();
@@ -360,7 +365,7 @@ describe('Mixologist test', () => {
 
         // We jump time to accumulate fees
         const day = 86400;
-        await time_travel(180 * day);
+        await timeTravel(180 * day);
 
         // Repay
         const userBorrowPart = await wethUsdcMixologist.userBorrowPart(
@@ -393,7 +398,10 @@ describe('Mixologist test', () => {
         expect(userBorrowPart.gt(wethBorrowVal));
         // Withdraw fees from BeachBar
         await expect(
-            bar.withdrawAllProtocolFees([multiSwapper.address]),
+            bar.withdrawAllProtocolFees(
+                [multiSwapper.address],
+                [{ minAssetAmount: 1 }],
+            ),
         ).to.emit(wethUsdcMixologist, 'LogYieldBoxFeesDeposit');
 
         const tapAmountHarvested = await yieldBox.toAmount(
@@ -470,7 +478,6 @@ describe('Mixologist test', () => {
         ).to.emit(wethUsdcMixologist, 'LogFlashLoan');
     });
 
-
     it('Should try to add asset to mixologist on behalf of another user and fail, then pass after approval', async () => {
         const { weth, yieldBox, wethUsdcMixologist, deployer, initContracts, eoa1 } =
             await register();
@@ -542,5 +549,219 @@ describe('Mixologist test', () => {
             false,
             mintValShare,
         )).wait()
+    });
+
+
+    it('should return ERC20 properties', async () => {
+        const { wethUsdcMixologist } = await register();
+        const name = await wethUsdcMixologist.name();
+        const symbol = await wethUsdcMixologist.symbol();
+        const decimals = await wethUsdcMixologist.decimals();
+        const totalSupply = await wethUsdcMixologist.totalSupply();
+
+        expect(symbol.toLowerCase()).eq('tmtt/weth-test');
+        expect(decimals).to.eq(18);
+        expect(totalSupply).to.eq(0);
+    });
+
+    it('should not allow initialization with bad arguments', async () => {
+        const { bar, mediumRiskMC, yieldBox, wethUsdcOracle } =
+            await register();
+
+        const data = new ethers.utils.AbiCoder().encode(
+            [
+                'address',
+                'address',
+                'uint256',
+                'address',
+                'uint256',
+                'address',
+                'address[]',
+                'address[]',
+            ],
+            [
+                bar.address,
+                ethers.constants.AddressZero,
+                0,
+                ethers.constants.AddressZero,
+                0,
+                wethUsdcOracle.address,
+                [],
+                [],
+            ],
+        );
+
+        await expect(
+            bar.registerMixologist(mediumRiskMC.address, data, true),
+        ).to.be.revertedWith('Mx: bad pair');
+    });
+
+    it('should compute amount to solvency for nothing borrowed', async () => {
+        const { wethUsdcMixologist, wethUsdcOracle } = await register();
+        const amountForNothingBorrowed =
+            await wethUsdcMixologist.computeAssetAmountToSolvency(
+                ethers.constants.AddressZero,
+                0,
+            );
+        expect(amountForNothingBorrowed.eq(0)).to.be.true;
+    });
+
+    it('should not update exchange rate', async () => {
+        const { wethUsdcMixologist, wethUsdcOracle } = await register();
+        await wethUsdcOracle.setSuccess(false);
+
+        await wethUsdcOracle.set(100);
+
+        const previousExchangeRate = await wethUsdcMixologist.exchangeRate();
+        await wethUsdcMixologist.updateExchangeRate();
+        let currentExchangeRate = await wethUsdcMixologist.exchangeRate();
+
+        expect(previousExchangeRate.eq(currentExchangeRate)).to.be.true;
+
+        await wethUsdcOracle.setSuccess(true);
+        await wethUsdcMixologist.updateExchangeRate();
+        currentExchangeRate = await wethUsdcMixologist.exchangeRate();
+        expect(currentExchangeRate.eq(100)).to.be.true;
+    });
+
+    it('removing everything should not be allowed', async () => {
+        const {
+            weth,
+            yieldBox,
+            wethDepositAndAddAsset,
+            eoa1,
+            approveTokensAndSetBarApproval,
+            deployer,
+            wethUsdcMixologist,
+        } = await register();
+
+        const assetId = await wethUsdcMixologist.assetId();
+        const collateralId = await wethUsdcMixologist.collateralId();
+        const wethMintVal = 1000;
+
+        weth.freeMint(1000);
+        await approveTokensAndSetBarApproval();
+        await wethDepositAndAddAsset(wethMintVal);
+        expect(
+            await wethUsdcMixologist.balanceOf(deployer.address),
+        ).to.be.equal(await yieldBox.toShare(assetId, wethMintVal, false));
+        const share = await yieldBox.toShare(assetId, wethMintVal, false);
+
+        await expect(
+            wethUsdcMixologist.removeAsset(deployer.address, deployer.address, share),
+        ).to.be.revertedWith('Mx: below minimum');
+    });
+
+    it('should set new swap paths', async () => {
+        const {
+            collateralSwapPath,
+            tapSwapPath,
+            wethUsdcMixologist,
+            deployer,
+            bar,
+        } = await register();
+
+        // function executeMixologistFn(address[] calldata mc, bytes[] memory data)
+
+        const setCollateralInterface = new ethers.utils.Interface([
+            'function setCollateralSwapPath(address[])',
+        ]);
+        const collateralSwapCalldata =
+            setCollateralInterface.encodeFunctionData('setCollateralSwapPath', [
+                collateralSwapPath,
+            ]);
+        await bar.executeMixologistFn(
+            [wethUsdcMixologist.address],
+            [collateralSwapCalldata],
+        );
+
+        const setTapInterface = new ethers.utils.Interface([
+            'function setTapSwapPath(address[])',
+        ]);
+        const tapSwapCalldata = setTapInterface.encodeFunctionData(
+            'setTapSwapPath',
+            [tapSwapPath],
+        );
+        await bar.executeMixologistFn(
+            [wethUsdcMixologist.address],
+            [tapSwapCalldata],
+        );
+    });
+
+    it('deposit fees to yieldbox should not work for inexistent swapper', async () => {
+        const { wethUsdcMixologist } = await register();
+
+        await expect(
+            wethUsdcMixologist.depositFeesToYieldBox(
+                ethers.constants.AddressZero,
+                { minAssetAmount: 1 },
+            ),
+        ).to.be.revertedWith('Mx: Invalid swapper');
+    });
+
+    it('should not be allowed to initialize twice', async () => {
+        const { wethUsdcMixologist } = await register();
+
+        await expect(
+            wethUsdcMixologist.init(ethers.utils.toUtf8Bytes('')),
+        ).to.be.revertedWith('Mx: initialized');
+        await wethUsdcMixologist.accrue();
+        await wethUsdcMixologist.accrue();
+    });
+
+    it('should accrue when utilization is over & under target', async () => {
+        const {
+            usdc,
+            weth,
+            yieldBox,
+            wethDepositAndAddAsset,
+            usdcDepositAndAddCollateral,
+            eoa1,
+            approveTokensAndSetBarApproval,
+            deployer,
+            wethUsdcMixologist,
+            multiSwapper,
+            wethUsdcOracle,
+            __wethUsdcPrice,
+        } = await register();
+
+        const assetId = await wethUsdcMixologist.assetId();
+        const collateralId = await wethUsdcMixologist.collateralId();
+        const wethMintVal = ethers.BigNumber.from((1e18).toString()).mul(10);
+        const usdcMintVal = wethMintVal
+            .mul(10)
+            .mul(__wethUsdcPrice.div((1e18).toString()));
+
+        // We get asset
+        weth.freeMint(wethMintVal);
+        usdc.connect(eoa1).freeMint(usdcMintVal);
+
+        // We approve external operators
+        await approveTokensAndSetBarApproval();
+        await approveTokensAndSetBarApproval(eoa1);
+
+        // We lend WETH as deployer
+        await wethDepositAndAddAsset(wethMintVal);
+        expect(
+            await wethUsdcMixologist.balanceOf(deployer.address),
+        ).to.be.equal(await yieldBox.toShare(assetId, wethMintVal, false));
+
+        // We deposit USDC collateral
+        await usdcDepositAndAddCollateral(usdcMintVal, eoa1);
+        expect(
+            await wethUsdcMixologist.userCollateralShare(eoa1.address),
+        ).equal(await yieldBox.toShare(collateralId, usdcMintVal, false));
+
+        const firstBorrow = ethers.BigNumber.from((1e17).toString());
+        await wethUsdcMixologist
+            .connect(eoa1)
+            .borrow(eoa1.address, eoa1.address, firstBorrow);
+        await wethUsdcMixologist.accrue();
+
+        await wethUsdcMixologist
+            .connect(eoa1)
+            .borrow(eoa1.address, eoa1.address, wethMintVal.sub(firstBorrow));
+
+        await wethUsdcMixologist.accrue();
     });
 });
