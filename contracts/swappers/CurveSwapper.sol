@@ -29,8 +29,8 @@ contract CurveSwapper {
     ) external view returns (uint256 amountOut) {
         uint256 amountIn = yieldBox.toAmount(tokenInId, shareIn, false);
         amountOut = curvePool.get_dy(
-            tokenIndexes[0],
-            tokenIndexes[1],
+            int128(int256(tokenIndexes[0])),
+            int128(int256(tokenIndexes[1])),
             amountIn
         );
     }
@@ -60,14 +60,14 @@ contract CurveSwapper {
         );
 
         amountOut = _swapTokensForTokens(
-            tokenIndexes[0],
-            tokenIndexes[1],
+            int128(int256(tokenIndexes[0])),
+            int128(int256(tokenIndexes[1])),
             amountIn,
             amountOutMin
         );
 
-        address tokenOut = curvePool.coins(tokenIndexes[1]);
-        IERC20(tokenOut).approve(address(yieldBox), amountOut);
+        (, address tokenOutAddress, , ) = yieldBox.assets(tokenOutId);
+        IERC20(tokenOutAddress).approve(address(yieldBox), amountOut);
         (, shareOut) = yieldBox.depositAsset(
             tokenOutId,
             address(this),
@@ -78,18 +78,18 @@ contract CurveSwapper {
     }
 
     function _swapTokensForTokens(
-        uint256 i,
-        uint256 j,
+        int128 i,
+        int128 j,
         uint256 amountIn,
         uint256 amountOutMin
     ) private returns (uint256) {
-        address tokenOut = curvePool.coins(j);
+        address tokenOut = curvePool.coins(uint256(uint128(j)));
 
         uint256 outputAmount = curvePool.get_dy(i, j, amountIn);
         require(outputAmount >= amountOutMin, 'insufficient-amount-out');
 
         uint256 balanceBefore = IERC20(tokenOut).balanceOf(address(this));
-        curvePool.exchange(i, j, amountIn, amountOutMin, false);
+        curvePool.exchange(i, j, amountIn, amountOutMin);
         uint256 balanceAfter = IERC20(tokenOut).balanceOf(address(this));
         require(balanceAfter > balanceBefore, 'swap failed');
 

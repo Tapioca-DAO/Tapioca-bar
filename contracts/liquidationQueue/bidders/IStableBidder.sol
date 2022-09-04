@@ -28,4 +28,8 @@ interface IStableBidder {
         uint256 amountIn,
         bytes calldata data
     ) external returns (uint256);
+
+    /// @notice returns the swapper address who performs the first swap
+    /// @dev used for sending funds to it
+    function firstStepSwapper() external view returns (address);
 }

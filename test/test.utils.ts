@@ -277,7 +277,8 @@ async function registerLiquidationQueue(
         minBidAmount: ethers.BigNumber.from((1e18).toString()).mul(200), // 200 USDC
         defaultBidAmount: ethers.BigNumber.from((1e18).toString()).mul(400), // 400 USDC
         feeCollector,
-        bidSwapper: ethers.constants.AddressZero,
+        bidExecutionSwapper: ethers.constants.AddressZero,
+        usdoSwapper: ethers.constants.AddressZero,
     };
     const payload = mixologist.interface.encodeFunctionData(
         'setLiquidationQueue',

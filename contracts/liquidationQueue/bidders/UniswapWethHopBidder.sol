@@ -8,7 +8,6 @@ import '../../swappers/MultiSwapper.sol';
 
 import './IStableBidder.sol';
 
-
 /// @notice Swaps Stable to tAsset through UniswapV2
 /// @dev Performs 2 swap operations:
 ///     - Stable to WETH through UniV2
@@ -56,6 +55,12 @@ contract UniswapWethHopBidder is IStableBidder, BoringOwnable {
         return 'stable -> WETH (Uniswap V2) / WETH -> tAsset (Uniswap V2)';
     }
 
+    /// @notice returns the swapper address who performs the first swap
+    /// @dev used for sending funds to it
+    function firstStepSwapper() external view returns (address) {
+        return address(univ2Swapper);
+    }
+
     /// @notice returns the amount of collateral
     /// @param amountIn Stablecoin amount
     function getOutputAmount(
@@ -97,7 +102,7 @@ contract UniswapWethHopBidder is IStableBidder, BoringOwnable {
 
         uint256 stableShare = _yieldBox.toShare(stableAssetId, amountIn, false);
         _yieldBox.transfer(
-            bidder,
+            address(_liquidationQueue),
             address(univ2Swapper),
             stableAssetId,
             stableShare

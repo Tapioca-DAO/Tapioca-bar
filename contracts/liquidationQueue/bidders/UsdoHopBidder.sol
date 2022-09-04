@@ -10,7 +10,8 @@ import '../../swappers/CurveSwapper.sol';
 
 import './IStableBidder.sol';
 
-/// @notice Swaps Stable to tAsset through UniswapV2
+
+/// @notice Swaps Stable to tAsset through Curve & UniswapV2
 /// @dev Performs 2 swap operations:
 ///     - Stable to USD0 through 3crv+USD0 pool
 ///     - USD0 to tAsset through UniV2
@@ -62,6 +63,12 @@ contract UsdoHopBidder is IStableBidder, BoringOwnable {
         return 'stable -> USD0 (3Crv+USD0) / USD0 -> tAsset (Uniswap V2)';
     }
 
+    /// @notice returns the swapper address who performs the first swap
+    /// @dev used for sending funds to it
+    function firstStepSwapper() external view returns (address) {
+        return address(curveSwapper);
+    }
+
     /// @notice returns the amount of collateral
     /// @param amountIn Stablecoin amount
     function getOutputAmount(
@@ -71,7 +78,7 @@ contract UsdoHopBidder is IStableBidder, BoringOwnable {
     ) external view returns (uint256) {
         require(
             address(_mixologist.beachBar().usdoToken()) != address(0),
-            'LQ: USD0 not set'
+            'USD0 not set'
         );
         uint256 usdoAssetId = _mixologist.beachBar().usdoAssetId();
 
@@ -120,7 +127,7 @@ contract UsdoHopBidder is IStableBidder, BoringOwnable {
         //Stable->USD0
         if (stableAssetId != usdoAssetId) {
             _yieldBox.transfer(
-                bidder,
+                address(_liquidationQueue),
                 address(curveSwapper),
                 stableAssetId,
                 stableShare
