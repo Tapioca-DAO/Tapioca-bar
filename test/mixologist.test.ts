@@ -128,6 +128,7 @@ describe('Mixologist test', () => {
                 [wethBorrowVal],
                 multiSwapper.address,
                 data,
+                data,
             ),
         ).to.be.reverted;
 
@@ -140,6 +141,7 @@ describe('Mixologist test', () => {
                 [eoa1.address],
                 [wethBorrowVal],
                 multiSwapper.address,
+                data,
                 data,
             ),
         ).to.not.be.reverted;

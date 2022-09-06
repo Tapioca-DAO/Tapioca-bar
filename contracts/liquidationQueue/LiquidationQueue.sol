@@ -4,7 +4,6 @@ import '@boringcrypto/boring-solidity/contracts/BoringOwnable.sol';
 import '@boringcrypto/boring-solidity/contracts/ERC20.sol';
 import '../mixologist/Mixologist.sol';
 import './ILiquidationQueue.sol';
-import 'hardhat/console.sol';
 enum MODE {
     ADD,
     SUB
@@ -235,9 +234,7 @@ contract LiquidationQueue {
         uint256 usdoAssetId = beachBar.usdoAssetId();
         yieldBox.transfer(
             msg.sender,
-            stableAssetId == usdoAssetId
-                ? address(this)
-                : address(liquidationQueueMeta.usdoSwapper.firstStepSwapper()),
+            address(liquidationQueueMeta.usdoSwapper),
             stableAssetId,
             yieldBox.toShare(stableAssetId, amountIn, false)
         );
@@ -509,7 +506,8 @@ contract LiquidationQueue {
         Bidder memory entry,
         uint256 discountedBidderAmount,
         uint256 exchangeRate,
-        uint256 poolId
+        uint256 poolId,
+        bytes memory swapData
     )
         private
         returns (
@@ -523,22 +521,20 @@ contract LiquidationQueue {
         finalUsdoAmount = entry.usdoAmount;
         //Execute the swap if USD0 was provided
         if (entry.isUsdo) {
-            uint256 usdoAssetId = beachBar.usdoAssetId();
             yieldBox.transfer(
                 address(this),
-                address(
-                    liquidationQueueMeta.bidExecutionSwapper.firstStepSwapper()
-                ),
-                usdoAssetId,
-                yieldBox.toShare(usdoAssetId, entry.usdoAmount, false)
-            );
-            finalCollateralAmount = liquidationQueueMeta
-                .bidExecutionSwapper
-                .swap(
+                address(liquidationQueueMeta.bidExecutionSwapper),
+                beachBar.usdoAssetId(),
+                yieldBox.toShare(
                     beachBar.usdoAssetId(),
                     entry.usdoAmount,
-                    '' //TODO: add data
-                );
+                    false
+                )
+            );
+
+            finalCollateralAmount = liquidationQueueMeta
+                .bidExecutionSwapper
+                .swap(beachBar.usdoAssetId(), entry.usdoAmount, swapData);
             finalDiscountedCollateralAmount = _getPremiumAmount(
                 _bidToCollateral(finalCollateralAmount, exchangeRate),
                 poolId,
@@ -551,7 +547,8 @@ contract LiquidationQueue {
         Bidder memory entry,
         uint256 collateralAmountToLiquidate,
         uint256 exchangeRate,
-        uint256 poolId
+        uint256 poolId,
+        bytes memory swapData
     )
         private
         returns (
@@ -578,15 +575,13 @@ contract LiquidationQueue {
 
             yieldBox.transfer(
                 address(this),
-                address(
-                    liquidationQueueMeta.bidExecutionSwapper.firstStepSwapper()
-                ),
+                address(liquidationQueueMeta.bidExecutionSwapper),
                 usdoAssetId,
                 yieldBox.toShare(usdoAssetId, finalUsdoAmount, false)
             );
             uint256 returnedCollateral = liquidationQueueMeta
                 .bidExecutionSwapper
-                .swap(usdoAssetId, finalUsdoAmount, ''); //TODO: add data
+                .swap(usdoAssetId, finalUsdoAmount, swapData); //TODO: add data
             require(
                 returnedCollateral >= finalDiscountedCollateralAmount,
                 'need-more-collateral'
@@ -612,9 +607,13 @@ contract LiquidationQueue {
     ///      Mixologist should send the `collateralAmountToLiquidate` to this contract before calling this function.
     /// Tx will fail if it can't transfer allowed BeachBar asset from Mixologist.
     /// @param collateralAmountToLiquidate The amount of collateral to liquidate.
+    /// @param swapData Swap data necessary for swapping USD0 to market asset; necessary only if bidder added USD0
     /// @return totalAmountExecuted The amount of asset that was executed.
     /// @return totalCollateralLiquidated The amount of collateral that was liquidated.
-    function executeBids(uint256 collateralAmountToLiquidate)
+    function executeBids(
+        uint256 collateralAmountToLiquidate,
+        bytes calldata swapData
+    )
         external
         returns (uint256 totalAmountExecuted, uint256 totalCollateralLiquidated)
     {
@@ -659,7 +658,8 @@ contract LiquidationQueue {
                             data.orderBookEntryCopy.bidInfo,
                             collateralAmountToLiquidate,
                             data.exchangeRate,
-                            data.curPoolId
+                            data.curPoolId,
+                            swapData
                         );
 
                     // Execute the bid.
@@ -695,7 +695,8 @@ contract LiquidationQueue {
                             data.orderBookEntryCopy.bidInfo,
                             data.discountedBidderAmount,
                             data.exchangeRate,
-                            data.curPoolId
+                            data.curPoolId,
+                            swapData
                         );
 
                     // Execute the bid.

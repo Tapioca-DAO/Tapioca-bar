@@ -7,8 +7,8 @@ interface IBidder {
     function name() external view returns (string memory);
 
     /// @notice returns the amount of collateral
-    /// @param tokenInId Stablecoin YieldBox asset id
-    /// @param amountIn Stablecoin amount
+    /// @param tokenInId Token in YieldBox asset id
+    /// @param amountIn Token in amount
     /// @param data extra data used for retrieving the ouput
     function getOutputAmount(
         uint256 tokenInId,
@@ -17,8 +17,8 @@ interface IBidder {
     ) external view returns (uint256);
 
     /// @notice swap USD0 to collateral
-    /// @param tokenInId Stablecoin asset id
-    /// @param amountIn Stablecoin amount
+    /// @param tokenInId Token in asset id
+    /// @param amountIn Token in amount
     /// @param data extra data used for the swap operation
     function swap(
         uint256 tokenInId,
@@ -26,13 +26,13 @@ interface IBidder {
         bytes calldata data
     ) external returns (uint256);
 
-    /// @notice returns the swapper address who performs the first swap
-    /// @dev used for sending funds from the LiquidationQueue contract to it
-    function firstStepSwapper() external view returns (address);
-
+    /// @notice returns token tokenIn amount based on tokenOut amount
+    /// @param tokenInId Token in asset id
+    /// @param amountOut Token out amount
+    /// @param data extra data used for retrieving the ouput
     function getInputAmount(
         uint256 tokenInId,
         uint256 amountOut,
-        bytes calldata
+        bytes calldata data
     ) external view returns (uint256);
 }

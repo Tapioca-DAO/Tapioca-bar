@@ -53,12 +53,6 @@ contract CurveStableToUsdoBidder is IBidder, BoringOwnable {
         return 'stable -> USD0 (3Crv+USD0)';
     }
 
-    /// @notice returns the swapper address who performs the first swap
-    /// @dev used for sending funds to it
-    function firstStepSwapper() external view returns (address) {
-        return address(curveSwapper);
-    }
-
     /// @notice returns the amount of collateral
     /// @param amountIn Stablecoin amount
     function getOutputAmount(
@@ -79,11 +73,26 @@ contract CurveStableToUsdoBidder is IBidder, BoringOwnable {
         return _getOutput(tokenInId, usdoAssetId, amountIn);
     }
 
+    /// @notice returns token tokenIn amount based on tokenOut amount
+    /// @param tokenInId Token in asset id
+    /// @param amountOut Token out amount
     function getInputAmount(
         uint256 tokenInId,
         uint256 amountOut,
         bytes calldata
-    ) external view returns (uint256) {}
+    ) external view returns (uint256) {
+        require(
+            address(_mixologist.beachBar().usdoToken()) != address(0),
+            'USD0 not set'
+        );
+
+        uint256 usdoAssetId = _mixologist.beachBar().usdoAssetId();
+        if (tokenInId == usdoAssetId) {
+            return amountOut;
+        }
+
+        return _getOutput(usdoAssetId, tokenInId, amountOut);
+    }
 
     // --- Write methods ---
     /// @notice swaps stable to collateral
@@ -95,13 +104,19 @@ contract CurveStableToUsdoBidder is IBidder, BoringOwnable {
         uint256 amountIn,
         bytes calldata data
     ) external returns (uint256) {
-        require(msg.sender == address(_liquidationQueue), 'only LQ');
         require(
             address(_mixologist.beachBar().usdoToken()) != address(0),
             'USD0 not set'
         );
         uint256 usdoAssetId = _mixologist.beachBar().usdoAssetId();
+        require(msg.sender == address(_liquidationQueue), 'only LQ');
         if (tokenInId == usdoAssetId) {
+            _yieldBox.transfer(
+                address(this),
+                address(_liquidationQueue),
+                tokenInId,
+                _yieldBox.toShare(tokenInId, amountIn, false)
+            );
             return amountIn;
         }
 
@@ -110,7 +125,12 @@ contract CurveStableToUsdoBidder is IBidder, BoringOwnable {
             //should always be sent
             _usdoMin = abi.decode(data, (uint256));
         }
-
+        _yieldBox.transfer(
+            address(this),
+            address(curveSwapper),
+            tokenInId,
+            _yieldBox.toShare(tokenInId, amountIn, false)
+        );
         return
             _swap(
                 tokenInId,

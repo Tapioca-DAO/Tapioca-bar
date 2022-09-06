@@ -51,12 +51,9 @@ contract UniUsdoToWethBidder is IBidder, BoringOwnable {
         return 'USD0 -> WETH (Uniswap V2)';
     }
 
-    /// @notice returns the swapper address who performs the first swap
-    /// @dev used for sending funds to it
-    function firstStepSwapper() external view returns (address) {
-        return address(univ2Swapper);
-    }
-
+    /// @notice returns token tokenIn amount based on tokenOut amount
+    /// @param tokenInId Token in asset id
+    /// @param amountOut Token out amount
     function getInputAmount(
         uint256 tokenInId,
         uint256 amountOut,
@@ -106,20 +103,27 @@ contract UniUsdoToWethBidder is IBidder, BoringOwnable {
         uint256 amountIn,
         bytes calldata data
     ) external returns (uint256) {
-        require(msg.sender == address(_liquidationQueue), 'only LQ');
         require(
             address(_mixologist.beachBar().usdoToken()) != address(0),
-            'LQ: USD0 not set'
+            'USD0 not set'
         );
 
         uint256 usdoAssetId = _mixologist.beachBar().usdoAssetId();
         require(tokenInId == usdoAssetId, 'token not valid');
+        require(msg.sender == address(_liquidationQueue), 'only LQ');
 
         uint256 assetMin = 0;
         if (data.length > 0) {
             //should always be sent
             assetMin = abi.decode(data, (uint256));
         }
+
+        _yieldBox.transfer(
+            address(this),
+            address(univ2Swapper),
+            tokenInId,
+            _yieldBox.toShare(tokenInId, amountIn, false)
+        );
 
         return
             _uniswapSwap(

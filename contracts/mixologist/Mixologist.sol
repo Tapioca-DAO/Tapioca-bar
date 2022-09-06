@@ -610,13 +610,16 @@ contract Mixologist is ERC20, BoringOwnable {
     ///        Ignore for `orderBookLiquidation()`
     /// @param swapper Contract address of the `MultiSwapper` implementation. See `setSwapper`.
     ///        Ignore for `orderBookLiquidation()`
-    /// @param swapData Extra swap data
+    /// @param collateralToAssetSwapData Extra swap data
     ///        Ignore for `orderBookLiquidation()`
+    /// @param usdoToBorrowedSwapData Extra swap data
+    ///        Ignore for `closedLiquidation()`
     function liquidate(
         address[] calldata users,
         uint256[] calldata maxBorrowParts,
         MultiSwapper swapper,
-        bytes calldata swapData
+        bytes calldata collateralToAssetSwapData,
+        bytes calldata usdoToBorrowedSwapData
     ) external {
         // Oracle can fail but we still need to allow liquidations
         (, uint256 _exchangeRate) = updateExchangeRate();
@@ -625,7 +628,11 @@ contract Mixologist is ERC20, BoringOwnable {
         if (address(liquidationQueue) != address(0)) {
             (, bool bidAvail) = liquidationQueue.getNextAvailBidPool();
             if (bidAvail) {
-                orderBookLiquidation(users, _exchangeRate);
+                orderBookLiquidation(
+                    users,
+                    _exchangeRate,
+                    usdoToBorrowedSwapData
+                );
                 return;
             }
         }
@@ -634,13 +641,14 @@ contract Mixologist is ERC20, BoringOwnable {
             maxBorrowParts,
             swapper,
             _exchangeRate,
-            swapData
+            collateralToAssetSwapData
         );
     }
 
     function orderBookLiquidation(
         address[] calldata users,
-        uint256 _exchangeRate
+        uint256 _exchangeRate,
+        bytes memory swapData
     ) internal {
         uint256 allCollateralShare;
         uint256 allBorrowAmount;
@@ -713,7 +721,8 @@ contract Mixologist is ERC20, BoringOwnable {
 
         // LiquidationQueue pay debt
         liquidationQueue.executeBids(
-            yieldBox.toAmount(collateralId, allCollateralShare, true)
+            yieldBox.toAmount(collateralId, allCollateralShare, true),
+            swapData
         );
 
         uint256 returnedShare = yieldBox.balanceOf(address(this), assetId) -
