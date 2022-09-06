@@ -46,6 +46,21 @@ contract MultiSwapper {
         amountOut = amounts[amounts.length - 1];
     }
 
+    function getInputAmount(
+        uint256 tokenOutId,
+        address[] calldata path,
+        uint256 shareOut
+    ) external view returns (uint256 amountIn) {
+        uint256 amountOut = yieldBox.toAmount(tokenOutId, shareOut, false);
+        uint256[] memory amounts = UniswapV2Library.getAmountsIn(
+            factory,
+            amountOut,
+            path,
+            pairCodeHash
+        );
+        amountIn = amounts[0];
+    }
+
     function swap(
         uint256 tokenInId,
         uint256 tokenOutId,

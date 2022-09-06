@@ -21,8 +21,8 @@ contract CurvePoolMock {
     }
 
     function get_dy(
-        uint256,
-        uint256,
+        int128,
+        int128,
         uint256 dx
     ) external view returns (uint256) {
         if (divider == 0) return 0;
@@ -30,14 +30,13 @@ contract CurvePoolMock {
     }
 
     function exchange(
-        uint256,
-        uint256 j,
+        int128,
+        int128 j,
         uint256 dx,
-        uint256,
-        bool
-    ) external payable {
+        uint256
+    ) external {
         if (divider == 0) return;
-        address tokenOut = coins[j];
+        address tokenOut = coins[uint256(uint128(j))];
         uint256 freeMintAmount = dx / divider;
         ERC20Mock(tokenOut).freeMint(freeMintAmount);
         IERC20(tokenOut).safeTransfer(msg.sender, freeMintAmount);

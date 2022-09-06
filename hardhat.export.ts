@@ -48,16 +48,11 @@ const config: HardhatUserConfig & { dodoc?: any } = {
     defaultNetwork: 'hardhat',
     networks: {
         hardhat: {
+            hardfork: 'merge',
             allowUnlimitedContractSize: true,
-            accounts:
-                process.env.PRIVATE_KEY !== undefined
-                    ? [
-                          {
-                              privateKey: process.env.PRIVATE_KEY,
-                              balance: '1000000000000000000000000',
-                          },
-                      ]
-                    : [],
+            accounts: {
+                count: 5,
+            },
         },
         rinkeby: {
             gasMultiplier: 2,

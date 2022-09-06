@@ -10,6 +10,9 @@ import {
     WETH9Mock,
     YieldBox,
 } from '../typechain';
+import { MultiSwapper } from '../typechain/MultiSwapper';
+import { UniswapV2Factory } from '../typechain/UniswapV2Factory';
+import { UniswapV2Router02 } from '../typechain/UniswapV2Router02';
 
 ethers.utils.Logger.setLogLevel(ethers.utils.Logger.levels.ERROR);
 
@@ -126,6 +129,33 @@ async function setBeachBarAssets(
     return { wethAssetId, usdcAssetId };
 }
 
+async function addUniV2UsdoWethLiquidity(
+    deployerAddress: string,
+    usdo: ERC20Mock,
+    weth: WETH9Mock,
+    __uniFactory: UniswapV2Factory,
+    __uniRouter: UniswapV2Router02,
+) {
+    const wethPairAmount = ethers.BigNumber.from(1e6).mul((1e18).toString());
+    const usdoPairAmount = wethPairAmount.mul(
+        __wethUsdcPrice.div((1e18).toString()),
+    );
+    await weth.freeMint(wethPairAmount);
+    await usdo.freeMint(usdoPairAmount);
+
+    await weth.approve(__uniRouter.address, wethPairAmount);
+    await usdo.approve(__uniRouter.address, usdoPairAmount);
+    await __uniRouter.addLiquidity(
+        weth.address,
+        usdo.address,
+        wethPairAmount,
+        usdoPairAmount,
+        wethPairAmount,
+        usdoPairAmount,
+        deployerAddress,
+        Math.floor(Date.now() / 1000) + 1000 * 60, // 1min margin
+    );
+}
 async function uniV2EnvironnementSetup(
     deployerAddress: string,
     weth: WETH9Mock,
@@ -262,6 +292,49 @@ async function registerMixologist(
     return { wethUsdcMixologist };
 }
 
+async function registerUniUsdoToWethBidder(
+    uniSwapper: MultiSwapper,
+    mixologist: Mixologist,
+) {
+    const usdoToWethBidder = await (
+        await ethers.getContractFactory('UniUsdoToWethBidder')
+    ).deploy(uniSwapper.address, mixologist.address);
+    await usdoToWethBidder.deployed();
+
+    return { usdoToWethBidder };
+}
+async function deployCurveStableToUsdoBidder(
+    mixologist: Mixologist,
+    bar: BeachBar,
+    usdc: ERC20Mock,
+    usdo: ERC20Mock,
+) {
+    const curvePoolMock = await (
+        await ethers.getContractFactory('CurvePoolMock')
+    ).deploy(usdo.address, usdc.address);
+    const curveSwapper = await (
+        await ethers.getContractFactory('CurveSwapper')
+    ).deploy(curvePoolMock.address, bar.address);
+
+    const stableToUsdoBidder = await (
+        await ethers.getContractFactory('CurveStableToUsdoBidder')
+    ).deploy(curveSwapper.address, mixologist.address, 2);
+    await stableToUsdoBidder.deployed();
+
+    return { stableToUsdoBidder, curveSwapper };
+}
+
+async function deployAndSetUsdo(bar: BeachBar) {
+    const usdo = await (
+        await ethers.getContractFactory('ERC20Mock')
+    ).deploy(BN(1e18).mul(1e9).toString());
+    await usdo.deployed();
+
+    await await bar.setUsdoToken(usdo.address);
+
+    return { usdo };
+}
+
 async function registerLiquidationQueue(
     bar: BeachBar,
     mixologist: Mixologist,
@@ -275,9 +348,11 @@ async function registerLiquidationQueue(
     const LQ_META = {
         activationTime: 600, // 10min
         minBidAmount: ethers.BigNumber.from((1e18).toString()).mul(200), // 200 USDC
+        closeToMinBidAmount: ethers.BigNumber.from((1e18).toString()).mul(202),
         defaultBidAmount: ethers.BigNumber.from((1e18).toString()).mul(400), // 400 USDC
         feeCollector,
-        bidSwapper: ethers.constants.AddressZero,
+        bidExecutionSwapper: ethers.constants.AddressZero,
+        usdoSwapper: ethers.constants.AddressZero,
     };
     const payload = mixologist.interface.encodeFunctionData(
         'setLiquidationQueue',
@@ -399,6 +474,11 @@ export async function register(staging?: boolean) {
     ).deploy();
     await mixologistHelper.deployed();
 
+    const { usdoToWethBidder } = await registerUniUsdoToWethBidder(
+        multiSwapper,
+        wethUsdcMixologist,
+    );
+
     const initialSetup = {
         __wethUsdcPrice,
         deployer,
@@ -421,6 +501,7 @@ export async function register(staging?: boolean) {
         liquidationQueue,
         LQ_META,
         feeCollector,
+        usdoToWethBidder,
         mediumRiskMC,
         __uniFactory,
         __uniRouter,
@@ -550,6 +631,9 @@ export async function register(staging?: boolean) {
         usdcDepositAndAddCollateral,
         initContracts,
         timeTravel,
+        deployCurveStableToUsdoBidder,
+        deployAndSetUsdo,
+        addUniV2UsdoWethLiquidity,
     };
 
     return { ...initialSetup, ...utilFuncs };

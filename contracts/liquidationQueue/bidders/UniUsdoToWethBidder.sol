@@ -3,17 +3,18 @@ pragma solidity ^0.8.0;
 
 import '@boringcrypto/boring-solidity/contracts/BoringOwnable.sol';
 
+import '../ILiquidationQueue.sol';
 import '../../mixologist/Mixologist.sol';
 import '../../swappers/MultiSwapper.sol';
+import '../../swappers/CurveSwapper.sol';
 
-import './IStableBidder.sol';
+import './IBidder.sol';
+import 'hardhat/console.sol';
 
-
-/// @notice Swaps Stable to tAsset through UniswapV2
-/// @dev Performs 2 swap operations:
-///     - Stable to WETH through UniV2
-///     - WETH to tAsset through UniV2
-contract UniswapWethHopBidder is IStableBidder, BoringOwnable {
+/// @notice Swaps USD0 to WETH UniswapV2
+/// @dev Performs 1 swap operation:
+///     - USD0 to Weth through UniV2
+contract UniUsdoToWethBidder is IBidder, BoringOwnable {
     // ************ //
     // *** DATA *** //
     // ************ //
@@ -26,25 +27,19 @@ contract UniswapWethHopBidder is IStableBidder, BoringOwnable {
     Mixologist _mixologist;
     YieldBox _yieldBox;
     ILiquidationQueue _liquidationQueue;
-    uint256 wethAssetId;
-    uint256 tAssetId;
+    uint256 wethId;
 
     // --- Events ---
     event UniV2SwapperUpdated(address indexed _old, address indexed _new);
 
-    constructor(
-        MultiSwapper uniV2Swapper_,
-        Mixologist mixologist_,
-        uint256 wethAssetId_
-    ) {
+    constructor(MultiSwapper uniV2Swapper_, Mixologist mixologist_) {
         univ2Swapper = uniV2Swapper_;
 
         _mixologist = mixologist_;
         _yieldBox = mixologist_.yieldBox();
         _liquidationQueue = mixologist_.liquidationQueue();
 
-        wethAssetId = wethAssetId_;
-        tAssetId = mixologist_.collateralId();
+        wethId = mixologist_.assetId();
     }
 
     // ************ //
@@ -53,78 +48,94 @@ contract UniswapWethHopBidder is IStableBidder, BoringOwnable {
     // --- View methods ---
     /// @notice returns the unique name
     function name() external pure returns (string memory) {
-        return 'stable -> WETH (Uniswap V2) / WETH -> tAsset (Uniswap V2)';
+        return 'USD0 -> WETH (Uniswap V2)';
+    }
+
+    /// @notice returns token tokenIn amount based on tokenOut amount
+    /// @param tokenInId Token in asset id
+    /// @param amountOut Token out amount
+    function getInputAmount(
+        uint256 tokenInId,
+        uint256 amountOut,
+        bytes calldata
+    ) external view returns (uint256) {
+        require(
+            tokenInId == _mixologist.beachBar().usdoAssetId(),
+            'token not valid'
+        );
+
+        uint256 shareOut = _yieldBox.toShare(wethId, amountOut, false);
+
+        (, address tokenInAddress, , ) = _yieldBox.assets(tokenInId);
+        (, address tokenOutAddress, , ) = _yieldBox.assets(wethId);
+
+        address[] memory path = new address[](2);
+        path[0] = tokenInAddress;
+        path[1] = tokenOutAddress;
+
+        return univ2Swapper.getInputAmount(wethId, path, shareOut);
     }
 
     /// @notice returns the amount of collateral
     /// @param amountIn Stablecoin amount
     function getOutputAmount(
-        uint256 stableAssetId,
+        uint256 tokenInId,
         uint256 amountIn,
         bytes calldata
     ) external view returns (uint256) {
-        //Stable->WETH
-        uint256 wethAmount = _outputAmount(
-            stableAssetId,
-            wethAssetId,
-            amountIn
+        require(
+            address(_mixologist.beachBar().usdoToken()) != address(0),
+            'USD0 not set'
         );
+        uint256 usdoAssetId = _mixologist.beachBar().usdoAssetId();
+        require(tokenInId == usdoAssetId, 'token not valid');
 
-        //WETH->tAsset
-        return _outputAmount(wethAssetId, tAssetId, wethAmount);
+        return _uniswapOutputAmount(usdoAssetId, wethId, amountIn);
     }
 
     // --- Write methods ---
     /// @notice swaps stable to collateral
-    /// @param bidder the sender to swap it from
-    /// @param stableAssetId Stablecoin asset id
+    /// @param tokenInId Token in asset Id
     /// @param amountIn Stablecoin amount
     /// @param data extra data used for the swap operation
     function swap(
-        address bidder,
-        uint256 stableAssetId,
+        uint256 tokenInId,
         uint256 amountIn,
         bytes calldata data
     ) external returns (uint256) {
+        require(
+            address(_mixologist.beachBar().usdoToken()) != address(0),
+            'USD0 not set'
+        );
+
+        uint256 usdoAssetId = _mixologist.beachBar().usdoAssetId();
+        require(tokenInId == usdoAssetId, 'token not valid');
         require(msg.sender == address(_liquidationQueue), 'only LQ');
 
-        uint256 _wethMin = 0;
-        uint256 _tAssetMin = 0;
+        uint256 assetMin = 0;
         if (data.length > 0) {
             //should always be sent
-            (_wethMin, _tAssetMin) = abi.decode(data, (uint256, uint256));
+            assetMin = abi.decode(data, (uint256));
         }
 
-        uint256 stableShare = _yieldBox.toShare(stableAssetId, amountIn, false);
         _yieldBox.transfer(
-            bidder,
+            address(this),
             address(univ2Swapper),
-            stableAssetId,
-            stableShare
-        ); //TODO: check if we want to do it directly without the yieldbox deposit
-
-        //Stable -> WETH;
-        uint256 wethAmount = _swap(
-            stableAssetId,
-            wethAssetId,
-            stableShare,
-            _wethMin
+            tokenInId,
+            _yieldBox.toShare(tokenInId, amountIn, false)
         );
 
-        //WETH->tAsset
-        uint256 wethShare = _yieldBox.toShare(wethAssetId, wethAmount, false);
-        uint256 liquidatedAmount = _swap(
-            wethAssetId,
-            tAssetId,
-            wethShare,
-            _tAssetMin
-        );
-
-        return liquidatedAmount;
+        return
+            _uniswapSwap(
+                usdoAssetId,
+                wethId,
+                amountIn,
+                assetMin,
+                address(_liquidationQueue)
+            );
     }
 
     // --- Owner methods ---
-
     /// @notice sets the UniV2 swapper
     /// @dev used for WETH to USDC swap
     /// @param _swapper The UniV2 pool swapper address
@@ -134,29 +145,36 @@ contract UniswapWethHopBidder is IStableBidder, BoringOwnable {
     }
 
     // --- Private methods ---
-    function _swap(
+    function _uniswapSwap(
         uint256 tokenInId,
         uint256 tokenOutId,
-        uint256 tokenInShare,
-        uint256 minAmount
+        uint256 tokenInAmount,
+        uint256 minAmount,
+        address to
     ) private returns (uint256) {
         (, address tokenInAddress, , ) = _yieldBox.assets(tokenInId);
         (, address tokenOutAddress, , ) = _yieldBox.assets(tokenOutId);
         address[] memory swapPath = new address[](2);
         swapPath[0] = tokenInAddress;
         swapPath[1] = tokenOutAddress;
+        uint256 tokenInShare = _yieldBox.toShare(
+            tokenInId,
+            tokenInAmount,
+            false
+        );
         (uint256 outAmount, ) = univ2Swapper.swap(
             tokenInId,
             tokenOutId,
             minAmount,
-            address(univ2Swapper),
+            to,
             swapPath,
             tokenInShare
         );
+
         return outAmount;
     }
 
-    function _outputAmount(
+    function _uniswapOutputAmount(
         uint256 tokenInId,
         uint256 tokenOutId,
         uint256 amountIn

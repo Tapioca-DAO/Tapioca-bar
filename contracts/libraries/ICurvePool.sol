@@ -9,16 +9,15 @@ interface ICurvePool {
     function coins(uint256 i) external view returns (address);
 
     function get_dy(
-        uint256 i,
-        uint256 j,
+        int128 i,
+        int128 j,
         uint256 dx
     ) external view returns (uint256);
 
     function exchange(
-        uint256 i,
-        uint256 j,
+        int128 i,
+        int128 j,
         uint256 dx,
-        uint256 min_dy,
-        bool use_eth
-    ) external payable;
+        uint256 min_dy
+    ) external;
 }
