@@ -1,0 +1,310 @@
+<!-- Based on d3-flamegraph's example. See its license in: https://github.com/spiermar/d3-flame-graph/blob/master/LICENSE -->
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/gh/spiermar/d3-flame-graph@2.0.3/dist/d3-flamegraph.css">
+
+    <style>
+    /* Space out content a bit */
+    body {
+      padding-top: 20px;
+      padding-bottom: 20px;
+    }
+
+    /* Custom page header */
+    .header {
+      padding-bottom: 20px;
+      padding-right: 15px;
+      padding-left: 15px;
+      border-bottom: 1px solid #e5e5e5;
+    }
+
+    /* Make the masthead heading the same height as the navigation */
+    .header h3 {
+      margin-top: 0;
+      margin-bottom: 0;
+      line-height: 40px;
+    }
+
+    /* Customize container */
+    .container {
+      max-width: 990px;
+    }
+    </style>
+
+    <title>Hardhat task flamegraph</title>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header clearfix">
+        <nav>
+          <div class="pull-right">
+            <form class="form-inline" id="form">
+              <a class="btn" href="javascript: resetZoom();">Reset zoom</a>
+              <a class="btn" href="javascript: clear();">Clear</a>
+              <div class="form-group">
+                <input type="text" class="form-control" id="term">
+              </div>
+              <a class="btn btn-primary" href="javascript: search();">Search</a>
+            </form>
+          </div>
+        </nav>
+        <h3 class="text-muted">Hardhat task flamegraph</h3>
+      </div>
+      <div id="chart">
+      </div>
+      <hr>
+      <div id="details">
+      </div>
+    </div>
+
+    <!-- D3.js -->
+    <script src="https://d3js.org/d3.v4.min.js" charset="utf-8"></script>
+    
+    <!-- d3-tip -->
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/d3-tip/0.9.1/d3-tip.min.js"></script>
+
+    <!-- d3-flamegraph -->
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/gh/spiermar/d3-flame-graph@2.0.3/dist/d3-flamegraph.min.js"></script>
+
+    <script type="text/javascript">
+    const flameGraph = d3.flamegraph()
+      .width(960)
+      .cellHeight(18)
+      .transitionDuration(750)
+      .minFrameSize(5)
+      .transitionEase(d3.easeCubic)
+      .sort(true)
+      .title("")
+      .onClick(onClick)
+      .differential(false)
+      .selfValue(false);
+
+    function label(d) {
+      if (d.data.parallel) {
+        return "(multiple parallel runs) task: " + d.data.name + ", max time: " + readableTime(d.data.value);  
+      }
+        
+      return "task: " + d.data.name + ", time: " + readableTime(d.data.value);
+    }
+    
+    function readableTime(t) {
+      const NANOSECONDS_TO_MILLISECONDS = 1_000_000;
+      const NANOSECONDS_TO_SECONDS = 1_000_000_000;
+      
+      if (t < NANOSECONDS_TO_MILLISECONDS) {
+        return t + "ns";
+      }
+      
+      if (t < NANOSECONDS_TO_SECONDS) {
+          return (t / NANOSECONDS_TO_MILLISECONDS).toFixed(4) + "ms";
+      }
+      
+      return (t / NANOSECONDS_TO_SECONDS).toFixed(4) + "s";
+    }
+    
+    const tip = d3.tip()
+      .direction("s")
+      .offset([8, 0])
+      .attr('class', 'd3-flame-graph-tip')
+      .html(label);
+
+    flameGraph.tooltip(tip);
+
+    const details = document.getElementById("details");
+    flameGraph.setDetailsElement(details);
+
+    flameGraph.label(label);
+    
+    flameGraph.setColorMapper(function(d, originalColor) {
+      if (d.highlight) {
+        return '#E600E6';
+      }
+
+      if (d.data.parallel) {
+        return '#1478eb'
+      }
+
+      return "#EB5414"
+    });
+    
+    d3.select("#chart")
+          .datum({
+  "name": "compile",
+  "value": 269009500,
+  "children": [
+    {
+      "name": "super::compile",
+      "value": 268651500,
+      "children": [
+        {
+          "name": "super::super::compile",
+          "value": 268444900,
+          "children": [
+            {
+              "name": "compile:get-compilation-tasks",
+              "value": 311800,
+              "children": [],
+              "parallel": false
+            },
+            {
+              "name": "compile:remove-obsolete-artifacts",
+              "value": 46031800,
+              "children": [],
+              "parallel": false
+            },
+            {
+              "name": "compile:solidity",
+              "value": 221944000,
+              "children": [
+                {
+                  "name": "compile:solidity:compile-jobs",
+                  "value": 1322700,
+                  "children": [
+                    {
+                      "name": "super::compile:solidity:compile-jobs",
+                      "value": 787300,
+                      "children": [
+                        {
+                          "name": "compile:solidity:log:nothing-to-compile",
+                          "value": 552500,
+                          "children": [],
+                          "parallel": false
+                        }
+                      ],
+                      "parallel": false
+                    },
+                    {
+                      "name": "typechain:generate-types",
+                      "value": 442800,
+                      "children": [],
+                      "parallel": false
+                    }
+                  ],
+                  "parallel": false
+                },
+                {
+                  "name": "compile:solidity:filter-compilation-jobs",
+                  "value": 9113300,
+                  "children": [],
+                  "parallel": false
+                },
+                {
+                  "name": "compile:solidity:get-compilation-jobs",
+                  "value": 34844400,
+                  "children": [
+                    {
+                      "name": "compile:solidity:get-compilation-job-for-file",
+                      "value": 22384100,
+                      "children": [
+                        {
+                          "name": "super::compile:solidity:get-compilation-job-for-file",
+                          "value": 21486900,
+                          "children": [],
+                          "parallel": false
+                        }
+                      ],
+                      "parallel": false
+                    },
+                    {
+                      "name": "compile:solidity:get-compilation-job-for-file",
+                      "value": 5114300,
+                      "children": [
+                        {
+                          "name": "super::compile:solidity:get-compilation-job-for-file",
+                          "value": 4218600,
+                          "children": [],
+                          "parallel": true
+                        }
+                      ],
+                      "parallel": true
+                    }
+                  ],
+                  "parallel": false
+                },
+                {
+                  "name": "compile:solidity:get-dependency-graph",
+                  "value": 128698000,
+                  "children": [
+                    {
+                      "name": "compile:solidity:read-file",
+                      "value": 9237500,
+                      "children": [],
+                      "parallel": true
+                    }
+                  ],
+                  "parallel": false
+                },
+                {
+                  "name": "compile:solidity:get-source-names",
+                  "value": 11997600,
+                  "children": [],
+                  "parallel": false
+                },
+                {
+                  "name": "compile:solidity:get-source-paths",
+                  "value": 13326600,
+                  "children": [],
+                  "parallel": false
+                },
+                {
+                  "name": "compile:solidity:handle-compilation-jobs-failures",
+                  "value": 113300,
+                  "children": [],
+                  "parallel": false
+                },
+                {
+                  "name": "compile:solidity:log:compilation-result",
+                  "value": 99500,
+                  "children": [],
+                  "parallel": false
+                },
+                {
+                  "name": "compile:solidity:merge-compilation-jobs",
+                  "value": 101900,
+                  "children": [],
+                  "parallel": false
+                }
+              ],
+              "parallel": false
+            }
+          ],
+          "parallel": false
+        }
+      ],
+      "parallel": false
+    }
+  ],
+  "parallel": false
+})
+          .call(flameGraph);
+
+    document.getElementById("form").addEventListener("submit", function(event){
+      event.preventDefault();
+      search();
+    });
+
+    function search() {
+      const term = document.getElementById("term").value;
+      flameGraph.search(term);
+    }
+
+    function clear() {
+      document.getElementById('term').value = '';
+      flameGraph.clear();
+    }
+
+    function resetZoom() {
+      flameGraph.resetZoom();
+    }
+
+    function onClick(d) {
+      console.info("Clicked on " + d.data.name);
+    }
+    </script>
+  </body>
+</html>

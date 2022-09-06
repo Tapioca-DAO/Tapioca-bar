@@ -48,6 +48,7 @@ const config: HardhatUserConfig & { dodoc?: any } = {
     defaultNetwork: 'hardhat',
     networks: {
         hardhat: {
+            hardfork: 'merge',
             allowUnlimitedContractSize: true,
             accounts: {
                 count: 5,
