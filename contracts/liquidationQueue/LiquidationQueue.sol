@@ -153,14 +153,8 @@ contract LiquidationQueue {
     );
 
     event Redeem(address indexed redeemer, address indexed to, uint256 amount);
-    event BidSwapperUpdated(
-        IStableBidder indexed _old,
-        IStableBidder indexed _new
-    );
-    event UsdoSwapperUpdated(
-        IStableBidder indexed _old,
-        IStableBidder indexed _new
-    );
+    event BidSwapperUpdated(IBidder indexed _old, IBidder indexed _new);
+    event UsdoSwapperUpdated(IBidder indexed _old, IBidder indexed _new);
 
     // ***************** //
     // *** MODIFIERS *** //
@@ -233,7 +227,6 @@ contract LiquidationQueue {
         bytes calldata data
     ) external Active {
         require(pool <= MAX_BID_POOLS, 'LQ: premium too high');
-
         require(
             address(liquidationQueueMeta.usdoSwapper) != address(0),
             'LQ: USD0 swapper not set'
@@ -250,19 +243,15 @@ contract LiquidationQueue {
         );
 
         uint256 usdoAmount = liquidationQueueMeta.usdoSwapper.swap(
-            msg.sender,
             stableAssetId,
             amountIn,
             data
-        );
-        uint256 balanceOfUsdoAfter = yieldBox.balanceOf(
-            address(this),
-            usdoAssetId
         );
 
         uint256 usdoValueInCollateral = liquidationQueueMeta
             .bidExecutionSwapper
             .getOutputAmount(usdoAssetId, usdoAmount, data);
+
         require(
             usdoValueInCollateral >= liquidationQueueMeta.minBidAmount,
             'LQ: bid too low'
@@ -534,13 +523,21 @@ contract LiquidationQueue {
         finalUsdoAmount = entry.usdoAmount;
         //Execute the swap if USD0 was provided
         if (entry.isUsdo) {
+            uint256 usdoAssetId = beachBar.usdoAssetId();
+            yieldBox.transfer(
+                address(this),
+                address(
+                    liquidationQueueMeta.bidExecutionSwapper.firstStepSwapper()
+                ),
+                usdoAssetId,
+                yieldBox.toShare(usdoAssetId, entry.usdoAmount, false)
+            );
             finalCollateralAmount = liquidationQueueMeta
                 .bidExecutionSwapper
                 .swap(
-                    address(this),
                     beachBar.usdoAssetId(),
                     entry.usdoAmount,
-                    ''
+                    '' //TODO: add data
                 );
             finalDiscountedCollateralAmount = _getPremiumAmount(
                 _bidToCollateral(finalCollateralAmount, exchangeRate),
@@ -557,7 +554,6 @@ contract LiquidationQueue {
         uint256 poolId
     )
         private
-        pure
         returns (
             uint256 finalDiscountedCollateralAmount,
             uint256 finalUsdoAmount
@@ -570,8 +566,31 @@ contract LiquidationQueue {
             MODE.SUB
         );
 
+        uint256 usdoAssetId = beachBar.usdoAssetId();
         if (entry.isUsdo) {
-            //TODO: swap and update
+            finalUsdoAmount = liquidationQueueMeta
+                .bidExecutionSwapper
+                .getInputAmount(
+                    usdoAssetId,
+                    finalDiscountedCollateralAmount,
+                    ''
+                ); //TODO: add data
+
+            yieldBox.transfer(
+                address(this),
+                address(
+                    liquidationQueueMeta.bidExecutionSwapper.firstStepSwapper()
+                ),
+                usdoAssetId,
+                yieldBox.toShare(usdoAssetId, finalUsdoAmount, false)
+            );
+            uint256 returnedCollateral = liquidationQueueMeta
+                .bidExecutionSwapper
+                .swap(usdoAssetId, finalUsdoAmount, ''); //TODO: add data
+            require(
+                returnedCollateral >= finalDiscountedCollateralAmount,
+                'need-more-collateral'
+            );
         }
     }
 
@@ -657,7 +676,7 @@ contract LiquidationQueue {
                         data
                             .orderBookEntry
                             .bidInfo
-                            .usdoAmount = finalUsdoAmount;
+                            .usdoAmount -= finalUsdoAmount;
                     }
 
                     // Update the total amount executed, the total collateral liquidated and collateral to liquidate.
@@ -690,7 +709,9 @@ contract LiquidationQueue {
                     data.totalPoolAmountExecuted += finalCollateralAmount;
                     data
                         .totalPoolCollateralLiquidated += finalDiscountedCollateralAmount;
+
                     collateralAmountToLiquidate -= finalDiscountedCollateralAmount;
+
                     // Since the current bid was fulfilled, get the next one.
                     unchecked {
                         ++data.poolInfo.nextBidPull;
@@ -716,6 +737,7 @@ contract LiquidationQueue {
         // Stack too deep
         {
             uint256 toSend = totalAmountExecuted;
+
             // Transfer the assets to the Mixologist.
             yieldBox.withdraw(
                 lqAssetId,
@@ -736,7 +758,7 @@ contract LiquidationQueue {
 
     /// @notice updates the bid swapper address
     /// @param _swapper thew new ICollateralSwaper contract address
-    function setBidExecutionSwapper(IStableBidder _swapper) external {
+    function setBidExecutionSwapper(IBidder _swapper) external {
         require(msg.sender == address(mixologist), 'unauthorized');
         // yieldBox.setApprovalForAll(
         //     address(liquidationQueueMeta.bidExecutionSwapper),
@@ -752,7 +774,7 @@ contract LiquidationQueue {
 
     /// @notice updates the bid swapper address
     /// @param _swapper thew new ICollateralSwaper contract address
-    function setUsdoSwapper(IStableBidder _swapper) external {
+    function setUsdoSwapper(IBidder _swapper) external {
         require(msg.sender == address(mixologist), 'unauthorized');
         // yieldBox.setApprovalForAll(
         //     address(liquidationQueueMeta.usdoSwapper),

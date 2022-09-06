@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-import './bidders/IStableBidder.sol';
+import './bidders/IBidder.sol';
 
 struct Bidder {
     bool isUsdo;
@@ -25,8 +25,8 @@ struct LiquidationQueueMeta {
     uint256 activationTime; // Time needed before a bid can be activated for execution
     uint256 minBidAmount; // Minimum bid amount
     address feeCollector; // Address of the fee collector
-    IStableBidder bidExecutionSwapper; //Allows swapping USD0 to collateral when a bid is executed
-    IStableBidder usdoSwapper; //Allows swapping any other stablecoin to USD0
+    IBidder bidExecutionSwapper; //Allows swapping USD0 to collateral when a bid is executed
+    IBidder usdoSwapper; //Allows swapping any other stablecoin to USD0
 }
 
 interface ILiquidationQueue {

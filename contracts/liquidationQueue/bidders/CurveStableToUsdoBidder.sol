@@ -8,11 +8,11 @@ import '../../mixologist/Mixologist.sol';
 import '../../swappers/MultiSwapper.sol';
 import '../../swappers/CurveSwapper.sol';
 
-import './IStableBidder.sol';
+import './IBidder.sol';
 
 /// @notice Swaps Stable to USD0 through Curve
 /// @dev Performs a swap operation between stable and USD0 through 3CRV+USD0 pool
-contract ToUsdoBidder is IStableBidder, BoringOwnable {
+contract CurveStableToUsdoBidder is IBidder, BoringOwnable {
     // ************ //
     // *** DATA *** //
     // ************ //
@@ -62,7 +62,7 @@ contract ToUsdoBidder is IStableBidder, BoringOwnable {
     /// @notice returns the amount of collateral
     /// @param amountIn Stablecoin amount
     function getOutputAmount(
-        uint256 stableAssetId,
+        uint256 tokenInId,
         uint256 amountIn,
         bytes calldata
     ) external view returns (uint256) {
@@ -72,32 +72,26 @@ contract ToUsdoBidder is IStableBidder, BoringOwnable {
         );
 
         uint256 usdoAssetId = _mixologist.beachBar().usdoAssetId();
-        if (stableAssetId == usdoAssetId) {
+        if (tokenInId == usdoAssetId) {
             return amountIn;
         }
 
-        (, address tokenInAddress, , ) = _yieldBox.assets(stableAssetId);
-        (, address tokenOutAddress, , ) = _yieldBox.assets(usdoAssetId);
-
-        uint256 tokenInCurveIndex = _getCurveIndex(tokenInAddress);
-        uint256 tokenOutCurveIndex = _getCurveIndex(tokenOutAddress);
-        uint256[] memory indexes = new uint256[](2);
-        indexes[0] = tokenInCurveIndex;
-        indexes[1] = tokenOutCurveIndex;
-
-        uint256 share = _yieldBox.toShare(stableAssetId, amountIn, false);
-        return curveSwapper.getOutputAmount(stableAssetId, indexes, share);
+        return _getOutput(tokenInId, usdoAssetId, amountIn);
     }
+
+    function getInputAmount(
+        uint256 tokenInId,
+        uint256 amountOut,
+        bytes calldata
+    ) external view returns (uint256) {}
 
     // --- Write methods ---
     /// @notice swaps stable to collateral
-    /// @param bidder the sender to swap it from
-    /// @param stableAssetId Stablecoin asset id
+    /// @param tokenInId Stablecoin asset id
     /// @param amountIn Stablecoin amount
     /// @param data extra data used for the swap operation
     function swap(
-        address bidder,
-        uint256 stableAssetId,
+        uint256 tokenInId,
         uint256 amountIn,
         bytes calldata data
     ) external returns (uint256) {
@@ -107,7 +101,7 @@ contract ToUsdoBidder is IStableBidder, BoringOwnable {
             'USD0 not set'
         );
         uint256 usdoAssetId = _mixologist.beachBar().usdoAssetId();
-        if (stableAssetId == usdoAssetId) {
+        if (tokenInId == usdoAssetId) {
             return amountIn;
         }
 
@@ -117,31 +111,14 @@ contract ToUsdoBidder is IStableBidder, BoringOwnable {
             _usdoMin = abi.decode(data, (uint256));
         }
 
-        (, address tokenInAddress, , ) = _yieldBox.assets(stableAssetId);
-        (, address tokenOutAddress, , ) = _yieldBox.assets(usdoAssetId);
-
-        uint256 tokenInCurveIndex = _getCurveIndex(tokenInAddress);
-        uint256 tokenOutCurveIndex = _getCurveIndex(tokenOutAddress);
-
-        uint256[] memory indexes = new uint256[](2);
-        indexes[0] = tokenInCurveIndex;
-        indexes[1] = tokenOutCurveIndex;
-        uint256 tokenInShare = _yieldBox.toShare(
-            stableAssetId,
-            amountIn,
-            false
-        );
-
-        (, uint256 shareOut) = curveSwapper.swap(
-            stableAssetId,
-            usdoAssetId,
-            indexes,
-            tokenInShare,
-            _usdoMin,
-            address(_liquidationQueue)
-        );
-
-        return _yieldBox.toAmount(usdoAssetId, shareOut, false);
+        return
+            _swap(
+                tokenInId,
+                usdoAssetId,
+                amountIn,
+                _usdoMin,
+                address(_liquidationQueue)
+            );
     }
 
     // --- Owner methods ---
@@ -164,5 +141,57 @@ contract ToUsdoBidder is IStableBidder, BoringOwnable {
         }
         require(index > -1, 'asset not found');
         return uint256(index);
+    }
+
+    function _getOutput(
+        uint256 tokenInId,
+        uint256 tokenOutId,
+        uint256 amountIn
+    ) private view returns (uint256) {
+        (, address tokenInAddress, , ) = _yieldBox.assets(tokenInId);
+        (, address tokenOutAddress, , ) = _yieldBox.assets(tokenOutId);
+
+        uint256 tokenInCurveIndex = _getCurveIndex(tokenInAddress);
+        uint256 tokenOutCurveIndex = _getCurveIndex(tokenOutAddress);
+        uint256[] memory indexes = new uint256[](2);
+        indexes[0] = tokenInCurveIndex;
+        indexes[1] = tokenOutCurveIndex;
+
+        uint256 share = _yieldBox.toShare(tokenInId, amountIn, false);
+        return curveSwapper.getOutputAmount(tokenInId, indexes, share);
+    }
+
+    function _swap(
+        uint256 stableAssetId,
+        uint256 usdoAssetId,
+        uint256 amountIn,
+        uint256 minAmount,
+        address to
+    ) private returns (uint256) {
+        (, address tokenInAddress, , ) = _yieldBox.assets(stableAssetId);
+        (, address tokenOutAddress, , ) = _yieldBox.assets(usdoAssetId);
+
+        uint256 tokenInCurveIndex = _getCurveIndex(tokenInAddress);
+        uint256 tokenOutCurveIndex = _getCurveIndex(tokenOutAddress);
+
+        uint256[] memory indexes = new uint256[](2);
+        indexes[0] = tokenInCurveIndex;
+        indexes[1] = tokenOutCurveIndex;
+        uint256 tokenInShare = _yieldBox.toShare(
+            stableAssetId,
+            amountIn,
+            false
+        );
+
+        (uint256 amountOut, ) = curveSwapper.swap(
+            stableAssetId,
+            usdoAssetId,
+            indexes,
+            tokenInShare,
+            minAmount,
+            to
+        );
+
+        return amountOut;
     }
 }
