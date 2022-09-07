@@ -146,7 +146,6 @@ contract Mixologist is ERC20, BoringOwnable {
      * @param approved Status of approval.
      */
     function setApprovalForAll(address operator, bool approved) external {
-
         // Effects
         isApprovedForAll[msg.sender][operator] = approved;
 
@@ -271,6 +270,40 @@ contract Mixologist is ERC20, BoringOwnable {
         accrueInfo.interestPerSecond = uint64(STARTING_INTEREST_PER_SECOND); // 1% APR, with 1e18 being 100%
 
         updateExchangeRate();
+    }
+
+    /// @notice Allows batched call to Mixologist.
+    /// @param calls An array encoded call data.
+    /// @param revertOnFail If True then reverts after a failed call and stops doing further calls.
+    function execute(bytes[] calldata calls, bool revertOnFail)
+        external
+        returns (bool[] memory successes, bytes[] memory results)
+    {
+        successes = new bool[](calls.length);
+        results = new bytes[](calls.length);
+        for (uint256 i = 0; i < calls.length; i++) {
+            (bool success, bytes memory result) = address(this).delegatecall(
+                calls[i]
+            );
+            require(success || !revertOnFail, _getRevertMsg(result));
+            successes[i] = success;
+            results[i] = result;
+        }
+    }
+
+    function _getRevertMsg(bytes memory _returnData)
+        private
+        pure
+        returns (string memory)
+    {
+        // If the _res length is less than 68, then the transaction failed silently (without a revert message)
+        if (_returnData.length < 68) return 'no-data';
+        // solhint-disable-next-line no-inline-assembly
+        assembly {
+            // Slice the sighash.
+            _returnData := add(_returnData, 0x04)
+        }
+        return abi.decode(_returnData, (string)); // All that remains is the revert string
     }
 
     /// @notice Accrues the interest on the borrowed tokens and handles the accumulation of fees.
@@ -421,7 +454,7 @@ contract Mixologist is ERC20, BoringOwnable {
     /// @dev Checks if the user is solvent in the closed liquidation case at the end of the function body.
     modifier solvent() {
         _;
-        require(_isSolvent(msg.sender, exchangeRate), 'Mx: user insolvent');
+        require(_isSolvent(msg.sender, exchangeRate), 'Mx: insolvent');
     }
 
     /// @notice Gets the exchange rate. I.e how much collateral to buy 1e18 asset.
@@ -458,7 +491,7 @@ contract Mixologist is ERC20, BoringOwnable {
         if (skim) {
             require(
                 share <= yieldBox.balanceOf(address(this), _assetId) - total,
-                'Mx: Skim too much'
+                'Mx: too much'
             );
         } else {
             yieldBox.transfer(from, address(this), _assetId, share); // added a 'from' instead of 'msg.sender' -0xGAB
@@ -567,7 +600,7 @@ contract Mixologist is ERC20, BoringOwnable {
         emit Transfer(from, address(0), fraction);
         _totalAsset.elastic -= uint128(share);
         _totalAsset.base -= uint128(fraction);
-        require(_totalAsset.base >= 1000, 'Mx: below minimum');
+        require(_totalAsset.base >= 1000, 'Mx: min limit');
         totalAsset = _totalAsset;
         emit LogRemoveAsset(from, to, share, fraction);
         yieldBox.transfer(address(this), to, assetId, share);
@@ -603,7 +636,7 @@ contract Mixologist is ERC20, BoringOwnable {
 
         share = yieldBox.toShare(assetId, amount, false);
         Rebase memory _totalAsset = totalAsset;
-        require(_totalAsset.base >= 1000, 'Mx: below minimum');
+        require(_totalAsset.base >= 1000, 'Mx: min limit');
         _totalAsset.elastic -= uint128(share);
         totalAsset = _totalAsset;
         yieldBox.transfer(address(this), to, assetId, share);
@@ -755,7 +788,7 @@ contract Mixologist is ERC20, BoringOwnable {
                 allBorrowPart += borrowPart;
             }
         }
-        require(allBorrowAmount != 0, 'Mx: all are solvent');
+        require(allBorrowAmount != 0, 'Mx: solvent');
 
         _totalBorrow.elastic -= uint128(allBorrowAmount);
         _totalBorrow.base -= uint128(allBorrowPart);
@@ -851,7 +884,7 @@ contract Mixologist is ERC20, BoringOwnable {
                 allBorrowPart += borrowPart;
             }
         }
-        require(allBorrowAmount != 0, 'Mx: all are solvent');
+        require(allBorrowAmount != 0, 'Mx: solvent');
         _totalBorrow.elastic -= uint128(allBorrowAmount);
         _totalBorrow.base -= uint128(allBorrowPart);
         totalBorrow = _totalBorrow;
@@ -929,7 +962,7 @@ contract Mixologist is ERC20, BoringOwnable {
 
         require(
             yieldBox.amountOf(address(this), assetId) >= amount + feeAmount,
-            'Mx: flashloan insufficient funds'
+            'Mx: insufficient funds'
         );
 
         totalAsset.base = _totalAsset.base + uint128(feeFraction);
