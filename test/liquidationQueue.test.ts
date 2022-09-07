@@ -297,6 +297,7 @@ describe('LiquidationQueue test', () => {
             .connect(eoa1)
             .addAsset(
                 eoa1.address,
+                eoa1.address,
                 false,
                 await yieldBox.toShare(marketAssetId, wethAmount, false),
             );
@@ -320,10 +321,15 @@ describe('LiquidationQueue test', () => {
         await yieldBox.setApprovalForAll(wethUsdcMixologist.address, true);
         await wethUsdcMixologist.addCollateral(
             deployer.address,
+            deployer.address,
             false,
             await yieldBox.toShare(marketColId, usdcAmount, false),
         );
-        await wethUsdcMixologist.borrow(deployer.address, borrowAmount);
+        await wethUsdcMixologist.borrow(
+            deployer.address,
+            deployer.address,
+            borrowAmount,
+        );
 
         // Try to liquidate but with failure since price hasn't changed
         const data = new ethers.utils.AbiCoder().encode(['uint256'], [1]);
@@ -335,7 +341,7 @@ describe('LiquidationQueue test', () => {
                 data,
                 data,
             ),
-        ).to.be.revertedWith('Mx: all are solvent');
+        ).to.be.revertedWith('Mx: solvent');
 
         // Make some price movement and liquidate
         const priceDrop = __wethUsdcPrice.mul(5).div(100);
@@ -360,7 +366,7 @@ describe('LiquidationQueue test', () => {
                 data,
                 data,
             ),
-        ).to.be.revertedWith('Mx: all are solvent');
+        ).to.be.revertedWith('Mx: solvent');
 
         // Check that LQ balances has been added
         expect(await liquidationQueue.balancesDue(deployer.address)).to.not.eq(
@@ -769,7 +775,12 @@ describe('LiquidationQueue test', () => {
 
                 await wethUsdcMixologist
                     .connect(account)
-                    .addAsset(account.address, false, lendValShare);
+                    .addAsset(
+                        account.address,
+                        account.address,
+                        false,
+                        lendValShare,
+                    );
 
                 const mixologistBalanceOfAccountAfter =
                     await wethUsdcMixologist.balanceOf(account.address);
@@ -820,11 +831,16 @@ describe('LiquidationQueue test', () => {
                 );
                 await wethUsdcMixologist
                     .connect(account)
-                    .addCollateral(account.address, false, collateralShare);
+                    .addCollateral(
+                        account.address,
+                        account.address,
+                        false,
+                        collateralShare,
+                    );
 
                 await wethUsdcMixologist
                     .connect(account)
-                    .borrow(account.address, borrowVal);
+                    .borrow(account.address, account.address, borrowVal);
 
                 // Can't liquidate yet
                 await expect(
@@ -1595,7 +1611,12 @@ describe('LiquidationQueue test', () => {
 
         await wethUsdcMixologist
             .connect(accounts[0])
-            .addAsset(accounts[0].address, false, lendValShare);
+            .addAsset(
+                accounts[0].address,
+                accounts[0].address,
+                false,
+                lendValShare,
+            );
 
         const mixologistBalanceOfAccountAfter =
             await wethUsdcMixologist.balanceOf(accounts[0].address);
@@ -1638,10 +1659,15 @@ describe('LiquidationQueue test', () => {
         );
         await wethUsdcMixologist
             .connect(accounts[1])
-            .addCollateral(accounts[1].address, false, collateralShare);
+            .addCollateral(
+                accounts[1].address,
+                accounts[1].address,
+                false,
+                collateralShare,
+            );
         await wethUsdcMixologist
             .connect(accounts[1])
-            .borrow(accounts[1].address, borrowVal);
+            .borrow(accounts[1].address, accounts[1].address, borrowVal);
 
         //  ---liquidate now
         const swapData = new ethers.utils.AbiCoder().encode(['uint256'], [1]);
@@ -1897,7 +1923,12 @@ describe('LiquidationQueue test', () => {
 
         await wethUsdcMixologist
             .connect(accounts[0])
-            .addAsset(accounts[0].address, false, lendValShare);
+            .addAsset(
+                accounts[0].address,
+                accounts[0].address,
+                false,
+                lendValShare,
+            );
 
         const mixologistBalanceOfAccountAfter =
             await wethUsdcMixologist.balanceOf(accounts[0].address);
@@ -1940,10 +1971,15 @@ describe('LiquidationQueue test', () => {
         );
         await wethUsdcMixologist
             .connect(accounts[1])
-            .addCollateral(accounts[1].address, false, collateralShare);
+            .addCollateral(
+                accounts[1].address,
+                accounts[1].address,
+                false,
+                collateralShare,
+            );
         await wethUsdcMixologist
             .connect(accounts[1])
-            .borrow(accounts[1].address, borrowVal);
+            .borrow(accounts[1].address, accounts[1].address, borrowVal);
 
         //  ---liquidate now
         const swapData = new ethers.utils.AbiCoder().encode(['uint256'], [1]);
