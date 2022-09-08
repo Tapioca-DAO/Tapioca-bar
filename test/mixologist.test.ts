@@ -34,7 +34,7 @@ describe('Mixologist test', () => {
             await yieldBox.setApprovalForAll(wethUsdcMixologist.address, true)
         ).wait();
 
-        const addAssetFn = wethUsdcMixologist.interface.encodeFunctionData(
+        let addAssetFn = wethUsdcMixologist.interface.encodeFunctionData(
             'addAsset',
             [deployer.address, deployer.address, false, mintValShare],
         );
@@ -55,6 +55,18 @@ describe('Mixologist test', () => {
             )
         ).wait();
 
+        addAssetFn = wethUsdcMixologist.interface.encodeFunctionData(
+            'addAsset',
+            [deployer.address, deployer.address, true, mintValShare],
+        );
+
+        await expect(
+            wethUsdcMixologist.execute(
+                [addAssetFn, removeAssetFn, updateExchangeRateFn],
+                true,
+            ),
+        ).to.be.revertedWith('Mx: too much');
+
         // Withdraw from bar
         await (
             await yieldBox.withdraw(
@@ -69,6 +81,154 @@ describe('Mixologist test', () => {
         // Check the value of the asset
         const balanceAfter = await weth.balanceOf(deployer.address);
         expect(balanceAfter).to.equal(balanceBefore);
+    });
+
+    it('Should deposit Usdc collateral and borrow Weth in a single tx without lenders but revert with the right error code', async () => {
+        const {
+            usdc,
+            weth,
+            yieldBox,
+            eoa1,
+            approveTokensAndSetBarApproval,
+            deployer,
+            wethUsdcMixologist,
+            __wethUsdcPrice,
+        } = await register();
+
+        const assetId = await wethUsdcMixologist.assetId();
+        const collateralId = await wethUsdcMixologist.collateralId();
+        const wethMintVal = ethers.BigNumber.from((1e18).toString()).mul(10);
+        const usdcMintVal = wethMintVal.mul(
+            __wethUsdcPrice.div((1e18).toString()),
+        );
+        const wethMintValShare = await yieldBox.toShare(
+            assetId,
+            wethMintVal,
+            false,
+        );
+        const wethBorrowVal = usdcMintVal
+            .mul(74)
+            .div(100)
+            .div(__wethUsdcPrice.div((1e18).toString()));
+
+        // We get asset
+        weth.freeMint(wethMintVal);
+        usdc.connect(eoa1).freeMint(usdcMintVal);
+
+        // We approve external operators
+        await approveTokensAndSetBarApproval();
+        await approveTokensAndSetBarApproval(eoa1);
+
+        const usdcMintValShare = await yieldBox.toShare(
+            collateralId,
+            usdcMintVal,
+            false,
+        );
+        await (
+            await yieldBox
+                .connect(eoa1)
+                .depositAsset(
+                    collateralId,
+                    eoa1.address,
+                    eoa1.address,
+                    usdcMintVal,
+                    0,
+                )
+        ).wait();
+
+        const addCollateralFn = wethUsdcMixologist.interface.encodeFunctionData(
+            'addCollateral',
+            [eoa1.address, eoa1.address, false, usdcMintValShare],
+        );
+        const borrowFn = wethUsdcMixologist.interface.encodeFunctionData(
+            'borrow',
+            [eoa1.address, eoa1.address, wethBorrowVal],
+        );
+
+        await expect(
+            wethUsdcMixologist
+                .connect(eoa1)
+                .execute([addCollateralFn, borrowFn], true),
+        ).to.be.revertedWith('Mx: min limit');
+    });
+
+    it('Should deposit Usdc collateral and borrow Weth in a single tx without lenders and decode the error codes', async () => {
+        const {
+            usdc,
+            weth,
+            yieldBox,
+            eoa1,
+            approveTokensAndSetBarApproval,
+            deployer,
+            wethUsdcMixologist,
+            __wethUsdcPrice,
+        } = await register();
+
+        const assetId = await wethUsdcMixologist.assetId();
+        const collateralId = await wethUsdcMixologist.collateralId();
+        const wethMintVal = ethers.BigNumber.from((1e18).toString()).mul(10);
+        const usdcMintVal = wethMintVal.mul(
+            __wethUsdcPrice.div((1e18).toString()),
+        );
+        const wethMintValShare = await yieldBox.toShare(
+            assetId,
+            wethMintVal,
+            false,
+        );
+        const wethBorrowVal = usdcMintVal
+            .mul(74)
+            .div(100)
+            .div(__wethUsdcPrice.div((1e18).toString()));
+
+        // We get asset
+        weth.freeMint(wethMintVal);
+        usdc.connect(eoa1).freeMint(usdcMintVal);
+
+        // We approve external operators
+        await approveTokensAndSetBarApproval();
+        await approveTokensAndSetBarApproval(eoa1);
+
+        const usdcMintValShare = await yieldBox.toShare(
+            collateralId,
+            usdcMintVal,
+            false,
+        );
+        await (
+            await yieldBox
+                .connect(eoa1)
+                .depositAsset(
+                    collateralId,
+                    eoa1.address,
+                    eoa1.address,
+                    usdcMintVal,
+                    0,
+                )
+        ).wait();
+
+        const addCollateralFn = wethUsdcMixologist.interface.encodeFunctionData(
+            'addCollateral',
+            [eoa1.address, eoa1.address, false, usdcMintValShare],
+        );
+        const borrowFn = wethUsdcMixologist.interface.encodeFunctionData(
+            'borrow',
+            [eoa1.address, eoa1.address, wethBorrowVal],
+        );
+
+        const data = await wethUsdcMixologist
+            .connect(eoa1)
+            .callStatic.execute([addCollateralFn, borrowFn], false);
+
+        expect(data.successes[0]).to.be.true;
+        expect(data.successes[1]).to.be.false; //can't borrow as there are no lenders
+
+        expect(data.results[0]).to.eq('no-data');
+        expect(data.results[1]).to.eq('Mx: min limit');
+
+        await expect(
+            wethUsdcMixologist
+                .connect(eoa1)
+                .execute([addCollateralFn, borrowFn], false),
+        ).not.to.be.reverted;
     });
 
     it('Should lend Weth, deposit Usdc collateral and borrow Weth in a single tx', async () => {
@@ -840,7 +1000,7 @@ describe('Mixologist test', () => {
                 deployer.address,
                 share,
             ),
-        ).to.be.revertedWith('Mx: min limti');
+        ).to.be.revertedWith('Mx: min limit');
     });
 
     it('should set new swap paths', async () => {

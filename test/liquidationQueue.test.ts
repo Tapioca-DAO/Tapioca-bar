@@ -1247,6 +1247,13 @@ describe('LiquidationQueue test', () => {
             [LQ_META.minBidAmount.div(1e3), LQ_META.minBidAmount],
         );
 
+        const testOutput = await stableToUsdoBidder.getOutputAmount(
+            usdoAssetId,
+            toBid,
+            ethers.utils.toUtf8Bytes(''),
+        );
+        expect(testOutput.eq(toBid)).to.be.true;
+
         await expect(
             liquidationQueue.bidWithStable(
                 deployer.address,

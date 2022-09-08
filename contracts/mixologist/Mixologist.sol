@@ -277,17 +277,17 @@ contract Mixologist is ERC20, BoringOwnable {
     /// @param revertOnFail If True then reverts after a failed call and stops doing further calls.
     function execute(bytes[] calldata calls, bool revertOnFail)
         external
-        returns (bool[] memory successes, bytes[] memory results)
+        returns (bool[] memory successes, string[] memory results)
     {
         successes = new bool[](calls.length);
-        results = new bytes[](calls.length);
+        results = new string[](calls.length);
         for (uint256 i = 0; i < calls.length; i++) {
             (bool success, bytes memory result) = address(this).delegatecall(
                 calls[i]
             );
             require(success || !revertOnFail, _getRevertMsg(result));
             successes[i] = success;
-            results[i] = result;
+            results[i] = _getRevertMsg(result);
         }
     }
 
