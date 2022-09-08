@@ -13,7 +13,8 @@
         "@comment deploy": "Deploy scripts",
         "deploy": "npx hardhat deploy",
         "deploy:mainnet": "npx hardhat deploy --network mainnet",
-        "deploy:testnet": "npx hardhat run scripts/exportStagingAddresses.ts --network rinkeby"
+        "deploy:testnet": "npx hardhat run scripts/exportStagingAddresses.ts --network rinkeby",
+        "prepare": "husky install"
     },
     "devDependencies": {
         "@boringcrypto/boring-solidity": "boringcrypto/BoringSolidity#21beaec5c9383c6e9312e4464ad5755fda69e09b",
@@ -56,6 +57,7 @@
         "write-json-file": "4.3.0"
     },
     "dependencies": {
+        "husky": "^8.0.1",
         "load-json-file": "^7.0.1"
     }
 }
