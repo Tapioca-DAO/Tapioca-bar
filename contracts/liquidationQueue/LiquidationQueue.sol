@@ -571,7 +571,7 @@ contract LiquidationQueue {
                     usdoAssetId,
                     finalDiscountedCollateralAmount,
                     ''
-                ); //TODO: add data
+                );
 
             yieldBox.transfer(
                 address(this),
@@ -617,7 +617,6 @@ contract LiquidationQueue {
         external
         returns (uint256 totalAmountExecuted, uint256 totalCollateralLiquidated)
     {
-        //TODO: add bytes calldata data for swap operations
         require(msg.sender == address(mixologist), 'LQ: Only Mixologist');
         BidExecutionData memory data;
 

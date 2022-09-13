@@ -1,11 +1,12 @@
 import { ethers } from 'hardhat';
 import { expect } from 'chai';
 import { register } from './test.utils';
+import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 
 describe('Mixologist test', () => {
     it('should add addset, remove asset and update exchange rate in a single tx', async () => {
         const { weth, yieldBox, wethUsdcMixologist, deployer, initContracts } =
-            await register();
+            await loadFixture(register);
 
         await initContracts(); // To prevent `Mixologist: below minimum`
 
@@ -90,10 +91,9 @@ describe('Mixologist test', () => {
             yieldBox,
             eoa1,
             approveTokensAndSetBarApproval,
-            deployer,
             wethUsdcMixologist,
             __wethUsdcPrice,
-        } = await register();
+        } = await loadFixture(register);
 
         const assetId = await wethUsdcMixologist.assetId();
         const collateralId = await wethUsdcMixologist.collateralId();
@@ -101,19 +101,14 @@ describe('Mixologist test', () => {
         const usdcMintVal = wethMintVal.mul(
             __wethUsdcPrice.div((1e18).toString()),
         );
-        const wethMintValShare = await yieldBox.toShare(
-            assetId,
-            wethMintVal,
-            false,
-        );
         const wethBorrowVal = usdcMintVal
             .mul(74)
             .div(100)
             .div(__wethUsdcPrice.div((1e18).toString()));
 
         // We get asset
-        weth.freeMint(wethMintVal);
-        usdc.connect(eoa1).freeMint(usdcMintVal);
+        await weth.freeMint(wethMintVal);
+        await usdc.connect(eoa1).freeMint(usdcMintVal);
 
         // We approve external operators
         await approveTokensAndSetBarApproval();
@@ -159,10 +154,9 @@ describe('Mixologist test', () => {
             yieldBox,
             eoa1,
             approveTokensAndSetBarApproval,
-            deployer,
             wethUsdcMixologist,
             __wethUsdcPrice,
-        } = await register();
+        } = await loadFixture(register);
 
         const assetId = await wethUsdcMixologist.assetId();
         const collateralId = await wethUsdcMixologist.collateralId();
@@ -170,19 +164,14 @@ describe('Mixologist test', () => {
         const usdcMintVal = wethMintVal.mul(
             __wethUsdcPrice.div((1e18).toString()),
         );
-        const wethMintValShare = await yieldBox.toShare(
-            assetId,
-            wethMintVal,
-            false,
-        );
         const wethBorrowVal = usdcMintVal
             .mul(74)
             .div(100)
             .div(__wethUsdcPrice.div((1e18).toString()));
 
         // We get asset
-        weth.freeMint(wethMintVal);
-        usdc.connect(eoa1).freeMint(usdcMintVal);
+        await weth.freeMint(wethMintVal);
+        await usdc.connect(eoa1).freeMint(usdcMintVal);
 
         // We approve external operators
         await approveTokensAndSetBarApproval();
@@ -241,7 +230,7 @@ describe('Mixologist test', () => {
             deployer,
             wethUsdcMixologist,
             __wethUsdcPrice,
-        } = await register();
+        } = await loadFixture(register);
 
         const assetId = await wethUsdcMixologist.assetId();
         const collateralId = await wethUsdcMixologist.collateralId();
@@ -255,8 +244,8 @@ describe('Mixologist test', () => {
             .div(__wethUsdcPrice.div((1e18).toString()));
 
         // We get asset
-        weth.freeMint(wethMintVal);
-        usdc.connect(eoa1).freeMint(usdcMintVal);
+        await weth.freeMint(wethMintVal);
+        await usdc.connect(eoa1).freeMint(usdcMintVal);
 
         // We approve external operators
         await approveTokensAndSetBarApproval();
@@ -325,7 +314,7 @@ describe('Mixologist test', () => {
 
     it('Should deposit to yieldBox, add asset to mixologist, remove asset and withdraw', async () => {
         const { weth, yieldBox, wethUsdcMixologist, deployer, initContracts } =
-            await register();
+            await loadFixture(register);
 
         await initContracts(); // To prevent `Mixologist: below minimum`
 
@@ -402,7 +391,7 @@ describe('Mixologist test', () => {
             multiSwapper,
             wethUsdcOracle,
             __wethUsdcPrice,
-        } = await register();
+        } = await loadFixture(register);
 
         const assetId = await wethUsdcMixologist.assetId();
         const collateralId = await wethUsdcMixologist.collateralId();
@@ -412,8 +401,8 @@ describe('Mixologist test', () => {
         );
 
         // We get asset
-        weth.freeMint(wethMintVal);
-        usdc.connect(eoa1).freeMint(usdcMintVal);
+        await weth.freeMint(wethMintVal);
+        await usdc.connect(eoa1).freeMint(usdcMintVal);
 
         // We approve external operators
         await approveTokensAndSetBarApproval();
@@ -486,7 +475,7 @@ describe('Mixologist test', () => {
             mixologistHelper,
             BN,
             __wethUsdcPrice,
-        } = await register();
+        } = await loadFixture(register);
 
         await initContracts(); // To prevent `Mixologist: below minimum`
 
@@ -498,8 +487,8 @@ describe('Mixologist test', () => {
             .mul(50)
             .div(100)
             .div(__wethUsdcPrice.div((1e18).toString()));
-        weth.freeMint(lendVal);
-        usdc.connect(eoa1).freeMint(collateralVal);
+        await weth.freeMint(lendVal);
+        await usdc.connect(eoa1).freeMint(collateralVal);
 
         /**
          * LEND
@@ -657,7 +646,7 @@ describe('Mixologist test', () => {
             mixologistHelper,
             __wethUsdcPrice,
             timeTravel,
-        } = await register();
+        } = await loadFixture(register);
 
         const assetId = await wethUsdcMixologist.assetId();
         const collateralId = await wethUsdcMixologist.collateralId();
@@ -667,8 +656,8 @@ describe('Mixologist test', () => {
         );
 
         // We get asset
-        weth.freeMint(wethMintVal);
-        usdc.connect(eoa1).freeMint(usdcMintVal);
+        await weth.freeMint(wethMintVal);
+        await usdc.connect(eoa1).freeMint(usdcMintVal);
 
         // We approve external operators
         await approveTokensAndSetBarApproval();
@@ -757,12 +746,12 @@ describe('Mixologist test', () => {
             wethUsdcMixologist,
             approveTokensAndSetBarApproval,
             wethDepositAndAddAsset,
-        } = await register();
+        } = await loadFixture(register);
 
         const wethMintVal = ethers.BigNumber.from((1e18).toString()).mul(10);
 
         // We get asset
-        weth.freeMint(wethMintVal);
+        await weth.freeMint(wethMintVal);
 
         // We approve external operators
         await approveTokensAndSetBarApproval();
@@ -818,15 +807,15 @@ describe('Mixologist test', () => {
             deployer,
             initContracts,
             eoa1,
-        } = await register();
+        } = await loadFixture(register);
 
         await initContracts(); // To prevent `Mixologist: below minimum`
 
         const mintVal = ethers.BigNumber.from((1e18).toString()).mul(10);
 
         // Mint WETH for both accounts
-        weth.freeMint(mintVal);
-        weth.connect(eoa1).freeMint(mintVal);
+        await weth.freeMint(mintVal);
+        await weth.connect(eoa1).freeMint(mintVal);
 
         // Deposit assets to bar
         const mintValShare = await yieldBox.toShare(
@@ -900,8 +889,7 @@ describe('Mixologist test', () => {
     });
 
     it('should return ERC20 properties', async () => {
-        const { wethUsdcMixologist } = await register();
-        const name = await wethUsdcMixologist.name();
+        const { wethUsdcMixologist } = await loadFixture(register);
         const symbol = await wethUsdcMixologist.symbol();
         const decimals = await wethUsdcMixologist.decimals();
         const totalSupply = await wethUsdcMixologist.totalSupply();
@@ -912,11 +900,18 @@ describe('Mixologist test', () => {
     });
 
     it('should not allow initialization with bad arguments', async () => {
-        const { bar, mediumRiskMC, yieldBox, wethUsdcOracle } =
-            await register();
+        const {
+            bar,
+            mediumRiskMC,
+            wethUsdcOracle,
+            _mxLendingBorrowingModule,
+            _mxLiquidationModule,
+        } = await loadFixture(register);
 
         const data = new ethers.utils.AbiCoder().encode(
             [
+                'address',
+                'address',
                 'address',
                 'address',
                 'uint256',
@@ -927,6 +922,8 @@ describe('Mixologist test', () => {
                 'address[]',
             ],
             [
+                _mxLiquidationModule.address,
+                _mxLendingBorrowingModule.address,
                 bar.address,
                 ethers.constants.AddressZero,
                 0,
@@ -944,7 +941,7 @@ describe('Mixologist test', () => {
     });
 
     it('should compute amount to solvency for nothing borrowed', async () => {
-        const { wethUsdcMixologist, wethUsdcOracle } = await register();
+        const { wethUsdcMixologist } = await loadFixture(register);
         const amountForNothingBorrowed =
             await wethUsdcMixologist.computeAssetAmountToSolvency(
                 ethers.constants.AddressZero,
@@ -954,7 +951,9 @@ describe('Mixologist test', () => {
     });
 
     it('should not update exchange rate', async () => {
-        const { wethUsdcMixologist, wethUsdcOracle } = await register();
+        const { wethUsdcMixologist, wethUsdcOracle } = await loadFixture(
+            register,
+        );
         await wethUsdcOracle.setSuccess(false);
 
         await wethUsdcOracle.set(100);
@@ -976,17 +975,15 @@ describe('Mixologist test', () => {
             weth,
             yieldBox,
             wethDepositAndAddAsset,
-            eoa1,
             approveTokensAndSetBarApproval,
             deployer,
             wethUsdcMixologist,
-        } = await register();
+        } = await loadFixture(register);
 
         const assetId = await wethUsdcMixologist.assetId();
-        const collateralId = await wethUsdcMixologist.collateralId();
         const wethMintVal = 1000;
 
-        weth.freeMint(1000);
+        await weth.freeMint(1000);
         await approveTokensAndSetBarApproval();
         await wethDepositAndAddAsset(wethMintVal);
         expect(
@@ -1004,13 +1001,8 @@ describe('Mixologist test', () => {
     });
 
     it('should set new swap paths', async () => {
-        const {
-            collateralSwapPath,
-            tapSwapPath,
-            wethUsdcMixologist,
-            deployer,
-            bar,
-        } = await register();
+        const { collateralSwapPath, tapSwapPath, wethUsdcMixologist, bar } =
+            await loadFixture(register);
 
         // function executeMixologistFn(address[] calldata mc, bytes[] memory data)
 
@@ -1040,7 +1032,7 @@ describe('Mixologist test', () => {
     });
 
     it('deposit fees to yieldbox should not work for inexistent swapper', async () => {
-        const { wethUsdcMixologist } = await register();
+        const { wethUsdcMixologist } = await loadFixture(register);
 
         await expect(
             wethUsdcMixologist.depositFeesToYieldBox(
@@ -1051,7 +1043,7 @@ describe('Mixologist test', () => {
     });
 
     it('should not be allowed to initialize twice', async () => {
-        const { wethUsdcMixologist } = await register();
+        const { wethUsdcMixologist } = await loadFixture(register);
 
         await expect(
             wethUsdcMixologist.init(ethers.utils.toUtf8Bytes('')),
@@ -1071,10 +1063,8 @@ describe('Mixologist test', () => {
             approveTokensAndSetBarApproval,
             deployer,
             wethUsdcMixologist,
-            multiSwapper,
-            wethUsdcOracle,
             __wethUsdcPrice,
-        } = await register();
+        } = await loadFixture(register);
 
         const assetId = await wethUsdcMixologist.assetId();
         const collateralId = await wethUsdcMixologist.collateralId();
@@ -1084,8 +1074,8 @@ describe('Mixologist test', () => {
             .mul(__wethUsdcPrice.div((1e18).toString()));
 
         // We get asset
-        weth.freeMint(wethMintVal);
-        usdc.connect(eoa1).freeMint(usdcMintVal);
+        await weth.freeMint(wethMintVal);
+        await usdc.connect(eoa1).freeMint(usdcMintVal);
 
         // We approve external operators
         await approveTokensAndSetBarApproval();

@@ -9,7 +9,6 @@ import '../../swappers/MultiSwapper.sol';
 import '../../swappers/CurveSwapper.sol';
 
 import './IBidder.sol';
-import 'hardhat/console.sol';
 
 /// @notice Swaps USD0 to WETH UniswapV2
 /// @dev Performs 1 swap operation:

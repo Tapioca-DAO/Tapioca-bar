@@ -1,11 +1,11 @@
-import { ethers } from 'hardhat';
 import { expect } from 'chai';
-import { BeachBar } from '../typechain';
+import { ethers } from 'hardhat';
 import { register } from './test.utils';
+import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 
 describe('BeachBar test', () => {
     it('Should display Tapioca markets', async () => {
-        const { bar } = await register();
+        const { bar } = await loadFixture(register);
 
         const markets = await bar.tapiocaMarkets();
 
@@ -13,7 +13,7 @@ describe('BeachBar test', () => {
     });
 
     it('should return length of master contracts', async () => {
-        const { bar } = await register();
+        const { bar } = await loadFixture(register);
 
         const length = await bar.masterContractLength();
 
@@ -21,7 +21,7 @@ describe('BeachBar test', () => {
     });
 
     it('should not allow registering mixologist without a proper master contract', async () => {
-        const { bar } = await register();
+        const { bar } = await loadFixture(register);
 
         await expect(
             bar.registerMixologist(
@@ -33,7 +33,7 @@ describe('BeachBar test', () => {
     });
 
     it('should not allow registering the same master contract twice', async () => {
-        const { bar, mediumRiskMC } = await register();
+        const { bar, mediumRiskMC } = await loadFixture(register);
 
         await expect(
             bar.registerMasterContract(mediumRiskMC.address, 1),
@@ -41,7 +41,7 @@ describe('BeachBar test', () => {
     });
 
     it('should not allow executing without a proper master contract', async () => {
-        const { bar } = await register();
+        const { bar } = await loadFixture(register);
 
         await expect(
             bar.executeMixologistFn(
@@ -52,13 +52,13 @@ describe('BeachBar test', () => {
     });
 
     it('should list all mixologist registered markets', async () => {
-        const { bar } = await register();
+        const { bar } = await loadFixture(register);
         const markets = await bar.tapiocaMarkets();
         expect(markets[0]).to.not.eq(ethers.constants.AddressZero);
     });
 
     it('should register a master contract', async () => {
-        const { bar } = await register();
+        const { bar } = await loadFixture(register);
 
         const newMC = await (
             await ethers.getContractFactory('Mixologist')
@@ -74,7 +74,7 @@ describe('BeachBar test', () => {
     });
 
     it('should not withdraw for zero address swapper', async () => {
-        const { bar } = await register();
+        const { bar } = await loadFixture(register);
 
         await expect(
             bar.withdrawAllProtocolFees(

@@ -2,10 +2,11 @@ import { ethers } from 'hardhat';
 import { expect } from 'chai';
 import { register } from './test.utils';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
+import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 
 describe('LiquidationQueue test', () => {
     it('should throw if premium too high or amount too low', async () => {
-        const { liquidationQueue, deployer } = await register();
+        const { liquidationQueue, deployer } = await loadFixture(register);
 
         await expect(
             liquidationQueue.bid(deployer.address, 40, 1),
@@ -17,8 +18,8 @@ describe('LiquidationQueue test', () => {
     });
 
     it('Should make a bid', async () => {
-        const { liquidationQueue, deployer, weth, LQ_META, bar, yieldBox } =
-            await register();
+        const { liquidationQueue, deployer, weth, LQ_META, yieldBox } =
+            await loadFixture(register);
 
         const POOL = 10;
 
@@ -51,11 +52,9 @@ describe('LiquidationQueue test', () => {
             deployer,
             weth,
             LQ_META,
-            bar,
             yieldBox,
-            usdc,
             timeTravel,
-        } = await register();
+        } = await loadFixture(register);
 
         const POOL = 10;
 
@@ -77,11 +76,6 @@ describe('LiquidationQueue test', () => {
             POOL,
             LQ_META.minBidAmount,
         );
-
-        const liquidationQueueLqId = await liquidationQueue.lqAssetId();
-        const liquidationQueueMarketId = await liquidationQueue.marketAssetId();
-        const liquidationLiquidatedAssetId =
-            await liquidationQueue.liquidatedAssetId();
 
         // Require bid activation after 10min
         await expect(
@@ -120,8 +114,8 @@ describe('LiquidationQueue test', () => {
     });
 
     it('Should remove an inactivated bid', async () => {
-        const { liquidationQueue, deployer, weth, LQ_META, bar, yieldBox } =
-            await register();
+        const { liquidationQueue, deployer, weth, LQ_META, yieldBox } =
+            await loadFixture(register);
 
         const POOL = 10;
         const lqAssetId = await liquidationQueue.lqAssetId();
@@ -171,10 +165,9 @@ describe('LiquidationQueue test', () => {
             deployer,
             weth,
             LQ_META,
-            bar,
             yieldBox,
             timeTravel,
-        } = await register();
+        } = await loadFixture(register);
 
         const POOL = 10;
         const lqAssetId = await liquidationQueue.lqAssetId();
@@ -240,14 +233,13 @@ describe('LiquidationQueue test', () => {
             LQ_META,
             weth,
             usdc,
-            bar,
             yieldBox,
             wethUsdcMixologist,
             wethUsdcOracle,
             multiSwapper,
             BN,
             timeTravel,
-        } = await register();
+        } = await loadFixture(register);
 
         const POOL = 5;
         const marketAssetId = await wethUsdcMixologist.assetId();
@@ -380,7 +372,9 @@ describe('LiquidationQueue test', () => {
     });
 
     it('should get the market', async () => {
-        const { liquidationQueue, wethUsdcMixologist } = await register();
+        const { liquidationQueue, wethUsdcMixologist } = await loadFixture(
+            register,
+        );
 
         const market = await liquidationQueue.market();
         const mixologistName = await wethUsdcMixologist.name();
@@ -396,7 +390,7 @@ describe('LiquidationQueue test', () => {
             yieldBox,
             deployer,
             timeTravel,
-        } = await register();
+        } = await loadFixture(register);
 
         const orderBookEntries = await liquidationQueue.getOrderBookPoolEntries(
             0,
@@ -440,7 +434,7 @@ describe('LiquidationQueue test', () => {
             yieldBox,
             deployer,
             timeTravel,
-        } = await register();
+        } = await loadFixture(register);
 
         const POOL = 10;
 
@@ -479,7 +473,7 @@ describe('LiquidationQueue test', () => {
 
     it('should check different flows using the 18 decimals test tokens', async () => {
         const poolId = 1;
-        let accounts = await ethers.getSigners();
+        const accounts = await ethers.getSigners();
         const {
             yieldBox,
             liquidationQueue,
@@ -491,7 +485,7 @@ describe('LiquidationQueue test', () => {
             multiSwapper,
             wethUsdcOracle,
             timeTravel,
-        } = await register();
+        } = await loadFixture(register);
 
         const mixologistAssetId = await wethUsdcMixologist.assetId();
         const mixologistCollateralId = await wethUsdcMixologist.collateralId();
@@ -511,7 +505,7 @@ describe('LiquidationQueue test', () => {
         ///
         /// - get test funds
         ///
-        for (let account of accounts) {
+        for (const account of accounts) {
             await weth.connect(account).freeMint(LQ_META.defaultBidAmount); //for lending
             await usdc.connect(account).freeMint(usdcMintVal); //for collateral
         }
@@ -533,7 +527,7 @@ describe('LiquidationQueue test', () => {
         ///
         /// - deposit asset into the YieldBox
         ///
-        for (let account of accounts) {
+        for (const account of accounts) {
             const beforeDepositAmountOfAccount = await yieldBox.amountOf(
                 account.address,
                 lqAssetId,
@@ -588,7 +582,7 @@ describe('LiquidationQueue test', () => {
         ///
         /// - place some bids, try to activate before time and remove inactive
         ///
-        for (let account of accounts) {
+        for (const account of accounts) {
             await expect(
                 liquidationQueue
                     .connect(account)
@@ -637,7 +631,7 @@ describe('LiquidationQueue test', () => {
         ///
         /// - place some bids, activate them, remove activated bid
         ///
-        for (let account of accounts) {
+        for (const account of accounts) {
             await expect(
                 liquidationQueue
                     .connect(account)
@@ -645,7 +639,7 @@ describe('LiquidationQueue test', () => {
             ).to.emit(liquidationQueue, 'Bid');
         }
         await timeTravel(600); //jump 10 mins to be able to activate bids
-        for (let account of accounts) {
+        for (const account of accounts) {
             await expect(
                 liquidationQueue
                     .connect(account)
@@ -685,7 +679,7 @@ describe('LiquidationQueue test', () => {
             ).to.eq(parseFloat(ethers.utils.formatEther(LQ_META.minBidAmount)));
         }
 
-        for (let account of accounts) {
+        for (const account of accounts) {
             const userBidsLength = await liquidationQueue
                 .connect(account)
                 .userBidIndexLength(account.address, poolId);
@@ -711,7 +705,7 @@ describe('LiquidationQueue test', () => {
             parseFloat(
                 ethers.utils.formatEther(firstAccountYieldBoxBalanceBeforeBids),
             ),
-            `✖️ Balance not right after removing the active bid`,
+            '✖️ Balance not right after removing the active bid',
         ).to.eq(
             parseFloat(
                 ethers.utils.formatEther(firstAccountYieldBoxBalanceAfterBids),
@@ -722,7 +716,7 @@ describe('LiquidationQueue test', () => {
         const firstUserBalanceDue = await liquidationQueue.balancesDue(
             accounts[0].address,
         );
-        expect(firstUserBalanceDue, `✖️ Due for first user not right`).to.eq(0);
+        expect(firstUserBalanceDue, '✖️ Due for first user not right').to.eq(0);
 
         ///
         /// - split accounts into 2 groups (first lends, the 2nd one borrows), place bids, change collateral price, execute bids
@@ -740,7 +734,7 @@ describe('LiquidationQueue test', () => {
             }
 
             //place bids
-            for (let account of accounts) {
+            for (const account of accounts) {
                 await liquidationQueue
                     .connect(account)
                     .bid(account.address, poolId, LQ_META.minBidAmount);
@@ -748,7 +742,7 @@ describe('LiquidationQueue test', () => {
             //jump over the min activation period
             timeTravel(600);
             //activate bids
-            for (let account of accounts) {
+            for (const account of accounts) {
                 await liquidationQueue
                     .connect(account)
                     .activateBid(account.address, poolId);
@@ -759,7 +753,7 @@ describe('LiquidationQueue test', () => {
                 LQ_META.minBidAmount,
                 false,
             );
-            for (let account of firstHalf) {
+            for (const account of firstHalf) {
                 const mixologistBalanceOfAccountBefore =
                     await wethUsdcMixologist.balanceOf(account.address);
                 await expect(
@@ -806,7 +800,7 @@ describe('LiquidationQueue test', () => {
                 .mul(74)
                 .div(100)
                 .div(__wethUsdcPrice.div((1e18).toString())); // We borrow 74% collateral, max is 75%
-            for (let account of secondHalf) {
+            for (const account of secondHalf) {
                 //we don't use skim; need yieldbox balance
                 await usdc
                     .connect(account)
@@ -888,11 +882,11 @@ describe('LiquidationQueue test', () => {
 
             await expect(
                 parseFloat(shareForCallerAfter.toString()),
-                `✖️ After liquidation shares not right`,
+                '✖️ After liquidation shares not right',
             ).to.be.greaterThan(parseFloat(shareForCallerBefore.toString()));
 
             //redeem if everything is left
-            for (let account of secondHalf) {
+            for (const account of secondHalf) {
                 const dueAmount = await liquidationQueue.balancesDue(
                     account.address,
                 );
@@ -912,7 +906,7 @@ describe('LiquidationQueue test', () => {
                     );
                     await expect(
                         parseFloat(balanceAfterRedeem.toString()),
-                        `✖️ After redeem shares not right`,
+                        '✖️ After redeem shares not right',
                     ).to.be.greaterThan(
                         parseFloat(balanceBeforeRedeem.toString()),
                     );
@@ -922,7 +916,7 @@ describe('LiquidationQueue test', () => {
     });
 
     it('should now allow bid on uninitialized contract', async () => {
-        const { deployer, LQ_META } = await register();
+        const { deployer, LQ_META } = await loadFixture(register);
 
         const liquidationQueueTest = await (
             await ethers.getContractFactory('LiquidationQueue')
@@ -939,7 +933,7 @@ describe('LiquidationQueue test', () => {
     });
 
     it('should not allow setting bid swapper from not authorized account ', async () => {
-        const { liquidationQueue } = await register();
+        const { liquidationQueue } = await loadFixture(register);
 
         await expect(
             liquidationQueue.setBidExecutionSwapper(
@@ -949,7 +943,7 @@ describe('LiquidationQueue test', () => {
     });
 
     it('should not allow initializing LQ twice', async () => {
-        const { liquidationQueue, deployer } = await register();
+        const { liquidationQueue, deployer } = await loadFixture(register);
 
         const LQ_META = {
             activationTime: 600, // 10min
@@ -965,7 +959,7 @@ describe('LiquidationQueue test', () => {
     });
 
     it('sould not be able to redeem without a balance', async () => {
-        const { liquidationQueue, deployer } = await register();
+        const { liquidationQueue, deployer } = await loadFixture(register);
 
         await expect(
             liquidationQueue.redeem(deployer.address),
@@ -973,7 +967,7 @@ describe('LiquidationQueue test', () => {
     });
 
     it('should not allow bid execution from EOA', async () => {
-        const { liquidationQueue, BN } = await register();
+        const { liquidationQueue, BN } = await loadFixture(register);
 
         await expect(
             liquidationQueue.executeBids(
@@ -993,7 +987,6 @@ describe('LiquidationQueue test', () => {
             usdc,
             usdcAssetId,
             LQ_META,
-            BN,
             weth,
             __uniRouter,
             __uniFactory,
@@ -1002,7 +995,7 @@ describe('LiquidationQueue test', () => {
             deployAndSetUsdo,
             deployCurveStableToUsdoBidder,
             addUniV2UsdoWethLiquidity,
-        } = await register();
+        } = await loadFixture(register);
 
         //deploy and register USD0
         const { usdo } = await deployAndSetUsdo(bar);
@@ -1147,29 +1140,24 @@ describe('LiquidationQueue test', () => {
             wethUsdcMixologist,
             usdc,
             weth,
-            usdcAssetId,
             LQ_META,
-            multiSwapper,
-            BN,
-            __uniFactory,
             __uniRouter,
             __wethUsdcPrice,
             usdoToWethBidder,
             deployAndSetUsdo,
             deployCurveStableToUsdoBidder,
-        } = await register();
+        } = await loadFixture(register);
 
         //deploy and register USD0
         const { usdo } = await deployAndSetUsdo(bar);
 
         //deploy and register usdoSwapper and bidExecutionSwapper
-        const { stableToUsdoBidder, curveSwapper } =
-            await deployCurveStableToUsdoBidder(
-                wethUsdcMixologist,
-                bar,
-                usdc,
-                usdo,
-            );
+        const { stableToUsdoBidder } = await deployCurveStableToUsdoBidder(
+            wethUsdcMixologist,
+            bar,
+            usdc,
+            usdo,
+        );
 
         const usdofnData = wethUsdcMixologist.interface.encodeFunctionData(
             'updateLQUsdoSwapper',
@@ -1283,27 +1271,24 @@ describe('LiquidationQueue test', () => {
             weth,
             usdcAssetId,
             LQ_META,
-            multiSwapper,
             __wethUsdcPrice,
             usdoToWethBidder,
-            BN,
             timeTravel,
             deployAndSetUsdo,
             deployCurveStableToUsdoBidder,
             __uniRouter,
-        } = await register();
+        } = await loadFixture(register);
 
         //deploy and register USD0
         const { usdo } = await deployAndSetUsdo(bar);
 
         //deploy and register usdoSwapper and bidExecutionSwapper
-        const { stableToUsdoBidder, curveSwapper } =
-            await deployCurveStableToUsdoBidder(
-                wethUsdcMixologist,
-                bar,
-                usdc,
-                usdo,
-            );
+        const { stableToUsdoBidder } = await deployCurveStableToUsdoBidder(
+            wethUsdcMixologist,
+            bar,
+            usdc,
+            usdo,
+        );
 
         const usdofnData = wethUsdcMixologist.interface.encodeFunctionData(
             'updateLQUsdoSwapper',
@@ -1450,17 +1435,15 @@ describe('LiquidationQueue test', () => {
             usdcAssetId,
             LQ_META,
             multiSwapper,
-            BN,
             timeTravel,
             __wethUsdcPrice,
-            __uniFactory,
             __uniRouter,
             weth,
             wethUsdcOracle,
             usdoToWethBidder,
             deployAndSetUsdo,
             deployCurveStableToUsdoBidder,
-        } = await register();
+        } = await loadFixture(register);
 
         //deploy and register USD0
         const { usdo } = await deployAndSetUsdo(bar);
@@ -1595,7 +1578,7 @@ describe('LiquidationQueue test', () => {
             await wethUsdcMixologist.balanceOf(accounts[0].address);
         await expect(
             mixologistBalanceOfAccountBefore,
-            `✖️ Account 0 mixologist balance before is not right`,
+            '✖️ Account 0 mixologist balance before is not right',
         ).to.eq(0);
 
         await weth
@@ -1632,7 +1615,7 @@ describe('LiquidationQueue test', () => {
             parseFloat(
                 ethers.utils.formatEther(mixologistBalanceOfAccountAfter),
             ),
-            `✖️ Account 0 mixologist balance after lend operation is not right`,
+            '✖️ Account 0 mixologist balance after lend operation is not right',
         ).to.eq(parseFloat(ethers.utils.formatEther(lendValShare)));
 
         // --- borrow
@@ -1711,7 +1694,7 @@ describe('LiquidationQueue test', () => {
         );
         await expect(
             parseFloat(shareForCallerAfter.toString()),
-            `✖️ After liquidation shares not right`,
+            '✖️ After liquidation shares not right',
         ).to.be.greaterThan(parseFloat(shareForCallerBefore.toString()));
     });
 
@@ -1734,7 +1717,7 @@ describe('LiquidationQueue test', () => {
             deployAndSetUsdo,
             deployCurveStableToUsdoBidder,
             timeTravel,
-        } = await register();
+        } = await loadFixture(register);
 
         //deploy and register USD0
         const { usdo } = await deployAndSetUsdo(bar);
@@ -1909,7 +1892,7 @@ describe('LiquidationQueue test', () => {
             await wethUsdcMixologist.balanceOf(accounts[0].address);
         await expect(
             mixologistBalanceOfAccountBefore,
-            `✖️ Account 0 mixologist balance before is not right`,
+            '✖️ Account 0 mixologist balance before is not right',
         ).to.eq(0);
 
         await weth.connect(accounts[0]).approve(yieldBox.address, lentAmount);
@@ -1944,7 +1927,7 @@ describe('LiquidationQueue test', () => {
             parseFloat(
                 ethers.utils.formatEther(mixologistBalanceOfAccountAfter),
             ),
-            `✖️ Account 0 mixologist balance after lend operation is not right`,
+            '✖️ Account 0 mixologist balance after lend operation is not right',
         ).to.eq(parseFloat(ethers.utils.formatEther(lendValShare)));
 
         // --- borrow
@@ -2023,7 +2006,7 @@ describe('LiquidationQueue test', () => {
         );
         await expect(
             parseFloat(shareForCallerAfter.toString()),
-            `✖️ After liquidation shares not right`,
+            '✖️ After liquidation shares not right',
         ).to.be.greaterThan(parseFloat(shareForCallerBefore.toString()));
 
         // Check that LQ balances has been added
@@ -2043,9 +2026,9 @@ describe('LiquidationQueue test', () => {
 
 //TODO: move to utils if needed in other places
 const splitArray = (arr: any, batches: number) => {
-    var chunkLength = Math.max(arr.length / batches, 1);
-    var chunks = [];
-    for (var i = 0; i < batches; i++) {
+    const chunkLength = Math.max(arr.length / batches, 1);
+    const chunks = [];
+    for (let i = 0; i < batches; i++) {
         if (chunkLength * (i + 1) <= arr.length)
             chunks.push(arr.slice(chunkLength * i, chunkLength * (i + 1)));
     }

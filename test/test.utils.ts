@@ -1,7 +1,6 @@
 import { time } from '@nomicfoundation/hardhat-network-helpers';
 import { BigNumberish } from 'ethers';
 import { ethers } from 'hardhat';
-import { string } from 'hardhat/internal/core/params/argumentTypes';
 import {
     BeachBar,
     ERC20Mock,
@@ -259,8 +258,19 @@ async function registerMixologist(
     collateralSwapPath: string[],
     tapSwapPath: string[],
 ) {
+    const _mxLiquidationModule = await (
+        await ethers.getContractFactory('MXLiquidation')
+    ).deploy();
+    await _mxLiquidationModule.deployed();
+    const _mxLendingBorrowingModule = await (
+        await ethers.getContractFactory('MXLendingBorrowing')
+    ).deploy();
+    await _mxLendingBorrowingModule.deployed();
+
     const data = new ethers.utils.AbiCoder().encode(
         [
+            'address',
+            'address',
             'address',
             'address',
             'uint256',
@@ -271,6 +281,8 @@ async function registerMixologist(
             'address[]',
         ],
         [
+            _mxLiquidationModule.address,
+            _mxLendingBorrowingModule.address,
             bar.address,
             weth.address,
             wethAssetId,
@@ -289,7 +301,11 @@ async function registerMixologist(
             (await yieldBox.clonesOfCount(mediumRiskMC)).sub(1),
         ),
     );
-    return { wethUsdcMixologist };
+    return {
+        wethUsdcMixologist,
+        _mxLiquidationModule,
+        _mxLendingBorrowingModule,
+    };
 }
 
 async function registerUniUsdoToWethBidder(
@@ -423,7 +439,11 @@ export async function register(staging?: boolean) {
     // 7 Deploy WethUSDC medium risk MC clone
     const collateralSwapPath = [usdc.address, weth.address];
     const tapSwapPath = [weth.address, tap.address];
-    const { wethUsdcMixologist } = await registerMixologist(
+    const {
+        wethUsdcMixologist,
+        _mxLendingBorrowingModule,
+        _mxLiquidationModule,
+    } = await registerMixologist(
         mediumRiskMC.address,
         yieldBox,
         bar,
@@ -493,6 +513,8 @@ export async function register(staging?: boolean) {
         yieldBox,
         bar,
         wethUsdcMixologist,
+        _mxLiquidationModule,
+        _mxLendingBorrowingModule,
         mixologistHelper,
         eoa1,
         multiSwapper,
