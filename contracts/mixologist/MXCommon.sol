@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-import './MixologistStorage.sol';
+import './MXStorage.sol';
 
-contract MixologistCommon is MixologistStorage {
+contract MXCommon is MXStorage {
     using RebaseLibrary for Rebase;
-    using BoringERC20 for IERC20;
 
     /// Modifier to check if the msg.sender is allowed to use funds belonging to the 'from' address.
     /// If 'from' is msg.sender, it's allowed.
@@ -21,6 +20,13 @@ contract MixologistCommon is MixologistStorage {
     modifier solvent() {
         _;
         require(_isSolvent(msg.sender, exchangeRate), 'Mx: insolvent');
+    }
+
+    bool private initialized;
+    modifier onlyOnce() {
+        require(!initialized, 'Mx: initialized');
+        _;
+        initialized = true;
     }
 
     // ************** //
@@ -179,5 +185,82 @@ contract MixologistCommon is MixologistStorage {
         } else {
             yieldBox.transfer(from, address(this), _assetId, share); // added a 'from' instead of 'msg.sender' -0xGAB
         }
+    }
+
+    /// @dev Concrete implementation of `addAsset`.
+    function _addAsset(
+        address from,
+        address to,
+        bool skim,
+        uint256 share
+    ) internal returns (uint256 fraction) {
+        Rebase memory _totalAsset = totalAsset;
+        uint256 totalAssetShare = _totalAsset.elastic;
+        uint256 allShare = _totalAsset.elastic +
+            yieldBox.toShare(assetId, totalBorrow.elastic, true);
+        fraction = allShare == 0
+            ? share
+            : (share * _totalAsset.base) / allShare;
+        if (_totalAsset.base + uint128(fraction) < 1000) {
+            return 0;
+        }
+        totalAsset = _totalAsset.add(share, fraction);
+        balanceOf[to] += fraction;
+        emit Transfer(address(0), to, fraction);
+        _addTokens(from, assetId, share, totalAssetShare, skim);
+        emit LogAddAsset(skim ? address(yieldBox) : from, to, share, fraction);
+    }
+
+    /// @notice Adds assets to the lending pair.
+    /// @param from Address to add asset from.
+    /// @param to The address of the user to receive the assets.
+    /// @param skim True if the amount should be skimmed from the deposit balance of msg.sender.
+    /// False if tokens from msg.sender in `yieldBox` should be transferred.
+    /// @param share The amount of shares to add.
+    /// @return fraction Total fractions added.
+    function addAsset(
+        address from,
+        address to,
+        bool skim,
+        uint256 share
+    ) public allowed(from) returns (uint256 fraction) {
+        accrue();
+        fraction = _addAsset(from, to, skim, share);
+    }
+
+    /// @dev Concrete implementation of `removeAsset`.
+    /// @param from The account to remove from. Should always be msg.sender except for `depositFeesToyieldBox()`.
+    function _removeAsset(
+        address from,
+        address to,
+        uint256 fraction
+    ) internal returns (uint256 share) {
+        Rebase memory _totalAsset = totalAsset;
+        uint256 allShare = _totalAsset.elastic +
+            yieldBox.toShare(assetId, totalBorrow.elastic, true);
+        share = (fraction * allShare) / _totalAsset.base;
+        balanceOf[from] -= fraction;
+        emit Transfer(from, address(0), fraction);
+        _totalAsset.elastic -= uint128(share);
+        _totalAsset.base -= uint128(fraction);
+        require(_totalAsset.base >= 1000, 'Mx: min limit');
+        totalAsset = _totalAsset;
+        emit LogRemoveAsset(from, to, share, fraction);
+        yieldBox.transfer(address(this), to, assetId, share);
+    }
+
+    /// @notice Removes an asset from msg.sender and transfers it to `to`.
+    /// @param from Account to debit Assets from.
+    /// @param to The user that receives the removed assets.
+    /// @param fraction The amount/fraction of assets held to remove.
+    /// @return share The amount of shares transferred to `to`.
+    function removeAsset(
+        address from,
+        address to,
+        uint256 fraction
+    ) public allowed(from) returns (uint256 share) {
+        accrue();
+
+        share = _removeAsset(from, to, fraction);
     }
 }

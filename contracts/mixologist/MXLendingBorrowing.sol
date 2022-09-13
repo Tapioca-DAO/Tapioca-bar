@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-import './MixologistCommon.sol';
+import './MXCommon.sol';
 
-contract MixologistLendingBorrowing is MixologistCommon {
+contract MXLendingBorrowing is MXCommon {
     using RebaseLibrary for Rebase;
     using BoringERC20 for IERC20;
 

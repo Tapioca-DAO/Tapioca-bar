@@ -13,8 +13,53 @@ import '../liquidationQueue/ILiquidationQueue.sol';
 
 // solhint-disable max-line-length
 
-contract MixologistStorage is BoringOwnable {
+contract MXStorage is BoringOwnable, ERC20 {
     using RebaseLibrary for Rebase;
+    using BoringERC20 for IERC20;
+    
+    
+    // ************* //
+    // *** ERC20 *** //
+    // ************* //
+    
+    function symbol() external view returns (string memory) {
+        return
+            string(
+                abi.encodePacked(
+                    'tm',
+                    collateral.safeSymbol(),
+                    '/',
+                    asset.safeSymbol(),
+                    '-',
+                    oracle.symbol(oracleData)
+                )
+            );
+    }
+
+    function name() external view returns (string memory) {
+        return
+            string(
+                abi.encodePacked(
+                    'Tapioca Mixologist ',
+                    collateral.safeName(),
+                    '/',
+                    asset.safeName(),
+                    '-',
+                    oracle.name(oracleData)
+                )
+            );
+    }
+
+    function decimals() external view returns (uint8) {
+        return asset.safeDecimals();
+    }
+
+    // totalSupply for ERC20 compatibility
+    // BalanceOf[user] represent a fraction
+    function totalSupply() public view override returns (uint256) {
+        return totalAsset.base;
+    }
+
 
     // ************ //
     // *** VARS *** //

@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-import './MixologistCommon.sol';
+import './MXCommon.sol';
 
 // solhint-disable max-line-length
 
-contract MixologistLiquidation is MixologistCommon {
+contract MXLiquidation is MXCommon {
     using RebaseLibrary for Rebase;
     using BoringERC20 for IERC20;
 
