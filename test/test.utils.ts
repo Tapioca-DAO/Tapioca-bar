@@ -5,7 +5,10 @@ import { string } from 'hardhat/internal/core/params/argumentTypes';
 import {
     BeachBar,
     ERC20Mock,
-    Mixologist,
+    BaseMixologist,
+    MixologistLendingBorrowing,
+    MixologistLiquidation,
+    MixologistSetter,
     OracleMock,
     WETH9Mock,
     YieldBox,
@@ -15,6 +18,13 @@ import { UniswapV2Factory } from '../typechain/UniswapV2Factory';
 import { UniswapV2Router02 } from '../typechain/UniswapV2Router02';
 
 ethers.utils.Logger.setLogLevel(ethers.utils.Logger.levels.ERROR);
+
+const mixologistModules = {
+    Base: 0,
+    LendingBorrowing: 1,
+    Liquidation: 2,
+    Setter: 3,
+};
 
 async function resetVM() {
     await ethers.provider.send('hardhat_reset', []);
@@ -238,13 +248,37 @@ async function registerMultiSwapper(
 
 async function deployMediumRiskMC(bar: BeachBar) {
     const mediumRiskMC = await (
-        await ethers.getContractFactory('Mixologist')
+        await ethers.getContractFactory('BaseMixologist')
     ).deploy();
     await mediumRiskMC.deployed();
 
     await (await bar.registerMasterContract(mediumRiskMC.address, 1)).wait();
 
     return { mediumRiskMC };
+}
+
+async function registerMixologistLendingBorrowingModule() {
+    const mixologistLendingBorrowingModule = await (
+        await ethers.getContractFactory('MixologistLendingBorrowing')
+    ).deploy();
+    await mixologistLendingBorrowingModule.deployed();
+    return { mixologistLendingBorrowingModule };
+}
+
+async function registerMixologistLiquidationModule() {
+    const mixologistLiquidationModule = await (
+        await ethers.getContractFactory('MixologistLiquidation')
+    ).deploy();
+    await mixologistLiquidationModule.deployed();
+    return { mixologistLiquidationModule };
+}
+
+async function registerMixologistSetterModule() {
+    const mixologistSetterModule = await (
+        await ethers.getContractFactory('MixologistSetter')
+    ).deploy();
+    await mixologistSetterModule.deployed();
+    return { mixologistSetterModule };
 }
 
 async function registerMixologist(
@@ -258,6 +292,9 @@ async function registerMixologist(
     wethUsdcOracle: OracleMock,
     collateralSwapPath: string[],
     tapSwapPath: string[],
+    mixologistLendingBorrowingModule: MixologistLendingBorrowing,
+    mixologistLiquidationModule: MixologistLiquidation,
+    mixologistSetterModule: MixologistSetter,
 ) {
     const data = new ethers.utils.AbiCoder().encode(
         [
@@ -269,6 +306,9 @@ async function registerMixologist(
             'address',
             'address[]',
             'address[]',
+            'address',
+            'address',
+            'address',
         ],
         [
             bar.address,
@@ -279,11 +319,14 @@ async function registerMixologist(
             wethUsdcOracle.address,
             collateralSwapPath,
             tapSwapPath,
+            mixologistLendingBorrowingModule.address,
+            mixologistLiquidationModule.address,
+            mixologistSetterModule.address,
         ],
     );
     await (await bar.registerMixologist(mediumRiskMC, data, true)).wait();
     const wethUsdcMixologist = await ethers.getContractAt(
-        'Mixologist',
+        'BaseMixologist',
         await yieldBox.clonesOf(
             mediumRiskMC,
             (await yieldBox.clonesOfCount(mediumRiskMC)).sub(1),
@@ -294,7 +337,7 @@ async function registerMixologist(
 
 async function registerUniUsdoToWethBidder(
     uniSwapper: MultiSwapper,
-    mixologist: Mixologist,
+    mixologist: BaseMixologist,
 ) {
     const usdoToWethBidder = await (
         await ethers.getContractFactory('UniUsdoToWethBidder')
@@ -304,7 +347,7 @@ async function registerUniUsdoToWethBidder(
     return { usdoToWethBidder };
 }
 async function deployCurveStableToUsdoBidder(
-    mixologist: Mixologist,
+    mixologist: BaseMixologist,
     bar: BeachBar,
     usdc: ERC20Mock,
     usdo: ERC20Mock,
@@ -337,8 +380,9 @@ async function deployAndSetUsdo(bar: BeachBar) {
 
 async function registerLiquidationQueue(
     bar: BeachBar,
-    mixologist: Mixologist,
+    mixologist: BaseMixologist,
     feeCollector: string,
+    mixologistSetter: MixologistSetter,
 ) {
     const liquidationQueue = await (
         await ethers.getContractFactory('LiquidationQueue')
@@ -354,13 +398,20 @@ async function registerLiquidationQueue(
         bidExecutionSwapper: ethers.constants.AddressZero,
         usdoSwapper: ethers.constants.AddressZero,
     };
-    const payload = mixologist.interface.encodeFunctionData(
+
+    const payloadFn = mixologistSetter.interface.encodeFunctionData(
         'setLiquidationQueue',
         [liquidationQueue.address, LQ_META],
     );
-
+    let payloadExecutionData = new ethers.utils.AbiCoder().encode(
+        ['uint256', 'bytes'],
+        [mixologistModules.Setter, payloadFn],
+    );
+    let beachBarFn = mixologist.interface.encodeFunctionData('executeModule', [
+        payloadExecutionData,
+    ]);
     await (
-        await bar.executeMixologistFn([mixologist.address], [payload])
+        await bar.executeMixologistFn([mixologist.address], [beachBarFn])
     ).wait();
 
     return { liquidationQueue, LQ_META };
@@ -423,6 +474,13 @@ export async function register(staging?: boolean) {
     // 7 Deploy WethUSDC medium risk MC clone
     const collateralSwapPath = [usdc.address, weth.address];
     const tapSwapPath = [weth.address, tap.address];
+
+    const { mixologistLendingBorrowingModule } =
+        await registerMixologistLendingBorrowingModule();
+    const { mixologistLiquidationModule } =
+        await registerMixologistLiquidationModule();
+    const { mixologistSetterModule } = await registerMixologistSetterModule();
+
     const { wethUsdcMixologist } = await registerMixologist(
         mediumRiskMC.address,
         yieldBox,
@@ -434,6 +492,9 @@ export async function register(staging?: boolean) {
         wethUsdcOracle,
         collateralSwapPath,
         tapSwapPath,
+        mixologistLendingBorrowingModule,
+        mixologistLiquidationModule,
+        mixologistSetterModule,
     );
 
     // 8 Set feeTo & feeVeTap
@@ -452,6 +513,7 @@ export async function register(staging?: boolean) {
         bar,
         wethUsdcMixologist,
         feeCollector.address,
+        mixologistSetterModule,
     );
 
     /**
@@ -503,6 +565,9 @@ export async function register(staging?: boolean) {
         feeCollector,
         usdoToWethBidder,
         mediumRiskMC,
+        mixologistLendingBorrowingModule,
+        mixologistLiquidationModule,
+        mixologistSetterModule,
         __uniFactory,
         __uniRouter,
         __wethUsdcMockPair,
@@ -583,14 +648,20 @@ export async function register(staging?: boolean) {
                 0,
             )
         ).wait();
+
         const _valShare = await _yieldBox.balanceOf(_account.address, id);
+
+        const addCollateralFn =
+            mixologistLendingBorrowingModule.interface.encodeFunctionData(
+                'addCollateral',
+                [_account.address, _account.address, false, _valShare],
+            );
+        const mixologistExecutionData = new ethers.utils.AbiCoder().encode(
+            ['uint256', 'bytes'],
+            [mixologistModules.LendingBorrowing, addCollateralFn],
+        );
         await (
-            await _wethUsdcMixologist.addCollateral(
-                _account.address,
-                _account.address,
-                false,
-                _valShare,
-            )
+            await _wethUsdcMixologist.executeModule(mixologistExecutionData)
         ).wait();
     };
 
@@ -634,6 +705,7 @@ export async function register(staging?: boolean) {
         deployCurveStableToUsdoBidder,
         deployAndSetUsdo,
         addUniV2UsdoWethLiquidity,
+        mixologistModules,
     };
 
     return { ...initialSetup, ...utilFuncs };

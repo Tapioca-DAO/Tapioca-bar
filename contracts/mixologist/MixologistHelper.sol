@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 import '@boringcrypto/boring-solidity/contracts/libraries/BoringRebase.sol';
 import '../bar/BeachBar.sol';
-import './Mixologist.sol';
+import './BaseMixologist.sol';
 
 /// @dev This contract provides useful helper functions for `Mixologist`.
 contract MixologistHelper {
@@ -11,7 +11,7 @@ contract MixologistHelper {
     /// @dev Helper function to calculate the collateral shares that are needed for `borrowPart`,
     /// taking the current exchange rate into account.
     function getCollateralSharesForBorrowPart(
-        Mixologist mixologist,
+        BaseMixologist mixologist,
         uint256 borrowPart
     ) public view returns (uint256) {
         // Taken from Mixologist
@@ -37,11 +37,10 @@ contract MixologistHelper {
 
     /// @dev Compute the amount of `mixologist.assetId` from `fraction`
     /// `fraction` can be `mixologist.accrueInfo.feeFraction` or `mixologist.balanceOf`
-    function getAmountForAssetFraction(Mixologist mixologist, uint256 fraction)
-        public
-        view
-        returns (uint256)
-    {
+    function getAmountForAssetFraction(
+        BaseMixologist mixologist,
+        uint256 fraction
+    ) public view returns (uint256) {
         (uint128 elastic, uint128 base) = mixologist.totalAsset();
         return
             mixologist.yieldBox().toAmount(

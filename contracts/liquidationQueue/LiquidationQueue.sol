@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 import '@boringcrypto/boring-solidity/contracts/BoringOwnable.sol';
 import '@boringcrypto/boring-solidity/contracts/ERC20.sol';
-import '../mixologist/Mixologist.sol';
+import '../mixologist/BaseMixologist.sol';
 import './ILiquidationQueue.sol';
 enum MODE {
     ADD,
@@ -23,7 +23,7 @@ contract LiquidationQueue {
      */
 
     LiquidationQueueMeta public liquidationQueueMeta; // Meta-data for this contract.
-    Mixologist public mixologist; // The target market.
+    BaseMixologist public mixologist; // The target market.
     BeachBar public beachBar;
     YieldBox public yieldBox;
 
@@ -86,7 +86,7 @@ contract LiquidationQueue {
 
         liquidationQueueMeta = _liquidationQueueMeta;
 
-        mixologist = Mixologist(msg.sender);
+        mixologist = BaseMixologist(msg.sender);
         liquidatedAssetId = mixologist.collateralId();
         marketAssetId = mixologist.assetId();
         beachBar = mixologist.beachBar();
@@ -571,7 +571,7 @@ contract LiquidationQueue {
                     usdoAssetId,
                     finalDiscountedCollateralAmount,
                     ''
-                ); //TODO: add data
+                );
 
             yieldBox.transfer(
                 address(this),
@@ -617,7 +617,6 @@ contract LiquidationQueue {
         external
         returns (uint256 totalAmountExecuted, uint256 totalCollateralLiquidated)
     {
-        //TODO: add bytes calldata data for swap operations
         require(msg.sender == address(mixologist), 'LQ: Only Mixologist');
         BidExecutionData memory data;
 

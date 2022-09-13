@@ -4,12 +4,11 @@ pragma solidity ^0.8.0;
 import '@boringcrypto/boring-solidity/contracts/BoringOwnable.sol';
 
 import '../ILiquidationQueue.sol';
-import '../../mixologist/Mixologist.sol';
+import '../../mixologist/BaseMixologist.sol';
 import '../../swappers/MultiSwapper.sol';
 import '../../swappers/CurveSwapper.sol';
 
 import './IBidder.sol';
-import 'hardhat/console.sol';
 
 /// @notice Swaps USD0 to WETH UniswapV2
 /// @dev Performs 1 swap operation:
@@ -24,7 +23,7 @@ contract UniUsdoToWethBidder is IBidder, BoringOwnable {
     MultiSwapper public univ2Swapper;
 
     // --- Private ---
-    Mixologist _mixologist;
+    BaseMixologist _mixologist;
     YieldBox _yieldBox;
     ILiquidationQueue _liquidationQueue;
     uint256 wethId;
@@ -32,7 +31,7 @@ contract UniUsdoToWethBidder is IBidder, BoringOwnable {
     // --- Events ---
     event UniV2SwapperUpdated(address indexed _old, address indexed _new);
 
-    constructor(MultiSwapper uniV2Swapper_, Mixologist mixologist_) {
+    constructor(MultiSwapper uniV2Swapper_, BaseMixologist mixologist_) {
         univ2Swapper = uniV2Swapper_;
 
         _mixologist = mixologist_;

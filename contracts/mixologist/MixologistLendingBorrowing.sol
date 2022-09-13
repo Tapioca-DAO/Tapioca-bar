@@ -144,6 +144,7 @@ contract MixologistLendingBorrowing is MixologistCommon {
         require(_totalAsset.base >= 1000, 'Mx: min limit');
         _totalAsset.elastic -= uint128(share);
         totalAsset = _totalAsset;
+
         yieldBox.transfer(address(this), to, assetId, share);
     }
 

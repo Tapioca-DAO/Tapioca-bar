@@ -2,43 +2,27 @@
 pragma solidity ^0.8.0;
 
 import './MixologistCommon.sol';
-import './interfaces/IMixologistSetter.sol';
-import './interfaces/IMixologistLiquidation.sol';
-import './interfaces/IMixologistLendingBorrowing.sol';
-
-import 'hardhat/console.sol';
+import './MixologistSetter.sol';
+import './MixologistLiquidation.sol';
+import './MixologistLendingBorrowing.sol';
 
 contract BaseMixologist is MixologistCommon, ERC20 {
     using RebaseLibrary for Rebase;
     using BoringERC20 for IERC20;
 
     enum Module {
+        Base,
         LendingBorrowing,
         Liquidation,
         Setter
     }
-    IMixologistSetter setterModule;
-    IMixologistLiquidation liquidationModule;
-    IMixologistLendingBorrowing lendingBorrowingModule;
+    MixologistSetter setterModule;
+    MixologistLiquidation liquidationModule;
+    MixologistLendingBorrowing lendingBorrowingModule;
 
     // *************** //
     // *** PROXIED *** //
     // *************** //
-
-    //TODO: remove
-    // function test(bytes memory data) external view {
-    //     (Module fragment, bytes memory encodedCall) = abi.decode(
-    //         data,
-    //         (Module, bytes)
-    //     );
-
-    //     if (fragment == Module.LendingBorrowing) {
-    //         console.log('is lending');
-    //     } else {
-    //         console.log('is NOT lending');
-    //     }
-    // }
-
     function executeModule(bytes memory data)
         external
         returns (bytes memory returnData)
@@ -80,6 +64,8 @@ contract BaseMixologist is MixologistCommon, ERC20 {
             _module = address(liquidationModule);
         } else if (fragment == Module.Setter) {
             _module = address(setterModule);
+        } else if (fragment == Module.Base) {
+            _module = address(this);
         } else {
             revert('Mx: action-not-recognized');
         }
@@ -101,8 +87,9 @@ contract BaseMixologist is MixologistCommon, ERC20 {
             IOracle _oracle,
             address[] memory _collateralSwapPath,
             address[] memory _tapSwapPath,
-            IMixologistLendingBorrowing _lendingBorrowingModule,
-            IMixologistLiquidation _liquidationModule
+            MixologistLendingBorrowing _lendingBorrowingModule,
+            MixologistLiquidation _liquidationModule,
+            MixologistSetter _setterModule
         ) = abi.decode(
                 data,
                 (
@@ -114,8 +101,9 @@ contract BaseMixologist is MixologistCommon, ERC20 {
                     IOracle,
                     address[],
                     address[],
-                    IMixologistLendingBorrowing,
-                    IMixologistLiquidation
+                    MixologistLendingBorrowing,
+                    MixologistLiquidation,
+                    MixologistSetter
                 )
             );
 
@@ -125,6 +113,7 @@ contract BaseMixologist is MixologistCommon, ERC20 {
 
         lendingBorrowingModule = _lendingBorrowingModule;
         liquidationModule = _liquidationModule;
+        setterModule = _setterModule;
 
         require(
             address(_collateral) != address(0) &&

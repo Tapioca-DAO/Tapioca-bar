@@ -11,6 +11,8 @@ import '../mixologist/interfaces/IOracle.sol';
 import '../mixologist/interfaces/IFlashLoan.sol';
 import '../liquidationQueue/ILiquidationQueue.sol';
 
+// solhint-disable max-line-length
+
 contract MixologistStorage is BoringOwnable {
     using RebaseLibrary for Rebase;
 

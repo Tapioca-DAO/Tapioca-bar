@@ -3,6 +3,8 @@ pragma solidity ^0.8.0;
 
 import './MixologistCommon.sol';
 
+// solhint-disable max-line-length
+
 contract MixologistLiquidation is MixologistCommon {
     using RebaseLibrary for Rebase;
     using BoringERC20 for IERC20;
@@ -10,7 +12,6 @@ contract MixologistLiquidation is MixologistCommon {
     // ************** //
     // *** PUBLIC *** //
     // ************** //
-    
 
     /// @notice Return the amount of collateral for a `user` to be solvent. Returns 0 if user already solvent.
     /// @dev We use a `CLOSED_COLLATERIZATION_RATE` that is a safety buffer when making the user solvent again,

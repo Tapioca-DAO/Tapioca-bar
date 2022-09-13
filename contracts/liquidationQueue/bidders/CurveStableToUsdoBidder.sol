@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import '@boringcrypto/boring-solidity/contracts/BoringOwnable.sol';
 
 import '../ILiquidationQueue.sol';
-import '../../mixologist/Mixologist.sol';
+import '../../mixologist/BaseMixologist.sol';
 import '../../swappers/MultiSwapper.sol';
 import '../../swappers/CurveSwapper.sol';
 
@@ -22,7 +22,7 @@ contract CurveStableToUsdoBidder is IBidder, BoringOwnable {
     CurveSwapper public curveSwapper;
 
     // --- Private ---
-    Mixologist _mixologist;
+    BaseMixologist _mixologist;
     YieldBox _yieldBox;
     ILiquidationQueue _liquidationQueue;
     uint256 curveAssetsLength;
@@ -32,7 +32,7 @@ contract CurveStableToUsdoBidder is IBidder, BoringOwnable {
 
     constructor(
         CurveSwapper curveSwapper_,
-        Mixologist mixologist_,
+        BaseMixologist mixologist_,
         uint256 curvePoolAssetCount_
     ) {
         curveSwapper = curveSwapper_;

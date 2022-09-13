@@ -245,6 +245,9 @@ describe('LiquidationQueue test', () => {
             wethUsdcMixologist,
             wethUsdcOracle,
             multiSwapper,
+            mixologistLendingBorrowingModule,
+            mixologistLiquidationModule,
+            mixologistModules,
             BN,
             timeTravel,
         } = await register();
@@ -319,28 +322,55 @@ describe('LiquidationQueue test', () => {
             0,
         );
         await yieldBox.setApprovalForAll(wethUsdcMixologist.address, true);
-        await wethUsdcMixologist.addCollateral(
-            deployer.address,
-            deployer.address,
-            false,
-            await yieldBox.toShare(marketColId, usdcAmount, false),
+
+        const addCollateralFn =
+            mixologistLendingBorrowingModule.interface.encodeFunctionData(
+                'addCollateral',
+                [
+                    deployer.address,
+                    deployer.address,
+                    false,
+                    await yieldBox.toShare(marketColId, usdcAmount, false),
+                ],
+            );
+        const addCollateralData = new ethers.utils.AbiCoder().encode(
+            ['uint256', 'bytes'],
+            [mixologistModules.LendingBorrowing, addCollateralFn],
         );
-        await wethUsdcMixologist.borrow(
-            deployer.address,
-            deployer.address,
-            borrowAmount,
+
+        await wethUsdcMixologist.executeModule(addCollateralData);
+
+        const borrowFn =
+            mixologistLendingBorrowingModule.interface.encodeFunctionData(
+                'borrow',
+                [deployer.address, deployer.address, borrowAmount],
+            );
+        const borrowExecutionData = new ethers.utils.AbiCoder().encode(
+            ['uint256', 'bytes'],
+            [mixologistModules.LendingBorrowing, borrowFn],
         );
+        await wethUsdcMixologist.executeModule(borrowExecutionData);
 
         // Try to liquidate but with failure since price hasn't changed
         const data = new ethers.utils.AbiCoder().encode(['uint256'], [1]);
+
+        let liquidationFn =
+            mixologistLiquidationModule.interface.encodeFunctionData(
+                'liquidate',
+                [
+                    [deployer.address],
+                    [await wethUsdcMixologist.userBorrowPart(deployer.address)],
+                    ethers.constants.AddressZero,
+                    data,
+                    data,
+                ],
+            );
+        let liquidateData = new ethers.utils.AbiCoder().encode(
+            ['uint256', 'bytes'],
+            [mixologistModules.Liquidation, liquidationFn],
+        );
         await expect(
-            wethUsdcMixologist.liquidate(
-                [deployer.address],
-                [await wethUsdcMixologist.userBorrowPart(deployer.address)],
-                ethers.constants.AddressZero,
-                data,
-                data,
-            ),
+            wethUsdcMixologist.executeModule(liquidateData),
         ).to.be.revertedWith('Mx: solvent');
 
         // Make some price movement and liquidate
@@ -348,24 +378,26 @@ describe('LiquidationQueue test', () => {
         await wethUsdcOracle.set(__wethUsdcPrice.add(priceDrop));
         await wethUsdcMixologist.updateExchangeRate();
 
-        await expect(
-            wethUsdcMixologist.liquidate(
-                [deployer.address],
-                [await wethUsdcMixologist.userBorrowPart(deployer.address)],
-                multiSwapper.address,
-                data,
-                data,
-            ),
-        ).to.not.be.reverted;
+        liquidationFn =
+            mixologistLiquidationModule.interface.encodeFunctionData(
+                'liquidate',
+                [
+                    [deployer.address],
+                    [await wethUsdcMixologist.userBorrowPart(deployer.address)],
+                    ethers.constants.AddressZero,
+                    data,
+                    data,
+                ],
+            );
+        liquidateData = new ethers.utils.AbiCoder().encode(
+            ['uint256', 'bytes'],
+            [mixologistModules.Liquidation, liquidationFn],
+        );
+        await expect(wethUsdcMixologist.executeModule(liquidateData)).to.not.be
+            .reverted;
 
         await expect(
-            wethUsdcMixologist.liquidate(
-                [deployer.address],
-                [await wethUsdcMixologist.userBorrowPart(deployer.address)],
-                multiSwapper.address,
-                data,
-                data,
-            ),
+            wethUsdcMixologist.executeModule(liquidateData),
         ).to.be.revertedWith('Mx: solvent');
 
         // Check that LQ balances has been added
@@ -490,6 +522,9 @@ describe('LiquidationQueue test', () => {
             __wethUsdcPrice,
             multiSwapper,
             wethUsdcOracle,
+            mixologistLendingBorrowingModule,
+            mixologistLiquidationModule,
+            mixologistModules,
             timeTravel,
         } = await register();
 
@@ -829,29 +864,58 @@ describe('LiquidationQueue test', () => {
                     usdcDepositVal,
                     false,
                 );
-                await wethUsdcMixologist
-                    .connect(account)
-                    .addCollateral(
-                        account.address,
-                        account.address,
-                        false,
-                        collateralShare,
+
+                const addCollateralFn =
+                    mixologistLendingBorrowingModule.interface.encodeFunctionData(
+                        'addCollateral',
+                        [
+                            account.address,
+                            account.address,
+                            false,
+                            collateralShare,
+                        ],
                     );
+                const addCollateralData = new ethers.utils.AbiCoder().encode(
+                    ['uint256', 'bytes'],
+                    [mixologistModules.LendingBorrowing, addCollateralFn],
+                );
 
                 await wethUsdcMixologist
                     .connect(account)
-                    .borrow(account.address, account.address, borrowVal);
+                    .executeModule(addCollateralData);
+
+                const borrowFn =
+                    mixologistLendingBorrowingModule.interface.encodeFunctionData(
+                        'borrow',
+                        [account.address, account.address, borrowVal],
+                    );
+                const borrowExecutionData = new ethers.utils.AbiCoder().encode(
+                    ['uint256', 'bytes'],
+                    [mixologistModules.LendingBorrowing, borrowFn],
+                );
+                await wethUsdcMixologist
+                    .connect(account)
+                    .executeModule(borrowExecutionData);
 
                 // Can't liquidate yet
-                await expect(
-                    wethUsdcMixologist.liquidate(
-                        [account.address],
-                        [borrowVal],
-                        multiSwapper.address,
-                        swapData,
-                        swapData,
-                    ),
-                ).to.be.reverted;
+                let liquidationFn =
+                    mixologistLiquidationModule.interface.encodeFunctionData(
+                        'liquidate',
+                        [
+                            [account.address],
+                            [borrowVal],
+                            multiSwapper.address,
+                            swapData,
+                            swapData,
+                        ],
+                    );
+                let liquidateData = new ethers.utils.AbiCoder().encode(
+                    ['uint256', 'bytes'],
+                    [mixologistModules.Liquidation, liquidationFn],
+                );
+
+                await expect(wethUsdcMixologist.executeModule(liquidateData)).to
+                    .be.reverted;
             }
 
             //simulate a price drop
@@ -872,15 +936,24 @@ describe('LiquidationQueue test', () => {
                 lqAssetId,
             );
 
+            let liquidationFn =
+                mixologistLiquidationModule.interface.encodeFunctionData(
+                    'liquidate',
+                    [
+                        liqudatableAccounts,
+                        liquidatebleAmonts,
+                        multiSwapper.address,
+                        swapData,
+                        swapData,
+                    ],
+                );
+            let liquidateData = new ethers.utils.AbiCoder().encode(
+                ['uint256', 'bytes'],
+                [mixologistModules.Liquidation, liquidationFn],
+            );
             await wethUsdcMixologist
                 .connect(accounts[0])
-                .liquidate(
-                    liqudatableAccounts,
-                    liquidatebleAmonts,
-                    multiSwapper.address,
-                    swapData,
-                    swapData,
-                );
+                .executeModule(liquidateData);
             const shareForCallerAfter = await yieldBox.balanceOf(
                 accounts[0].address,
                 lqAssetId,
@@ -999,6 +1072,10 @@ describe('LiquidationQueue test', () => {
             __uniFactory,
             __wethUsdcPrice,
             usdoToWethBidder,
+            mixologistLendingBorrowingModule,
+            mixologistLiquidationModule,
+            mixologistSetterModule,
+            mixologistModules,
             deployAndSetUsdo,
             deployCurveStableToUsdoBidder,
             addUniV2UsdoWethLiquidity,
@@ -1016,22 +1093,41 @@ describe('LiquidationQueue test', () => {
                 usdo,
             );
 
-        const usdofnData = wethUsdcMixologist.interface.encodeFunctionData(
+        const usdofnData = mixologistSetterModule.interface.encodeFunctionData(
             'updateLQUsdoSwapper',
             [stableToUsdoBidder.address],
         );
+        let setLqUsdoSwapperData = new ethers.utils.AbiCoder().encode(
+            ['uint256', 'bytes'],
+            [mixologistModules.Setter, usdofnData],
+        );
+        let beachBarLqUsdoSwapperData =
+            wethUsdcMixologist.interface.encodeFunctionData('executeModule', [
+                setLqUsdoSwapperData,
+            ]);
+
         await bar.executeMixologistFn(
             [wethUsdcMixologist.address],
-            [usdofnData],
+            [beachBarLqUsdoSwapperData],
         );
 
-        const executionfnData = wethUsdcMixologist.interface.encodeFunctionData(
-            'updateLQExecutionSwapper',
-            [usdoToWethBidder.address],
+        const executionSwapperFn =
+            mixologistSetterModule.interface.encodeFunctionData(
+                'updateLQExecutionSwapper',
+                [usdoToWethBidder.address],
+            );
+        let setExecutionSwapperData = new ethers.utils.AbiCoder().encode(
+            ['uint256', 'bytes'],
+            [mixologistModules.Setter, executionSwapperFn],
         );
+        let beachBarExecutionSwapperData =
+            wethUsdcMixologist.interface.encodeFunctionData('executeModule', [
+                setExecutionSwapperData,
+            ]);
+
         await bar.executeMixologistFn(
             [wethUsdcMixologist.address],
-            [executionfnData],
+            [beachBarExecutionSwapperData],
         );
 
         const savedBidSwapper = (await liquidationQueue.liquidationQueueMeta())
@@ -1155,6 +1251,8 @@ describe('LiquidationQueue test', () => {
             __uniRouter,
             __wethUsdcPrice,
             usdoToWethBidder,
+            mixologistSetterModule,
+            mixologistModules,
             deployAndSetUsdo,
             deployCurveStableToUsdoBidder,
         } = await register();
@@ -1171,22 +1269,41 @@ describe('LiquidationQueue test', () => {
                 usdo,
             );
 
-        const usdofnData = wethUsdcMixologist.interface.encodeFunctionData(
+        const usdofnData = mixologistSetterModule.interface.encodeFunctionData(
             'updateLQUsdoSwapper',
             [stableToUsdoBidder.address],
         );
+        let setLqUsdoSwapperData = new ethers.utils.AbiCoder().encode(
+            ['uint256', 'bytes'],
+            [mixologistModules.Setter, usdofnData],
+        );
+        let beachBarLqUsdoSwapperData =
+            wethUsdcMixologist.interface.encodeFunctionData('executeModule', [
+                setLqUsdoSwapperData,
+            ]);
+
         await bar.executeMixologistFn(
             [wethUsdcMixologist.address],
-            [usdofnData],
+            [beachBarLqUsdoSwapperData],
         );
 
-        const executionfnData = wethUsdcMixologist.interface.encodeFunctionData(
-            'updateLQExecutionSwapper',
-            [usdoToWethBidder.address],
+        const executionSwapperFn =
+            mixologistSetterModule.interface.encodeFunctionData(
+                'updateLQExecutionSwapper',
+                [usdoToWethBidder.address],
+            );
+        let setExecutionSwapperData = new ethers.utils.AbiCoder().encode(
+            ['uint256', 'bytes'],
+            [mixologistModules.Setter, executionSwapperFn],
         );
+        let beachBarExecutionSwapperData =
+            wethUsdcMixologist.interface.encodeFunctionData('executeModule', [
+                setExecutionSwapperData,
+            ]);
+
         await bar.executeMixologistFn(
             [wethUsdcMixologist.address],
-            [executionfnData],
+            [beachBarExecutionSwapperData],
         );
 
         const savedBidSwapper = (await liquidationQueue.liquidationQueueMeta())
@@ -1286,6 +1403,8 @@ describe('LiquidationQueue test', () => {
             multiSwapper,
             __wethUsdcPrice,
             usdoToWethBidder,
+            mixologistSetterModule,
+            mixologistModules,
             BN,
             timeTravel,
             deployAndSetUsdo,
@@ -1305,22 +1424,41 @@ describe('LiquidationQueue test', () => {
                 usdo,
             );
 
-        const usdofnData = wethUsdcMixologist.interface.encodeFunctionData(
+        const usdofnData = mixologistSetterModule.interface.encodeFunctionData(
             'updateLQUsdoSwapper',
             [stableToUsdoBidder.address],
         );
+        let setLqUsdoSwapperData = new ethers.utils.AbiCoder().encode(
+            ['uint256', 'bytes'],
+            [mixologistModules.Setter, usdofnData],
+        );
+        let beachBarLqUsdoSwapperData =
+            wethUsdcMixologist.interface.encodeFunctionData('executeModule', [
+                setLqUsdoSwapperData,
+            ]);
+
         await bar.executeMixologistFn(
             [wethUsdcMixologist.address],
-            [usdofnData],
+            [beachBarLqUsdoSwapperData],
         );
 
-        const executionfnData = wethUsdcMixologist.interface.encodeFunctionData(
-            'updateLQExecutionSwapper',
-            [usdoToWethBidder.address],
+        const executionSwapperFn =
+            mixologistSetterModule.interface.encodeFunctionData(
+                'updateLQExecutionSwapper',
+                [usdoToWethBidder.address],
+            );
+        let setExecutionSwapperData = new ethers.utils.AbiCoder().encode(
+            ['uint256', 'bytes'],
+            [mixologistModules.Setter, executionSwapperFn],
         );
+        let beachBarExecutionSwapperData =
+            wethUsdcMixologist.interface.encodeFunctionData('executeModule', [
+                setExecutionSwapperData,
+            ]);
+
         await bar.executeMixologistFn(
             [wethUsdcMixologist.address],
-            [executionfnData],
+            [beachBarExecutionSwapperData],
         );
 
         //setup univ2 enviroment for usdo <> weth pair
@@ -1458,6 +1596,10 @@ describe('LiquidationQueue test', () => {
             weth,
             wethUsdcOracle,
             usdoToWethBidder,
+            mixologistSetterModule,
+            mixologistLendingBorrowingModule,
+            mixologistLiquidationModule,
+            mixologistModules,
             deployAndSetUsdo,
             deployCurveStableToUsdoBidder,
         } = await register();
@@ -1473,22 +1615,41 @@ describe('LiquidationQueue test', () => {
             usdo,
         );
 
-        const usdofnData = wethUsdcMixologist.interface.encodeFunctionData(
+        const usdofnData = mixologistSetterModule.interface.encodeFunctionData(
             'updateLQUsdoSwapper',
             [stableToUsdoBidder.address],
         );
+        let setLqUsdoSwapperData = new ethers.utils.AbiCoder().encode(
+            ['uint256', 'bytes'],
+            [mixologistModules.Setter, usdofnData],
+        );
+        let beachBarLqUsdoSwapperData =
+            wethUsdcMixologist.interface.encodeFunctionData('executeModule', [
+                setLqUsdoSwapperData,
+            ]);
+
         await bar.executeMixologistFn(
             [wethUsdcMixologist.address],
-            [usdofnData],
+            [beachBarLqUsdoSwapperData],
         );
 
-        const executionfnData = wethUsdcMixologist.interface.encodeFunctionData(
-            'updateLQExecutionSwapper',
-            [usdoToWethBidder.address],
+        const executionSwapperFn =
+            mixologistSetterModule.interface.encodeFunctionData(
+                'updateLQExecutionSwapper',
+                [usdoToWethBidder.address],
+            );
+        let setExecutionSwapperData = new ethers.utils.AbiCoder().encode(
+            ['uint256', 'bytes'],
+            [mixologistModules.Setter, executionSwapperFn],
         );
+        let beachBarExecutionSwapperData =
+            wethUsdcMixologist.interface.encodeFunctionData('executeModule', [
+                setExecutionSwapperData,
+            ]);
+
         await bar.executeMixologistFn(
             [wethUsdcMixologist.address],
-            [executionfnData],
+            [beachBarExecutionSwapperData],
         );
 
         const savedBidSwapper = (await liquidationQueue.liquidationQueueMeta())
@@ -1664,29 +1825,58 @@ describe('LiquidationQueue test', () => {
             usdcDepositVal,
             false,
         );
-        await wethUsdcMixologist
-            .connect(accounts[1])
-            .addCollateral(
-                accounts[1].address,
-                accounts[1].address,
-                false,
-                collateralShare,
+
+        const addCollateralFn =
+            mixologistLendingBorrowingModule.interface.encodeFunctionData(
+                'addCollateral',
+                [
+                    accounts[1].address,
+                    accounts[1].address,
+                    false,
+                    collateralShare,
+                ],
             );
+        const addCollateralData = new ethers.utils.AbiCoder().encode(
+            ['uint256', 'bytes'],
+            [mixologistModules.LendingBorrowing, addCollateralFn],
+        );
         await wethUsdcMixologist
             .connect(accounts[1])
-            .borrow(accounts[1].address, accounts[1].address, borrowVal);
+            .executeModule(addCollateralData);
+
+        const borrowFn =
+            mixologistLendingBorrowingModule.interface.encodeFunctionData(
+                'borrow',
+                [accounts[1].address, accounts[1].address, borrowVal],
+            );
+        const borrowExecutionData = new ethers.utils.AbiCoder().encode(
+            ['uint256', 'bytes'],
+            [mixologistModules.LendingBorrowing, borrowFn],
+        );
+        await wethUsdcMixologist
+            .connect(accounts[1])
+            .executeModule(borrowExecutionData);
 
         //  ---liquidate now
         const swapData = new ethers.utils.AbiCoder().encode(['uint256'], [1]);
-        await expect(
-            wethUsdcMixologist.liquidate(
-                [accounts[1].address],
-                [borrowVal],
-                multiSwapper.address,
-                swapData,
-                swapData,
-            ),
-        ).to.be.reverted;
+        let liquidationFn =
+            mixologistLiquidationModule.interface.encodeFunctionData(
+                'liquidate',
+                [
+                    [accounts[1].address],
+                    [borrowVal],
+                    multiSwapper.address,
+                    swapData,
+                    swapData,
+                ],
+            );
+        let liquidateData = new ethers.utils.AbiCoder().encode(
+            ['uint256', 'bytes'],
+            [mixologistModules.Liquidation, liquidationFn],
+        );
+
+        await expect(wethUsdcMixologist.executeModule(liquidateData)).to.be
+            .reverted;
 
         const priceDrop = __wethUsdcPrice.mul(2).div(100);
         await wethUsdcOracle.set(__wethUsdcPrice.add(priceDrop));
@@ -1696,15 +1886,24 @@ describe('LiquidationQueue test', () => {
             lqAssetId,
         );
 
+        liquidationFn =
+            mixologistLiquidationModule.interface.encodeFunctionData(
+                'liquidate',
+                [
+                    [accounts[1].address],
+                    [borrowVal],
+                    multiSwapper.address,
+                    swapData,
+                    swapData,
+                ],
+            );
+        liquidateData = new ethers.utils.AbiCoder().encode(
+            ['uint256', 'bytes'],
+            [mixologistModules.Liquidation, liquidationFn],
+        );
         await wethUsdcMixologist
             .connect(accounts[0])
-            .liquidate(
-                [accounts[1].address],
-                [borrowVal],
-                multiSwapper.address,
-                swapData,
-                swapData,
-            );
+            .executeModule(liquidateData);
         const shareForCallerAfter = await yieldBox.balanceOf(
             accounts[0].address,
             lqAssetId,
@@ -1731,6 +1930,10 @@ describe('LiquidationQueue test', () => {
             weth,
             wethUsdcOracle,
             usdoToWethBidder,
+            mixologistModules,
+            mixologistLendingBorrowingModule,
+            mixologistSetterModule,
+            mixologistLiquidationModule,
             deployAndSetUsdo,
             deployCurveStableToUsdoBidder,
             timeTravel,
@@ -1747,24 +1950,42 @@ describe('LiquidationQueue test', () => {
             usdo,
         );
 
-        const usdofnData = wethUsdcMixologist.interface.encodeFunctionData(
+        const usdofnData = mixologistSetterModule.interface.encodeFunctionData(
             'updateLQUsdoSwapper',
             [stableToUsdoBidder.address],
         );
+        let setLqUsdoSwapperData = new ethers.utils.AbiCoder().encode(
+            ['uint256', 'bytes'],
+            [mixologistModules.Setter, usdofnData],
+        );
+        let beachBarLqUsdoSwapperData =
+            wethUsdcMixologist.interface.encodeFunctionData('executeModule', [
+                setLqUsdoSwapperData,
+            ]);
+
         await bar.executeMixologistFn(
             [wethUsdcMixologist.address],
-            [usdofnData],
+            [beachBarLqUsdoSwapperData],
         );
 
-        const executionfnData = wethUsdcMixologist.interface.encodeFunctionData(
-            'updateLQExecutionSwapper',
-            [usdoToWethBidder.address],
+        const executionSwapperFn =
+            mixologistSetterModule.interface.encodeFunctionData(
+                'updateLQExecutionSwapper',
+                [usdoToWethBidder.address],
+            );
+        let setExecutionSwapperData = new ethers.utils.AbiCoder().encode(
+            ['uint256', 'bytes'],
+            [mixologistModules.Setter, executionSwapperFn],
         );
+        let beachBarExecutionSwapperData =
+            wethUsdcMixologist.interface.encodeFunctionData('executeModule', [
+                setExecutionSwapperData,
+            ]);
+
         await bar.executeMixologistFn(
             [wethUsdcMixologist.address],
-            [executionfnData],
+            [beachBarExecutionSwapperData],
         );
-
         const savedBidSwapper = (await liquidationQueue.liquidationQueueMeta())
             .usdoSwapper;
         expect(savedBidSwapper.toLowerCase()).to.eq(
@@ -1976,29 +2197,59 @@ describe('LiquidationQueue test', () => {
             usdcDepositVal,
             false,
         );
-        await wethUsdcMixologist
-            .connect(accounts[1])
-            .addCollateral(
-                accounts[1].address,
-                accounts[1].address,
-                false,
-                collateralShare,
+
+        const addCollateralFn =
+            mixologistLendingBorrowingModule.interface.encodeFunctionData(
+                'addCollateral',
+                [
+                    accounts[1].address,
+                    accounts[1].address,
+                    false,
+                    collateralShare,
+                ],
             );
+        const addCollateralData = new ethers.utils.AbiCoder().encode(
+            ['uint256', 'bytes'],
+            [mixologistModules.LendingBorrowing, addCollateralFn],
+        );
+
         await wethUsdcMixologist
             .connect(accounts[1])
-            .borrow(accounts[1].address, accounts[1].address, borrowVal);
+            .executeModule(addCollateralData);
+
+        const borrowFn =
+            mixologistLendingBorrowingModule.interface.encodeFunctionData(
+                'borrow',
+                [accounts[1].address, accounts[1].address, borrowVal],
+            );
+        const borrowExecutionData = new ethers.utils.AbiCoder().encode(
+            ['uint256', 'bytes'],
+            [mixologistModules.LendingBorrowing, borrowFn],
+        );
+        await wethUsdcMixologist
+            .connect(accounts[1])
+            .executeModule(borrowExecutionData);
 
         //  ---liquidate now
         const swapData = new ethers.utils.AbiCoder().encode(['uint256'], [1]);
-        await expect(
-            wethUsdcMixologist.liquidate(
-                [accounts[1].address],
-                [borrowVal],
-                multiSwapper.address,
-                swapData,
-                swapData,
-            ),
-        ).to.be.reverted;
+        let liquidationFn =
+            mixologistLiquidationModule.interface.encodeFunctionData(
+                'liquidate',
+                [
+                    [accounts[1].address],
+                    [borrowVal],
+                    multiSwapper.address,
+                    swapData,
+                    swapData,
+                ],
+            );
+        let liquidateData = new ethers.utils.AbiCoder().encode(
+            ['uint256', 'bytes'],
+            [mixologistModules.Liquidation, liquidationFn],
+        );
+
+        await expect(wethUsdcMixologist.executeModule(liquidateData)).to.be
+            .reverted;
 
         const priceDrop = __wethUsdcPrice.mul(2).div(100);
         await wethUsdcOracle.set(__wethUsdcPrice.add(priceDrop));
@@ -2008,15 +2259,24 @@ describe('LiquidationQueue test', () => {
             lqAssetId,
         );
 
+        liquidationFn =
+            mixologistLiquidationModule.interface.encodeFunctionData(
+                'liquidate',
+                [
+                    [accounts[1].address],
+                    [borrowVal],
+                    multiSwapper.address,
+                    swapData,
+                    swapData,
+                ],
+            );
+        liquidateData = new ethers.utils.AbiCoder().encode(
+            ['uint256', 'bytes'],
+            [mixologistModules.Liquidation, liquidationFn],
+        );
         await wethUsdcMixologist
             .connect(accounts[0])
-            .liquidate(
-                [accounts[1].address],
-                [borrowVal],
-                multiSwapper.address,
-                swapData,
-                swapData,
-            );
+            .executeModule(liquidateData);
         const shareForCallerAfter = await yieldBox.balanceOf(
             accounts[0].address,
             lqAssetId,

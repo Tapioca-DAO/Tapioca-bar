@@ -1,11 +1,19 @@
 import { ethers } from 'hardhat';
 import { expect } from 'chai';
 import { register } from './test.utils';
+import { Result } from '@ethersproject/abi';
 
+//TODO: check re-entrancy
 describe('Mixologist test', () => {
     it('should add addset, remove asset and update exchange rate in a single tx', async () => {
-        const { weth, yieldBox, wethUsdcMixologist, deployer, initContracts } =
-            await register();
+        const {
+            weth,
+            yieldBox,
+            wethUsdcMixologist,
+            deployer,
+            mixologistModules,
+            initContracts,
+        } = await register();
 
         await initContracts(); // To prevent `Mixologist: below minimum`
 
@@ -38,19 +46,32 @@ describe('Mixologist test', () => {
             'addAsset',
             [deployer.address, deployer.address, false, mintValShare],
         );
-        const removeAssetFn = wethUsdcMixologist.interface.encodeFunctionData(
+        let addAssetData = new ethers.utils.AbiCoder().encode(
+            ['uint256', 'bytes'],
+            [mixologistModules.Base, addAssetFn],
+        );
+
+        let removeAssetFn = wethUsdcMixologist.interface.encodeFunctionData(
             'removeAsset',
             [deployer.address, deployer.address, mintValShare],
         );
+        let removeAssetData = new ethers.utils.AbiCoder().encode(
+            ['uint256', 'bytes'],
+            [mixologistModules.Base, removeAssetFn],
+        );
 
-        const updateExchangeRateFn =
+        let updateExchangeRateFn =
             wethUsdcMixologist.interface.encodeFunctionData(
                 'updateExchangeRate',
             );
+        let updateExchangeRateData = new ethers.utils.AbiCoder().encode(
+            ['uint256', 'bytes'],
+            [mixologistModules.Base, updateExchangeRateFn],
+        );
 
         await (
-            await wethUsdcMixologist.execute(
-                [addAssetFn, removeAssetFn, updateExchangeRateFn],
+            await wethUsdcMixologist.batchExecuteModules(
+                [addAssetData, removeAssetData, updateExchangeRateData],
                 true,
             )
         ).wait();
@@ -59,10 +80,14 @@ describe('Mixologist test', () => {
             'addAsset',
             [deployer.address, deployer.address, true, mintValShare],
         );
+        addAssetData = new ethers.utils.AbiCoder().encode(
+            ['uint256', 'bytes'],
+            [mixologistModules.Base, addAssetFn],
+        );
 
         await expect(
-            wethUsdcMixologist.execute(
-                [addAssetFn, removeAssetFn, updateExchangeRateFn],
+            wethUsdcMixologist.batchExecuteModules(
+                [addAssetData, removeAssetData, updateExchangeRateData],
                 true,
             ),
         ).to.be.revertedWith('Mx: too much');
@@ -90,8 +115,9 @@ describe('Mixologist test', () => {
             yieldBox,
             eoa1,
             approveTokensAndSetBarApproval,
-            deployer,
             wethUsdcMixologist,
+            mixologistModules,
+            mixologistLendingBorrowingModule,
             __wethUsdcPrice,
         } = await register();
 
@@ -136,19 +162,33 @@ describe('Mixologist test', () => {
                 )
         ).wait();
 
-        const addCollateralFn = wethUsdcMixologist.interface.encodeFunctionData(
-            'addCollateral',
-            [eoa1.address, eoa1.address, false, usdcMintValShare],
+        const addCollateralFn =
+            mixologistLendingBorrowingModule.interface.encodeFunctionData(
+                'addCollateral',
+                [eoa1.address, eoa1.address, false, usdcMintValShare],
+            );
+        const borrowFn =
+            mixologistLendingBorrowingModule.interface.encodeFunctionData(
+                'borrow',
+                [eoa1.address, eoa1.address, wethBorrowVal],
+            );
+
+        const addCollateralData = new ethers.utils.AbiCoder().encode(
+            ['uint256', 'bytes'],
+            [mixologistModules.LendingBorrowing, addCollateralFn],
         );
-        const borrowFn = wethUsdcMixologist.interface.encodeFunctionData(
-            'borrow',
-            [eoa1.address, eoa1.address, wethBorrowVal],
+        const borrowExecutionData = new ethers.utils.AbiCoder().encode(
+            ['uint256', 'bytes'],
+            [mixologistModules.LendingBorrowing, borrowFn],
         );
 
         await expect(
             wethUsdcMixologist
                 .connect(eoa1)
-                .execute([addCollateralFn, borrowFn], true),
+                .batchExecuteModules(
+                    [addCollateralData, borrowExecutionData],
+                    true,
+                ),
         ).to.be.revertedWith('Mx: min limit');
     });
 
@@ -159,8 +199,9 @@ describe('Mixologist test', () => {
             yieldBox,
             eoa1,
             approveTokensAndSetBarApproval,
-            deployer,
             wethUsdcMixologist,
+            mixologistModules,
+            mixologistLendingBorrowingModule,
             __wethUsdcPrice,
         } = await register();
 
@@ -170,11 +211,7 @@ describe('Mixologist test', () => {
         const usdcMintVal = wethMintVal.mul(
             __wethUsdcPrice.div((1e18).toString()),
         );
-        const wethMintValShare = await yieldBox.toShare(
-            assetId,
-            wethMintVal,
-            false,
-        );
+
         const wethBorrowVal = usdcMintVal
             .mul(74)
             .div(100)
@@ -205,29 +242,54 @@ describe('Mixologist test', () => {
                 )
         ).wait();
 
-        const addCollateralFn = wethUsdcMixologist.interface.encodeFunctionData(
-            'addCollateral',
-            [eoa1.address, eoa1.address, false, usdcMintValShare],
+        const addCollateralFn =
+            mixologistLendingBorrowingModule.interface.encodeFunctionData(
+                'addCollateral',
+                [eoa1.address, eoa1.address, false, usdcMintValShare],
+            );
+        const addCollateralData = new ethers.utils.AbiCoder().encode(
+            ['uint256', 'bytes'],
+            [mixologistModules.LendingBorrowing, addCollateralFn],
         );
-        const borrowFn = wethUsdcMixologist.interface.encodeFunctionData(
-            'borrow',
-            [eoa1.address, eoa1.address, wethBorrowVal],
+        const borrowFn =
+            mixologistLendingBorrowingModule.interface.encodeFunctionData(
+                'borrow',
+                [eoa1.address, eoa1.address, wethBorrowVal],
+            );
+        const borrowExecutionData = new ethers.utils.AbiCoder().encode(
+            ['uint256', 'bytes'],
+            [mixologistModules.LendingBorrowing, borrowFn],
         );
 
         const data = await wethUsdcMixologist
             .connect(eoa1)
-            .callStatic.execute([addCollateralFn, borrowFn], false);
+            .callStatic.batchExecuteModules(
+                [addCollateralData, borrowExecutionData],
+                false,
+            );
 
         expect(data.successes[0]).to.be.true;
         expect(data.successes[1]).to.be.false; //can't borrow as there are no lenders
 
-        expect(data.results[0]).to.eq('no-data');
-        expect(data.results[1]).to.eq('Mx: min limit');
+        const slicedSigHashForBorrowCall = ethers.utils.hexDataSlice(
+            data.returnDatas[1],
+            4,
+        );
+        const decoded1 = new ethers.utils.AbiCoder().decode(
+            ['string'],
+            slicedSigHashForBorrowCall,
+        )[0];
+
+        expect(data.returnDatas[0]).to.be.eq('0x');
+        expect(decoded1).to.eq('Mx: min limit');
 
         await expect(
             wethUsdcMixologist
                 .connect(eoa1)
-                .execute([addCollateralFn, borrowFn], false),
+                .batchExecuteModules(
+                    [addCollateralData, borrowExecutionData],
+                    false,
+                ),
         ).not.to.be.reverted;
     });
 
@@ -240,6 +302,8 @@ describe('Mixologist test', () => {
             approveTokensAndSetBarApproval,
             deployer,
             wethUsdcMixologist,
+            mixologistLendingBorrowingModule,
+            mixologistModules,
             __wethUsdcPrice,
         } = await register();
 
@@ -277,11 +341,14 @@ describe('Mixologist test', () => {
             )
         ).wait();
 
-        const addAssetFn = wethUsdcMixologist.interface.encodeFunctionData(
-            'addAsset',
-            [deployer.address, deployer.address, false, wethMintValShare],
-        );
-        await (await wethUsdcMixologist.execute([addAssetFn], true)).wait();
+        await (
+            await wethUsdcMixologist.addAsset(
+                deployer.address,
+                deployer.address,
+                false,
+                wethMintValShare,
+            )
+        ).wait();
         expect(
             await wethUsdcMixologist.balanceOf(deployer.address),
         ).to.be.equal(await yieldBox.toShare(assetId, wethMintVal, false));
@@ -303,19 +370,29 @@ describe('Mixologist test', () => {
                 )
         ).wait();
 
-        const addCollateralFn = wethUsdcMixologist.interface.encodeFunctionData(
-            'addCollateral',
-            [eoa1.address, eoa1.address, false, usdcMintValShare],
-        );
-        const borrowFn = wethUsdcMixologist.interface.encodeFunctionData(
-            'borrow',
-            [eoa1.address, eoa1.address, wethBorrowVal],
+        const addCollateralFn =
+            mixologistLendingBorrowingModule.interface.encodeFunctionData(
+                'addCollateral',
+                [eoa1.address, eoa1.address, false, usdcMintValShare],
+            );
+        const addCollateralData = new ethers.utils.AbiCoder().encode(
+            ['uint256', 'bytes'],
+            [mixologistModules.LendingBorrowing, addCollateralFn],
         );
 
+        const borrowFn =
+            mixologistLendingBorrowingModule.interface.encodeFunctionData(
+                'borrow',
+                [eoa1.address, eoa1.address, wethBorrowVal],
+            );
+        const borrowData = new ethers.utils.AbiCoder().encode(
+            ['uint256', 'bytes'],
+            [mixologistModules.LendingBorrowing, borrowFn],
+        );
         await (
             await wethUsdcMixologist
                 .connect(eoa1)
-                .execute([addCollateralFn, borrowFn], true)
+                .batchExecuteModules([addCollateralData, borrowData], true)
         ).wait();
 
         expect(
@@ -402,6 +479,9 @@ describe('Mixologist test', () => {
             multiSwapper,
             wethUsdcOracle,
             __wethUsdcPrice,
+            mixologistModules,
+            mixologistLendingBorrowingModule,
+            mixologistLiquidationModule,
         } = await register();
 
         const assetId = await wethUsdcMixologist.assetId();
@@ -436,10 +516,18 @@ describe('Mixologist test', () => {
             .mul(74)
             .div(100)
             .div(__wethUsdcPrice.div((1e18).toString()));
-
+        let borrowFn =
+            mixologistLendingBorrowingModule.interface.encodeFunctionData(
+                'borrow',
+                [eoa1.address, eoa1.address, wethBorrowVal],
+            );
+        let mixologistExecutionData = new ethers.utils.AbiCoder().encode(
+            ['uint256', 'bytes'],
+            [mixologistModules.LendingBorrowing, borrowFn],
+        );
         await wethUsdcMixologist
             .connect(eoa1)
-            .borrow(eoa1.address, eoa1.address, wethBorrowVal);
+            .executeModule(mixologistExecutionData);
         await yieldBox
             .connect(eoa1)
             .withdraw(assetId, eoa1.address, eoa1.address, wethBorrowVal, 0);
@@ -447,29 +535,30 @@ describe('Mixologist test', () => {
         const data = new ethers.utils.AbiCoder().encode(['uint256'], [1]);
 
         // Can't liquidate
-        await expect(
-            wethUsdcMixologist.liquidate(
-                [eoa1.address],
-                [wethBorrowVal],
-                multiSwapper.address,
-                data,
-                data,
-            ),
-        ).to.be.reverted;
+        let liquidateFn =
+            mixologistLiquidationModule.interface.encodeFunctionData(
+                'liquidate',
+                [
+                    [eoa1.address],
+                    [wethBorrowVal],
+                    multiSwapper.address,
+                    data,
+                    data,
+                ],
+            );
+        mixologistExecutionData = new ethers.utils.AbiCoder().encode(
+            ['uint256', 'bytes'],
+            [mixologistModules.Liquidation, liquidateFn],
+        );
+        await expect(wethUsdcMixologist.executeModule(mixologistExecutionData))
+            .to.be.reverted;
 
         // Can be liquidated price drop (USDC/WETH)
         const priceDrop = __wethUsdcPrice.mul(2).div(100);
         await wethUsdcOracle.set(__wethUsdcPrice.add(priceDrop));
 
-        await expect(
-            wethUsdcMixologist.liquidate(
-                [eoa1.address],
-                [wethBorrowVal],
-                multiSwapper.address,
-                data,
-                data,
-            ),
-        ).to.not.be.reverted;
+        await expect(wethUsdcMixologist.executeModule(mixologistExecutionData))
+            .to.not.be.reverted;
     });
 
     it('Should accumulate fees for lender', async () => {
@@ -480,6 +569,8 @@ describe('Mixologist test', () => {
             eoa1,
             wethUsdcMixologist,
             deployer,
+            mixologistModules,
+            mixologistLendingBorrowingModule,
             initContracts,
             approveTokensAndSetBarApproval,
             usdcDepositAndAddCollateral,
@@ -551,9 +642,19 @@ describe('Mixologist test', () => {
         ).equal(await yieldBox.toShare(collateralId, collateralVal, false));
 
         // We borrow
+        let borrowFn =
+            mixologistLendingBorrowingModule.interface.encodeFunctionData(
+                'borrow',
+                [eoa1.address, eoa1.address, borrowVal],
+            );
+        let mixologistExecutionData = new ethers.utils.AbiCoder().encode(
+            ['uint256', 'bytes'],
+            [mixologistModules.LendingBorrowing, borrowFn],
+        );
+
         await wethUsdcMixologist
             .connect(eoa1)
-            .borrow(eoa1.address, eoa1.address, borrowVal);
+            .executeModule(mixologistExecutionData);
 
         // Validate fees
         const userBorrowPart = await wethUsdcMixologist.userBorrowPart(
@@ -586,22 +687,42 @@ describe('Mixologist test', () => {
                 userBorrowPart,
                 0,
             );
+
+        let repayFn =
+            mixologistLendingBorrowingModule.interface.encodeFunctionData(
+                'repay',
+                [eoa1.address, eoa1.address, false, userBorrowPart],
+            );
+        mixologistExecutionData = new ethers.utils.AbiCoder().encode(
+            ['uint256', 'bytes'],
+            [mixologistModules.LendingBorrowing, repayFn],
+        );
         await wethUsdcMixologist
             .connect(eoa1)
-            .repay(eoa1.address, eoa1.address, false, userBorrowPart);
+            .executeModule(mixologistExecutionData);
 
         expect(await wethUsdcMixologist.userBorrowPart(eoa1.address)).to.be.eq(
             BN(0),
         );
+
         // Withdraw collateral
-        await (
-            await wethUsdcMixologist
-                .connect(eoa1)
-                .removeCollateral(
+        let removeCollateralFn =
+            mixologistLendingBorrowingModule.interface.encodeFunctionData(
+                'removeCollateral',
+                [
                     eoa1.address,
                     eoa1.address,
                     await wethUsdcMixologist.userCollateralShare(eoa1.address),
-                )
+                ],
+            );
+        mixologistExecutionData = new ethers.utils.AbiCoder().encode(
+            ['uint256', 'bytes'],
+            [mixologistModules.LendingBorrowing, removeCollateralFn],
+        );
+        await (
+            await wethUsdcMixologist
+                .connect(eoa1)
+                .executeModule(mixologistExecutionData)
         ).wait();
 
         await (
@@ -655,6 +776,8 @@ describe('Mixologist test', () => {
             multiSwapper,
             mixologistFeeVeTap,
             mixologistHelper,
+            mixologistLendingBorrowingModule,
+            mixologistModules,
             __wethUsdcPrice,
             timeTravel,
         } = await register();
@@ -691,9 +814,19 @@ describe('Mixologist test', () => {
             .mul(74)
             .div(100)
             .div(__wethUsdcPrice.div((1e18).toString()));
+
+        let borrowFn =
+            mixologistLendingBorrowingModule.interface.encodeFunctionData(
+                'borrow',
+                [eoa1.address, eoa1.address, wethBorrowVal],
+            );
+        let mixologistExecutionData = new ethers.utils.AbiCoder().encode(
+            ['uint256', 'bytes'],
+            [mixologistModules.LendingBorrowing, borrowFn],
+        );
         await wethUsdcMixologist
             .connect(eoa1)
-            .borrow(eoa1.address, eoa1.address, wethBorrowVal);
+            .executeModule(mixologistExecutionData);
 
         // We jump time to accumulate fees
         const day = 86400;
@@ -703,8 +836,9 @@ describe('Mixologist test', () => {
         const userBorrowPart = await wethUsdcMixologist.userBorrowPart(
             eoa1.address,
         );
-        await weth.connect(eoa1).freeMint(userBorrowPart);
+        expect(userBorrowPart.gt(0)).to.be.true;
 
+        await weth.connect(eoa1).freeMint(userBorrowPart);
         await yieldBox
             .connect(eoa1)
             .depositAsset(
@@ -714,9 +848,20 @@ describe('Mixologist test', () => {
                 userBorrowPart,
                 0,
             );
+
+        let repayFn =
+            mixologistLendingBorrowingModule.interface.encodeFunctionData(
+                'repay',
+                [eoa1.address, eoa1.address, false, userBorrowPart],
+            );
+
+        mixologistExecutionData = new ethers.utils.AbiCoder().encode(
+            ['uint256', 'bytes'],
+            [mixologistModules.LendingBorrowing, repayFn],
+        );
         await wethUsdcMixologist
             .connect(eoa1)
-            .repay(eoa1.address, eoa1.address, false, userBorrowPart);
+            .executeModule(mixologistExecutionData);
 
         const feesAmountInAsset =
             await mixologistHelper.getAmountForAssetFraction(
@@ -755,6 +900,8 @@ describe('Mixologist test', () => {
         const {
             weth,
             wethUsdcMixologist,
+            mixologistLendingBorrowingModule,
+            mixologistModules,
             approveTokensAndSetBarApproval,
             wethDepositAndAddAsset,
         } = await register();
@@ -778,35 +925,43 @@ describe('Mixologist test', () => {
             await ethers.getContractFactory('FlashLoanMockSuccess')
         ).deploy();
 
-        // Malicious operator
+        let flashLoanFn =
+            mixologistLendingBorrowingModule.interface.encodeFunctionData(
+                'flashLoan',
+                [
+                    maliciousOperator.address,
+                    maliciousOperator.address,
+                    wethMintVal,
+                    ethers.utils.hexlify(0),
+                ],
+            );
+        let mixologistExecutionData = new ethers.utils.AbiCoder().encode(
+            ['uint256', 'bytes'],
+            [mixologistModules.LendingBorrowing, flashLoanFn],
+        );
         await expect(
-            wethUsdcMixologist.flashLoan(
-                maliciousOperator.address,
-                maliciousOperator.address,
-                wethMintVal,
-                ethers.utils.hexlify(0),
-            ),
+            wethUsdcMixologist.executeModule(mixologistExecutionData),
         ).to.be.revertedWith('Mx: insufficient funds');
 
         // Insufficient funds
-        await expect(
-            wethUsdcMixologist.flashLoan(
-                maliciousOperator.address,
-                maliciousOperator.address,
-                wethMintVal,
-                ethers.utils.hexlify(0),
-            ),
-        ).to.be.revertedWith('Mx: insufficient funds');
-
+        flashLoanFn =
+            mixologistLendingBorrowingModule.interface.encodeFunctionData(
+                'flashLoan',
+                [
+                    operator.address,
+                    operator.address,
+                    wethMintVal,
+                    ethers.utils.hexlify(0),
+                ],
+            );
+        mixologistExecutionData = new ethers.utils.AbiCoder().encode(
+            ['uint256', 'bytes'],
+            [mixologistModules.LendingBorrowing, flashLoanFn],
+        );
         await weth.freeMint(wethMintVal.mul(90).div(100_000)); // 0.09% fee
         await weth.transfer(operator.address, wethMintVal.mul(90).div(100_000));
         await expect(
-            wethUsdcMixologist.flashLoan(
-                operator.address,
-                operator.address,
-                wethMintVal,
-                ethers.utils.hexlify(0),
-            ),
+            wethUsdcMixologist.executeModule(mixologistExecutionData),
         ).to.emit(wethUsdcMixologist, 'LogFlashLoan');
     });
 
@@ -925,6 +1080,9 @@ describe('Mixologist test', () => {
                 'address',
                 'address[]',
                 'address[]',
+                'address',
+                'address',
+                'address',
             ],
             [
                 bar.address,
@@ -935,6 +1093,9 @@ describe('Mixologist test', () => {
                 wethUsdcOracle.address,
                 [],
                 [],
+                ethers.constants.AddressZero,
+                ethers.constants.AddressZero,
+                ethers.constants.AddressZero,
             ],
         );
 
@@ -944,13 +1105,29 @@ describe('Mixologist test', () => {
     });
 
     it('should compute amount to solvency for nothing borrowed', async () => {
-        const { wethUsdcMixologist, wethUsdcOracle } = await register();
-        const amountForNothingBorrowed =
-            await wethUsdcMixologist.computeAssetAmountToSolvency(
-                ethers.constants.AddressZero,
-                0,
+        const {
+            wethUsdcMixologist,
+            mixologistLiquidationModule,
+            mixologistModules,
+        } = await register();
+
+        let computeAmountToSolvencyFn =
+            mixologistLiquidationModule.interface.encodeFunctionData(
+                'computeAssetAmountToSolvency',
+                [ethers.constants.AddressZero, 0],
             );
-        expect(amountForNothingBorrowed.eq(0)).to.be.true;
+        const data = new ethers.utils.AbiCoder().encode(
+            ['uint256', 'bytes'],
+            [mixologistModules.Liquidation, computeAmountToSolvencyFn],
+        );
+
+        const encodedResult = await wethUsdcMixologist.callStatic.executeModule(
+            data,
+        );
+        const decodedAmountForNothingBorrowed =
+            new ethers.utils.AbiCoder().decode(['uint256'], encodedResult)[0];
+
+        expect(decodedAmountForNothingBorrowed.eq(0)).to.be.true;
     });
 
     it('should not update exchange rate', async () => {
@@ -1010,33 +1187,45 @@ describe('Mixologist test', () => {
             wethUsdcMixologist,
             deployer,
             bar,
+            mixologistSetterModule,
+            mixologistModules,
         } = await register();
 
-        // function executeMixologistFn(address[] calldata mc, bytes[] memory data)
-
-        const setCollateralInterface = new ethers.utils.Interface([
-            'function setCollateralSwapPath(address[])',
-        ]);
-        const collateralSwapCalldata =
-            setCollateralInterface.encodeFunctionData('setCollateralSwapPath', [
-                collateralSwapPath,
-            ]);
-        await bar.executeMixologistFn(
-            [wethUsdcMixologist.address],
-            [collateralSwapCalldata],
+        const setCollateralSwapPathFn =
+            mixologistSetterModule.interface.encodeFunctionData(
+                'setCollateralSwapPath',
+                [collateralSwapPath],
+            );
+        let mixologistExecutionData = new ethers.utils.AbiCoder().encode(
+            ['uint256', 'bytes'],
+            [mixologistModules.Setter, setCollateralSwapPathFn],
         );
 
-        const setTapInterface = new ethers.utils.Interface([
-            'function setTapSwapPath(address[])',
-        ]);
-        const tapSwapCalldata = setTapInterface.encodeFunctionData(
-            'setTapSwapPath',
-            [tapSwapPath],
+        let beachBarFn = wethUsdcMixologist.interface.encodeFunctionData(
+            'executeModule',
+            [mixologistExecutionData],
         );
-        await bar.executeMixologistFn(
-            [wethUsdcMixologist.address],
-            [tapSwapCalldata],
+        await expect(
+            bar.executeMixologistFn([wethUsdcMixologist.address], [beachBarFn]),
+        ).to.not.be.reverted;
+
+        const setTapSwapPathFn =
+            mixologistSetterModule.interface.encodeFunctionData(
+                'setTapSwapPath',
+                [tapSwapPath],
+            );
+
+        mixologistExecutionData = new ethers.utils.AbiCoder().encode(
+            ['uint256', 'bytes'],
+            [mixologistModules.Setter, setTapSwapPathFn],
         );
+        beachBarFn = wethUsdcMixologist.interface.encodeFunctionData(
+            'executeModule',
+            [mixologistExecutionData],
+        );
+        await expect(
+            bar.executeMixologistFn([wethUsdcMixologist.address], [beachBarFn]),
+        ).to.not.be.reverted;
     });
 
     it('deposit fees to yieldbox should not work for inexistent swapper', async () => {
@@ -1071,9 +1260,11 @@ describe('Mixologist test', () => {
             approveTokensAndSetBarApproval,
             deployer,
             wethUsdcMixologist,
+            mixologistLendingBorrowingModule,
             multiSwapper,
             wethUsdcOracle,
             __wethUsdcPrice,
+            mixologistModules,
         } = await register();
 
         const assetId = await wethUsdcMixologist.assetId();
@@ -1104,15 +1295,39 @@ describe('Mixologist test', () => {
         ).equal(await yieldBox.toShare(collateralId, usdcMintVal, false));
 
         const firstBorrow = ethers.BigNumber.from((1e17).toString());
-        await wethUsdcMixologist
-            .connect(eoa1)
-            .borrow(eoa1.address, eoa1.address, firstBorrow);
-        await wethUsdcMixologist.accrue();
+
+        let borrowFn =
+            mixologistLendingBorrowingModule.interface.encodeFunctionData(
+                'borrow',
+                [eoa1.address, eoa1.address, firstBorrow],
+            );
+        let mixologistExecutionData = new ethers.utils.AbiCoder().encode(
+            ['uint256', 'bytes'],
+            [mixologistModules.LendingBorrowing, borrowFn],
+        );
 
         await wethUsdcMixologist
             .connect(eoa1)
-            .borrow(eoa1.address, eoa1.address, wethMintVal.sub(firstBorrow));
-
+            .executeModule(mixologistExecutionData);
         await wethUsdcMixologist.accrue();
+
+        borrowFn =
+            mixologistLendingBorrowingModule.interface.encodeFunctionData(
+                'borrow',
+                [eoa1.address, eoa1.address, wethMintVal.sub(firstBorrow)],
+            );
+        mixologistExecutionData = new ethers.utils.AbiCoder().encode(
+            ['uint256', 'bytes'],
+            [mixologistModules.LendingBorrowing, borrowFn],
+        );
+        await wethUsdcMixologist
+            .connect(eoa1)
+            .executeModule(mixologistExecutionData);
+        await wethUsdcMixologist.accrue();
+
+        const borrowPart = await wethUsdcMixologist.userBorrowPart(
+            eoa1.address,
+        );
+        expect(borrowPart.gt(0)).to.be.true;
     });
 });
