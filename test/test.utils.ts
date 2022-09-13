@@ -1,7 +1,6 @@
 import { time } from '@nomicfoundation/hardhat-network-helpers';
 import { BigNumberish } from 'ethers';
 import { ethers } from 'hardhat';
-import { string } from 'hardhat/internal/core/params/argumentTypes';
 import {
     BeachBar,
     ERC20Mock,

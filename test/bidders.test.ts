@@ -1,6 +1,7 @@
 import { ethers } from 'hardhat';
 import { expect } from 'chai';
 import { register } from './test.utils';
+import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 
 describe('Bidders test', () => {
     it('should test name', async () => {
@@ -10,7 +11,7 @@ describe('Bidders test', () => {
             usdc,
             bar,
             deployCurveStableToUsdoBidder,
-        } = await register();
+        } = await loadFixture(register);
 
         let savedName = await usdoToWethBidder.name();
         expect(savedName).to.eq('USD0 -> WETH (Uniswap V2)');
@@ -33,9 +34,7 @@ describe('Bidders test', () => {
             usdc,
             bar,
             deployCurveStableToUsdoBidder,
-            deployAndSetUsdo,
-            BN,
-        } = await register();
+        } = await loadFixture(register);
 
         await expect(
             usdoToWethBidder.getInputAmount(
@@ -77,7 +76,7 @@ describe('Bidders test', () => {
             multiSwapper,
             deployCurveStableToUsdoBidder,
             deployAndSetUsdo,
-        } = await register();
+        } = await loadFixture(register);
 
         await expect(
             usdoToWethBidder.setUniswapSwapper(multiSwapper.address),
@@ -106,15 +105,14 @@ describe('Bidders test', () => {
             yieldBox,
             deployCurveStableToUsdoBidder,
             deployAndSetUsdo,
-        } = await register();
+        } = await loadFixture(register);
 
-        const { stableToUsdoBidder, curveSwapper } =
-            await deployCurveStableToUsdoBidder(
-                wethUsdcMixologist,
-                bar,
-                usdc,
-                usdc,
-            );
+        const { stableToUsdoBidder } = await deployCurveStableToUsdoBidder(
+            wethUsdcMixologist,
+            bar,
+            usdc,
+            usdc,
+        );
 
         await expect(
             stableToUsdoBidder.swap(1, 1, ethers.utils.toUtf8Bytes('')),
@@ -155,16 +153,15 @@ describe('Bidders test', () => {
             yieldBox,
             deployCurveStableToUsdoBidder,
             deployAndSetUsdo,
-        } = await register();
+        } = await loadFixture(register);
 
         const { usdo } = await deployAndSetUsdo(bar);
-        const { stableToUsdoBidder, curveSwapper } =
-            await deployCurveStableToUsdoBidder(
-                wethUsdcMixologist,
-                bar,
-                usdc,
-                usdo,
-            );
+        const { stableToUsdoBidder } = await deployCurveStableToUsdoBidder(
+            wethUsdcMixologist,
+            bar,
+            usdc,
+            usdo,
+        );
 
         const usdoAssetId = await yieldBox.ids(
             1,

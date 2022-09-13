@@ -2,10 +2,11 @@ import { ethers } from 'hardhat';
 import { expect } from 'chai';
 import { register } from './test.utils';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
+import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 
 describe('LiquidationQueue test', () => {
     it('should throw if premium too high or amount too low', async () => {
-        const { liquidationQueue, deployer } = await register();
+        const { liquidationQueue, deployer } = await loadFixture(register);
 
         await expect(
             liquidationQueue.bid(deployer.address, 40, 1),
@@ -17,8 +18,8 @@ describe('LiquidationQueue test', () => {
     });
 
     it('Should make a bid', async () => {
-        const { liquidationQueue, deployer, weth, LQ_META, bar, yieldBox } =
-            await register();
+        const { liquidationQueue, deployer, weth, LQ_META, yieldBox } =
+            await loadFixture(register);
 
         const POOL = 10;
 
@@ -51,11 +52,9 @@ describe('LiquidationQueue test', () => {
             deployer,
             weth,
             LQ_META,
-            bar,
             yieldBox,
-            usdc,
             timeTravel,
-        } = await register();
+        } = await loadFixture(register);
 
         const POOL = 10;
 
@@ -77,11 +76,6 @@ describe('LiquidationQueue test', () => {
             POOL,
             LQ_META.minBidAmount,
         );
-
-        const liquidationQueueLqId = await liquidationQueue.lqAssetId();
-        const liquidationQueueMarketId = await liquidationQueue.marketAssetId();
-        const liquidationLiquidatedAssetId =
-            await liquidationQueue.liquidatedAssetId();
 
         // Require bid activation after 10min
         await expect(
@@ -120,8 +114,8 @@ describe('LiquidationQueue test', () => {
     });
 
     it('Should remove an inactivated bid', async () => {
-        const { liquidationQueue, deployer, weth, LQ_META, bar, yieldBox } =
-            await register();
+        const { liquidationQueue, deployer, weth, LQ_META, yieldBox } =
+            await loadFixture(register);
 
         const POOL = 10;
         const lqAssetId = await liquidationQueue.lqAssetId();
@@ -171,10 +165,9 @@ describe('LiquidationQueue test', () => {
             deployer,
             weth,
             LQ_META,
-            bar,
             yieldBox,
             timeTravel,
-        } = await register();
+        } = await loadFixture(register);
 
         const POOL = 10;
         const lqAssetId = await liquidationQueue.lqAssetId();
@@ -240,14 +233,13 @@ describe('LiquidationQueue test', () => {
             LQ_META,
             weth,
             usdc,
-            bar,
             yieldBox,
             wethUsdcMixologist,
             wethUsdcOracle,
             multiSwapper,
             BN,
             timeTravel,
-        } = await register();
+        } = await loadFixture(register);
 
         const POOL = 5;
         const marketAssetId = await wethUsdcMixologist.assetId();
@@ -380,7 +372,9 @@ describe('LiquidationQueue test', () => {
     });
 
     it('should get the market', async () => {
-        const { liquidationQueue, wethUsdcMixologist } = await register();
+        const { liquidationQueue, wethUsdcMixologist } = await loadFixture(
+            register,
+        );
 
         const market = await liquidationQueue.market();
         const mixologistName = await wethUsdcMixologist.name();
@@ -396,7 +390,7 @@ describe('LiquidationQueue test', () => {
             yieldBox,
             deployer,
             timeTravel,
-        } = await register();
+        } = await loadFixture(register);
 
         const orderBookEntries = await liquidationQueue.getOrderBookPoolEntries(
             0,
@@ -440,7 +434,7 @@ describe('LiquidationQueue test', () => {
             yieldBox,
             deployer,
             timeTravel,
-        } = await register();
+        } = await loadFixture(register);
 
         const POOL = 10;
 
@@ -491,7 +485,7 @@ describe('LiquidationQueue test', () => {
             multiSwapper,
             wethUsdcOracle,
             timeTravel,
-        } = await register();
+        } = await loadFixture(register);
 
         const mixologistAssetId = await wethUsdcMixologist.assetId();
         const mixologistCollateralId = await wethUsdcMixologist.collateralId();
@@ -922,7 +916,7 @@ describe('LiquidationQueue test', () => {
     });
 
     it('should now allow bid on uninitialized contract', async () => {
-        const { deployer, LQ_META } = await register();
+        const { deployer, LQ_META } = await loadFixture(register);
 
         const liquidationQueueTest = await (
             await ethers.getContractFactory('LiquidationQueue')
@@ -939,7 +933,7 @@ describe('LiquidationQueue test', () => {
     });
 
     it('should not allow setting bid swapper from not authorized account ', async () => {
-        const { liquidationQueue } = await register();
+        const { liquidationQueue } = await loadFixture(register);
 
         await expect(
             liquidationQueue.setBidExecutionSwapper(
@@ -949,7 +943,7 @@ describe('LiquidationQueue test', () => {
     });
 
     it('should not allow initializing LQ twice', async () => {
-        const { liquidationQueue, deployer } = await register();
+        const { liquidationQueue, deployer } = await loadFixture(register);
 
         const LQ_META = {
             activationTime: 600, // 10min
@@ -965,7 +959,7 @@ describe('LiquidationQueue test', () => {
     });
 
     it('sould not be able to redeem without a balance', async () => {
-        const { liquidationQueue, deployer } = await register();
+        const { liquidationQueue, deployer } = await loadFixture(register);
 
         await expect(
             liquidationQueue.redeem(deployer.address),
@@ -973,7 +967,7 @@ describe('LiquidationQueue test', () => {
     });
 
     it('should not allow bid execution from EOA', async () => {
-        const { liquidationQueue, BN } = await register();
+        const { liquidationQueue, BN } = await loadFixture(register);
 
         await expect(
             liquidationQueue.executeBids(
@@ -993,7 +987,6 @@ describe('LiquidationQueue test', () => {
             usdc,
             usdcAssetId,
             LQ_META,
-            BN,
             weth,
             __uniRouter,
             __uniFactory,
@@ -1002,7 +995,7 @@ describe('LiquidationQueue test', () => {
             deployAndSetUsdo,
             deployCurveStableToUsdoBidder,
             addUniV2UsdoWethLiquidity,
-        } = await register();
+        } = await loadFixture(register);
 
         //deploy and register USD0
         const { usdo } = await deployAndSetUsdo(bar);
@@ -1147,29 +1140,24 @@ describe('LiquidationQueue test', () => {
             wethUsdcMixologist,
             usdc,
             weth,
-            usdcAssetId,
             LQ_META,
-            multiSwapper,
-            BN,
-            __uniFactory,
             __uniRouter,
             __wethUsdcPrice,
             usdoToWethBidder,
             deployAndSetUsdo,
             deployCurveStableToUsdoBidder,
-        } = await register();
+        } = await loadFixture(register);
 
         //deploy and register USD0
         const { usdo } = await deployAndSetUsdo(bar);
 
         //deploy and register usdoSwapper and bidExecutionSwapper
-        const { stableToUsdoBidder, curveSwapper } =
-            await deployCurveStableToUsdoBidder(
-                wethUsdcMixologist,
-                bar,
-                usdc,
-                usdo,
-            );
+        const { stableToUsdoBidder } = await deployCurveStableToUsdoBidder(
+            wethUsdcMixologist,
+            bar,
+            usdc,
+            usdo,
+        );
 
         const usdofnData = wethUsdcMixologist.interface.encodeFunctionData(
             'updateLQUsdoSwapper',
@@ -1283,27 +1271,24 @@ describe('LiquidationQueue test', () => {
             weth,
             usdcAssetId,
             LQ_META,
-            multiSwapper,
             __wethUsdcPrice,
             usdoToWethBidder,
-            BN,
             timeTravel,
             deployAndSetUsdo,
             deployCurveStableToUsdoBidder,
             __uniRouter,
-        } = await register();
+        } = await loadFixture(register);
 
         //deploy and register USD0
         const { usdo } = await deployAndSetUsdo(bar);
 
         //deploy and register usdoSwapper and bidExecutionSwapper
-        const { stableToUsdoBidder, curveSwapper } =
-            await deployCurveStableToUsdoBidder(
-                wethUsdcMixologist,
-                bar,
-                usdc,
-                usdo,
-            );
+        const { stableToUsdoBidder } = await deployCurveStableToUsdoBidder(
+            wethUsdcMixologist,
+            bar,
+            usdc,
+            usdo,
+        );
 
         const usdofnData = wethUsdcMixologist.interface.encodeFunctionData(
             'updateLQUsdoSwapper',
@@ -1450,17 +1435,15 @@ describe('LiquidationQueue test', () => {
             usdcAssetId,
             LQ_META,
             multiSwapper,
-            BN,
             timeTravel,
             __wethUsdcPrice,
-            __uniFactory,
             __uniRouter,
             weth,
             wethUsdcOracle,
             usdoToWethBidder,
             deployAndSetUsdo,
             deployCurveStableToUsdoBidder,
-        } = await register();
+        } = await loadFixture(register);
 
         //deploy and register USD0
         const { usdo } = await deployAndSetUsdo(bar);
@@ -1734,7 +1717,7 @@ describe('LiquidationQueue test', () => {
             deployAndSetUsdo,
             deployCurveStableToUsdoBidder,
             timeTravel,
-        } = await register();
+        } = await loadFixture(register);
 
         //deploy and register USD0
         const { usdo } = await deployAndSetUsdo(bar);
