@@ -59,6 +59,6 @@
     "dependencies": {
         "husky": "^8.0.1",
         "load-json-file": "^7.0.1",
-        "tapioca-sdk": "^1.0.8"
+        "tapioca-sdk": "^1.0.9"
     }
 }
