@@ -52,7 +52,7 @@ describe('Bidders test', () => {
                 ethers.utils.toUtf8Bytes(''),
             ),
         ).to.be.revertedWith('USD0 not set');
-        let { stableToUsdoBidder } = await deployCurveStableToUsdoBidder(
+        const { stableToUsdoBidder } = await deployCurveStableToUsdoBidder(
             wethUsdcMixologist,
             bar,
             usdc,
@@ -108,7 +108,7 @@ describe('Bidders test', () => {
             deployAndSetUsdo,
         } = await register();
 
-        let { stableToUsdoBidder, curveSwapper } =
+        const { stableToUsdoBidder, curveSwapper } =
             await deployCurveStableToUsdoBidder(
                 wethUsdcMixologist,
                 bar,

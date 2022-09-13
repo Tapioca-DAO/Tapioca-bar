@@ -61,7 +61,7 @@ describe('BeachBar test', () => {
         const { bar } = await register();
 
         const newMC = await (
-            await ethers.getContractFactory('BaseMixologist')
+            await ethers.getContractFactory('Mixologist')
         ).deploy();
         await newMC.deployed();
 

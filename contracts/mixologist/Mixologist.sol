@@ -64,6 +64,9 @@ contract Mixologist is MXCommon {
         } else {
             revert('Mx: action-not-recognized');
         }
+        if (module == address(0)) {
+            revert('Mx: module-not-set');
+        }
 
         (success, returnData) = module.delegatecall(_data);
         if (!success) {
@@ -85,6 +88,9 @@ contract Mixologist is MXCommon {
             module = address(liquidationModule);
         } else {
             revert('Mx: action-not-recognized');
+        }
+        if (module == address(0)) {
+            revert('Mx: module-not-set');
         }
 
         (success, returnData) = module.staticcall(_data);
@@ -108,6 +114,8 @@ contract Mixologist is MXCommon {
     /// @notice The init function that acts as a constructor
     function init(bytes calldata data) external onlyOnce {
         (
+            address _liquidationModule,
+            address _lendingBorrowingModule,
             BeachBar tapiocaBar_,
             IERC20 _asset,
             uint256 _assetId,
@@ -119,6 +127,8 @@ contract Mixologist is MXCommon {
         ) = abi.decode(
                 data,
                 (
+                    address,
+                    address,
                     BeachBar,
                     IERC20,
                     uint256,
@@ -130,6 +140,8 @@ contract Mixologist is MXCommon {
                 )
             );
 
+        liquidationModule = MXLiquidation(_liquidationModule);
+        lendingBorrowingModule = MXLendingBorrowing(_lendingBorrowingModule);
         beachBar = tapiocaBar_;
         yieldBox = tapiocaBar_.yieldBox();
         owner = address(beachBar);

@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import '../../mixologist/interfaces/IFlashLoan.sol';
 import '../../bar/YieldBox.sol';
-import '../../mixologist/BaseMixologist.sol';
+import '../../mixologist/Mixologist.sol';
 
 contract FlashLoanMockAttacker is IFlashBorrower {
     function onFlashLoan(
@@ -23,7 +23,7 @@ contract FlashLoanMockSuccess is IFlashBorrower {
         uint256 fee,
         bytes calldata
     ) external {
-        BaseMixologist mixologist = BaseMixologist(msg.sender);
+        Mixologist mixologist = Mixologist(msg.sender);
         YieldBox yieldBox = mixologist.yieldBox();
 
         token.approve(address(yieldBox), amount + fee);
