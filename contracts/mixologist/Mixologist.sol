@@ -5,6 +5,8 @@ import './MXCommon.sol';
 import './MXLiquidation.sol';
 import './MXLendingBorrowing.sol';
 
+// solhint-disable max-line-length
+
 contract Mixologist is MXCommon {
     using RebaseLibrary for Rebase;
 
@@ -41,7 +43,7 @@ contract Mixologist is MXCommon {
         returns (string memory)
     {
         // If the _res length is less than 68, then the transaction failed silently (without a revert message)
-        if (_returnData.length < 68) return 'no-data';
+        if (_returnData.length < 68) return 'Mx: no return data';
         // solhint-disable-next-line no-inline-assembly
         assembly {
             // Slice the sighash.
@@ -61,11 +63,10 @@ contract Mixologist is MXCommon {
             module = address(lendingBorrowingModule);
         } else if (_module == Module.Liquidation) {
             module = address(liquidationModule);
-        } else {
-            revert('Mx: action-not-recognized');
         }
+
         if (module == address(0)) {
-            revert('Mx: module-not-set');
+            revert('Mx: module not set');
         }
 
         (success, returnData) = module.delegatecall(_data);
@@ -86,11 +87,10 @@ contract Mixologist is MXCommon {
             module = address(lendingBorrowingModule);
         } else if (_module == Module.Liquidation) {
             module = address(liquidationModule);
-        } else {
-            revert('Mx: action-not-recognized');
         }
+
         if (module == address(0)) {
-            revert('Mx: module-not-set');
+            revert('Mx: module not set');
         }
 
         (success, returnData) = module.staticcall(_data);
@@ -414,5 +414,11 @@ contract Mixologist is MXCommon {
     /// @notice Execute an only owner function inside of the LiquidationQueue
     function updateLQUsdoSwapper(address _swapper) external onlyOwner {
         liquidationQueue.setUsdoSwapper(_swapper);
+    }
+
+    /// @notice sets max borrowable amount
+    function setBorrowCap(uint256 _cap) external onlyOwner {
+        emit LogBorrowCapUpdated(totalBorrowCap, _cap);
+        totalBorrowCap = _cap;
     }
 }

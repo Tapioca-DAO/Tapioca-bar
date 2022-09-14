@@ -136,6 +136,10 @@ contract MXLendingBorrowing is MXCommon {
             BORROW_OPENING_FEE_PRECISION; // A flat % fee is charged for any borrow
 
         (totalBorrow, part) = totalBorrow.add(amount + feeAmount, true);
+        require(
+            totalBorrowCap == 0 || totalBorrow.base <= totalBorrowCap,
+            'Mx: borrow cap reached'
+        );
         userBorrowPart[from] += part;
         emit LogBorrow(from, to, amount, feeAmount, part);
 

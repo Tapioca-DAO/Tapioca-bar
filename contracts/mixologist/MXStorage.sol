@@ -16,12 +16,11 @@ import '../liquidationQueue/ILiquidationQueue.sol';
 contract MXStorage is BoringOwnable, ERC20 {
     using RebaseLibrary for Rebase;
     using BoringERC20 for IERC20;
-    
-    
+
     // ************* //
     // *** ERC20 *** //
     // ************* //
-    
+
     function symbol() external view returns (string memory) {
         return
             string(
@@ -60,7 +59,6 @@ contract MXStorage is BoringOwnable, ERC20 {
         return totalAsset.base;
     }
 
-
     // ************ //
     // *** VARS *** //
     // ************ //
@@ -84,6 +82,7 @@ contract MXStorage is BoringOwnable, ERC20 {
     uint256 public totalCollateralShare; // Total collateral supplied
     Rebase public totalAsset; // elastic = yieldBox shares held by the Mixologist, base = Total fractions held by asset suppliers
     Rebase public totalBorrow; // elastic = Total token amount to be repayed by borrowers, base = Total parts of the debt held by borrowers
+    uint256 public totalBorrowCap;
 
     // User balances
     mapping(address => uint256) public userCollateralShare;
@@ -163,6 +162,8 @@ contract MXStorage is BoringOwnable, ERC20 {
         address indexed _operator,
         bool _approved
     );
+    event LogBorrowCapUpdated(uint256 _oldVal, uint256 _newVal);
+
     // ***************** //
     // *** CONSTANTS *** //
     // ***************** //
