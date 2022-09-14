@@ -581,7 +581,7 @@ contract LiquidationQueue {
             );
             uint256 returnedCollateral = liquidationQueueMeta
                 .bidExecutionSwapper
-                .swap(usdoAssetId, finalUsdoAmount, swapData); //TODO: add data
+                .swap(usdoAssetId, finalUsdoAmount, swapData);
             require(
                 returnedCollateral >= finalDiscountedCollateralAmount,
                 'need-more-collateral'
