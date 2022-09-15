@@ -1,6 +1,7 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { API } from 'tapioca-sdk';
 import { TContract, TProjectDeployment } from 'tapioca-sdk/dist/api/exportSDK';
+import { getBeachBarMarkets } from './getBeachBarMarkets';
 
 export const getDeployments = async (_hre: HardhatRuntimeEnvironment) => {
     const { deployments } = _hre;
@@ -32,8 +33,11 @@ export const exportSDK__task = async (
             }),
         ),
     };
+    console.log('[+] Exporting:');
+    console.log(JSON.stringify(_deployments, null, 2));
+    console.log(await getBeachBarMarkets(hre));
     await API.exportSDK.run({
-        projectCaller: 'TapiocaZ',
+        projectCaller: 'Tapioca-Bar',
         contractNames: [
             'YieldBox',
             'BeachBar',
