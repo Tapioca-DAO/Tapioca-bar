@@ -1,6 +1,6 @@
 import '@nomiclabs/hardhat-ethers';
 import { task } from 'hardhat/config';
-import { deployMockContracts__task } from './scripts/deployMockContracts';
+import { getDeployments__task } from './tasks/getDeployments';
 import { exportSDK__task } from './tasks/exportSDK';
 import { getBeachBarMarkets__task } from './tasks/getBeachBarMarkets';
 
@@ -25,7 +25,7 @@ task(
 );
 
 task(
-    'deployMock',
-    'Deploy mock contracts (supposed to be used on testnet only).',
-    deployMockContracts__task,
+    'getDeployments',
+    'Print a list of deployed contract.',
+    getDeployments__task,
 );

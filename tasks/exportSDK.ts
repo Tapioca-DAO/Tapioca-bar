@@ -1,19 +1,9 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { API } from 'tapioca-sdk';
 import { TContract, TProjectDeployment } from 'tapioca-sdk/dist/api/exportSDK';
+
 import { getBeachBarMarkets } from './getBeachBarMarkets';
-
-export const getDeployments = async (_hre: HardhatRuntimeEnvironment) => {
-    const { deployments } = _hre;
-    const all = await deployments.all();
-    return Promise.all(
-        Object.keys(all).map(async (e) => ({
-            name: e,
-            address: all[e].address,
-        })),
-    );
-};
-
+import { getDeployments } from './getDeployments';
 /**
  * Script used to generate typings for the tapioca-sdk
  * https://github.com/Tapioca-DAO/tapioca-sdk

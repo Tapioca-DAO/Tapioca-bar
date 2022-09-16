@@ -11,7 +11,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         log: true,
     });
 
-    if (hre.network.live || hre.network.tags['rinkeby']) {
+    if (hre.network.live) {
         try {
             const helper = await deployments.get('MixologistHelper');
             await hre.run('verify', { address: helper.address });
@@ -21,4 +21,4 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     }
 };
 export default func;
-func.tags = ['MixologistHelper'];
+func.tags = ['MixologistHelper', 'testnet'];
