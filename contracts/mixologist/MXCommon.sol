@@ -17,9 +17,9 @@ contract MXCommon is MXStorage {
     }
 
     /// @dev Checks if the user is solvent in the closed liquidation case at the end of the function body.
-    modifier solvent() {
+    modifier solvent(address from) {
         _;
-        require(_isSolvent(msg.sender, exchangeRate), 'Mx: insolvent');
+        require(_isSolvent(from, exchangeRate), 'Mx: insolvent');
     }
 
     bool private initialized;
