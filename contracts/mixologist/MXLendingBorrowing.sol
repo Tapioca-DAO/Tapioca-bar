@@ -20,7 +20,7 @@ contract MXLendingBorrowing is MXCommon {
         address from,
         address to,
         uint256 amount
-    ) public solvent allowed(from) returns (uint256 part, uint256 share) {
+    ) public solvent(from) allowed(from) returns (uint256 part, uint256 share) {
         accrue();
 
         (part, share) = _borrow(from, to, amount);
@@ -71,7 +71,7 @@ contract MXLendingBorrowing is MXCommon {
         address from,
         address to,
         uint256 share
-    ) public solvent allowed(from) {
+    ) public solvent(from) allowed(from) {
         // accrue must be called because we check solvency
         accrue();
 
