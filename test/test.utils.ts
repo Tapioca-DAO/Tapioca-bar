@@ -1,6 +1,6 @@
 import { time } from '@nomicfoundation/hardhat-network-helpers';
 import { BigNumberish } from 'ethers';
-import { ethers } from 'hardhat';
+import hre, { ethers } from 'hardhat';
 import {
     BeachBar,
     ERC20Mock,
@@ -14,6 +14,8 @@ import { UniswapV2Factory } from '../typechain/UniswapV2Factory';
 import { UniswapV2Router02 } from '../typechain/UniswapV2Router02';
 
 ethers.utils.Logger.setLogLevel(ethers.utils.Logger.levels.ERROR);
+
+const verifyEtherscanQueue: { address: string; args: any[] }[] = [];
 
 async function resetVM() {
     await ethers.provider.send('hardhat_reset', []);
@@ -46,11 +48,13 @@ async function registerUniswapV2() {
     return { __uniFactory, __uniFactoryFee, __uniRouter };
 }
 
-async function registerERC20Tokens() {
+async function registerERC20Tokens(staging?: boolean) {
+    const supplyStart = ethers.BigNumber.from((1e18).toString()).mul(1e9);
+
     // Deploy USDC and WETH
     const usdc = await (
         await ethers.getContractFactory('ERC20Mock')
-    ).deploy(ethers.BigNumber.from((1e18).toString()).mul(1e9));
+    ).deploy(supplyStart);
     await usdc.deployed();
     const weth = await (await ethers.getContractFactory('WETH9Mock')).deploy();
     await weth.deployed();
@@ -58,13 +62,17 @@ async function registerERC20Tokens() {
     // Deploy TAP
     const tap = await (
         await ethers.getContractFactory('ERC20Mock')
-    ).deploy(ethers.BigNumber.from((1e18).toString()).mul(1e9));
+    ).deploy(supplyStart);
     await tap.deployed();
+
+    await verifyEtherscan(usdc.address, [supplyStart], staging);
+    await verifyEtherscan(weth.address, [], staging);
+    await verifyEtherscan(tap.address, [supplyStart], staging);
 
     return { usdc, weth, tap };
 }
 
-async function registerYieldBox(wethAddress: string) {
+async function registerYieldBox(wethAddress: string, staging?: boolean) {
     // Deploy URIBuilder
     const uriBuilder = await (
         await ethers.getContractFactory('YieldBoxURIBuilder')
@@ -77,14 +85,26 @@ async function registerYieldBox(wethAddress: string) {
     ).deploy(ethers.constants.AddressZero, uriBuilder.address);
     await yieldBox.deployed();
 
+    await verifyEtherscan(uriBuilder.address, [], staging);
+    await verifyEtherscan(
+        yieldBox.address,
+        [ethers.constants.AddressZero, uriBuilder.address],
+        staging,
+    );
+
     return { uriBuilder, yieldBox };
 }
 
-async function registerBeachBar(yieldBox: string, tapAddress: string) {
+async function registerBeachBar(
+    yieldBox: string,
+    tapAddress: string,
+    staging?: boolean,
+) {
     const bar = await (
         await ethers.getContractFactory('BeachBar')
     ).deploy(yieldBox, tapAddress);
     await bar.deployed();
+    await verifyEtherscan(bar.address, [yieldBox, tapAddress], staging);
 
     return { bar };
 }
@@ -224,6 +244,7 @@ async function registerMultiSwapper(
     bar: BeachBar,
     __uniFactoryAddress: string,
     __uniFactoryPairCodeHash: string,
+    staging?: boolean,
 ) {
     const multiSwapper = await (
         await ethers.getContractFactory('MultiSwapper')
@@ -232,16 +253,24 @@ async function registerMultiSwapper(
 
     await (await bar.setSwapper(multiSwapper.address, true)).wait();
 
+    await verifyEtherscan(
+        multiSwapper.address,
+        [__uniFactoryAddress, bar.address, __uniFactoryPairCodeHash],
+        staging,
+    );
+
     return { multiSwapper };
 }
 
-async function deployMediumRiskMC(bar: BeachBar) {
+async function deployMediumRiskMC(bar: BeachBar, staging?: boolean) {
     const mediumRiskMC = await (
         await ethers.getContractFactory('Mixologist')
     ).deploy();
     await mediumRiskMC.deployed();
 
     await (await bar.registerMasterContract(mediumRiskMC.address, 1)).wait();
+
+    await verifyEtherscan(mediumRiskMC.address, [], staging);
 
     return { mediumRiskMC };
 }
@@ -257,6 +286,7 @@ async function registerMixologist(
     wethUsdcOracle: OracleMock,
     collateralSwapPath: string[],
     tapSwapPath: string[],
+    staging?: boolean,
 ) {
     const _mxLiquidationModule = await (
         await ethers.getContractFactory('MXLiquidation')
@@ -301,6 +331,9 @@ async function registerMixologist(
             (await yieldBox.clonesOfCount(mediumRiskMC)).sub(1),
         ),
     );
+
+    await verifyEtherscan(wethUsdcMixologist.address, [], staging);
+
     return {
         wethUsdcMixologist,
         _mxLiquidationModule,
@@ -311,11 +344,18 @@ async function registerMixologist(
 async function registerUniUsdoToWethBidder(
     uniSwapper: MultiSwapper,
     mixologist: Mixologist,
+    staging?: boolean,
 ) {
     const usdoToWethBidder = await (
         await ethers.getContractFactory('UniUsdoToWethBidder')
     ).deploy(uniSwapper.address, mixologist.address);
     await usdoToWethBidder.deployed();
+
+    await verifyEtherscan(
+        usdoToWethBidder.address,
+        [uniSwapper.address, mixologist.address],
+        staging,
+    );
 
     return { usdoToWethBidder };
 }
@@ -324,6 +364,7 @@ async function deployCurveStableToUsdoBidder(
     bar: BeachBar,
     usdc: ERC20Mock,
     usdo: ERC20Mock,
+    staging?: boolean,
 ) {
     const curvePoolMock = await (
         await ethers.getContractFactory('CurvePoolMock')
@@ -337,16 +378,38 @@ async function deployCurveStableToUsdoBidder(
     ).deploy(curveSwapper.address, mixologist.address, 2);
     await stableToUsdoBidder.deployed();
 
+    await verifyEtherscan(
+        curvePoolMock.address,
+        [usdo.address, usdc.address],
+        staging,
+    );
+    await verifyEtherscan(
+        curveSwapper.address,
+        [curvePoolMock.address, bar.address],
+        staging,
+    );
+    await verifyEtherscan(
+        stableToUsdoBidder.address,
+        [curveSwapper.address, mixologist.address, 2],
+        staging,
+    );
+
     return { stableToUsdoBidder, curveSwapper };
 }
 
-async function deployAndSetUsdo(bar: BeachBar) {
+async function deployAndSetUsdo(bar: BeachBar, staging?: boolean) {
     const usdo = await (
         await ethers.getContractFactory('ERC20Mock')
     ).deploy(BN(1e18).mul(1e9).toString());
     await usdo.deployed();
 
-    await await bar.setUsdoToken(usdo.address);
+    await bar.setUsdoToken(usdo.address);
+
+    await verifyEtherscan(
+        usdo.address,
+        [BN(1e18).mul(1e9).toString()],
+        staging,
+    );
 
     return { usdo };
 }
@@ -355,6 +418,7 @@ async function registerLiquidationQueue(
     bar: BeachBar,
     mixologist: Mixologist,
     feeCollector: string,
+    staging?: boolean,
 ) {
     const liquidationQueue = await (
         await ethers.getContractFactory('LiquidationQueue')
@@ -379,9 +443,24 @@ async function registerLiquidationQueue(
         await bar.executeMixologistFn([mixologist.address], [payload])
     ).wait();
 
+    await verifyEtherscan(
+        liquidationQueue.address,
+        [BN(1e18).mul(1e9).toString()],
+        staging,
+    );
+
     return { liquidationQueue, LQ_META };
 }
 
+const verifyEtherscan = async (
+    address: string,
+    args: any[],
+    staging?: boolean,
+) => {
+    if (staging) {
+        verifyEtherscanQueue.push({ address, args });
+    }
+};
 const log = (message: string, staging?: boolean) =>
     staging && console.log(message);
 export async function register(staging?: boolean) {
@@ -400,16 +479,24 @@ export async function register(staging?: boolean) {
     ).deploy();
     await wethUsdcOracle.deployed();
     await (await wethUsdcOracle.set(__wethUsdcPrice)).wait();
+    await verifyEtherscan(wethUsdcOracle.address, [], staging);
 
     log('Deploying Tokens', staging);
     // 1 Deploy tokens
-    const { tap, usdc, weth } = await registerERC20Tokens();
+    const { tap, usdc, weth } = await registerERC20Tokens(staging);
     log('Deploying YieldBox', staging);
     // 2 Deploy Yieldbox
-    const { yieldBox, uriBuilder } = await registerYieldBox(weth.address);
+    const { yieldBox, uriBuilder } = await registerYieldBox(
+        weth.address,
+        staging,
+    );
     log('Deploying BeachBar', staging);
     // 2.1 Deploy BeachBar
-    const { bar } = await registerBeachBar(yieldBox.address, tap.address);
+    const { bar } = await registerBeachBar(
+        yieldBox.address,
+        tap.address,
+        staging,
+    );
 
     log('Deploying UniFactory', staging);
     // 3 Add asset types to BeachBar
@@ -429,11 +516,12 @@ export async function register(staging?: boolean) {
         bar,
         __uniFactory.address,
         await __uniFactory.pairCodeHash(),
+        staging,
     );
 
     log('Deploying MediumRiskMC', staging);
     // 6  Deploy MediumRisk master contract
-    const { mediumRiskMC } = await deployMediumRiskMC(bar);
+    const { mediumRiskMC } = await deployMediumRiskMC(bar, staging);
 
     log('Registering Mixologist', staging);
     // 7 Deploy WethUSDC medium risk MC clone
@@ -454,6 +542,7 @@ export async function register(staging?: boolean) {
         wethUsdcOracle,
         collateralSwapPath,
         tapSwapPath,
+        staging,
     );
 
     // 8 Set feeTo & feeVeTap
@@ -472,6 +561,7 @@ export async function register(staging?: boolean) {
         bar,
         wethUsdcMixologist,
         feeCollector.address,
+        staging,
     );
 
     /**
@@ -658,5 +748,5 @@ export async function register(staging?: boolean) {
         addUniV2UsdoWethLiquidity,
     };
 
-    return { ...initialSetup, ...utilFuncs };
+    return { ...initialSetup, ...utilFuncs, verifyEtherscanQueue };
 }

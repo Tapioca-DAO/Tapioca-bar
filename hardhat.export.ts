@@ -53,6 +53,7 @@ const config: HardhatUserConfig & { dodoc?: any } = {
             accounts: {
                 count: 5,
             },
+            tags: ['testnet'],
         },
         rinkeby: {
             gasMultiplier: 2,
@@ -65,12 +66,14 @@ const config: HardhatUserConfig & { dodoc?: any } = {
                     ? [process.env.PRIVATE_KEY]
                     : [],
             tags: ['testnet'],
+            live: true,
         },
     },
     etherscan: {
         apiKey: {
             rinkeby: process.env.RINKEBY_KEY ?? '',
         },
+        customChains: [],
     },
     typechain: {
         outDir: 'typechain',
