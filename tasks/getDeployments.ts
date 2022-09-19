@@ -1,20 +1,43 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
+import { API } from 'tapioca-sdk';
+import fs from 'fs';
 
-export const getDeployments = async (_hre: HardhatRuntimeEnvironment) => {
-    const { deployments } = _hre;
-    const all = (await deployments?.all()) ?? [];
-
-    return Promise.all(
-        Object.keys(all).map(async (e) => ({
-            name: e,
-            address: all[e].address,
-        })),
-    );
+export const getDeployments = async (
+    _hre: HardhatRuntimeEnvironment,
+    local?: boolean,
+) => {
+    if (local) {
+        return JSON.parse(
+            fs.readFileSync(API.utils.PROJECT_RELATIVE_DEPLOYMENT_PATH, 'utf8'),
+        )[await _hre.getChainId()];
+    }
+    return API.utils.getDeployment('Tapioca-Bar', await _hre.getChainId());
 };
 
-export const getDeployments__task = async function (
+export const getLocalDeployments__task = async function (
     taskArgs: any,
     hre: HardhatRuntimeEnvironment,
 ) {
-    console.log(await getDeployments(hre));
+    try {
+        console.log(await getDeployments(hre, true));
+    } catch (e) {
+        console.log(
+            '[-] No local deployments found on chain id',
+            await hre.getChainId(),
+        );
+    }
+};
+
+export const getSDKDeployments__task = async function (
+    taskArgs: any,
+    hre: HardhatRuntimeEnvironment,
+) {
+    try {
+        console.log(await getDeployments(hre));
+    } catch (e) {
+        console.log(
+            '[-] No SDK deployments found on chain id',
+            await hre.getChainId(),
+        );
+    }
 };

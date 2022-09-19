@@ -1,8 +1,11 @@
 import '@nomiclabs/hardhat-ethers';
 import { task } from 'hardhat/config';
-import { getDeployments__task } from './tasks/getDeployments';
 import { exportSDK__task } from './tasks/exportSDK';
 import { getBeachBarMarkets__task } from './tasks/getBeachBarMarkets';
+import {
+    getLocalDeployments__task,
+    getSDKDeployments__task,
+} from './tasks/getDeployments';
 
 task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
     const accounts = await hre.ethers.getSigners();
@@ -25,7 +28,13 @@ task(
 );
 
 task(
-    'getDeployments',
-    'Print a list of deployed contract.',
-    getDeployments__task,
+    'getLocalDeployments',
+    'Print a list of locally deployed contracts.',
+    getLocalDeployments__task,
+);
+
+task(
+    'getSDKDeployments',
+    'Print a list of SDK deployed contract.',
+    getSDKDeployments__task,
 );
