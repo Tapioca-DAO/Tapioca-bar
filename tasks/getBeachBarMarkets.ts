@@ -1,10 +1,26 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
+import _ from 'lodash';
+import { TContract } from 'tapioca-sdk/dist/shared';
+import { getDeployments } from './getDeployments';
 
 export const getBeachBarMarkets = async (hre: HardhatRuntimeEnvironment) => {
-    const beachBarAddr = (await hre.deployments.get('BeachBar')).address;
-    const beachBar = await hre.ethers.getContractAt('BeachBar', beachBarAddr);
+    let deployments: TContract[] = [];
+    try {
+        deployments = await getDeployments(hre, true);
+    } catch (e) {
+        deployments = await getDeployments(hre);
+    }
 
-    const addresses = await beachBar.tapiocaMarkets();
+    const beachBar = _.find(deployments, { name: 'bar' });
+    if (!beachBar) {
+        throw new Error('[-] BeachBar not found');
+    }
+    const beachBarContract = await hre.ethers.getContractAt(
+        'BeachBar',
+        beachBar.address,
+    );
+
+    const addresses = await beachBarContract.tapiocaMarkets();
     const markets = [];
 
     for (const address of addresses) {
