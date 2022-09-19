@@ -30,4 +30,4 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     }
 };
 export default func;
-func.tags = ['BeachBar', 'testnet'];
+func.tags = ['BeachBar'];
