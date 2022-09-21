@@ -5,6 +5,7 @@ import '@nomicfoundation/hardhat-chai-matchers';
 import { HardhatUserConfig } from 'hardhat/config';
 import 'hardhat-deploy';
 import 'hardhat-contract-sizer';
+import 'hardhat-gas-reporter';
 
 dotenv.config();
 
@@ -21,26 +22,15 @@ const config: HardhatUserConfig & { dodoc?: any } = {
                 },
             },
             {
-                version: '0.8.15',
+                version: '0.8.9',
                 settings: {
                     optimizer: {
                         enabled: true,
-                        runs: 100,
+                        runs: 999,
                     },
                 },
             },
         ],
-        overrides: {
-            'contracts/mixologist/Mixologist.sol': {
-                version: '0.8.15',
-                settings: {
-                    optimizer: {
-                        enabled: true,
-                        runs: 200,
-                    },
-                },
-            },
-        },
     },
     namedAccounts: {
         deployer: 0,
@@ -79,11 +69,9 @@ const config: HardhatUserConfig & { dodoc?: any } = {
         outDir: 'typechain',
         target: 'ethers-v5',
     },
-    // gasReporter: {
-    //     currency: 'USD',
-    //     token: 'BOBA',
-    //     coinmarketcap: process.env.COINMARKETCAP_API ?? '',
-    // },
+    gasReporter: {
+        enabled: true,
+    },
     mocha: {
         timeout: 4000000,
     },

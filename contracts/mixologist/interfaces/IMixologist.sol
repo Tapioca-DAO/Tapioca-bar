@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.0;
 import '@boringcrypto/boring-solidity/contracts/interfaces/IERC20.sol';
-import '../../bar/BeachBar.sol';
+import '../../BeachBar.sol';
 import './IOracle.sol';
 import '../../swappers/MultiSwapper.sol';
 
@@ -179,15 +179,17 @@ interface IMixologist {
         bytes32 s
     ) external;
 
-    function removeAsset(address from,
+    function removeAsset(
+        address from,
         address to,
-        uint256 fraction)
-        external
-        returns (uint256 share);
+        uint256 fraction
+    ) external returns (uint256 share);
 
-    function removeCollateral(address from,
+    function removeCollateral(
+        address from,
         address to,
-        uint256 share) external;
+        uint256 share
+    ) external;
 
     function repay(
         address from,

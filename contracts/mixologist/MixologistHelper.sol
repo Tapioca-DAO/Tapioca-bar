@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 import '@boringcrypto/boring-solidity/contracts/libraries/BoringRebase.sol';
-import '../bar/BeachBar.sol';
+import '../BeachBar.sol';
 import './Mixologist.sol';
 
 /// @dev This contract provides useful helper functions for `Mixologist`.
