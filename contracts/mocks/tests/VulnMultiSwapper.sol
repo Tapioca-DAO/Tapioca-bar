@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import '../../bar/BeachBar.sol';
+import '../../BeachBar.sol';
 
 contract VulnMultiSwapper {
     function counterfeitSwap(

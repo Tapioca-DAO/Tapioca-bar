@@ -1,0 +1,34 @@
+{
+    "license": "UNLICENSED",
+    "devDependencies": {
+        "@boringcrypto/hardhat-framework": "boringcrypto/hardhat-framework#fb3efb3f2f6db3ca798acd5fd3454e62b169a856",
+        "concurrently": "^7.0.0",
+        "husky": "^7.0.0"
+    },
+    "scripts": {
+        "compile": "hardhat compile",
+        "test": "hardhat test",
+        "coverage": "hardhat coverage && open-cli ./coverage/index.html",
+        "prettier": "prettier --write *.js *.ts *.json test/**/*.ts contracts/**/*.sol",
+        "flat": "hardhat flat .\\contracts\\YieldBox.sol --output .\\flat\\YieldBoxFlat.sol",
+        "dev": "hardhat compile && concurrently \"hardhat node --export ./workbench/contracts.json --watch\" \"vite --config web3/vite.config.ts\" \"vite --config workbench/vite.config.ts\"",
+        "build": "vue-tsc --noEmit && vite build",
+        "preview": "vite preview",
+        "prepare": "husky install",
+        "workbench": "vite --config workbench/vite.config.ts"
+    },
+    "dependencies": {
+        "@boringcrypto/boring-solidity": "boringcrypto/BoringSolidity#c343377d4633f8a7f320993679d9f2b04c87b066",
+        "@openzeppelin/contracts": "^4.5.0",
+        "@popperjs/core": "^2.11.2",
+        "@uniswap/token-lists": "^1.0.0-beta.28",
+        "axios": "^0.26.1",
+        "bootstrap": "^5.1.3",
+        "bootstrap-icons": "^1.8.1",
+        "bootstrap-vue-3": "^0.1.7",
+        "bootswatch": "^5.1.3",
+        "decimal.js-light": "^2.5.1",
+        "solc": "0.8.9",
+        "vue-router": "^4.0.13"
+    }
+}
