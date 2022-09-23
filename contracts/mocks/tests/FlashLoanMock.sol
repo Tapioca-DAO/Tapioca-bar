@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 import '../../mixologist/interfaces/IFlashLoan.sol';
-import '../../bar/YieldBox.sol';
+import '../../../yieldbox/contracts/YieldBox.sol';
 import '../../mixologist/Mixologist.sol';
 
 contract FlashLoanMockAttacker is IFlashBorrower {

@@ -3,8 +3,8 @@ pragma solidity ^0.8.0;
 import '@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol';
 import '../libraries/ICurvePool.sol';
 
-import '../bar/YieldBox.sol';
-import '../bar/BeachBar.sol';
+import '../../yieldbox/contracts/YieldBox.sol';
+import '../BeachBar.sol';
 
 contract CurveSwapper {
     using BoringERC20 for IERC20;

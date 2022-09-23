@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 import '../ILiquidationQueue.sol';
-import '../../bar/BeachBar.sol';
+import '../../BeachBar.sol';
 
 contract LQMixologistMock {
     BeachBar immutable beachBar;
