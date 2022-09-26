@@ -3,7 +3,7 @@ import { expect } from 'chai';
 import { register } from './test.utils';
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 
-describe.only('MixologistHelper test', () => {
+describe('MixologistHelper test', () => {
     it('Should deposit to yieldBox & add asset to mixologist through Mx helper', async () => {
         const {
             weth,
