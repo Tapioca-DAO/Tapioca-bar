@@ -2,6 +2,7 @@
 pragma solidity ^0.8.0;
 
 import './MXCommon.sol';
+import 'hardhat/console.sol';
 
 contract MXLendingBorrowing is MXCommon {
     using RebaseLibrary for Rebase;
@@ -160,6 +161,7 @@ contract MXLendingBorrowing is MXCommon {
         uint256 part
     ) internal returns (uint256 amount) {
         (totalBorrow, amount) = totalBorrow.sub(part, true);
+
         userBorrowPart[to] -= part;
 
         uint256 share = yieldBox.toShare(assetId, amount, true);
