@@ -21,7 +21,7 @@ contract MXStorage is BoringOwnable, ERC20 {
     // *** ERC20 *** //
     // ************* //
 
-    function symbol() external view returns (string memory) {
+    function symbol() public view returns (string memory) {
         return
             string(
                 abi.encodePacked(

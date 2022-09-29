@@ -99,17 +99,6 @@ contract Mixologist is MXCommon {
         }
     }
 
-    /**
-     * @notice Sets approval status for an `operator` to manage user account.
-     * @param operator Address of Operator.
-     * @param approved Status of approval.
-     */
-    function setApprovalForAll(address operator, bool approved) external {
-        // Effects
-        isApprovedForAll[msg.sender][operator] = approved;
-
-        emit LogApprovalForAll(msg.sender, operator, approved);
-    }
 
     /// @notice The init function that acts as a constructor
     function init(bytes calldata data) external onlyOnce {
