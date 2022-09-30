@@ -42,7 +42,7 @@ describe('LiquidationQueue test', () => {
 
         expect(
             (await liquidationQueue.bidPools(POOL, deployer.address))
-                .collateralAmount,
+                .liquidatedAssetAmount,
         ).to.equal(LQ_META.minBidAmount);
     });
 
@@ -93,7 +93,7 @@ describe('LiquidationQueue test', () => {
         // Check for deleted bid pool entry queue
         expect(
             (await liquidationQueue.bidPools(POOL, deployer.address))
-                .collateralAmount,
+                .liquidatedAssetAmount,
         ).to.be.eq(0);
 
         // Check for order book entry addition record
@@ -105,7 +105,7 @@ describe('LiquidationQueue test', () => {
 
         expect(
             entry.bidder.toLowerCase() === deployer.address.toLowerCase() &&
-                entry.bidInfo.collateralAmount.eq(LQ_META.minBidAmount),
+                entry.bidInfo.liquidatedAssetAmount.eq(LQ_META.minBidAmount),
         ).to.be.true;
 
         // Check order pool info update
@@ -146,7 +146,7 @@ describe('LiquidationQueue test', () => {
         // Check for deleted bid pool entry queue
         expect(
             (await liquidationQueue.bidPools(POOL, deployer.address))
-                .collateralAmount,
+                .liquidatedAssetAmount,
         ).to.be.eq(0);
 
         // Check for fund return
@@ -210,7 +210,7 @@ describe('LiquidationQueue test', () => {
         // Check for deleted bid pool entry queue
         expect(
             (await liquidationQueue.bidPools(POOL, deployer.address))
-                .collateralAmount,
+                .liquidatedAssetAmount,
         ).to.be.eq(0);
 
         // Check for fund return
@@ -611,7 +611,9 @@ describe('LiquidationQueue test', () => {
                 account.address,
             );
             expect(
-                parseFloat(ethers.utils.formatEther(bidInfo.collateralAmount)),
+                parseFloat(
+                    ethers.utils.formatEther(bidInfo.liquidatedAssetAmount),
+                ),
                 `✖️ Bid pool amount not right for account ${accounts.indexOf(
                     account,
                 )}`,
@@ -651,7 +653,9 @@ describe('LiquidationQueue test', () => {
                 account.address,
             );
             expect(
-                parseFloat(ethers.utils.formatEther(bidInfo.collateralAmount)),
+                parseFloat(
+                    ethers.utils.formatEther(bidInfo.liquidatedAssetAmount),
+                ),
             ).to.eq(0);
 
             const orderBookInfo = await liquidationQueue.orderBookInfos(poolId);
@@ -670,7 +674,7 @@ describe('LiquidationQueue test', () => {
             expect(
                 parseFloat(
                     ethers.utils.formatEther(
-                        orderBookEntry.bidInfo.collateralAmount,
+                        orderBookEntry.bidInfo.liquidatedAssetAmount,
                     ),
                 ),
                 `✖️ Activated bid amount not right for account ${accounts.indexOf(
@@ -692,7 +696,7 @@ describe('LiquidationQueue test', () => {
 
             expect(
                 (await liquidationQueue.bidPools(poolId, account.address))
-                    .collateralAmount,
+                    .liquidatedAssetAmount,
             ).to.be.eq(0);
         }
 
@@ -1002,12 +1006,7 @@ describe('LiquidationQueue test', () => {
 
         //deploy and register usdoSwapper and bidExecutionSwapper
         const { stableToUsdoBidder, curveSwapper } =
-            await deployCurveStableToUsdoBidder(
-                wethUsdcMixologist,
-                bar,
-                usdc,
-                usdo,
-            );
+            await deployCurveStableToUsdoBidder(bar, usdc, usdo);
 
         const usdofnData = wethUsdcMixologist.interface.encodeFunctionData(
             'updateLQUsdoSwapper',
@@ -1093,6 +1092,7 @@ describe('LiquidationQueue test', () => {
 
         const testingUsdoToUsdcAmount =
             await stableToUsdoBidder.getOutputAmount(
+                wethUsdcMixologist.address,
                 usdcAssetId,
                 toBid,
                 ethers.utils.toUtf8Bytes(''),
@@ -1153,7 +1153,6 @@ describe('LiquidationQueue test', () => {
 
         //deploy and register usdoSwapper and bidExecutionSwapper
         const { stableToUsdoBidder } = await deployCurveStableToUsdoBidder(
-            wethUsdcMixologist,
             bar,
             usdc,
             usdo,
@@ -1234,8 +1233,8 @@ describe('LiquidationQueue test', () => {
             ['uint256', 'uint256'],
             [LQ_META.minBidAmount.div(1e3), LQ_META.minBidAmount],
         );
-
         const testOutput = await stableToUsdoBidder.getOutputAmount(
+            wethUsdcMixologist.address,
             usdoAssetId,
             toBid,
             ethers.utils.toUtf8Bytes(''),
@@ -1284,7 +1283,6 @@ describe('LiquidationQueue test', () => {
 
         //deploy and register usdoSwapper and bidExecutionSwapper
         const { stableToUsdoBidder } = await deployCurveStableToUsdoBidder(
-            wethUsdcMixologist,
             bar,
             usdc,
             usdo,
@@ -1420,7 +1418,7 @@ describe('LiquidationQueue test', () => {
         // Check for deleted bid pool entry queue
         expect(
             (await liquidationQueue.bidPools(POOL, deployer.address))
-                .collateralAmount,
+                .liquidatedAssetAmount,
         ).to.be.eq(0);
     });
 
@@ -1450,7 +1448,6 @@ describe('LiquidationQueue test', () => {
 
         //deploy and register usdoSwapper and bidExecutionSwapper
         const { stableToUsdoBidder } = await deployCurveStableToUsdoBidder(
-            wethUsdcMixologist,
             bar,
             usdc,
             usdo,
@@ -1679,6 +1676,7 @@ describe('LiquidationQueue test', () => {
             lqAssetId,
         );
 
+
         await wethUsdcMixologist
             .connect(accounts[0])
             .liquidate(
@@ -1724,7 +1722,6 @@ describe('LiquidationQueue test', () => {
 
         //deploy and register usdoSwapper and bidExecutionSwapper
         const { stableToUsdoBidder } = await deployCurveStableToUsdoBidder(
-            wethUsdcMixologist,
             bar,
             usdc,
             usdo,

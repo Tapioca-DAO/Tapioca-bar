@@ -118,7 +118,7 @@ contract LiquidationQueue {
         address indexed bidder,
         uint256 indexed pool,
         uint256 usdoAmount,
-        uint256 collateralAmount,
+        uint256 liquidatedAssetAmount,
         uint256 timestamp
     );
 
@@ -127,7 +127,7 @@ contract LiquidationQueue {
         address indexed bidder,
         uint256 indexed pool,
         uint256 usdoAmount,
-        uint256 collateralAmount,
+        uint256 liquidatedAssetAmount,
         uint256 collateralValue,
         uint256 timestamp
     );
@@ -137,7 +137,7 @@ contract LiquidationQueue {
         address indexed bidder,
         uint256 indexed pool,
         uint256 usdoAmount,
-        uint256 collateralAmount,
+        uint256 liquidatedAssetAmount,
         uint256 collateralValue,
         uint256 timestamp
     );
@@ -146,7 +146,7 @@ contract LiquidationQueue {
         address indexed caller,
         uint256 indexed pool,
         uint256 usdoAmountExecuted,
-        uint256 collateralAmountExecuted,
+        uint256 liquidatedAssetAmountExecuted,
         uint256 collateralLiquidated,
         uint256 timestamp
     );
@@ -240,21 +240,27 @@ contract LiquidationQueue {
         );
 
         uint256 usdoAmount = liquidationQueueMeta.usdoSwapper.swap(
+            mixologist,
             stableAssetId,
             amountIn,
             data
         );
 
-        uint256 usdoValueInCollateral = liquidationQueueMeta
-            .bidExecutionSwapper
-            .getOutputAmount(usdoAssetId, usdoAmount, data);
+        Bidder memory bidder = _bid(user, pool, usdoAmount, true);
+
+        uint256 usdoValueInLqAsset = bidder.swapOnExecute
+            ? liquidationQueueMeta.bidExecutionSwapper.getOutputAmount(
+                mixologist,
+                usdoAssetId,
+                usdoAmount,
+                data
+            )
+            : bidder.liquidatedAssetAmount;
 
         require(
-            usdoValueInCollateral >= liquidationQueueMeta.minBidAmount,
+            usdoValueInLqAsset >= liquidationQueueMeta.minBidAmount,
             'LQ: bid too low'
         );
-
-        _bid(user, pool, usdoAmount, true);
     }
 
     /// @notice Add a bid to a bid pool.
@@ -320,14 +326,15 @@ contract LiquidationQueue {
             user,
             pool,
             orderBookEntry.bidInfo.usdoAmount,
-            orderBookEntry.bidInfo.collateralAmount,
-            orderBookEntry.bidInfo.usdoAmount > 0
+            orderBookEntry.bidInfo.liquidatedAssetAmount,
+            orderBookEntry.bidInfo.swapOnExecute
                 ? liquidationQueueMeta.bidExecutionSwapper.getOutputAmount(
+                    mixologist,
                     beachBar.usdoAssetId(),
                     orderBookEntry.bidInfo.usdoAmount,
                     ''
                 )
-                : orderBookEntry.bidInfo.collateralAmount,
+                : orderBookEntry.bidInfo.liquidatedAssetAmount,
             block.timestamp
         );
     }
@@ -344,17 +351,22 @@ contract LiquidationQueue {
         bool isUsdo = bidPools[pool][msg.sender].isUsdo;
         amountRemoved = isUsdo
             ? bidPools[pool][msg.sender].usdoAmount
-            : bidPools[pool][msg.sender].collateralAmount;
+            : bidPools[pool][msg.sender].liquidatedAssetAmount;
         delete bidPools[pool][msg.sender];
 
-        uint256 collateralValue = amountRemoved;
-        if (isUsdo) {
-            collateralValue = liquidationQueueMeta
+        uint256 lqAssetValue = amountRemoved;
+        if (bidPools[pool][msg.sender].swapOnExecute) {
+            lqAssetValue = liquidationQueueMeta
                 .bidExecutionSwapper
-                .getOutputAmount(beachBar.usdoAssetId(), amountRemoved, '');
+                .getOutputAmount(
+                    mixologist,
+                    beachBar.usdoAssetId(),
+                    amountRemoved,
+                    ''
+                );
         }
         require(
-            collateralValue >= liquidationQueueMeta.minBidAmount,
+            lqAssetValue >= liquidationQueueMeta.minBidAmount,
             'LQ: bid does not exist'
         ); //save gas
 
@@ -373,7 +385,7 @@ contract LiquidationQueue {
             pool,
             isUsdo ? amountRemoved : 0,
             isUsdo ? 0 : amountRemoved,
-            collateralValue,
+            lqAssetValue,
             block.timestamp
         );
     }
@@ -400,7 +412,9 @@ contract LiquidationQueue {
 
         amountRemoved = isUsdo
             ? orderBookEntries[pool][orderBookIndex].bidInfo.usdoAmount
-            : orderBookEntries[pool][orderBookIndex].bidInfo.collateralAmount;
+            : orderBookEntries[pool][orderBookIndex]
+                .bidInfo
+                .liquidatedAssetAmount;
 
         // Clean expired bids.
         for (uint256 i = 0; i < bidIndexesLen; ) {
@@ -423,7 +437,7 @@ contract LiquidationQueue {
                 ? orderBookEntries[pool][orderBookIndex].bidInfo.usdoAmount
                 : orderBookEntries[pool][orderBookIndex]
                     .bidInfo
-                    .collateralAmount;
+                    .liquidatedAssetAmount;
             orderBookEntries[pool][orderBookIndex] = orderBookEntries[pool][
                 poolInfo.nextBidPush - 1
             ];
@@ -441,11 +455,16 @@ contract LiquidationQueue {
             assetId,
             yieldBox.toShare(assetId, amountRemoved, false)
         );
-        uint256 collateralValue = amountRemoved;
-        if (isUsdo) {
-            collateralValue = liquidationQueueMeta
+        uint256 lqAssetValue = amountRemoved;
+        if (orderBookEntries[pool][orderBookIndex].bidInfo.swapOnExecute) {
+            lqAssetValue = liquidationQueueMeta
                 .bidExecutionSwapper
-                .getOutputAmount(beachBar.usdoAssetId(), amountRemoved, '');
+                .getOutputAmount(
+                    mixologist,
+                    beachBar.usdoAssetId(),
+                    amountRemoved,
+                    ''
+                );
         }
         emit RemoveBid(
             msg.sender,
@@ -453,7 +472,7 @@ contract LiquidationQueue {
             pool,
             isUsdo ? amountRemoved : 0,
             isUsdo ? 0 : amountRemoved,
-            collateralValue,
+            lqAssetValue,
             block.timestamp
         );
     }
@@ -487,16 +506,17 @@ contract LiquidationQueue {
         uint256 exchangeRate,
         uint256 poolId
     ) private view returns (uint256) {
-        uint256 collateralAmount = entry.isUsdo
+        uint256 liquidatedAssetAmount = entry.swapOnExecute
             ? liquidationQueueMeta.bidExecutionSwapper.getOutputAmount(
+                mixologist,
                 beachBar.usdoAssetId(),
                 entry.usdoAmount,
                 ''
             )
-            : entry.collateralAmount;
+            : entry.liquidatedAssetAmount;
         return
             _getPremiumAmount(
-                _bidToCollateral(collateralAmount, exchangeRate),
+                _bidToCollateral(liquidatedAssetAmount, exchangeRate),
                 poolId,
                 MODE.ADD
             );
@@ -516,11 +536,11 @@ contract LiquidationQueue {
             uint256 finalUsdoAmount
         )
     {
-        finalCollateralAmount = entry.collateralAmount;
+        finalCollateralAmount = entry.liquidatedAssetAmount;
         finalDiscountedCollateralAmount = discountedBidderAmount;
         finalUsdoAmount = entry.usdoAmount;
-        //Execute the swap if USD0 was provided
-        if (entry.isUsdo) {
+        //Execute the swap if USD0 was provided and it's different from the liqudation asset id
+        if (entry.swapOnExecute) {
             yieldBox.transfer(
                 address(this),
                 address(liquidationQueueMeta.bidExecutionSwapper),
@@ -534,7 +554,12 @@ contract LiquidationQueue {
 
             finalCollateralAmount = liquidationQueueMeta
                 .bidExecutionSwapper
-                .swap(beachBar.usdoAssetId(), entry.usdoAmount, swapData);
+                .swap(
+                    mixologist,
+                    beachBar.usdoAssetId(),
+                    entry.usdoAmount,
+                    swapData
+                );
             finalDiscountedCollateralAmount = _getPremiumAmount(
                 _bidToCollateral(finalCollateralAmount, exchangeRate),
                 poolId,
@@ -563,11 +588,13 @@ contract LiquidationQueue {
             MODE.SUB
         );
 
+        //Execute the swap if USD0 was provided and it's different from the liqudation asset id
         uint256 usdoAssetId = beachBar.usdoAssetId();
-        if (entry.isUsdo) {
+        if (entry.swapOnExecute) {
             finalUsdoAmount = liquidationQueueMeta
                 .bidExecutionSwapper
                 .getInputAmount(
+                    mixologist,
                     usdoAssetId,
                     finalDiscountedCollateralAmount,
                     ''
@@ -581,7 +608,7 @@ contract LiquidationQueue {
             );
             uint256 returnedCollateral = liquidationQueueMeta
                 .bidExecutionSwapper
-                .swap(usdoAssetId, finalUsdoAmount, swapData);
+                .swap(mixologist, usdoAssetId, finalUsdoAmount, swapData);
             require(
                 returnedCollateral >= finalDiscountedCollateralAmount,
                 'need-more-collateral'
@@ -670,7 +697,7 @@ contract LiquidationQueue {
                         data
                             .orderBookEntry
                             .bidInfo
-                            .collateralAmount -= finalDiscountedCollateralAmount; // Update bid entry amount.
+                            .liquidatedAssetAmount -= finalDiscountedCollateralAmount; // Update bid entry amount.
                     } else {
                         data
                             .orderBookEntry
@@ -703,7 +730,7 @@ contract LiquidationQueue {
                         data.orderBookEntryCopy.bidder
                     ] += finalDiscountedCollateralAmount; // Write balance.
                     data.orderBookEntry.bidInfo.usdoAmount = 0; // Update bid entry amount.
-                    data.orderBookEntry.bidInfo.collateralAmount = 0; // Update bid entry amount.
+                    data.orderBookEntry.bidInfo.liquidatedAssetAmount = 0; // Update bid entry amount.
                     // Update the total amount executed, the total collateral liquidated and collateral to liquidate.
                     data.totalUsdoAmountUsed += finalUsdoAmount;
                     data.totalPoolAmountExecuted += finalCollateralAmount;
@@ -760,10 +787,6 @@ contract LiquidationQueue {
     /// @param _swapper thew new ICollateralSwaper contract address
     function setBidExecutionSwapper(IBidder _swapper) external {
         require(msg.sender == address(mixologist), 'unauthorized');
-        // yieldBox.setApprovalForAll(
-        //     address(liquidationQueueMeta.bidExecutionSwapper),
-        //     false
-        // );
         emit BidSwapperUpdated(
             liquidationQueueMeta.bidExecutionSwapper,
             _swapper
@@ -776,10 +799,6 @@ contract LiquidationQueue {
     /// @param _swapper thew new ICollateralSwaper contract address
     function setUsdoSwapper(IBidder _swapper) external {
         require(msg.sender == address(mixologist), 'unauthorized');
-        // yieldBox.setApprovalForAll(
-        //     address(liquidationQueueMeta.usdoSwapper),
-        //     false
-        // );
         emit UsdoSwapperUpdated(liquidationQueueMeta.usdoSwapper, _swapper);
         liquidationQueueMeta.usdoSwapper = _swapper;
         // yieldBox.setApprovalForAll(address(_swapper), true);
@@ -836,12 +855,12 @@ contract LiquidationQueue {
         uint256 pool,
         uint256 amount,
         bool isUsdo
-    ) internal {
-        Bidder memory bidder;
+    ) internal returns (Bidder memory bidder) {
         bidder.usdoAmount = isUsdo ? amount : 0;
-        bidder.collateralAmount = isUsdo ? 0 : amount;
+        bidder.liquidatedAssetAmount = isUsdo ? 0 : amount;
         bidder.timestamp = block.timestamp;
         bidder.isUsdo = isUsdo;
+        bidder.swapOnExecute = isUsdo && lqAssetId != beachBar.usdoAssetId();
 
         bidPools[pool][user] = bidder;
 
@@ -850,7 +869,7 @@ contract LiquidationQueue {
             user,
             pool,
             isUsdo ? amount : 0, //USD0 amount
-            isUsdo ? 0 : amount, //collateral amount
+            isUsdo ? 0 : amount, //liquidated asset amount
             block.timestamp
         );
 
