@@ -12,7 +12,7 @@ export const constants: { [key: string]: any } = {
         yieldBoxAddress: '0x0000000000000000000000000000000000000000', //can be omitted/address(0) if we need to deploy it
         tapAddress: '0x0000000000000000000000000000000000000000', //TapOFT address
         wrappedNative: '0x0000000000000000000000000000000000000000', //for YieldBox
-        usdoAddress: '0x0000000000000000000000000000000000000000', //can be omitted/address(0) if we need to deploy it
+        usdoAddress: '0x0000000000000000000000000000000000000000', //USD0 address
         uniV2Factory: '0x0000000000000000000000000000000000000000', //TODO: fill it with the right value
         uniV2Router: '0x0000000000000000000000000000000000000000', //TODO: fill it with the right value
         curveStablePool: '0x0000000000000000000000000000000000000000', //TODO: fill it with the right value
