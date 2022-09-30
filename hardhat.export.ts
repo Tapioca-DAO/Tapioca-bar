@@ -70,7 +70,7 @@ const config: HardhatUserConfig & { dodoc?: any } = {
         target: 'ethers-v5',
     },
     gasReporter: {
-        enabled: true,
+        enabled: false,
     },
     mocha: {
         timeout: 4000000,
