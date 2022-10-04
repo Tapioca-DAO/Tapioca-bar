@@ -10,7 +10,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const chainId = await hre.getChainId();
     const contracts: any[] = [];
 
-    console.log(`\n Deploying BeachBar`);
+    console.log('\n Deploying BeachBar');
     let yieldBoxAddress = constants[chainId].yieldBoxAddress;
     if (
         !hre.ethers.utils.isAddress(yieldBoxAddress!) ||
@@ -33,11 +33,11 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         args: args,
         artifact: 'BeachBar',
     });
-    console.log(`Done`);
+    console.log('Done');
 
-    updateDeployments(contracts, chainId);
+    await updateDeployments(contracts, chainId);
 
-    console.log(`\n Setting feeTo & feeVeTo`);
+    console.log('\n Setting feeTo & feeVeTo');
     const beachBarContract = await hre.ethers.getContractAt(
         'BeachBar',
         deployedBeachBar.address,
@@ -46,7 +46,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     await (
         await beachBarContract.setFeeVeTap(constants[chainId].feeVeTo)
     ).wait();
-    console.log(`Done`);
+    console.log('Done');
 };
 
 export default func;

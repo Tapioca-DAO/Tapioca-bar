@@ -10,17 +10,17 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const chainId = await hre.getChainId();
     const contracts: any[] = [];
 
-    let yieldBoxAddress = constants[chainId].yieldBoxAddress;
+    const yieldBoxAddress = constants[chainId].yieldBoxAddress;
     if (
         hre.ethers.utils.isAddress(yieldBoxAddress!) &&
         yieldBoxAddress != hre.ethers.constants.AddressZero
     ) {
-        console.log(`YieldBox already deployed. Skipping...`);
+        console.log('YieldBox already deployed. Skipping...');
         return;
     }
-    
+
     //deploy YieldBoxURIBuilder
-    console.log(`\n Deploying YieldBoxURIBuilder`);
+    console.log('\n Deploying YieldBoxURIBuilder');
     await deploy('YieldBoxURIBuilder', { from: deployer, log: true });
     await verify(hre, 'YieldBoxURIBuilder', []);
     const deployedUriBuilder = await deployments.get('YieldBoxURIBuilder');
@@ -29,10 +29,10 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         args: [],
         artifact: 'YieldBoxURIBuilder',
     });
-    console.log(`Done`);
+    console.log('Done');
 
     //deploy YieldBox
-    console.log(`\n Deploying YieldBox`);
+    console.log('\n Deploying YieldBox');
     const yieldBoxArgs = [
         constants[chainId].wrappedNative,
         deployedUriBuilder.address,
@@ -49,9 +49,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         args: yieldBoxArgs,
         artifact: 'YieldBox',
     });
-    console.log(`Done`);
+    console.log('Done');
 
-    updateDeployments(contracts, chainId);
+    await updateDeployments(contracts, chainId);
 };
 
 export default func;

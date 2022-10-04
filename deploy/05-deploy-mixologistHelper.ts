@@ -10,7 +10,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const chainId = await hre.getChainId();
     const contracts: any[] = [];
 
-    console.log(`\n Deploying MixologistHelper`);
+    console.log('\n Deploying MixologistHelper');
     await deploy('MixologistHelper', {
         from: deployer,
         log: true,
@@ -22,9 +22,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         args: [],
         artifact: 'MixologistHelper',
     });
-    console.log(`Done`);
+    console.log('Done');
 
-    updateDeployments(contracts, chainId);
+    await updateDeployments(contracts, chainId);
 };
 
 export default func;

@@ -12,7 +12,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
     const beachBar = await deployments.get('BeachBar');
 
-    console.log(`\n Deploying CurveSwapper`);
+    console.log('\n Deploying CurveSwapper');
     const curveSwapperArgs = [
         constants[chainId].curveStablePool,
         beachBar.address,
@@ -29,9 +29,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         args: curveSwapperArgs,
         artifact: 'CurveSwapper',
     });
-    console.log(`Done`);
+    console.log('Done');
 
-    console.log(`\n Deploying CurveStableToUsdoBidder`);
+    console.log('\n Deploying CurveStableToUsdoBidder');
     // constructor(CurveSwapper curveSwapper_, uint256 curvePoolAssetCount_) {
     const stableToUsd0Args = [deployedCurveSwapper.address, 4];
     await deploy('CurveStableToUsdoBidder', {
@@ -48,9 +48,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         args: stableToUsd0Args,
         artifact: 'CurveStableToUsdoBidder',
     });
-    console.log(`Done`);
+    console.log('Done');
 
-    updateDeployments(contracts, chainId);
+    await updateDeployments(contracts, chainId);
 };
 
 export default func;

@@ -10,7 +10,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const chainId = await hre.getChainId();
     const contracts: any[] = [];
 
-    console.log(`\n Deploying MultiSwapper`);
+    console.log('\n Deploying MultiSwapper');
     const uniswapFactoryContract = await hre.ethers.getContractAt(
         'UniswapV2Factory',
         constants[chainId].uniV2Factory,
@@ -34,11 +34,11 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         args: args,
         artifact: 'MultiSwapper',
     });
-    console.log(`Done`);
+    console.log('Done');
 
-    updateDeployments(contracts, chainId);
+    await updateDeployments(contracts, chainId);
 
-    console.log(`\n Setting MultiSwapper`);
+    console.log('\n Setting MultiSwapper');
     const beachBarContract = await hre.ethers.getContractAt(
         'BeachBar',
         beachBar.address,
@@ -46,7 +46,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     await (
         await beachBarContract.setSwapper(deployedMultiSwapper.address, true)
     ).wait();
-    console.log(`Done`);
+    console.log('Done');
 };
 
 export default func;

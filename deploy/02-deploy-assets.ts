@@ -34,7 +34,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
                 0,
             )
         ).wait();
-        console.log(`   done`);
+        console.log('   done');
     }
 };
 
