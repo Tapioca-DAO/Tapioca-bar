@@ -4,6 +4,7 @@ import '@boringcrypto/boring-solidity/contracts/BoringOwnable.sol';
 import '@boringcrypto/boring-solidity/contracts/ERC20.sol';
 import '../mixologist/Mixologist.sol';
 import './ILiquidationQueue.sol';
+
 enum MODE {
     ADD,
     SUB
@@ -255,7 +256,7 @@ contract LiquidationQueue {
                 usdoAmount,
                 data
             )
-            : bidder.liquidatedAssetAmount;
+            : bidder.usdoAmount;
 
         require(
             usdoValueInLqAsset >= liquidationQueueMeta.minBidAmount,
@@ -321,6 +322,9 @@ contract LiquidationQueue {
         }
         orderBookInfos[pool] = poolInfo;
 
+        uint256 bidAmount = orderBookEntry.bidInfo.isUsdo
+            ? orderBookEntry.bidInfo.usdoAmount
+            : orderBookEntry.bidInfo.liquidatedAssetAmount;
         emit ActivateBid(
             msg.sender,
             user,
@@ -334,7 +338,7 @@ contract LiquidationQueue {
                     orderBookEntry.bidInfo.usdoAmount,
                     ''
                 )
-                : orderBookEntry.bidInfo.liquidatedAssetAmount,
+                : bidAmount,
             block.timestamp
         );
     }
@@ -506,6 +510,9 @@ contract LiquidationQueue {
         uint256 exchangeRate,
         uint256 poolId
     ) private view returns (uint256) {
+        uint256 bidAmount = entry.isUsdo
+            ? entry.usdoAmount
+            : entry.liquidatedAssetAmount;
         uint256 liquidatedAssetAmount = entry.swapOnExecute
             ? liquidationQueueMeta.bidExecutionSwapper.getOutputAmount(
                 mixologist,
@@ -513,7 +520,7 @@ contract LiquidationQueue {
                 entry.usdoAmount,
                 ''
             )
-            : entry.liquidatedAssetAmount;
+            : bidAmount;
         return
             _getPremiumAmount(
                 _bidToCollateral(liquidatedAssetAmount, exchangeRate),
