@@ -1,7 +1,7 @@
 import fs from 'fs';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import _ from 'lodash';
-import { saveDeploymentOnDisk } from 'tapioca-sdk/dist/api/utils';
+import SDK from 'tapioca-sdk';
 import { TContract } from 'tapioca-sdk/dist/shared';
 
 export const constants: { [key: string]: any } = {
@@ -119,7 +119,7 @@ export const updateDeployments = async (
     contracts: TContract[],
     chainId: string,
 ) => {
-    await saveDeploymentOnDisk({
+    await SDK.API.utils.saveDeploymentOnDisk({
         [chainId]: contracts,
     });
 };
