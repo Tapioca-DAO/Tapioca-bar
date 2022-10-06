@@ -1571,4 +1571,37 @@ describe('Mixologist test', () => {
             wethAmount.mul(1).div(100),
         );
     });
+
+    it('should get correct collateral amount from collateral shares', async () => {
+        const {
+            deployer,
+            usdc,
+            BN,
+            approveTokensAndSetBarApproval,
+            usdcDepositAndAddCollateral,
+            wethUsdcMixologist,
+            __wethUsdcPrice,
+            eoa1,
+        } = await loadFixture(register);
+
+        const wethAmount = BN(1e18).mul(1);
+        const usdcAmount = wethAmount
+            .mul(__wethUsdcPrice.mul(2))
+            .div((1e18).toString());
+
+        await usdc.freeMint(usdcAmount);
+        await approveTokensAndSetBarApproval();
+        await usdcDepositAndAddCollateral(usdcAmount);
+
+        await usdc.connect(eoa1).freeMint(usdcAmount.mul(2));
+        await approveTokensAndSetBarApproval(eoa1);
+        await usdcDepositAndAddCollateral(usdcAmount.mul(2), eoa1);
+
+        const collateralAmount =
+            await wethUsdcMixologist.getCollateralAmountForShare(
+                await wethUsdcMixologist.userCollateralShare(deployer.address),
+            );
+
+        expect(collateralAmount).to.be.equal(usdcAmount);
+    });
 });
