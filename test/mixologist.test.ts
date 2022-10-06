@@ -629,13 +629,11 @@ describe('Mixologist test', () => {
             eoa1.address,
         );
         const minCollateralShareRepay =
-            await mixologistHelper.getCollateralSharesForBorrowPart(
-                wethUsdcMixologist.address,
+            await wethUsdcMixologist.getCollateralSharesForBorrowPart(
                 borrowVal.mul(50).div(100000).add(borrowVal),
             );
         const userCollateralShareToRepay =
-            await mixologistHelper.getCollateralSharesForBorrowPart(
-                wethUsdcMixologist.address,
+            await wethUsdcMixologist.getCollateralSharesForBorrowPart(
                 userBorrowPart,
             );
 
@@ -788,8 +786,7 @@ describe('Mixologist test', () => {
             .repay(eoa1.address, eoa1.address, false, userBorrowPart);
 
         const feesAmountInAsset =
-            await mixologistHelper.getAmountForAssetFraction(
-                wethUsdcMixologist.address,
+            await wethUsdcMixologist.getAmountForAssetFraction(
                 (
                     await wethUsdcMixologist.accrueInfo()
                 ).feesEarnedFraction,

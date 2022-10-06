@@ -264,6 +264,7 @@ contract MXCommon is MXStorage {
         share = _removeAsset(from, to, fraction);
     }
 
+    /// @dev Return the equivalent of collateral shares in asset amount.
     function _getAmountForCollateralShares(uint256 shares)
         internal
         view
@@ -277,5 +278,39 @@ contract MXCommon is MXStorage {
                     LQ_COLLATERIZATION_RATE),
                 false
             ) / exchangeRate;
+    }
+
+    /// @dev Calculate the collateral shares that are needed for `borrowPart`,
+    /// taking the current exchange rate into account.
+    function _getCollateralSharesForBorrowPart(uint256 borrowPart)
+        internal
+        view
+        returns (uint256)
+    {
+        uint256 borrowAmount = totalBorrow.toElastic(borrowPart, false);
+        return
+            yieldBox.toShare(
+                collateralId,
+                (borrowAmount * LIQUIDATION_MULTIPLIER * exchangeRate) /
+                    (LIQUIDATION_MULTIPLIER_PRECISION *
+                        EXCHANGE_RATE_PRECISION),
+                false
+            );
+    }
+
+    /// @dev Compute the amount of `mixologist.assetId` from `fraction`
+    /// `fraction` can be `mixologist.accrueInfo.feeFraction` or `mixologist.balanceOf`
+    function _getAmountForAssetFraction(uint256 fraction)
+        internal
+        view
+        returns (uint256)
+    {
+        Rebase memory _totalAsset = totalAsset;
+        return
+            yieldBox.toAmount(
+                assetId,
+                (fraction * _totalAsset.elastic) / _totalAsset.base,
+                false
+            );
     }
 }
