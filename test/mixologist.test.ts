@@ -629,13 +629,11 @@ describe('Mixologist test', () => {
             eoa1.address,
         );
         const minCollateralShareRepay =
-            await mixologistHelper.getCollateralSharesForBorrowPart(
-                wethUsdcMixologist.address,
+            await wethUsdcMixologist.getCollateralSharesForBorrowPart(
                 borrowVal.mul(50).div(100000).add(borrowVal),
             );
         const userCollateralShareToRepay =
-            await mixologistHelper.getCollateralSharesForBorrowPart(
-                wethUsdcMixologist.address,
+            await wethUsdcMixologist.getCollateralSharesForBorrowPart(
                 userBorrowPart,
             );
 
@@ -788,8 +786,7 @@ describe('Mixologist test', () => {
             .repay(eoa1.address, eoa1.address, false, userBorrowPart);
 
         const feesAmountInAsset =
-            await mixologistHelper.getAmountForAssetFraction(
-                wethUsdcMixologist.address,
+            await wethUsdcMixologist.getAmountForAssetFraction(
                 (
                     await wethUsdcMixologist.accrueInfo()
                 ).feesEarnedFraction,
@@ -1529,5 +1526,82 @@ describe('Mixologist test', () => {
                 swapData,
             ),
         ).to.not.be.reverted;
+    });
+
+    it('should get correct amount from borrow part', async () => {
+        const {
+            deployer,
+            usdc,
+            BN,
+            approveTokensAndSetBarApproval,
+            usdcDepositAndAddCollateral,
+            wethDepositAndAddAsset,
+            wethUsdcMixologist,
+            __wethUsdcPrice,
+            weth,
+            eoa1,
+        } = await loadFixture(register);
+
+        const wethAmount = BN(1e18).mul(1);
+        const usdcAmount = wethAmount
+            .mul(__wethUsdcPrice.mul(2))
+            .div((1e18).toString());
+
+        await usdc.freeMint(usdcAmount);
+        await approveTokensAndSetBarApproval();
+        await usdcDepositAndAddCollateral(usdcAmount);
+
+        await approveTokensAndSetBarApproval(eoa1);
+        await weth.connect(eoa1).freeMint(wethAmount);
+        await wethDepositAndAddAsset(wethAmount, eoa1);
+
+        await wethUsdcMixologist.borrow(
+            deployer.address,
+            deployer.address,
+            wethAmount,
+        );
+
+        const amountFromShares =
+            await wethUsdcMixologist.getAmountForBorrowPart(
+                await wethUsdcMixologist.userBorrowPart(deployer.address),
+            );
+
+        expect(amountFromShares).to.be.approximately(
+            wethAmount,
+            wethAmount.mul(1).div(100),
+        );
+    });
+
+    it('should get correct collateral amount from collateral shares', async () => {
+        const {
+            deployer,
+            usdc,
+            BN,
+            approveTokensAndSetBarApproval,
+            usdcDepositAndAddCollateral,
+            wethUsdcMixologist,
+            __wethUsdcPrice,
+            eoa1,
+        } = await loadFixture(register);
+
+        const wethAmount = BN(1e18).mul(1);
+        const usdcAmount = wethAmount
+            .mul(__wethUsdcPrice.mul(2))
+            .div((1e18).toString());
+
+        await usdc.freeMint(usdcAmount);
+        await approveTokensAndSetBarApproval();
+        await usdcDepositAndAddCollateral(usdcAmount);
+
+        await usdc.connect(eoa1).freeMint(usdcAmount.mul(2));
+        await approveTokensAndSetBarApproval(eoa1);
+        await usdcDepositAndAddCollateral(usdcAmount.mul(2), eoa1);
+
+        const collateralAmount =
+            await wethUsdcMixologist.getCollateralAmountForShare(
+                await wethUsdcMixologist.userCollateralShare(deployer.address),
+            );
+
+        expect(collateralAmount).to.be.equal(usdcAmount);
     });
 });
