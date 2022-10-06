@@ -31,9 +31,13 @@ contract MXLiquidation is MXCommon {
 
         Rebase memory _totalBorrow = totalBorrow;
 
-        uint256 collateralAmountInAsset = _getAmountForCollateralShares(
-            collateralShare
-        );
+        uint256 collateralAmountInAsset = yieldBox.toAmount(
+            collateralId,
+            (collateralShare *
+                (EXCHANGE_RATE_PRECISION / COLLATERIZATION_RATE_PRECISION) *
+                LQ_COLLATERIZATION_RATE),
+            false
+        ) / _exchangeRate;
         // Obviously it's not `borrowPart` anymore but `borrowAmount`
         borrowPart = (borrowPart * _totalBorrow.elastic) / _totalBorrow.base;
 

@@ -211,15 +211,15 @@ contract Mixologist is MXCommon {
         return _getAmountForAssetFraction(fraction);
     }
 
-    /// @notice Return the equivalent of collateral shares in asset amount.
-    /// @param shares The amount of shares to convert.
-    /// @return amount The equivalent of collateral shares in asset amount.
-    function getAmountForCollateralShares(uint256 shares)
+    /// @notice Return the equivalent of borrow part in asset amount.
+    /// @param borrowPart The amount of borrow part to convert.
+    /// @return amount The equivalent of borrow part in asset amount.
+    function getAmountForBorrowPart(uint256 borrowPart)
         public
         view
         returns (uint256 amount)
     {
-        return _getAmountForCollateralShares(shares);
+        return _getAmountForBorrowPart(borrowPart);
     }
 
     /// @notice Adds `collateral` from msg.sender to the account `to`.

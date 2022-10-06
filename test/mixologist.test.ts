@@ -1527,4 +1527,48 @@ describe('Mixologist test', () => {
             ),
         ).to.not.be.reverted;
     });
+
+    it('should get correct amount from borrow part', async () => {
+        const {
+            deployer,
+            usdc,
+            BN,
+            approveTokensAndSetBarApproval,
+            usdcDepositAndAddCollateral,
+            wethDepositAndAddAsset,
+            wethUsdcMixologist,
+            __wethUsdcPrice,
+            weth,
+            eoa1,
+        } = await loadFixture(register);
+
+        const wethAmount = BN(1e18).mul(1);
+        const usdcAmount = wethAmount
+            .mul(__wethUsdcPrice.mul(2))
+            .div((1e18).toString());
+
+        await usdc.freeMint(usdcAmount);
+        await approveTokensAndSetBarApproval();
+        await usdcDepositAndAddCollateral(usdcAmount);
+
+        await approveTokensAndSetBarApproval(eoa1);
+        await weth.connect(eoa1).freeMint(wethAmount);
+        await wethDepositAndAddAsset(wethAmount, eoa1);
+
+        await wethUsdcMixologist.borrow(
+            deployer.address,
+            deployer.address,
+            wethAmount,
+        );
+
+        const amountFromShares =
+            await wethUsdcMixologist.getAmountForBorrowPart(
+                await wethUsdcMixologist.userBorrowPart(deployer.address),
+            );
+
+        expect(amountFromShares).to.be.approximately(
+            wethAmount,
+            wethAmount.mul(1).div(100),
+        );
+    });
 });

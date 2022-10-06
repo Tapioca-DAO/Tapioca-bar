@@ -264,20 +264,13 @@ contract MXCommon is MXStorage {
         share = _removeAsset(from, to, fraction);
     }
 
-    /// @dev Return the equivalent of collateral shares in asset amount.
-    function _getAmountForCollateralShares(uint256 shares)
+    /// @dev Return the equivalent of collateral borrow part in asset amount.
+    function _getAmountForBorrowPart(uint256 borrowPart)
         internal
         view
         returns (uint256)
     {
-        return
-            yieldBox.toAmount(
-                collateralId,
-                (shares *
-                    (EXCHANGE_RATE_PRECISION / COLLATERIZATION_RATE_PRECISION) *
-                    LQ_COLLATERIZATION_RATE),
-                false
-            ) / exchangeRate;
+        return totalBorrow.toElastic(borrowPart, false);
     }
 
     /// @dev Calculate the collateral shares that are needed for `borrowPart`,
