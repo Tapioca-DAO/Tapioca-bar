@@ -1,5 +1,6 @@
 import '@nomiclabs/hardhat-ethers';
 import { task } from 'hardhat/config';
+import { deployMarket__task } from './tasks/deployMarket';
 import { exportSDK__task } from './tasks/exportSDK';
 import { getBeachBarMarkets__task } from './tasks/getBeachBarMarkets';
 import {
@@ -33,6 +34,12 @@ task(
     'markets',
     'Display the list of deployed markets for the current chain ID.',
     getBeachBarMarkets__task,
+);
+
+task(
+    'deployMarket',
+    'Deploy a Mixologist market, a Liquidation Queue and initialize it.',
+    deployMarket__task,
 );
 
 task(

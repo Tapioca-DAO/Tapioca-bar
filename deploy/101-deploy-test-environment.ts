@@ -4,6 +4,7 @@ import { register } from '../test/test.utils';
 import { TContract, TProjectDeployment } from 'tapioca-sdk/dist/api/exportSDK';
 import fs from 'fs';
 import _ from 'lodash';
+import { updateDeployments } from './utils';
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const {
@@ -33,8 +34,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         wethUsdcMixologist,
     };
 
+    const chainId = await hre.getChainId();
     const projectDeployment: TProjectDeployment = {
-        [await hre.getChainId()]: [],
+        [chainId]: [],
     };
     for (const contract of Object.keys(contracts) as Array<
         keyof typeof contracts
@@ -48,25 +50,20 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
             toVerify: !!etherScanVerification,
         };
 
-        (
-            projectDeployment[
-                Number(await hre.getChainId()) as 10
-            ] as TContract[]
-        ).push({
+        (projectDeployment[Number(chainId) as 10] as TContract[]).push({
             name: contract,
             address: contracts[contract].address,
             meta,
         });
     }
 
-    const toSave = JSON.stringify(projectDeployment, null, 2);
-    fs.writeFileSync('./deployments.json', toSave);
+    await updateDeployments(projectDeployment[chainId], chainId);
 
     for (const contract of verifyEtherscanQueue) {
         console.log(
             '[+] Verifying',
             _.find(
-                projectDeployment[(await hre.getChainId()) as unknown as 10],
+                projectDeployment[chainId as unknown as 10],
                 (e) => e.address === contract.address,
             )?.name,
             contract.address,
