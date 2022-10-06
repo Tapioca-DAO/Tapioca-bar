@@ -263,4 +263,19 @@ contract MXCommon is MXStorage {
 
         share = _removeAsset(from, to, fraction);
     }
+
+    function _getAmountForCollateralShares(uint256 shares)
+        internal
+        view
+        returns (uint256)
+    {
+        return
+            yieldBox.toAmount(
+                collateralId,
+                (shares *
+                    (EXCHANGE_RATE_PRECISION / COLLATERIZATION_RATE_PRECISION) *
+                    LQ_COLLATERIZATION_RATE),
+                false
+            ) / exchangeRate;
+    }
 }

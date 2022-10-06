@@ -187,6 +187,17 @@ contract Mixologist is MXCommon {
         amountToSolvency = abi.decode(result, (uint256));
     }
 
+    /// @notice Return the equivalent of collateral shares in asset amount.
+    /// @param shares The amount of shares to convert.
+    /// @return amount The equivalent of collateral shares in asset amount.
+    function getAmountForCollateralShares(uint256 shares)
+        public
+        view
+        returns (uint256 amount)
+    {
+        return _getAmountForCollateralShares(shares);
+    }
+
     /// @notice Adds `collateral` from msg.sender to the account `to`.
     /// @param from Account to transfer shares from.
     /// @param to The receiver of the tokens.
