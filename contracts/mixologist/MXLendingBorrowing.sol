@@ -2,7 +2,6 @@
 pragma solidity ^0.8.0;
 
 import './MXCommon.sol';
-import 'hardhat/console.sol';
 
 contract MXLendingBorrowing is MXCommon {
     using RebaseLibrary for Rebase;

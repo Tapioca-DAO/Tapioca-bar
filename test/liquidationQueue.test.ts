@@ -987,18 +987,11 @@ describe('LiquidationQueue test', () => {
             usdc,
             usdcAssetId,
             LQ_META,
-            weth,
-            __uniRouter,
-            __uniFactory,
             __wethUsdcPrice,
             usdoToWethBidder,
-            deployAndSetUsdo,
+            usd0,
             deployCurveStableToUsdoBidder,
-            addUniV2UsdoWethLiquidity,
         } = await loadFixture(register);
-
-        //deploy and register USD0
-        const { usdo } = await deployAndSetUsdo(bar);
 
         //deploy and register usdoSwapper and bidExecutionSwapper
         const { stableToUsdoBidder, curveSwapper } =
@@ -1006,7 +999,7 @@ describe('LiquidationQueue test', () => {
                 wethUsdcMixologist,
                 bar,
                 usdc,
-                usdo,
+                usd0,
             );
 
         const usdofnData = wethUsdcMixologist.interface.encodeFunctionData(
@@ -1031,15 +1024,6 @@ describe('LiquidationQueue test', () => {
             .usdoSwapper;
         expect(savedBidSwapper.toLowerCase()).to.eq(
             stableToUsdoBidder.address.toLowerCase(),
-        );
-
-        //setup univ2 enviroment for usdo <> weth pair
-        await addUniV2UsdoWethLiquidity(
-            deployer.address,
-            usdo,
-            weth,
-            __uniFactory,
-            __uniRouter,
         );
 
         /// --- Acts ----
@@ -1139,24 +1123,21 @@ describe('LiquidationQueue test', () => {
             liquidationQueue,
             wethUsdcMixologist,
             usdc,
+            usd0,
             weth,
             LQ_META,
             __uniRouter,
             __wethUsdcPrice,
             usdoToWethBidder,
-            deployAndSetUsdo,
             deployCurveStableToUsdoBidder,
         } = await loadFixture(register);
-
-        //deploy and register USD0
-        const { usdo } = await deployAndSetUsdo(bar);
 
         //deploy and register usdoSwapper and bidExecutionSwapper
         const { stableToUsdoBidder } = await deployCurveStableToUsdoBidder(
             wethUsdcMixologist,
             bar,
             usdc,
-            usdo,
+            usd0,
         );
 
         const usdofnData = wethUsdcMixologist.interface.encodeFunctionData(
@@ -1183,35 +1164,12 @@ describe('LiquidationQueue test', () => {
             stableToUsdoBidder.address.toLowerCase(),
         );
 
-        //setup univ2 enviroment for usdo <> weth pair
-        const wethPairAmount = ethers.BigNumber.from(1e6).mul(
-            (1e18).toString(),
-        );
-        const usdoPairAmount = wethPairAmount.mul(
-            __wethUsdcPrice.div((1e18).toString()),
-        );
-        await weth.freeMint(wethPairAmount);
-        await usdo.freeMint(usdoPairAmount);
-
-        await weth.approve(__uniRouter.address, wethPairAmount);
-        await usdo.approve(__uniRouter.address, usdoPairAmount);
-        await __uniRouter.addLiquidity(
-            weth.address,
-            usdo.address,
-            wethPairAmount,
-            usdoPairAmount,
-            wethPairAmount,
-            usdoPairAmount,
-            deployer.address,
-            Math.floor(Date.now() / 1000) + 1000 * 60, // 1min margin
-        );
-
         /// --- Acts ----
         const POOL = 10;
 
         const usdoAssetId = await yieldBox.ids(
             1,
-            usdo.address,
+            usd0.address,
             ethers.constants.AddressZero,
             0,
         );
@@ -1219,8 +1177,8 @@ describe('LiquidationQueue test', () => {
         const toBid = LQ_META.defaultBidAmount.mul(
             __wethUsdcPrice.div((1e18).toString()),
         );
-        await usdo.freeMint(toBid);
-        await usdo.approve(yieldBox.address, toBid);
+        await usd0.mint(deployer.address, toBid);
+        await usd0.approve(yieldBox.address, toBid);
         await yieldBox.depositAsset(
             usdoAssetId,
             deployer.address,
@@ -1268,26 +1226,25 @@ describe('LiquidationQueue test', () => {
             liquidationQueue,
             wethUsdcMixologist,
             usdc,
+            usd0,
             weth,
             usdcAssetId,
             LQ_META,
             __wethUsdcPrice,
             usdoToWethBidder,
             timeTravel,
-            deployAndSetUsdo,
             deployCurveStableToUsdoBidder,
             __uniRouter,
         } = await loadFixture(register);
 
         //deploy and register USD0
-        const { usdo } = await deployAndSetUsdo(bar);
 
         //deploy and register usdoSwapper and bidExecutionSwapper
         const { stableToUsdoBidder } = await deployCurveStableToUsdoBidder(
             wethUsdcMixologist,
             bar,
             usdc,
-            usdo,
+            usd0,
         );
 
         const usdofnData = wethUsdcMixologist.interface.encodeFunctionData(
@@ -1306,29 +1263,6 @@ describe('LiquidationQueue test', () => {
         await bar.executeMixologistFn(
             [wethUsdcMixologist.address],
             [executionfnData],
-        );
-
-        //setup univ2 enviroment for usdo <> weth pair
-        const wethPairAmount = ethers.BigNumber.from(1e6).mul(
-            (1e18).toString(),
-        );
-        const usdoPairAmount = wethPairAmount.mul(
-            __wethUsdcPrice.div((1e18).toString()),
-        );
-        await weth.freeMint(wethPairAmount);
-        await usdo.freeMint(usdoPairAmount);
-
-        await weth.approve(__uniRouter.address, wethPairAmount);
-        await usdo.approve(__uniRouter.address, usdoPairAmount);
-        await __uniRouter.addLiquidity(
-            weth.address,
-            usdo.address,
-            wethPairAmount,
-            usdoPairAmount,
-            wethPairAmount,
-            usdoPairAmount,
-            deployer.address,
-            Math.floor(Date.now() / 1000) + 1000 * 60, // 1min margin
         );
 
         /// --- Acts ----
@@ -1432,6 +1366,7 @@ describe('LiquidationQueue test', () => {
             liquidationQueue,
             wethUsdcMixologist,
             usdc,
+            usd0,
             usdcAssetId,
             LQ_META,
             multiSwapper,
@@ -1441,19 +1376,15 @@ describe('LiquidationQueue test', () => {
             weth,
             wethUsdcOracle,
             usdoToWethBidder,
-            deployAndSetUsdo,
             deployCurveStableToUsdoBidder,
         } = await loadFixture(register);
-
-        //deploy and register USD0
-        const { usdo } = await deployAndSetUsdo(bar);
 
         //deploy and register usdoSwapper and bidExecutionSwapper
         const { stableToUsdoBidder } = await deployCurveStableToUsdoBidder(
             wethUsdcMixologist,
             bar,
             usdc,
-            usdo,
+            usd0,
         );
 
         const usdofnData = wethUsdcMixologist.interface.encodeFunctionData(
@@ -1478,29 +1409,6 @@ describe('LiquidationQueue test', () => {
             .usdoSwapper;
         expect(savedBidSwapper.toLowerCase()).to.eq(
             stableToUsdoBidder.address.toLowerCase(),
-        );
-
-        //setup univ2 enviroment for usdo <> weth pair
-        const wethPairAmount = ethers.BigNumber.from(1e6).mul(
-            (1e18).toString(),
-        );
-        const usdoPairAmount = wethPairAmount.mul(
-            __wethUsdcPrice.div((1e18).toString()),
-        );
-        await weth.freeMint(wethPairAmount);
-        await usdo.freeMint(usdoPairAmount);
-
-        await weth.approve(__uniRouter.address, wethPairAmount);
-        await usdo.approve(__uniRouter.address, usdoPairAmount);
-        await __uniRouter.addLiquidity(
-            weth.address,
-            usdo.address,
-            wethPairAmount,
-            usdoPairAmount,
-            wethPairAmount,
-            usdoPairAmount,
-            deployer.address,
-            Math.floor(Date.now() / 1000) + 1000 * 60, // 1min margin
         );
 
         /// --- Acts ----
@@ -1706,6 +1614,7 @@ describe('LiquidationQueue test', () => {
             liquidationQueue,
             wethUsdcMixologist,
             usdc,
+            usd0,
             usdcAssetId,
             LQ_META,
             multiSwapper,
@@ -1714,20 +1623,16 @@ describe('LiquidationQueue test', () => {
             weth,
             wethUsdcOracle,
             usdoToWethBidder,
-            deployAndSetUsdo,
             deployCurveStableToUsdoBidder,
             timeTravel,
         } = await loadFixture(register);
-
-        //deploy and register USD0
-        const { usdo } = await deployAndSetUsdo(bar);
 
         //deploy and register usdoSwapper and bidExecutionSwapper
         const { stableToUsdoBidder } = await deployCurveStableToUsdoBidder(
             wethUsdcMixologist,
             bar,
             usdc,
-            usdo,
+            usd0,
         );
 
         const usdofnData = wethUsdcMixologist.interface.encodeFunctionData(
@@ -1752,29 +1657,6 @@ describe('LiquidationQueue test', () => {
             .usdoSwapper;
         expect(savedBidSwapper.toLowerCase()).to.eq(
             stableToUsdoBidder.address.toLowerCase(),
-        );
-
-        //setup univ2 enviroment for usdo <> weth pair
-        const wethPairAmount = ethers.BigNumber.from(1e6).mul(
-            (1e18).toString(),
-        );
-        const usdoPairAmount = wethPairAmount.mul(
-            __wethUsdcPrice.div((1e18).toString()),
-        );
-        await weth.freeMint(wethPairAmount);
-        await usdo.freeMint(usdoPairAmount);
-
-        await weth.approve(__uniRouter.address, wethPairAmount);
-        await usdo.approve(__uniRouter.address, usdoPairAmount);
-        await __uniRouter.addLiquidity(
-            weth.address,
-            usdo.address,
-            wethPairAmount,
-            usdoPairAmount,
-            wethPairAmount,
-            usdoPairAmount,
-            deployer.address,
-            Math.floor(Date.now() / 1000) + 1000 * 60, // 1min margin
         );
 
         /// --- Acts ----

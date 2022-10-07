@@ -9,7 +9,7 @@ import '../yieldbox/contracts/enums/YieldBoxTokenType.sol';
 import './swappers/MultiSwapper.sol';
 import './mixologist/interfaces/IMixologist.sol';
 import '@boringcrypto/boring-solidity/contracts/BoringOwnable.sol';
-import '@boringcrypto/boring-solidity/contracts/ERC20.sol';
+import './usd0/IUSD0.sol';
 
 enum ContractType {
     lowRisk,
@@ -34,7 +34,7 @@ contract BeachBar is BoringOwnable {
     IERC20 public immutable tapToken;
     uint256 public immutable tapAssetId;
 
-    IERC20 public usdoToken;
+    IUSD0 public usdoToken;
     uint256 public usdoAssetId;
 
     MasterContract[] public masterContracts;
@@ -171,17 +171,17 @@ contract BeachBar is BoringOwnable {
     /// @notice Used to set the USD0 token
     /// @dev sets usdoToken and usdoAssetId
     /// @param _usdoToken the USD0 token address
-    function setUsdoToken(IERC20 _usdoToken) external onlyOwner {
-        usdoToken = _usdoToken;
+    function setUsdoToken(address _usdoToken) external onlyOwner {
+        usdoToken = IUSD0(_usdoToken);
         usdoAssetId = uint96(
             yieldBox.registerAsset(
                 TokenType.ERC20,
-                address(_usdoToken),
+                _usdoToken,
                 IStrategy(address(0)),
                 0
             )
         );
-        emit UsdoTokenUpdated(address(_usdoToken), usdoAssetId);
+        emit UsdoTokenUpdated(_usdoToken, usdoAssetId);
     }
 
     /// @notice Register a master contract

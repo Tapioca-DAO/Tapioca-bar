@@ -1247,4 +1247,80 @@ describe('Mixologist test', () => {
                 .computeAssetAmountToSolvency(deployer.address, 1),
         ).to.be.revertedWith('Mx: module not set');
     });
+
+    it('should allow multiple borrowers', async () => {
+        const {
+            usdc,
+            weth,
+            yieldBox,
+            multiSwapper,
+            deployer,
+            wethUsdcMixologist,
+            timeTravel,
+            __wethUsdcPrice,
+            approveTokensAndSetBarApproval,
+            wethDepositAndAddAsset,
+            usdcDepositAndAddCollateral,
+        } = await loadFixture(register);
+
+        const assetId = await wethUsdcMixologist.assetId();
+        const collateralId = await wethUsdcMixologist.collateralId();
+        const wethMintVal = ethers.BigNumber.from((1e18).toString()).mul(10);
+        const usdcMintVal = wethMintVal
+            .mul(10)
+            .mul(__wethUsdcPrice.div((1e18).toString()));
+        const wethBorrowVal = usdcMintVal
+            .mul(74)
+            .div(100)
+            .div(__wethUsdcPrice.div((1e18).toString()));
+
+        await weth.freeMint(wethMintVal.mul(10));
+        await approveTokensAndSetBarApproval();
+        await wethDepositAndAddAsset(wethMintVal.mul(10));
+        expect(
+            await wethUsdcMixologist.balanceOf(deployer.address),
+        ).to.be.equal(
+            await yieldBox.toShare(assetId, wethMintVal.mul(10), false),
+        );
+
+        const eoas = [];
+        for (var i = 0; i < 5; i++) {
+            const eoa = new ethers.Wallet(
+                ethers.Wallet.createRandom().privateKey,
+                ethers.provider,
+            );
+            await deployer.sendTransaction({
+                to: eoa.address,
+                value: ethers.utils.parseEther('1'),
+            });
+            eoas.push(eoa);
+        }
+
+        for (var i = 0; i < eoas.length; i++) {
+            const eoa = eoas[i];
+            await usdc.connect(eoa).freeMint(usdcMintVal);
+            await approveTokensAndSetBarApproval(eoa);
+            await usdcDepositAndAddCollateral(usdcMintVal, eoa);
+            expect(
+                await wethUsdcMixologist.userCollateralShare(eoa.address),
+            ).equal(await yieldBox.toShare(collateralId, usdcMintVal, false));
+            timeTravel(86400);
+        }
+
+        timeTravel(86400 * 5);
+        const firstBorrow = ethers.BigNumber.from((1e17).toString());
+
+        for (var i = 0; i < eoas.length; i++) {
+            const eoa = eoas[i];
+            await wethUsdcMixologist
+                .connect(eoa)
+                .borrow(eoa.address, eoa.address, firstBorrow);
+            timeTravel(10 * 86400);
+        }
+
+        timeTravel(10 * 86400);
+        await wethUsdcMixologist.depositFeesToYieldBox(multiSwapper.address, {
+            minAssetAmount: 1,
+        });
+    });
 });

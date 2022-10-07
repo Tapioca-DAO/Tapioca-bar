@@ -9,6 +9,7 @@ describe('Bidders test', () => {
             usdoToWethBidder,
             wethUsdcMixologist,
             usdc,
+            usd0,
             bar,
             deployCurveStableToUsdoBidder,
         } = await loadFixture(register);
@@ -20,7 +21,7 @@ describe('Bidders test', () => {
             wethUsdcMixologist,
             bar,
             usdc,
-            usdc,
+            usd0,
         );
 
         savedName = await stableToUsdoBidder.name();
@@ -32,6 +33,7 @@ describe('Bidders test', () => {
             usdoToWethBidder,
             wethUsdcMixologist,
             usdc,
+            usd0,
             bar,
             deployCurveStableToUsdoBidder,
         } = await loadFixture(register);
@@ -44,27 +46,12 @@ describe('Bidders test', () => {
             ),
         ).to.be.revertedWith('token not valid');
 
-        await expect(
-            usdoToWethBidder.getOutputAmount(
-                1,
-                1,
-                ethers.utils.toUtf8Bytes(''),
-            ),
-        ).to.be.revertedWith('USD0 not set');
         const { stableToUsdoBidder } = await deployCurveStableToUsdoBidder(
             wethUsdcMixologist,
             bar,
             usdc,
-            usdc,
+            usd0,
         );
-
-        await expect(
-            stableToUsdoBidder.getInputAmount(
-                150,
-                1,
-                ethers.utils.toUtf8Bytes(''),
-            ),
-        ).to.be.revertedWith('USD0 not set');
     });
 
     it('should set swappers', async () => {
@@ -74,21 +61,20 @@ describe('Bidders test', () => {
             usdc,
             bar,
             multiSwapper,
+            usd0,
             deployCurveStableToUsdoBidder,
-            deployAndSetUsdo,
         } = await loadFixture(register);
 
         await expect(
             usdoToWethBidder.setUniswapSwapper(multiSwapper.address),
         ).to.emit(usdoToWethBidder, 'UniV2SwapperUpdated');
 
-        const { usdo } = await deployAndSetUsdo(bar);
         const { stableToUsdoBidder, curveSwapper } =
             await deployCurveStableToUsdoBidder(
                 wethUsdcMixologist,
                 bar,
                 usdc,
-                usdo,
+                usd0,
             );
 
         await expect(
@@ -104,30 +90,23 @@ describe('Bidders test', () => {
             bar,
             yieldBox,
             deployCurveStableToUsdoBidder,
-            deployAndSetUsdo,
+            usd0,
         } = await loadFixture(register);
 
         const { stableToUsdoBidder } = await deployCurveStableToUsdoBidder(
             wethUsdcMixologist,
             bar,
             usdc,
-            usdc,
+            usd0,
         );
 
-        await expect(
-            stableToUsdoBidder.swap(1, 1, ethers.utils.toUtf8Bytes('')),
-        ).to.be.revertedWith('USD0 not set');
-        await expect(
-            usdoToWethBidder.swap(1, 1, ethers.utils.toUtf8Bytes('')),
-        ).to.be.revertedWith('USD0 not set');
-        const { usdo } = await deployAndSetUsdo(bar);
         await expect(
             usdoToWethBidder.swap(1, 1, ethers.utils.toUtf8Bytes('')),
         ).to.be.revertedWith('token not valid');
 
         const usdoAssetId = await yieldBox.ids(
             1,
-            usdo.address,
+            usd0.address,
             ethers.constants.AddressZero,
             0,
         );
@@ -149,23 +128,22 @@ describe('Bidders test', () => {
         const {
             wethUsdcMixologist,
             usdc,
+            usd0,
             bar,
             yieldBox,
             deployCurveStableToUsdoBidder,
-            deployAndSetUsdo,
         } = await loadFixture(register);
 
-        const { usdo } = await deployAndSetUsdo(bar);
         const { stableToUsdoBidder } = await deployCurveStableToUsdoBidder(
             wethUsdcMixologist,
             bar,
             usdc,
-            usdo,
+            usd0,
         );
 
         const usdoAssetId = await yieldBox.ids(
             1,
-            usdo.address,
+            usd0.address,
             ethers.constants.AddressZero,
             0,
         );
