@@ -1,5 +1,5 @@
 import { time } from '@nomicfoundation/hardhat-network-helpers';
-import { BigNumberish } from 'ethers';
+import { BigNumber, BigNumberish } from 'ethers';
 import hre, { ethers, getChainId } from 'hardhat';
 import {
     BeachBar,
@@ -430,24 +430,23 @@ async function registerMixologist(
 
 async function registerUniUsdoToWethBidder(
     uniSwapper: MultiSwapper,
-    mixologist: Mixologist,
+    wethAssetId: BigNumber,
     staging?: boolean,
 ) {
     const usdoToWethBidder = await (
         await ethers.getContractFactory('UniUsdoToWethBidder')
-    ).deploy(uniSwapper.address, mixologist.address);
+    ).deploy(uniSwapper.address, wethAssetId);
     await usdoToWethBidder.deployed();
 
     await verifyEtherscan(
         usdoToWethBidder.address,
-        [uniSwapper.address, mixologist.address],
+        [uniSwapper.address, wethAssetId],
         staging,
     );
 
     return { usdoToWethBidder };
 }
 async function deployCurveStableToUsdoBidder(
-    mixologist: Mixologist,
     bar: BeachBar,
     usdc: ERC20Mock,
     usdo: USD0,
@@ -463,7 +462,7 @@ async function deployCurveStableToUsdoBidder(
 
     const stableToUsdoBidder = await (
         await ethers.getContractFactory('CurveStableToUsdoBidder')
-    ).deploy(curveSwapper.address, mixologist.address, 2);
+    ).deploy(curveSwapper.address, 2);
     await stableToUsdoBidder.deployed();
 
     await verifyEtherscan(
@@ -478,7 +477,7 @@ async function deployCurveStableToUsdoBidder(
     );
     await verifyEtherscan(
         stableToUsdoBidder.address,
-        [curveSwapper.address, mixologist.address, 2],
+        [curveSwapper.address, 2],
         staging,
     );
 
@@ -741,7 +740,7 @@ export async function register(staging?: boolean) {
 
     const { usdoToWethBidder } = await registerUniUsdoToWethBidder(
         multiSwapper,
-        wethUsdcMixologist,
+        wethAssetId,
     );
 
     const initialSetup = {

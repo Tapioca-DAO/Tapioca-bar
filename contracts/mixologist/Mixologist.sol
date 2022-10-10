@@ -187,6 +187,52 @@ contract Mixologist is MXCommon {
         amountToSolvency = abi.decode(result, (uint256));
     }
 
+    /// @notice Calculate the collateral amount off the shares.
+    /// @param share The shares.
+    /// @return amount The amount.
+    function getCollateralAmountForShare(uint256 share)
+        public
+        view
+        returns (uint256 amount)
+    {
+        return _getCollateralAmountForShare(share);
+    }
+
+    /// @notice Calculate the collateral shares that are needed for `borrowPart`,
+    /// taking the current exchange rate into account.
+    /// @param borrowPart The borrow part.
+    /// @return collateralShares The collateral shares.
+    function getCollateralSharesForBorrowPart(uint256 borrowPart)
+        public
+        view
+        returns (uint256 collateralShares)
+    {
+        return _getCollateralSharesForBorrowPart(borrowPart);
+    }
+
+    /// @notice Compute the amount of `mixologist.assetId` from `fraction`
+    /// `fraction` can be `mixologist.accrueInfo.feeFraction` or `mixologist.balanceOf`
+    /// @param fraction The fraction.
+    /// @return amount The amount.
+    function getAmountForAssetFraction(uint256 fraction)
+        public
+        view
+        returns (uint256 amount)
+    {
+        return _getAmountForAssetFraction(fraction);
+    }
+
+    /// @notice Return the equivalent of borrow part in asset amount.
+    /// @param borrowPart The amount of borrow part to convert.
+    /// @return amount The equivalent of borrow part in asset amount.
+    function getAmountForBorrowPart(uint256 borrowPart)
+        public
+        view
+        returns (uint256 amount)
+    {
+        return _getAmountForBorrowPart(borrowPart);
+    }
+
     /// @notice Adds `collateral` from msg.sender to the account `to`.
     /// @param from Account to transfer shares from.
     /// @param to The receiver of the tokens.

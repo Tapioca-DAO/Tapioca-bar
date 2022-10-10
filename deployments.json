@@ -49,6 +49,28 @@
       "name": "wethUsdcMixologist",
       "address": "0x289D0656012140B7e8c9bF11042A2fCb75913Ffe",
       "meta": {}
+    },
+    {
+      "name": "YieldBoxURIBuilder",
+      "address": "aaa",
+      "meta": {}
+    },
+    {
+      "name": "YieldBox",
+      "address": "bbb",
+      "meta": {
+        "constructorArguments": [
+          "a",
+          "b"
+        ],
+        "toVerify": {
+          "address": "bbb",
+          "args": [
+            "a",
+            "b"
+          ]
+        }
+      }
     }
   ]
 }

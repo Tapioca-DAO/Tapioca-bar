@@ -5,8 +5,9 @@ import './bidders/IBidder.sol';
 
 struct Bidder {
     bool isUsdo;
+    bool swapOnExecute;
     uint256 usdoAmount;
-    uint256 collateralAmount;
+    uint256 liquidatedAssetAmount;
     uint256 timestamp; // Timestamp in second of the last bid.
 }
 

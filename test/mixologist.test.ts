@@ -629,13 +629,11 @@ describe('Mixologist test', () => {
             eoa1.address,
         );
         const minCollateralShareRepay =
-            await mixologistHelper.getCollateralSharesForBorrowPart(
-                wethUsdcMixologist.address,
+            await wethUsdcMixologist.getCollateralSharesForBorrowPart(
                 borrowVal.mul(50).div(100000).add(borrowVal),
             );
         const userCollateralShareToRepay =
-            await mixologistHelper.getCollateralSharesForBorrowPart(
-                wethUsdcMixologist.address,
+            await wethUsdcMixologist.getCollateralSharesForBorrowPart(
                 userBorrowPart,
             );
 
@@ -788,8 +786,7 @@ describe('Mixologist test', () => {
             .repay(eoa1.address, eoa1.address, false, userBorrowPart);
 
         const feesAmountInAsset =
-            await mixologistHelper.getAmountForAssetFraction(
-                wethUsdcMixologist.address,
+            await wethUsdcMixologist.getAmountForAssetFraction(
                 (
                     await wethUsdcMixologist.accrueInfo()
                 ).feesEarnedFraction,
@@ -1246,6 +1243,358 @@ describe('Mixologist test', () => {
                 .connect(deployer)
                 .computeAssetAmountToSolvency(deployer.address, 1),
         ).to.be.revertedWith('Mx: module not set');
+    });
+
+    it('should create and test wethUsd0 mixologist', async () => {
+        const {
+            deployer,
+            bar,
+            eoa1,
+            yieldBox,
+            weth,
+            wethAssetId,
+            usdcAssetId,
+            mediumRiskMC,
+            wethUsdcOracle,
+            tapSwapPath,
+            usdc,
+            usd0,
+            __wethUsdcPrice,
+            deployCurveStableToUsdoBidder,
+            multiSwapper,
+            BN,
+            timeTravel,
+        } = await loadFixture(register);
+        //deploy and register USD0
+     
+        const usdoAssetId = await yieldBox.ids(
+            1,
+            usd0.address,
+            ethers.constants.AddressZero,
+            0,
+        );
+
+        //Deploy & set Mixologist
+        const _mxLiquidationModule = await (
+            await ethers.getContractFactory('MXLiquidation')
+        ).deploy();
+        await _mxLiquidationModule.deployed();
+        const _mxLendingBorrowingModule = await (
+            await ethers.getContractFactory('MXLendingBorrowing')
+        ).deploy();
+        await _mxLendingBorrowingModule.deployed();
+
+        const collateralSwapPath = [usd0.address, weth.address];
+
+        const newPrice = __wethUsdcPrice.div(1000000);
+        await wethUsdcOracle.set(newPrice);
+
+        const data = new ethers.utils.AbiCoder().encode(
+            [
+                'address',
+                'address',
+                'address',
+                'address',
+                'uint256',
+                'address',
+                'uint256',
+                'address',
+                'address[]',
+                'address[]',
+            ],
+            [
+                _mxLiquidationModule.address,
+                _mxLendingBorrowingModule.address,
+                bar.address,
+                usd0.address,
+                usdoAssetId,
+                weth.address,
+                wethAssetId,
+                wethUsdcOracle.address,
+                collateralSwapPath,
+                tapSwapPath,
+            ],
+        );
+        await bar.registerMixologist(mediumRiskMC.address, data, true);
+        const wethUsdoMixologist = await ethers.getContractAt(
+            'Mixologist',
+            await yieldBox.clonesOf(
+                mediumRiskMC.address,
+                (await yieldBox.clonesOfCount(mediumRiskMC.address)).sub(1),
+            ),
+        );
+
+        //Deploy & set LiquidationQueue
+        await usd0.setMinterStatus(wethUsdoMixologist.address, true);
+        await usd0.setBurnerStatus(wethUsdoMixologist.address, true);
+
+        const liquidationQueue = await (
+            await ethers.getContractFactory('LiquidationQueue')
+        ).deploy();
+        await liquidationQueue.deployed();
+
+        const feeCollector = new ethers.Wallet(
+            ethers.Wallet.createRandom().privateKey,
+            ethers.provider,
+        );
+
+        const { stableToUsdoBidder } = await deployCurveStableToUsdoBidder(
+            bar,
+            usdc,
+            usd0,
+        );
+
+        const LQ_META = {
+            activationTime: 600, // 10min
+            minBidAmount: ethers.BigNumber.from((1e18).toString()).mul(200), // 200 USDC
+            closeToMinBidAmount: ethers.BigNumber.from((1e18).toString()).mul(
+                202,
+            ),
+            defaultBidAmount: ethers.BigNumber.from((1e18).toString()).mul(400), // 400 USDC
+            feeCollector: feeCollector.address,
+            bidExecutionSwapper: ethers.constants.AddressZero,
+            usdoSwapper: stableToUsdoBidder.address,
+        };
+        const payload = wethUsdoMixologist.interface.encodeFunctionData(
+            'setLiquidationQueue',
+            [liquidationQueue.address, LQ_META],
+        );
+
+        await (
+            await bar.executeMixologistFn(
+                [wethUsdoMixologist.address],
+                [payload],
+            )
+        ).wait();
+
+        //get tokens
+        const wethAmount = ethers.BigNumber.from((1e18).toString()).mul(100);
+        const usdoAmount = ethers.BigNumber.from((1e18).toString()).mul(20000);
+        await usd0.mint(deployer.address, usdoAmount);
+        await weth.connect(eoa1).freeMint(wethAmount);
+
+        //aprove external operators
+        await usd0
+            .connect(deployer)
+            .approve(yieldBox.address, ethers.constants.MaxUint256);
+        await weth
+            .connect(deployer)
+            .approve(yieldBox.address, ethers.constants.MaxUint256);
+        await yieldBox
+            .connect(deployer)
+            .setApprovalForAll(wethUsdoMixologist.address, true);
+
+        await usd0
+            .connect(eoa1)
+            .approve(yieldBox.address, ethers.constants.MaxUint256);
+        await weth
+            .connect(eoa1)
+            .approve(yieldBox.address, ethers.constants.MaxUint256);
+        await yieldBox
+            .connect(eoa1)
+            .setApprovalForAll(wethUsdoMixologist.address, true);
+
+        // We lend Usdo as deployer
+        const usdoLendValue = usdoAmount.div(2);
+        const _valShare = await yieldBox.toShare(
+            usdoAssetId,
+            usdoLendValue,
+            false,
+        );
+        await yieldBox.depositAsset(
+            usdoAssetId,
+            deployer.address,
+            deployer.address,
+            0,
+            _valShare,
+        );
+        await wethUsdoMixologist.addAsset(
+            deployer.address,
+            deployer.address,
+            false,
+            _valShare,
+        );
+        expect(
+            await wethUsdoMixologist.balanceOf(deployer.address),
+        ).to.be.equal(
+            await yieldBox.toShare(usdoAssetId, usdoLendValue, false),
+        );
+
+        //we lend weth collateral
+        const wethDepositAmount = ethers.BigNumber.from((1e18).toString()).mul(
+            1,
+        );
+        await yieldBox
+            .connect(eoa1)
+            .depositAsset(
+                wethAssetId,
+                eoa1.address,
+                eoa1.address,
+                wethDepositAmount,
+                0,
+            );
+        const _wethValShare = await yieldBox
+            .connect(eoa1)
+            .balanceOf(eoa1.address, wethAssetId);
+        await wethUsdoMixologist
+            .connect(eoa1)
+            .addCollateral(eoa1.address, eoa1.address, false, _wethValShare);
+        expect(
+            await wethUsdoMixologist.userCollateralShare(eoa1.address),
+        ).equal(await yieldBox.toShare(wethAssetId, wethDepositAmount, false));
+
+        //borrow
+        const usdoBorrowVal = wethDepositAmount
+            .mul(74)
+            .div(100)
+            .mul(__wethUsdcPrice.div((1e18).toString()));
+
+        await wethUsdoMixologist
+            .connect(eoa1)
+            .borrow(eoa1.address, eoa1.address, usdoBorrowVal);
+        await yieldBox
+            .connect(eoa1)
+            .withdraw(
+                usdoAssetId,
+                eoa1.address,
+                eoa1.address,
+                usdoBorrowVal,
+                0,
+            );
+        const usdoBalanceOfEoa = await usd0.balanceOf(eoa1.address);
+
+        // Can't liquidate
+        const swapData = new ethers.utils.AbiCoder().encode(['uint256'], [1]);
+        await expect(
+            wethUsdoMixologist.liquidate(
+                [eoa1.address],
+                [usdoBorrowVal],
+                multiSwapper.address,
+                swapData,
+                swapData,
+            ),
+        ).to.be.reverted;
+
+        const priceDrop = newPrice.mul(2).div(100);
+        await wethUsdcOracle.set(newPrice.add(priceDrop));
+
+        const lqAssetId = await liquidationQueue.lqAssetId();
+        expect(lqAssetId.eq(usdoAssetId)).to.be.true;
+
+        await usdc.freeMint(ethers.BigNumber.from((1e18).toString()).mul(1000));
+        await usdc.approve(
+            yieldBox.address,
+            ethers.BigNumber.from((1e18).toString()).mul(1000),
+        );
+        await yieldBox.depositAsset(
+            usdcAssetId,
+            deployer.address,
+            deployer.address,
+            ethers.BigNumber.from((1e18).toString()).mul(1000),
+            0,
+        );
+        await yieldBox.setApprovalForAll(liquidationQueue.address, true);
+        await expect(
+            liquidationQueue.bidWithStable(
+                deployer.address,
+                1,
+                usdcAssetId,
+                ethers.BigNumber.from((1e18).toString()).mul(1000),
+                swapData,
+            ),
+        ).to.emit(liquidationQueue, 'Bid');
+        await timeTravel(10_000);
+        await expect(liquidationQueue.activateBid(deployer.address, 1)).to.emit(
+            liquidationQueue,
+            'ActivateBid',
+        );
+
+        await expect(
+            wethUsdoMixologist.liquidate(
+                [eoa1.address],
+                [usdoBorrowVal],
+                multiSwapper.address,
+                swapData,
+                swapData,
+            ),
+        ).to.not.be.reverted;
+    });
+
+    it('should get correct amount from borrow part', async () => {
+        const {
+            deployer,
+            usdc,
+            BN,
+            approveTokensAndSetBarApproval,
+            usdcDepositAndAddCollateral,
+            wethDepositAndAddAsset,
+            wethUsdcMixologist,
+            __wethUsdcPrice,
+            weth,
+            eoa1,
+        } = await loadFixture(register);
+
+        const wethAmount = BN(1e18).mul(1);
+        const usdcAmount = wethAmount
+            .mul(__wethUsdcPrice.mul(2))
+            .div((1e18).toString());
+
+        await usdc.freeMint(usdcAmount);
+        await approveTokensAndSetBarApproval();
+        await usdcDepositAndAddCollateral(usdcAmount);
+
+        await approveTokensAndSetBarApproval(eoa1);
+        await weth.connect(eoa1).freeMint(wethAmount);
+        await wethDepositAndAddAsset(wethAmount, eoa1);
+
+        await wethUsdcMixologist.borrow(
+            deployer.address,
+            deployer.address,
+            wethAmount,
+        );
+
+        const amountFromShares =
+            await wethUsdcMixologist.getAmountForBorrowPart(
+                await wethUsdcMixologist.userBorrowPart(deployer.address),
+            );
+
+        expect(amountFromShares).to.be.approximately(
+            wethAmount,
+            wethAmount.mul(1).div(100),
+        );
+    });
+
+    it('should get correct collateral amount from collateral shares', async () => {
+        const {
+            deployer,
+            usdc,
+            BN,
+            approveTokensAndSetBarApproval,
+            usdcDepositAndAddCollateral,
+            wethUsdcMixologist,
+            __wethUsdcPrice,
+            eoa1,
+        } = await loadFixture(register);
+
+        const wethAmount = BN(1e18).mul(1);
+        const usdcAmount = wethAmount
+            .mul(__wethUsdcPrice.mul(2))
+            .div((1e18).toString());
+
+        await usdc.freeMint(usdcAmount);
+        await approveTokensAndSetBarApproval();
+        await usdcDepositAndAddCollateral(usdcAmount);
+
+        await usdc.connect(eoa1).freeMint(usdcAmount.mul(2));
+        await approveTokensAndSetBarApproval(eoa1);
+        await usdcDepositAndAddCollateral(usdcAmount.mul(2), eoa1);
+
+        const collateralAmount =
+            await wethUsdcMixologist.getCollateralAmountForShare(
+                await wethUsdcMixologist.userCollateralShare(deployer.address),
+            );
+
+        expect(collateralAmount).to.be.equal(usdcAmount);
     });
 
     it('should allow multiple borrowers', async () => {

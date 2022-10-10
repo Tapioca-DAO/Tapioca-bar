@@ -18,7 +18,6 @@ describe('Bidders test', () => {
         expect(savedName).to.eq('USD0 -> WETH (Uniswap V2)');
 
         const { stableToUsdoBidder } = await deployCurveStableToUsdoBidder(
-            wethUsdcMixologist,
             bar,
             usdc,
             usd0,
@@ -40,6 +39,7 @@ describe('Bidders test', () => {
 
         await expect(
             usdoToWethBidder.getInputAmount(
+                wethUsdcMixologist.address,
                 150,
                 1,
                 ethers.utils.toUtf8Bytes(''),
@@ -47,7 +47,6 @@ describe('Bidders test', () => {
         ).to.be.revertedWith('token not valid');
 
         const { stableToUsdoBidder } = await deployCurveStableToUsdoBidder(
-            wethUsdcMixologist,
             bar,
             usdc,
             usd0,
@@ -70,12 +69,7 @@ describe('Bidders test', () => {
         ).to.emit(usdoToWethBidder, 'UniV2SwapperUpdated');
 
         const { stableToUsdoBidder, curveSwapper } =
-            await deployCurveStableToUsdoBidder(
-                wethUsdcMixologist,
-                bar,
-                usdc,
-                usd0,
-            );
+            await deployCurveStableToUsdoBidder(bar, usdc, usd0);
 
         await expect(
             stableToUsdoBidder.setCurveSwapper(curveSwapper.address),
@@ -94,14 +88,18 @@ describe('Bidders test', () => {
         } = await loadFixture(register);
 
         const { stableToUsdoBidder } = await deployCurveStableToUsdoBidder(
-            wethUsdcMixologist,
             bar,
             usdc,
             usd0,
         );
 
         await expect(
-            usdoToWethBidder.swap(1, 1, ethers.utils.toUtf8Bytes('')),
+            usdoToWethBidder.swap(
+                wethUsdcMixologist.address,
+                1,
+                1,
+                ethers.utils.toUtf8Bytes(''),
+            ),
         ).to.be.revertedWith('token not valid');
 
         const usdoAssetId = await yieldBox.ids(
@@ -113,6 +111,7 @@ describe('Bidders test', () => {
 
         await expect(
             stableToUsdoBidder.swap(
+                wethUsdcMixologist.address,
                 usdoAssetId,
                 1,
                 ethers.utils.toUtf8Bytes(''),
@@ -120,7 +119,12 @@ describe('Bidders test', () => {
         ).to.be.revertedWith('only LQ');
 
         await expect(
-            usdoToWethBidder.swap(usdoAssetId, 1, ethers.utils.toUtf8Bytes('')),
+            usdoToWethBidder.swap(
+                wethUsdcMixologist.address,
+                usdoAssetId,
+                1,
+                ethers.utils.toUtf8Bytes(''),
+            ),
         ).to.be.revertedWith('only LQ');
     });
 
@@ -135,7 +139,6 @@ describe('Bidders test', () => {
         } = await loadFixture(register);
 
         const { stableToUsdoBidder } = await deployCurveStableToUsdoBidder(
-            wethUsdcMixologist,
             bar,
             usdc,
             usd0,
@@ -157,6 +160,7 @@ describe('Bidders test', () => {
 
         await expect(
             await stableToUsdoBidder.getInputAmount(
+                wethUsdcMixologist.address,
                 usdoAssetId,
                 100,
                 ethers.utils.toUtf8Bytes(''),
@@ -165,6 +169,7 @@ describe('Bidders test', () => {
 
         await expect(
             await stableToUsdoBidder.getInputAmount(
+                wethUsdcMixologist.address,
                 usdcAssetId,
                 100,
                 ethers.utils.toUtf8Bytes(''),
