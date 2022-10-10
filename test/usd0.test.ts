@@ -46,20 +46,12 @@ describe('USD0', () => {
     });
 
     it('should mint and burn', async () => {
-        const { registerUsd0Contract, deployer, BN } = await loadFixture(
+        const { registerUsd0Contract, deployer, BN, eoas } = await loadFixture(
             register,
         );
         const { usd0 } = await registerUsd0Contract('1');
-        const normalUser = new ethers.Wallet(
-            ethers.Wallet.createRandom().privateKey,
-            ethers.provider,
-        );
+        const normalUser = eoas[1];
 
-        await deployer.sendTransaction({
-            to: normalUser.address,
-            // Convert currency unit from ether to wei
-            value: ethers.utils.parseEther('1'),
-        });
 
         const amount = BN(1000).mul((1e18).toString());
 

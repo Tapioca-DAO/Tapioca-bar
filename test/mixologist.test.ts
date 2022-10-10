@@ -1261,6 +1261,7 @@ describe('Mixologist test', () => {
             approveTokensAndSetBarApproval,
             wethDepositAndAddAsset,
             usdcDepositAndAddCollateral,
+            eoas,
         } = await loadFixture(register);
 
         const assetId = await wethUsdcMixologist.assetId();
@@ -1282,19 +1283,6 @@ describe('Mixologist test', () => {
         ).to.be.equal(
             await yieldBox.toShare(assetId, wethMintVal.mul(10), false),
         );
-
-        const eoas = [];
-        for (var i = 0; i < 5; i++) {
-            const eoa = new ethers.Wallet(
-                ethers.Wallet.createRandom().privateKey,
-                ethers.provider,
-            );
-            await deployer.sendTransaction({
-                to: eoa.address,
-                value: ethers.utils.parseEther('1'),
-            });
-            eoas.push(eoa);
-        }
 
         for (var i = 0; i < eoas.length; i++) {
             const eoa = eoas[i];

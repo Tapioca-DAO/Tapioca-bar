@@ -50,7 +50,7 @@ const config: HardhatUserConfig & { dodoc?: any } = {
             hardfork: 'merge',
             allowUnlimitedContractSize: true,
             accounts: {
-                count: 5,
+                count: 10,
             },
             tags: ['testnet'],
         },

@@ -11,16 +11,6 @@ import '../BeachBar.sol';
 
 // solhint-disable max-line-length
 
-//TODO:
-// - check contract
-// - add fees into separate variable
-// - retian initial borrowed amount
-// - add param to withdraw fees
-// - account for borrow opening fee + stability accrued.. burn only the original amount and transfer the rest to the contract for withdrawal
-// - add test with repaying less
-// - add test with multiple borrows and full repayment + withdraw fees
-// - add test with multiple borrows and partial repayment + withdraw fees
-
 contract MinterMixologist is BoringOwnable {
     using RebaseLibrary for Rebase;
     using BoringERC20 for IERC20;
@@ -109,6 +99,8 @@ contract MinterMixologist is BoringOwnable {
     event LogBorrowCapUpdated(uint256 _oldVal, uint256 _newVal);
     event LogStabilityFee(uint256 _oldFee, uint256 _newFee);
     event LogBorrowingFee(uint256 _oldVal, uint256 _newVal);
+    event LogCollateralSwapPath();
+    event LogTapSwapPath();
 
     // ***************** //
     // *** CONSTANTS *** //
@@ -219,15 +211,6 @@ contract MinterMixologist is BoringOwnable {
         _accrueInfo.lastAccrued = uint64(block.timestamp);
 
         Rebase memory _totalBorrow = totalBorrow;
-        if (_totalBorrow.base == 0) {
-            // If there are no borrows, reset the interest rate
-            if (_accrueInfo.stabilityFee != STABILITY_FEE) {
-                _accrueInfo.stabilityFee = STABILITY_FEE;
-                emit LogAccrue(0, 0, STABILITY_FEE);
-            }
-            accrueInfo = _accrueInfo;
-            return;
-        }
 
         uint256 extraAmount = 0;
         uint256 feeFraction = 0;
@@ -315,15 +298,17 @@ contract MinterMixologist is BoringOwnable {
     /// @notice Withdraw the fees accumulated in `accrueInfo.feesEarned` to the balance of `feeTo`.
     function withdrawFeesEarned(uint256 amount) public {
         accrue();
-        address _feeTo = beachBar.feeTo();
-        uint256 _feesEarned = accrueInfo.feesEarned;
+
         require(amount > 0, 'Mx: Amount not valid');
-        require(_feesEarned >= amount, 'Mx: Amount too big');
+        require(accrueInfo.feesEarned >= amount, 'Mx: Amount too big');
+
         uint256 balance = asset.balanceOf(address(this));
         require(balance >= amount, 'Mx: Not enough tokens');
-        balanceOf[_feeTo] += amount;
+
+        balanceOf[beachBar.feeTo()] += amount;
         accrueInfo.feesEarned -= uint128(amount);
-        emit LogWithdrawFees(_feeTo, amount);
+
+        emit LogWithdrawFees(beachBar.feeTo(), amount);
     }
 
     /// @notice Withdraw the balance of `feeTo`, swap asset into TAP and deposit it to yieldBox of `feeTo`
@@ -407,12 +392,14 @@ contract MinterMixologist is BoringOwnable {
         onlyOwner
     {
         collateralSwapPath = _collateralSwapPath;
+        emit LogCollateralSwapPath();
     }
 
     /// @notice Used to set the swap path of Asset -> TAP
     /// @param _tapSwapPath The Uniswap path .
     function setTapSwapPath(address[] calldata _tapSwapPath) public onlyOwner {
         tapSwapPath = _tapSwapPath;
+        emit LogTapSwapPath();
     }
 
     /// @notice sets max borrowable amount
@@ -447,7 +434,6 @@ contract MinterMixologist is BoringOwnable {
         uint256 borrowPart = userBorrowPart[user];
         if (borrowPart == 0) return true;
         uint256 collateralShare = userCollateralShare[user];
-        if (collateralShare == 0) return false;
 
         Rebase memory _totalBorrow = totalBorrow;
 

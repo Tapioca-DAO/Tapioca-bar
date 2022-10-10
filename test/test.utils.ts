@@ -579,6 +579,8 @@ export async function register(staging?: boolean) {
      * INITIAL SETUP
      */
     const deployer = (await ethers.getSigners())[0];
+    const eoas = await ethers.getSigners();
+    eoas.shift(); //remove deployer
 
     log('Deploying WETH9Mock', staging);
     // Deploy WethUSDC mock oracle
@@ -746,6 +748,7 @@ export async function register(staging?: boolean) {
         __wethUsdcPrice,
         __usd0WethPrice,
         deployer,
+        eoas,
         usd0,
         usdc,
         usdcAssetId,
