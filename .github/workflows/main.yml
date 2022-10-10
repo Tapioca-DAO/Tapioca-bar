@@ -11,4 +11,7 @@ jobs:
         with:
           node-version: '16.x'
       - run: npm install
+      - name: Build tapioca-sdk
+        working-directory: ./tapioca-sdk
+        run: npm install
       - run: npm run test
