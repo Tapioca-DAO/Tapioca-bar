@@ -13,5 +13,7 @@ jobs:
       - run: npm install
       - name: Build tapioca-sdk
         working-directory: ./tapioca-sdk
-        run: npm install
+        run: |
+          npm install
+          yarn build
       - run: npm run test
