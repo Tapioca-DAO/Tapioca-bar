@@ -323,6 +323,7 @@ describe('MinterMixologist test', () => {
             deployer,
             eoa1,
             multiSwapper,
+            timeTravel,
             __wethUsdcPrice,
         } = await loadFixture(register);
 
@@ -427,6 +428,8 @@ describe('MinterMixologist test', () => {
                 0,
             );
 
+        timeTravel(100 * 86400);
+
         let userBorrowedAmount = await wethMinterMixologist.userBorrowPart(
             eoa1.address,
         );
@@ -440,35 +443,10 @@ describe('MinterMixologist test', () => {
         );
         expect(userBorrowedAmount.gt(0)).to.be.true;
 
-        //deposit fees to yieldBox
         await expect(
-            wethMinterMixologist.depositFeesToYieldBox(
-                multiSwapper.address,
-                {
-                    minAssetAmount: ethers.BigNumber.from((1e18).toString()),
-                },
-                userBorrowedAmount,
-            ),
-        ).to.be.revertedWith('Mx: Amount too big');
-
-        await expect(
-            wethMinterMixologist.depositFeesToYieldBox(
-                multiSwapper.address,
-                {
-                    minAssetAmount: ethers.BigNumber.from((1e18).toString()),
-                },
-                repaymentAmount.mul(2),
-            ),
-        ).to.be.revertedWith('Mx: Not enough tokens');
-
-        await expect(
-            wethMinterMixologist.depositFeesToYieldBox(
-                multiSwapper.address,
-                {
-                    minAssetAmount: ethers.BigNumber.from((1e18).toString()),
-                },
-                repaymentAmount,
-            ),
+            wethMinterMixologist.depositFeesToYieldBox(multiSwapper.address, {
+                minAssetAmount: ethers.BigNumber.from((1e10).toString()),
+            }),
         ).to.emit(wethMinterMixologist, 'LogYieldBoxFeesDeposit');
 
         yieldBoxBalanceOfFeeVeTap = await yieldBox.toAmount(
@@ -613,15 +591,10 @@ describe('MinterMixologist test', () => {
         expect(userBorrowedAmount.eq(0)).to.be.true;
 
         //deposit fees to yieldBox
-        const accruedFees = (await wethMinterMixologist.accrueInfo())[2];
         await expect(
-            wethMinterMixologist.depositFeesToYieldBox(
-                multiSwapper.address,
-                {
-                    minAssetAmount: ethers.BigNumber.from((1e18).toString()),
-                },
-                accruedFees,
-            ),
+            wethMinterMixologist.depositFeesToYieldBox(multiSwapper.address, {
+                minAssetAmount: ethers.BigNumber.from((1e10).toString()),
+            }),
         ).to.emit(wethMinterMixologist, 'LogYieldBoxFeesDeposit');
 
         yieldBoxBalanceOfFeeVeTap = await yieldBox.toAmount(
@@ -651,6 +624,8 @@ describe('MinterMixologist test', () => {
             bar,
             eoas,
         } = await loadFixture(register);
+
+        await wethMinterMixologist.updateBorrowingFee(5e2); //0.5%
 
         const wethMintVal = ethers.BigNumber.from((1e18).toString()).mul(10);
         let usdoBorrowVal = wethMintVal
@@ -704,7 +679,7 @@ describe('MinterMixologist test', () => {
             const userBorrowPart = await wethMinterMixologist.userBorrowPart(
                 eoa.address,
             );
-            expect(userBorrowPart.lte(usdoBorrowVal)).to.be.true;
+            expect(userBorrowPart.gte(usdoBorrowVal)).to.be.true; //slightly bigger because of the opening borrow fee
         }
 
         //----------------
@@ -766,7 +741,6 @@ describe('MinterMixologist test', () => {
         }
 
         //----------------
-        const feesAmount = (await wethMinterMixologist.accrueInfo())[2];
         const yieldBoxBalanceOfFeeVeTapBefore = await yieldBox.toAmount(
             await bar.tapAssetId(),
             await yieldBox.balanceOf(
@@ -779,13 +753,9 @@ describe('MinterMixologist test', () => {
 
         //deposit fees to yieldBox
         await expect(
-            wethMinterMixologist.depositFeesToYieldBox(
-                multiSwapper.address,
-                {
-                    minAssetAmount: ethers.BigNumber.from((1e18).toString()),
-                },
-                feesAmount,
-            ),
+            wethMinterMixologist.depositFeesToYieldBox(multiSwapper.address, {
+                minAssetAmount: ethers.BigNumber.from((1e18).toString()),
+            }),
         ).to.emit(wethMinterMixologist, 'LogYieldBoxFeesDeposit');
 
         const yieldBoxBalanceOfFeeVeTap = await yieldBox.toAmount(
@@ -813,6 +783,8 @@ describe('MinterMixologist test', () => {
             bar,
             eoas,
         } = await loadFixture(register);
+
+        await wethMinterMixologist.updateBorrowingFee(5e2); //0.5%
 
         const wethMintVal = ethers.BigNumber.from((1e18).toString()).mul(10);
         let usdoBorrowVal = wethMintVal
@@ -866,7 +838,7 @@ describe('MinterMixologist test', () => {
             const userBorrowPart = await wethMinterMixologist.userBorrowPart(
                 eoa.address,
             );
-            expect(userBorrowPart.lte(usdoBorrowVal)).to.be.true;
+            expect(userBorrowPart.gte(usdoBorrowVal)).to.be.true; //slightly bigger because of the opening borrow fee
         }
 
         //----------------
@@ -909,7 +881,6 @@ describe('MinterMixologist test', () => {
         }
 
         //----------------
-        let feesAmount = (await wethMinterMixologist.accrueInfo())[2];
         const yieldBoxBalanceOfFeeVeTapBefore = await yieldBox.toAmount(
             await bar.tapAssetId(),
             await yieldBox.balanceOf(
@@ -922,13 +893,9 @@ describe('MinterMixologist test', () => {
 
         //deposit fees to yieldBox
         await expect(
-            wethMinterMixologist.depositFeesToYieldBox(
-                multiSwapper.address,
-                {
-                    minAssetAmount: ethers.BigNumber.from((1e18).toString()),
-                },
-                feesAmount,
-            ),
+            wethMinterMixologist.depositFeesToYieldBox(multiSwapper.address, {
+                minAssetAmount: ethers.BigNumber.from((1e18).toString()),
+            }),
         ).to.emit(wethMinterMixologist, 'LogYieldBoxFeesDeposit');
 
         const yieldBoxBalanceOfFeeVeTap = await yieldBox.toAmount(
@@ -965,15 +932,11 @@ describe('MinterMixologist test', () => {
                 .repay(eoa.address, eoa.address, userBorrowedAmount);
         }
 
-        feesAmount = (await wethMinterMixologist.accrueInfo())[2];
+        const balance = await usd0.balanceOf(wethMinterMixologist.address);
         await expect(
-            wethMinterMixologist.depositFeesToYieldBox(
-                multiSwapper.address,
-                {
-                    minAssetAmount: ethers.BigNumber.from((1e18).toString()),
-                },
-                feesAmount,
-            ),
+            wethMinterMixologist.depositFeesToYieldBox(multiSwapper.address, {
+                minAssetAmount: ethers.BigNumber.from((1e18).toString()),
+            }),
         ).to.emit(wethMinterMixologist, 'LogYieldBoxFeesDeposit');
 
         const yieldBoxFinalBalanceOfFeeVeTap = await yieldBox.toAmount(
@@ -1001,6 +964,8 @@ describe('MinterMixologist test', () => {
             timeTravel,
             __wethUsdcPrice,
         } = await loadFixture(register);
+
+        await wethMinterMixologist.updateBorrowingFee(5e2); //0.5%
 
         await weth.approve(yieldBox.address, ethers.constants.MaxUint256);
         await yieldBox.setApprovalForAll(wethMinterMixologist.address, true);
@@ -1052,21 +1017,8 @@ describe('MinterMixologist test', () => {
             eoa1.address,
         );
 
-        expect(userBorrowPart.lte(usdoBorrowVal.mul(3))).to.be.true;
-        expect(userBorrowPart.gte(usdoBorrowVal.mul(2))).to.be.true;
-
-        let feesAmount = (await wethMinterMixologist.accrueInfo())[2];
-        expect(feesAmount.gt(0)).to.be.true;
-
-        await expect(
-            wethMinterMixologist.depositFeesToYieldBox(
-                multiSwapper.address,
-                {
-                    minAssetAmount: ethers.BigNumber.from((1e18).toString()),
-                },
-                feesAmount,
-            ),
-        ).to.be.revertedWith('Mx: Not enough tokens');
+        expect(userBorrowPart.gte(usdoBorrowVal.mul(3))).to.be.true;
+        expect(userBorrowPart.lte(usdoBorrowVal.mul(4))).to.be.true;
 
         timeTravel(100 * 86400);
 
@@ -1090,16 +1042,9 @@ describe('MinterMixologist test', () => {
         );
         expect(userBorrowPart.eq(0)).to.be.true;
 
-        feesAmount = (await wethMinterMixologist.accrueInfo())[2];
-        expect(feesAmount.gt(0)).to.be.true;
-
-        await wethMinterMixologist.depositFeesToYieldBox(
-            multiSwapper.address,
-            {
-                minAssetAmount: 1,
-            },
-            feesAmount,
-        );
+        await wethMinterMixologist.depositFeesToYieldBox(multiSwapper.address, {
+            minAssetAmount: 1,
+        });
 
         const feeVeTap = await bar.feeVeTap();
         const yieldBoxBalanceOfFeeVeTapShare = await yieldBox.balanceOf(
@@ -1112,7 +1057,6 @@ describe('MinterMixologist test', () => {
             false,
         );
 
-        expect(yieldBoxBalanceOfFeeVeTapAmount.lte(feesAmount)).to.be.true;
         expect(yieldBoxBalanceOfFeeVeTapAmount.gt(0)).to.be.true;
     });
 
@@ -1135,13 +1079,7 @@ describe('MinterMixologist test', () => {
         ).to.be.revertedWith('Mx: bad pair');
     });
 
-    it('should allow withdrawing fees with invalid amount', async () => {
-        const { wethMinterMixologist } = await loadFixture(register);
-
-        await expect(
-            wethMinterMixologist.withdrawFeesEarned(0),
-        ).to.be.revertedWith('Mx: Amount not valid');
-    });
+    
     it('should not allow depositing fees with invalid swapper', async () => {
         const { wethMinterMixologist, multiSwapper } = await loadFixture(
             register,
@@ -1151,15 +1089,13 @@ describe('MinterMixologist test', () => {
             wethMinterMixologist.depositFeesToYieldBox(
                 ethers.constants.AddressZero,
                 { minAssetAmount: 1 },
-                10,
             ),
         ).to.be.revertedWith('Mx: Invalid swapper');
+
         await expect(
-            wethMinterMixologist.depositFeesToYieldBox(
-                multiSwapper.address,
-                { minAssetAmount: 1 },
-                10,
-            ),
+            wethMinterMixologist.depositFeesToYieldBox(multiSwapper.address, {
+                minAssetAmount: 1,
+            }),
         ).to.not.emit(wethMinterMixologist, 'LogYieldBoxFeesDeposit');
     });
 
@@ -1179,8 +1115,16 @@ describe('MinterMixologist test', () => {
             .reverted;
         await expect(wethMinterMixologist.connect(eoa1).updateStabilityFee(100))
             .to.be.reverted;
+        await expect(
+            wethMinterMixologist.updateStabilityFee(
+                ethers.utils.parseEther('1'),
+            ),
+        ).to.be.revertedWith('Mx: value not valid');
         await expect(wethMinterMixologist.connect(eoa1).updateBorrowingFee(100))
             .to.be.reverted;
+        await expect(
+            wethMinterMixologist.updateBorrowingFee(1e5),
+        ).to.be.revertedWith('Mx: value not valid');
 
         await expect(
             wethMinterMixologist.setCollateralSwapPath(collateralSwapPath),

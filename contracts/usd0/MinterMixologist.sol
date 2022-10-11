@@ -9,7 +9,21 @@ import '../../yieldbox/contracts/YieldBox.sol';
 import '../mixologist/interfaces/IOracle.sol';
 import '../BeachBar.sol';
 
+
 // solhint-disable max-line-length
+/*
+
+__/\\\\\\\\\\\\\\\_____/\\\\\\\\\_____/\\\\\\\\\\\\\____/\\\\\\\\\\\_______/\\\\\_____________/\\\\\\\\\_____/\\\\\\\\\____        
+ _\///////\\\/////____/\\\\\\\\\\\\\__\/\\\/////////\\\_\/////\\\///______/\\\///\\\________/\\\////////____/\\\\\\\\\\\\\__       
+  _______\/\\\________/\\\/////////\\\_\/\\\_______\/\\\_____\/\\\_______/\\\/__\///\\\____/\\\/____________/\\\/////////\\\_      
+   _______\/\\\_______\/\\\_______\/\\\_\/\\\\\\\\\\\\\/______\/\\\______/\\\______\//\\\__/\\\_____________\/\\\_______\/\\\_     
+    _______\/\\\_______\/\\\\\\\\\\\\\\\_\/\\\/////////________\/\\\_____\/\\\_______\/\\\_\/\\\_____________\/\\\\\\\\\\\\\\\_    
+     _______\/\\\_______\/\\\/////////\\\_\/\\\_________________\/\\\_____\//\\\______/\\\__\//\\\____________\/\\\/////////\\\_   
+      _______\/\\\_______\/\\\_______\/\\\_\/\\\_________________\/\\\______\///\\\__/\\\_____\///\\\__________\/\\\_______\/\\\_  
+       _______\/\\\_______\/\\\_______\/\\\_\/\\\______________/\\\\\\\\\\\____\///\\\\\/________\////\\\\\\\\\_\/\\\_______\/\\\_ 
+        _______\///________\///________\///__\///______________\///////////_______\/////_____________\/////////__\///________\///__
+
+*/
 
 contract MinterMixologist is BoringOwnable {
     using RebaseLibrary for Rebase;
@@ -21,7 +35,6 @@ contract MinterMixologist is BoringOwnable {
     struct AccrueInfo {
         uint64 stabilityFee;
         uint64 lastAccrued;
-        uint128 feesEarned;
     }
     AccrueInfo public accrueInfo;
 
@@ -42,7 +55,6 @@ contract MinterMixologist is BoringOwnable {
     mapping(address => uint256) public userCollateralShare;
     // userAssetFraction is called balanceOf for ERC20 compatibility (it's in ERC20.sol)
 
-    mapping(address => uint256) private userOpeningFeesAmount;
     mapping(address => uint256) public userBorrowPart;
 
     // map of operator approval
@@ -65,7 +77,7 @@ contract MinterMixologist is BoringOwnable {
     // *** EVENTS *** //
     // ************** //
     event LogExchangeRate(uint256 rate);
-    event LogAccrue(uint256 accruedAmount, uint256 feeFraction, uint64 rate);
+    event LogAccrue(uint256 accruedAmount, uint64 rate);
     event LogAddCollateral(
         address indexed from,
         address indexed to,
@@ -105,21 +117,20 @@ contract MinterMixologist is BoringOwnable {
     // ***************** //
     // *** CONSTANTS *** //
     // ***************** //
-    uint256 internal constant CLOSED_COLLATERIZATION_RATE = 75000; // 75%
-    uint256 private constant COLLATERIZATION_RATE_PRECISION = 1e5; // Must be less than EXCHANGE_RATE_PRECISION (due to optimization in math)
     uint256 private constant EXCHANGE_RATE_PRECISION = 1e18;
-    uint64 private constant STABILITY_FEE = 317097920; // approx 1% APR
-
-    uint256 internal constant LIQUIDATION_MULTIPLIER = 112000; // add 12%
+    uint256 private constant COLLATERIZATION_RATE_PRECISION = 1e5; // Must be less than EXCHANGE_RATE_PRECISION (due to optimization in math)
     uint256 internal constant LIQUIDATION_MULTIPLIER_PRECISION = 1e5;
-
-    // Fees
-    uint256 internal constant CALLER_FEE = 1000; // 1%
-    uint256 internal constant CALLER_FEE_DIVISOR = 1e5;
-    uint256 private constant PROTOCOL_FEE = 10000; // 10%
-    uint256 private constant PROTOCOL_FEE_DIVISOR = 1e5;
-    uint256 private constant DEFAULT_BORROW_OPENING_FEE = 0; // 50=0.05%
     uint256 private constant BORROW_OPENING_FEE_PRECISION = 1e5;
+    uint256 private constant PROTOCOL_FEE_DIVISOR = 1e5;
+    uint256 internal constant CALLER_FEE_DIVISOR = 1e5;
+
+    uint256 internal constant CLOSED_COLLATERIZATION_RATE = 75000; // 75%
+    uint256 internal constant LIQUIDATION_MULTIPLIER = 112000; // add 12%
+    uint256 internal constant CALLER_FEE = 90000; // 90%
+    uint256 private constant PROTOCOL_FEE = 10000; // 10%
+
+    uint256 private constant MAX_BORROWING_FEE = 8e4; //at 80% for testing; TBD
+    uint256 private constant MAX_STABILITY_FEE = 8e17; //at 80% for testing; TBD
 
     // ************* //
     // *** METHODS *** //
@@ -156,8 +167,7 @@ contract MinterMixologist is BoringOwnable {
         collateralId = _collateralId;
         oracle = _oracle;
 
-        accrueInfo.stabilityFee = uint64(STABILITY_FEE); // 1% APR, with 1e18 being 100%
-        borrowingFee = DEFAULT_BORROW_OPENING_FEE;
+        accrueInfo.stabilityFee = 317097920; // aprox 1% APR, with 1e18 being 100%
 
         updateExchangeRate();
 
@@ -213,7 +223,6 @@ contract MinterMixologist is BoringOwnable {
         Rebase memory _totalBorrow = totalBorrow;
 
         uint256 extraAmount = 0;
-        uint256 feeFraction = 0;
 
         // Calculate fees
         extraAmount =
@@ -223,13 +232,10 @@ contract MinterMixologist is BoringOwnable {
             1e18;
         _totalBorrow.elastic += uint128(extraAmount);
 
-        uint256 feeAmount = (extraAmount * PROTOCOL_FEE) / PROTOCOL_FEE_DIVISOR; // % of interest paid goes to fee
-        _accrueInfo.feesEarned += uint128(feeAmount);
-
         totalBorrow = _totalBorrow;
         accrueInfo = _accrueInfo;
 
-        emit LogAccrue(extraAmount, feeFraction, _accrueInfo.stabilityFee);
+        emit LogAccrue(extraAmount, _accrueInfo.stabilityFee);
     }
 
     /// @notice Sender borrows `amount` and transfers it to `to`.
@@ -295,32 +301,18 @@ contract MinterMixologist is BoringOwnable {
         _removeCollateral(from, to, share);
     }
 
-    /// @notice Withdraw the fees accumulated in `accrueInfo.feesEarned` to the balance of `feeTo`.
-    function withdrawFeesEarned(uint256 amount) public {
-        accrue();
-
-        require(amount > 0, 'Mx: Amount not valid');
-        require(accrueInfo.feesEarned >= amount, 'Mx: Amount too big');
-
-        uint256 balance = asset.balanceOf(address(this));
-        require(balance >= amount, 'Mx: Not enough tokens');
-
-        balanceOf[beachBar.feeTo()] += amount;
-        accrueInfo.feesEarned -= uint128(amount);
-
-        emit LogWithdrawFees(beachBar.feeTo(), amount);
-    }
-
     /// @notice Withdraw the balance of `feeTo`, swap asset into TAP and deposit it to yieldBox of `feeTo`
     function depositFeesToYieldBox(
         MultiSwapper swapper,
-        SwapData calldata swapData,
-        uint256 amount
+        SwapData calldata swapData
     ) public {
-        if (accrueInfo.feesEarned > 0) {
-            withdrawFeesEarned(amount);
-        }
         require(beachBar.swappers(swapper), 'Mx: Invalid swapper');
+
+        uint256 balance = asset.balanceOf(address(this));
+        balanceOf[beachBar.feeTo()] += balance;
+
+        emit LogWithdrawFees(beachBar.feeTo(), balance);
+
         address _feeTo = beachBar.feeTo();
         address _feeVeTap = beachBar.feeVeTap();
 
@@ -411,6 +403,7 @@ contract MinterMixologist is BoringOwnable {
     /// @notice Updates the stability fee
     /// @param _stabilityFee the new value
     function updateStabilityFee(uint64 _stabilityFee) external onlyOwner {
+        require(_stabilityFee <= MAX_STABILITY_FEE, 'Mx: value not valid');
         emit LogStabilityFee(accrueInfo.stabilityFee, _stabilityFee);
         accrueInfo.stabilityFee = _stabilityFee;
     }
@@ -418,6 +411,7 @@ contract MinterMixologist is BoringOwnable {
     /// @notice Updates the borrowing fee
     /// @param _borrowingFee the new value
     function updateBorrowingFee(uint256 _borrowingFee) external onlyOwner {
+        require(_borrowingFee <= MAX_BORROWING_FEE, 'Mx: value not valid');
         emit LogBorrowingFee(borrowingFee, _borrowingFee);
         borrowingFee = _borrowingFee;
     }
@@ -544,7 +538,12 @@ contract MinterMixologist is BoringOwnable {
         uint256 returnedShare = balanceAfter - balanceBefore;
         uint256 extraShare = returnedShare - allBorrowShare;
         uint256 feeShare = (extraShare * PROTOCOL_FEE) / PROTOCOL_FEE_DIVISOR; // 10% of profit goes to fee.
-        uint256 callerShare = (extraShare * CALLER_FEE) / CALLER_FEE_DIVISOR; //  1%  of profit goes to caller.
+        uint256 callerShare = (extraShare * CALLER_FEE) / CALLER_FEE_DIVISOR; //  90%  of profit goes to caller.
+
+        require(
+            feeShare + callerShare == extraShare,
+            'Mx: fee values not valid'
+        );
 
         yieldBox.transfer(address(this), beachBar.feeTo(), assetId, feeShare);
         yieldBox.transfer(address(this), msg.sender, assetId, callerShare);
@@ -597,12 +596,7 @@ contract MinterMixologist is BoringOwnable {
 
         userBorrowPart[to] -= part;
 
-        uint256 toWithdraw = userOpeningFeesAmount[from] >= part
-            ? part
-            : userOpeningFeesAmount[from];
-        userOpeningFeesAmount[from] -= toWithdraw;
-
-        toWithdraw += (amount - part); //acrrued
+        uint256 toWithdraw = (amount - part); //acrrued
         uint256 toBurn = amount - toWithdraw;
 
         yieldBox.withdraw(assetId, from, address(this), amount, 0);
@@ -630,7 +624,6 @@ contract MinterMixologist is BoringOwnable {
             'Mx: borrow cap reached'
         );
 
-        userOpeningFeesAmount[from] += feeAmount;
         userBorrowPart[from] += part;
 
         //mint USD0
@@ -639,9 +632,6 @@ contract MinterMixologist is BoringOwnable {
         //deposit borrowed amount to user
         asset.approve(address(yieldBox), amount);
         yieldBox.depositAsset(assetId, address(this), to, amount, 0);
-
-        //accrue opening fee
-        accrueInfo.feesEarned += uint128(feeAmount);
 
         share = yieldBox.toShare(assetId, amount, false);
 

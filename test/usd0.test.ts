@@ -10,9 +10,11 @@ describe('USD0', () => {
         const { usd0 } = await registerUsd0Contract('1');
 
         const signerIsAllowedToMint = await usd0.allowedMinter(
+            1,
             deployer.address,
         );
         const signerIsAllowedToBurn = await usd0.allowedBurner(
+            1,
             deployer.address,
         );
         expect(signerIsAllowedToMint).to.be.true;
@@ -30,18 +32,18 @@ describe('USD0', () => {
             ethers.provider,
         );
 
-        let minterStatus = await usd0.allowedMinter(minter.address);
+        let minterStatus = await usd0.allowedMinter(1, minter.address);
         expect(minterStatus).to.be.false;
 
         await usd0.setMinterStatus(minter.address, true);
-        minterStatus = await usd0.allowedMinter(minter.address);
+        minterStatus = await usd0.allowedMinter(1, minter.address);
         expect(minterStatus).to.be.true;
 
-        let burnerStatus = await usd0.allowedBurner(minter.address);
+        let burnerStatus = await usd0.allowedBurner(1, minter.address);
         expect(burnerStatus).to.be.false;
 
         await usd0.setBurnerStatus(minter.address, true);
-        burnerStatus = await usd0.allowedBurner(minter.address);
+        burnerStatus = await usd0.allowedBurner(1, minter.address);
         expect(burnerStatus).to.be.true;
     });
 
@@ -51,7 +53,6 @@ describe('USD0', () => {
         );
         const { usd0 } = await registerUsd0Contract('1');
         const normalUser = eoas[1];
-
 
         const amount = BN(1000).mul((1e18).toString());
 
