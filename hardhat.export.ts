@@ -54,24 +54,9 @@ const config: HardhatUserConfig & { dodoc?: any } = {
             },
             tags: ['testnet'],
         },
-        rinkeby: {
-            gasMultiplier: 2,
-            url:
-                process.env.RINKEBY ??
-                'https://rinkeby.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161',
-            chainId: 4,
-            accounts:
-                process.env.PRIVATE_KEY !== undefined
-                    ? [process.env.PRIVATE_KEY]
-                    : [],
-            tags: ['testnet'],
-            live: true,
-        },
         goerli: {
-            gasMultiplier: 10,
-            url:
-                process.env.GOERLI ??
-                'https://eth-goerli.g.alchemy.com/v2/<api_key>',
+            gasMultiplier: 2,
+            url: process.env.GOERLI ?? 'https://rpc.ankr.com/eth_goerli',
             chainId: 5,
             accounts:
                 process.env.PRIVATE_KEY !== undefined
