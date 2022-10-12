@@ -719,11 +719,6 @@
   "resolved" "https://registry.npmjs.org/@nomicfoundation/hardhat-toolbox/-/hardhat-toolbox-1.0.2.tgz"
   "version" "1.0.2"
 
-"@nomicfoundation/solidity-analyzer-darwin-arm64@0.0.3":
-  "integrity" "sha512-W+bIiNiZmiy+MTYFZn3nwjyPUO6wfWJ0lnXx2zZrM8xExKObMrhCh50yy8pQING24mHfpPFCn89wEB/iG7vZDw=="
-  "resolved" "https://registry.npmjs.org/@nomicfoundation/solidity-analyzer-darwin-arm64/-/solidity-analyzer-darwin-arm64-0.0.3.tgz"
-  "version" "0.0.3"
-
 "@nomicfoundation/solidity-analyzer-darwin-x64@0.0.3":
   "integrity" "sha512-HuJd1K+2MgmFIYEpx46uzwEFjvzKAI765mmoMxy4K+Aqq1p+q7hHRlsFU2kx3NB8InwotkkIq3A5FLU1sI1WDw=="
   "resolved" "https://registry.npmjs.org/@nomicfoundation/solidity-analyzer-darwin-x64/-/solidity-analyzer-darwin-x64-0.0.3.tgz"
@@ -6828,10 +6823,10 @@
     "string-width" "^4.2.3"
     "strip-ansi" "^6.0.1"
 
-"tapioca-sdk@^1.1.5":
-  "integrity" "sha512-0tzP3D9QD2WA2OrDGesLlpKSctu26wC/4kdlwsljcfsZEERmeDEyeZpyOMzCaSGtYD0Nf74Wy+3QsgP/oa6ttw=="
-  "resolved" "https://registry.npmjs.org/tapioca-sdk/-/tapioca-sdk-1.1.5.tgz"
-  "version" "1.1.5"
+"tapioca-sdk@^1.1.6":
+  "integrity" "sha512-jGwLJQwQZRzcHA02F4nCZoxOazBIvS4V9qZe9ALfaL4IxL69a6epyUqKHBn4y5VgW3KYVKgcoRRkUo+yhoeEQQ=="
+  "resolved" "https://registry.npmjs.org/tapioca-sdk/-/tapioca-sdk-1.1.6.tgz"
+  "version" "1.1.6"
   dependencies:
     "ethers" "^5.6.9"
     "lodash" "^4.17.21"
