@@ -69,7 +69,9 @@ const config: HardhatUserConfig & { dodoc?: any } = {
         },
         goerli: {
             gasMultiplier: 10,
-            url: process.env.GOERLI ??'https://eth-goerli.g.alchemy.com/v2/<api_key>',
+            url:
+                process.env.GOERLI ??
+                'https://eth-goerli.g.alchemy.com/v2/<api_key>',
             chainId: 5,
             accounts:
                 process.env.PRIVATE_KEY !== undefined

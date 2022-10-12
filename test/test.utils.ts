@@ -1102,6 +1102,7 @@ export async function register(staging?: boolean) {
     const { usdoToWethBidder } = await registerUniUsdoToWethBidder(
         multiSwapper,
         wethAssetId,
+        staging,
     );
     log(
         `Deployed UniswapUsdoToWethBidder ${usdoToWethBidder.address}`,
@@ -1115,6 +1116,7 @@ export async function register(staging?: boolean) {
             bar,
             usdc,
             usd0,
+            staging,
         );
         log(
             `Deployed CurveStableToUsdoBidder ${stableToUsdoBidder.address}`,
