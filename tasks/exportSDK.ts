@@ -13,7 +13,7 @@ export const exportSDK__task = async (
 ) => {
     const _deployments: TProjectDeployment = {
         [(await hre.getChainId()) as keyof TProjectDeployment]: (
-            await getDeployments(hre, true)
+            (await getDeployments(hre, true)) ?? []
         ).map((e: TContract) => ({
             address: e.address,
             meta: {},
@@ -26,6 +26,8 @@ export const exportSDK__task = async (
         projectCaller: 'Tapioca-Bar',
         contractNames: [
             'YieldBox',
+            'USD0',
+            'MinterMixologist',
             'BeachBar',
             'Mixologist',
             'MixologistHelper',
