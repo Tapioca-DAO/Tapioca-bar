@@ -42,7 +42,7 @@ contract USD0 is PausableOFT {
     // ************** //
     /// @notice creates USDO0 OFT
     /// @param _lzEndpoint LayerZero endpoint
-    constructor(address _lzEndpoint) PausableOFT('USD0', 'UDS0', _lzEndpoint) {
+    constructor(address _lzEndpoint) PausableOFT('USD0', 'USD0', _lzEndpoint) {
         uint256 chain = _getChainId();
         allowedMinter[chain][msg.sender] = true;
         allowedBurner[chain][msg.sender] = true;

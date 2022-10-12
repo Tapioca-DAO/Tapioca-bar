@@ -17,7 +17,7 @@ export const setLiquidationQueue = async (
         [taskArgs['liquidationQueue'], taskArgs['meta']],
     );
 
-    await beachBarContract.executeMixologistFn([mixologistAddress], [callData]);
+    await beachBarContract.executeMixologistFn([mixologistAddress], [callData],true);
 };
 
 export const setLiquidationQueue__task = async (

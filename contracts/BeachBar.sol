@@ -225,7 +225,11 @@ contract BeachBar is BoringOwnable {
     }
 
     /// @notice Execute an only owner function inside of a Mixologist market
-    function executeMixologistFn(address[] calldata mc, bytes[] memory data)
+    function executeMixologistFn(
+        address[] calldata mc,
+        bytes[] memory data,
+        bool forceSuccess
+    )
         external
         onlyOwner
         returns (bool[] memory success, bytes[] memory result)
@@ -239,6 +243,9 @@ contract BeachBar is BoringOwnable {
                 'BeachBar: MC not registered'
             );
             (success[i], result[i]) = mc[i].call(data[i]);
+            if (forceSuccess) {
+                require(success[i], _getRevertMsg(result[i]));
+            }
             ++i;
         }
     }
@@ -260,5 +267,20 @@ contract BeachBar is BoringOwnable {
     function setSwapper(MultiSwapper swapper, bool enable) external onlyOwner {
         swappers[swapper] = enable;
         emit SwapperUpdate(address(swapper), enable);
+    }
+
+    function _getRevertMsg(bytes memory _returnData)
+        private
+        pure
+        returns (string memory)
+    {
+        // If the _res length is less than 68, then the transaction failed silently (without a revert message)
+        if (_returnData.length < 68) return 'Mx: no return data';
+        // solhint-disable-next-line no-inline-assembly
+        assembly {
+            // Slice the sighash.
+            _returnData := add(_returnData, 0x04)
+        }
+        return abi.decode(_returnData, (string)); // All that remains is the revert string
     }
 }

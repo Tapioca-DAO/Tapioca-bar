@@ -17,7 +17,7 @@ export const setPath = async (
         [taskArgs['path']],
     );
 
-    await beachBarContract.executeMixologistFn([mixologistAddress], [callData]);
+    await beachBarContract.executeMixologistFn([mixologistAddress], [callData],true);
 };
 
 export const setTapSwapPath__task = async (

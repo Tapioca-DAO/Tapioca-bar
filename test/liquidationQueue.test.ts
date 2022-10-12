@@ -947,7 +947,8 @@ describe('LiquidationQueue test', () => {
     });
 
     it('should not allow initializing LQ twice', async () => {
-        const { liquidationQueue, deployer } = await loadFixture(register);
+        const { liquidationQueue, deployer, wethUsdcMixologist } =
+            await loadFixture(register);
 
         const LQ_META = {
             activationTime: 600, // 10min
@@ -957,9 +958,9 @@ describe('LiquidationQueue test', () => {
             bidExecutionSwapper: ethers.constants.AddressZero,
             usdoSwapper: ethers.constants.AddressZero,
         };
-        await expect(liquidationQueue.init(LQ_META)).to.be.revertedWith(
-            'LQ: Initialized',
-        );
+        await expect(
+            liquidationQueue.init(LQ_META, wethUsdcMixologist.address),
+        ).to.be.revertedWith('LQ: Initialized');
     });
 
     it('sould not be able to redeem without a balance', async () => {
@@ -1008,6 +1009,7 @@ describe('LiquidationQueue test', () => {
         await bar.executeMixologistFn(
             [wethUsdcMixologist.address],
             [usdofnData],
+            true,
         );
 
         const executionfnData = wethUsdcMixologist.interface.encodeFunctionData(
@@ -1017,6 +1019,7 @@ describe('LiquidationQueue test', () => {
         await bar.executeMixologistFn(
             [wethUsdcMixologist.address],
             [executionfnData],
+            true,
         );
 
         const savedBidSwapper = (await liquidationQueue.liquidationQueueMeta())
@@ -1146,6 +1149,7 @@ describe('LiquidationQueue test', () => {
         await bar.executeMixologistFn(
             [wethUsdcMixologist.address],
             [usdofnData],
+            true,
         );
 
         const executionfnData = wethUsdcMixologist.interface.encodeFunctionData(
@@ -1155,6 +1159,7 @@ describe('LiquidationQueue test', () => {
         await bar.executeMixologistFn(
             [wethUsdcMixologist.address],
             [executionfnData],
+            true,
         );
 
         const savedBidSwapper = (await liquidationQueue.liquidationQueueMeta())
@@ -1252,6 +1257,7 @@ describe('LiquidationQueue test', () => {
         await bar.executeMixologistFn(
             [wethUsdcMixologist.address],
             [usdofnData],
+            true,
         );
 
         const executionfnData = wethUsdcMixologist.interface.encodeFunctionData(
@@ -1261,6 +1267,7 @@ describe('LiquidationQueue test', () => {
         await bar.executeMixologistFn(
             [wethUsdcMixologist.address],
             [executionfnData],
+            true,
         );
 
         /// --- Acts ----
@@ -1391,6 +1398,7 @@ describe('LiquidationQueue test', () => {
         await bar.executeMixologistFn(
             [wethUsdcMixologist.address],
             [usdofnData],
+            true,
         );
 
         const executionfnData = wethUsdcMixologist.interface.encodeFunctionData(
@@ -1400,6 +1408,7 @@ describe('LiquidationQueue test', () => {
         await bar.executeMixologistFn(
             [wethUsdcMixologist.address],
             [executionfnData],
+            true,
         );
 
         const savedBidSwapper = (await liquidationQueue.liquidationQueueMeta())
@@ -1638,6 +1647,7 @@ describe('LiquidationQueue test', () => {
         await bar.executeMixologistFn(
             [wethUsdcMixologist.address],
             [usdofnData],
+            true,
         );
 
         const executionfnData = wethUsdcMixologist.interface.encodeFunctionData(
@@ -1647,6 +1657,7 @@ describe('LiquidationQueue test', () => {
         await bar.executeMixologistFn(
             [wethUsdcMixologist.address],
             [executionfnData],
+            true,
         );
 
         const savedBidSwapper = (await liquidationQueue.liquidationQueueMeta())

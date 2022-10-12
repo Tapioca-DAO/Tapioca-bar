@@ -14,7 +14,7 @@ export const setCap = async (taskArgs: any, hre: HardhatRuntimeEnvironment) => {
         [taskArgs['cap']],
     );
 
-    await beachBarContract.executeMixologistFn([mixologistAddress], [callData]);
+    await beachBarContract.executeMixologistFn([mixologistAddress], [callData],true);
 };
 
 export const setBorrowCap__task = async (

@@ -431,6 +431,7 @@ describe('Mixologist test', () => {
         await bar.executeMixologistFn(
             [wethUsdcMixologist.address],
             [borrowCapData],
+            true,
         );
         const savedBorrowCap = await wethUsdcMixologist.totalBorrowCap();
         expect(savedBorrowCap.eq(wethBorrowVal.div(2))).to.be.true;
@@ -448,6 +449,7 @@ describe('Mixologist test', () => {
         await bar.executeMixologistFn(
             [wethUsdcMixologist.address],
             [borrowCapData],
+            true,
         );
 
         await expect(
@@ -1089,6 +1091,7 @@ describe('Mixologist test', () => {
         await bar.executeMixologistFn(
             [wethUsdcMixologist.address],
             [collateralSwapCalldata],
+            true,
         );
 
         const tapSwapCalldata = wethUsdcMixologist.interface.encodeFunctionData(
@@ -1098,6 +1101,7 @@ describe('Mixologist test', () => {
         await bar.executeMixologistFn(
             [wethUsdcMixologist.address],
             [tapSwapCalldata],
+            true,
         );
     });
 
@@ -1355,15 +1359,18 @@ describe('Mixologist test', () => {
             bidExecutionSwapper: ethers.constants.AddressZero,
             usdoSwapper: stableToUsdoBidder.address,
         };
+        await liquidationQueue.init(LQ_META, wethUsdoMixologist.address);
+
         const payload = wethUsdoMixologist.interface.encodeFunctionData(
             'setLiquidationQueue',
-            [liquidationQueue.address, LQ_META],
+            [liquidationQueue.address],
         );
 
         await (
             await bar.executeMixologistFn(
                 [wethUsdoMixologist.address],
                 [payload],
+                true,
             )
         ).wait();
 

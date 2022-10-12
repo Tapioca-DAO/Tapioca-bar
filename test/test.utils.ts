@@ -650,7 +650,7 @@ async function createWethUsd0Mixologist(
 ) {
     const _mxLiquidationModule = await (
         await ethers.getContractFactory('MXLiquidation')
-    ).deploy();
+    ).deploy({ gasPrice: gasPrice });
     await _mxLiquidationModule.deployed();
     log(
         `Deployed WethUsd0MXLiquidationModule ${_mxLiquidationModule.address} with no arguments`,
@@ -659,7 +659,7 @@ async function createWethUsd0Mixologist(
 
     const _mxLendingBorrowingModule = await (
         await ethers.getContractFactory('MXLendingBorrowing')
-    ).deploy();
+    ).deploy({ gasPrice: gasPrice });
     await _mxLendingBorrowingModule.deployed();
     log(
         `Deployed WethUsd0MXLendingBorrowingModule ${_mxLendingBorrowingModule.address} with no arguments`,
@@ -668,19 +668,18 @@ async function createWethUsd0Mixologist(
 
     const collateralSwapPath = [usd0.address, weth.address];
 
-    // Deploy WethUSDC mock oracle
-    log('deploying wethUsdc oracle', staging);
-    const wethUsdcOracle = await (
+    // Deploy WethUSD0 mock oracle
+    const wethUsd0Oracle = await (
         await ethers.getContractFactory('OracleMock')
     ).deploy({ gasPrice: gasPrice });
-    await wethUsdcOracle.deployed();
+    await wethUsd0Oracle.deployed();
     log(
-        `Deployed WethUsd0 mock oracle at ${wethUsdcOracle.address} with no arguments`,
+        `Deployed WethUsd0 mock oracle at ${wethUsd0Oracle.address} with no arguments`,
         staging,
     );
 
     const newPrice = __wethUsdcPrice.div(1000000);
-    await wethUsdcOracle.set(newPrice);
+    await wethUsd0Oracle.set(newPrice, { gasPrice: gasPrice });
     log(`Price was set for WethUsd0 mock oracle`, staging);
 
     const data = new ethers.utils.AbiCoder().encode(
@@ -704,12 +703,17 @@ async function createWethUsd0Mixologist(
             usdoAssetId,
             weth.address,
             wethAssetId,
-            wethUsdcOracle.address,
+            wethUsd0Oracle.address,
             collateralSwapPath,
             tapSwapPath,
         ],
     );
-    await bar.registerMixologist(mediumRiskMC.address, data, true);
+    await bar.registerMixologist(mediumRiskMC.address, data, false, {
+        gasPrice: gasPrice,
+    });
+
+    const clonesCount = await yieldBox.clonesOfCount(mediumRiskMC.address);
+    log(`Clones count of MediumRiskMC ${clonesCount}`, staging);
 
     const wethUsdoMixologist = await ethers.getContractAt(
         'Mixologist',
@@ -724,8 +728,12 @@ async function createWethUsd0Mixologist(
     );
 
     //Deploy & set LiquidationQueue
-    await usd0.setMinterStatus(wethUsdoMixologist.address, true);
-    await usd0.setBurnerStatus(wethUsdoMixologist.address, true);
+    await usd0.setMinterStatus(wethUsdoMixologist.address, true, {
+        gasPrice: gasPrice,
+    });
+    await usd0.setBurnerStatus(wethUsdoMixologist.address, true, {
+        gasPrice: gasPrice,
+    });
     log(
         `Updated Usd0 Minter and Burner status for WethUsd0Mixologist`,
         staging,
@@ -733,7 +741,7 @@ async function createWethUsd0Mixologist(
 
     const liquidationQueue = await (
         await ethers.getContractFactory('LiquidationQueue')
-    ).deploy();
+    ).deploy({ gasPrice: gasPrice });
     await liquidationQueue.deployed();
     log(
         `Deployed WethUsd0LiquidationQueue at ${liquidationQueue.address} with no arguments`,
@@ -755,13 +763,26 @@ async function createWethUsd0Mixologist(
         bidExecutionSwapper: ethers.constants.AddressZero,
         usdoSwapper: stableToUsdoBidder.address,
     };
+
+    await liquidationQueue.init(LQ_META, wethUsdoMixologist.address, {
+        gasPrice: gasPrice,
+    });
+    log(`LiquidationQueue initialized`);
+
     const payload = wethUsdoMixologist.interface.encodeFunctionData(
         'setLiquidationQueue',
-        [liquidationQueue.address, LQ_META],
+        [liquidationQueue.address],
     );
 
     await (
-        await bar.executeMixologistFn([wethUsdoMixologist.address], [payload])
+        await bar.executeMixologistFn(
+            [wethUsdoMixologist.address],
+            [payload],
+            true,
+            {
+                gasPrice: gasPrice,
+            },
+        )
     ).wait();
     log(`WethUsd0LiquidationQueue was set for WethUsd0Mixologist`, staging);
 
@@ -792,13 +813,16 @@ async function registerLiquidationQueue(
         bidExecutionSwapper: ethers.constants.AddressZero,
         usdoSwapper: ethers.constants.AddressZero,
     };
+    await liquidationQueue.init(LQ_META, mixologist.address);
+    log(`LiquidationQueue initialized`, staging);
+
     const payload = mixologist.interface.encodeFunctionData(
         'setLiquidationQueue',
-        [liquidationQueue.address, LQ_META],
+        [liquidationQueue.address],
     );
 
     await (
-        await bar.executeMixologistFn([mixologist.address], [payload], {
+        await bar.executeMixologistFn([mixologist.address], [payload], true, {
             gasPrice: gasPrice,
         })
     ).wait();
@@ -1018,7 +1042,7 @@ export async function register(staging?: boolean) {
     await bar.setFeeTo(mixologistFeeTo.address, { gasPrice: gasPrice });
     await bar.setFeeVeTap(mixologistFeeVeTap.address, { gasPrice: gasPrice });
     log(
-        'feeTo ${mixologistFeeTo} and feeVeTap ${mixologistFeeVeTap} were set for WethUsdcMixologist',
+        `feeTo ${mixologistFeeTo} and feeVeTap ${mixologistFeeVeTap} were set for WethUsdcMixologist`,
         staging,
     );
 
@@ -1084,7 +1108,10 @@ export async function register(staging?: boolean) {
             tap,
             usd0,
         );
-    log('WethUSDO & TapUSDO pairs created', staging);
+    log(
+        `WethUSDO ${__wethUsdoMockPair} & TapUSDO ${__tapUsdoMockPair} pairs created`,
+        staging,
+    );
 
     // ------------------- 15 Create MixologistHelper -------------------
     log('Deploying MixologistHelper', staging);
@@ -1110,7 +1137,7 @@ export async function register(staging?: boolean) {
     );
 
     if (staging) {
-        // ------------------- 17 Create CurveStableToUsdoBidder -------------------
+        //------------------- 17 Create CurveStableToUsdoBidder -------------------
         log('Deploying CurveStableToUsdoBidder', staging);
         const { stableToUsdoBidder } = await deployCurveStableToUsdoBidder(
             bar,
@@ -1122,7 +1149,6 @@ export async function register(staging?: boolean) {
             `Deployed CurveStableToUsdoBidder ${stableToUsdoBidder.address}`,
             staging,
         );
-
         // ------------------- 18 Create WethUsd0Mixologist -------------------
         log('Deploying WethUsd0Mixologist', staging);
         const usd0AssetId = await yieldBox.ids(
