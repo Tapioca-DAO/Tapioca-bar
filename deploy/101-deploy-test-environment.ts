@@ -8,30 +8,40 @@ import { updateDeployments } from './utils';
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const {
-        __uniFactory,
-        __uniRouter,
-        bar,
-        liquidationQueue,
-        mixologistHelper,
+        wethUsdcOracle,
         usdc,
         weth,
+        tap,
         yieldBox,
-        wethUsdcOracle,
+        bar,
+        __uniFactory,
+        __uniRouter,
+        multiSwapper,
+        mediumRiskMC,
         wethUsdcMixologist,
+        usd0,
+        wethMinterMixologist,
+        mixologistHelper,
+        usdoToWethBidder,
         verifyEtherscanQueue,
     } = await register(true);
 
     const contracts = {
-        __uniFactory,
-        __uniRouter,
-        bar,
-        liquidationQueue,
-        mixologistHelper,
+        wethUsdcOracle,
         usdc,
         weth,
+        tap,
         yieldBox,
-        wethUsdcOracle,
+        bar,
+        __uniFactory,
+        __uniRouter,
+        multiSwapper,
+        mediumRiskMC,
         wethUsdcMixologist,
+        usd0,
+        wethMinterMixologist,
+        mixologistHelper,
+        usdoToWethBidder,
     };
 
     const chainId = await hre.getChainId();

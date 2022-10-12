@@ -31,7 +31,9 @@ struct LiquidationQueueMeta {
 }
 
 interface ILiquidationQueue {
-    function init(LiquidationQueueMeta calldata) external;
+    function init(LiquidationQueueMeta calldata, address mixologist) external;
+
+    function onlyOnce() external view returns (bool);
 
     function setBidExecutionSwapper(address swapper) external;
 

@@ -17,7 +17,7 @@ export const setLiquidationQueueBidSwapper = async (
         [taskArgs['swapper']],
     );
 
-    await beachBarContract.executeMixologistFn([mixologistAddress], [callData]);
+    await beachBarContract.executeMixologistFn([mixologistAddress], [callData],true);
 };
 
 export const setLiquidationQueueBidSwapper__task = async (

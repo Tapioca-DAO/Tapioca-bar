@@ -31,7 +31,7 @@ contract LiquidationQueue {
     uint256 public lqAssetId; // The liquidation queue BeachBar asset id.
     uint256 public marketAssetId; // The mixologist asset id.
     uint256 public liquidatedAssetId; // The asset that is being liquidated.
-    bool onlyOnce; // Contract init variable.
+    bool public onlyOnce; // Contract init variable.
 
     /**
      * Pools & order books information.
@@ -80,14 +80,15 @@ contract LiquidationQueue {
 
     /// @notice Acts as a 'constructor', should be called by a Mixologist market.
     /// @param  _liquidationQueueMeta Info about the liquidations.
-    function init(LiquidationQueueMeta calldata _liquidationQueueMeta)
-        external
-    {
+    function init(
+        LiquidationQueueMeta calldata _liquidationQueueMeta,
+        Mixologist _mixologist
+    ) external {
         require(!onlyOnce, 'LQ: Initialized');
 
         liquidationQueueMeta = _liquidationQueueMeta;
 
-        mixologist = Mixologist(msg.sender);
+        mixologist = Mixologist(_mixologist);
         liquidatedAssetId = mixologist.collateralId();
         marketAssetId = mixologist.assetId();
         beachBar = mixologist.beachBar();

@@ -20,6 +20,6 @@ contract LQMixologistMock {
         ILiquidationQueue liquidationQueue,
         LiquidationQueueMeta calldata lqMeta
     ) external {
-        liquidationQueue.init(lqMeta);
+        liquidationQueue.init(lqMeta, address(this));
     }
 }

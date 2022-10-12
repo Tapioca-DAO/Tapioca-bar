@@ -69,7 +69,6 @@ task(
     getMixologistTotals__task,
 ).addParam('mixologist', 'Mixologist address');
 
-
 //Mixologist setters
 task(
     'setColleteralSwapPath',

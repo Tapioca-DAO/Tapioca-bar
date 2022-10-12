@@ -30,6 +30,15 @@ const config: HardhatUserConfig & { dodoc?: any } = {
                     },
                 },
             },
+            {
+                version: '0.8.15',
+                settings: {
+                    optimizer: {
+                        enabled: true,
+                        runs: 999,
+                    },
+                },
+            },
         ],
     },
     namedAccounts: {
@@ -41,7 +50,7 @@ const config: HardhatUserConfig & { dodoc?: any } = {
             hardfork: 'merge',
             allowUnlimitedContractSize: true,
             accounts: {
-                count: 5,
+                count: 10,
             },
             tags: ['testnet'],
         },
@@ -58,11 +67,22 @@ const config: HardhatUserConfig & { dodoc?: any } = {
             tags: ['testnet'],
             live: true,
         },
+        goerli: {
+            gasMultiplier: 10,
+            url:
+                process.env.GOERLI ??
+                'https://eth-goerli.g.alchemy.com/v2/<api_key>',
+            chainId: 5,
+            accounts:
+                process.env.PRIVATE_KEY !== undefined
+                    ? [process.env.PRIVATE_KEY]
+                    : [],
+            tags: ['testnet'],
+            live: true,
+        },
     },
     etherscan: {
-        apiKey: {
-            rinkeby: process.env.RINKEBY_KEY ?? '',
-        },
+        apiKey: process.env.ETHERSCAN_KEY,
         customChains: [],
     },
     typechain: {

@@ -5,8 +5,14 @@ import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 
 describe('Bidders test', () => {
     it('should test name', async () => {
-        const { usdoToWethBidder, usdc, bar, deployCurveStableToUsdoBidder } =
-            await loadFixture(register);
+        const {
+            usdoToWethBidder,
+            wethUsdcMixologist,
+            usdc,
+            usd0,
+            bar,
+            deployCurveStableToUsdoBidder,
+        } = await loadFixture(register);
 
         let savedName = await usdoToWethBidder.name();
         expect(savedName).to.eq('USD0 -> WETH (Uniswap V2)');
@@ -14,7 +20,7 @@ describe('Bidders test', () => {
         const { stableToUsdoBidder } = await deployCurveStableToUsdoBidder(
             bar,
             usdc,
-            usdc,
+            usd0,
         );
 
         savedName = await stableToUsdoBidder.name();
@@ -26,6 +32,7 @@ describe('Bidders test', () => {
             usdoToWethBidder,
             wethUsdcMixologist,
             usdc,
+            usd0,
             bar,
             deployCurveStableToUsdoBidder,
         } = await loadFixture(register);
@@ -39,28 +46,11 @@ describe('Bidders test', () => {
             ),
         ).to.be.revertedWith('token not valid');
 
-        await expect(
-            usdoToWethBidder.getOutputAmount(
-                wethUsdcMixologist.address,
-                1,
-                1,
-                ethers.utils.toUtf8Bytes(''),
-            ),
-        ).to.be.revertedWith('USD0 not set');
         const { stableToUsdoBidder } = await deployCurveStableToUsdoBidder(
             bar,
             usdc,
-            usdc,
+            usd0,
         );
-
-        await expect(
-            stableToUsdoBidder.getInputAmount(
-                wethUsdcMixologist.address,
-                150,
-                1,
-                ethers.utils.toUtf8Bytes(''),
-            ),
-        ).to.be.revertedWith('USD0 not set');
     });
 
     it('should set swappers', async () => {
@@ -70,17 +60,16 @@ describe('Bidders test', () => {
             usdc,
             bar,
             multiSwapper,
+            usd0,
             deployCurveStableToUsdoBidder,
-            deployAndSetUsdo,
         } = await loadFixture(register);
 
         await expect(
             usdoToWethBidder.setUniswapSwapper(multiSwapper.address),
         ).to.emit(usdoToWethBidder, 'UniV2SwapperUpdated');
 
-        const { usdo } = await deployAndSetUsdo(bar);
         const { stableToUsdoBidder, curveSwapper } =
-            await deployCurveStableToUsdoBidder(bar, usdc, usdo);
+            await deployCurveStableToUsdoBidder(bar, usdc, usd0);
 
         await expect(
             stableToUsdoBidder.setCurveSwapper(curveSwapper.address),
@@ -95,32 +84,15 @@ describe('Bidders test', () => {
             bar,
             yieldBox,
             deployCurveStableToUsdoBidder,
-            deployAndSetUsdo,
+            usd0,
         } = await loadFixture(register);
 
         const { stableToUsdoBidder } = await deployCurveStableToUsdoBidder(
             bar,
             usdc,
-            usdc,
+            usd0,
         );
 
-        await expect(
-            stableToUsdoBidder.swap(
-                wethUsdcMixologist.address,
-                1,
-                1,
-                ethers.utils.toUtf8Bytes(''),
-            ),
-        ).to.be.revertedWith('USD0 not set');
-        await expect(
-            usdoToWethBidder.swap(
-                wethUsdcMixologist.address,
-                1,
-                1,
-                ethers.utils.toUtf8Bytes(''),
-            ),
-        ).to.be.revertedWith('USD0 not set');
-        const { usdo } = await deployAndSetUsdo(bar);
         await expect(
             usdoToWethBidder.swap(
                 wethUsdcMixologist.address,
@@ -132,7 +104,7 @@ describe('Bidders test', () => {
 
         const usdoAssetId = await yieldBox.ids(
             1,
-            usdo.address,
+            usd0.address,
             ethers.constants.AddressZero,
             0,
         );
@@ -160,22 +132,21 @@ describe('Bidders test', () => {
         const {
             wethUsdcMixologist,
             usdc,
+            usd0,
             bar,
             yieldBox,
             deployCurveStableToUsdoBidder,
-            deployAndSetUsdo,
         } = await loadFixture(register);
 
-        const { usdo } = await deployAndSetUsdo(bar);
         const { stableToUsdoBidder } = await deployCurveStableToUsdoBidder(
             bar,
             usdc,
-            usdo,
+            usd0,
         );
 
         const usdoAssetId = await yieldBox.ids(
             1,
-            usdo.address,
+            usd0.address,
             ethers.constants.AddressZero,
             0,
         );

@@ -13,5 +13,6 @@ module.exports = {
         'mixologist/legacy',
         'libraries',
         'swappers/MultiSwapper.sol',
+        'usd0/mocks/LZEndpointMock.sol',
     ],
 };

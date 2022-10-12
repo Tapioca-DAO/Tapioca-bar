@@ -431,6 +431,7 @@ describe('Mixologist test', () => {
         await bar.executeMixologistFn(
             [wethUsdcMixologist.address],
             [borrowCapData],
+            true,
         );
         const savedBorrowCap = await wethUsdcMixologist.totalBorrowCap();
         expect(savedBorrowCap.eq(wethBorrowVal.div(2))).to.be.true;
@@ -448,6 +449,7 @@ describe('Mixologist test', () => {
         await bar.executeMixologistFn(
             [wethUsdcMixologist.address],
             [borrowCapData],
+            true,
         );
 
         await expect(
@@ -1089,6 +1091,7 @@ describe('Mixologist test', () => {
         await bar.executeMixologistFn(
             [wethUsdcMixologist.address],
             [collateralSwapCalldata],
+            true,
         );
 
         const tapSwapCalldata = wethUsdcMixologist.interface.encodeFunctionData(
@@ -1098,6 +1101,7 @@ describe('Mixologist test', () => {
         await bar.executeMixologistFn(
             [wethUsdcMixologist.address],
             [tapSwapCalldata],
+            true,
         );
     });
 
@@ -1255,26 +1259,21 @@ describe('Mixologist test', () => {
             wethAssetId,
             usdcAssetId,
             mediumRiskMC,
-            deployAndSetUsdo,
             wethUsdcOracle,
             tapSwapPath,
             usdc,
+            usd0,
             __wethUsdcPrice,
+            deployCurveStableToUsdoBidder,
             multiSwapper,
             BN,
             timeTravel,
         } = await loadFixture(register);
         //deploy and register USD0
-        const { usdo } = await deployAndSetUsdo(bar);
-        await yieldBox.registerAsset(
-            1,
-            usdo.address,
-            ethers.constants.AddressZero,
-            0,
-        );
+
         const usdoAssetId = await yieldBox.ids(
             1,
-            usdo.address,
+            usd0.address,
             ethers.constants.AddressZero,
             0,
         );
@@ -1289,7 +1288,7 @@ describe('Mixologist test', () => {
         ).deploy();
         await _mxLendingBorrowingModule.deployed();
 
-        const collateralSwapPath = [usdo.address, weth.address];
+        const collateralSwapPath = [usd0.address, weth.address];
 
         const newPrice = __wethUsdcPrice.div(1000000);
         await wethUsdcOracle.set(newPrice);
@@ -1311,7 +1310,7 @@ describe('Mixologist test', () => {
                 _mxLiquidationModule.address,
                 _mxLendingBorrowingModule.address,
                 bar.address,
-                usdo.address,
+                usd0.address,
                 usdoAssetId,
                 weth.address,
                 wethAssetId,
@@ -1330,17 +1329,8 @@ describe('Mixologist test', () => {
         );
 
         //Deploy & set LiquidationQueue
-        const curvePoolMock = await (
-            await ethers.getContractFactory('CurvePoolMock')
-        ).deploy(usdo.address, usdc.address);
-        const curveSwapper = await (
-            await ethers.getContractFactory('CurveSwapper')
-        ).deploy(curvePoolMock.address, bar.address);
-
-        const stableToUsdoBidder = await (
-            await ethers.getContractFactory('CurveStableToUsdoBidder')
-        ).deploy(curveSwapper.address, 2);
-        await stableToUsdoBidder.deployed();
+        await usd0.setMinterStatus(wethUsdoMixologist.address, true);
+        await usd0.setBurnerStatus(wethUsdoMixologist.address, true);
 
         const liquidationQueue = await (
             await ethers.getContractFactory('LiquidationQueue')
@@ -1350,6 +1340,12 @@ describe('Mixologist test', () => {
         const feeCollector = new ethers.Wallet(
             ethers.Wallet.createRandom().privateKey,
             ethers.provider,
+        );
+
+        const { stableToUsdoBidder } = await deployCurveStableToUsdoBidder(
+            bar,
+            usdc,
+            usd0,
         );
 
         const LQ_META = {
@@ -1363,26 +1359,29 @@ describe('Mixologist test', () => {
             bidExecutionSwapper: ethers.constants.AddressZero,
             usdoSwapper: stableToUsdoBidder.address,
         };
+        await liquidationQueue.init(LQ_META, wethUsdoMixologist.address);
+
         const payload = wethUsdoMixologist.interface.encodeFunctionData(
             'setLiquidationQueue',
-            [liquidationQueue.address, LQ_META],
+            [liquidationQueue.address],
         );
 
         await (
             await bar.executeMixologistFn(
                 [wethUsdoMixologist.address],
                 [payload],
+                true,
             )
         ).wait();
 
         //get tokens
         const wethAmount = ethers.BigNumber.from((1e18).toString()).mul(100);
         const usdoAmount = ethers.BigNumber.from((1e18).toString()).mul(20000);
-        await usdo.connect(deployer).freeMint(usdoAmount);
+        await usd0.mint(deployer.address, usdoAmount);
         await weth.connect(eoa1).freeMint(wethAmount);
 
         //aprove external operators
-        await usdo
+        await usd0
             .connect(deployer)
             .approve(yieldBox.address, ethers.constants.MaxUint256);
         await weth
@@ -1392,7 +1391,7 @@ describe('Mixologist test', () => {
             .connect(deployer)
             .setApprovalForAll(wethUsdoMixologist.address, true);
 
-        await usdo
+        await usd0
             .connect(eoa1)
             .approve(yieldBox.address, ethers.constants.MaxUint256);
         await weth
@@ -1469,7 +1468,7 @@ describe('Mixologist test', () => {
                 usdoBorrowVal,
                 0,
             );
-        const usdoBalanceOfEoa = await usdo.balanceOf(eoa1.address);
+        const usdoBalanceOfEoa = await usd0.balanceOf(eoa1.address);
 
         // Can't liquidate
         const swapData = new ethers.utils.AbiCoder().encode(['uint256'], [1]);
@@ -1603,5 +1602,69 @@ describe('Mixologist test', () => {
             );
 
         expect(collateralAmount).to.be.equal(usdcAmount);
+    });
+
+    it('should allow multiple borrowers', async () => {
+        const {
+            usdc,
+            weth,
+            yieldBox,
+            multiSwapper,
+            deployer,
+            wethUsdcMixologist,
+            timeTravel,
+            __wethUsdcPrice,
+            approveTokensAndSetBarApproval,
+            wethDepositAndAddAsset,
+            usdcDepositAndAddCollateral,
+            eoas,
+        } = await loadFixture(register);
+
+        const assetId = await wethUsdcMixologist.assetId();
+        const collateralId = await wethUsdcMixologist.collateralId();
+        const wethMintVal = ethers.BigNumber.from((1e18).toString()).mul(10);
+        const usdcMintVal = wethMintVal
+            .mul(10)
+            .mul(__wethUsdcPrice.div((1e18).toString()));
+        const wethBorrowVal = usdcMintVal
+            .mul(74)
+            .div(100)
+            .div(__wethUsdcPrice.div((1e18).toString()));
+
+        await weth.freeMint(wethMintVal.mul(10));
+        await approveTokensAndSetBarApproval();
+        await wethDepositAndAddAsset(wethMintVal.mul(10));
+        expect(
+            await wethUsdcMixologist.balanceOf(deployer.address),
+        ).to.be.equal(
+            await yieldBox.toShare(assetId, wethMintVal.mul(10), false),
+        );
+
+        for (var i = 0; i < eoas.length; i++) {
+            const eoa = eoas[i];
+            await usdc.connect(eoa).freeMint(usdcMintVal);
+            await approveTokensAndSetBarApproval(eoa);
+            await usdcDepositAndAddCollateral(usdcMintVal, eoa);
+            expect(
+                await wethUsdcMixologist.userCollateralShare(eoa.address),
+            ).equal(await yieldBox.toShare(collateralId, usdcMintVal, false));
+            timeTravel(86400);
+        }
+
+        timeTravel(86400 * 5);
+        const firstBorrow = ethers.BigNumber.from((1e17).toString());
+
+        for (var i = 0; i < eoas.length; i++) {
+            const eoa = eoas[i];
+            await wethUsdcMixologist
+                .connect(eoa)
+                .borrow(eoa.address, eoa.address, firstBorrow);
+            timeTravel(10 * 86400);
+        }
+
+        timeTravel(10 * 86400);
+        await wethUsdcMixologist.depositFeesToYieldBox(multiSwapper.address, {
+            minAssetAmount: 1,
+        });
     });
 });

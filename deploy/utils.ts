@@ -293,6 +293,7 @@ export const registerLiquidationQueue = async (
         await beachBarContract.executeMixologistFn(
             [marketData.address],
             [payload],
+            true,
         )
     ).wait();
     console.log('[+] Done');

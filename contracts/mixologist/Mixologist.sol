@@ -442,13 +442,11 @@ contract Mixologist is MXCommon {
 
     /// @notice Set a new LiquidationQueue.
     /// @param _liquidationQueue The address of the new LiquidationQueue contract.
-    /// It should be a new contract as `init()` can be called only one time.
-    /// @param _liquidationQueueMeta The liquidation queue info.
-    function setLiquidationQueue(
-        ILiquidationQueue _liquidationQueue,
-        LiquidationQueueMeta calldata _liquidationQueueMeta
-    ) public onlyOwner {
-        _liquidationQueue.init(_liquidationQueueMeta);
+    function setLiquidationQueue(ILiquidationQueue _liquidationQueue)
+        public
+        onlyOwner
+    {
+        require(_liquidationQueue.onlyOnce(), 'Mx: LQ not initalized');
         liquidationQueue = _liquidationQueue;
     }
 
