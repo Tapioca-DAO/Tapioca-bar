@@ -1,5 +1,5 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
-import { API } from 'tapioca-sdk';
+import SDK from 'tapioca-sdk';
 import { TContract, TProjectDeployment } from 'tapioca-sdk/dist/shared';
 import { getDeployments } from './getDeployments';
 
@@ -22,7 +22,7 @@ export const exportSDK__task = async (
     };
     console.log('[+] Exporting:');
     console.log(JSON.stringify(_deployments, null, 2));
-    await API.exportSDK.run({
+    await SDK.API.exportSDK.run({
         projectCaller: 'Tapioca-Bar',
         contractNames: [
             'YieldBox',
