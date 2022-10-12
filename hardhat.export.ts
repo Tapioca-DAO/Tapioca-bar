@@ -67,11 +67,20 @@ const config: HardhatUserConfig & { dodoc?: any } = {
             tags: ['testnet'],
             live: true,
         },
+        goerli: {
+            gasMultiplier: 10,
+            url: process.env.GOERLI ??'https://eth-goerli.g.alchemy.com/v2/<api_key>',
+            chainId: 5,
+            accounts:
+                process.env.PRIVATE_KEY !== undefined
+                    ? [process.env.PRIVATE_KEY]
+                    : [],
+            tags: ['testnet'],
+            live: true,
+        },
     },
     etherscan: {
-        apiKey: {
-            rinkeby: process.env.RINKEBY_KEY ?? '',
-        },
+        apiKey: process.env.ETHERSCAN_KEY,
         customChains: [],
     },
     typechain: {

@@ -30,7 +30,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         usdc,
         weth,
         yieldBox,
-        wethUsdcOracle,
+        // wethUsdcOracle,
         wethUsdcMixologist,
     };
 

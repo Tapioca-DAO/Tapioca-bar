@@ -1266,7 +1266,7 @@ describe('Mixologist test', () => {
             timeTravel,
         } = await loadFixture(register);
         //deploy and register USD0
-     
+
         const usdoAssetId = await yieldBox.ids(
             1,
             usd0.address,

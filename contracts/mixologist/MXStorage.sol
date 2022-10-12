@@ -96,8 +96,8 @@ contract MXStorage is BoringOwnable, ERC20 {
     /// Asset -> collateral = assetAmount * exchangeRate.
     uint256 public exchangeRate;
 
-    IOracle oracle;
-    bytes oracleData;
+    IOracle public oracle;
+    bytes public oracleData;
     address[] collateralSwapPath; // Collateral -> Asset
     address[] tapSwapPath; // Asset -> Tap
 
