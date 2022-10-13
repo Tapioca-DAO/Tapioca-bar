@@ -45,6 +45,7 @@ async function registerUsd0Contract(chainId: string, staging?: boolean) {
         `Deployed LZEndpointMock ${lzEndpointContract.address} with args [${chainId}]`,
         staging,
     );
+    await verifyEtherscan(lzEndpointContract.address, [chainId], staging);
 
     const usd0 = await (
         await ethers.getContractFactory('USD0')
@@ -56,7 +57,7 @@ async function registerUsd0Contract(chainId: string, staging?: boolean) {
     );
     await verifyEtherscan(usd0.address, [lzEndpointContract.address], staging);
 
-    return { usd0 };
+    return { usd0, lzEndpointContract };
 }
 async function registerUniswapV2(staging?: boolean) {
     const __uniFactoryFee = ethers.Wallet.createRandom();
@@ -203,6 +204,17 @@ async function setBeachBarAssets(
     );
 
     return { wethAssetId, usdcAssetId };
+}
+
+async function deployProxyDeployer() {
+    const proxyDeployer = await (
+        await ethers.getContractFactory('ProxyDeployer')
+    ).deploy({
+        gasPrice: gasPrice,
+    });
+    await proxyDeployer.deployed();
+
+    return { proxyDeployer };
 }
 
 async function addUniV2UsdoWethLiquidity(
@@ -594,6 +606,7 @@ async function deployCurveStableToUsdoBidder(
     const curvePoolMock = await (
         await ethers.getContractFactory('CurvePoolMock')
     ).deploy(usdo.address, usdc.address, { gasPrice: gasPrice });
+
     await usdo.setMinterStatus(curvePoolMock.address, true);
     log(
         `Deployed CurvePoolMock ${curvePoolMock.address} with args [${usdo.address},${usdc.address}]`,
@@ -1064,7 +1077,10 @@ export async function register(staging?: boolean) {
     // ------------------- 10 Deploy USD0 -------------------
     log('Registering USD0', staging);
     const chainId = await hre.getChainId();
-    const { usd0 } = await registerUsd0Contract(chainId, staging);
+    const { usd0, lzEndpointContract } = await registerUsd0Contract(
+        chainId,
+        staging,
+    );
     log(`USD0 registered ${usd0.address}`, staging);
 
     // ------------------- 11 Set USD0 on BeachBar -------------------
@@ -1176,6 +1192,9 @@ export async function register(staging?: boolean) {
             staging,
         );
     }
+
+    // ------------------- 19 Create ProxyDeployer -------------------
+    const { proxyDeployer } = await deployProxyDeployer();
     /**
      * OTHERS
      */
@@ -1197,6 +1216,7 @@ export async function register(staging?: boolean) {
         deployer,
         eoas,
         usd0,
+        lzEndpointContract,
         usdc,
         usdcAssetId,
         weth,
@@ -1224,6 +1244,8 @@ export async function register(staging?: boolean) {
         feeCollector,
         usdoToWethBidder,
         mediumRiskMC,
+        proxyDeployer,
+        registerMixologist,
         __uniFactory,
         __uniRouter,
         __wethUsdcMockPair,

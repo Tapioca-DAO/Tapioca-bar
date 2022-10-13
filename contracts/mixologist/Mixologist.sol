@@ -99,7 +99,6 @@ contract Mixologist is MXCommon {
         }
     }
 
-
     /// @notice The init function that acts as a constructor
     function init(bytes calldata data) external onlyOnce {
         (

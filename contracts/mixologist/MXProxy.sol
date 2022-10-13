@@ -23,20 +23,41 @@ contract MXProxy is NonblockingLzApp {
         bytes _mxPayload
     );
     event SetUseCustomAdapterParams(bool _useCustomAdapterParams);
+    event LogMixologistStatus(address indexed mixologist, bool status);
 
-    constructor(address _lzEndpoint) NonblockingLzApp(_lzEndpoint) {}
+    constructor(address _lzEndpoint, address _owner)
+        NonblockingLzApp(_lzEndpoint)
+    {
+        _transferOwnership(_owner);
+    }
+
+    function updateMixologistStatus(address _mixologist, bool _status)
+        external
+        onlyOwner
+    {
+        mixologists[_mixologist] = _status;
+        emit LogMixologistStatus(_mixologist, _status);
+    }
 
     function _nonblockingLzReceive(
         uint16 _srcChainId,
-        bytes memory/*_srcAddress*/,
+        bytes memory, /*_srcAddress*/
         uint64, /*_nonce*/
         bytes memory _mxPayload
     ) internal override {
         // decode and load the toAddress
         (
+            bytes memory fromAddressBytes,
             bytes memory toAddressBytes,
             bytes[] memory mxCalls
-        ) = abi.decode(_mxPayload, (bytes, bytes[]));
+        ) = abi.decode(_mxPayload, (bytes, bytes, bytes[]));
+
+        address fromAddress;
+        assembly {
+            fromAddress := mload(add(fromAddressBytes, 20))
+        }
+        require(fromAddress == address(this), 'MXProxy: not proxy'); //should have the same address
+
         address toAddress;
         assembly {
             toAddress := mload(add(toAddressBytes, 20))
@@ -57,7 +78,11 @@ contract MXProxy is NonblockingLzApp {
         address _zroPaymentAddress,
         bytes memory _adapterParams
     ) internal virtual {
-        bytes memory mxPayload = abi.encode(_toAddress, _mxCalls);
+        bytes memory mxPayload = abi.encode(
+            abi.encodePacked(address(this)),
+            _toAddress,
+            _mxCalls
+        );
         if (useCustomAdapterParams) {
             _checkGasLimit(
                 _dstChainId,
