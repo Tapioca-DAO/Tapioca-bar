@@ -10,7 +10,9 @@ contract MXCommon is MXStorage {
     /// If 'from' is msg.sender, it's allowed.
     /// msg.sender can be an allowed operator if his allowance equal or exceed the balance of the user 'from'.
     modifier allowed(address from) virtual {
-        if (from != msg.sender && allowance[from][msg.sender] <= balanceOf[from]) {
+        if (
+            from != msg.sender && allowance[from][msg.sender] <= balanceOf[from]
+        ) {
             revert NotApproved(from, msg.sender);
         }
         _;

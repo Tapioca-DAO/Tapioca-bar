@@ -63,7 +63,7 @@ describe('MixologistHelper test', () => {
         await usdc.connect(eoa1).approve(mixologistHelper.address, usdcMintVal);
         await wethUsdcMixologist
             .connect(eoa1)
-            .setApprovalForAll(mixologistHelper.address, true);
+            .approve(mixologistHelper.address, usdcMintVal);
         await mixologistHelper
             .connect(eoa1)
             .depositAddCollateralAndBorrow(
@@ -106,7 +106,7 @@ describe('MixologistHelper test', () => {
         await usdc.connect(eoa1).approve(mixologistHelper.address, usdcMintVal);
         await wethUsdcMixologist
             .connect(eoa1)
-            .setApprovalForAll(mixologistHelper.address, true);
+            .approve(mixologistHelper.address, usdcMintVal);
         await mixologistHelper
             .connect(eoa1)
             .depositAddCollateralAndBorrow(
@@ -149,7 +149,7 @@ describe('MixologistHelper test', () => {
         await usdc.connect(eoa1).approve(mixologistHelper.address, usdcMintVal);
         await wethUsdcMixologist
             .connect(eoa1)
-            .setApprovalForAll(mixologistHelper.address, true);
+            .approve(mixologistHelper.address, usdcMintVal);
         await mixologistHelper
             .connect(eoa1)
             .depositAddCollateralAndBorrow(
@@ -169,7 +169,7 @@ describe('MixologistHelper test', () => {
             .approve(mixologistHelper.address, userBorrowPart.mul(2));
         await wethUsdcMixologist
             .connect(eoa1)
-            .setApprovalForAll(mixologistHelper.address, true);
+            .approve(mixologistHelper.address, userBorrowPart.mul(2));
         await mixologistHelper
             .connect(eoa1)
             .depositAndRepay(
@@ -213,7 +213,8 @@ describe('MixologistHelper test', () => {
         await usdc.connect(eoa1).approve(mixologistHelper.address, usdcMintVal);
         await wethUsdcMixologist
             .connect(eoa1)
-            .setApprovalForAll(mixologistHelper.address, true);
+            .approve(mixologistHelper.address, usdcMintVal);
+
         await mixologistHelper
             .connect(eoa1)
             .depositAddCollateralAndBorrow(
@@ -233,8 +234,7 @@ describe('MixologistHelper test', () => {
             .approve(mixologistHelper.address, userBorrowPart.mul(2));
         await wethUsdcMixologist
             .connect(eoa1)
-            .setApprovalForAll(mixologistHelper.address, true);
-
+            .approve(mixologistHelper.address, userBorrowPart.mul(2));
         const collateralShare = await wethUsdcMixologist.userCollateralShare(
             eoa1.address,
         );
