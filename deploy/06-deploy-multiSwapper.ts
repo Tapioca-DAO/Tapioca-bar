@@ -10,13 +10,13 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const chainId = await hre.getChainId();
     const contracts: any[] = [];
 
-    console.log('\n Deploying MultiSwapper');
     const uniswapFactoryContract = await hre.ethers.getContractAt(
         'UniswapV2Factory',
         constants[chainId].uniV2Factory,
     );
     const beachBar = await deployments.get('BeachBar');
 
+    console.log('\n Deploying MultiSwapper');
     const args = [
         constants[chainId].uniV2Factory,
         beachBar.address,
@@ -34,7 +34,11 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         args: args,
         artifact: 'MultiSwapper',
     });
-    console.log('Done');
+    console.log(
+        `Done. Deployed on ${
+            deployedMultiSwapper.address
+        } with args ${JSON.stringify(args)}`,
+    );
 
     await updateDeployments(contracts, chainId);
 

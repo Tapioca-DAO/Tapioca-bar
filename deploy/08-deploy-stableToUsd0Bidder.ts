@@ -29,7 +29,11 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         args: curveSwapperArgs,
         artifact: 'CurveSwapper',
     });
-    console.log('Done');
+    console.log(
+        `Done. Deployed on ${
+            deployedCurveSwapper.address
+        } with args ${JSON.stringify(curveSwapperArgs)}`,
+    );
 
     console.log('\n Deploying CurveStableToUsdoBidder');
     // constructor(CurveSwapper curveSwapper_, uint256 curvePoolAssetCount_) {
@@ -48,7 +52,11 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         args: stableToUsd0Args,
         artifact: 'CurveStableToUsdoBidder',
     });
-    console.log('Done');
+    console.log(
+        `Done. Deployed on ${
+            deployedStableToUsd0Swapper.address
+        } with args ${JSON.stringify(stableToUsd0Args)}`,
+    );
 
     await updateDeployments(contracts, chainId);
 };

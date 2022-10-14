@@ -22,7 +22,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         args: [],
         artifact: 'MixologistHelper',
     });
-    console.log('Done');
+    console.log(
+        `Done. Deployed on ${deployedMixologistHelper.address} with no arguments`,
+    );
 
     await updateDeployments(contracts, chainId);
 };

@@ -3,7 +3,6 @@ pragma solidity ^0.8.0;
 
 import './MXCommon.sol';
 
-
 contract MXLendingBorrowing is MXCommon {
     using RebaseLibrary for Rebase;
     using BoringERC20 for IERC20;

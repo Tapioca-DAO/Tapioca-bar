@@ -49,12 +49,10 @@ describe('Mixologist test', () => {
                 'updateExchangeRate',
             );
 
-        await (
-            await wethUsdcMixologist.execute(
-                [addAssetFn, removeAssetFn, updateExchangeRateFn],
-                true,
-            )
-        ).wait();
+        await wethUsdcMixologist.execute(
+            [addAssetFn, removeAssetFn, updateExchangeRateFn],
+            true,
+        );
 
         addAssetFn = wethUsdcMixologist.interface.encodeFunctionData(
             'addAsset',
@@ -69,15 +67,13 @@ describe('Mixologist test', () => {
         ).to.be.revertedWith('Mx: too much');
 
         // Withdraw from bar
-        await (
-            await yieldBox.withdraw(
-                await wethUsdcMixologist.assetId(),
-                deployer.address,
-                deployer.address,
-                0,
-                mintValShare,
-            )
-        ).wait();
+        await yieldBox.withdraw(
+            await wethUsdcMixologist.assetId(),
+            deployer.address,
+            deployer.address,
+            0,
+            mintValShare,
+        );
 
         // Check the value of the asset
         const balanceAfter = await weth.balanceOf(deployer.address);
@@ -119,17 +115,15 @@ describe('Mixologist test', () => {
             usdcMintVal,
             false,
         );
-        await (
-            await yieldBox
-                .connect(eoa1)
-                .depositAsset(
-                    collateralId,
-                    eoa1.address,
-                    eoa1.address,
-                    usdcMintVal,
-                    0,
-                )
-        ).wait();
+        await yieldBox
+            .connect(eoa1)
+            .depositAsset(
+                collateralId,
+                eoa1.address,
+                eoa1.address,
+                usdcMintVal,
+                0,
+            );
 
         const addCollateralFn = wethUsdcMixologist.interface.encodeFunctionData(
             'addCollateral',

@@ -24,6 +24,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         address: mediumRiskMC.address,
         meta: {},
     });
+    console.log(
+        `Done. Deployed MediumRiskMC on ${mediumRiskMC.address} with no arguments`,
+    );
 
     console.log('\nDeploying MXLiquidation');
     await deploy('MXLiquidation', { from: deployer, log: true });
@@ -34,6 +37,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         address: mxLiquidation.address,
         meta: {},
     });
+    console.log(
+        `Done. Deployed MXLiquidation on ${mxLiquidation.address} with no arguments`,
+    );
 
     console.log('\nDeploying MXLendingBorrowing');
     await deploy('MXLendingBorrowing', { from: deployer, log: true });
@@ -44,8 +50,10 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         address: mxLendingBorrowing.address,
         meta: {},
     });
-
-    console.log('Done');
+    console.log(
+        `Done. Deployed MXLendingBorrowing on ${mxLendingBorrowing.address} with no arguments`,
+    );
+    
     await updateDeployments(contracts, chainId);
 };
 

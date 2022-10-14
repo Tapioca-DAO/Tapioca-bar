@@ -30,7 +30,7 @@ describe('Proxy Deployer', () => {
     });
 
     it('Should try to deploy twice', async () => {
-        const { lzEndpointContract, proxyDeployer, deployer } =
+        const { lzEndpointContract, proxyDeployer, deployer, eoa1 } =
             await loadFixture(register);
 
         let saltStr = `Proxy${
@@ -38,6 +38,11 @@ describe('Proxy Deployer', () => {
         }${await lzEndpointContract.getChainId()}`;
         let salt = ethers.utils.formatBytes32String(saltStr);
 
+        await expect(
+            proxyDeployer
+                .connect(eoa1)
+                .deployWithCreate2(lzEndpointContract.address, salt),
+        ).to.be.revertedWith('ProxyDeployer: unauthorized');
         await proxyDeployer.deployWithCreate2(lzEndpointContract.address, salt);
         let count = await proxyDeployer.proxiesCount();
         expect(count).to.eq(1);

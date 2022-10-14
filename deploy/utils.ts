@@ -7,6 +7,7 @@ import { TContract } from 'tapioca-sdk/dist/shared';
 export const constants: { [key: string]: any } = {
     //optimism
     '10': {
+        lzEndpoint: '0x0000000000000000000000000000000000000000',
         feeTo: '0x0000000000000000000000000000000000000000', //for BeachBar
         feeVeTo: '0x0000000000000000000000000000000000000000', //for BeachBar
         lqFeeCollector: '0x0000000000000000000000000000000000000000', //for LiquidationQueue
@@ -47,6 +48,7 @@ export const constants: { [key: string]: any } = {
     },
     //optimism goerli (tesnet)
     '420': {
+        lzEndpoint: '0x0000000000000000000000000000000000000000',
         feeTo: '0x0000000000000000000000000000000000000000',
         feeVeTo: '0x0000000000000000000000000000000000000000',
         lqFeeCollector: '0x0000000000000000000000000000000000000000',

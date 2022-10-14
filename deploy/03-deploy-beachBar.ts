@@ -33,7 +33,11 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         args: args,
         artifact: 'BeachBar',
     });
-    console.log('Done');
+    console.log(
+        `Done. Deployed on ${
+            deployedBeachBar.address
+        } with args ${JSON.stringify(args)}`,
+    );
 
     await updateDeployments(contracts, chainId);
 

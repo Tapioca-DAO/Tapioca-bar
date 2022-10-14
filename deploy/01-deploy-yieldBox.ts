@@ -29,7 +29,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         args: [],
         artifact: 'YieldBoxURIBuilder',
     });
-    console.log('Done');
+    console.log(
+        `Done. Deployed on ${deployedUriBuilder.address} with no arguments`,
+    );
 
     //deploy YieldBox
     console.log('\n Deploying YieldBox');
@@ -49,7 +51,11 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         args: yieldBoxArgs,
         artifact: 'YieldBox',
     });
-    console.log('Done');
+    console.log(
+        `Done. Deployed on ${
+            deployedYieldBox.address
+        } with args ${JSON.stringify(yieldBoxArgs)}`,
+    );
 
     await updateDeployments(contracts, chainId);
 };

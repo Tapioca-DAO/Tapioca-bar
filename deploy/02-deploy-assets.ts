@@ -23,6 +23,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         yieldBoxAddress,
     );
 
+    console.log('\n Settings assets on YieldBox');
     for (let i = 0; i < constants[chainId].assets; i++) {
         const asset = constants[chainId].assets[i];
         console.log(`\n   registering ${asset.name}`);
@@ -36,6 +37,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         ).wait();
         console.log('   done');
     }
+    console.log(`Done`);
 };
 
 export default func;
