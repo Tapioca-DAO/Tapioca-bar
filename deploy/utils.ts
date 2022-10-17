@@ -5,6 +5,22 @@ import SDK from 'tapioca-sdk';
 import { TContract } from 'tapioca-sdk/dist/shared';
 
 export const constants: { [key: string]: any } = {
+    //optimism-goerli
+    '420': {
+        lzEndpoint: '0xae92d5aD7583AD66E49A0c67BAd18F6ba52dDDc1',
+    },
+    //goerli
+    '5': {
+        lzEndpoint: '0xbfD2135BFfbb0B5378b56643c2Df8a87552Bfa23',
+    },
+    //mumbai
+    '80001': {
+        lzEndpoint: '0xf69186dfBa60DdB133E91E9A4B5673624293d8F8',
+    },
+    //fantom tesnet
+    '4002': {
+        lzEndpoint: '0x7dcAD72640F835B0FA36EFD3D6d3ec902C7E5acf',
+    },
     //optimism
     '10': {
         lzEndpoint: '0x0000000000000000000000000000000000000000',

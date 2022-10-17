@@ -238,6 +238,9 @@ contract MXCommon is MXStorage {
         address to,
         uint256 fraction
     ) internal returns (uint256 share) {
+        if (totalAsset.base == 0) {
+            return 0;
+        }
         Rebase memory _totalAsset = totalAsset;
         uint256 allShare = _totalAsset.elastic +
             yieldBox.toShare(assetId, totalBorrow.elastic, true);

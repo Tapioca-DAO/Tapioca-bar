@@ -99,7 +99,6 @@ contract MXLendingBorrowing is MXCommon {
         yieldBox.withdraw(assetId, address(this), receiver, amount, 0);
 
         borrower.onFlashLoan(msg.sender, asset, amount, feeAmount, data);
-
         require(
             yieldBox.amountOf(address(this), assetId) >= amount + feeAmount,
             'Mx: insufficient funds'

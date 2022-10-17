@@ -5,7 +5,6 @@ import './MXCommon.sol';
 import './MXLiquidation.sol';
 import './MXLendingBorrowing.sol';
 
-
 // solhint-disable max-line-length
 
 contract Mixologist is MXCommon {
@@ -399,6 +398,7 @@ contract Mixologist is MXCommon {
             address(this),
             balanceOf[_feeTo]
         );
+        if (feeShares == 0) return;
 
         yieldBox.transfer(address(this), address(swapper), assetId, feeShares);
 

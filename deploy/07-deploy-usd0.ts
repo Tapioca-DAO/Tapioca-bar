@@ -42,3 +42,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     await (await beachBarContract.setUsdoToken(deployedUSD0.address)).wait();
     console.log('Done');
 };
+
+export default func;
+func.tags = ['USD0'];
