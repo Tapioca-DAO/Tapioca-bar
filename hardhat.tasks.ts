@@ -1,6 +1,7 @@
 import '@nomiclabs/hardhat-ethers';
 import { task } from 'hardhat/config';
 import { deployMarket__task } from './tasks/deployMarket';
+import { deployMinterMarket__task } from './tasks/deployMinterMarket';
 import { exportSDK__task } from './tasks/exportSDK';
 import { getBeachBarMarkets__task } from './tasks/getBeachBarMarkets';
 import {
@@ -10,11 +11,13 @@ import {
 import { setCollateralSwapPath__task } from './tasks/setCollateralSwapPath';
 import { setTapSwapPath__task } from './tasks/setTapSwapPath';
 import { setBorrowCap__task } from './tasks/setBorrowCap';
+import { registerYieldBoxAsset__task } from './tasks/registerYieldBoxAsset';
 import { setLiquidationQueueBidSwapper__task } from './tasks/setLiquidationQueueBidSwapper';
 import { setLiquidationQueueExecutionSwapper__task } from './tasks/setLiquidationQueueExecutionSwapper';
 import { setLiquidationQueue__task } from './tasks/setLiquidationQueue';
 import { getParticipantMixologistInfo__task } from './tasks/getParticipantMixologistInfo';
 import { getMixologistTotals__task } from './tasks/getMixologistTotals';
+import { deployOracleMock__task } from './tasks/deployOracleMock';
 
 task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
     const accounts = await hre.ethers.getSigners();
@@ -40,6 +43,18 @@ task(
     'deployMarket',
     'Deploy a Mixologist market, a Liquidation Queue and initialize it.',
     deployMarket__task,
+).addParam('name', 'Market name');
+
+task(
+    'deployMinterMarket',
+    'Deploy a MinterMixologist market',
+    deployMinterMarket__task,
+).addParam('name', 'Market name');
+
+task(
+    'deployOracleMock',
+    'Deploy USDC-WETH Oracle mock',
+    deployOracleMock__task,
 );
 
 task(
@@ -114,3 +129,9 @@ task(
     .addParam('mixologist', 'Mixologist address')
     .addParam('liquidationQueue', 'LiquidationQueue address')
     .addParam('meta', 'LiquidationQueue meta object');
+
+task(
+    'registerYieldBoxAsset',
+    'Register YieldBox asset',
+    registerYieldBoxAsset__task,
+).addParam('address', 'Asset address');

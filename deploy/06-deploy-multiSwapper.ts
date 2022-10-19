@@ -2,25 +2,22 @@ import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { DeployFunction } from 'hardhat-deploy/types';
 import { verify, updateDeployments, constants } from './utils';
 import _ from 'lodash';
+import { TContract } from 'tapioca-sdk/dist/shared';
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const { deployments, getNamedAccounts } = hre;
     const { deploy } = deployments;
     const { deployer } = await getNamedAccounts();
     const chainId = await hre.getChainId();
-    const contracts: any[] = [];
+    const contracts: TContract[] = [];
 
-    const uniswapFactoryContract = await hre.ethers.getContractAt(
-        'UniswapV2Factory',
-        constants[chainId].uniV2Factory,
-    );
     const beachBar = await deployments.get('BeachBar');
 
     console.log('\n Deploying MultiSwapper');
     const args = [
         constants[chainId].uniV2Factory,
         beachBar.address,
-        await uniswapFactoryContract.pairCodeHash(),
+        constants[chainId].uniV2PairHash,
     ];
     await deploy('MultiSwapper', {
         from: deployer,
@@ -30,9 +27,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     await verify(hre, 'MultiSwapper', args);
     const deployedMultiSwapper = await deployments.get('MultiSwapper');
     contracts.push({
-        contract: deployedMultiSwapper,
-        args: args,
-        artifact: 'MultiSwapper',
+        name: 'MultiSwapper',
+        address: deployedMultiSwapper.address,
+        meta: { constructorArguments: args },
     });
     console.log(
         `Done. Deployed on ${

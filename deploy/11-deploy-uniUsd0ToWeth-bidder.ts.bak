@@ -11,37 +11,30 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const chainId = await hre.getChainId();
     const contracts: TContract[] = [];
 
-    console.log('\n Deploying USD0');
-    const args = [constants[chainId].address];
-    await deploy('USD0', {
+    console.log(`\nDeploying UniswapUsd0ToWethBidder`);
+    const multiSwapper = await deployments.get('MultiSwapper');
+
+    const collateralId=;
+    
+    const args = [multiSwapper.address];
+    await deploy('UniUsdoToWethBidder', {
         from: deployer,
         log: true,
         args,
     });
-    await verify(hre, 'USD0', args);
-    const deployedUSD0 = await deployments.get('USD0');
+    await verify(hre, 'UniUsdoToWethBidder', args);
+    const deployed = await deployments.get('UniUsdoToWethBidder');
     contracts.push({
-        name: 'USD0',
-        address: deployedUSD0.address,
+        name: 'UniUsdoToWethBidder',
+        address: deployed.address,
         meta: { constructorArguments: args },
     });
     console.log(
-        `Done. Deployed on ${deployedUSD0.address} with args ${JSON.stringify(
-            args,
-        )}`,
+        `Done. Deployed UniUsdoToWethBidder on ${deployed.address} with args ${args}`,
     );
 
     await updateDeployments(contracts, chainId);
-
-    console.log('\n Setting USD0');
-    const beachBar = await deployments.get('BeachBar');
-    const beachBarContract = await hre.ethers.getContractAt(
-        'BeachBar',
-        beachBar.address,
-    );
-    await (await beachBarContract.setUsdoToken(deployedUSD0.address)).wait();
-    console.log('Done');
 };
 
 export default func;
-func.tags = ['USD0'];
+func.tags = ['UniswapUsd0ToWethBidder'];

@@ -1,10 +1,6 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import _ from 'lodash';
-import {
-    getMixologistContract,
-    getMixologistHelperContract,
-    getYieldBoxContract,
-} from './utils';
+import { getMixologistContract, getDeployment } from './utils';
 
 //Execution example:
 //      npx hardhat getParticipantMixologistInfo --mixologist "<address>" --participant "<address>"
@@ -16,11 +12,11 @@ export const getDetails = async (
     const { mixologistContract, mixologistAddress } =
         await getMixologistContract(taskArgs, hre);
 
-    const { mixologistHelperContract } = await getMixologistHelperContract(
-        taskArgs,
+    const mixologistHelperContract = await getDeployment(
         hre,
+        'MixologistHelperContract',
     );
-    const { yieldBoxContract } = await getYieldBoxContract(taskArgs, hre);
+    const yieldBoxContract = await getDeployment(hre, 'YieldBox');
 
     const assetId = await mixologistContract.assetId();
     const collateralId = await mixologistContract.collateralId();
