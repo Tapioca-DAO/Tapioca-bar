@@ -2,13 +2,14 @@ import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { DeployFunction } from 'hardhat-deploy/types';
 import { verify, updateDeployments, constants } from './utils';
 import _ from 'lodash';
+import { TContract } from 'tapioca-sdk/dist/shared';
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const { deployments, getNamedAccounts } = hre;
     const { deploy } = deployments;
     const { deployer } = await getNamedAccounts();
     const chainId = await hre.getChainId();
-    const contracts: any[] = [];
+    const contracts: TContract[] = [];
 
     console.log('\n Deploying MixologistHelper');
     await deploy('MixologistHelper', {
@@ -18,11 +19,13 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     await verify(hre, 'MixologistHelper', []);
     const deployedMixologistHelper = await deployments.get('MixologistHelper');
     contracts.push({
-        contract: deployedMixologistHelper,
-        args: [],
-        artifact: 'MixologistHelper',
+        name: 'MixologistHelper',
+        address: deployedMixologistHelper.address,
+        meta: {},
     });
-    console.log('Done');
+    console.log(
+        `Done. Deployed on ${deployedMixologistHelper.address} with no arguments`,
+    );
 
     await updateDeployments(contracts, chainId);
 };

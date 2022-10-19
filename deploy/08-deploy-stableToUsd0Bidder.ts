@@ -2,19 +2,20 @@ import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { DeployFunction } from 'hardhat-deploy/types';
 import { verify, updateDeployments, constants } from './utils';
 import _ from 'lodash';
+import { TContract } from 'tapioca-sdk/dist/shared';
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const { deployments, getNamedAccounts } = hre;
     const { deploy } = deployments;
     const { deployer } = await getNamedAccounts();
     const chainId = await hre.getChainId();
-    const contracts: any[] = [];
+    const contracts: TContract[] = [];
 
     const beachBar = await deployments.get('BeachBar');
 
     console.log('\n Deploying CurveSwapper');
     const curveSwapperArgs = [
-        constants[chainId].curveStablePool,
+        constants[chainId].crvStablePool,
         beachBar.address,
     ];
     await deploy('CurveSwapper', {
@@ -25,15 +26,18 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     await verify(hre, 'CurveSwapper', curveSwapperArgs);
     const deployedCurveSwapper = await deployments.get('CurveSwapper');
     contracts.push({
-        contract: deployedCurveSwapper,
-        args: curveSwapperArgs,
-        artifact: 'CurveSwapper',
+        address: deployedCurveSwapper.address,
+        meta: { constructorArguments: curveSwapperArgs },
+        name: 'CurveSwapper',
     });
-    console.log('Done');
+    console.log(
+        `Done. Deployed on ${
+            deployedCurveSwapper.address
+        } with args ${JSON.stringify(curveSwapperArgs)}`,
+    );
 
     console.log('\n Deploying CurveStableToUsdoBidder');
-    // constructor(CurveSwapper curveSwapper_, uint256 curvePoolAssetCount_) {
-    const stableToUsd0Args = [deployedCurveSwapper.address, 4];
+    const stableToUsd0Args = [deployedCurveSwapper.address, '4'];
     await deploy('CurveStableToUsdoBidder', {
         from: deployer,
         log: true,
@@ -44,11 +48,15 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         'CurveStableToUsdoBidder',
     );
     contracts.push({
-        contract: deployedStableToUsd0Swapper,
-        args: stableToUsd0Args,
-        artifact: 'CurveStableToUsdoBidder',
+        name: 'CurveStableToUsdoBidder',
+        address: deployedStableToUsd0Swapper.address,
+        meta: { constructorArguments: stableToUsd0Args },
     });
-    console.log('Done');
+    console.log(
+        `Done. Deployed on ${
+            deployedStableToUsd0Swapper.address
+        } with args ${JSON.stringify(stableToUsd0Args)}`,
+    );
 
     await updateDeployments(contracts, chainId);
 };

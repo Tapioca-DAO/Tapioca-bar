@@ -1,11 +1,11 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import _ from 'lodash';
-import { getBeachBarContract, getMixologistContract } from './utils';
+import { getDeployment, getMixologistContract } from './utils';
 
 //Execution example:
 //      npx hardhat setBorrowCap --mixologist "<address>" --cap "<cap>"
 export const setCap = async (taskArgs: any, hre: HardhatRuntimeEnvironment) => {
-    const { beachBarContract } = await getBeachBarContract(taskArgs, hre);
+    const beachBarContract = await getDeployment(hre, 'BeachBar');
     const { mixologistContract, mixologistAddress } =
         await getMixologistContract(taskArgs, hre);
 
@@ -14,7 +14,11 @@ export const setCap = async (taskArgs: any, hre: HardhatRuntimeEnvironment) => {
         [taskArgs['cap']],
     );
 
-    await beachBarContract.executeMixologistFn([mixologistAddress], [callData],true);
+    await beachBarContract.executeMixologistFn(
+        [mixologistAddress],
+        [callData],
+        true,
+    );
 };
 
 export const setBorrowCap__task = async (

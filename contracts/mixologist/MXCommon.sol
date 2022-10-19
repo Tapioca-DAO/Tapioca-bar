@@ -8,9 +8,11 @@ contract MXCommon is MXStorage {
 
     /// Modifier to check if the msg.sender is allowed to use funds belonging to the 'from' address.
     /// If 'from' is msg.sender, it's allowed.
-    /// If 'msg.sender' is an address (an operator) that is approved by 'from', it's allowed.
+    /// msg.sender can be an allowed operator if his allowance equal or exceed the balance of the user 'from'.
     modifier allowed(address from) virtual {
-        if (from != msg.sender && !isApprovedForAll[from][msg.sender]) {
+        if (
+            from != msg.sender && allowance[from][msg.sender] <= balanceOf[from]
+        ) {
             revert NotApproved(from, msg.sender);
         }
         _;
@@ -32,6 +34,7 @@ contract MXCommon is MXStorage {
     // ************** //
     // *** PUBLIC *** //
     // ************** //
+
     /// @notice Gets the exchange rate. I.e how much collateral to buy 1e18 asset.
     /// This function is supposed to be invoked if needed because Oracle queries can be expensive.
     /// @return updated True if `exchangeRate` was updated.
@@ -235,6 +238,9 @@ contract MXCommon is MXStorage {
         address to,
         uint256 fraction
     ) internal returns (uint256 share) {
+        if (totalAsset.base == 0) {
+            return 0;
+        }
         Rebase memory _totalAsset = totalAsset;
         uint256 allShare = _totalAsset.elastic +
             yieldBox.toShare(assetId, totalBorrow.elastic, true);

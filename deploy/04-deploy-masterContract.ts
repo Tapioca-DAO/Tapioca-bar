@@ -24,29 +24,24 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         address: mediumRiskMC.address,
         meta: {},
     });
+    console.log(
+        `Done. Deployed MediumRiskMC on ${mediumRiskMC.address} with no arguments`,
+    );
 
-    console.log('\nDeploying MXLiquidation');
-    await deploy('MXLiquidation', { from: deployer, log: true });
-    await verify(hre, 'MXLiquidation', []);
-    const mxLiquidation = await deployments.get('MXLiquidation');
-    contracts.push({
-        name: 'MXLiquidation',
-        address: mxLiquidation.address,
-        meta: {},
-    });
-
-    console.log('\nDeploying MXLendingBorrowing');
-    await deploy('MXLendingBorrowing', { from: deployer, log: true });
-    await verify(hre, 'MXLendingBorrowing', []);
-    const mxLendingBorrowing = await deployments.get('MXLendingBorrowing');
-    contracts.push({
-        name: 'MXLendingBorrowing',
-        address: mxLendingBorrowing.address,
-        meta: {},
-    });
-
-    console.log('Done');
     await updateDeployments(contracts, chainId);
+
+    const beachBarContract = await hre.ethers.getContractAt(
+        'BeachBar',
+        (
+            await deployments.get('BeachBar')
+        ).address,
+    );
+
+    console.log('\n Setting MasterContract on BeachBar');
+    await (
+        await beachBarContract.registerMasterContract(mediumRiskMC.address, 1)
+    ).wait();
+    console.log(`Done`);
 };
 
 export default func;

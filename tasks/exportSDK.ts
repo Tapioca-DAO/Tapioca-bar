@@ -11,8 +11,11 @@ export const exportSDK__task = async (
     taskArgs: any,
     hre: HardhatRuntimeEnvironment,
 ) => {
+    const chainId = await hre.getChainId();
+    console.log(`\nRetrieving deployments for chain ${chainId}`);
+
     const _deployments: TProjectDeployment = {
-        [(await hre.getChainId()) as keyof TProjectDeployment]: (
+        [chainId as keyof TProjectDeployment]: (
             (await getDeployments(hre, true)) ?? []
         ).map((e: TContract) => ({
             address: e.address,
@@ -20,8 +23,7 @@ export const exportSDK__task = async (
             name: e.name,
         })),
     };
-    console.log('[+] Exporting:');
-    console.log(JSON.stringify(_deployments, null, 2));
+    console.log('\nExporting:');
     await SDK.API.exportSDK.run({
         projectCaller: 'Tapioca-Bar',
         contractNames: [
@@ -37,4 +39,5 @@ export const exportSDK__task = async (
         artifactPath: hre.config.paths.artifacts,
         _deployments,
     });
+    console.log('Done');
 };

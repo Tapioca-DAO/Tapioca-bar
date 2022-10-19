@@ -1,6 +1,6 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import _ from 'lodash';
-import { getBeachBarContract, getMixologistContract } from './utils';
+import { getDeployment, getMixologistContract } from './utils';
 
 //Execution example:
 //      npx hardhat setLiquidationQueueBidSwapper --mixologist "<address>" --swapper "<cap>"
@@ -8,7 +8,7 @@ export const setLiquidationQueueExecutionSwapper = async (
     taskArgs: any,
     hre: HardhatRuntimeEnvironment,
 ) => {
-    const { beachBarContract } = await getBeachBarContract(taskArgs, hre);
+    const beachBarContract = await getDeployment(hre, 'BeachBar');
     const { mixologistContract, mixologistAddress } =
         await getMixologistContract(taskArgs, hre);
 

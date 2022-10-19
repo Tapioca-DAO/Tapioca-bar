@@ -2,25 +2,20 @@ import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { DeployFunction } from 'hardhat-deploy/types';
 import { verify, updateDeployments, constants } from './utils';
 import _ from 'lodash';
+import { TContract } from 'tapioca-sdk/dist/shared';
+import { getDeployment } from '../tasks/utils';
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const { deployments, getNamedAccounts } = hre;
     const { deploy } = deployments;
     const { deployer } = await getNamedAccounts();
     const chainId = await hre.getChainId();
-    const contracts: any[] = [];
+    const contracts: TContract[] = [];
 
     console.log('\n Deploying BeachBar');
-    let yieldBoxAddress = constants[chainId].yieldBoxAddress;
-    if (
-        !hre.ethers.utils.isAddress(yieldBoxAddress!) ||
-        yieldBoxAddress == hre.ethers.constants.AddressZero
-    ) {
-        const deployedYieldBox = await deployments.get('YieldBox');
-        yieldBoxAddress = deployedYieldBox.address;
-    }
+    const yieldBoxContract = await getDeployment(hre, 'YieldBox');
 
-    const args = [yieldBoxAddress, constants[chainId].tapAddress];
+    const args = [yieldBoxContract.address, constants[chainId].tapAddress];
     await deploy('BeachBar', {
         from: deployer,
         log: true,
@@ -29,11 +24,15 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     await verify(hre, 'BeachBar', args);
     const deployedBeachBar = await deployments.get('BeachBar');
     contracts.push({
-        contract: deployedBeachBar,
-        args: args,
-        artifact: 'BeachBar',
+        name: 'BeachBar',
+        address: deployedBeachBar.address,
+        meta: { constructorArguments: args },
     });
-    console.log('Done');
+    console.log(
+        `Done. Deployed on ${
+            deployedBeachBar.address
+        } with args ${JSON.stringify(args)}`,
+    );
 
     await updateDeployments(contracts, chainId);
 
@@ -42,6 +41,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         'BeachBar',
         deployedBeachBar.address,
     );
+
     await (await beachBarContract.setFeeTo(constants[chainId].feeTo)).wait();
     await (
         await beachBarContract.setFeeVeTap(constants[chainId].feeVeTo)

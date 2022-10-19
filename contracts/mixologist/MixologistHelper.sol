@@ -5,7 +5,6 @@ import '@boringcrypto/boring-solidity/contracts/ERC20.sol';
 import '@boringcrypto/boring-solidity/contracts/libraries/BoringRebase.sol';
 import './Mixologist.sol';
 
-import 'hardhat/console.sol';
 
 /// @dev This contract provides useful helper functions for `Mixologist`.
 contract MixologistHelper {

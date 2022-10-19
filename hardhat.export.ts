@@ -6,8 +6,29 @@ import { HardhatUserConfig } from 'hardhat/config';
 import 'hardhat-deploy';
 import 'hardhat-contract-sizer';
 import 'hardhat-gas-reporter';
+import SDK from 'tapioca-sdk';
+import { HttpNetworkConfig } from 'hardhat/types';
 
 dotenv.config();
+
+let supportedChains: { [key: string]: HttpNetworkConfig } = SDK.API.utils
+    .getSupportedChains()
+    .reduce(
+        (sdkChains, chain) => ({
+            ...sdkChains,
+            [chain.name]: <HttpNetworkConfig>{
+                accounts:
+                    process.env.PRIVATE_KEY !== undefined
+                        ? [process.env.PRIVATE_KEY]
+                        : [],
+                live: true,
+                url: chain.rpc.replace('<api_key>', process.env.ALCHEMY_KEY),
+                gasMultiplier: chain.tags.includes('testnet') ? 2 : 1,
+                chainId: Number(chain.chainId),
+            },
+        }),
+        {},
+    );
 
 const config: HardhatUserConfig & { dodoc?: any } = {
     solidity: {
@@ -54,17 +75,25 @@ const config: HardhatUserConfig & { dodoc?: any } = {
             },
             tags: ['testnet'],
         },
-        goerli: {
-            gasMultiplier: 2,
-            url: process.env.GOERLI ?? 'https://rpc.ankr.com/eth_goerli',
-            chainId: 5,
-            accounts:
-                process.env.PRIVATE_KEY !== undefined
-                    ? [process.env.PRIVATE_KEY]
-                    : [],
-            tags: ['testnet'],
-            live: true,
-        },
+        //testnets
+        goerli: supportedChains['goerli'],
+        bnb_testnet: supportedChains['bnb_testnet'],
+        fuji_avalanche: supportedChains['fuji_avalanche'],
+        mumbai: supportedChains['mumbai'],
+        fantom_testnet: supportedChains['fantom_testnet'],
+        arbitrum_goerli: supportedChains['arbitrum_goerli'],
+        optimism_goerli: supportedChains['optimism_goerli'],
+        harmony_testnet: supportedChains['harmony_testnet'],
+
+        //mainnets
+        ethereum: supportedChains['ethereum'],
+        bnb: supportedChains['bnb'],
+        avalanche: supportedChains['avalanche'],
+        matic: supportedChains['polygon'],
+        arbitrum: supportedChains['arbitrum'],
+        optimism: supportedChains['optimism'],
+        fantom: supportedChains['fantom'],
+        harmony: supportedChains['harmony'],
     },
     etherscan: {
         apiKey: process.env.ETHERSCAN_KEY,

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.9;
+pragma solidity ^0.8.0;
 
 import './MXCommon.sol';
 import './MXLiquidation.sol';
@@ -97,18 +97,6 @@ contract Mixologist is MXCommon {
         if (!success) {
             revert(_getRevertMsg(returnData));
         }
-    }
-
-    /**
-     * @notice Sets approval status for an `operator` to manage user account.
-     * @param operator Address of Operator.
-     * @param approved Status of approval.
-     */
-    function setApprovalForAll(address operator, bool approved) external {
-        // Effects
-        isApprovedForAll[msg.sender][operator] = approved;
-
-        emit LogApprovalForAll(msg.sender, operator, approved);
     }
 
     /// @notice The init function that acts as a constructor
@@ -410,6 +398,7 @@ contract Mixologist is MXCommon {
             address(this),
             balanceOf[_feeTo]
         );
+        if (feeShares == 0) return;
 
         yieldBox.transfer(address(this), address(swapper), assetId, feeShares);
 

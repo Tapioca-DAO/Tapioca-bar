@@ -49,12 +49,10 @@ describe('Mixologist test', () => {
                 'updateExchangeRate',
             );
 
-        await (
-            await wethUsdcMixologist.execute(
-                [addAssetFn, removeAssetFn, updateExchangeRateFn],
-                true,
-            )
-        ).wait();
+        await wethUsdcMixologist.execute(
+            [addAssetFn, removeAssetFn, updateExchangeRateFn],
+            true,
+        );
 
         addAssetFn = wethUsdcMixologist.interface.encodeFunctionData(
             'addAsset',
@@ -69,15 +67,13 @@ describe('Mixologist test', () => {
         ).to.be.revertedWith('Mx: too much');
 
         // Withdraw from bar
-        await (
-            await yieldBox.withdraw(
-                await wethUsdcMixologist.assetId(),
-                deployer.address,
-                deployer.address,
-                0,
-                mintValShare,
-            )
-        ).wait();
+        await yieldBox.withdraw(
+            await wethUsdcMixologist.assetId(),
+            deployer.address,
+            deployer.address,
+            0,
+            mintValShare,
+        );
 
         // Check the value of the asset
         const balanceAfter = await weth.balanceOf(deployer.address);
@@ -119,17 +115,15 @@ describe('Mixologist test', () => {
             usdcMintVal,
             false,
         );
-        await (
-            await yieldBox
-                .connect(eoa1)
-                .depositAsset(
-                    collateralId,
-                    eoa1.address,
-                    eoa1.address,
-                    usdcMintVal,
-                    0,
-                )
-        ).wait();
+        await yieldBox
+            .connect(eoa1)
+            .depositAsset(
+                collateralId,
+                eoa1.address,
+                eoa1.address,
+                usdcMintVal,
+                0,
+            );
 
         const addCollateralFn = wethUsdcMixologist.interface.encodeFunctionData(
             'addCollateral',
@@ -876,95 +870,6 @@ describe('Mixologist test', () => {
                 ethers.utils.hexlify(0),
             ),
         ).to.emit(wethUsdcMixologist, 'LogFlashLoan');
-    });
-
-    it('Should try to add asset to mixologist on behalf of another user and fail, then pass after approval', async () => {
-        const {
-            weth,
-            yieldBox,
-            wethUsdcMixologist,
-            deployer,
-            initContracts,
-            eoa1,
-        } = await loadFixture(register);
-
-        await initContracts(); // To prevent `Mixologist: below minimum`
-
-        const mintVal = ethers.BigNumber.from((1e18).toString()).mul(10);
-
-        // Mint WETH for both accounts
-        await weth.freeMint(mintVal);
-        await weth.connect(eoa1).freeMint(mintVal);
-
-        // Deposit assets to bar
-        const mintValShare = await yieldBox.toShare(
-            await wethUsdcMixologist.assetId(),
-            mintVal,
-            false,
-        );
-        await (await weth.approve(yieldBox.address, mintVal)).wait();
-        await (
-            await weth.connect(eoa1).approve(yieldBox.address, mintVal)
-        ).wait();
-
-        await (
-            await yieldBox.depositAsset(
-                await wethUsdcMixologist.assetId(),
-                deployer.address,
-                deployer.address,
-                0,
-                mintValShare,
-            )
-        ).wait();
-
-        await (
-            await yieldBox
-                .connect(eoa1)
-                .depositAsset(
-                    await wethUsdcMixologist.assetId(),
-                    eoa1.address,
-                    eoa1.address,
-                    0,
-                    mintValShare,
-                )
-        ).wait();
-
-        // Approve Mixologist in yieldBox
-        await (
-            await yieldBox.setApprovalForAll(wethUsdcMixologist.address, true)
-        ).wait();
-        await (
-            await yieldBox
-                .connect(eoa1)
-                .setApprovalForAll(wethUsdcMixologist.address, true)
-        ).wait();
-
-        // Add asset from eoa1 to deployer without approval
-        await expect(
-            wethUsdcMixologist.addAsset(
-                eoa1.address,
-                deployer.address,
-                false,
-                mintValShare,
-            ),
-        ).to.be.revertedWithCustomError(wethUsdcMixologist, 'NotApproved');
-
-        // Approve deployer as operator in Mixologist
-        await expect(
-            await wethUsdcMixologist
-                .connect(eoa1)
-                .setApprovalForAll(deployer.address, true),
-        ).to.emit(wethUsdcMixologist, 'LogApprovalForAll');
-
-        // Add asset from eoa1 to deployer with approval
-        await (
-            await wethUsdcMixologist.addAsset(
-                eoa1.address,
-                deployer.address,
-                false,
-                mintValShare,
-            )
-        ).wait();
     });
 
     it('should return ERC20 properties', async () => {
