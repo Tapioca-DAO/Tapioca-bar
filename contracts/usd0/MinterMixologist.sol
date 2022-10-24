@@ -5,10 +5,11 @@ import '@boringcrypto/boring-solidity/contracts/BoringOwnable.sol';
 import '@boringcrypto/boring-solidity/contracts/ERC20.sol';
 import '@boringcrypto/boring-solidity/contracts/libraries/BoringRebase.sol';
 import '@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol';
-import '../../yieldbox/contracts/YieldBox.sol';
-import '../mixologist/interfaces/IOracle.sol';
-import '../BeachBar.sol';
 
+import '../IBeachBar.sol';
+import '../swappers/IMultiSwapper.sol';
+import '../mixologist/interfaces/IOracle.sol';
+import '../../yieldbox/contracts/YieldBox.sol';
 
 // solhint-disable max-line-length
 /*
@@ -38,7 +39,7 @@ contract MinterMixologist is BoringOwnable {
     }
     AccrueInfo public accrueInfo;
 
-    BeachBar public beachBar;
+    IBeachBar public beachBar;
     YieldBox public yieldBox;
     IERC20 public collateral;
     IUSD0 public asset;
@@ -138,7 +139,7 @@ contract MinterMixologist is BoringOwnable {
 
     /// @notice Creates the MinterMixologist contract
     constructor(
-        BeachBar tapiocaBar_,
+        IBeachBar tapiocaBar_,
         IERC20 _collateral,
         uint256 _collateralId,
         IOracle _oracle,
@@ -146,13 +147,13 @@ contract MinterMixologist is BoringOwnable {
         address[] memory _collateralSwapPath
     ) {
         beachBar = tapiocaBar_;
-        yieldBox = tapiocaBar_.yieldBox();
+        yieldBox = YieldBox(tapiocaBar_.yieldBox());
         owner = address(beachBar);
 
         tapSwapPath = _tapSwapPath;
         collateralSwapPath = _collateralSwapPath;
 
-        address _asset = address(beachBar.usdoToken());
+        address _asset = beachBar.usdoToken();
 
         require(
             address(_collateral) != address(0) &&
@@ -303,8 +304,8 @@ contract MinterMixologist is BoringOwnable {
 
     /// @notice Withdraw the balance of `feeTo`, swap asset into TAP and deposit it to yieldBox of `feeTo`
     function depositFeesToYieldBox(
-        MultiSwapper swapper,
-        SwapData calldata swapData
+        IMultiSwapper swapper,
+        IBeachBar.SwapData calldata swapData
     ) public {
         require(beachBar.swappers(swapper), 'Mx: Invalid swapper');
 
@@ -360,7 +361,7 @@ contract MinterMixologist is BoringOwnable {
     function liquidate(
         address[] calldata users,
         uint256[] calldata maxBorrowParts,
-        MultiSwapper swapper,
+        IMultiSwapper swapper,
         bytes calldata collateralToAssetSwapData
     ) external {
         // Oracle can fail but we still need to allow liquidations
@@ -453,7 +454,7 @@ contract MinterMixologist is BoringOwnable {
     function _closedLiquidation(
         address[] calldata users,
         uint256[] calldata maxBorrowParts,
-        MultiSwapper swapper,
+        IMultiSwapper swapper,
         uint256 _exchangeRate,
         bytes calldata swapData
     ) private {

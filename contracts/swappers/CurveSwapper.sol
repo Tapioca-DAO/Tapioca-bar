@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
-import '@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol';
 import '../libraries/ICurvePool.sol';
-
 import '../../yieldbox/contracts/YieldBox.sol';
-import '../BeachBar.sol';
+import '../IBeachBar.sol';
+import '@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol';
 
 contract CurveSwapper {
     using BoringERC20 for IERC20;
@@ -13,9 +12,9 @@ contract CurveSwapper {
 
     YieldBox private immutable yieldBox;
 
-    constructor(ICurvePool _curvePool, BeachBar _bar) {
+    constructor(ICurvePool _curvePool, IBeachBar _bar) {
         curvePool = _curvePool;
-        yieldBox = _bar.yieldBox();
+        yieldBox = YieldBox(_bar.yieldBox());
     }
 
     /// @notice returns the possible output amount for input share

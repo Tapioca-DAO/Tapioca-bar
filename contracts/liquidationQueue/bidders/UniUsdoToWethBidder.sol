@@ -3,24 +3,23 @@ pragma solidity ^0.8.0;
 
 import '@boringcrypto/boring-solidity/contracts/BoringOwnable.sol';
 
+import '../../IBeachBar.sol';
 import '../ILiquidationQueue.sol';
-import '../../mixologist/Mixologist.sol';
-import '../../swappers/MultiSwapper.sol';
-import '../../swappers/CurveSwapper.sol';
-
-import './IBidder.sol';
+import '../../swappers/IMultiSwapper.sol';
+import '../../mixologist/interfaces/IMixologist.sol';
+import '../../../yieldbox/contracts/interfaces/IYieldBox.sol';
 
 /// @notice Swaps USD0 to WETH UniswapV2
 /// @dev Performs 1 swap operation:
 ///     - USD0 to Weth through UniV2
-contract UniUsdoToWethBidder is IBidder, BoringOwnable {
+contract UniUsdoToWethBidder is BoringOwnable {
     // ************ //
     // *** DATA *** //
     // ************ //
 
     // --- Public ---
     /// @notice UniswapV2 swapper
-    MultiSwapper public univ2Swapper;
+    IMultiSwapper public univ2Swapper;
 
     // --- Private ---
     uint256 wethId;
@@ -28,7 +27,7 @@ contract UniUsdoToWethBidder is IBidder, BoringOwnable {
     // --- Events ---
     event UniV2SwapperUpdated(address indexed _old, address indexed _new);
 
-    constructor(MultiSwapper uniV2Swapper_, uint256 _wethAssetId) {
+    constructor(IMultiSwapper uniV2Swapper_, uint256 _wethAssetId) {
         univ2Swapper = uniV2Swapper_;
         wethId = _wethAssetId;
     }
@@ -46,16 +45,16 @@ contract UniUsdoToWethBidder is IBidder, BoringOwnable {
     /// @param tokenInId Token in asset id
     /// @param amountOut Token out amount
     function getInputAmount(
-        Mixologist mixologist,
+        IMixologist mixologist,
         uint256 tokenInId,
         uint256 amountOut,
         bytes calldata
     ) external view returns (uint256) {
         require(
-            tokenInId == mixologist.beachBar().usdoAssetId(),
+            tokenInId == IBeachBar(mixologist.beachBar()).usdoAssetId(),
             'token not valid'
         );
-        YieldBox yieldBox = mixologist.yieldBox();
+        IYieldBox yieldBox = IYieldBox(mixologist.yieldBox());
 
         uint256 shareOut = yieldBox.toShare(wethId, amountOut, false);
 
@@ -72,21 +71,21 @@ contract UniUsdoToWethBidder is IBidder, BoringOwnable {
     /// @notice returns the amount of collateral
     /// @param amountIn Stablecoin amount
     function getOutputAmount(
-        Mixologist mixologist,
+        IMixologist mixologist,
         uint256 tokenInId,
         uint256 amountIn,
         bytes calldata
     ) external view returns (uint256) {
         require(
-            address(mixologist.beachBar().usdoToken()) != address(0),
+            IBeachBar(mixologist.beachBar()).usdoToken() != address(0),
             'USD0 not set'
         );
-        uint256 usdoAssetId = mixologist.beachBar().usdoAssetId();
+        uint256 usdoAssetId = IBeachBar(mixologist.beachBar()).usdoAssetId();
         require(tokenInId == usdoAssetId, 'token not valid');
 
         return
             _uniswapOutputAmount(
-                mixologist.yieldBox(),
+                IYieldBox(mixologist.yieldBox()),
                 usdoAssetId,
                 wethId,
                 amountIn
@@ -99,19 +98,21 @@ contract UniUsdoToWethBidder is IBidder, BoringOwnable {
     /// @param amountIn Stablecoin amount
     /// @param data extra data used for the swap operation
     function swap(
-        Mixologist mixologist,
+        IMixologist mixologist,
         uint256 tokenInId,
         uint256 amountIn,
         bytes calldata data
     ) external returns (uint256) {
         require(
-            address(mixologist.beachBar().usdoToken()) != address(0),
+            IBeachBar(mixologist.beachBar()).usdoToken() != address(0),
             'USD0 not set'
         );
-        YieldBox yieldBox = mixologist.yieldBox();
-        ILiquidationQueue liquidationQueue = mixologist.liquidationQueue();
+        IYieldBox yieldBox = IYieldBox(mixologist.yieldBox());
+        ILiquidationQueue liquidationQueue = ILiquidationQueue(
+            mixologist.liquidationQueue()
+        );
 
-        uint256 usdoAssetId = mixologist.beachBar().usdoAssetId();
+        uint256 usdoAssetId = IBeachBar(mixologist.beachBar()).usdoAssetId();
         require(tokenInId == usdoAssetId, 'token not valid');
         require(msg.sender == address(liquidationQueue), 'only LQ');
 
@@ -143,14 +144,14 @@ contract UniUsdoToWethBidder is IBidder, BoringOwnable {
     /// @notice sets the UniV2 swapper
     /// @dev used for WETH to USDC swap
     /// @param _swapper The UniV2 pool swapper address
-    function setUniswapSwapper(MultiSwapper _swapper) external onlyOwner {
+    function setUniswapSwapper(IMultiSwapper _swapper) external onlyOwner {
         emit UniV2SwapperUpdated(address(univ2Swapper), address(_swapper));
         univ2Swapper = _swapper;
     }
 
     // --- Private methods ---
     function _uniswapSwap(
-        YieldBox yieldBox,
+        IYieldBox yieldBox,
         uint256 tokenInId,
         uint256 tokenOutId,
         uint256 tokenInAmount,
@@ -180,7 +181,7 @@ contract UniUsdoToWethBidder is IBidder, BoringOwnable {
     }
 
     function _uniswapOutputAmount(
-        YieldBox yieldBox,
+        IYieldBox yieldBox,
         uint256 tokenInId,
         uint256 tokenOutId,
         uint256 amountIn

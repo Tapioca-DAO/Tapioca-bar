@@ -1,9 +1,14 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 import '@boringcrypto/boring-solidity/contracts/BoringOwnable.sol';
-import '@boringcrypto/boring-solidity/contracts/ERC20.sol';
-import '../mixologist/Mixologist.sol';
+import '@boringcrypto/boring-solidity/contracts/interfaces/IERC20.sol';
+
+import '../IBeachBar.sol';
 import './ILiquidationQueue.sol';
+import '../mixologist/interfaces/IMixologist.sol';
+import '../../yieldbox/contracts/interfaces/IStrategy.sol';
+
+import '../../yieldbox/contracts/YieldBox.sol';
 
 enum MODE {
     ADD,
@@ -24,8 +29,8 @@ contract LiquidationQueue {
      */
 
     LiquidationQueueMeta public liquidationQueueMeta; // Meta-data for this contract.
-    Mixologist public mixologist; // The target market.
-    BeachBar public beachBar;
+    IMixologist public mixologist; // The target market.
+    IBeachBar public beachBar;
     YieldBox public yieldBox;
 
     uint256 public lqAssetId; // The liquidation queue BeachBar asset id.
@@ -82,17 +87,17 @@ contract LiquidationQueue {
     /// @param  _liquidationQueueMeta Info about the liquidations.
     function init(
         LiquidationQueueMeta calldata _liquidationQueueMeta,
-        Mixologist _mixologist
+        IMixologist _mixologist
     ) external {
         require(!onlyOnce, 'LQ: Initialized');
 
         liquidationQueueMeta = _liquidationQueueMeta;
 
-        mixologist = Mixologist(_mixologist);
+        mixologist = IMixologist(_mixologist);
         liquidatedAssetId = mixologist.collateralId();
         marketAssetId = mixologist.assetId();
-        beachBar = mixologist.beachBar();
-        yieldBox = mixologist.yieldBox();
+        beachBar = IBeachBar(mixologist.beachBar());
+        yieldBox = YieldBox(mixologist.yieldBox());
 
         lqAssetId = _registerAsset();
 
@@ -242,7 +247,7 @@ contract LiquidationQueue {
         );
 
         uint256 usdoAmount = liquidationQueueMeta.usdoSwapper.swap(
-            mixologist,
+            address(mixologist),
             stableAssetId,
             amountIn,
             data
@@ -252,7 +257,7 @@ contract LiquidationQueue {
 
         uint256 usdoValueInLqAsset = bidder.swapOnExecute
             ? liquidationQueueMeta.bidExecutionSwapper.getOutputAmount(
-                mixologist,
+                address(mixologist),
                 usdoAssetId,
                 usdoAmount,
                 data
@@ -334,7 +339,7 @@ contract LiquidationQueue {
             orderBookEntry.bidInfo.liquidatedAssetAmount,
             orderBookEntry.bidInfo.swapOnExecute
                 ? liquidationQueueMeta.bidExecutionSwapper.getOutputAmount(
-                    mixologist,
+                    address(mixologist),
                     beachBar.usdoAssetId(),
                     orderBookEntry.bidInfo.usdoAmount,
                     ''
@@ -364,7 +369,7 @@ contract LiquidationQueue {
             lqAssetValue = liquidationQueueMeta
                 .bidExecutionSwapper
                 .getOutputAmount(
-                    mixologist,
+                    address(mixologist),
                     beachBar.usdoAssetId(),
                     amountRemoved,
                     ''
@@ -465,7 +470,7 @@ contract LiquidationQueue {
             lqAssetValue = liquidationQueueMeta
                 .bidExecutionSwapper
                 .getOutputAmount(
-                    mixologist,
+                    address(mixologist),
                     beachBar.usdoAssetId(),
                     amountRemoved,
                     ''
@@ -516,7 +521,7 @@ contract LiquidationQueue {
             : entry.liquidatedAssetAmount;
         uint256 liquidatedAssetAmount = entry.swapOnExecute
             ? liquidationQueueMeta.bidExecutionSwapper.getOutputAmount(
-                mixologist,
+                address(mixologist),
                 beachBar.usdoAssetId(),
                 entry.usdoAmount,
                 ''
@@ -563,7 +568,7 @@ contract LiquidationQueue {
             finalCollateralAmount = liquidationQueueMeta
                 .bidExecutionSwapper
                 .swap(
-                    mixologist,
+                    address(mixologist),
                     beachBar.usdoAssetId(),
                     entry.usdoAmount,
                     swapData
@@ -602,7 +607,7 @@ contract LiquidationQueue {
             finalUsdoAmount = liquidationQueueMeta
                 .bidExecutionSwapper
                 .getInputAmount(
-                    mixologist,
+                    address(mixologist),
                     usdoAssetId,
                     finalDiscountedCollateralAmount,
                     ''
@@ -616,7 +621,12 @@ contract LiquidationQueue {
             );
             uint256 returnedCollateral = liquidationQueueMeta
                 .bidExecutionSwapper
-                .swap(mixologist, usdoAssetId, finalUsdoAmount, swapData);
+                .swap(
+                    address(mixologist),
+                    usdoAssetId,
+                    finalUsdoAmount,
+                    swapData
+                );
             require(
                 returnedCollateral >= finalDiscountedCollateralAmount,
                 'need-more-collateral'

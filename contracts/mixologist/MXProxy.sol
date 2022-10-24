@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.9;
 
+import '@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol';
 import 'tapioca-sdk/src/contracts/lzApp/NonblockingLzApp.sol';
-import './Mixologist.sol';
-
+import './interfaces/IMixologist.sol';
 
 /*
 
@@ -145,7 +145,7 @@ contract MXProxy is NonblockingLzApp {
         }
         require(mixologists[toAddress], 'MXProxy: Invalid Mixologist');
 
-        Mixologist(toAddress).execute(mxCalls, true);
+        IMixologist(toAddress).execute(mxCalls, true);
 
         emit ReceiveFromChain(_srcChainId, toAddress, _mxPayload);
     }
@@ -159,7 +159,7 @@ contract MXProxy is NonblockingLzApp {
         address payable _refundAddress,
         address _zroPaymentAddress,
         bytes memory _adapterParams
-    ) internal virtual {
+    ) internal {
         bytes memory mxPayload = abi.encode(
             abi.encodePacked(address(this)),
             _toAddress,

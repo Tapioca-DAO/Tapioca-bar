@@ -3,8 +3,9 @@ pragma solidity ^0.8.0;
 
 import '@boringcrypto/boring-solidity/contracts/ERC20.sol';
 import '@boringcrypto/boring-solidity/contracts/libraries/BoringRebase.sol';
-import './Mixologist.sol';
 
+import './interfaces/IMixologist.sol';
+import '../../yieldbox/contracts/YieldBox.sol';
 
 /// @dev This contract provides useful helper functions for `Mixologist`.
 contract MixologistHelper {
@@ -16,11 +17,11 @@ contract MixologistHelper {
     /// @notice deposits asset to YieldBox and lends it to Mixologist
     /// @param mixologist the mixologist address
     /// @param _amount the amount to lend
-    function depositAndAddAsset(Mixologist mixologist, uint256 _amount)
+    function depositAndAddAsset(IMixologist mixologist, uint256 _amount)
         external
     {
         uint256 assetId = mixologist.assetId();
-        YieldBox yieldBox = mixologist.yieldBox();
+        YieldBox yieldBox = YieldBox(mixologist.yieldBox());
 
         (, address assetAddress, , ) = yieldBox.assets(assetId);
         _extractTokens(assetAddress, _amount);
@@ -41,12 +42,12 @@ contract MixologistHelper {
     /// @param _borrowAmount the amount to borrow
     /// @param _withdraw if true, withdraws from YieldBox to `msg.sender`
     function depositAddCollateralAndBorrow(
-        Mixologist mixologist,
+        IMixologist mixologist,
         uint256 _collateralAmount,
         uint256 _borrowAmount,
         bool _withdraw
     ) external {
-        YieldBox yieldBox = mixologist.yieldBox();
+        YieldBox yieldBox = YieldBox(mixologist.yieldBox());
 
         uint256 collateralId = mixologist.collateralId();
 
@@ -91,12 +92,12 @@ contract MixologistHelper {
     /// @param mixologist the mixologist address
     /// @param _depositAmount the amount to repay
     function depositAndRepay(
-        Mixologist mixologist,
+        IMixologist mixologist,
         uint256 _depositAmount,
         uint256 _repayAmount
     ) public {
         uint256 assetId = mixologist.assetId();
-        YieldBox yieldBox = mixologist.yieldBox();
+        YieldBox yieldBox = YieldBox(mixologist.yieldBox());
 
         (, address assetAddress, , ) = yieldBox.assets(assetId);
         _extractTokens(assetAddress, _depositAmount);
@@ -117,13 +118,13 @@ contract MixologistHelper {
     }
 
     function depositRepayAndRemoveCollateral(
-        Mixologist mixologist,
+        IMixologist mixologist,
         uint256 _depositAmount,
         uint256 _repayAmount,
         uint256 _collateralAmount,
         bool _withdraw
     ) external {
-        YieldBox yieldBox = mixologist.yieldBox();
+        YieldBox yieldBox = YieldBox(mixologist.yieldBox());
 
         depositAndRepay(mixologist, _depositAmount, _repayAmount);
 
@@ -151,7 +152,7 @@ contract MixologistHelper {
     // ************** //
     // *** Private *** //
     // ************** //
-    function _setApprovalForYieldBox(Mixologist mixologist, YieldBox yieldBox)
+    function _setApprovalForYieldBox(IMixologist mixologist, YieldBox yieldBox)
         private
     {
         bool isApproved = yieldBox.isApprovedForAll(

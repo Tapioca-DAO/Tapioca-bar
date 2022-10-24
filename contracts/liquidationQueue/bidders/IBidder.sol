@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-import '../../mixologist/Mixologist.sol';
-
 /// @notice Used for performing swap operations when bidding on LiquidationQueue
 interface IBidder {
     /// @notice returns the unique name
@@ -14,7 +12,7 @@ interface IBidder {
     /// @param amountIn Token in amount
     /// @param data extra data used for retrieving the ouput
     function getOutputAmount(
-        Mixologist mixologist,
+        address mixologist,
         uint256 tokenInId,
         uint256 amountIn,
         bytes calldata data
@@ -26,7 +24,7 @@ interface IBidder {
     /// @param amountIn Token in amount
     /// @param data extra data used for the swap operation
     function swap(
-        Mixologist mixologist,
+        address mixologist,
         uint256 tokenInId,
         uint256 amountIn,
         bytes calldata data
@@ -38,7 +36,7 @@ interface IBidder {
     /// @param amountOut Token out amount
     /// @param data extra data used for retrieving the ouput
     function getInputAmount(
-        Mixologist mixologist,
+        address mixologist,
         uint256 tokenInId,
         uint256 amountOut,
         bytes calldata data

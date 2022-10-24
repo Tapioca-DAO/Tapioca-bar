@@ -189,17 +189,11 @@ export const deployOracleMock = async (
     const { deployments, getNamedAccounts } = hre;
     const { deploy } = deployments;
     const { deployer } = await getNamedAccounts();
-    const contracts: TContract[] = [];
 
     console.log('\nDeploying OracleMock');
     await deploy('OracleMock', { from: deployer, log: true });
     await verify(hre, 'OracleMock', []);
     const oracleMock = await deployments.get('OracleMock');
-    contracts.push({
-        name: 'OracleMock',
-        address: oracleMock.address,
-        meta: {},
-    });
     console.log('Done');
 
     console.log(`\nSetting mock price`);

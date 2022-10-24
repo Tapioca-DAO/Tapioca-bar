@@ -2,12 +2,11 @@
 pragma solidity ^0.8.0;
 
 import '@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol';
+import '../IBeachBar.sol';
 import '../libraries/IUniswapV2Factory.sol';
 import '../libraries/UniswapV2Library.sol';
 import '../libraries/IUniswapV2Pair.sol';
-import '../BeachBar.sol';
 import '../../yieldbox/contracts//YieldBox.sol';
-
 
 /// Modified from https://github.com/sushiswap/kashi-lending/blob/master/contracts/swappers/SushiSwapMultiSwapper.sol
 
@@ -16,19 +15,17 @@ contract MultiSwapper {
 
     address private immutable factory;
 
-    BeachBar private immutable beachBar;
     YieldBox private immutable yieldBox;
 
     bytes32 private immutable pairCodeHash;
 
     constructor(
         address _factory,
-        BeachBar _tapiocaBar,
+        IBeachBar _tapiocaBar,
         bytes32 _pairCodeHash
     ) {
         factory = _factory;
-        beachBar = _tapiocaBar;
-        yieldBox = _tapiocaBar.yieldBox();
+        yieldBox = YieldBox(_tapiocaBar.yieldBox());
         pairCodeHash = _pairCodeHash;
     }
 

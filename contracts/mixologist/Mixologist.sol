@@ -5,6 +5,8 @@ import './MXCommon.sol';
 import './MXLiquidation.sol';
 import './MXLendingBorrowing.sol';
 
+import '../mixologist/interfaces/ISendFrom.sol';
+
 // solhint-disable max-line-length
 
 contract Mixologist is MXCommon {
@@ -104,7 +106,7 @@ contract Mixologist is MXCommon {
         (
             address _liquidationModule,
             address _lendingBorrowingModule,
-            BeachBar tapiocaBar_,
+            IBeachBar tapiocaBar_,
             IERC20 _asset,
             uint256 _assetId,
             IERC20 _collateral,
@@ -117,7 +119,7 @@ contract Mixologist is MXCommon {
                 (
                     address,
                     address,
-                    BeachBar,
+                    IBeachBar,
                     IERC20,
                     uint256,
                     IERC20,
@@ -131,7 +133,7 @@ contract Mixologist is MXCommon {
         liquidationModule = MXLiquidation(_liquidationModule);
         lendingBorrowingModule = MXLendingBorrowing(_lendingBorrowingModule);
         beachBar = tapiocaBar_;
-        yieldBox = tapiocaBar_.yieldBox();
+        yieldBox = YieldBox(tapiocaBar_.yieldBox());
         owner = address(beachBar);
 
         require(
@@ -328,7 +330,7 @@ contract Mixologist is MXCommon {
     function liquidate(
         address[] calldata users,
         uint256[] calldata maxBorrowParts,
-        MultiSwapper swapper,
+        IMultiSwapper swapper,
         bytes calldata collateralToAssetSwapData,
         bytes calldata usdoToBorrowedSwapData
     ) external {
@@ -383,8 +385,8 @@ contract Mixologist is MXCommon {
 
     /// @notice Withdraw the balance of `feeTo`, swap asset into TAP and deposit it to yieldBox of `feeTo`
     function depositFeesToYieldBox(
-        MultiSwapper swapper,
-        SwapData calldata swapData
+        IMultiSwapper swapper,
+        IBeachBar.SwapData calldata swapData
     ) public {
         if (accrueInfo.feesEarnedFraction > 0) {
             withdrawFeesEarned();
@@ -412,6 +414,41 @@ contract Mixologist is MXCommon {
         );
 
         emit LogYieldBoxFeesDeposit(feeShares, tapAmount);
+    }
+
+
+    /// @notice Withdraw to another layer
+    function withdrawTo(
+        uint16 dstChainId,
+        bytes memory receiver,
+        uint256 amount,
+        bytes calldata adapterParams
+    ) public payable {
+        try
+            IERC165(address(asset)).supportsInterface(
+                type(ISendFrom).interfaceId
+            )
+        {} catch {
+            return;
+        }
+
+        uint256 available = yieldBox.toAmount(
+            assetId,
+            yieldBox.balanceOf(msg.sender, assetId),
+            false
+        );
+        require(available >= amount, 'Mx: not available');
+
+        yieldBox.withdraw(assetId, msg.sender, address(this), amount, 0);
+        ISendFrom(address(asset)).sendFrom{value: msg.value}(
+            address(this),
+            dstChainId,
+            receiver,
+            amount,
+            payable(msg.sender),
+            msg.sender,
+            adapterParams
+        );
     }
 
     /// @notice Used to set the swap path of closed liquidations

@@ -1,15 +1,17 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-import '@boringcrypto/boring-solidity/contracts/BoringOwnable.sol';
 import '@boringcrypto/boring-solidity/contracts/ERC20.sol';
-import '@boringcrypto/boring-solidity/contracts/libraries/BoringRebase.sol';
+import '@boringcrypto/boring-solidity/contracts/BoringOwnable.sol';
 import '@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol';
+import '@boringcrypto/boring-solidity/contracts/libraries/BoringRebase.sol';
+
 import '../../yieldbox/contracts/YieldBox.sol';
-import '../swappers/MultiSwapper.sol';
+import '../swappers/IMultiSwapper.sol';
 import '../mixologist/interfaces/IOracle.sol';
 import '../mixologist/interfaces/IFlashLoan.sol';
 import '../liquidationQueue/ILiquidationQueue.sol';
+import '../IBeachBar.sol';
 
 // solhint-disable max-line-length
 
@@ -70,7 +72,7 @@ contract MXStorage is BoringOwnable, ERC20 {
 
     AccrueInfo public accrueInfo;
 
-    BeachBar public beachBar;
+    IBeachBar public beachBar;
     YieldBox public yieldBox;
     ILiquidationQueue public liquidationQueue;
     IERC20 public collateral;

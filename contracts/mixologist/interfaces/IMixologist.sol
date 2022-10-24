@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
-import '@boringcrypto/boring-solidity/contracts/interfaces/IERC20.sol';
-import '../../BeachBar.sol';
+
 import './IOracle.sol';
-import '../../swappers/MultiSwapper.sol';
+import '../../IBeachBar.sol';
+import '../../swappers/IMultiSwapper.sol';
 
 interface IMixologist {
     event Approval(
@@ -108,11 +108,13 @@ interface IMixologist {
 
     function approve(address spender, uint256 amount) external returns (bool);
 
-    function asset() external view returns (IERC20);
+    function asset() external view returns (address);
+
+    function assetId() external view returns (uint256);
 
     function balanceOf(address) external view returns (uint256);
 
-    function beachBar() external view returns (BeachBar);
+    function beachBar() external view returns (address);
 
     function borrow(
         address from,
@@ -122,13 +124,16 @@ interface IMixologist {
 
     function claimOwnership() external;
 
-    function collateral() external view returns (IERC20);
+    function collateral() external view returns (address);
 
-    function cook(
-        uint8[] calldata actions,
-        uint256[] calldata values,
-        bytes[] calldata datas
-    ) external payable returns (uint256 value1, uint256 value2);
+    function collateralId() external view returns (uint256);
+
+    /// @notice Allows batched call to Mixologist.
+    /// @param calls An array encoded call data.
+    /// @param revertOnFail If True then reverts after a failed call and stops doing further calls.
+    function execute(bytes[] calldata calls, bool revertOnFail)
+        external
+        returns (bool[] memory successes, string[] memory results);
 
     function decimals() external view returns (uint8);
 
@@ -137,8 +142,8 @@ interface IMixologist {
     function feeTo() external view returns (address);
 
     function getInitData(
-        IERC20 collateral_,
-        IERC20 asset_,
+        address collateral_,
+        address asset_,
         IOracle oracle_,
         bytes calldata oracleData_
     ) external pure returns (bytes memory data);
@@ -151,7 +156,7 @@ interface IMixologist {
         address[] calldata users,
         uint256[] calldata borrowParts,
         address to,
-        MultiSwapper swapper,
+        IMultiSwapper swapper,
         bool open
     ) external;
 
@@ -200,9 +205,9 @@ interface IMixologist {
 
     function setFeeTo(address newFeeTo) external;
 
-    function setSwapper(MultiSwapper swapper, bool enable) external;
+    function setSwapper(IMultiSwapper swapper, bool enable) external;
 
-    function swappers(MultiSwapper) external view returns (bool);
+    function swappers(IMultiSwapper) external view returns (bool);
 
     function symbol() external view returns (string memory);
 
@@ -239,5 +244,10 @@ interface IMixologist {
 
     function withdrawFees() external;
 
-    function depositFeesToYieldBox(MultiSwapper, SwapData calldata) external;
+    function depositFeesToYieldBox(IMultiSwapper, IBeachBar.SwapData calldata)
+        external;
+
+    function yieldBox() external view returns (address payable);
+
+    function liquidationQueue() external view returns (address payable);
 }

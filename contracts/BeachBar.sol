@@ -2,14 +2,11 @@
 
 pragma solidity ^0.8.0;
 
-import '../yieldbox/contracts/YieldBox.sol';
-import '../yieldbox/contracts/interfaces/IWrappedNative.sol';
-import '../yieldbox/contracts/interfaces/IStrategy.sol';
-import '../yieldbox/contracts/enums/YieldBoxTokenType.sol';
-import './swappers/MultiSwapper.sol';
-import './mixologist/interfaces/IMixologist.sol';
 import '@boringcrypto/boring-solidity/contracts/BoringOwnable.sol';
-import './usd0/IUSD0.sol';
+
+import '../yieldbox/contracts/YieldBox.sol';
+import './mixologist/interfaces/IMixologist.sol';
+import './IBeachBar.sol';
 
 enum ContractType {
     lowRisk,
@@ -20,10 +17,6 @@ enum ContractType {
 struct MasterContract {
     address location;
     ContractType risk;
-}
-
-struct SwapData {
-    uint256 minAssetAmount;
 }
 
 // TODO: Permissionless market deployment
@@ -45,7 +38,7 @@ contract BeachBar is BoringOwnable {
     address public feeTo; // Protocol
     address public feeVeTap; // TAP distributors
 
-    mapping(MultiSwapper => bool) public swappers;
+    mapping(IMultiSwapper => bool) public swappers;
 
     constructor(YieldBox _yieldBox, IERC20 tapToken_) {
         yieldBox = _yieldBox;
@@ -140,8 +133,8 @@ contract BeachBar is BoringOwnable {
     /// @dev Fees are withdrawn in TAP and sent to the FeeDistributor contract
     /// @param swappers_ One or more swappers to convert the asset to TAP.
     function withdrawAllProtocolFees(
-        MultiSwapper[] calldata swappers_,
-        SwapData[] calldata swapData_
+        IMultiSwapper[] calldata swappers_,
+        IBeachBar.SwapData[] calldata swapData_
     ) public {
         require(address(swappers_[0]) != address(0), 'BeachBar: zero address');
 
@@ -264,7 +257,7 @@ contract BeachBar is BoringOwnable {
     /// MasterContract Only Admin function.
     /// @param swapper The address of the swapper contract that conforms to `ISwapper`.
     /// @param enable True to enable the swapper. To disable use False.
-    function setSwapper(MultiSwapper swapper, bool enable) external onlyOwner {
+    function setSwapper(IMultiSwapper swapper, bool enable) external onlyOwner {
         swappers[swapper] = enable;
         emit SwapperUpdate(address(swapper), enable);
     }

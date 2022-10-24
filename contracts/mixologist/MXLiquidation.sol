@@ -61,7 +61,7 @@ contract MXLiquidation is MXCommon {
     function liquidate(
         address[] calldata users,
         uint256[] calldata maxBorrowParts,
-        MultiSwapper swapper,
+        IMultiSwapper swapper,
         bytes calldata collateralToAssetSwapData,
         bytes calldata usdoToBorrowedSwapData
     ) external {
@@ -197,7 +197,7 @@ contract MXLiquidation is MXCommon {
     function _closedLiquidation(
         address[] calldata users,
         uint256[] calldata maxBorrowParts,
-        MultiSwapper swapper,
+        IMultiSwapper swapper,
         uint256 _exchangeRate,
         bytes calldata swapData
     ) private {
