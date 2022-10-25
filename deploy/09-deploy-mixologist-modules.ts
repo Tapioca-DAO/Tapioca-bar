@@ -12,7 +12,10 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const contracts: TContract[] = [];
 
     console.log('\nDeploying MXLiquidation');
-    await deploy('MXLiquidation', { from: deployer, log: true });
+    await deploy('MXLiquidation', {
+        from: deployer,
+        log: true,
+    });
     await verify(hre, 'MXLiquidation', []);
     const mxLiquidation = await deployments.get('MXLiquidation');
     contracts.push({
