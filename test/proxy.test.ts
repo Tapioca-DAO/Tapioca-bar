@@ -282,26 +282,217 @@ describe('MXProxy', () => {
             ethers.Wallet.createRandom().privateKey,
             ethers.provider,
         );
-        await mixologistDst
-            .connect(eoa1)
-            .withdrawTo(
-                await lzEndpointSrc.getChainId(),
-                ethers.utils.solidityPack(
-                    ['address'],
-                    [randomReceiver.address],
-                ),
-                borrowPart.div(2),
-                ethers.utils.toUtf8Bytes(''),
-                {
-                    value: ethers.utils.parseEther('2'),
-                },
-            );
+        await mixologistDst.connect(eoa1).withdrawTo(
+            await lzEndpointSrc.getChainId(),
+            ethers.utils.solidityPack(['address'], [randomReceiver.address]),
+            borrowPart.div(2),
+            ethers.utils.toUtf8Bytes(''),
+            eoa1.address,
+            {
+                value: ethers.utils.parseEther('2'),
+            },
+        );
 
         const balanceOfReceiver = await usd0Src.balanceOf(
             randomReceiver.address,
         );
         expect(balanceOfReceiver.gt(0)).to.be.true;
         expect(balanceOfReceiver.eq(borrowPart.div(2))).to.be.true;
+    });
+
+    it('should test with OFT mixologist through helper', async () => {
+        const {
+            createWethUsd0Mixologist,
+            proxyDeployer,
+            deployer,
+            mediumRiskMC,
+            yieldBox,
+            bar,
+            weth,
+            usdc,
+            wethAssetId,
+            wethUsdcOracle,
+            tapSwapPath,
+            eoa1,
+            mixologistHelper,
+            deployCurveStableToUsdoBidder,
+            __wethUsdcPrice,
+        } = await loadFixture(register);
+
+        const newPrice = __wethUsdcPrice.div(1000000);
+        await wethUsdcOracle.set(newPrice);
+
+        const loadSetup = async function loadSetupFn() {
+            const {
+                proxySrc,
+                proxyDst,
+                mixologistSrc,
+                mixologistDst,
+                lzEndpointSrc,
+                lzEndpointDst,
+                usd0Src,
+                usd0Dst,
+                usd0DstId,
+                usd0SrcId,
+            } = await setupUsd0Environment(
+                proxyDeployer,
+                mediumRiskMC,
+                yieldBox,
+                bar,
+                usdc,
+                weth,
+                wethAssetId,
+                tapSwapPath,
+                createWethUsd0Mixologist,
+                deployCurveStableToUsdoBidder,
+            );
+            return {
+                proxySrc,
+                proxyDst,
+                mixologistSrc,
+                mixologistDst,
+                lzEndpointSrc,
+                lzEndpointDst,
+                usd0Src,
+                usd0Dst,
+                usd0DstId,
+                usd0SrcId,
+            };
+        };
+        const {
+            proxySrc,
+            proxyDst,
+            mixologistSrc,
+            mixologistDst,
+            lzEndpointSrc,
+            lzEndpointDst,
+            usd0Src,
+            usd0Dst,
+            usd0DstId,
+            usd0SrcId,
+        } = await loadFixture(loadSetup);
+
+        //get tokens
+        const wethAmount = ethers.BigNumber.from((1e18).toString()).mul(100);
+        const usdoAmount = ethers.BigNumber.from((1e18).toString()).mul(20000);
+        await usd0Dst.mint(deployer.address, usdoAmount);
+        await weth.connect(eoa1).freeMint(wethAmount);
+
+        //add USD0 for borrowing
+        const usdoLendValue = usdoAmount.div(2);
+        await usd0Dst.approve(yieldBox.address, usdoLendValue);
+
+        let usdoLendValueShare = await yieldBox.toShare(
+            await mixologistDst.assetId(),
+            usdoLendValue,
+            false,
+        );
+
+        await yieldBox.depositAsset(
+            await mixologistDst.assetId(),
+            deployer.address,
+            deployer.address,
+            0,
+            usdoLendValueShare,
+        );
+
+        // Approve mixologistDst actions
+        await yieldBox.setApprovalForAll(mixologistDst.address, true);
+        await mixologistDst.approve(
+            proxyDst.address,
+            ethers.constants.MaxUint256,
+        );
+
+        const balanceBefore = await mixologistDst.balanceOf(deployer.address);
+        let addAssetFn = mixologistDst.interface.encodeFunctionData(
+            'addAsset',
+            [deployer.address, deployer.address, false, usdoLendValueShare],
+        );
+
+        await proxySrc.executeOnChain(
+            await lzEndpointDst.getChainId(),
+            ethers.utils.solidityPack(['address'], [mixologistDst.address]),
+            [addAssetFn],
+            ethers.utils.toUtf8Bytes(''),
+            { value: ethers.utils.parseEther('1') },
+        );
+
+        const balanceAfter = await mixologistDst.balanceOf(deployer.address);
+        expect(balanceAfter.gt(balanceBefore)).to.be.true;
+
+        // --- Borrowing ---
+
+        const wethDepositAmount = ethers.BigNumber.from((1e18).toString()).mul(
+            1,
+        );
+        const usdoBorrowVal = wethDepositAmount
+            .mul(74)
+            .div(100)
+            .mul(__wethUsdcPrice.div((1e18).toString()));
+
+        await weth
+            .connect(eoa1)
+            .approve(mixologistHelper.address, ethers.constants.MaxUint256);
+        await mixologistDst
+            .connect(eoa1)
+            .approve(mixologistHelper.address, ethers.constants.MaxUint256);
+
+        const randomReceiver = new ethers.Wallet(
+            ethers.Wallet.createRandom().privateKey,
+            ethers.provider,
+        );
+        const withdrawData = new ethers.utils.AbiCoder().encode(
+            ['bool', 'uint256', 'bytes', 'bytes'],
+            [
+                true,
+                await lzEndpointSrc.getChainId(),
+                ethers.utils.solidityPack(
+                    ['address'],
+                    [randomReceiver.address],
+                ),
+                ethers.utils.toUtf8Bytes(''),
+            ],
+        );
+
+        await mixologistHelper
+            .connect(eoa1)
+            .depositAddCollateralAndBorrow(
+                mixologistDst.address,
+                wethDepositAmount,
+                usdoBorrowVal.div(2),
+                true,
+                ethers.utils.toUtf8Bytes(''),
+                {
+                    value: ethers.utils.parseEther('10'),
+                },
+            );
+
+        const userCollateralShare = await mixologistDst.userCollateralShare(
+            eoa1.address,
+        );
+        expect(userCollateralShare.gt(0)).to.be.true;
+
+        let borrowPart = await mixologistDst.userBorrowPart(eoa1.address);
+        expect(borrowPart.gt(0)).to.be.true;
+
+        let usdoBalance = await usd0Dst.balanceOf(eoa1.address);
+        expect(usdoBalance.gt(0)).to.be.true;
+
+        await mixologistHelper
+            .connect(eoa1)
+            .depositAddCollateralAndBorrow(
+                mixologistDst.address,
+                wethDepositAmount,
+                usdoBorrowVal.div(2),
+                true,
+                withdrawData,
+                {
+                    value: ethers.utils.parseEther('10'),
+                },
+            );
+
+        let usdoSrcBalabce = await usd0Src.balanceOf(randomReceiver.address);
+        expect(usdoSrcBalabce.gt(0)).to.be.true;
     });
 
     it('should add assets to mixologist from a different layers', async () => {

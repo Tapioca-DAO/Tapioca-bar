@@ -416,13 +416,13 @@ contract Mixologist is MXCommon {
         emit LogYieldBoxFeesDeposit(feeShares, tapAmount);
     }
 
-
     /// @notice Withdraw to another layer
     function withdrawTo(
         uint16 dstChainId,
         bytes memory receiver,
         uint256 amount,
-        bytes calldata adapterParams
+        bytes calldata adapterParams,
+        address payable refundAddress
     ) public payable {
         try
             IERC165(address(asset)).supportsInterface(
@@ -445,7 +445,7 @@ contract Mixologist is MXCommon {
             dstChainId,
             receiver,
             amount,
-            payable(msg.sender),
+            refundAddress,
             msg.sender,
             adapterParams
         );

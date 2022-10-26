@@ -250,4 +250,12 @@ interface IMixologist {
     function yieldBox() external view returns (address payable);
 
     function liquidationQueue() external view returns (address payable);
+
+    function withdrawTo(
+        uint16 dstChainId,
+        bytes memory receiver,
+        uint256 amount,
+        bytes calldata adapterParams,
+        address payable refundAddress
+    ) external payable;
 }

@@ -1598,6 +1598,7 @@ describe('Mixologist test', () => {
                 deployer.address,
                 100,
                 ethers.utils.toUtf8Bytes(''),
+                deployer.address
             ),
         ).not.to.be.reverted;
     });

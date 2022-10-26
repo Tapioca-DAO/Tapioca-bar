@@ -40,13 +40,14 @@ contract MixologistHelper {
     /// @param mixologist the mixologist address
     /// @param _collateralAmount the collateral amount to add
     /// @param _borrowAmount the amount to borrow
-    /// @param _withdraw if true, withdraws from YieldBox to `msg.sender`
+    /// @param withdraw_ if true, withdraws from YieldBox to `msg.sender`
     function depositAddCollateralAndBorrow(
         IMixologist mixologist,
         uint256 _collateralAmount,
         uint256 _borrowAmount,
-        bool _withdraw
-    ) external {
+        bool withdraw_,
+        bytes calldata _withdrawData
+    ) external payable {
         YieldBox yieldBox = YieldBox(mixologist.yieldBox());
 
         uint256 collateralId = mixologist.collateralId();
@@ -74,18 +75,48 @@ contract MixologistHelper {
         mixologist.addCollateral(address(this), msg.sender, false, _share);
 
         //borrow
-        address borrowReceiver = _withdraw ? address(this) : msg.sender;
+        address borrowReceiver = withdraw_ ? address(this) : msg.sender;
         mixologist.borrow(msg.sender, borrowReceiver, _borrowAmount);
 
-        if (_withdraw) {
+        if (withdraw_) {
+            _withdraw(_withdrawData, mixologist, yieldBox, _borrowAmount);
+        }
+    }
+
+    function _withdraw(
+        bytes calldata _withdrawData,
+        IMixologist mixologist,
+        YieldBox yieldBox,
+        uint256 _amount
+    ) private {
+        bool _otherChain;
+        uint16 _destChain;
+        bytes memory _receiver;
+        bytes memory _adapterParams;
+        if (_withdrawData.length > 0) {
+            (_otherChain, _destChain, _receiver, _adapterParams) = abi.decode(
+                _withdrawData,
+                (bool, uint16, bytes, bytes)
+            );
+        }
+        if (!_otherChain) {
             yieldBox.withdraw(
                 mixologist.assetId(),
                 address(this),
                 msg.sender,
-                _borrowAmount,
+                _amount,
                 0
             );
+            return;
         }
+
+        mixologist.withdrawTo{value: msg.value}(
+            _destChain,
+            _receiver,
+            _amount,
+            _adapterParams,
+            payable(msg.sender)
+        );
     }
 
     /// @notice deposits to YieldBox and repays borrowed amount
@@ -122,14 +153,14 @@ contract MixologistHelper {
         uint256 _depositAmount,
         uint256 _repayAmount,
         uint256 _collateralAmount,
-        bool _withdraw
+        bool withdraw_
     ) external {
         YieldBox yieldBox = YieldBox(mixologist.yieldBox());
 
         depositAndRepay(mixologist, _depositAmount, _repayAmount);
 
         //remove collateral
-        address receiver = _withdraw ? address(this) : msg.sender;
+        address receiver = withdraw_ ? address(this) : msg.sender;
         uint256 collateralShare = yieldBox.toShare(
             mixologist.collateralId(),
             _collateralAmount,
@@ -138,7 +169,7 @@ contract MixologistHelper {
         mixologist.removeCollateral(msg.sender, receiver, collateralShare);
 
         //withdraw
-        if (_withdraw) {
+        if (withdraw_) {
             yieldBox.withdraw(
                 mixologist.collateralId(),
                 address(this),
