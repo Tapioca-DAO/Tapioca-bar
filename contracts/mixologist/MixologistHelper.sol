@@ -41,6 +41,7 @@ contract MixologistHelper {
     /// @param _collateralAmount the collateral amount to add
     /// @param _borrowAmount the amount to borrow
     /// @param withdraw_ if true, withdraws from YieldBox to `msg.sender`
+    /// @param _withdrawData custom withdraw data; ignore if you need to withdraw on the same chain
     function depositAddCollateralAndBorrow(
         IMixologist mixologist,
         uint256 _collateralAmount,
@@ -83,6 +84,77 @@ contract MixologistHelper {
         }
     }
 
+    /// @notice deposits to YieldBox and repays borrowed amount
+    /// @param mixologist the mixologist address
+    /// @param _depositAmount the amount to deposit
+    /// @param _repayAmount the amount to be repayed
+    function depositAndRepay(
+        IMixologist mixologist,
+        uint256 _depositAmount,
+        uint256 _repayAmount
+    ) public {
+        uint256 assetId = mixologist.assetId();
+        YieldBox yieldBox = YieldBox(mixologist.yieldBox());
+
+        (, address assetAddress, , ) = yieldBox.assets(assetId);
+        _extractTokens(assetAddress, _depositAmount);
+
+        //deposit into the yieldbox
+        IERC20(assetAddress).approve(address(yieldBox), _depositAmount);
+        yieldBox.depositAsset(
+            assetId,
+            address(this),
+            address(this),
+            _depositAmount,
+            0
+        );
+
+        //repay
+        _setApprovalForYieldBox(mixologist, yieldBox);
+        mixologist.repay(address(this), msg.sender, false, _repayAmount);
+    }
+
+    /// @notice deposits to YieldBox, repays borrowed amount and removes collateral
+    /// @param mixologist the mixologist address
+    /// @param _depositAmount the amount to deposit
+    /// @param _repayAmount the amount to be repayed
+    /// @param _collateralAmount collateral amount to be removed
+    /// @param withdraw_ if true withdraws to sender address
+    function depositRepayAndRemoveCollateral(
+        IMixologist mixologist,
+        uint256 _depositAmount,
+        uint256 _repayAmount,
+        uint256 _collateralAmount,
+        bool withdraw_
+    ) external {
+        YieldBox yieldBox = YieldBox(mixologist.yieldBox());
+
+        depositAndRepay(mixologist, _depositAmount, _repayAmount);
+
+        //remove collateral
+        address receiver = withdraw_ ? address(this) : msg.sender;
+        uint256 collateralShare = yieldBox.toShare(
+            mixologist.collateralId(),
+            _collateralAmount,
+            false
+        );
+        mixologist.removeCollateral(msg.sender, receiver, collateralShare);
+
+        //withdraw
+        if (withdraw_) {
+            yieldBox.withdraw(
+                mixologist.collateralId(),
+                address(this),
+                msg.sender,
+                _collateralAmount,
+                0
+            );
+        }
+    }
+
+    // ************** //
+    // *** Private *** //
+    // ************** //
     function _withdraw(
         bytes calldata _withdrawData,
         IMixologist mixologist,
@@ -119,70 +191,6 @@ contract MixologistHelper {
         );
     }
 
-    /// @notice deposits to YieldBox and repays borrowed amount
-    /// @param mixologist the mixologist address
-    /// @param _depositAmount the amount to repay
-    function depositAndRepay(
-        IMixologist mixologist,
-        uint256 _depositAmount,
-        uint256 _repayAmount
-    ) public {
-        uint256 assetId = mixologist.assetId();
-        YieldBox yieldBox = YieldBox(mixologist.yieldBox());
-
-        (, address assetAddress, , ) = yieldBox.assets(assetId);
-        _extractTokens(assetAddress, _depositAmount);
-
-        //deposit into the yieldbox
-        IERC20(assetAddress).approve(address(yieldBox), _depositAmount);
-        yieldBox.depositAsset(
-            assetId,
-            address(this),
-            address(this),
-            _depositAmount,
-            0
-        );
-
-        //repay
-        _setApprovalForYieldBox(mixologist, yieldBox);
-        mixologist.repay(address(this), msg.sender, false, _repayAmount);
-    }
-
-    function depositRepayAndRemoveCollateral(
-        IMixologist mixologist,
-        uint256 _depositAmount,
-        uint256 _repayAmount,
-        uint256 _collateralAmount,
-        bool withdraw_
-    ) external {
-        YieldBox yieldBox = YieldBox(mixologist.yieldBox());
-
-        depositAndRepay(mixologist, _depositAmount, _repayAmount);
-
-        //remove collateral
-        address receiver = withdraw_ ? address(this) : msg.sender;
-        uint256 collateralShare = yieldBox.toShare(
-            mixologist.collateralId(),
-            _collateralAmount,
-            false
-        );
-        mixologist.removeCollateral(msg.sender, receiver, collateralShare);
-
-        //withdraw
-        if (withdraw_) {
-            yieldBox.withdraw(
-                mixologist.collateralId(),
-                address(this),
-                msg.sender,
-                _collateralAmount,
-                0
-            );
-        }
-    }
-
-    // ************** //
-    // *** Private *** //
-    // ************** //
     function _setApprovalForYieldBox(IMixologist mixologist, YieldBox yieldBox)
         private
     {
