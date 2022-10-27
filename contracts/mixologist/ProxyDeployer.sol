@@ -17,6 +17,7 @@ __/\\\\\\\\\\\\\\\_____/\\\\\\\\\_____/\\\\\\\\\\\\\____/\\\\\\\\\\\_______/\\\\
 
 */
 
+/// @title MXProxy factory
 contract ProxyDeployer {
     // ************ //
     // *** VARS *** //
@@ -32,17 +33,22 @@ contract ProxyDeployer {
     // ************ //
     // *** METHODS *** //
     // ************ //
+    /// @notice creates a new ProxyDeployer contract
     constructor() {
         owner = msg.sender;
     }
 
-    // --- View methods ---
+    // ********************** //
+    // *** VIEW FUNCTIONS *** //
+    // ********************** //
     /// @notice returns proxies count
     function proxiesCount() external view returns (uint256) {
         return proxies.length;
     }
 
-    // --- Only owner methods ---
+    // *********************** //
+    // *** OWNER FUNCTIONS *** //
+    // *********************** //
     /// @notice creates a new MXProxy contract using CREATE2 opcode
     /// @param _lzEndpoint the LayerZero endpoint MXProxy will be associated with
     /// @param _salt CREATE2 salt used to compute the new address

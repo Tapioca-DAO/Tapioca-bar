@@ -5,17 +5,42 @@ import '../../yieldbox/contracts/YieldBox.sol';
 import '../IBeachBar.sol';
 import '@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol';
 
+/*
+
+__/\\\\\\\\\\\\\\\_____/\\\\\\\\\_____/\\\\\\\\\\\\\____/\\\\\\\\\\\_______/\\\\\_____________/\\\\\\\\\_____/\\\\\\\\\____        
+ _\///////\\\/////____/\\\\\\\\\\\\\__\/\\\/////////\\\_\/////\\\///______/\\\///\\\________/\\\////////____/\\\\\\\\\\\\\__       
+  _______\/\\\________/\\\/////////\\\_\/\\\_______\/\\\_____\/\\\_______/\\\/__\///\\\____/\\\/____________/\\\/////////\\\_      
+   _______\/\\\_______\/\\\_______\/\\\_\/\\\\\\\\\\\\\/______\/\\\______/\\\______\//\\\__/\\\_____________\/\\\_______\/\\\_     
+    _______\/\\\_______\/\\\\\\\\\\\\\\\_\/\\\/////////________\/\\\_____\/\\\_______\/\\\_\/\\\_____________\/\\\\\\\\\\\\\\\_    
+     _______\/\\\_______\/\\\/////////\\\_\/\\\_________________\/\\\_____\//\\\______/\\\__\//\\\____________\/\\\/////////\\\_   
+      _______\/\\\_______\/\\\_______\/\\\_\/\\\_________________\/\\\______\///\\\__/\\\_____\///\\\__________\/\\\_______\/\\\_  
+       _______\/\\\_______\/\\\_______\/\\\_\/\\\______________/\\\\\\\\\\\____\///\\\\\/________\////\\\\\\\\\_\/\\\_______\/\\\_ 
+        _______\///________\///________\///__\///______________\///////////_______\/////_____________\/////////__\///________\///__
+
+*/
+
+/// @title Curve pool swapper
 contract CurveSwapper {
     using BoringERC20 for IERC20;
 
+    // ************ //
+    // *** VARS *** //
+    // ************ //
     ICurvePool public curvePool;
 
     YieldBox private immutable yieldBox;
 
+    /// @notice creates a new CurveSwapper contract
+    /// @param _curvePool CurvePool address
+    /// @param _bar BeachBar address
     constructor(ICurvePool _curvePool, IBeachBar _bar) {
         curvePool = _curvePool;
         yieldBox = YieldBox(_bar.yieldBox());
     }
+
+    // ********************** //
+    // *** VIEW FUNCTIONS *** //
+    // ********************** //
 
     /// @notice returns the possible output amount for input share
     /// @param tokenInId YieldBox asset id
@@ -33,6 +58,10 @@ contract CurveSwapper {
             amountIn
         );
     }
+
+    // ************************ //
+    // *** PUBLIC FUNCTIONS *** //
+    // ************************ //
 
     /// @notice swaps token in with token out
     /// @dev returns both amount and shares
@@ -76,6 +105,9 @@ contract CurveSwapper {
         );
     }
 
+    // ************************* //
+    // *** PRIVATE FUNCTIONS *** //
+    // ************************* //
     function _swapTokensForTokens(
         int128 i,
         int128 j,

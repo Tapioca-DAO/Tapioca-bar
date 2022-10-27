@@ -18,7 +18,7 @@ contract LQMixologistMock {
 
     function initLq(
         ILiquidationQueue liquidationQueue,
-        LiquidationQueueMeta calldata lqMeta
+        ILiquidationQueue.LiquidationQueueMeta calldata lqMeta
     ) external {
         liquidationQueue.init(lqMeta, address(this));
     }

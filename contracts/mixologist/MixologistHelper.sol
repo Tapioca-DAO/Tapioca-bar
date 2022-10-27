@@ -7,13 +7,14 @@ import '@boringcrypto/boring-solidity/contracts/libraries/BoringRebase.sol';
 import './interfaces/IMixologist.sol';
 import '../../yieldbox/contracts/YieldBox.sol';
 
-/// @dev This contract provides useful helper functions for `Mixologist`.
+/// @title Useful helper functions for `Mixologist`.
 contract MixologistHelper {
     using RebaseLibrary for Rebase;
 
-    // ************** //
-    // *** Write *** //
-    // ************** //
+    // ************************ //
+    // *** PUBLIC FUNCTIONS *** //
+    // ************************ //
+    
     /// @notice deposits asset to YieldBox and lends it to Mixologist
     /// @param mixologist the mixologist address
     /// @param _amount the amount to lend
@@ -152,9 +153,9 @@ contract MixologistHelper {
         }
     }
 
-    // ************** //
-    // *** Private *** //
-    // ************** //
+   // ************************** //
+    // *** PRIVATE FUNCTIONS *** //
+    // ************************* //
     function _withdraw(
         bytes calldata _withdrawData,
         IMixologist mixologist,

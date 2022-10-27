@@ -6,6 +6,9 @@ import './MXStorage.sol';
 contract MXCommon is MXStorage {
     using RebaseLibrary for Rebase;
 
+    // ***************** //
+    // *** MODIFIERS *** //
+    // ***************** //
     /// Modifier to check if the msg.sender is allowed to use funds belonging to the 'from' address.
     /// If 'from' is msg.sender, it's allowed.
     /// msg.sender can be an allowed operator if his allowance equal or exceed the balance of the user 'from'.
@@ -31,9 +34,9 @@ contract MXCommon is MXStorage {
         initialized = true;
     }
 
-    // ************** //
-    // *** PUBLIC *** //
-    // ************** //
+    // ************************ //
+    // *** PUBLIC FUNCTIONS *** //
+    // ************************ //
 
     /// @notice Gets the exchange rate. I.e how much collateral to buy 1e18 asset.
     /// This function is supposed to be invoked if needed because Oracle queries can be expensive.
@@ -134,9 +137,41 @@ contract MXCommon is MXStorage {
         accrueInfo = _accrueInfo;
     }
 
-    // *************** //
-    // *** PRIVATE *** //
-    // *************** //
+    /// @notice Removes an asset from msg.sender and transfers it to `to`.
+    /// @param from Account to debit Assets from.
+    /// @param to The user that receives the removed assets.
+    /// @param fraction The amount/fraction of assets held to remove.
+    /// @return share The amount of shares transferred to `to`.
+    function removeAsset(
+        address from,
+        address to,
+        uint256 fraction
+    ) public allowed(from) returns (uint256 share) {
+        accrue();
+
+        share = _removeAsset(from, to, fraction);
+    }
+
+    /// @notice Adds assets to the lending pair.
+    /// @param from Address to add asset from.
+    /// @param to The address of the user to receive the assets.
+    /// @param skim True if the amount should be skimmed from the deposit balance of msg.sender.
+    /// False if tokens from msg.sender in `yieldBox` should be transferred.
+    /// @param share The amount of shares to add.
+    /// @return fraction Total fractions added.
+    function addAsset(
+        address from,
+        address to,
+        bool skim,
+        uint256 share
+    ) public allowed(from) returns (uint256 fraction) {
+        accrue();
+        fraction = _addAsset(from, to, skim, share);
+    }
+
+    // ************************** //
+    // *** PRIVATE FUNCTIONS *** //
+    // ************************* //
     /// @notice Concrete implementation of `isSolvent`. Includes a parameter to allow caching `exchangeRate`.
     /// @param _exchangeRate The exchange rate. Used to cache the `exchangeRate` between calls.
     function _isSolvent(address user, uint256 _exchangeRate)
@@ -214,23 +249,6 @@ contract MXCommon is MXStorage {
         emit LogAddAsset(skim ? address(yieldBox) : from, to, share, fraction);
     }
 
-    /// @notice Adds assets to the lending pair.
-    /// @param from Address to add asset from.
-    /// @param to The address of the user to receive the assets.
-    /// @param skim True if the amount should be skimmed from the deposit balance of msg.sender.
-    /// False if tokens from msg.sender in `yieldBox` should be transferred.
-    /// @param share The amount of shares to add.
-    /// @return fraction Total fractions added.
-    function addAsset(
-        address from,
-        address to,
-        bool skim,
-        uint256 share
-    ) public allowed(from) returns (uint256 fraction) {
-        accrue();
-        fraction = _addAsset(from, to, skim, share);
-    }
-
     /// @dev Concrete implementation of `removeAsset`.
     /// @param from The account to remove from. Should always be msg.sender except for `depositFeesToyieldBox()`.
     function _removeAsset(
@@ -253,21 +271,6 @@ contract MXCommon is MXStorage {
         totalAsset = _totalAsset;
         emit LogRemoveAsset(from, to, share, fraction);
         yieldBox.transfer(address(this), to, assetId, share);
-    }
-
-    /// @notice Removes an asset from msg.sender and transfers it to `to`.
-    /// @param from Account to debit Assets from.
-    /// @param to The user that receives the removed assets.
-    /// @param fraction The amount/fraction of assets held to remove.
-    /// @return share The amount of shares transferred to `to`.
-    function removeAsset(
-        address from,
-        address to,
-        uint256 fraction
-    ) public allowed(from) returns (uint256 share) {
-        accrue();
-
-        share = _removeAsset(from, to, fraction);
     }
 
     function _getCollateralAmountForShare(uint256 share)

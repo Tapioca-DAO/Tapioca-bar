@@ -133,9 +133,23 @@ contract MinterMixologist is BoringOwnable {
     uint256 private constant MAX_BORROWING_FEE = 8e4; //at 80% for testing; TBD
     uint256 private constant MAX_STABILITY_FEE = 8e17; //at 80% for testing; TBD
 
-    // ************* //
-    // *** METHODS *** //
-    // ************* //
+    // ***************** //
+    // *** MODIFIERS *** //
+    // ***************** //
+    /// Modifier to check if the msg.sender is allowed to use funds belonging to the 'from' address.
+    /// If 'from' is msg.sender, it's allowed.
+    /// If 'msg.sender' is an address (an operator) that is approved by 'from', it's allowed.
+    modifier allowed(address from) virtual {
+        if (from != msg.sender && !isApprovedForAll[from][msg.sender]) {
+            revert NotApproved(from, msg.sender);
+        }
+        _;
+    }
+    /// @dev Checks if the user is solvent in the closed liquidation case at the end of the function body.
+    modifier solvent(address from) {
+        _;
+        require(_isSolvent(from, exchangeRate), 'Mx: insolvent');
+    }
 
     /// @notice Creates the MinterMixologist contract
     constructor(
@@ -175,25 +189,10 @@ contract MinterMixologist is BoringOwnable {
         owner = msg.sender;
     }
 
-    // --- Modifiers ---
-    /// Modifier to check if the msg.sender is allowed to use funds belonging to the 'from' address.
-    /// If 'from' is msg.sender, it's allowed.
-    /// If 'msg.sender' is an address (an operator) that is approved by 'from', it's allowed.
-    modifier allowed(address from) virtual {
-        if (from != msg.sender && !isApprovedForAll[from][msg.sender]) {
-            revert NotApproved(from, msg.sender);
-        }
-        _;
-    }
-    /// @dev Checks if the user is solvent in the closed liquidation case at the end of the function body.
-    modifier solvent(address from) {
-        _;
-        require(_isSolvent(from, exchangeRate), 'Mx: insolvent');
-    }
+    // ************************ //
+    // *** PUBLIC FUNCTIONS *** //
+    // ************************ //
 
-    // --- View methods ---
-
-    // --- Write methods ---
     /// @notice Gets the exchange rate. I.e how much collateral to buy 1e18 asset.
     /// @dev This function is supposed to be invoked if needed because Oracle queries can be expensive.
     ///      Oracle should consider USD0 at 1$
@@ -377,7 +376,10 @@ contract MinterMixologist is BoringOwnable {
         );
     }
 
-    // --- Owner methods ---
+    // *********************** //
+    // *** OWNER FUNCTIONS *** //
+    // *********************** //
+
     /// @notice Used to set the swap path of closed liquidations
     /// @param _collateralSwapPath The Uniswap path .
     function setCollateralSwapPath(address[] calldata _collateralSwapPath)
@@ -417,7 +419,10 @@ contract MinterMixologist is BoringOwnable {
         borrowingFee = _borrowingFee;
     }
 
-    // --- Private methods ---
+    // ************************* //
+    // *** PRIVATE FUNCTIONS *** //
+    // ************************* //
+
     /// @notice Concrete implementation of `isSolvent`. Includes a parameter to allow caching `exchangeRate`.
     /// @param _exchangeRate The exchange rate. Used to cache the `exchangeRate` between calls.
     function _isSolvent(address user, uint256 _exchangeRate)

@@ -10,32 +10,48 @@ import '../../swappers/ICurveSwapper.sol';
 import '../../mixologist/interfaces/IMixologist.sol';
 import '../../../yieldbox/contracts/interfaces/IYieldBox.sol';
 
-/// @notice Swaps Stable to USD0 through Curve
+/*
+
+__/\\\\\\\\\\\\\\\_____/\\\\\\\\\_____/\\\\\\\\\\\\\____/\\\\\\\\\\\_______/\\\\\_____________/\\\\\\\\\_____/\\\\\\\\\____        
+ _\///////\\\/////____/\\\\\\\\\\\\\__\/\\\/////////\\\_\/////\\\///______/\\\///\\\________/\\\////////____/\\\\\\\\\\\\\__       
+  _______\/\\\________/\\\/////////\\\_\/\\\_______\/\\\_____\/\\\_______/\\\/__\///\\\____/\\\/____________/\\\/////////\\\_      
+   _______\/\\\_______\/\\\_______\/\\\_\/\\\\\\\\\\\\\/______\/\\\______/\\\______\//\\\__/\\\_____________\/\\\_______\/\\\_     
+    _______\/\\\_______\/\\\\\\\\\\\\\\\_\/\\\/////////________\/\\\_____\/\\\_______\/\\\_\/\\\_____________\/\\\\\\\\\\\\\\\_    
+     _______\/\\\_______\/\\\/////////\\\_\/\\\_________________\/\\\_____\//\\\______/\\\__\//\\\____________\/\\\/////////\\\_   
+      _______\/\\\_______\/\\\_______\/\\\_\/\\\_________________\/\\\______\///\\\__/\\\_____\///\\\__________\/\\\_______\/\\\_  
+       _______\/\\\_______\/\\\_______\/\\\_\/\\\______________/\\\\\\\\\\\____\///\\\\\/________\////\\\\\\\\\_\/\\\_______\/\\\_ 
+        _______\///________\///________\///__\///______________\///////////_______\/////_____________\/////////__\///________\///__
+
+*/
+
+/// @title Swaps Stable to USD0 through Curve
 /// @dev Performs a swap operation between stable and USD0 through 3CRV+USD0 pool
 contract CurveStableToUsdoBidder is BoringOwnable {
     // ************ //
-    // *** DATA *** //
+    // *** VARS *** //
     // ************ //
 
-    // --- Public ---
     /// @notice 3Crv+USD0 swapper
     ICurveSwapper public curveSwapper;
-
-    // --- Private ---
+    /// @notice Curve pool assets number
     uint256 curveAssetsLength;
 
-    // --- Events ---
+    // ************** //
+    // *** EVENTS *** //
+    // ************** //
     event CurveSwapperUpdated(address indexed _old, address indexed _new);
 
+    /// @notice creates a new CurveStableToUsdoBidder
+    /// @param curveSwapper_ CurveSwapper address
+    /// @param curvePoolAssetCount_ Curve pool assets number
     constructor(ICurveSwapper curveSwapper_, uint256 curvePoolAssetCount_) {
         curveSwapper = curveSwapper_;
         curveAssetsLength = curvePoolAssetCount_;
     }
 
-    // ************ //
-    // *** METHODS *** //
-    // ************ //
-    // --- View methods ---
+    // ********************** //
+    // *** VIEW FUNCTIONS *** //
+    // ********************** //
     /// @notice returns the unique name
     function name() external pure returns (string memory) {
         return 'stable -> USD0 (3Crv+USD0)';
@@ -96,7 +112,10 @@ contract CurveStableToUsdoBidder is BoringOwnable {
             );
     }
 
-    // --- Write methods ---
+    // ************************ //
+    // *** PUBLIC FUNCTIONS *** //
+    // ************************ //
+
     /// @notice swaps stable to collateral
     /// @param tokenInId Stablecoin asset id
     /// @param amountIn Stablecoin amount
@@ -150,7 +169,9 @@ contract CurveStableToUsdoBidder is BoringOwnable {
             );
     }
 
-    // --- Owner methods ---
+    // *********************** //
+    // *** OWNER FUNCTIONS *** //
+    // *********************** //
     /// @notice sets the Curve swapper
     /// @dev used for USD0 to WETH swap
     /// @param _swapper The curve pool swapper address
@@ -159,7 +180,9 @@ contract CurveStableToUsdoBidder is BoringOwnable {
         curveSwapper = _swapper;
     }
 
-    // --- Private methods ---
+    // ************************* //
+    // *** PRIVATE FUNCTIONS *** //
+    // ************************* //
     function _getCurveIndex(address token) private view returns (uint256) {
         int256 index = -1;
         for (uint256 i = 0; i < curveAssetsLength; i++) {

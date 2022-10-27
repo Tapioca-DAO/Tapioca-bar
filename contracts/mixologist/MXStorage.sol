@@ -15,51 +15,23 @@ import '../IBeachBar.sol';
 
 // solhint-disable max-line-length
 
+/*
+
+__/\\\\\\\\\\\\\\\_____/\\\\\\\\\_____/\\\\\\\\\\\\\____/\\\\\\\\\\\_______/\\\\\_____________/\\\\\\\\\_____/\\\\\\\\\____        
+ _\///////\\\/////____/\\\\\\\\\\\\\__\/\\\/////////\\\_\/////\\\///______/\\\///\\\________/\\\////////____/\\\\\\\\\\\\\__       
+  _______\/\\\________/\\\/////////\\\_\/\\\_______\/\\\_____\/\\\_______/\\\/__\///\\\____/\\\/____________/\\\/////////\\\_      
+   _______\/\\\_______\/\\\_______\/\\\_\/\\\\\\\\\\\\\/______\/\\\______/\\\______\//\\\__/\\\_____________\/\\\_______\/\\\_     
+    _______\/\\\_______\/\\\\\\\\\\\\\\\_\/\\\/////////________\/\\\_____\/\\\_______\/\\\_\/\\\_____________\/\\\\\\\\\\\\\\\_    
+     _______\/\\\_______\/\\\/////////\\\_\/\\\_________________\/\\\_____\//\\\______/\\\__\//\\\____________\/\\\/////////\\\_   
+      _______\/\\\_______\/\\\_______\/\\\_\/\\\_________________\/\\\______\///\\\__/\\\_____\///\\\__________\/\\\_______\/\\\_  
+       _______\/\\\_______\/\\\_______\/\\\_\/\\\______________/\\\\\\\\\\\____\///\\\\\/________\////\\\\\\\\\_\/\\\_______\/\\\_ 
+        _______\///________\///________\///__\///______________\///////////_______\/////_____________\/////////__\///________\///__
+
+*/
+
 contract MXStorage is BoringOwnable, ERC20 {
     using RebaseLibrary for Rebase;
     using BoringERC20 for IERC20;
-
-    // ************* //
-    // *** ERC20 *** //
-    // ************* //
-
-    function symbol() public view returns (string memory) {
-        return
-            string(
-                abi.encodePacked(
-                    'tm',
-                    collateral.safeSymbol(),
-                    '/',
-                    asset.safeSymbol(),
-                    '-',
-                    oracle.symbol(oracleData)
-                )
-            );
-    }
-
-    function name() external view returns (string memory) {
-        return
-            string(
-                abi.encodePacked(
-                    'Tapioca Mixologist ',
-                    collateral.safeName(),
-                    '/',
-                    asset.safeName(),
-                    '-',
-                    oracle.name(oracleData)
-                )
-            );
-    }
-
-    function decimals() external view returns (uint8) {
-        return asset.safeDecimals();
-    }
-
-    // totalSupply for ERC20 compatibility
-    // BalanceOf[user] represent a fraction
-    function totalSupply() public view override returns (uint256) {
-        return totalAsset.base;
-    }
 
     // ************ //
     // *** VARS *** //
@@ -200,4 +172,45 @@ contract MXStorage is BoringOwnable, ERC20 {
     uint256 internal constant BORROW_OPENING_FEE_PRECISION = 1e5;
     uint256 internal constant FLASHLOAN_FEE = 90; // 0.09%
     uint256 internal constant FLASHLOAN_FEE_PRECISION = 1e5;
+
+    // ********************** //
+    // *** VIEW FUNCTIONS *** //
+    // ********************** //
+    function symbol() public view returns (string memory) {
+        return
+            string(
+                abi.encodePacked(
+                    'tm',
+                    collateral.safeSymbol(),
+                    '/',
+                    asset.safeSymbol(),
+                    '-',
+                    oracle.symbol(oracleData)
+                )
+            );
+    }
+
+    function name() external view returns (string memory) {
+        return
+            string(
+                abi.encodePacked(
+                    'Tapioca Mixologist ',
+                    collateral.safeName(),
+                    '/',
+                    asset.safeName(),
+                    '-',
+                    oracle.name(oracleData)
+                )
+            );
+    }
+
+    function decimals() external view returns (uint8) {
+        return asset.safeDecimals();
+    }
+
+    // totalSupply for ERC20 compatibility
+    // BalanceOf[user] represent a fraction
+    function totalSupply() public view override returns (uint256) {
+        return totalAsset.base;
+    }
 }

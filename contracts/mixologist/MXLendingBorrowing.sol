@@ -7,9 +7,9 @@ contract MXLendingBorrowing is MXCommon {
     using RebaseLibrary for Rebase;
     using BoringERC20 for IERC20;
 
-    // ************** //
-    // *** PUBLIC *** //
-    // ************** //
+    // ************************ //
+    // *** PUBLIC FUNCTIONS *** //
+    // ************************ //
     /// @notice Sender borrows `amount` and transfers it to `to`.
     /// @param from Account to borrow for.
     /// @param to The receiver of borrowed tokens.
@@ -110,9 +110,9 @@ contract MXLendingBorrowing is MXCommon {
         emit LogFlashLoan(address(borrower), amount, feeAmount, receiver);
     }
 
-    // *************** //
-    // *** PRIVATE *** //
-    // *************** //
+   // ************************** //
+    // *** PRIVATE FUNCTIONS *** //
+    // ************************* //
     /// @dev Concrete implementation of `removeCollateral`.
     function _removeCollateral(
         address from,

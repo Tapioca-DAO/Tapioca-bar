@@ -13,12 +13,17 @@ import '../../yieldbox/contracts//YieldBox.sol';
 contract MultiSwapper {
     using BoringERC20 for IERC20;
 
+    // ************ //
+    // *** VARS *** //
+    // ************ //
     address private immutable factory;
-
     YieldBox private immutable yieldBox;
-
     bytes32 private immutable pairCodeHash;
 
+    /// @notice creates a new MultiSwapper contract
+    /// @param _factory UniswapV2Factory address
+    /// @param _tapiocaBar BeachBar address
+    /// @param _pairCodeHash UniswapV2 pair code hash
     constructor(
         address _factory,
         IBeachBar _tapiocaBar,
@@ -29,6 +34,9 @@ contract MultiSwapper {
         pairCodeHash = _pairCodeHash;
     }
 
+    // ********************** //
+    // *** VIEW FUNCTIONS *** //
+    // ********************** //
     function getOutputAmount(
         uint256 tokenInId,
         address[] calldata path,
@@ -59,6 +67,9 @@ contract MultiSwapper {
         amountIn = amounts[0];
     }
 
+    // ************************ //
+    // *** PUBLIC FUNCTIONS *** //
+    // ************************ //
     function swap(
         uint256 tokenInId,
         uint256 tokenOutId,
@@ -92,6 +103,9 @@ contract MultiSwapper {
         );
     }
 
+    // ************************* //
+    // *** PRIVATE FUNCTIONS *** //
+    // ************************* //
     // Swaps an exact amount of tokens for another token through the path passed as an argument
     // Returns the amount of the final token
     function _swapExactTokensForTokens(

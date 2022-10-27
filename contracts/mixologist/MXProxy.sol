@@ -19,21 +19,26 @@ __/\\\\\\\\\\\\\\\_____/\\\\\\\\\_____/\\\\\\\\\\\\\____/\\\\\\\\\\\_______/\\\\
 
 */
 
+/// @title Omnichain proxy for Mixologist
 contract MXProxy is NonblockingLzApp {
     // ************ //
     // *** VARS *** //
     // ************ //
-    uint256 public constant NO_EXTRA_GAS = 0;
-    uint256 public constant FUNCTION_TYPE_SEND = 1;
     bool public useCustomAdapterParams;
     bool public enforceSameAddress;
 
     // Address of the whitelisted Mixologist contracts
     mapping(address => bool) public mixologists;
 
-    // ************ //
+    // ***************** //
+    // *** CONSTANTS *** //
+    // ***************** //
+    uint256 public constant NO_EXTRA_GAS = 0;
+    uint256 public constant FUNCTION_TYPE_SEND = 1;
+
+    // ************** //
     // *** EVENTS *** //
-    // ************ //
+    // ************** //
 
     event ReceiveFromChain(
         uint16 indexed _srcChainId,
@@ -49,9 +54,9 @@ contract MXProxy is NonblockingLzApp {
     event LogMixologistStatus(address indexed mixologist, bool status);
     event LogEnforce(bool _old, bool _new);
 
-    // ************ //
-    // *** METHODS *** //
-    // ************ //
+    /// @notice creates a new MXProxy contract
+    /// @param _lzEndpoint LayerZero endpoint address
+    /// @param _owner contract's owner address
     constructor(address _lzEndpoint, address _owner)
         NonblockingLzApp(_lzEndpoint)
     {
@@ -59,7 +64,38 @@ contract MXProxy is NonblockingLzApp {
         enforceSameAddress = true;
     }
 
-    // --- Only owner methods ---
+    // ************************ //
+    // *** PUBLIC FUNCTIONS *** //
+    // ************************ //
+
+    /// @notice execute Mixologist methods on another chain
+    /// @param _dstChainId te LayerZero destination chain id
+    /// @param _mixologistDstAddress destination Mixologist address
+    /// @param _mxCalls Mixologist calls
+    /// @param _adapterParams custom adapters
+    function executeOnChain(
+        uint16 _dstChainId,
+        bytes memory _mixologistDstAddress,
+        bytes[] memory _mxCalls,
+        bytes memory _adapterParams
+    ) external payable {
+        uint256 chainId = lzEndpoint.getChainId();
+        require(chainId != _dstChainId, 'MXProxy: Chain not valid');
+
+        _send(
+            msg.sender,
+            _dstChainId,
+            _mixologistDstAddress,
+            _mxCalls,
+            payable(msg.sender),
+            address(0),
+            _adapterParams
+        );
+    }
+
+    // *********************** //
+    // *** OWNER FUNCTIONS *** //
+    // *********************** //
     /// @notice set whitelist status for Mixologist
     /// @dev callable by owner
     /// @param _mixologist the Mixologist address
@@ -90,33 +126,9 @@ contract MXProxy is NonblockingLzApp {
         enforceSameAddress = _val;
     }
 
-    // --- Write methods ---
-    /// @notice execute Mixologist methods on another chain
-    /// @param _dstChainId te LayerZero destination chain id
-    /// @param _mixologistDstAddress destination Mixologist address
-    /// @param _mxCalls Mixologist calls
-    /// @param _adapterParams custom adapters
-    function executeOnChain(
-        uint16 _dstChainId,
-        bytes memory _mixologistDstAddress,
-        bytes[] memory _mxCalls,
-        bytes memory _adapterParams
-    ) external payable {
-        uint256 chainId = lzEndpoint.getChainId();
-        require(chainId != _dstChainId, 'MXProxy: Chain not valid');
-
-        _send(
-            msg.sender,
-            _dstChainId,
-            _mixologistDstAddress,
-            _mxCalls,
-            payable(msg.sender),
-            address(0),
-            _adapterParams
-        );
-    }
-
-    // --- Internal methods ---
+    // ************************ //
+    // *** PRIVATE FUNCTIONS *** //
+    // ************************ //
     /// @notice override of the '_nonblockingLzReceive' method
     function _nonblockingLzReceive(
         uint16 _srcChainId,
@@ -168,7 +180,7 @@ contract MXProxy is NonblockingLzApp {
         if (useCustomAdapterParams) {
             _checkGasLimit(
                 _dstChainId,
-                FUNCTION_TYPE_SEND,
+                uint16(FUNCTION_TYPE_SEND),
                 _adapterParams,
                 NO_EXTRA_GAS
             );

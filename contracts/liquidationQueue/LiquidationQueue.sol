@@ -10,16 +10,11 @@ import '../../yieldbox/contracts/interfaces/IStrategy.sol';
 
 import '../../yieldbox/contracts/YieldBox.sol';
 
-enum MODE {
-    ADD,
-    SUB
-}
-
 /// @title LiquidationQueue
 /// @author @0xRektora, TapiocaDAO
 // TODO: Capital efficiency? (register assets to strategies) (farm strat for TAP)
 // TODO: ERC20 impl?
-contract LiquidationQueue {
+contract LiquidationQueue is ILiquidationQueue {
     // ************ //
     // *** VARS *** //
     // ************ //
@@ -28,42 +23,54 @@ contract LiquidationQueue {
      * General information about the LiquidationQueue contract.
      */
 
-    LiquidationQueueMeta public liquidationQueueMeta; // Meta-data for this contract.
-    IMixologist public mixologist; // The target market.
+    /// @notice returns metadata information
+    LiquidationQueueMeta public liquidationQueueMeta;
+    /// @notice targeted market
+    IMixologist public mixologist;
+    /// @notice BeachBar addres
     IBeachBar public beachBar;
+    /// @notice YieldBox address
     YieldBox public yieldBox;
 
-    uint256 public lqAssetId; // The liquidation queue BeachBar asset id.
-    uint256 public marketAssetId; // The mixologist asset id.
-    uint256 public liquidatedAssetId; // The asset that is being liquidated.
-    bool public onlyOnce; // Contract init variable.
+    /// @notice liquidation queue BeachBar asset id
+    uint256 public lqAssetId;
+    /// @notice mixologist asset id
+    uint256 public marketAssetId;
+    /// @notice asset that is being liquidated
+    uint256 public liquidatedAssetId;
+
+    /// @notice initialization status
+    bool public onlyOnce;
 
     /**
      * Pools & order books information.
      */
 
-    // Bid pools, x% premium => bid pool
-    // 0 ... 30 range
-    // poolId => userAddress => userBidInfo.
+    /// @notice Bid pools
+    /// @dev x% premium => bid pool
+    ///      0 ... 30 range
+    ///      poolId => userAddress => userBidInfo.
     mapping(uint256 => mapping(address => Bidder)) public bidPools;
 
-    // The actual order book. Entries are stored only once a bid has been activated
-    // poolId => bidIndex => bidEntry).
+    /// @notice The actual order book. Entries are stored only once a bid has been activated
+    /// @dev poolId => bidIndex => bidEntry).
     mapping(uint256 => mapping(uint256 => OrderBookPoolEntry))
         public orderBookEntries;
-    // Meta-data about the order book pool
-    // poolId => poolInfo.
+    /// @notice Meta-data about the order book pool
+    /// @dev poolId => poolInfo.
     mapping(uint256 => OrderBookPoolInfo) public orderBookInfos;
 
     /**
      * Ledger.
      */
 
-    // user => orderBookEntries[poolId][bidIndex]
-    mapping(address => mapping(uint256 => uint256[])) public userBidIndexes; // User current bids.
+    /// @notice User current bids
+    /// @dev user => orderBookEntries[poolId][bidIndex]
+    mapping(address => mapping(uint256 => uint256[])) public userBidIndexes;
 
-    // user => amountDue.
-    mapping(address => uint256) public balancesDue; // Due balance of users.
+    /// @notice Due balance of users
+    /// @dev user => amountDue.
+    mapping(address => uint256) public balancesDue;
 
     // ***************** //
     // *** CONSTANTS *** //
@@ -78,43 +85,6 @@ contract LiquidationQueue {
 
     uint256 private constant WITHDRAWAL_FEE = 50; // 0.5%
     uint256 private constant WITHDRAWAL_FEE_PRECISION = 10_000;
-
-    // ************ //
-    // *** INIT *** //
-    // ************ //
-
-    /// @notice Acts as a 'constructor', should be called by a Mixologist market.
-    /// @param  _liquidationQueueMeta Info about the liquidations.
-    function init(
-        LiquidationQueueMeta calldata _liquidationQueueMeta,
-        IMixologist _mixologist
-    ) external {
-        require(!onlyOnce, 'LQ: Initialized');
-
-        liquidationQueueMeta = _liquidationQueueMeta;
-
-        mixologist = IMixologist(_mixologist);
-        liquidatedAssetId = mixologist.collateralId();
-        marketAssetId = mixologist.assetId();
-        beachBar = IBeachBar(mixologist.beachBar());
-        yieldBox = YieldBox(mixologist.yieldBox());
-
-        lqAssetId = _registerAsset();
-
-        IERC20(mixologist.asset()).approve(
-            address(yieldBox),
-            type(uint256).max
-        );
-        yieldBox.setApprovalForAll(address(mixologist), true);
-
-        // We initialize the pools to save gas on conditionals later on.
-        for (uint256 i = 0; i <= MAX_BID_POOLS; ) {
-            _initOrderBookPoolInfo(i);
-            ++i;
-        }
-
-        onlyOnce = true; // We set the init flag.
-    }
 
     // ************** //
     // *** EVENTS *** //
@@ -159,8 +129,8 @@ contract LiquidationQueue {
     );
 
     event Redeem(address indexed redeemer, address indexed to, uint256 amount);
-    event BidSwapperUpdated(IBidder indexed _old, IBidder indexed _new);
-    event UsdoSwapperUpdated(IBidder indexed _old, IBidder indexed _new);
+    event BidSwapperUpdated(IBidder indexed _old, address indexed _new);
+    event UsdoSwapperUpdated(IBidder indexed _old, address indexed _new);
 
     // ***************** //
     // *** MODIFIERS *** //
@@ -171,14 +141,49 @@ contract LiquidationQueue {
         _;
     }
 
-    // ************* //
-    // *** VIEWS *** //
-    // ************* //
+    /// @notice Acts as a 'constructor', should be called by a Mixologist market.
+    /// @param  _liquidationQueueMeta Info about the liquidations.
+    function init(
+        LiquidationQueueMeta calldata _liquidationQueueMeta,
+        address _mixologist
+    ) external override {
+        require(!onlyOnce, 'LQ: Initialized');
 
+        liquidationQueueMeta = _liquidationQueueMeta;
+
+        mixologist = IMixologist(_mixologist);
+        liquidatedAssetId = mixologist.collateralId();
+        marketAssetId = mixologist.assetId();
+        beachBar = IBeachBar(mixologist.beachBar());
+        yieldBox = YieldBox(mixologist.yieldBox());
+
+        lqAssetId = _registerAsset();
+
+        IERC20(mixologist.asset()).approve(
+            address(yieldBox),
+            type(uint256).max
+        );
+        yieldBox.setApprovalForAll(address(mixologist), true);
+
+        // We initialize the pools to save gas on conditionals later on.
+        for (uint256 i = 0; i <= MAX_BID_POOLS; ) {
+            _initOrderBookPoolInfo(i);
+            ++i;
+        }
+
+        onlyOnce = true; // We set the init flag.
+    }
+
+    // ********************** //
+    // *** VIEW FUNCTIONS *** //
+    // ********************** //
+
+    /// @notice returns targeted market
     function market() public view returns (string memory) {
         return mixologist.name();
     }
 
+    /// @notice returns order book size
     function getOrderBookSize(uint256 pool) public view returns (uint256 size) {
         OrderBookPoolInfo memory poolInfo = orderBookInfos[pool];
         unchecked {
@@ -186,7 +191,8 @@ contract LiquidationQueue {
         }
     }
 
-    // /!\ GAS COST /!\
+    // TODO: simulate with big order book pool => /!\ GAS COST /!\
+    /// @notice returns an array of 'OrderBookPoolEntry' for a pool
     function getOrderBookPoolEntries(uint256 pool)
         external
         view
@@ -213,9 +219,49 @@ contract LiquidationQueue {
         }
     }
 
-    // *********** //
-    // *** TXS *** //
-    // *********** //
+    /// @notice Get the next not empty bid pool in ASC order.
+    /// @return i The bid pool id.
+    /// @return available True if there is at least 1 bid available across all the order books.
+    function getNextAvailBidPool()
+        public
+        view
+        override
+        returns (uint256 i, bool available)
+    {
+        for (; i <= MAX_BID_POOLS; ) {
+            if (getOrderBookSize(i) != 0) {
+                available = true;
+                break;
+            }
+            ++i;
+        }
+    }
+
+    /// @notice returns number of pool bids for user
+    function userBidIndexLength(address user, uint256 pool)
+        external
+        view
+        returns (uint256 len)
+    {
+        uint256[] memory bidIndexes = userBidIndexes[user][pool];
+
+        uint256 bidIndexesLen = bidIndexes.length;
+        OrderBookPoolInfo memory poolInfo = orderBookInfos[pool];
+        for (uint256 i = 0; i < bidIndexesLen; ) {
+            if (bidIndexes[i] >= poolInfo.nextBidPull) {
+                bidIndexesLen--;
+            }
+            unchecked {
+                ++i;
+            }
+        }
+
+        return bidIndexes.length;
+    }
+
+    // ************************ //
+    // *** PUBLIC FUNCTIONS *** //
+    // ************************ //
 
     /// @notice Add a bid to a bid pool using stablecoins.
     /// @dev Works the same way as `bid` but performs a swap from the stablecoin to USDO
@@ -511,142 +557,6 @@ contract LiquidationQueue {
         emit Redeem(msg.sender, to, redeemable);
     }
 
-    function _viewBidderDiscountedCollateralAmount(
-        Bidder memory entry,
-        uint256 exchangeRate,
-        uint256 poolId
-    ) private view returns (uint256) {
-        uint256 bidAmount = entry.isUsdo
-            ? entry.usdoAmount
-            : entry.liquidatedAssetAmount;
-        uint256 liquidatedAssetAmount = entry.swapOnExecute
-            ? liquidationQueueMeta.bidExecutionSwapper.getOutputAmount(
-                address(mixologist),
-                beachBar.usdoAssetId(),
-                entry.usdoAmount,
-                ''
-            )
-            : bidAmount;
-        return
-            _getPremiumAmount(
-                _bidToCollateral(liquidatedAssetAmount, exchangeRate),
-                poolId,
-                MODE.ADD
-            );
-    }
-
-    function _useEntireBidAmount(
-        Bidder memory entry,
-        uint256 discountedBidderAmount,
-        uint256 exchangeRate,
-        uint256 poolId,
-        bytes memory swapData
-    )
-        private
-        returns (
-            uint256 finalCollateralAmount,
-            uint256 finalDiscountedCollateralAmount,
-            uint256 finalUsdoAmount
-        )
-    {
-        finalCollateralAmount = entry.liquidatedAssetAmount;
-        finalDiscountedCollateralAmount = discountedBidderAmount;
-        finalUsdoAmount = entry.usdoAmount;
-        //Execute the swap if USD0 was provided and it's different from the liqudation asset id
-        if (entry.swapOnExecute) {
-            yieldBox.transfer(
-                address(this),
-                address(liquidationQueueMeta.bidExecutionSwapper),
-                beachBar.usdoAssetId(),
-                yieldBox.toShare(
-                    beachBar.usdoAssetId(),
-                    entry.usdoAmount,
-                    false
-                )
-            );
-
-            finalCollateralAmount = liquidationQueueMeta
-                .bidExecutionSwapper
-                .swap(
-                    address(mixologist),
-                    beachBar.usdoAssetId(),
-                    entry.usdoAmount,
-                    swapData
-                );
-            finalDiscountedCollateralAmount = _getPremiumAmount(
-                _bidToCollateral(finalCollateralAmount, exchangeRate),
-                poolId,
-                MODE.ADD
-            );
-        }
-    }
-
-    function _userPartiallyBidAmount(
-        Bidder memory entry,
-        uint256 collateralAmountToLiquidate,
-        uint256 exchangeRate,
-        uint256 poolId,
-        bytes memory swapData
-    )
-        private
-        returns (
-            uint256 finalDiscountedCollateralAmount,
-            uint256 finalUsdoAmount
-        )
-    {
-        finalUsdoAmount = 0;
-        finalDiscountedCollateralAmount = _getPremiumAmount(
-            _collateralToBid(collateralAmountToLiquidate, exchangeRate),
-            poolId,
-            MODE.SUB
-        );
-
-        //Execute the swap if USD0 was provided and it's different from the liqudation asset id
-        uint256 usdoAssetId = beachBar.usdoAssetId();
-        if (entry.swapOnExecute) {
-            finalUsdoAmount = liquidationQueueMeta
-                .bidExecutionSwapper
-                .getInputAmount(
-                    address(mixologist),
-                    usdoAssetId,
-                    finalDiscountedCollateralAmount,
-                    ''
-                );
-
-            yieldBox.transfer(
-                address(this),
-                address(liquidationQueueMeta.bidExecutionSwapper),
-                usdoAssetId,
-                yieldBox.toShare(usdoAssetId, finalUsdoAmount, false)
-            );
-            uint256 returnedCollateral = liquidationQueueMeta
-                .bidExecutionSwapper
-                .swap(
-                    address(mixologist),
-                    usdoAssetId,
-                    finalUsdoAmount,
-                    swapData
-                );
-            require(
-                returnedCollateral >= finalDiscountedCollateralAmount,
-                'need-more-collateral'
-            );
-        }
-    }
-
-    struct BidExecutionData {
-        uint256 curPoolId;
-        bool isBidAvail;
-        OrderBookPoolInfo poolInfo;
-        OrderBookPoolEntry orderBookEntry;
-        OrderBookPoolEntry orderBookEntryCopy;
-        uint256 totalPoolAmountExecuted;
-        uint256 totalPoolCollateralLiquidated;
-        uint256 totalUsdoAmountUsed;
-        uint256 exchangeRate;
-        uint256 discountedBidderAmount;
-    }
-
     /// @notice Execute the liquidation call by executing the bids placed in the pools in ASC order.
     /// @dev Should only be called from Mixologist.
     ///      Mixologist should send the `collateralAmountToLiquidate` to this contract before calling this function.
@@ -660,6 +570,7 @@ contract LiquidationQueue {
         bytes calldata swapData
     )
         external
+        override
         returns (uint256 totalAmountExecuted, uint256 totalCollateralLiquidated)
     {
         require(msg.sender == address(mixologist), 'LQ: Only Mixologist');
@@ -803,77 +714,155 @@ contract LiquidationQueue {
 
     /// @notice updates the bid swapper address
     /// @param _swapper thew new ICollateralSwaper contract address
-    function setBidExecutionSwapper(IBidder _swapper) external {
+    function setBidExecutionSwapper(address _swapper) external override {
         require(msg.sender == address(mixologist), 'unauthorized');
         emit BidSwapperUpdated(
             liquidationQueueMeta.bidExecutionSwapper,
             _swapper
         );
-        liquidationQueueMeta.bidExecutionSwapper = _swapper;
-        // yieldBox.setApprovalForAll(address(_swapper), true);
+        liquidationQueueMeta.bidExecutionSwapper = IBidder(_swapper);
     }
 
     /// @notice updates the bid swapper address
     /// @param _swapper thew new ICollateralSwaper contract address
-    function setUsdoSwapper(IBidder _swapper) external {
+    function setUsdoSwapper(address _swapper) external override {
         require(msg.sender == address(mixologist), 'unauthorized');
         emit UsdoSwapperUpdated(liquidationQueueMeta.usdoSwapper, _swapper);
-        liquidationQueueMeta.usdoSwapper = _swapper;
-        // yieldBox.setApprovalForAll(address(_swapper), true);
+        liquidationQueueMeta.usdoSwapper = IBidder(_swapper);
     }
 
-    // ************* //
-    // *** VIEWS *** //
-    // ************* //
+    // ************************* //
+    // *** PRIVATE FUNCTIONS *** //
+    // ************************* //
+    function _viewBidderDiscountedCollateralAmount(
+        Bidder memory entry,
+        uint256 exchangeRate,
+        uint256 poolId
+    ) private view returns (uint256) {
+        uint256 bidAmount = entry.isUsdo
+            ? entry.usdoAmount
+            : entry.liquidatedAssetAmount;
+        uint256 liquidatedAssetAmount = entry.swapOnExecute
+            ? liquidationQueueMeta.bidExecutionSwapper.getOutputAmount(
+                address(mixologist),
+                beachBar.usdoAssetId(),
+                entry.usdoAmount,
+                ''
+            )
+            : bidAmount;
+        return
+            _getPremiumAmount(
+                _bidToCollateral(liquidatedAssetAmount, exchangeRate),
+                poolId,
+                MODE.ADD
+            );
+    }
 
-    /// @notice Get the next not empty bid pool in ASC order.
-    /// @return i The bid pool id.
-    /// @return available True if there is at least 1 bid available across all the order books.
-    function getNextAvailBidPool()
-        public
-        view
-        returns (uint256 i, bool available)
+    function _useEntireBidAmount(
+        Bidder memory entry,
+        uint256 discountedBidderAmount,
+        uint256 exchangeRate,
+        uint256 poolId,
+        bytes memory swapData
+    )
+        private
+        returns (
+            uint256 finalCollateralAmount,
+            uint256 finalDiscountedCollateralAmount,
+            uint256 finalUsdoAmount
+        )
     {
-        for (; i <= MAX_BID_POOLS; ) {
-            if (getOrderBookSize(i) != 0) {
-                available = true;
-                break;
-            }
-            ++i;
+        finalCollateralAmount = entry.liquidatedAssetAmount;
+        finalDiscountedCollateralAmount = discountedBidderAmount;
+        finalUsdoAmount = entry.usdoAmount;
+        //Execute the swap if USD0 was provided and it's different from the liqudation asset id
+        if (entry.swapOnExecute) {
+            yieldBox.transfer(
+                address(this),
+                address(liquidationQueueMeta.bidExecutionSwapper),
+                beachBar.usdoAssetId(),
+                yieldBox.toShare(
+                    beachBar.usdoAssetId(),
+                    entry.usdoAmount,
+                    false
+                )
+            );
+
+            finalCollateralAmount = liquidationQueueMeta
+                .bidExecutionSwapper
+                .swap(
+                    address(mixologist),
+                    beachBar.usdoAssetId(),
+                    entry.usdoAmount,
+                    swapData
+                );
+            finalDiscountedCollateralAmount = _getPremiumAmount(
+                _bidToCollateral(finalCollateralAmount, exchangeRate),
+                poolId,
+                MODE.ADD
+            );
         }
     }
 
-    function userBidIndexLength(address user, uint256 pool)
-        external
-        view
-        returns (uint256 len)
+    function _userPartiallyBidAmount(
+        Bidder memory entry,
+        uint256 collateralAmountToLiquidate,
+        uint256 exchangeRate,
+        uint256 poolId,
+        bytes memory swapData
+    )
+        private
+        returns (
+            uint256 finalDiscountedCollateralAmount,
+            uint256 finalUsdoAmount
+        )
     {
-        uint256[] memory bidIndexes = userBidIndexes[user][pool];
+        finalUsdoAmount = 0;
+        finalDiscountedCollateralAmount = _getPremiumAmount(
+            _collateralToBid(collateralAmountToLiquidate, exchangeRate),
+            poolId,
+            MODE.SUB
+        );
 
-        uint256 bidIndexesLen = bidIndexes.length;
-        OrderBookPoolInfo memory poolInfo = orderBookInfos[pool];
-        for (uint256 i = 0; i < bidIndexesLen; ) {
-            if (bidIndexes[i] >= poolInfo.nextBidPull) {
-                bidIndexesLen--;
-            }
-            unchecked {
-                ++i;
-            }
+        //Execute the swap if USD0 was provided and it's different from the liqudation asset id
+        uint256 usdoAssetId = beachBar.usdoAssetId();
+        if (entry.swapOnExecute) {
+            finalUsdoAmount = liquidationQueueMeta
+                .bidExecutionSwapper
+                .getInputAmount(
+                    address(mixologist),
+                    usdoAssetId,
+                    finalDiscountedCollateralAmount,
+                    ''
+                );
+
+            yieldBox.transfer(
+                address(this),
+                address(liquidationQueueMeta.bidExecutionSwapper),
+                usdoAssetId,
+                yieldBox.toShare(usdoAssetId, finalUsdoAmount, false)
+            );
+            uint256 returnedCollateral = liquidationQueueMeta
+                .bidExecutionSwapper
+                .swap(
+                    address(mixologist),
+                    usdoAssetId,
+                    finalUsdoAmount,
+                    swapData
+                );
+            require(
+                returnedCollateral >= finalDiscountedCollateralAmount,
+                'need-more-collateral'
+            );
         }
-
-        return bidIndexes.length;
     }
-
-    // **************** //
-    // *** INTERNAL *** //
-    // **************** //
 
     function _bid(
         address user,
         uint256 pool,
         uint256 amount,
         bool isUsdo
-    ) internal returns (Bidder memory bidder) {
+    ) private returns (Bidder memory bidder) {
         bidder.usdoAmount = isUsdo ? amount : 0;
         bidder.liquidatedAssetAmount = isUsdo ? 0 : amount;
         bidder.timestamp = block.timestamp;

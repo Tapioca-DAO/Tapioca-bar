@@ -6,8 +6,22 @@ import './usd0/IUSD0.sol';
 import './swappers/IMultiSwapper.sol';
 
 interface IBeachBar {
+    /// @notice swap extra data
     struct SwapData {
         uint256 minAssetAmount;
+    }
+
+    /// @notice Used to define the MasterContract's type
+    enum ContractType {
+        lowRisk,
+        mediumRisk,
+        highRisk
+    }
+
+    /// @notice MasterContract address and type
+    struct MasterContract {
+        address location;
+        ContractType risk;
     }
 
     function swappers(IMultiSwapper swapper) external view returns (bool);

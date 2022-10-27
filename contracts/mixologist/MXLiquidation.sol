@@ -9,9 +9,9 @@ contract MXLiquidation is MXCommon {
     using RebaseLibrary for Rebase;
     using BoringERC20 for IERC20;
 
-    // ************** //
-    // *** PUBLIC *** //
-    // ************** //
+    // ********************** //
+    // *** VIEW FUNCTIONS *** //
+    // ********************** //
 
     /// @notice Return the amount of collateral for a `user` to be solvent. Returns 0 if user already solvent.
     /// @dev We use a `CLOSED_COLLATERIZATION_RATE` that is a safety buffer when making the user solvent again,
@@ -46,6 +46,10 @@ contract MXLiquidation is MXCommon {
                 ? borrowPart - collateralAmountInAsset
                 : 0;
     }
+
+    // ************************ //
+    // *** PUBLIC FUNCTIONS *** //
+    // ************************ //
 
     /// @notice Entry point for liquidations.
     /// @dev Will call `closedLiquidation()` if not LQ exists or no LQ bid avail exists. Otherwise use LQ.
@@ -89,9 +93,9 @@ contract MXLiquidation is MXCommon {
         );
     }
 
-    // *************** //
-    // *** PRIVATE *** //
-    // *************** //
+    // ************************* //
+    // *** PRIVATE FUNCTIONS *** //
+    // ************************* //
     function _orderBookLiquidation(
         address[] calldata users,
         uint256 _exchangeRate,
