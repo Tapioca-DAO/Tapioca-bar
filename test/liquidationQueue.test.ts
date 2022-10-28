@@ -1612,7 +1612,7 @@ describe('LiquidationQueue test', () => {
         ).to.be.greaterThan(parseFloat(shareForCallerBefore.toString()));
     });
 
-    it('should execute bids for stable bidders using th entire bid amount', async () => {
+    it('should execute bids for stable bidders using the entire bid amount', async () => {
         const {
             deployer,
             bar,

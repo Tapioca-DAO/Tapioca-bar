@@ -8,6 +8,7 @@ import 'hardhat-contract-sizer';
 import 'hardhat-gas-reporter';
 import SDK from 'tapioca-sdk';
 import { HttpNetworkConfig } from 'hardhat/types';
+import 'solidity-coverage';
 
 dotenv.config();
 
@@ -71,10 +72,14 @@ const config: HardhatUserConfig & { dodoc?: any } = {
             hardfork: 'merge',
             allowUnlimitedContractSize: true,
             accounts: {
-                count: 10,
+                mnemonic:
+                    'test test test test test test test test test test test junk',
+                count: 101,
+                accountsBalance: '1000000000000000000000',
             },
             tags: ['testnet'],
         },
+
         //testnets
         goerli: supportedChains['goerli'],
         bnb_testnet: supportedChains['bnb_testnet'],

@@ -14,7 +14,7 @@ contract MixologistHelper {
     // ************************ //
     // *** PUBLIC FUNCTIONS *** //
     // ************************ //
-    
+
     /// @notice deposits asset to YieldBox and lends it to Mixologist
     /// @param mixologist the mixologist address
     /// @param _amount the amount to lend
@@ -153,7 +153,7 @@ contract MixologistHelper {
         }
     }
 
-   // ************************** //
+    // ************************** //
     // *** PRIVATE FUNCTIONS *** //
     // ************************* //
     function _withdraw(

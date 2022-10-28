@@ -191,7 +191,6 @@ contract LiquidationQueue is ILiquidationQueue {
         }
     }
 
-    // TODO: simulate with big order book pool => /!\ GAS COST /!\
     /// @notice returns an array of 'OrderBookPoolEntry' for a pool
     function getOrderBookPoolEntries(uint256 pool)
         external

@@ -1577,19 +1577,7 @@ describe('Mixologist test', () => {
     it('should test withdrawTo checks', async () => {
         const {
             wethUsdcMixologist,
-            createWethUsd0Mixologist,
-            usd0,
-            weth,
-            bar,
-            wethAssetId,
-            tapSwapPath,
-            mediumRiskMC,
-            yieldBox,
-            usdc,
             deployer,
-            eoa1,
-            deployCurveStableToUsdoBidder,
-            __wethUsdcPrice,
         } = await loadFixture(register);
 
         await expect(

@@ -26,7 +26,7 @@ __/\\\\\\\\\\\\\\\_____/\\\\\\\\\_____/\\\\\\\\\\\\\____/\\\\\\\\\\\_______/\\\\
 
 */
 
-contract MinterMixologist is BoringOwnable {
+contract MinterMixologist is BoringOwnable, ERC20 {
     using RebaseLibrary for Rebase;
     using BoringERC20 for IERC20;
 
@@ -50,7 +50,6 @@ contract MinterMixologist is BoringOwnable {
     uint256 public totalCollateralShare; // Total collateral supplied
     Rebase public totalBorrow; // elastic = Total token amount to be repayed by borrowers, base = Total parts of the debt held by borrowers
     uint256 public totalBorrowCap;
-    mapping(address => uint256) public balanceOf;
 
     // User balances
     mapping(address => uint256) public userCollateralShare;
@@ -68,6 +67,7 @@ contract MinterMixologist is BoringOwnable {
     uint256 public borrowingFee;
 
     IOracle oracle;
+    bytes public oracleData;
     address[] tapSwapPath; // Asset -> Tap
     address[] collateralSwapPath; // Collateral -> Asset
 
@@ -140,7 +140,9 @@ contract MinterMixologist is BoringOwnable {
     /// If 'from' is msg.sender, it's allowed.
     /// If 'msg.sender' is an address (an operator) that is approved by 'from', it's allowed.
     modifier allowed(address from) virtual {
-        if (from != msg.sender && !isApprovedForAll[from][msg.sender]) {
+        if (
+            from != msg.sender && allowance[from][msg.sender] <= balanceOf[from]
+        ) {
             revert NotApproved(from, msg.sender);
         }
         _;
@@ -187,6 +189,47 @@ contract MinterMixologist is BoringOwnable {
         updateExchangeRate();
 
         owner = msg.sender;
+    }
+
+    // ********************** //
+    // *** VIEW FUNCTIONS *** //
+    // ********************** //
+    function symbol() public view returns (string memory) {
+        return
+            string(
+                abi.encodePacked(
+                    'tmm',
+                    collateral.safeSymbol(),
+                    '/',
+                    asset.symbol(),
+                    '-',
+                    oracle.symbol(oracleData)
+                )
+            );
+    }
+
+    function name() external view returns (string memory) {
+        return
+            string(
+                abi.encodePacked(
+                    'Tapioca MinterMixologist ',
+                    collateral.safeName(),
+                    '/',
+                    asset.name(),
+                    '-',
+                    oracle.name(oracleData)
+                )
+            );
+    }
+
+    function decimals() external view returns (uint8) {
+        return asset.decimals();
+    }
+
+    // totalSupply for ERC20 compatibility
+    // BalanceOf[user] represent a fraction
+    function totalSupply() public view override returns (uint256) {
+        return asset.totalSupply();
     }
 
     // ************************ //
