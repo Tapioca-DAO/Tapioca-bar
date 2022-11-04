@@ -1512,6 +1512,7 @@ describe('Mixologist test', () => {
     it('should allow multiple borrowers', async () => {
         const {
             usdc,
+            eoa1,
             weth,
             yieldBox,
             multiSwapper,
@@ -1571,5 +1572,22 @@ describe('Mixologist test', () => {
         await wethUsdcMixologist.depositFeesToYieldBox(multiSwapper.address, {
             minAssetAmount: 1,
         });
+    });
+
+    it('should test withdrawTo checks', async () => {
+        const {
+            wethUsdcMixologist,
+            deployer,
+        } = await loadFixture(register);
+
+        await expect(
+            wethUsdcMixologist.withdrawTo(
+                1,
+                deployer.address,
+                100,
+                ethers.utils.toUtf8Bytes(''),
+                deployer.address
+            ),
+        ).not.to.be.reverted;
     });
 });

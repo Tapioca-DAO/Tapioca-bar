@@ -25,7 +25,7 @@ export const constants: { [key: string]: any } = {
         tapAddress: '0x306547aa4B4241D73ae1e7A5465D277d06C40cbC',
         feeTo: '0x40282d3Cf4890D9806BC1853e97a59C93D813653',
         feeVeTo: '0x40282d3Cf4890D9806BC1853e97a59C93D813653',
-        feeCollector: '0x40282d3Cf4890D9806BC1853e97a59C93D813653', //liquidation queue
+        feeCollector: '0x40282d3Cf4890D9806BC1853e97a59C93D813653', //for liquidation queue
         uniV2Factory: '0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f',
         uniV2Router: '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D ',
         uniV2PairHash:
@@ -40,10 +40,14 @@ export const constants: { [key: string]: any } = {
                 name: 'WETH',
                 address: '0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6',
             },
+            {
+                name: 'TAP',
+                address: '0x306547aa4B4241D73ae1e7A5465D277d06C40cbC',
+            },
         ],
         mx_ETH: {
-            collateralAddress: '0x07865c6e87b9f70255377e024ace6630c1eaa37f',
-            assetAddress: '0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6',
+            collateralAddress: '0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6', //weth
+            assetAddress: '0xD52343b83BCE11B4A03ED4434b9AAfdc633bB39b',
             oracleAddress: '0x08aa8c316b485a1a73356f662a9881d7b31bf427', //mock
             minBidAmount: 20,
             hasExecutionBidder: false,
@@ -54,50 +58,44 @@ export const constants: { [key: string]: any } = {
             oracleAddress: '0x08aa8c316b485a1a73356f662a9881d7b31bf427', //mock
         },
     },
-    //mumbai
-    '80001': {
-        ...supportedChains['mumbai'],
-    },
-    //fantom tesnet
+    //fantom_testnet
     '4002': {
         ...supportedChains['fantom_testnet'],
-    },
-    //optimism-goerli
-    '420': {
-        ...supportedChains['optimism_goerli'],
-        feeTo: '0x0000000000000000000000000000000000000000',
-        feeVeTo: '0x0000000000000000000000000000000000000000',
-        lqFeeCollector: '0x0000000000000000000000000000000000000000',
-        yieldBoxAddress: '0x0000000000000000000000000000000000000000',
-        tapAddress: '0x0000000000000000000000000000000000000000',
         wrappedNative: '0x0000000000000000000000000000000000000000',
-        usdoAddress: '0x0000000000000000000000000000000000000000',
-        uniV2Factory: '0x0000000000000000000000000000000000000000',
-        uniV2Router: '0x0000000000000000000000000000000000000000',
-        curveStablePool: '0x0000000000000000000000000000000000000000',
+        tapAddress: '0x4663B30afc168A6D1810fA6857a74d04bf632E54',
+        feeTo: '0x40282d3Cf4890D9806BC1853e97a59C93D813653',
+        feeVeTo: '0x40282d3Cf4890D9806BC1853e97a59C93D813653',
+        feeCollector: '0x40282d3Cf4890D9806BC1853e97a59C93D813653', //for liquidation queue
+        uniV2Factory: '0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f',
+        uniV2Router: '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D ',
+        uniV2PairHash:
+            '0x68ddfd89d43db94fbd68a4abd2861ebcbfea56c0fd36334bbb95f0661c3171a2',
+        crvStablePool: '0x803147a1f65f9b838e7be39bac1a4f51e6d29a18', //random address
         assets: [
             {
-                name: 'USDO',
-                address: '0x0000000000000000000000000000000000000000',
+                name: 'USDC',
+                address: '0xdEE65CaD824eD001a03215941FEb7c85D3E0aA94',
             },
             {
-                name: 'tETH',
-                address: '0x0000000000000000000000000000000000000000',
+                name: 'WETH',
+                address: '0x84C7dD519Ea924bf1Cf6613f9127F26D7aB801D0',
+            },
+            {
+                name: 'TAP',
+                address: '0x4663B30afc168A6D1810fA6857a74d04bf632E54',
             },
         ],
         mx_ETH: {
-            collateralAddress: '0x0000000000000000000000000000000000000000',
-            oracleAddress: '0x0000000000000000000000000000000000000000',
+            collateralAddress: '0x84C7dD519Ea924bf1Cf6613f9127F26D7aB801D0', //weth
+            assetAddress: '0x9F737c63B04f8544A88b8Fb55Fa897252E79bED9',
+            oracleAddress: '0x41dC15C448aB9141254EEd98F562a407E915d3b1', //mock
             minBidAmount: 20,
             hasExecutionBidder: false,
             executionBidder: '0x0000000000000000000000000000000000000000',
         },
-        mx_AVAX: {
-            collateralAddress: '0x0000000000000000000000000000000000000000', //tAVAX address
-            oracleAddress: '0x0000000000000000000000000000000000000000', //tAVAX-USD0 oracle
-            minBidAmount: 20, //min USD0 bid amount
-            hasExecutionBidder: false, //if false, bidExecutionSwapper is not set
-            executionBidder: '0x0000000000000000000000000000000000000000', //bidExecutionSwapper address
+        minterMx_ETH: {
+            collateralAddress: '0x84C7dD519Ea924bf1Cf6613f9127F26D7aB801D0',
+            oracleAddress: '0x41dC15C448aB9141254EEd98F562a407E915d3b1', //mock
         },
     },
 
@@ -189,17 +187,11 @@ export const deployOracleMock = async (
     const { deployments, getNamedAccounts } = hre;
     const { deploy } = deployments;
     const { deployer } = await getNamedAccounts();
-    const contracts: TContract[] = [];
 
     console.log('\nDeploying OracleMock');
     await deploy('OracleMock', { from: deployer, log: true });
     await verify(hre, 'OracleMock', []);
     const oracleMock = await deployments.get('OracleMock');
-    contracts.push({
-        name: 'OracleMock',
-        address: oracleMock.address,
-        meta: {},
-    });
     console.log('Done');
 
     console.log(`\nSetting mock price`);
@@ -274,6 +266,7 @@ export const registerMinterMarket = async (
         tapSwapPath,
         collateralSwapPath,
     ];
+
     await deploy('MinterMixologist', {
         from: deployer,
         log: true,
@@ -284,14 +277,17 @@ export const registerMinterMarket = async (
     console.log(
         `Done. Deployed on ${deployedMinter.address} with args ${args}`,
     );
-
     console.log(`\nSetting minter and burner role for USD0`);
     const usd0Contract = await hre.ethers.getContractAt(
         'USD0',
         usd0Deployed.address,
     );
-    await usd0Contract.setMinterStatus(deployedMinter.address, true);
-    await usd0Contract.setBurnerStatus(deployedMinter.address, true);
+    await (
+        await usd0Contract.setMinterStatus(deployedMinter.address, true)
+    ).wait();
+    await (
+        await usd0Contract.setBurnerStatus(deployedMinter.address, true)
+    ).wait();
     console.log(`Done`);
 
     return new Promise(async (resolve) =>
@@ -456,11 +452,12 @@ export const registerLiquidationQueue = async (
             : hre.ethers.constants.AddressZero,
         usdoSwapper: stableToUsdoBidder.address,
     };
+
     const lqContract = await hre.ethers.getContractAt(
         'LiquidationQueue',
         deployedLQ.address,
     );
-    await lqContract.init(LQ_META, mixologistContract.address);
+    await (await lqContract.init(LQ_META, mixologistContract.address)).wait();
     console.log(`Done`);
 
     console.log(`\nSetting ${name} LiquidationQueue on Mixologist`);

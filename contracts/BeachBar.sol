@@ -2,51 +2,49 @@
 
 pragma solidity ^0.8.0;
 
-import '../yieldbox/contracts/YieldBox.sol';
-import '../yieldbox/contracts/interfaces/IWrappedNative.sol';
-import '../yieldbox/contracts/interfaces/IStrategy.sol';
-import '../yieldbox/contracts/enums/YieldBoxTokenType.sol';
-import './swappers/MultiSwapper.sol';
-import './mixologist/interfaces/IMixologist.sol';
 import '@boringcrypto/boring-solidity/contracts/BoringOwnable.sol';
-import './usd0/IUSD0.sol';
 
-enum ContractType {
-    lowRisk,
-    mediumRisk,
-    highRisk
-}
-
-struct MasterContract {
-    address location;
-    ContractType risk;
-}
-
-struct SwapData {
-    uint256 minAssetAmount;
-}
+import '../yieldbox/contracts/YieldBox.sol';
+import './mixologist/interfaces/IMixologist.sol';
+import './IBeachBar.sol';
 
 // TODO: Permissionless market deployment
 ///     + asset registration? (toggle to renounce ownership so users can call)
+/// @title Global market registry
+/// @notice Mixologist management
 contract BeachBar is BoringOwnable {
+    /// @notice returns the YieldBox contract
     YieldBox public immutable yieldBox;
 
+    /// @notice returns the TAP contract
     IERC20 public immutable tapToken;
+    /// @notice returns TAP asset id registered in the YieldBox contract
     uint256 public immutable tapAssetId;
 
+    /// @notice returns USD0 contract
     IUSD0 public usdoToken;
+
+    /// @notice returns USD0 asset id registered in the YieldBox contract
     uint256 public usdoAssetId;
 
-    MasterContract[] public masterContracts;
+    /// @notice master contracts registered
+    IBeachBar.MasterContract[] public masterContracts;
 
     // Used to check if a master contract is registered to be used as a Mixologist template
     mapping(address => bool) isMasterContractRegistered;
 
-    address public feeTo; // Protocol
-    address public feeVeTap; // TAP distributors
+    /// @notice protocol fees
+    address public feeTo;
 
-    mapping(MultiSwapper => bool) public swappers;
+    /// @notice TAP distributor fees
+    address public feeVeTap;
 
+    /// @notice whitelisted swappers
+    mapping(IMultiSwapper => bool) public swappers;
+
+    /// @notice creates a BeachBar contract
+    /// @param _yieldBox YieldBox contract address
+    /// @param tapToken_ TapOFT contract address
     constructor(YieldBox _yieldBox, IERC20 tapToken_) {
         yieldBox = _yieldBox;
         tapToken = tapToken_;
@@ -65,7 +63,7 @@ contract BeachBar is BoringOwnable {
     // ************** //
 
     event ProtocolWithdrawal(address[] markets, uint256 timestamp);
-    event RegisterMasterContract(address location, ContractType risk);
+    event RegisterMasterContract(address location, IBeachBar.ContractType risk);
     event RegisterMixologist(address location, address masterContract);
     event FeeToUpdate(address newFeeTo);
     event FeeVeTapUpdate(address newFeeVeTap);
@@ -75,7 +73,6 @@ contract BeachBar is BoringOwnable {
     // ******************//
     // *** MODIFIERS *** //
     // ***************** //
-
     modifier registeredMasterContract(address mc) {
         require(
             isMasterContractRegistered[mc] == true,
@@ -89,6 +86,7 @@ contract BeachBar is BoringOwnable {
     // ********************** //
 
     /// @notice Get all the Mixologist contract addresses
+    /// @return markets list of available markets
     function tapiocaMarkets() public view returns (address[] memory markets) {
         uint256 _masterContractLength = masterContracts.length;
         uint256 marketsLength = 0;
@@ -140,8 +138,8 @@ contract BeachBar is BoringOwnable {
     /// @dev Fees are withdrawn in TAP and sent to the FeeDistributor contract
     /// @param swappers_ One or more swappers to convert the asset to TAP.
     function withdrawAllProtocolFees(
-        MultiSwapper[] calldata swappers_,
-        SwapData[] calldata swapData_
+        IMultiSwapper[] calldata swappers_,
+        IBeachBar.SwapData[] calldata swapData_
     ) public {
         require(address(swappers_[0]) != address(0), 'BeachBar: zero address');
 
@@ -189,14 +187,14 @@ contract BeachBar is BoringOwnable {
     /// @param contractType_ The risk type of the contract
     function registerMasterContract(
         address mcAddress,
-        ContractType contractType_
+        IBeachBar.ContractType contractType_
     ) external onlyOwner {
         require(
             isMasterContractRegistered[mcAddress] == false,
             'BeachBar: MC registered'
         );
 
-        MasterContract memory mc;
+        IBeachBar.MasterContract memory mc;
         mc.location = mcAddress;
         mc.risk = contractType_;
         masterContracts.push(mc);
@@ -250,11 +248,13 @@ contract BeachBar is BoringOwnable {
         }
     }
 
+    /// @notice Set protocol fees address
     function setFeeTo(address feeTo_) external onlyOwner {
         feeTo = feeTo_;
         emit FeeToUpdate(feeTo_);
     }
 
+    /// @notice Set TAP distributors fees address
     function setFeeVeTap(address feeVeTap_) external onlyOwner {
         feeVeTap = feeVeTap_;
         emit FeeVeTapUpdate(feeVeTap_);
@@ -264,11 +264,14 @@ contract BeachBar is BoringOwnable {
     /// MasterContract Only Admin function.
     /// @param swapper The address of the swapper contract that conforms to `ISwapper`.
     /// @param enable True to enable the swapper. To disable use False.
-    function setSwapper(MultiSwapper swapper, bool enable) external onlyOwner {
+    function setSwapper(IMultiSwapper swapper, bool enable) external onlyOwner {
         swappers[swapper] = enable;
         emit SwapperUpdate(address(swapper), enable);
     }
 
+    // ************************* //
+    // *** PRIVATE FUNCTIONS *** //
+    // ************************* //
     function _getRevertMsg(bytes memory _returnData)
         private
         pure

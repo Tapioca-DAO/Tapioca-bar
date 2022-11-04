@@ -71,6 +71,7 @@ describe('MixologistHelper test', () => {
                 usdcMintVal,
                 borrowAmount,
                 false,
+                ethers.utils.toUtf8Bytes(''),
             );
     });
 
@@ -114,6 +115,7 @@ describe('MixologistHelper test', () => {
                 usdcMintVal,
                 borrowAmount,
                 true,
+                ethers.utils.toUtf8Bytes(''),
             );
     });
 
@@ -157,6 +159,7 @@ describe('MixologistHelper test', () => {
                 usdcMintVal,
                 borrowAmount,
                 true,
+                ethers.utils.toUtf8Bytes(''),
             );
 
         const userBorrowPart = await wethUsdcMixologist.userBorrowPart(
@@ -222,6 +225,7 @@ describe('MixologistHelper test', () => {
                 usdcMintVal,
                 borrowAmount,
                 true,
+                ethers.utils.toUtf8Bytes(''),
             );
 
         const userBorrowPart = await wethUsdcMixologist.userBorrowPart(

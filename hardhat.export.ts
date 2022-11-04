@@ -71,10 +71,14 @@ const config: HardhatUserConfig & { dodoc?: any } = {
             hardfork: 'merge',
             allowUnlimitedContractSize: true,
             accounts: {
+                mnemonic:
+                    'test test test test test test test test test test test junk',
                 count: 10,
+                accountsBalance: '1000000000000000000000',
             },
             tags: ['testnet'],
         },
+
         //testnets
         goerli: supportedChains['goerli'],
         bnb_testnet: supportedChains['bnb_testnet'],

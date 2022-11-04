@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+import '@boringcrypto/boring-solidity/contracts/interfaces/IERC20.sol';
+
 import '../../mixologist/interfaces/IFlashLoan.sol';
-import '../../../yieldbox/contracts/YieldBox.sol';
-import '../../mixologist/Mixologist.sol';
+import '../../mixologist/interfaces/IMixologist.sol';
+import '../../../yieldbox/contracts/interfaces/IYieldBox.sol';
 
 contract FlashLoanMockAttacker is IFlashBorrower {
     function onFlashLoan(
@@ -23,8 +25,8 @@ contract FlashLoanMockSuccess is IFlashBorrower {
         uint256 fee,
         bytes calldata
     ) external {
-        Mixologist mixologist = Mixologist(msg.sender);
-        YieldBox yieldBox = mixologist.yieldBox();
+        IMixologist mixologist = IMixologist(msg.sender);
+        IYieldBox yieldBox = IYieldBox(mixologist.yieldBox());
 
         token.approve(address(yieldBox), amount + fee);
 

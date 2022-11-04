@@ -5,10 +5,11 @@ import '@boringcrypto/boring-solidity/contracts/BoringOwnable.sol';
 import '@boringcrypto/boring-solidity/contracts/ERC20.sol';
 import '@boringcrypto/boring-solidity/contracts/libraries/BoringRebase.sol';
 import '@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol';
-import '../../yieldbox/contracts/YieldBox.sol';
-import '../mixologist/interfaces/IOracle.sol';
-import '../BeachBar.sol';
 
+import '../IBeachBar.sol';
+import '../swappers/IMultiSwapper.sol';
+import '../mixologist/interfaces/IOracle.sol';
+import '../../yieldbox/contracts/YieldBox.sol';
 
 // solhint-disable max-line-length
 /*
@@ -25,7 +26,7 @@ __/\\\\\\\\\\\\\\\_____/\\\\\\\\\_____/\\\\\\\\\\\\\____/\\\\\\\\\\\_______/\\\\
 
 */
 
-contract MinterMixologist is BoringOwnable {
+contract MinterMixologist is BoringOwnable, ERC20 {
     using RebaseLibrary for Rebase;
     using BoringERC20 for IERC20;
 
@@ -38,7 +39,7 @@ contract MinterMixologist is BoringOwnable {
     }
     AccrueInfo public accrueInfo;
 
-    BeachBar public beachBar;
+    IBeachBar public beachBar;
     YieldBox public yieldBox;
     IERC20 public collateral;
     IUSD0 public asset;
@@ -49,7 +50,6 @@ contract MinterMixologist is BoringOwnable {
     uint256 public totalCollateralShare; // Total collateral supplied
     Rebase public totalBorrow; // elastic = Total token amount to be repayed by borrowers, base = Total parts of the debt held by borrowers
     uint256 public totalBorrowCap;
-    mapping(address => uint256) public balanceOf;
 
     // User balances
     mapping(address => uint256) public userCollateralShare;
@@ -67,6 +67,7 @@ contract MinterMixologist is BoringOwnable {
     uint256 public borrowingFee;
 
     IOracle oracle;
+    bytes public oracleData;
     address[] tapSwapPath; // Asset -> Tap
     address[] collateralSwapPath; // Collateral -> Asset
 
@@ -132,13 +133,29 @@ contract MinterMixologist is BoringOwnable {
     uint256 private constant MAX_BORROWING_FEE = 8e4; //at 80% for testing; TBD
     uint256 private constant MAX_STABILITY_FEE = 8e17; //at 80% for testing; TBD
 
-    // ************* //
-    // *** METHODS *** //
-    // ************* //
+    // ***************** //
+    // *** MODIFIERS *** //
+    // ***************** //
+    /// Modifier to check if the msg.sender is allowed to use funds belonging to the 'from' address.
+    /// If 'from' is msg.sender, it's allowed.
+    /// If 'msg.sender' is an address (an operator) that is approved by 'from', it's allowed.
+    modifier allowed(address from) virtual {
+        if (
+            from != msg.sender && allowance[from][msg.sender] <= balanceOf[from]
+        ) {
+            revert NotApproved(from, msg.sender);
+        }
+        _;
+    }
+    /// @dev Checks if the user is solvent in the closed liquidation case at the end of the function body.
+    modifier solvent(address from) {
+        _;
+        require(_isSolvent(from, exchangeRate), 'Mx: insolvent');
+    }
 
     /// @notice Creates the MinterMixologist contract
     constructor(
-        BeachBar tapiocaBar_,
+        IBeachBar tapiocaBar_,
         IERC20 _collateral,
         uint256 _collateralId,
         IOracle _oracle,
@@ -146,13 +163,13 @@ contract MinterMixologist is BoringOwnable {
         address[] memory _collateralSwapPath
     ) {
         beachBar = tapiocaBar_;
-        yieldBox = tapiocaBar_.yieldBox();
+        yieldBox = YieldBox(tapiocaBar_.yieldBox());
         owner = address(beachBar);
 
         tapSwapPath = _tapSwapPath;
         collateralSwapPath = _collateralSwapPath;
 
-        address _asset = address(beachBar.usdoToken());
+        address _asset = beachBar.usdoToken();
 
         require(
             address(_collateral) != address(0) &&
@@ -174,25 +191,51 @@ contract MinterMixologist is BoringOwnable {
         owner = msg.sender;
     }
 
-    // --- Modifiers ---
-    /// Modifier to check if the msg.sender is allowed to use funds belonging to the 'from' address.
-    /// If 'from' is msg.sender, it's allowed.
-    /// If 'msg.sender' is an address (an operator) that is approved by 'from', it's allowed.
-    modifier allowed(address from) virtual {
-        if (from != msg.sender && !isApprovedForAll[from][msg.sender]) {
-            revert NotApproved(from, msg.sender);
-        }
-        _;
-    }
-    /// @dev Checks if the user is solvent in the closed liquidation case at the end of the function body.
-    modifier solvent(address from) {
-        _;
-        require(_isSolvent(from, exchangeRate), 'Mx: insolvent');
+    // ********************** //
+    // *** VIEW FUNCTIONS *** //
+    // ********************** //
+    function symbol() public view returns (string memory) {
+        return
+            string(
+                abi.encodePacked(
+                    'tmm',
+                    collateral.safeSymbol(),
+                    '/',
+                    asset.symbol(),
+                    '-',
+                    oracle.symbol(oracleData)
+                )
+            );
     }
 
-    // --- View methods ---
+    function name() external view returns (string memory) {
+        return
+            string(
+                abi.encodePacked(
+                    'Tapioca MinterMixologist ',
+                    collateral.safeName(),
+                    '/',
+                    asset.name(),
+                    '-',
+                    oracle.name(oracleData)
+                )
+            );
+    }
 
-    // --- Write methods ---
+    function decimals() external view returns (uint8) {
+        return asset.decimals();
+    }
+
+    // totalSupply for ERC20 compatibility
+    // BalanceOf[user] represent a fraction
+    function totalSupply() public view override returns (uint256) {
+        return asset.totalSupply();
+    }
+
+    // ************************ //
+    // *** PUBLIC FUNCTIONS *** //
+    // ************************ //
+
     /// @notice Gets the exchange rate. I.e how much collateral to buy 1e18 asset.
     /// @dev This function is supposed to be invoked if needed because Oracle queries can be expensive.
     ///      Oracle should consider USD0 at 1$
@@ -303,8 +346,8 @@ contract MinterMixologist is BoringOwnable {
 
     /// @notice Withdraw the balance of `feeTo`, swap asset into TAP and deposit it to yieldBox of `feeTo`
     function depositFeesToYieldBox(
-        MultiSwapper swapper,
-        SwapData calldata swapData
+        IMultiSwapper swapper,
+        IBeachBar.SwapData calldata swapData
     ) public {
         require(beachBar.swappers(swapper), 'Mx: Invalid swapper');
 
@@ -360,7 +403,7 @@ contract MinterMixologist is BoringOwnable {
     function liquidate(
         address[] calldata users,
         uint256[] calldata maxBorrowParts,
-        MultiSwapper swapper,
+        IMultiSwapper swapper,
         bytes calldata collateralToAssetSwapData
     ) external {
         // Oracle can fail but we still need to allow liquidations
@@ -376,7 +419,10 @@ contract MinterMixologist is BoringOwnable {
         );
     }
 
-    // --- Owner methods ---
+    // *********************** //
+    // *** OWNER FUNCTIONS *** //
+    // *********************** //
+
     /// @notice Used to set the swap path of closed liquidations
     /// @param _collateralSwapPath The Uniswap path .
     function setCollateralSwapPath(address[] calldata _collateralSwapPath)
@@ -416,7 +462,10 @@ contract MinterMixologist is BoringOwnable {
         borrowingFee = _borrowingFee;
     }
 
-    // --- Private methods ---
+    // ************************* //
+    // *** PRIVATE FUNCTIONS *** //
+    // ************************* //
+
     /// @notice Concrete implementation of `isSolvent`. Includes a parameter to allow caching `exchangeRate`.
     /// @param _exchangeRate The exchange rate. Used to cache the `exchangeRate` between calls.
     function _isSolvent(address user, uint256 _exchangeRate)
@@ -453,7 +502,7 @@ contract MinterMixologist is BoringOwnable {
     function _closedLiquidation(
         address[] calldata users,
         uint256[] calldata maxBorrowParts,
-        MultiSwapper swapper,
+        IMultiSwapper swapper,
         uint256 _exchangeRate,
         bytes calldata swapData
     ) private {

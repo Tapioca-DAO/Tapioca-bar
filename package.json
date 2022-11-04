@@ -5,7 +5,7 @@
         "compile": "NODE_ENV=compile hardhat compile --quiet && yarn solhint",
         "solhint": "solhint contracts/**/*.sol --fix",
         "clean": "rm -rf ./cache && rm -rf ./artifacts && rm -rf ./.openzeppelin",
-        "coverage": "yarn clean && NODE_ENV=compile hardhat coverage",
+        "coverage": "NODE_ENV=compile hardhat compile --quiet && hardhat coverage --network hardhat",
         "contracts_size": "yarn compile && NODE_ENV=hardhat hardhat size-contracts",
         "typechain": "npx hardhat typechain",
         "test": "npx hardhat test",
@@ -72,6 +72,6 @@
         "husky": "^8.0.1",
         "load-json-file": "^7.0.1",
         "lodash": "^4.17.21",
-        "tapioca-sdk": "^1.1.11"
+        "tapioca-sdk": "^1.1.12"
     }
 }

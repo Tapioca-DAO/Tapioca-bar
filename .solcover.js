@@ -15,4 +15,6 @@ module.exports = {
         'swappers/MultiSwapper.sol',
         'usd0/mocks/LZEndpointMock.sol',
     ],
+    norpc: true,
+    isTruffle: false,
 };

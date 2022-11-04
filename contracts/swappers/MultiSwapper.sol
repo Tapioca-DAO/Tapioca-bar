@@ -2,36 +2,41 @@
 pragma solidity ^0.8.0;
 
 import '@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol';
+import '../IBeachBar.sol';
 import '../libraries/IUniswapV2Factory.sol';
 import '../libraries/UniswapV2Library.sol';
 import '../libraries/IUniswapV2Pair.sol';
-import '../BeachBar.sol';
 import '../../yieldbox/contracts//YieldBox.sol';
-
 
 /// Modified from https://github.com/sushiswap/kashi-lending/blob/master/contracts/swappers/SushiSwapMultiSwapper.sol
 
 contract MultiSwapper {
     using BoringERC20 for IERC20;
 
+    // ************ //
+    // *** VARS *** //
+    // ************ //
     address private immutable factory;
-
-    BeachBar private immutable beachBar;
     YieldBox private immutable yieldBox;
-
     bytes32 private immutable pairCodeHash;
 
+    /// @notice creates a new MultiSwapper contract
+    /// @param _factory UniswapV2Factory address
+    /// @param _tapiocaBar BeachBar address
+    /// @param _pairCodeHash UniswapV2 pair code hash
     constructor(
         address _factory,
-        BeachBar _tapiocaBar,
+        IBeachBar _tapiocaBar,
         bytes32 _pairCodeHash
     ) {
         factory = _factory;
-        beachBar = _tapiocaBar;
-        yieldBox = _tapiocaBar.yieldBox();
+        yieldBox = YieldBox(_tapiocaBar.yieldBox());
         pairCodeHash = _pairCodeHash;
     }
 
+    // ********************** //
+    // *** VIEW FUNCTIONS *** //
+    // ********************** //
     function getOutputAmount(
         uint256 tokenInId,
         address[] calldata path,
@@ -62,6 +67,9 @@ contract MultiSwapper {
         amountIn = amounts[0];
     }
 
+    // ************************ //
+    // *** PUBLIC FUNCTIONS *** //
+    // ************************ //
     function swap(
         uint256 tokenInId,
         uint256 tokenOutId,
@@ -95,6 +103,9 @@ contract MultiSwapper {
         );
     }
 
+    // ************************* //
+    // *** PRIVATE FUNCTIONS *** //
+    // ************************* //
     // Swaps an exact amount of tokens for another token through the path passed as an argument
     // Returns the amount of the final token
     function _swapExactTokensForTokens(

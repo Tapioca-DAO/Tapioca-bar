@@ -1379,6 +1379,7 @@ export async function register(staging?: boolean) {
         deployCurveStableToUsdoBidder,
         registerUsd0Contract,
         addUniV2UsdoWethLiquidity,
+        createWethUsd0Mixologist,
     };
 
     return { ...initialSetup, ...utilFuncs, verifyEtherscanQueue };

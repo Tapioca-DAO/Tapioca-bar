@@ -46,7 +46,8 @@ describe('BeachBar test', () => {
         await expect(
             bar.executeMixologistFn(
                 [ethers.constants.AddressZero],
-                [ethers.utils.toUtf8Bytes('')],true
+                [ethers.utils.toUtf8Bytes('')],
+                true,
             ),
         ).to.be.revertedWith('BeachBar: MC not registered');
     });

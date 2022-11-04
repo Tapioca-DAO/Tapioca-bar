@@ -34,10 +34,12 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         proxyDeployer.address,
     );
 
+    console.log(`\nDeploying MXProxy`);
     await proxyDeployerContract.deployWithCreate2(
         constants[chainId].address,
-        salt,
+        salt
     );
+    console.log(`Done`);
     const count = await proxyDeployerContract.proxiesCount();
     const proxy = await proxyDeployerContract.proxies(count.sub(1));
 

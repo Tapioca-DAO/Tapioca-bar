@@ -18,10 +18,12 @@ __/\\\\\\\\\\\\\\\_____/\\\\\\\\\_____/\\\\\\\\\\\\\____/\\\\\\\\\\\_______/\\\\
 
 */
 
+/// @title USD0 OFT contract
 contract USD0 is PausableOFT {
-    // ************** //
-    // *** DATA *** //
-    // ************** //
+    // ************ //
+    // *** VARS *** //
+    // ************ //
+
     /// @notice addresses allowed to mint USD0
     /// @dev chainId>address>status
     mapping(uint256 => mapping(address => bool)) public allowedMinter;
@@ -37,10 +39,7 @@ contract USD0 is PausableOFT {
     event SetMinterStatus(address indexed _for, bool _status);
     event SetBurnerStatus(address indexed _for, bool _status);
 
-    // ************** //
-    // *** METHODS *** //
-    // ************** //
-    /// @notice creates USDO0 OFT
+    /// @notice creates a new USDO0 OFT contract
     /// @param _lzEndpoint LayerZero endpoint
     constructor(address _lzEndpoint) PausableOFT('USD0', 'USD0', _lzEndpoint) {
         uint256 chain = _getChainId();
@@ -48,13 +47,17 @@ contract USD0 is PausableOFT {
         allowedBurner[chain][msg.sender] = true;
     }
 
-    //-- View methods --
+    // ********************** //
+    // *** VIEW FUNCTIONS *** //
+    // ********************** //
     /// @notice returns token's decimals
     function decimals() public pure override returns (uint8) {
         return 18;
     }
 
-    //-- Write methods --
+    // ************************ //
+    // *** PUBLIC FUNCTIONS *** //
+    // ************************ //
     /// @notice mints USD0
     /// @param _to receiver address
     /// @param _amount the amount to mint
@@ -73,7 +76,9 @@ contract USD0 is PausableOFT {
         emit Burned(_from, _amount);
     }
 
-    //-- Owner methods --
+    // *********************** //
+    // *** OWNER FUNCTIONS *** //
+    // *********************** //
     /// @notice sets/unsets address as minter
     /// @param _for role receiver
     /// @param _status true/false
@@ -90,7 +95,9 @@ contract USD0 is PausableOFT {
         emit SetBurnerStatus(_for, _status);
     }
 
-    //-- Private methods --
+    // ************************* //
+    // *** PRIVATE FUNCTIONS *** //
+    // ************************* //
     /// @notice Return the current Layer-Zero "chain ID", not the actual `chainId` OPCODE output.
     /// @dev Useful for testing.
     function _getChainId() private view returns (uint256) {

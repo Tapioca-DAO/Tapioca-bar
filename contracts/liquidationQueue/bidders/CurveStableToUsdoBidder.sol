@@ -3,39 +3,55 @@ pragma solidity ^0.8.0;
 
 import '@boringcrypto/boring-solidity/contracts/BoringOwnable.sol';
 
+import '../../IBeachBar.sol';
 import '../ILiquidationQueue.sol';
-import '../../mixologist/Mixologist.sol';
-import '../../swappers/MultiSwapper.sol';
-import '../../swappers/CurveSwapper.sol';
+import '../../libraries/ICurvePool.sol';
+import '../../swappers/ICurveSwapper.sol';
+import '../../mixologist/interfaces/IMixologist.sol';
+import '../../../yieldbox/contracts/interfaces/IYieldBox.sol';
 
-import './IBidder.sol';
+/*
 
-/// @notice Swaps Stable to USD0 through Curve
+__/\\\\\\\\\\\\\\\_____/\\\\\\\\\_____/\\\\\\\\\\\\\____/\\\\\\\\\\\_______/\\\\\_____________/\\\\\\\\\_____/\\\\\\\\\____        
+ _\///////\\\/////____/\\\\\\\\\\\\\__\/\\\/////////\\\_\/////\\\///______/\\\///\\\________/\\\////////____/\\\\\\\\\\\\\__       
+  _______\/\\\________/\\\/////////\\\_\/\\\_______\/\\\_____\/\\\_______/\\\/__\///\\\____/\\\/____________/\\\/////////\\\_      
+   _______\/\\\_______\/\\\_______\/\\\_\/\\\\\\\\\\\\\/______\/\\\______/\\\______\//\\\__/\\\_____________\/\\\_______\/\\\_     
+    _______\/\\\_______\/\\\\\\\\\\\\\\\_\/\\\/////////________\/\\\_____\/\\\_______\/\\\_\/\\\_____________\/\\\\\\\\\\\\\\\_    
+     _______\/\\\_______\/\\\/////////\\\_\/\\\_________________\/\\\_____\//\\\______/\\\__\//\\\____________\/\\\/////////\\\_   
+      _______\/\\\_______\/\\\_______\/\\\_\/\\\_________________\/\\\______\///\\\__/\\\_____\///\\\__________\/\\\_______\/\\\_  
+       _______\/\\\_______\/\\\_______\/\\\_\/\\\______________/\\\\\\\\\\\____\///\\\\\/________\////\\\\\\\\\_\/\\\_______\/\\\_ 
+        _______\///________\///________\///__\///______________\///////////_______\/////_____________\/////////__\///________\///__
+
+*/
+
+/// @title Swaps Stable to USD0 through Curve
 /// @dev Performs a swap operation between stable and USD0 through 3CRV+USD0 pool
-contract CurveStableToUsdoBidder is IBidder, BoringOwnable {
+contract CurveStableToUsdoBidder is BoringOwnable {
     // ************ //
-    // *** DATA *** //
+    // *** VARS *** //
     // ************ //
 
-    // --- Public ---
     /// @notice 3Crv+USD0 swapper
-    CurveSwapper public curveSwapper;
-
-    // --- Private ---
+    ICurveSwapper public curveSwapper;
+    /// @notice Curve pool assets number
     uint256 curveAssetsLength;
 
-    // --- Events ---
+    // ************** //
+    // *** EVENTS *** //
+    // ************** //
     event CurveSwapperUpdated(address indexed _old, address indexed _new);
 
-    constructor(CurveSwapper curveSwapper_, uint256 curvePoolAssetCount_) {
+    /// @notice creates a new CurveStableToUsdoBidder
+    /// @param curveSwapper_ CurveSwapper address
+    /// @param curvePoolAssetCount_ Curve pool assets number
+    constructor(ICurveSwapper curveSwapper_, uint256 curvePoolAssetCount_) {
         curveSwapper = curveSwapper_;
         curveAssetsLength = curvePoolAssetCount_;
     }
 
-    // ************ //
-    // *** METHODS *** //
-    // ************ //
-    // --- View methods ---
+    // ********************** //
+    // *** VIEW FUNCTIONS *** //
+    // ********************** //
     /// @notice returns the unique name
     function name() external pure returns (string memory) {
         return 'stable -> USD0 (3Crv+USD0)';
@@ -44,72 +60,82 @@ contract CurveStableToUsdoBidder is IBidder, BoringOwnable {
     /// @notice returns the amount of collateral
     /// @param amountIn Stablecoin amount
     function getOutputAmount(
-        Mixologist mixologist,
+        IMixologist mixologist,
         uint256 tokenInId,
         uint256 amountIn,
         bytes calldata
     ) external view returns (uint256) {
         require(
-            address(mixologist.beachBar().usdoToken()) != address(0),
+            IBeachBar(mixologist.beachBar()).usdoToken() != address(0),
             'USD0 not set'
         );
 
-        uint256 usdoAssetId = mixologist.beachBar().usdoAssetId();
+        uint256 usdoAssetId = IBeachBar(mixologist.beachBar()).usdoAssetId();
         if (tokenInId == usdoAssetId) {
             return amountIn;
         }
 
         return
-            _getOutput(mixologist.yieldBox(), tokenInId, usdoAssetId, amountIn);
+            _getOutput(
+                IYieldBox(mixologist.yieldBox()),
+                tokenInId,
+                usdoAssetId,
+                amountIn
+            );
     }
 
     /// @notice returns token tokenIn amount based on tokenOut amount
     /// @param tokenInId Token in asset id
     /// @param amountOut Token out amount
     function getInputAmount(
-        Mixologist mixologist,
+        IMixologist mixologist,
         uint256 tokenInId,
         uint256 amountOut,
         bytes calldata
     ) external view returns (uint256) {
         require(
-            address(mixologist.beachBar().usdoToken()) != address(0),
+            IBeachBar(mixologist.beachBar()).usdoToken() != address(0),
             'USD0 not set'
         );
 
-        uint256 usdoAssetId = mixologist.beachBar().usdoAssetId();
+        uint256 usdoAssetId = IBeachBar(mixologist.beachBar()).usdoAssetId();
         if (tokenInId == usdoAssetId) {
             return amountOut;
         }
 
         return
             _getOutput(
-                mixologist.yieldBox(),
+                IYieldBox(mixologist.yieldBox()),
                 usdoAssetId,
                 tokenInId,
                 amountOut
             );
     }
 
-    // --- Write methods ---
+    // ************************ //
+    // *** PUBLIC FUNCTIONS *** //
+    // ************************ //
+
     /// @notice swaps stable to collateral
     /// @param tokenInId Stablecoin asset id
     /// @param amountIn Stablecoin amount
     /// @param data extra data used for the swap operation
     function swap(
-        Mixologist mixologist,
+        IMixologist mixologist,
         uint256 tokenInId,
         uint256 amountIn,
         bytes calldata data
     ) external returns (uint256) {
         require(
-            address(mixologist.beachBar().usdoToken()) != address(0),
+            IBeachBar(mixologist.beachBar()).usdoToken() != address(0),
             'USD0 not set'
         );
-        YieldBox yieldBox = mixologist.yieldBox();
-        ILiquidationQueue liquidationQueue = mixologist.liquidationQueue();
+        IYieldBox yieldBox = IYieldBox(mixologist.yieldBox());
+        ILiquidationQueue liquidationQueue = ILiquidationQueue(
+            mixologist.liquidationQueue()
+        );
 
-        uint256 usdoAssetId = mixologist.beachBar().usdoAssetId();
+        uint256 usdoAssetId = IBeachBar(mixologist.beachBar()).usdoAssetId();
         require(msg.sender == address(liquidationQueue), 'only LQ');
         if (tokenInId == usdoAssetId) {
             yieldBox.transfer(
@@ -134,7 +160,7 @@ contract CurveStableToUsdoBidder is IBidder, BoringOwnable {
         );
         return
             _swap(
-                mixologist.yieldBox(),
+                yieldBox,
                 tokenInId,
                 usdoAssetId,
                 amountIn,
@@ -143,20 +169,26 @@ contract CurveStableToUsdoBidder is IBidder, BoringOwnable {
             );
     }
 
-    // --- Owner methods ---
+    // *********************** //
+    // *** OWNER FUNCTIONS *** //
+    // *********************** //
     /// @notice sets the Curve swapper
     /// @dev used for USD0 to WETH swap
     /// @param _swapper The curve pool swapper address
-    function setCurveSwapper(CurveSwapper _swapper) external onlyOwner {
+    function setCurveSwapper(ICurveSwapper _swapper) external onlyOwner {
         emit CurveSwapperUpdated(address(curveSwapper), address(_swapper));
         curveSwapper = _swapper;
     }
 
-    // --- Private methods ---
+    // ************************* //
+    // *** PRIVATE FUNCTIONS *** //
+    // ************************* //
     function _getCurveIndex(address token) private view returns (uint256) {
         int256 index = -1;
         for (uint256 i = 0; i < curveAssetsLength; i++) {
-            address tokenAtIndex = curveSwapper.curvePool().coins(i);
+            address tokenAtIndex = ICurvePool(curveSwapper.curvePool()).coins(
+                i
+            );
             if (tokenAtIndex == token) {
                 index = int256(i);
             }
@@ -166,7 +198,7 @@ contract CurveStableToUsdoBidder is IBidder, BoringOwnable {
     }
 
     function _getOutput(
-        YieldBox yieldBox,
+        IYieldBox yieldBox,
         uint256 tokenInId,
         uint256 tokenOutId,
         uint256 amountIn
@@ -185,7 +217,7 @@ contract CurveStableToUsdoBidder is IBidder, BoringOwnable {
     }
 
     function _swap(
-        YieldBox yieldBox,
+        IYieldBox yieldBox,
         uint256 stableAssetId,
         uint256 usdoAssetId,
         uint256 amountIn,

@@ -5,106 +5,47 @@ import './MXCommon.sol';
 import './MXLiquidation.sol';
 import './MXLendingBorrowing.sol';
 
+import '../mixologist/interfaces/ISendFrom.sol';
+
 // solhint-disable max-line-length
 
+/*
+
+__/\\\\\\\\\\\\\\\_____/\\\\\\\\\_____/\\\\\\\\\\\\\____/\\\\\\\\\\\_______/\\\\\_____________/\\\\\\\\\_____/\\\\\\\\\____        
+ _\///////\\\/////____/\\\\\\\\\\\\\__\/\\\/////////\\\_\/////\\\///______/\\\///\\\________/\\\////////____/\\\\\\\\\\\\\__       
+  _______\/\\\________/\\\/////////\\\_\/\\\_______\/\\\_____\/\\\_______/\\\/__\///\\\____/\\\/____________/\\\/////////\\\_      
+   _______\/\\\_______\/\\\_______\/\\\_\/\\\\\\\\\\\\\/______\/\\\______/\\\______\//\\\__/\\\_____________\/\\\_______\/\\\_     
+    _______\/\\\_______\/\\\\\\\\\\\\\\\_\/\\\/////////________\/\\\_____\/\\\_______\/\\\_\/\\\_____________\/\\\\\\\\\\\\\\\_    
+     _______\/\\\_______\/\\\/////////\\\_\/\\\_________________\/\\\_____\//\\\______/\\\__\//\\\____________\/\\\/////////\\\_   
+      _______\/\\\_______\/\\\_______\/\\\_\/\\\_________________\/\\\______\///\\\__/\\\_____\///\\\__________\/\\\_______\/\\\_  
+       _______\/\\\_______\/\\\_______\/\\\_\/\\\______________/\\\\\\\\\\\____\///\\\\\/________\////\\\\\\\\\_\/\\\_______\/\\\_ 
+        _______\///________\///________\///__\///______________\///////////_______\/////_____________\/////////__\///________\///__
+
+*/
+
+/// @title Tapioca market
 contract Mixologist is MXCommon {
     using RebaseLibrary for Rebase;
 
+    // ************ //
+    // *** VARS *** //
+    // ************ //
     enum Module {
         Base,
         LendingBorrowing,
         Liquidation
     }
-    MXLiquidation liquidationModule;
-    MXLendingBorrowing lendingBorrowingModule;
-
-    /// @notice Allows batched call to Mixologist.
-    /// @param calls An array encoded call data.
-    /// @param revertOnFail If True then reverts after a failed call and stops doing further calls.
-    function execute(bytes[] calldata calls, bool revertOnFail)
-        external
-        returns (bool[] memory successes, string[] memory results)
-    {
-        successes = new bool[](calls.length);
-        results = new string[](calls.length);
-        for (uint256 i = 0; i < calls.length; i++) {
-            (bool success, bytes memory result) = address(this).delegatecall(
-                calls[i]
-            );
-            require(success || !revertOnFail, _getRevertMsg(result));
-            successes[i] = success;
-            results[i] = _getRevertMsg(result);
-        }
-    }
-
-    function _getRevertMsg(bytes memory _returnData)
-        private
-        pure
-        returns (string memory)
-    {
-        // If the _res length is less than 68, then the transaction failed silently (without a revert message)
-        if (_returnData.length < 68) return 'Mx: no return data';
-        // solhint-disable-next-line no-inline-assembly
-        assembly {
-            // Slice the sighash.
-            _returnData := add(_returnData, 0x04)
-        }
-        return abi.decode(_returnData, (string)); // All that remains is the revert string
-    }
-
-    function _executeModule(Module _module, bytes memory _data)
-        private
-        returns (bytes memory returnData)
-    {
-        address module;
-        bool success = true;
-
-        if (_module == Module.LendingBorrowing) {
-            module = address(lendingBorrowingModule);
-        } else if (_module == Module.Liquidation) {
-            module = address(liquidationModule);
-        }
-
-        if (module == address(0)) {
-            revert('Mx: module not set');
-        }
-
-        (success, returnData) = module.delegatecall(_data);
-        if (!success) {
-            revert(_getRevertMsg(returnData));
-        }
-    }
-
-    function _executeViewModule(Module _module, bytes memory _data)
-        private
-        view
-        returns (bytes memory returnData)
-    {
-        address module;
-        bool success = true;
-
-        if (_module == Module.LendingBorrowing) {
-            module = address(lendingBorrowingModule);
-        } else if (_module == Module.Liquidation) {
-            module = address(liquidationModule);
-        }
-
-        if (module == address(0)) {
-            revert('Mx: module not set');
-        }
-
-        (success, returnData) = module.staticcall(_data);
-        if (!success) {
-            revert(_getRevertMsg(returnData));
-        }
-    }
+    /// @notice returns the liquidation module
+    MXLiquidation public liquidationModule;
+    /// @notice returns the lending module
+    MXLendingBorrowing public lendingBorrowingModule;
 
     /// @notice The init function that acts as a constructor
     function init(bytes calldata data) external onlyOnce {
         (
             address _liquidationModule,
             address _lendingBorrowingModule,
-            BeachBar tapiocaBar_,
+            IBeachBar tapiocaBar_,
             IERC20 _asset,
             uint256 _assetId,
             IERC20 _collateral,
@@ -117,7 +58,7 @@ contract Mixologist is MXCommon {
                 (
                     address,
                     address,
-                    BeachBar,
+                    IBeachBar,
                     IERC20,
                     uint256,
                     IERC20,
@@ -131,7 +72,7 @@ contract Mixologist is MXCommon {
         liquidationModule = MXLiquidation(_liquidationModule);
         lendingBorrowingModule = MXLendingBorrowing(_lendingBorrowingModule);
         beachBar = tapiocaBar_;
-        yieldBox = tapiocaBar_.yieldBox();
+        yieldBox = YieldBox(tapiocaBar_.yieldBox());
         owner = address(beachBar);
 
         require(
@@ -153,6 +94,9 @@ contract Mixologist is MXCommon {
         updateExchangeRate();
     }
 
+    // ********************** //
+    // *** VIEW FUNCTIONS *** //
+    // ********************** //
     /// @notice Return the amount of collateral for a `user` to be solvent. Returns 0 if user already solvent.
     /// @dev We use a `CLOSED_COLLATERIZATION_RATE` that is a safety buffer when making the user solvent again,
     ///      To prevent from being liquidated. This function is valid only if user is not solvent by `_isSolvent()`.
@@ -219,6 +163,28 @@ contract Mixologist is MXCommon {
         returns (uint256 amount)
     {
         return _getAmountForBorrowPart(borrowPart);
+    }
+
+    // ************************ //
+    // *** PUBLIC FUNCTIONS *** //
+    // ************************ //
+    /// @notice Allows batched call to Mixologist.
+    /// @param calls An array encoded call data.
+    /// @param revertOnFail If True then reverts after a failed call and stops doing further calls.
+    function execute(bytes[] calldata calls, bool revertOnFail)
+        external
+        returns (bool[] memory successes, string[] memory results)
+    {
+        successes = new bool[](calls.length);
+        results = new string[](calls.length);
+        for (uint256 i = 0; i < calls.length; i++) {
+            (bool success, bytes memory result) = address(this).delegatecall(
+                calls[i]
+            );
+            require(success || !revertOnFail, _getRevertMsg(result));
+            successes[i] = success;
+            results[i] = _getRevertMsg(result);
+        }
     }
 
     /// @notice Adds `collateral` from msg.sender to the account `to`.
@@ -328,7 +294,7 @@ contract Mixologist is MXCommon {
     function liquidate(
         address[] calldata users,
         uint256[] calldata maxBorrowParts,
-        MultiSwapper swapper,
+        IMultiSwapper swapper,
         bytes calldata collateralToAssetSwapData,
         bytes calldata usdoToBorrowedSwapData
     ) external {
@@ -383,8 +349,8 @@ contract Mixologist is MXCommon {
 
     /// @notice Withdraw the balance of `feeTo`, swap asset into TAP and deposit it to yieldBox of `feeTo`
     function depositFeesToYieldBox(
-        MultiSwapper swapper,
-        SwapData calldata swapData
+        IMultiSwapper swapper,
+        IBeachBar.SwapData calldata swapData
     ) public {
         if (accrueInfo.feesEarnedFraction > 0) {
             withdrawFeesEarned();
@@ -414,6 +380,44 @@ contract Mixologist is MXCommon {
         emit LogYieldBoxFeesDeposit(feeShares, tapAmount);
     }
 
+    /// @notice Withdraw to another layer
+    function withdrawTo(
+        uint16 dstChainId,
+        bytes memory receiver,
+        uint256 amount,
+        bytes calldata adapterParams,
+        address payable refundAddress
+    ) public payable {
+        try
+            IERC165(address(asset)).supportsInterface(
+                type(ISendFrom).interfaceId
+            )
+        {} catch {
+            return;
+        }
+
+        uint256 available = yieldBox.toAmount(
+            assetId,
+            yieldBox.balanceOf(msg.sender, assetId),
+            false
+        );
+        require(available >= amount, 'Mx: not available');
+
+        yieldBox.withdraw(assetId, msg.sender, address(this), amount, 0);
+        ISendFrom(address(asset)).sendFrom{value: msg.value}(
+            address(this),
+            dstChainId,
+            receiver,
+            amount,
+            refundAddress,
+            msg.sender,
+            adapterParams
+        );
+    }
+
+    // *********************** //
+    // *** OWNER FUNCTIONS *** //
+    // *********************** //
     /// @notice Used to set the swap path of closed liquidations
     /// @param _collateralSwapPath The Uniswap path .
     function setCollateralSwapPath(address[] calldata _collateralSwapPath)
@@ -453,5 +457,70 @@ contract Mixologist is MXCommon {
     function setBorrowCap(uint256 _cap) external onlyOwner {
         emit LogBorrowCapUpdated(totalBorrowCap, _cap);
         totalBorrowCap = _cap;
+    }
+
+    // ************************* //
+    // *** PRIVATE FUNCTIONS *** //
+    // ************************* //
+    function _getRevertMsg(bytes memory _returnData)
+        private
+        pure
+        returns (string memory)
+    {
+        // If the _res length is less than 68, then the transaction failed silently (without a revert message)
+        if (_returnData.length < 68) return 'Mx: no return data';
+        // solhint-disable-next-line no-inline-assembly
+        assembly {
+            // Slice the sighash.
+            _returnData := add(_returnData, 0x04)
+        }
+        return abi.decode(_returnData, (string)); // All that remains is the revert string
+    }
+
+    function _executeModule(Module _module, bytes memory _data)
+        private
+        returns (bytes memory returnData)
+    {
+        address module;
+        bool success = true;
+
+        if (_module == Module.LendingBorrowing) {
+            module = address(lendingBorrowingModule);
+        } else if (_module == Module.Liquidation) {
+            module = address(liquidationModule);
+        }
+
+        if (module == address(0)) {
+            revert('Mx: module not set');
+        }
+
+        (success, returnData) = module.delegatecall(_data);
+        if (!success) {
+            revert(_getRevertMsg(returnData));
+        }
+    }
+
+    function _executeViewModule(Module _module, bytes memory _data)
+        private
+        view
+        returns (bytes memory returnData)
+    {
+        address module;
+        bool success = true;
+
+        if (_module == Module.LendingBorrowing) {
+            module = address(lendingBorrowingModule);
+        } else if (_module == Module.Liquidation) {
+            module = address(liquidationModule);
+        }
+
+        if (module == address(0)) {
+            revert('Mx: module not set');
+        }
+
+        (success, returnData) = module.staticcall(_data);
+        if (!success) {
+            revert(_getRevertMsg(returnData));
+        }
     }
 }
