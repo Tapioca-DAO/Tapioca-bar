@@ -126,9 +126,9 @@ contract MXProxy is NonblockingLzApp {
         enforceSameAddress = _val;
     }
 
-    // ************************ //
+    // ************************* //
     // *** PRIVATE FUNCTIONS *** //
-    // ************************ //
+    // ************************* //
     /// @notice override of the '_nonblockingLzReceive' method
     function _nonblockingLzReceive(
         uint16 _srcChainId,
@@ -195,7 +195,8 @@ contract MXProxy is NonblockingLzApp {
             mxPayload,
             _refundAddress,
             _zroPaymentAddress,
-            _adapterParams
+            _adapterParams,
+            msg.value
         );
 
         emit SendToChain(_dstChainId, _from, mxPayload);

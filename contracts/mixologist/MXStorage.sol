@@ -12,6 +12,7 @@ import '../mixologist/interfaces/IOracle.sol';
 import '../mixologist/interfaces/IFlashLoan.sol';
 import '../liquidationQueue/ILiquidationQueue.sol';
 import '../IBeachBar.sol';
+import './interfaces/IMixologist.sol';
 
 // solhint-disable max-line-length
 
@@ -36,13 +37,8 @@ contract MXStorage is BoringOwnable, ERC20 {
     // ************ //
     // *** VARS *** //
     // ************ //
-    struct AccrueInfo {
-        uint64 interestPerSecond;
-        uint64 lastAccrued;
-        uint128 feesEarnedFraction;
-    }
 
-    AccrueInfo public accrueInfo;
+    IMixologist.AccrueInfo public accrueInfo;
 
     IBeachBar public beachBar;
     YieldBox public yieldBox;

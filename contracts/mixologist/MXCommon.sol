@@ -56,7 +56,7 @@ contract MXCommon is MXStorage {
 
     /// @notice Accrues the interest on the borrowed tokens and handles the accumulation of fees.
     function accrue() public {
-        AccrueInfo memory _accrueInfo = accrueInfo;
+        IMixologist.AccrueInfo memory _accrueInfo = accrueInfo;
         // Number of seconds since accrue was called
         uint256 elapsedTime = block.timestamp - _accrueInfo.lastAccrued;
         if (elapsedTime == 0) {

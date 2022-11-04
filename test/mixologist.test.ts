@@ -223,6 +223,8 @@ describe('Mixologist test', () => {
             approveTokensAndSetBarApproval,
             deployer,
             wethUsdcMixologist,
+            mixologistHelper,
+            wethUsdcOracle,
             __wethUsdcPrice,
         } = await loadFixture(register);
 
@@ -304,6 +306,17 @@ describe('Mixologist test', () => {
         expect(
             await wethUsdcMixologist.userCollateralShare(eoa1.address),
         ).equal(await yieldBox.toShare(collateralId, usdcMintVal, false));
+
+
+        const dataFromHelper = (await mixologistHelper.marketsInfo(eoa1.address, [wethUsdcMixologist.address]))[0];
+        expect(dataFromHelper[0].toLowerCase()).eq(usdc.address.toLowerCase());
+        expect(dataFromHelper[1].toLowerCase()).eq(weth.address.toLowerCase());
+        expect(dataFromHelper[2].toLowerCase()).eq(wethUsdcOracle.address.toLowerCase());
+        expect(dataFromHelper[5].eq(usdcMintValShare)).to.be.true;
+
+        const borrowed = await wethUsdcMixologist.userBorrowPart(eoa1.address);
+        expect(dataFromHelper[9].eq(borrowed)).to.be.true;
+
     });
 
     it('Should deposit to yieldBox, add asset to mixologist, remove asset and withdraw', async () => {

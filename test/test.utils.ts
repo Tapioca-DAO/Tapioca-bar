@@ -147,6 +147,74 @@ async function registerYieldBox(wethAddress: string, staging?: boolean) {
     return { uriBuilder, yieldBox };
 }
 
+
+
+async function deployAaveLendingPoolMock(assetAddress: string, staging?: boolean) {
+    const lendingPoolMock = await (
+        await ethers.getContractFactory('LendingPoolMock')
+    ).deploy(assetAddress, { gasPrice: gasPrice });
+    await lendingPoolMock.deployed();
+    log(
+        `Deployed LendingPoolMock ${lendingPoolMock.address} with args [${assetAddress}]`,
+        staging,
+    );
+    await verifyEtherscan(lendingPoolMock.address, [assetAddress], staging);
+
+    return { lendingPoolMock };
+}
+async function registerAaveStrategy(wethAddress: string, yieldBoxAddres: string, lendingPoolAddress: string, staging?: boolean) {
+    if (lendingPoolAddress == ethers.constants.AddressZero) {
+        const { lendingPoolMock } = await deployAaveLendingPoolMock(wethAddress, staging);
+        lendingPoolAddress = lendingPoolMock.address;
+    }
+
+    const aaveStrategy = await (
+        await ethers.getContractFactory('AaveStrategy')
+    ).deploy(yieldBoxAddres, wethAddress, lendingPoolAddress, { gasPrice: gasPrice });
+    await aaveStrategy.deployed();
+
+    log(
+        `Deployed AaveStrategy ${aaveStrategy.address} with args [${yieldBoxAddres},${wethAddress},${lendingPoolAddress}]`,
+        staging,
+    );
+    await verifyEtherscan(aaveStrategy.address, [yieldBoxAddres, wethAddress, lendingPoolAddress], staging);
+    return { aaveStrategy };
+}
+
+
+async function deployYearnVaultMock(assetAddress: string, staging?: boolean) {
+    const vaultMock = await (
+        await ethers.getContractFactory('YearnVaultMock')
+    ).deploy(assetAddress, { gasPrice: gasPrice });
+    await vaultMock.deployed();
+    log(
+        `Deployed YearnVaultMock ${vaultMock.address} with args [${assetAddress}]`,
+        staging,
+    );
+    await verifyEtherscan(vaultMock.address, [assetAddress], staging);
+
+    return { vaultMock };
+}
+async function registerYearnStrategy(wethAddress: string, yieldBoxAddres: string, vaultAddress: string, staging?: boolean) {
+    if (vaultAddress == ethers.constants.AddressZero) {
+        const { vaultMock } = await deployYearnVaultMock(wethAddress, staging);
+        vaultAddress = vaultMock.address;
+    }
+
+    const yearnStrategy = await (
+        await ethers.getContractFactory('YearnStrategy')
+    ).deploy(yieldBoxAddres, wethAddress, vaultAddress, { gasPrice: gasPrice });
+    await yearnStrategy.deployed();
+
+    log(
+        `Deployed YearnStrategy ${yearnStrategy.address} with args [${yieldBoxAddres},${wethAddress},${vaultAddress}]`,
+        staging,
+    );
+    await verifyEtherscan(yearnStrategy.address, [yieldBoxAddres, wethAddress, vaultAddress], staging);
+    return { yearnStrategy };
+}
+
+
 async function registerBeachBar(
     yieldBox: string,
     tapAddress: string,
@@ -873,10 +941,8 @@ async function registerMinterMixologist(
     );
     await wethMinterMixologist.deployed();
     log(
-        `Deployed WethMinterMixologist ${
-            wethMinterMixologist.address
-        } with args [${bar.address},${
-            wethCollateral.address
+        `Deployed WethMinterMixologist ${wethMinterMixologist.address
+        } with args [${bar.address},${wethCollateral.address
         },${wethCollateralId},${oracle.address},${JSON.stringify(
             tapSwapPath,
         )},${JSON.stringify(collateralSwapPath)}]`,
@@ -1087,6 +1153,16 @@ export async function register(staging?: boolean) {
     await bar.setUsdoToken(usd0.address, { gasPrice: gasPrice });
     log(`USD0 was set on BeachBar`, staging);
 
+    // ------------------- 11.1 Deploy AAVE Strategy -------------------
+    log('Deploying AaveStrategy', staging);
+    const { aaveStrategy } = await registerAaveStrategy(weth.address, yieldBox.address, ethers.constants.AddressZero, staging);
+    log(`Deployed AaveStrategy ${aaveStrategy.address}`, staging);
+
+    // ------------------- 11.2 Deploy Yearn Strategy -------------------
+    log('Deploying YearnStrategy', staging);
+    const { yearnStrategy } = await registerYearnStrategy(weth.address, yieldBox.address, ethers.constants.AddressZero, staging);
+    log(`Deployed YearnStrategy ${yearnStrategy.address}`, staging);
+
     // ------------------- 12 Register MinterMixologist -------------------
     log('Deploying WethMinterMixologist', staging);
     const minterMixologistCollateralSwapPath = [weth.address, usd0.address];
@@ -1245,6 +1321,8 @@ export async function register(staging?: boolean) {
         usdoToWethBidder,
         mediumRiskMC,
         proxyDeployer,
+        aaveStrategy,
+        yearnStrategy,
         registerMixologist,
         __uniFactory,
         __uniRouter,

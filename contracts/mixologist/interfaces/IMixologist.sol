@@ -7,6 +7,12 @@ import '../../IBeachBar.sol';
 import '../../swappers/IMultiSwapper.sol';
 
 interface IMixologist {
+    struct AccrueInfo {
+        uint64 interestPerSecond;
+        uint64 lastAccrued;
+        uint128 feesEarnedFraction;
+    }
+
     event Approval(
         address indexed _owner,
         address indexed _spender,

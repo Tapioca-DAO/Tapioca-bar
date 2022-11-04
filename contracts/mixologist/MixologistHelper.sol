@@ -11,6 +11,78 @@ import '../../yieldbox/contracts/YieldBox.sol';
 contract MixologistHelper {
     using RebaseLibrary for Rebase;
 
+    struct MarketInfo {
+        address collateral;
+        address asset;
+        IOracle oracle;
+        bytes oracleData;
+        uint256 totalCollateralShare;
+        uint256 userCollateralShare;
+        Rebase totalAsset;
+        uint256 userAssetFraction;
+        Rebase totalBorrow;
+        uint256 userBorrowPart;
+        uint256 currentExchangeRate;
+        uint256 spotExchangeRate;
+        uint256 oracleExchangeRate;
+        IMixologist.AccrueInfo accrueInfo;
+    }
+
+    // ********************** //
+    // *** VIEW FUNCTIONS *** //
+    // ********************** //
+    function marketsInfo(address who, IMixologist[] memory markets)
+        external
+        view
+        returns (MarketInfo[] memory)
+    {
+        uint256 len = markets.length;
+        MarketInfo[] memory result = new MarketInfo[](len);
+
+        Rebase memory _totalAsset;
+        Rebase memory _totalBorrowed;
+        IMixologist.AccrueInfo memory _accrueInfo;
+        for (uint256 i = 0; i < len; i++) {
+            IMixologist mx = markets[i];
+
+            result[i].collateral = mx.collateral();
+            result[i].asset = mx.asset();
+            result[i].oracle = mx.oracle();
+            result[i].oracleData = mx.oracleData();
+            result[i].totalCollateralShare = mx.totalCollateralShare();
+            result[i].userCollateralShare = mx.userCollateralShare(who);
+            (uint128 totalAssetElastic, uint128 totalAssetBase) = mx
+                .totalAsset();
+            _totalAsset = Rebase(totalAssetElastic, totalAssetBase);
+            result[i].totalAsset = _totalAsset;
+            result[i].userAssetFraction = mx.balanceOf(who);
+            (uint128 totalBorrowElastic, uint128 totalBorrowBase) = mx
+                .totalBorrow();
+            _totalBorrowed = Rebase(totalBorrowElastic, totalBorrowBase);
+            result[i].totalBorrow = _totalBorrowed;
+            result[i].userBorrowPart = mx.userBorrowPart(who);
+
+            result[i].currentExchangeRate = mx.exchangeRate();
+            (, result[i].oracleExchangeRate) = mx.oracle().peek(
+                mx.oracleData()
+            );
+            result[i].spotExchangeRate = mx.oracle().peekSpot(mx.oracleData());
+            (
+                uint64 interestPerSecond,
+                uint64 lastBlockAccrued,
+                uint128 feesEarnedFraction
+            ) = mx.accrueInfo();
+            _accrueInfo = IMixologist.AccrueInfo(
+                interestPerSecond,
+                lastBlockAccrued,
+                feesEarnedFraction
+            );
+            result[i].accrueInfo = _accrueInfo;
+        }
+
+        return result;
+    }
+
     // ************************ //
     // *** PUBLIC FUNCTIONS *** //
     // ************************ //
