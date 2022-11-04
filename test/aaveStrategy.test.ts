@@ -95,7 +95,6 @@ describe('AaveStrategy test', () => {
     it("should allow deposits and withdrawals", async () => {
         const { aaveStrategy, weth, wethAssetId, yieldBox, deployer } = await loadFixture(register);
 
-
         await yieldBox.registerAsset(1, weth.address, aaveStrategy.address, 0);
 
         const wethAaveStrategyAssetId = await yieldBox.ids(

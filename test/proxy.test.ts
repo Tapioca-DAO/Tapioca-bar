@@ -248,7 +248,7 @@ describe('MXProxy', () => {
             ['uint16', 'uint256'],
             [1, 2250000],
         );
-        await proxySrc.setMinDstGasLookup(
+        await proxySrc.setMinDstGas(
             await lzEndpointDst.getChainId(),
             1,
             1,
@@ -620,7 +620,7 @@ describe('MXProxy', () => {
             ['uint16', 'uint256'],
             [1, 2250000],
         );
-        await proxySrc.setMinDstGasLookup(
+        await proxySrc.setMinDstGas(
             await lzEndpointDst.getChainId(),
             1,
             1,
@@ -906,7 +906,7 @@ describe('MXProxy', () => {
             ['uint16', 'uint256'],
             [1, 2250000],
         );
-        await proxySrc.setMinDstGasLookup(
+        await proxySrc.setMinDstGas(
             await lzEndpointDst.getChainId(),
             1,
             1,
@@ -1076,7 +1076,7 @@ describe('MXProxy', () => {
             ['uint16', 'uint256'],
             [1, 2250000],
         );
-        await proxySrc.setMinDstGasLookup(
+        await proxySrc.setMinDstGas(
             await lzEndpointDst.getChainId(),
             1,
             1,
@@ -1373,7 +1373,7 @@ describe('MXProxy', () => {
             ['uint16', 'uint256'],
             [1, 2250000],
         );
-        await proxySrc.setMinDstGasLookup(
+        await proxySrc.setMinDstGas(
             await lzEndpointDst.getChainId(),
             1,
             1,
