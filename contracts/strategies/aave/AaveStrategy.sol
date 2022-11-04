@@ -123,9 +123,10 @@ contract AaveStrategy is BaseERC20Strategy, BoringOwnable {
         uint256 queued = wrappedNative.balanceOf(address(this));
         if (amount > queued) {
             uint256 toWithdraw = amount - queued;
-            lendingPool.withdraw(address(wrappedNative), toWithdraw, to);
+            lendingPool.withdraw(address(wrappedNative), toWithdraw, address(this));
         } 
 
+        wrappedNative.safeTransfer(to, amount);
         emit AmountWithdrawn(to, amount);
     }
 }
