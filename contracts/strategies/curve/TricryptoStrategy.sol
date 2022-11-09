@@ -9,7 +9,8 @@ import '@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol';
 
 import '../../../yieldbox/contracts/strategies/BaseStrategy.sol';
 
-import './IYearnVault.sol';
+import './ITricryptoLPGetter.sol';
+import './ITricryptoLPGauge.sol';
 
 /*
 
@@ -24,27 +25,29 @@ __/\\\\\\\\\\\\\\\_____/\\\\\\\\\_____/\\\\\\\\\\\\\____/\\\\\\\\\\\_______/\\\\
         _______\///________\///________\///__\///______________\///////////_______\/////_____________\/////////__\///________\///__
 */
 
-//TODO: decide if we need to start with ETH and wrap it into WETH; stargate allows ETH. not WETH, while others allow WETH, not ETH
-//TODO: handle rewards deposits to yieldbox
-
-//Wrapped-native strategy for Yearn
-contract YearnStrategy is BaseERC20Strategy, BoringOwnable, ReentrancyGuard {
+contract TricryptoStrategy is
+    BaseERC20Strategy,
+    BoringOwnable,
+    ReentrancyGuard
+{
     using BoringERC20 for IERC20;
 
     // ************ //
     // *** VARS *** //
     // ************ //
     IERC20 public immutable wrappedNative;
-    IYearnVault public immutable vault;
+    ITricryptoLPGauge public immutable lpGauge;
+    ITricryptoLPGetter public lpGetter;
 
     /// @notice Queues tokens up to depositThreshold
-    /// @dev When the amount of tokens is greater than the threshold, a deposit operation to Yearn is performed
+    /// @dev When the amount of tokens is greater than the threshold, a deposit operation to AAVE is performed
     uint256 public depositThreshold;
 
     // ************** //
     // *** EVENTS *** //
     // ************** //
     event DepositThreshold(uint256 _old, uint256 _new);
+    event LPGetterSet(address indexed _old, address indexed _new);
     event AmountQueued(uint256 amount);
     event AmountDeposited(uint256 amount);
     event AmountWithdrawn(address indexed to, uint256 amount);
@@ -52,12 +55,16 @@ contract YearnStrategy is BaseERC20Strategy, BoringOwnable, ReentrancyGuard {
     constructor(
         IYieldBox _yieldBox,
         address _token,
-        address _vault
+        address _lpGauge,
+        address _lpGetter
     ) BaseERC20Strategy(_yieldBox, _token) {
         wrappedNative = IERC20(_token);
-        vault = IYearnVault(_vault);
+        lpGauge = ITricryptoLPGauge(_lpGauge);
+        lpGetter = ITricryptoLPGetter(_lpGetter);
 
-        wrappedNative.approve(address(vault), type(uint256).max);
+        IERC20(lpGetter.lpToken()).approve(_lpGauge, type(uint256).max);
+        IERC20(lpGetter.lpToken()).approve(_lpGetter, type(uint256).max);
+        wrappedNative.approve(_lpGetter, type(uint256).max);
     }
 
     // ********************** //
@@ -65,7 +72,7 @@ contract YearnStrategy is BaseERC20Strategy, BoringOwnable, ReentrancyGuard {
     // ********************** //
     /// @notice Returns the name of this strategy
     function name() external pure override returns (string memory name_) {
-        return 'Yearn';
+        return 'Curve-Tricrypto';
     }
 
     /// @notice Returns the description of this strategy
@@ -75,7 +82,7 @@ contract YearnStrategy is BaseERC20Strategy, BoringOwnable, ReentrancyGuard {
         override
         returns (string memory description_)
     {
-        return 'Yearn strategy for wrapped native assets';
+        return 'Curve-Tricrypto strategy for wrapped native assets';
     }
 
     // *********************** //
@@ -88,47 +95,75 @@ contract YearnStrategy is BaseERC20Strategy, BoringOwnable, ReentrancyGuard {
         depositThreshold = amount;
     }
 
+    /// @notice Sets the Tricrypto LP Getter
+    /// @param _lpGetter the new address
+    function setTricryptoLPGetter(address _lpGetter) external onlyOwner {
+        emit LPGetterSet(address(lpGetter), _lpGetter);
+        wrappedNative.approve(address(lpGetter), 0);
+        lpGetter = ITricryptoLPGetter(_lpGetter);
+        wrappedNative.approve(_lpGetter, type(uint256).max);
+    }
+
     // ************************* //
     // *** PRIVATE FUNCTIONS *** //
     // ************************* //
+    /// @dev queries Curve-Tricrypto Liquidity Pool
     function _currentBalance() internal view override returns (uint256 amount) {
-        uint256 shares = vault.balanceOf(address(this));
-        uint256 pricePerShare = vault.pricePerShare();
+        uint256 lpBalance = lpGauge.balanceOf(address(this));
+        uint256 assetAmount = lpGetter.calcLpToWeth(lpBalance);
         uint256 queued = wrappedNative.balanceOf(address(this));
-        uint256 invested = (shares * pricePerShare) / (10**vault.decimals());
-        return invested + queued;
+        return assetAmount + queued;
     }
 
-    /// @dev deposits to Yearn or queues tokens if the 'depositThreshold' has not been met yet
-    ///      - when depositing to Yearn, yToken is minted to this contract
+    /// @dev deposits to Curve Tricrypto or queues tokens if the 'depositThreshold' has not been met yet
     function _deposited(uint256 amount) internal override nonReentrant {
         uint256 queued = wrappedNative.balanceOf(address(this));
         if (queued > depositThreshold) {
-            vault.deposit(queued, address(this));
+            _addLiquidityAndStake(queued);
             emit AmountDeposited(queued);
             return;
         }
         emit AmountQueued(amount);
     }
 
-    /// @dev burns yToken in exchange of Token and withdraws from Yearn Vault
+    /// @dev withdraws from Curve Tricrypto
     function _withdraw(address to, uint256 amount)
         internal
         override
         nonReentrant
     {
         uint256 available = _currentBalance();
-        require(available >= amount, 'YearnStrategy: amount not valid');
+        require(available >= amount, 'TricryptoStrategy: amount not valid');
 
         uint256 queued = wrappedNative.balanceOf(address(this));
         if (amount > queued) {
-            uint256 pricePerShare = vault.pricePerShare();
-            uint256 toWithdraw = (((amount - queued) * (10**vault.decimals())) /
-                pricePerShare);
-
-            vault.withdraw(toWithdraw, address(this), 0);
+            uint256 lpBalance = lpGauge.balanceOf(address(this));
+            lpGauge.withdraw(lpBalance, true);
+            uint256 calcWithdraw = lpGetter.calcLpToWeth(lpBalance);
+            uint256 minAmount = (calcWithdraw * 2_500) / 10_000; //2.5%
+            uint256 assetAmount = lpGetter.removeLiquidityWeth(
+                lpBalance,
+                minAmount
+            );
+            require(
+                assetAmount + queued >= amount,
+                'TricryptoStrategy: not enough'
+            );
         }
+
         wrappedNative.safeTransfer(to, amount);
+
+        queued = wrappedNative.balanceOf(address(this));
+        if (queued > 0) {
+            _addLiquidityAndStake(queued);
+        }
         emit AmountWithdrawn(to, amount);
+    }
+
+    function _addLiquidityAndStake(uint256 amount) private {
+        uint256 calcAmount = lpGetter.calcWethToLp(amount);
+        uint256 minAmount = (calcAmount * 2_500) / 10_000; //2.5%
+        uint256 lpAmount = lpGetter.addLiquidityWeth(amount, minAmount);
+        lpGauge.deposit(lpAmount, address(this), false);
     }
 }

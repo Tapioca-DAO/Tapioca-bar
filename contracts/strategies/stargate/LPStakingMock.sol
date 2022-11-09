@@ -20,4 +20,26 @@ contract LPStakingMock {
     function withdraw(uint256, uint256 amount) external {
         lpToken.safeTransfer(msg.sender, amount);
     }
+
+    function userInfo(address)
+        external
+        view
+        returns (uint256 amount, uint256 rewardDebt)
+    {
+        amount = lpToken.balanceOf(address(this));
+        rewardDebt = 0;
+    }
+
+    function poolInfo(uint256)
+        external
+        view
+        returns (
+            address ,
+            uint256 ,
+            uint256 ,
+            uint256 
+        )
+    {
+        return (address(lpToken), 0, 0, 0);
+    }
 }

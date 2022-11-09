@@ -147,9 +147,279 @@ async function registerYieldBox(wethAddress: string, staging?: boolean) {
     return { uriBuilder, yieldBox };
 }
 
+async function deployStargateMocks(wethAddress: string, staging?: boolean) {
+    const stargateRouterMock = await (
+        await ethers.getContractFactory('StargateRouterMock')
+    ).deploy(wethAddress, { gasPrice: gasPrice });
+    await stargateRouterMock.deployed();
+    log(
+        `Deployed StargateRouterMock ${stargateRouterMock.address} with args [${wethAddress}]`,
+        staging,
+    );
 
+    const routerETHMock = await (
+        await ethers.getContractFactory('RouterETHMock')
+    ).deploy(stargateRouterMock.address, wethAddress, { gasPrice: gasPrice });
+    await routerETHMock.deployed();
+    log(
+        `Deployed RouterETHMock ${routerETHMock.address} with args [${stargateRouterMock.address}, ${wethAddress}]`,
+        staging,
+    );
 
-async function deployAaveLendingPoolMock(assetAddress: string, staging?: boolean) {
+    const lpStakingMock = await (
+        await ethers.getContractFactory('LPStakingMock')
+    ).deploy(wethAddress, { gasPrice: gasPrice });
+    await lpStakingMock.deployed();
+    log(
+        `Deployed LPStakingMock ${lpStakingMock.address} with args [${lpStakingMock.address}]`,
+        staging,
+    );
+
+    return { stargateRouterMock, routerETHMock, lpStakingMock };
+}
+
+async function registerStargateStrategy(
+    yieldBoxAddres: string,
+    token: string,
+    routerEth: string,
+    lpStaking: string,
+    lpStakingPid: string,
+    lpToken: string,
+    staging?: boolean,
+) {
+    if (
+        routerEth == ethers.constants.AddressZero &&
+        lpStaking == ethers.constants.AddressZero
+    ) {
+        const { stargateRouterMock, routerETHMock, lpStakingMock } =
+            await deployStargateMocks(lpToken, staging);
+
+        routerEth = routerETHMock.address;
+        lpStaking = lpStakingMock.address;
+    }
+
+    const stargateStrategy = await (
+        await ethers.getContractFactory('StargateStrategy')
+    ).deploy(
+        yieldBoxAddres,
+        token,
+        routerEth,
+        lpStaking,
+        lpStakingPid,
+        lpToken,
+        {
+            gasPrice: gasPrice,
+        },
+    );
+    await stargateStrategy.deployed();
+
+    log(
+        `Deployed StargateStrategy ${stargateStrategy.address} with args [${yieldBoxAddres},${token},${routerEth},${lpStaking},${lpStakingPid},${lpToken}]`,
+        staging,
+    );
+    await verifyEtherscan(
+        stargateStrategy.address,
+        [yieldBoxAddres, token, routerEth, lpStaking, lpStakingPid, lpToken],
+        staging,
+    );
+
+    return { stargateStrategy };
+}
+
+async function deployStEtEThMock(staging?: boolean) {
+    const stEthMock = await (
+        await ethers.getContractFactory('StEthMock')
+    ).deploy(ethers.utils.parseEther('100000'), { gasPrice: gasPrice });
+    await stEthMock.deployed();
+
+    log(
+        `Deployed StEthMock ${
+            stEthMock.address
+        } with args [${ethers.utils.parseEther('100000')}]`,
+        staging,
+    );
+    await verifyEtherscan(
+        stEthMock.address,
+        [ethers.utils.parseEther('100000')],
+        staging,
+    );
+
+    return { stEthMock };
+}
+
+async function deployCurveStEthPoolMock(
+    stEthAddress: string,
+    staging?: boolean,
+) {
+    if (stEthAddress == ethers.constants.AddressZero) {
+        const { stEthMock } = await deployStEtEThMock(staging);
+        stEthAddress = stEthMock.address;
+    }
+    const curveStEthPoolMock = await (
+        await ethers.getContractFactory('CurveEthStEthPoolMock')
+    ).deploy(stEthAddress, { gasPrice: gasPrice });
+    await curveStEthPoolMock.deployed();
+
+    log(
+        `Deployed CurveEthStEthPoolMock ${curveStEthPoolMock.address} with args [${stEthAddress}]`,
+        staging,
+    );
+    await verifyEtherscan(curveStEthPoolMock.address, [stEthAddress], staging);
+
+    return { curveStEthPoolMock };
+}
+
+async function registerLidoStEthStrategy(
+    wethAddress: string,
+    yieldBoxAddres: string,
+    stEthAddress: string,
+    curveSthEThPoolAddress: string,
+    staging?: boolean,
+) {
+    if (stEthAddress == ethers.constants.AddressZero) {
+        const { stEthMock } = await deployStEtEThMock(staging);
+        stEthAddress = stEthMock.address;
+    }
+    if (curveSthEThPoolAddress == ethers.constants.AddressZero) {
+        const { curveStEthPoolMock } = await deployCurveStEthPoolMock(
+            stEthAddress,
+        );
+        curveSthEThPoolAddress = curveStEthPoolMock.address;
+    }
+
+    const lidoEthStrategy = await (
+        await ethers.getContractFactory('LidoEthStrategy')
+    ).deploy(
+        yieldBoxAddres,
+        wethAddress,
+        stEthAddress,
+        curveSthEThPoolAddress,
+        { gasPrice: gasPrice },
+    );
+    await lidoEthStrategy.deployed();
+
+    log(
+        `Deployed LidoEthStrategy ${lidoEthStrategy.address} with args [${yieldBoxAddres},${wethAddress},${stEthAddress},${curveSthEThPoolAddress}]`,
+        staging,
+    );
+    await verifyEtherscan(
+        lidoEthStrategy.address,
+        [yieldBoxAddres, wethAddress, stEthAddress, curveSthEThPoolAddress],
+        staging,
+    );
+
+    return { lidoEthStrategy };
+}
+
+async function deployTricryptoStrategyMocks(
+    wethAddress: string,
+    staging?: boolean,
+) {
+    const liquidityPoolMock = await (
+        await ethers.getContractFactory('TricryptoLiquidityPoolMock')
+    ).deploy(wethAddress, { gasPrice: gasPrice });
+    await liquidityPoolMock.deployed();
+
+    log(
+        `Deployed TricryptoLiquidityPoolMock ${liquidityPoolMock.address} with args [${wethAddress}]`,
+        staging,
+    );
+    await verifyEtherscan(liquidityPoolMock.address, [wethAddress], staging);
+
+    // const liquidityPoolMockContract = await ethers.getco
+    const lpTokenAddress = await liquidityPoolMock.token();
+
+    const lpGaugeMock = await (
+        await ethers.getContractFactory('TricryptoLPGaugeMock')
+    ).deploy(lpTokenAddress, { gasPrice: gasPrice });
+    await lpGaugeMock.deployed();
+
+    return { liquidityPoolMock, lpGaugeMock };
+}
+
+async function deployTricryptoLPGetter(
+    liquidityPoolAddress: string,
+    wethAddress: string,
+    wbtcAddress: string,
+    usdtAddress: string,
+    staging?: boolean,
+) {
+    const tricryptoLPGtter = await (
+        await ethers.getContractFactory('TricryptoLPGetter')
+    ).deploy(liquidityPoolAddress, usdtAddress, wbtcAddress, wethAddress, {
+        gasPrice: gasPrice,
+    });
+    await tricryptoLPGtter.deployed();
+
+    log(
+        `Deployed TricryptoLPGetter ${tricryptoLPGtter.address} with args [${liquidityPoolAddress},${usdtAddress},${wbtcAddress},${wethAddress}]`,
+        staging,
+    );
+    await verifyEtherscan(
+        tricryptoLPGtter.address,
+        [liquidityPoolAddress, usdtAddress, wbtcAddress, wethAddress],
+        staging,
+    );
+
+    return { tricryptoLPGtter };
+}
+
+async function registerTricryptoStrategy(
+    wethAddress: string,
+    usdtAddress: string,
+    wbtcAddress: string,
+    yieldBoxAddres: string,
+    liquidityPoolAddress: string,
+    lpGaugeAddress: string,
+    lpGetterAddress: string,
+    staging?: boolean,
+) {
+    if (
+        lpGaugeAddress == ethers.constants.AddressZero &&
+        liquidityPoolAddress == ethers.constants.AddressZero
+    ) {
+        const { liquidityPoolMock, lpGaugeMock } =
+            await deployTricryptoStrategyMocks(wethAddress, staging);
+        liquidityPoolAddress = liquidityPoolMock.address;
+        lpGaugeAddress = lpGaugeMock.address;
+    }
+
+    let tricryptoLPGtter: any;
+    if (lpGetterAddress == ethers.constants.AddressZero) {
+        const tricryptoLPGetterDeployment = await deployTricryptoLPGetter(
+            liquidityPoolAddress,
+            wethAddress,
+            wbtcAddress,
+            usdtAddress,
+        );
+        lpGetterAddress = tricryptoLPGetterDeployment.tricryptoLPGtter.address;
+        tricryptoLPGtter = tricryptoLPGetterDeployment.tricryptoLPGtter;
+    }
+
+    const tricryptoStrategy = await (
+        await ethers.getContractFactory('TricryptoStrategy')
+    ).deploy(yieldBoxAddres, wethAddress, lpGaugeAddress, lpGetterAddress, {
+        gasPrice: gasPrice,
+    });
+    await tricryptoStrategy.deployed();
+
+    log(
+        `Deployed TricryptoStrategy ${tricryptoStrategy.address} with args [${yieldBoxAddres},${wethAddress},${lpGaugeAddress},${lpGetterAddress}]`,
+        staging,
+    );
+    await verifyEtherscan(
+        tricryptoStrategy.address,
+        [yieldBoxAddres, wethAddress, lpGaugeAddress, lpGetterAddress],
+        staging,
+    );
+
+    return { tricryptoStrategy, tricryptoLPGtter };
+}
+
+async function deployAaveLendingPoolMock(
+    assetAddress: string,
+    staging?: boolean,
+) {
     const lendingPoolMock = await (
         await ethers.getContractFactory('LendingPoolMock')
     ).deploy(assetAddress, { gasPrice: gasPrice });
@@ -162,25 +432,38 @@ async function deployAaveLendingPoolMock(assetAddress: string, staging?: boolean
 
     return { lendingPoolMock };
 }
-async function registerAaveStrategy(wethAddress: string, yieldBoxAddres: string, lendingPoolAddress: string, staging?: boolean) {
+async function registerAaveStrategy(
+    wethAddress: string,
+    yieldBoxAddres: string,
+    lendingPoolAddress: string,
+    staging?: boolean,
+) {
     if (lendingPoolAddress == ethers.constants.AddressZero) {
-        const { lendingPoolMock } = await deployAaveLendingPoolMock(wethAddress, staging);
+        const { lendingPoolMock } = await deployAaveLendingPoolMock(
+            wethAddress,
+            staging,
+        );
         lendingPoolAddress = lendingPoolMock.address;
     }
 
     const aaveStrategy = await (
         await ethers.getContractFactory('AaveStrategy')
-    ).deploy(yieldBoxAddres, wethAddress, lendingPoolAddress, { gasPrice: gasPrice });
+    ).deploy(yieldBoxAddres, wethAddress, lendingPoolAddress, {
+        gasPrice: gasPrice,
+    });
     await aaveStrategy.deployed();
 
     log(
         `Deployed AaveStrategy ${aaveStrategy.address} with args [${yieldBoxAddres},${wethAddress},${lendingPoolAddress}]`,
         staging,
     );
-    await verifyEtherscan(aaveStrategy.address, [yieldBoxAddres, wethAddress, lendingPoolAddress], staging);
+    await verifyEtherscan(
+        aaveStrategy.address,
+        [yieldBoxAddres, wethAddress, lendingPoolAddress],
+        staging,
+    );
     return { aaveStrategy };
 }
-
 
 async function deployYearnVaultMock(assetAddress: string, staging?: boolean) {
     const vaultMock = await (
@@ -195,7 +478,12 @@ async function deployYearnVaultMock(assetAddress: string, staging?: boolean) {
 
     return { vaultMock };
 }
-async function registerYearnStrategy(wethAddress: string, yieldBoxAddres: string, vaultAddress: string, staging?: boolean) {
+async function registerYearnStrategy(
+    wethAddress: string,
+    yieldBoxAddres: string,
+    vaultAddress: string,
+    staging?: boolean,
+) {
     if (vaultAddress == ethers.constants.AddressZero) {
         const { vaultMock } = await deployYearnVaultMock(wethAddress, staging);
         vaultAddress = vaultMock.address;
@@ -210,10 +498,13 @@ async function registerYearnStrategy(wethAddress: string, yieldBoxAddres: string
         `Deployed YearnStrategy ${yearnStrategy.address} with args [${yieldBoxAddres},${wethAddress},${vaultAddress}]`,
         staging,
     );
-    await verifyEtherscan(yearnStrategy.address, [yieldBoxAddres, wethAddress, vaultAddress], staging);
+    await verifyEtherscan(
+        yearnStrategy.address,
+        [yieldBoxAddres, wethAddress, vaultAddress],
+        staging,
+    );
     return { yearnStrategy };
 }
-
 
 async function registerBeachBar(
     yieldBox: string,
@@ -941,8 +1232,10 @@ async function registerMinterMixologist(
     );
     await wethMinterMixologist.deployed();
     log(
-        `Deployed WethMinterMixologist ${wethMinterMixologist.address
-        } with args [${bar.address},${wethCollateral.address
+        `Deployed WethMinterMixologist ${
+            wethMinterMixologist.address
+        } with args [${bar.address},${
+            wethCollateral.address
         },${wethCollateralId},${oracle.address},${JSON.stringify(
             tapSwapPath,
         )},${JSON.stringify(collateralSwapPath)}]`,
@@ -1155,13 +1448,60 @@ export async function register(staging?: boolean) {
 
     // ------------------- 11.1 Deploy AAVE Strategy -------------------
     log('Deploying AaveStrategy', staging);
-    const { aaveStrategy } = await registerAaveStrategy(weth.address, yieldBox.address, ethers.constants.AddressZero, staging);
+    const { aaveStrategy } = await registerAaveStrategy(
+        weth.address,
+        yieldBox.address,
+        ethers.constants.AddressZero,
+        staging,
+    );
     log(`Deployed AaveStrategy ${aaveStrategy.address}`, staging);
 
     // ------------------- 11.2 Deploy Yearn Strategy -------------------
     log('Deploying YearnStrategy', staging);
-    const { yearnStrategy } = await registerYearnStrategy(weth.address, yieldBox.address, ethers.constants.AddressZero, staging);
+    const { yearnStrategy } = await registerYearnStrategy(
+        weth.address,
+        yieldBox.address,
+        ethers.constants.AddressZero,
+        staging,
+    );
     log(`Deployed YearnStrategy ${yearnStrategy.address}`, staging);
+
+    // ------------------- 11.3 Deploy Stargate Strategy -------------------
+    log('Deploying StargateStrategy', staging);
+    const { stargateStrategy } = await registerStargateStrategy(
+        yieldBox.address,
+        weth.address,
+        ethers.constants.AddressZero,
+        ethers.constants.AddressZero,
+        '0',
+        weth.address,
+        staging,
+    );
+    log(`Deployed StargateStrategy ${stargateStrategy.address}`, staging);
+
+    // ------------------- 11.4 Deploy Tricrypto Strategy -------------------
+    log('Deploying TricryptoStrategy', staging);
+    const { tricryptoStrategy, tricryptoLPGtter } =
+        await registerTricryptoStrategy(
+            weth.address,
+            usdc.address,
+            usdc.address,
+            yieldBox.address,
+            ethers.constants.AddressZero,
+            ethers.constants.AddressZero,
+            ethers.constants.AddressZero,
+            staging,
+        );
+
+    // ------------------- 11.5 Deploy Lido-Eth Strategy -------------------
+    log('Deploying Lido ETH', staging);
+    const { lidoEthStrategy } = await registerLidoStEthStrategy(
+        weth.address,
+        yieldBox.address,
+        ethers.constants.AddressZero,
+        ethers.constants.AddressZero,
+        staging,
+    );
 
     // ------------------- 12 Register MinterMixologist -------------------
     log('Deploying WethMinterMixologist', staging);
@@ -1323,7 +1663,12 @@ export async function register(staging?: boolean) {
         proxyDeployer,
         aaveStrategy,
         yearnStrategy,
+        stargateStrategy,
+        tricryptoStrategy,
+        tricryptoLPGtter,
+        lidoEthStrategy,
         registerMixologist,
+        deployTricryptoLPGetter,
         __uniFactory,
         __uniRouter,
         __wethUsdcMockPair,

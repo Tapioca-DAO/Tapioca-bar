@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
+import '@openzeppelin/contracts/security/ReentrancyGuard.sol';
+
 import '@boringcrypto/boring-solidity/contracts/BoringOwnable.sol';
 import '@boringcrypto/boring-solidity/contracts/interfaces/IERC20.sol';
 import '@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol';
@@ -10,6 +12,9 @@ import '../../../yieldbox/contracts/strategies/BaseStrategy.sol';
 import './IRouter.sol';
 import './IRouterETH.sol';
 import './ILPStaking.sol';
+import '../interfaces/INative.sol';
+
+import 'hardhat/console.sol';
 
 /*
 
@@ -28,10 +33,13 @@ __/\\\\\\\\\\\\\\\_____/\\\\\\\\\_____/\\\\\\\\\\\\\____/\\\\\\\\\\\_______/\\\\
 //TODO: handle rewards deposits to yieldbox
 
 //Native strategy for Stargate
-contract StargateStrategy is BaseNativeStrategy, BoringOwnable {
+contract StargateStrategy is BaseERC20Strategy, BoringOwnable, ReentrancyGuard {
+    using BoringERC20 for IERC20;
+
     // ************ //
     // *** VARS *** //
     // ************ //
+    IERC20 public immutable wrappedNative;
     IRouterETH public immutable addLiquidityRouter;
     IRouter public immutable router;
     ILPStaking public immutable lpStaking;
@@ -54,12 +62,13 @@ contract StargateStrategy is BaseNativeStrategy, BoringOwnable {
 
     constructor(
         IYieldBox _yieldBox,
-        uint256 _tokenId,
+        address _token,
         address _ethRouter,
         address _lpStaking,
         uint256 _stakingPid,
         address _lpToken
-    ) BaseNativeStrategy(_yieldBox, _tokenId) {
+    ) BaseERC20Strategy(_yieldBox, _token) {
+        wrappedNative = IERC20(_token);
         addLiquidityRouter = IRouterETH(_ethRouter);
         lpStaking = ILPStaking(_lpStaking);
         lpStakingPid = _stakingPid;
@@ -69,6 +78,7 @@ contract StargateStrategy is BaseNativeStrategy, BoringOwnable {
 
         stgNative = IERC20(_lpToken);
         stgNative.approve(_lpStaking, type(uint256).max);
+        stgNative.approve(address(router), type(uint256).max);
     }
 
     // ********************** //
@@ -86,7 +96,7 @@ contract StargateStrategy is BaseNativeStrategy, BoringOwnable {
         override
         returns (string memory description_)
     {
-        return 'Stargate strategy for native assets';
+        return 'Stargate strategy for wrapped native assets';
     }
 
     // *********************** //
@@ -104,16 +114,18 @@ contract StargateStrategy is BaseNativeStrategy, BoringOwnable {
     // ************************* //
     /// @dev queries 'getUserAccountData' from Stargate and gets the total collateral
     function _currentBalance() internal view override returns (uint256 amount) {
-        uint256 queued = address(this).balance;
+        uint256 queued = wrappedNative.balanceOf(address(this));
         (amount, ) = lpStaking.userInfo(address(this));
         return amount + queued;
     }
 
     /// @dev deposits to Stargate or queues tokens if the 'depositThreshold' has not been met yet
     ///      - when depositing to Stargate, aToken is minted to this contract
-    function _deposited(uint256 amount) internal override {
-        uint256 queued = address(this).balance;
+    function _deposited(uint256 amount) internal override nonReentrant {
+        uint256 queued = wrappedNative.balanceOf(address(this));
         if (queued > depositThreshold) {
+            INative(address(wrappedNative)).withdraw(queued);
+
             addLiquidityRouter.addLiquidityETH{value: queued}();
             uint256 toStake = stgNative.balanceOf(address(this));
             lpStaking.deposit(lpStakingPid, toStake);
@@ -124,24 +136,29 @@ contract StargateStrategy is BaseNativeStrategy, BoringOwnable {
     }
 
     /// @dev burns stgToken in exchange of Native and withdraws from Stargate Staking & Router
-    function _withdraw(address to, uint256 amount) internal override {
+    function _withdraw(address to, uint256 amount)
+        internal
+        override
+        nonReentrant
+    {
         uint256 available = _currentBalance();
         require(available >= amount, 'StargateStrategy: amount not valid');
 
-        uint256 queued = address(this).balance;
+        uint256 queued = wrappedNative.balanceOf(address(this));
         if (amount > queued) {
             uint256 toWithdraw = amount - queued;
             lpStaking.withdraw(lpStakingPid, toWithdraw);
-            router.instantRedeemLocal(uint16(lpRouterPid), toWithdraw, address(this));
+            router.instantRedeemLocal(
+                uint16(lpRouterPid),
+                toWithdraw,
+                address(this)
+            );
+            INative(address(wrappedNative)).deposit{value: amount}();
         }
 
-        safeTransferETH(to, amount);
-        emit AmountWithdrawn(to, amount);
-    }
+        wrappedNative.safeTransfer(to, amount);
 
-    function safeTransferETH(address to, uint256 value) internal {
-        (bool success, ) = to.call{value: value}(new bytes(0));
-        require(success, 'StargateStrategy: ETH transfer failed');
+        emit AmountWithdrawn(to, amount);
     }
 
     receive() external payable {}

@@ -23,6 +23,8 @@ contract MXLendingBorrowing is MXCommon {
     ) public solvent(from) allowed(from) returns (uint256 part, uint256 share) {
         accrue();
 
+        updateExchangeRate();
+
         (part, share) = _borrow(from, to, amount);
     }
 
@@ -40,6 +42,8 @@ contract MXLendingBorrowing is MXCommon {
         uint256 part
     ) public allowed(from) returns (uint256 amount) {
         accrue();
+
+        updateExchangeRate();
 
         amount = _repay(from, to, skim, part);
     }
@@ -110,7 +114,7 @@ contract MXLendingBorrowing is MXCommon {
         emit LogFlashLoan(address(borrower), amount, feeAmount, receiver);
     }
 
-   // ************************** //
+    // ************************** //
     // *** PRIVATE FUNCTIONS *** //
     // ************************* //
     /// @dev Concrete implementation of `removeCollateral`.

@@ -248,7 +248,7 @@ describe('MXProxy', () => {
             ['uint16', 'uint256'],
             [1, 2250000],
         );
-        await proxySrc.setMinDstGas(
+        await proxySrc.setMinDstGasLookup(
             await lzEndpointDst.getChainId(),
             1,
             1,
@@ -282,16 +282,21 @@ describe('MXProxy', () => {
             ethers.Wallet.createRandom().privateKey,
             ethers.provider,
         );
-        await mixologistDst.connect(eoa1).withdrawTo(
-            await lzEndpointSrc.getChainId(),
-            ethers.utils.solidityPack(['address'], [randomReceiver.address]),
-            borrowPart.div(2),
-            ethers.utils.toUtf8Bytes(''),
-            eoa1.address,
-            {
-                value: ethers.utils.parseEther('2'),
-            },
-        );
+        await mixologistDst
+            .connect(eoa1)
+            .withdrawTo(
+                await lzEndpointSrc.getChainId(),
+                ethers.utils.solidityPack(
+                    ['address'],
+                    [randomReceiver.address],
+                ),
+                borrowPart.div(2),
+                ethers.utils.toUtf8Bytes(''),
+                eoa1.address,
+                {
+                    value: ethers.utils.parseEther('2'),
+                },
+            );
 
         const balanceOfReceiver = await usd0Src.balanceOf(
             randomReceiver.address,
@@ -620,7 +625,7 @@ describe('MXProxy', () => {
             ['uint16', 'uint256'],
             [1, 2250000],
         );
-        await proxySrc.setMinDstGas(
+        await proxySrc.setMinDstGasLookup(
             await lzEndpointDst.getChainId(),
             1,
             1,
@@ -739,7 +744,7 @@ describe('MXProxy', () => {
                 ethers.utils.solidityPack(['address'], [mixologistDst.address]),
                 [addCollateralFn],
                 ethers.utils.toUtf8Bytes(''),
-                { value: ethers.utils.parseEther('1') },
+                { value: ethers.utils.parseEther('2') },
             );
 
         const userCollateralShare = await mixologistDst.userCollateralShare(
@@ -753,6 +758,17 @@ describe('MXProxy', () => {
         expect(userCollateralShare.eq(usdcMintValShare)).to.be.true;
         expect(userCollateralAmount.eq(usdcMintVal)).to.be.true;
 
+        const adapterParam = ethers.utils.solidityPack(
+            ['uint16', 'uint256'],
+            [1, 2250000],
+        );
+        await proxySrc.setMinDstGasLookup(
+            await lzEndpointDst.getChainId(),
+            1,
+            1,
+        );
+        await proxySrc.setUseCustomAdapterParams(true);
+
         const borrowFn = mixologistDst.interface.encodeFunctionData('borrow', [
             eoa1.address,
             eoa1.address,
@@ -764,8 +780,8 @@ describe('MXProxy', () => {
                 await lzEndpointDst.getChainId(),
                 ethers.utils.solidityPack(['address'], [mixologistDst.address]),
                 [borrowFn],
-                ethers.utils.toUtf8Bytes(''),
-                { value: ethers.utils.parseEther('1') },
+                adapterParam,
+                { value: ethers.utils.parseEther('10') },
             );
         let borrowPart = await mixologistDst.userBorrowPart(eoa1.address);
         expect(borrowPart.gt(wethBorrowVal)).to.be.true;
@@ -795,8 +811,8 @@ describe('MXProxy', () => {
                 await lzEndpointDst.getChainId(),
                 ethers.utils.solidityPack(['address'], [mixologistDst.address]),
                 [repayFn],
-                ethers.utils.toUtf8Bytes(''),
-                { value: ethers.utils.parseEther('1') },
+                adapterParam,
+                { value: ethers.utils.parseEther('10') },
             );
         borrowPart = await mixologistDst.userBorrowPart(eoa1.address);
         expect(borrowPart.eq(0)).to.be.true;
@@ -906,7 +922,7 @@ describe('MXProxy', () => {
             ['uint16', 'uint256'],
             [1, 2250000],
         );
-        await proxySrc.setMinDstGas(
+        await proxySrc.setMinDstGasLookup(
             await lzEndpointDst.getChainId(),
             1,
             1,
@@ -964,6 +980,16 @@ describe('MXProxy', () => {
             0,
             mintValShare,
         );
+        const adapterParam = ethers.utils.solidityPack(
+            ['uint16', 'uint256'],
+            [1, 2250000],
+        );
+        await proxySrc.setMinDstGasLookup(
+            await lzEndpointDst.getChainId(),
+            1,
+            1,
+        );
+        await proxySrc.setUseCustomAdapterParams(true);
 
         // Approve mixologistDst actions
         await yieldBox.setApprovalForAll(mixologistDst.address, true);
@@ -981,8 +1007,8 @@ describe('MXProxy', () => {
             await lzEndpointDst.getChainId(),
             ethers.utils.solidityPack(['address'], [mixologistDst.address]),
             [addAssetFn],
-            ethers.utils.toUtf8Bytes(''),
-            { value: ethers.utils.parseEther('1') },
+            adapterParam,
+            { value: ethers.utils.parseEther('10') },
         );
         const balanceAfter = await mixologistDst.balanceOf(deployer.address);
         expect(balanceAfter.eq(mintValShare)).to.be.true;
@@ -1030,8 +1056,8 @@ describe('MXProxy', () => {
                 await lzEndpointDst.getChainId(),
                 ethers.utils.solidityPack(['address'], [mixologistDst.address]),
                 [addCollateralFn],
-                ethers.utils.toUtf8Bytes(''),
-                { value: ethers.utils.parseEther('1') },
+                adapterParam,
+                { value: ethers.utils.parseEther('10') },
             );
 
         const userCollateralShare = await mixologistDst.userCollateralShare(
@@ -1056,8 +1082,8 @@ describe('MXProxy', () => {
                 await lzEndpointDst.getChainId(),
                 ethers.utils.solidityPack(['address'], [mixologistDst.address]),
                 [borrowFn],
-                ethers.utils.toUtf8Bytes(''),
-                { value: ethers.utils.parseEther('1') },
+                adapterParam,
+                { value: ethers.utils.parseEther('10') },
             );
         let borrowPart = await mixologistDst.userBorrowPart(eoa1.address);
         const remaining = borrowPart.sub(wethBorrowVal);
@@ -1072,23 +1098,12 @@ describe('MXProxy', () => {
             [[eoa1.address], [wethBorrowVal], multiSwapper.address, data, data],
         );
 
-        const adapterParam = ethers.utils.solidityPack(
-            ['uint16', 'uint256'],
-            [1, 2250000],
-        );
-        await proxySrc.setMinDstGas(
-            await lzEndpointDst.getChainId(),
-            1,
-            1,
-        );
-        await proxySrc.setUseCustomAdapterParams(true);
-
         await proxySrc.executeOnChain(
             await lzEndpointDst.getChainId(),
             ethers.utils.solidityPack(['address'], [mixologistDst.address]),
             [liquidateFn],
             adapterParam,
-            { value: ethers.utils.parseEther('1') },
+            { value: ethers.utils.parseEther('10') },
         );
 
         const borrowPartFinal = await mixologistDst.userBorrowPart(
@@ -1127,6 +1142,17 @@ describe('MXProxy', () => {
         const { proxySrc, proxyDst, mixologistDst, lzEndpointDst } =
             await loadFixture(loadSetup);
 
+        const adapterParam = ethers.utils.solidityPack(
+            ['uint16', 'uint256'],
+            [1, 2250000],
+        );
+        await proxySrc.setMinDstGasLookup(
+            await lzEndpointDst.getChainId(),
+            1,
+            1,
+        );
+        await proxySrc.setUseCustomAdapterParams(true);
+
         // --- Lending ---
         // Get assets
         const mintVal = ethers.BigNumber.from((1e18).toString()).mul(10);
@@ -1163,8 +1189,8 @@ describe('MXProxy', () => {
             await lzEndpointDst.getChainId(),
             ethers.utils.solidityPack(['address'], [mixologistDst.address]),
             [addAssetFn],
-            ethers.utils.toUtf8Bytes(''),
-            { value: ethers.utils.parseEther('1') },
+            adapterParam,
+            { value: ethers.utils.parseEther('10') },
         );
         const balanceAfter = await mixologistDst.balanceOf(deployer.address);
         expect(balanceAfter.eq(mintValShare)).to.be.true;
@@ -1212,8 +1238,8 @@ describe('MXProxy', () => {
                 await lzEndpointDst.getChainId(),
                 ethers.utils.solidityPack(['address'], [mixologistDst.address]),
                 [addCollateralFn],
-                ethers.utils.toUtf8Bytes(''),
-                { value: ethers.utils.parseEther('1') },
+                adapterParam,
+                { value: ethers.utils.parseEther('10') },
             );
 
         const userCollateralShare = await mixologistDst.userCollateralShare(
@@ -1238,8 +1264,8 @@ describe('MXProxy', () => {
                 await lzEndpointDst.getChainId(),
                 ethers.utils.solidityPack(['address'], [mixologistDst.address]),
                 [borrowFn],
-                ethers.utils.toUtf8Bytes(''),
-                { value: ethers.utils.parseEther('1') },
+                adapterParam,
+                { value: ethers.utils.parseEther('10') },
             );
         let borrowPart = await mixologistDst.userBorrowPart(eoa1.address);
         expect(borrowPart.gt(wethBorrowVal)).to.be.true;
@@ -1269,8 +1295,8 @@ describe('MXProxy', () => {
                 await lzEndpointDst.getChainId(),
                 ethers.utils.solidityPack(['address'], [mixologistDst.address]),
                 [repayFn],
-                ethers.utils.toUtf8Bytes(''),
-                { value: ethers.utils.parseEther('1') },
+                adapterParam,
+                { value: ethers.utils.parseEther('10') },
             );
         borrowPart = await mixologistDst.userBorrowPart(eoa1.address);
         expect(borrowPart.eq(0)).to.be.true;
@@ -1373,7 +1399,7 @@ describe('MXProxy', () => {
             ['uint16', 'uint256'],
             [1, 2250000],
         );
-        await proxySrc.setMinDstGas(
+        await proxySrc.setMinDstGasLookup(
             await lzEndpointDst.getChainId(),
             1,
             1,

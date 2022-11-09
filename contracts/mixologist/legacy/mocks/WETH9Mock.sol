@@ -67,4 +67,6 @@ contract WETH9Mock {
 
         return true;
     }
+
+    receive() external payable {}
 }

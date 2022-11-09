@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
+import '@openzeppelin/contracts/security/ReentrancyGuard.sol';
+
 import '@boringcrypto/boring-solidity/contracts/BoringOwnable.sol';
 import '@boringcrypto/boring-solidity/contracts/interfaces/IERC20.sol';
 import '@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol';
@@ -22,11 +24,10 @@ __/\\\\\\\\\\\\\\\_____/\\\\\\\\\_____/\\\\\\\\\\\\\____/\\\\\\\\\\\_______/\\\\
         _______\///________\///________\///__\///______________\///////////_______\/////_____________\/////////__\///________\///__
 */
 
-//TODO: decide if we need to start with ETH and wrap it into WETH; stargate allows ETH. not WETH, while others allow WETH, not ETH
 //TODO: handle rewards deposits to yieldbox
 
 //Wrapped-native strategy for AAVE
-contract AaveStrategy is BaseERC20Strategy, BoringOwnable {
+contract AaveStrategy is BaseERC20Strategy, BoringOwnable, ReentrancyGuard {
     using BoringERC20 for IERC20;
 
     // ************ //
@@ -100,7 +101,7 @@ contract AaveStrategy is BaseERC20Strategy, BoringOwnable {
 
     /// @dev deposits to AAVE or queues tokens if the 'depositThreshold' has not been met yet
     ///      - when depositing to AAVE, aToken is minted to this contract
-    function _deposited(uint256 amount) internal override {
+    function _deposited(uint256 amount) internal override nonReentrant {
         uint256 queued = wrappedNative.balanceOf(address(this));
         if (queued > depositThreshold) {
             lendingPool.deposit(
@@ -116,15 +117,23 @@ contract AaveStrategy is BaseERC20Strategy, BoringOwnable {
     }
 
     /// @dev burns aToken in exchange of Token and withdraws from AAVE LendingPool
-    function _withdraw(address to, uint256 amount) internal override {
+    function _withdraw(address to, uint256 amount)
+        internal
+        override
+        nonReentrant
+    {
         uint256 available = _currentBalance();
         require(available >= amount, 'AaveStrategy: amount not valid');
 
         uint256 queued = wrappedNative.balanceOf(address(this));
         if (amount > queued) {
             uint256 toWithdraw = amount - queued;
-            lendingPool.withdraw(address(wrappedNative), toWithdraw, address(this));
-        } 
+            lendingPool.withdraw(
+                address(wrappedNative),
+                toWithdraw,
+                address(this)
+            );
+        }
 
         wrappedNative.safeTransfer(to, amount);
         emit AmountWithdrawn(to, amount);

@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import '@boringcrypto/boring-solidity/contracts/interfaces/IERC20.sol';
 import '@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol';
 
-import "../../mixologist/legacy/mocks/ERC20Mock.sol";
+import '../../mixologist/legacy/mocks/ERC20Mock.sol';
 
 contract RouterETHMock {
     address public stgRouter;
@@ -25,6 +25,8 @@ contract RouterETHMock {
 
     function addLiquidityETH() external payable {
         ERC20Mock(lpToken).freeMint(msg.value);
-        ERC20Mock(lpToken).transfer(msg.sender, msg.value);
+        ERC20Mock(lpToken).transfer(msg.sender, msg.value - 1);
     }
+
+    receive() external payable {}
 }

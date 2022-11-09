@@ -4,25 +4,32 @@ pragma solidity ^0.8.0;
 import '@boringcrypto/boring-solidity/contracts/interfaces/IERC20.sol';
 import '@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol';
 
-import '../../mixologist/legacy/mocks/ERC20Mock.sol';
-
-contract StargateRouterMock {
+contract CurveEthStEthPoolMock {
     using BoringERC20 for IERC20;
 
-    IERC20 public stgToken;
+    address public steth;
 
-    constructor(address _stgToken) {
-        stgToken = IERC20(_stgToken);
+    constructor(address _steth) {
+        steth = _steth;
     }
 
-    function instantRedeemLocal(
-        uint16,
-        uint256 _amountLP,
-        address _to
+    function exchange(
+        int128,
+        int128,
+        uint256 dx,
+        uint256
     ) external returns (uint256) {
-        stgToken.safeTransferFrom(msg.sender, address(this), _amountLP);
-        safeTransferETH(_to, _amountLP); //we assume contract has eth
-        return _amountLP;
+        IERC20(steth).safeTransferFrom(msg.sender, address(this), dx);
+        safeTransferETH(msg.sender, dx); //we assume contract has eth
+        return dx;
+    }
+
+    function get_dy(
+        int128,
+        int128,
+        uint256 dx
+    ) external pure returns (uint256) {
+        return dx;
     }
 
     function safeTransferETH(address to, uint256 value) internal {
