@@ -8,9 +8,11 @@ import '@boringcrypto/boring-solidity/contracts/interfaces/IERC20.sol';
 import '@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol';
 
 import '../../../yieldbox/contracts/strategies/BaseStrategy.sol';
+import '../../swappers/NonYieldBoxMultiSwapper.sol';
 
 import './ITricryptoLPGetter.sol';
 import './ITricryptoLPGauge.sol';
+import './ICurveMinter.sol';
 
 /*
 
@@ -36,8 +38,12 @@ contract TricryptoStrategy is
     // *** VARS *** //
     // ************ //
     IERC20 public immutable wrappedNative;
+    NonYieldBoxMultiSwapper public swapper;
+
     ITricryptoLPGauge public immutable lpGauge;
+    ICurveMinter public immutable minter;
     ITricryptoLPGetter public lpGetter;
+    IERC20 public immutable rewardToken; //CRV token
 
     /// @notice Queues tokens up to depositThreshold
     /// @dev When the amount of tokens is greater than the threshold, a deposit operation to AAVE is performed
@@ -46,6 +52,7 @@ contract TricryptoStrategy is
     // ************** //
     // *** EVENTS *** //
     // ************** //
+    event MultiSwapper(address indexed _old, address indexed _new);
     event DepositThreshold(uint256 _old, uint256 _new);
     event LPGetterSet(address indexed _old, address indexed _new);
     event AmountQueued(uint256 amount);
@@ -56,14 +63,21 @@ contract TricryptoStrategy is
         IYieldBox _yieldBox,
         address _token,
         address _lpGauge,
-        address _lpGetter
+        address _lpGetter,
+        address _minter,
+        address _multiSwapper
     ) BaseERC20Strategy(_yieldBox, _token) {
         wrappedNative = IERC20(_token);
+        swapper = NonYieldBoxMultiSwapper(_multiSwapper);
+
         lpGauge = ITricryptoLPGauge(_lpGauge);
+        minter = ICurveMinter(_minter);
         lpGetter = ITricryptoLPGetter(_lpGetter);
+        rewardToken = IERC20(lpGauge.crv_token());
 
         IERC20(lpGetter.lpToken()).approve(_lpGauge, type(uint256).max);
         IERC20(lpGetter.lpToken()).approve(_lpGetter, type(uint256).max);
+        rewardToken.approve(_multiSwapper, type(uint256).max);
         wrappedNative.approve(_lpGetter, type(uint256).max);
     }
 
@@ -85,6 +99,18 @@ contract TricryptoStrategy is
         return 'Curve-Tricrypto strategy for wrapped native assets';
     }
 
+    /// @notice returns compounded amounts in wrappedNative
+    function compoundAmount() public returns (uint256 result) {
+        uint256 claimable = lpGauge.claimable_tokens(address(this));
+        result = 0;
+        if (claimable > 0) {
+            address[] memory path = new address[](2); //todo: check if path is right
+            path[0] = address(rewardToken);
+            path[1] = address(wrappedNative);
+            result = swapper.getOutputAmount(path, claimable);
+        }
+    }
+
     // *********************** //
     // *** OWNER FUNCTIONS *** //
     // *********************** //
@@ -95,6 +121,15 @@ contract TricryptoStrategy is
         depositThreshold = amount;
     }
 
+    /// @notice Sets the Swapper address
+    /// @param _swapper The new swapper address
+    function setMultiSwapper(address _swapper) external onlyOwner {
+        emit MultiSwapper(address(swapper), _swapper);
+        rewardToken.approve(address(swapper), 0);
+        rewardToken.approve(_swapper, type(uint256).max);
+        swapper = NonYieldBoxMultiSwapper(_swapper);
+    }
+
     /// @notice Sets the Tricrypto LP Getter
     /// @param _lpGetter the new address
     function setTricryptoLPGetter(address _lpGetter) external onlyOwner {
@@ -102,6 +137,42 @@ contract TricryptoStrategy is
         wrappedNative.approve(address(lpGetter), 0);
         lpGetter = ITricryptoLPGetter(_lpGetter);
         wrappedNative.approve(_lpGetter, type(uint256).max);
+    }
+
+    // ************************ //
+    // *** PUBLIC FUNCTIONS *** //
+    // ************************ //
+    function compound(bool _tryStake) public {
+        uint256 claimable = lpGauge.claimable_tokens(address(this));
+        if (claimable > 0) {
+            uint256 crvBalanceBefore = rewardToken.balanceOf(address(this));
+            minter.mint(address(lpGauge));
+            uint256 crvBalanceAfter = rewardToken.balanceOf(address(this));
+
+            if (crvBalanceAfter > crvBalanceBefore) {
+                uint256 crvAmount = crvBalanceAfter - crvBalanceBefore;
+
+                address[] memory path = new address[](2); //todo: check if path is right
+                path[0] = address(rewardToken);
+                path[1] = address(wrappedNative);
+                uint256 calcAmount = swapper.getOutputAmount(path, crvAmount);
+                uint256 minAmount = (calcAmount * 2_500) / 10_000; //2.5%
+                swapper.swap(
+                    address(rewardToken),
+                    address(wrappedNative),
+                    minAmount,
+                    address(this),
+                    path,
+                    crvAmount
+                );
+
+                uint256 queued = wrappedNative.balanceOf(address(this));
+                if (_tryStake && queued > depositThreshold) {
+                    _addLiquidityAndStake(queued);
+                    emit AmountDeposited(queued);
+                }
+            }
+        }
     }
 
     // ************************* //
@@ -137,6 +208,7 @@ contract TricryptoStrategy is
 
         uint256 queued = wrappedNative.balanceOf(address(this));
         if (amount > queued) {
+            compound(false);
             uint256 lpBalance = lpGauge.balanceOf(address(this));
             lpGauge.withdraw(lpBalance, true);
             uint256 calcWithdraw = lpGetter.calcLpToWeth(lpBalance);

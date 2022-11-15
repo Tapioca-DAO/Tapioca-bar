@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.9;
 
-import './MXProxy.sol';
+import './SGLProxy.sol';
 
 /*
 
@@ -17,7 +17,7 @@ __/\\\\\\\\\\\\\\\_____/\\\\\\\\\_____/\\\\\\\\\\\\\____/\\\\\\\\\\\_______/\\\\
 
 */
 
-/// @title MXProxy factory
+/// @title SGLProxy factory
 contract ProxyDeployer {
     // ************ //
     // *** VARS *** //
@@ -49,8 +49,8 @@ contract ProxyDeployer {
     // *********************** //
     // *** OWNER FUNCTIONS *** //
     // *********************** //
-    /// @notice creates a new MXProxy contract using CREATE2 opcode
-    /// @param _lzEndpoint the LayerZero endpoint MXProxy will be associated with
+    /// @notice creates a new SGLProxy contract using CREATE2 opcode
+    /// @param _lzEndpoint the LayerZero endpoint SGLProxy will be associated with
     /// @param _salt CREATE2 salt used to compute the new address
     function deployWithCreate2(address _lzEndpoint, bytes32 _salt)
         public
@@ -59,7 +59,7 @@ contract ProxyDeployer {
     {
         require(msg.sender == owner, 'ProxyDeployer: unauthorized');
         // https://docs.soliditylang.org/en/latest/control-structures.html#salted-contract-creations-create2
-        cloneAddress = address(new MXProxy{salt: _salt}(_lzEndpoint, owner));
+        cloneAddress = address(new SGLProxy{salt: _salt}(_lzEndpoint, owner));
         proxies.push(cloneAddress);
         emit LogDeploy(_lzEndpoint, cloneAddress);
     }

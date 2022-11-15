@@ -11,24 +11,24 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const chainId = await hre.getChainId();
     const contracts: TContract[] = [];
 
-    console.log('\n Deploying MixologistHelper');
-    await deploy('MixologistHelper', {
+    console.log('\n Deploying SingularityHelper');
+    await deploy('SingularityHelper', {
         from: deployer,
         log: true,
     });
-    await verify(hre, 'MixologistHelper', []);
-    const deployedMixologistHelper = await deployments.get('MixologistHelper');
+    await verify(hre, 'SingularityHelper', []);
+    const deployedSingularityHelper = await deployments.get('SingularityHelper');
     contracts.push({
-        name: 'MixologistHelper',
-        address: deployedMixologistHelper.address,
+        name: 'SingularityHelper',
+        address: deployedSingularityHelper.address,
         meta: {},
     });
     console.log(
-        `Done. Deployed on ${deployedMixologistHelper.address} with no arguments`,
+        `Done. Deployed on ${deployedSingularityHelper.address} with no arguments`,
     );
 
     await updateDeployments(contracts, chainId);
 };
 
 export default func;
-func.tags = ['MixologistHelper'];
+func.tags = ['SingularityHelper'];

@@ -5,7 +5,7 @@ import '@boringcrypto/boring-solidity/contracts/interfaces/IERC20.sol';
 
 import '../IBeachBar.sol';
 import './ILiquidationQueue.sol';
-import '../mixologist/interfaces/IMixologist.sol';
+import '../singularity/interfaces/ISingularity.sol';
 import '../../yieldbox/contracts/interfaces/IStrategy.sol';
 
 import '../../yieldbox/contracts/YieldBox.sol';
@@ -26,7 +26,7 @@ contract LiquidationQueue is ILiquidationQueue {
     /// @notice returns metadata information
     LiquidationQueueMeta public liquidationQueueMeta;
     /// @notice targeted market
-    IMixologist public mixologist;
+    ISingularity public mixologist;
     /// @notice BeachBar addres
     IBeachBar public beachBar;
     /// @notice YieldBox address
@@ -141,7 +141,7 @@ contract LiquidationQueue is ILiquidationQueue {
         _;
     }
 
-    /// @notice Acts as a 'constructor', should be called by a Mixologist market.
+    /// @notice Acts as a 'constructor', should be called by a Singularity market.
     /// @param  _liquidationQueueMeta Info about the liquidations.
     function init(
         LiquidationQueueMeta calldata _liquidationQueueMeta,
@@ -151,7 +151,7 @@ contract LiquidationQueue is ILiquidationQueue {
 
         liquidationQueueMeta = _liquidationQueueMeta;
 
-        mixologist = IMixologist(_mixologist);
+        mixologist = ISingularity(_mixologist);
         liquidatedAssetId = mixologist.collateralId();
         marketAssetId = mixologist.assetId();
         beachBar = IBeachBar(mixologist.beachBar());
@@ -557,9 +557,9 @@ contract LiquidationQueue is ILiquidationQueue {
     }
 
     /// @notice Execute the liquidation call by executing the bids placed in the pools in ASC order.
-    /// @dev Should only be called from Mixologist.
-    ///      Mixologist should send the `collateralAmountToLiquidate` to this contract before calling this function.
-    /// Tx will fail if it can't transfer allowed BeachBar asset from Mixologist.
+    /// @dev Should only be called from Singularity.
+    ///      Singularity should send the `collateralAmountToLiquidate` to this contract before calling this function.
+    /// Tx will fail if it can't transfer allowed BeachBar asset from Singularity.
     /// @param collateralAmountToLiquidate The amount of collateral to liquidate.
     /// @param swapData Swap data necessary for swapping USD0 to market asset; necessary only if bidder added USD0
     /// @return totalAmountExecuted The amount of asset that was executed.
@@ -572,7 +572,7 @@ contract LiquidationQueue is ILiquidationQueue {
         override
         returns (uint256 totalAmountExecuted, uint256 totalCollateralLiquidated)
     {
-        require(msg.sender == address(mixologist), 'LQ: Only Mixologist');
+        require(msg.sender == address(mixologist), 'LQ: Only Singularity');
         BidExecutionData memory data;
 
         (data.curPoolId, data.isBidAvail) = getNextAvailBidPool();
@@ -693,7 +693,7 @@ contract LiquidationQueue is ILiquidationQueue {
         {
             uint256 toSend = totalAmountExecuted;
 
-            // Transfer the assets to the Mixologist.
+            // Transfer the assets to the Singularity.
             yieldBox.withdraw(
                 lqAssetId,
                 address(this),

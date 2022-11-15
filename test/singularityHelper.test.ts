@@ -4,24 +4,24 @@ import { register } from './test.utils';
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 
 describe('MixologistHelper test', () => {
-    it('Should deposit to yieldBox & add asset to mixologist through Mx helper', async () => {
+    it('Should deposit to yieldBox & add asset to singularity through Mx helper', async () => {
         const {
             weth,
             yieldBox,
-            wethUsdcMixologist,
+            wethUsdcSingularity,
             deployer,
             initContracts,
-            mixologistHelper,
+            singularityHelper,
         } = await loadFixture(register);
 
-        await initContracts(); // To prevent `Mixologist: below minimum`
+        await initContracts(); // To prevent `Singularity: below minimum`
 
         const mintVal = ethers.BigNumber.from((1e18).toString()).mul(10);
         weth.freeMint(mintVal);
 
-        await weth.approve(mixologistHelper.address, mintVal);
-        await mixologistHelper.depositAndAddAsset(
-            wethUsdcMixologist.address,
+        await weth.approve(singularityHelper.address, mintVal);
+        await singularityHelper.depositAndAddAsset(
+            wethUsdcSingularity.address,
             mintVal,
         );
     });
@@ -30,21 +30,21 @@ describe('MixologistHelper test', () => {
         const {
             weth,
             yieldBox,
-            wethUsdcMixologist,
+            wethUsdcSingularity,
             deployer,
             usdc,
             eoa1,
             initContracts,
-            mixologistHelper,
+            singularityHelper,
             __wethUsdcPrice,
             approveTokensAndSetBarApproval,
             wethDepositAndAddAsset,
         } = await loadFixture(register);
 
-        await initContracts(); // To prevent `Mixologist: below minimum`
+        await initContracts(); // To prevent `Singularity: below minimum`
 
-        const assetId = await wethUsdcMixologist.assetId();
-        const collateralId = await wethUsdcMixologist.collateralId();
+        const assetId = await wethUsdcSingularity.assetId();
+        const collateralId = await wethUsdcSingularity.collateralId();
 
         const borrowAmount = ethers.BigNumber.from((1e17).toString());
         const wethMintVal = ethers.BigNumber.from((1e18).toString()).mul(10);
@@ -60,14 +60,14 @@ describe('MixologistHelper test', () => {
         await approveTokensAndSetBarApproval();
         await wethDepositAndAddAsset(wethMintVal);
 
-        await usdc.connect(eoa1).approve(mixologistHelper.address, usdcMintVal);
-        await wethUsdcMixologist
+        await usdc.connect(eoa1).approve(singularityHelper.address, usdcMintVal);
+        await wethUsdcSingularity
             .connect(eoa1)
-            .approve(mixologistHelper.address, usdcMintVal);
-        await mixologistHelper
+            .approve(singularityHelper.address, usdcMintVal);
+        await singularityHelper
             .connect(eoa1)
             .depositAddCollateralAndBorrow(
-                wethUsdcMixologist.address,
+                wethUsdcSingularity.address,
                 usdcMintVal,
                 borrowAmount,
                 false,
@@ -78,17 +78,17 @@ describe('MixologistHelper test', () => {
     it('should deposit, add collateral, borrow and withdraw through Mx helper', async () => {
         const {
             weth,
-            wethUsdcMixologist,
+            wethUsdcSingularity,
             usdc,
             eoa1,
             initContracts,
-            mixologistHelper,
+            singularityHelper,
             __wethUsdcPrice,
             approveTokensAndSetBarApproval,
             wethDepositAndAddAsset,
         } = await loadFixture(register);
 
-        await initContracts(); // To prevent `Mixologist: below minimum`
+        await initContracts(); // To prevent `Singularity: below minimum`
 
         const borrowAmount = ethers.BigNumber.from((1e17).toString());
         const wethMintVal = ethers.BigNumber.from((1e18).toString()).mul(10);
@@ -104,14 +104,14 @@ describe('MixologistHelper test', () => {
         await approveTokensAndSetBarApproval();
         await wethDepositAndAddAsset(wethMintVal);
 
-        await usdc.connect(eoa1).approve(mixologistHelper.address, usdcMintVal);
-        await wethUsdcMixologist
+        await usdc.connect(eoa1).approve(singularityHelper.address, usdcMintVal);
+        await wethUsdcSingularity
             .connect(eoa1)
-            .approve(mixologistHelper.address, usdcMintVal);
-        await mixologistHelper
+            .approve(singularityHelper.address, usdcMintVal);
+        await singularityHelper
             .connect(eoa1)
             .depositAddCollateralAndBorrow(
-                wethUsdcMixologist.address,
+                wethUsdcSingularity.address,
                 usdcMintVal,
                 borrowAmount,
                 true,
@@ -122,17 +122,17 @@ describe('MixologistHelper test', () => {
     it('should deposit and repay through Mx helper', async () => {
         const {
             weth,
-            wethUsdcMixologist,
+            wethUsdcSingularity,
             usdc,
             eoa1,
             initContracts,
-            mixologistHelper,
+            singularityHelper,
             __wethUsdcPrice,
             approveTokensAndSetBarApproval,
             wethDepositAndAddAsset,
         } = await loadFixture(register);
 
-        await initContracts(); // To prevent `Mixologist: below minimum`
+        await initContracts(); // To prevent `Singularity: below minimum`
 
         const borrowAmount = ethers.BigNumber.from((1e17).toString());
         const wethMintVal = ethers.BigNumber.from((1e18).toString()).mul(10);
@@ -148,35 +148,35 @@ describe('MixologistHelper test', () => {
         await approveTokensAndSetBarApproval();
         await wethDepositAndAddAsset(wethMintVal);
 
-        await usdc.connect(eoa1).approve(mixologistHelper.address, usdcMintVal);
-        await wethUsdcMixologist
+        await usdc.connect(eoa1).approve(singularityHelper.address, usdcMintVal);
+        await wethUsdcSingularity
             .connect(eoa1)
-            .approve(mixologistHelper.address, usdcMintVal);
-        await mixologistHelper
+            .approve(singularityHelper.address, usdcMintVal);
+        await singularityHelper
             .connect(eoa1)
             .depositAddCollateralAndBorrow(
-                wethUsdcMixologist.address,
+                wethUsdcSingularity.address,
                 usdcMintVal,
                 borrowAmount,
                 true,
                 ethers.utils.toUtf8Bytes(''),
             );
 
-        const userBorrowPart = await wethUsdcMixologist.userBorrowPart(
+        const userBorrowPart = await wethUsdcSingularity.userBorrowPart(
             eoa1.address,
         );
         await weth.connect(eoa1).freeMint(userBorrowPart.mul(2));
 
         await weth
             .connect(eoa1)
-            .approve(mixologistHelper.address, userBorrowPart.mul(2));
-        await wethUsdcMixologist
+            .approve(singularityHelper.address, userBorrowPart.mul(2));
+        await wethUsdcSingularity
             .connect(eoa1)
-            .approve(mixologistHelper.address, userBorrowPart.mul(2));
-        await mixologistHelper
+            .approve(singularityHelper.address, userBorrowPart.mul(2));
+        await singularityHelper
             .connect(eoa1)
             .depositAndRepay(
-                wethUsdcMixologist.address,
+                wethUsdcSingularity.address,
                 userBorrowPart.mul(2),
                 userBorrowPart,
             );
@@ -186,18 +186,18 @@ describe('MixologistHelper test', () => {
         const {
             usdcAssetId,
             weth,
-            wethUsdcMixologist,
+            wethUsdcSingularity,
             usdc,
             eoa1,
             initContracts,
             yieldBox,
-            mixologistHelper,
+            singularityHelper,
             __wethUsdcPrice,
             approveTokensAndSetBarApproval,
             wethDepositAndAddAsset,
         } = await loadFixture(register);
 
-        await initContracts(); // To prevent `Mixologist: below minimum`
+        await initContracts(); // To prevent `Singularity: below minimum`
 
         const borrowAmount = ethers.BigNumber.from((1e17).toString());
         const wethMintVal = ethers.BigNumber.from((1e18).toString()).mul(10);
@@ -213,33 +213,33 @@ describe('MixologistHelper test', () => {
         await approveTokensAndSetBarApproval();
         await wethDepositAndAddAsset(wethMintVal);
 
-        await usdc.connect(eoa1).approve(mixologistHelper.address, usdcMintVal);
-        await wethUsdcMixologist
+        await usdc.connect(eoa1).approve(singularityHelper.address, usdcMintVal);
+        await wethUsdcSingularity
             .connect(eoa1)
-            .approve(mixologistHelper.address, usdcMintVal);
+            .approve(singularityHelper.address, usdcMintVal);
 
-        await mixologistHelper
+        await singularityHelper
             .connect(eoa1)
             .depositAddCollateralAndBorrow(
-                wethUsdcMixologist.address,
+                wethUsdcSingularity.address,
                 usdcMintVal,
                 borrowAmount,
                 true,
                 ethers.utils.toUtf8Bytes(''),
             );
 
-        const userBorrowPart = await wethUsdcMixologist.userBorrowPart(
+        const userBorrowPart = await wethUsdcSingularity.userBorrowPart(
             eoa1.address,
         );
         await weth.connect(eoa1).freeMint(userBorrowPart.mul(2));
 
         await weth
             .connect(eoa1)
-            .approve(mixologistHelper.address, userBorrowPart.mul(2));
-        await wethUsdcMixologist
+            .approve(singularityHelper.address, userBorrowPart.mul(2));
+        await wethUsdcSingularity
             .connect(eoa1)
-            .approve(mixologistHelper.address, userBorrowPart.mul(2));
-        const collateralShare = await wethUsdcMixologist.userCollateralShare(
+            .approve(singularityHelper.address, userBorrowPart.mul(2));
+        const collateralShare = await wethUsdcSingularity.userCollateralShare(
             eoa1.address,
         );
         const collateralAmount = await yieldBox.toAmount(
@@ -248,10 +248,10 @@ describe('MixologistHelper test', () => {
             false,
         );
         const usdcBalanceBefore = await usdc.balanceOf(eoa1.address);
-        await mixologistHelper
+        await singularityHelper
             .connect(eoa1)
             .depositRepayAndRemoveCollateral(
-                wethUsdcMixologist.address,
+                wethUsdcSingularity.address,
                 userBorrowPart.mul(2),
                 userBorrowPart,
                 collateralAmount,

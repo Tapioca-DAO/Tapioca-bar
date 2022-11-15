@@ -31,4 +31,6 @@ interface ILPStaking {
         external
         view
         returns (uint256 amount, uint256 rewardDebt);
+
+    function stargate() external view returns (address);
 }

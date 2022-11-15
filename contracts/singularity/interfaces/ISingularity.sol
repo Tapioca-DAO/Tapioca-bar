@@ -6,7 +6,7 @@ import './IOracle.sol';
 import '../../IBeachBar.sol';
 import '../../swappers/IMultiSwapper.sol';
 
-interface IMixologist {
+interface ISingularity {
     struct AccrueInfo {
         uint64 interestPerSecond;
         uint64 lastAccrued;
@@ -134,7 +134,7 @@ interface IMixologist {
 
     function collateralId() external view returns (uint256);
 
-    /// @notice Allows batched call to Mixologist.
+    /// @notice Allows batched call to Singularity.
     /// @param calls An array encoded call data.
     /// @param revertOnFail If True then reverts after a failed call and stops doing further calls.
     function execute(bytes[] calldata calls, bool revertOnFail)

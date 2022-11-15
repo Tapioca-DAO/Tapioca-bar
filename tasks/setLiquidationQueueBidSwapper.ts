@@ -1,23 +1,23 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import _ from 'lodash';
-import { getDeployment, getMixologistContract } from './utils';
+import { getDeployment, getSingularityContract } from './utils';
 
 //Execution example:
-//      npx hardhat setLiquidationQueueBidSwapper --mixologist "<address>" --swapper "<cap>"
+//      npx hardhat setLiquidationQueueBidSwapper --singularity "<address>" --swapper "<cap>"
 export const setLiquidationQueueBidSwapper = async (
     taskArgs: any,
     hre: HardhatRuntimeEnvironment,
 ) => {
     const beachBarContract = await getDeployment(hre, 'BeachBar');
-    const { mixologistContract, mixologistAddress } =
-        await getMixologistContract(taskArgs, hre);
+    const { singularityContract, singularityAddress } =
+        await getSingularityContract(taskArgs, hre);
 
-    const callData = mixologistContract.interface.encodeFunctionData(
+    const callData = singularityContract.interface.encodeFunctionData(
         'updateLQUsdoSwapper',
         [taskArgs['swapper']],
     );
 
-    await beachBarContract.executeMixologistFn([mixologistAddress], [callData],true);
+    await beachBarContract.executeMixologistFn([singularityAddress], [callData],true);
 };
 
 export const setLiquidationQueueBidSwapper__task = async (
@@ -25,7 +25,7 @@ export const setLiquidationQueueBidSwapper__task = async (
     hre: HardhatRuntimeEnvironment,
 ) => {
     console.log(
-        `Setting LiquidationQueue big swapper on mixologist: ${args['mixologist']}`,
+        `Setting LiquidationQueue big swapper on singularity: ${args['singularity']}`,
     );
     await setLiquidationQueueBidSwapper(args, hre);
     console.log('Execution completed');

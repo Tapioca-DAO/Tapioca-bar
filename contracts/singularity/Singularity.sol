@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-import './MXCommon.sol';
-import './MXLiquidation.sol';
-import './MXLendingBorrowing.sol';
+import './SGLCommon.sol';
+import './SGLLiquidation.sol';
+import './SGLLendingBorrowing.sol';
 
-import '../mixologist/interfaces/ISendFrom.sol';
+import '../singularity/interfaces/ISendFrom.sol';
 
 // solhint-disable max-line-length
 
@@ -24,7 +24,7 @@ __/\\\\\\\\\\\\\\\_____/\\\\\\\\\_____/\\\\\\\\\\\\\____/\\\\\\\\\\\_______/\\\\
 */
 
 /// @title Tapioca market
-contract Mixologist is MXCommon {
+contract Singularity is SGLCommon {
     using RebaseLibrary for Rebase;
 
     // ************ //
@@ -36,9 +36,9 @@ contract Mixologist is MXCommon {
         Liquidation
     }
     /// @notice returns the liquidation module
-    MXLiquidation public liquidationModule;
+    SGLLiquidation public liquidationModule;
     /// @notice returns the lending module
-    MXLendingBorrowing public lendingBorrowingModule;
+    SGLLendingBorrowing public lendingBorrowingModule;
 
     /// @notice The init function that acts as a constructor
     function init(bytes calldata data) external onlyOnce {
@@ -69,8 +69,8 @@ contract Mixologist is MXCommon {
                 )
             );
 
-        liquidationModule = MXLiquidation(_liquidationModule);
-        lendingBorrowingModule = MXLendingBorrowing(_lendingBorrowingModule);
+        liquidationModule = SGLLiquidation(_liquidationModule);
+        lendingBorrowingModule = SGLLendingBorrowing(_lendingBorrowingModule);
         beachBar = tapiocaBar_;
         yieldBox = YieldBox(tapiocaBar_.yieldBox());
         owner = address(beachBar);
@@ -79,7 +79,7 @@ contract Mixologist is MXCommon {
             address(_collateral) != address(0) &&
                 address(_asset) != address(0) &&
                 address(_oracle) != address(0),
-            'Mx: bad pair'
+            'SGL: bad pair'
         );
         asset = _asset;
         collateral = _collateral;
@@ -111,7 +111,7 @@ contract Mixologist is MXCommon {
         bytes memory result = _executeViewModule(
             Module.Liquidation,
             abi.encodeWithSelector(
-                MXLiquidation.computeAssetAmountToSolvency.selector,
+                SGLLiquidation.computeAssetAmountToSolvency.selector,
                 user,
                 _exchangeRate
             )
@@ -168,7 +168,7 @@ contract Mixologist is MXCommon {
     // ************************ //
     // *** PUBLIC FUNCTIONS *** //
     // ************************ //
-    /// @notice Allows batched call to Mixologist.
+    /// @notice Allows batched call to Singularity.
     /// @param calls An array encoded call data.
     /// @param revertOnFail If True then reverts after a failed call and stops doing further calls.
     function execute(bytes[] calldata calls, bool revertOnFail)
@@ -202,7 +202,7 @@ contract Mixologist is MXCommon {
         _executeModule(
             Module.LendingBorrowing,
             abi.encodeWithSelector(
-                MXLendingBorrowing.addCollateral.selector,
+                SGLLendingBorrowing.addCollateral.selector,
                 from,
                 to,
                 skim,
@@ -223,7 +223,7 @@ contract Mixologist is MXCommon {
         _executeModule(
             Module.LendingBorrowing,
             abi.encodeWithSelector(
-                MXLendingBorrowing.removeCollateral.selector,
+                SGLLendingBorrowing.removeCollateral.selector,
                 from,
                 to,
                 share
@@ -245,7 +245,7 @@ contract Mixologist is MXCommon {
         bytes memory result = _executeModule(
             Module.LendingBorrowing,
             abi.encodeWithSelector(
-                MXLendingBorrowing.borrow.selector,
+                SGLLendingBorrowing.borrow.selector,
                 from,
                 to,
                 amount
@@ -270,7 +270,7 @@ contract Mixologist is MXCommon {
         bytes memory result = _executeModule(
             Module.LendingBorrowing,
             abi.encodeWithSelector(
-                MXLendingBorrowing.repay.selector,
+                SGLLendingBorrowing.repay.selector,
                 from,
                 to,
                 skim,
@@ -301,7 +301,7 @@ contract Mixologist is MXCommon {
         _executeModule(
             Module.Liquidation,
             abi.encodeWithSelector(
-                MXLiquidation.liquidate.selector,
+                SGLLiquidation.liquidate.selector,
                 users,
                 maxBorrowParts,
                 swapper,
@@ -327,7 +327,7 @@ contract Mixologist is MXCommon {
         _executeModule(
             Module.LendingBorrowing,
             abi.encodeWithSelector(
-                MXLendingBorrowing.flashLoan.selector,
+                SGLLendingBorrowing.flashLoan.selector,
                 borrower,
                 receiver,
                 amount,
@@ -401,7 +401,7 @@ contract Mixologist is MXCommon {
             yieldBox.balanceOf(msg.sender, assetId),
             false
         );
-        require(available >= amount, 'Mx: not available');
+        require(available >= amount, 'SGL: not available');
 
         yieldBox.withdraw(assetId, msg.sender, address(this), amount, 0);
         ISendFrom(address(asset)).sendFrom{value: msg.value}(
@@ -439,7 +439,7 @@ contract Mixologist is MXCommon {
         public
         onlyOwner
     {
-        require(_liquidationQueue.onlyOnce(), 'Mx: LQ not initalized');
+        require(_liquidationQueue.onlyOnce(), 'SGL: LQ not initalized');
         liquidationQueue = _liquidationQueue;
     }
 
@@ -468,7 +468,7 @@ contract Mixologist is MXCommon {
         returns (string memory)
     {
         // If the _res length is less than 68, then the transaction failed silently (without a revert message)
-        if (_returnData.length < 68) return 'Mx: no return data';
+        if (_returnData.length < 68) return 'SGL: no return data';
         // solhint-disable-next-line no-inline-assembly
         assembly {
             // Slice the sighash.
@@ -491,7 +491,7 @@ contract Mixologist is MXCommon {
         }
 
         if (module == address(0)) {
-            revert('Mx: module not set');
+            revert('SGL: module not set');
         }
 
         (success, returnData) = module.delegatecall(_data);
@@ -515,7 +515,7 @@ contract Mixologist is MXCommon {
         }
 
         if (module == address(0)) {
-            revert('Mx: module not set');
+            revert('SGL: module not set');
         }
 
         (success, returnData) = module.staticcall(_data);

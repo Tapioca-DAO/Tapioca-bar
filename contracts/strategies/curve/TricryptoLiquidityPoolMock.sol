@@ -7,7 +7,7 @@ pragma solidity ^0.8.0;
 import '@boringcrypto/boring-solidity/contracts/interfaces/IERC20.sol';
 import '@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol';
 
-import '../../mixologist/legacy/mocks/ERC20Mock.sol';
+import '../../singularity/legacy/mocks/ERC20Mock.sol';
 
 contract TricryptoLiquidityPoolMock {
     using BoringERC20 for IERC20;
@@ -18,12 +18,12 @@ contract TricryptoLiquidityPoolMock {
     constructor(address _weth) {
         weth = _weth;
         token = new ERC20Mock(10_000**18);
-        token.freeMint(10_000**18);
     }
 
     function add_liquidity(uint256[3] calldata amounts, uint256) external {
         IERC20(weth).safeTransferFrom(msg.sender, address(this), amounts[2]); //WETH
 
+        token.freeMint(amounts[2]);
         token.transfer(msg.sender, amounts[2]);
     }
 

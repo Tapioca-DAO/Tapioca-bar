@@ -15,8 +15,8 @@ import { registerYieldBoxAsset__task } from './tasks/registerYieldBoxAsset';
 import { setLiquidationQueueBidSwapper__task } from './tasks/setLiquidationQueueBidSwapper';
 import { setLiquidationQueueExecutionSwapper__task } from './tasks/setLiquidationQueueExecutionSwapper';
 import { setLiquidationQueue__task } from './tasks/setLiquidationQueue';
-import { getParticipantMixologistInfo__task } from './tasks/getParticipantMixologistInfo';
-import { getMixologistTotals__task } from './tasks/getMixologistTotals';
+import { getParticipantSingularityInfo__task } from './tasks/getParticipantSingularityInfo';
+import { getSingularityTotals__task } from './tasks/getSingularityTotals';
 import { deployOracleMock__task } from './tasks/deployOracleMock';
 
 task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
@@ -41,13 +41,13 @@ task(
 
 task(
     'deployMarket',
-    'Deploy a Mixologist market, a Liquidation Queue and initialize it.',
+    'Deploy a Singularity market, a Liquidation Queue and initialize it.',
     deployMarket__task,
 ).addParam('name', 'Market name');
 
 task(
     'deployMinterMarket',
-    'Deploy a MinterMixologist market',
+    'Deploy a MinterSingularity market',
     deployMinterMarket__task,
 ).addParam('name', 'Market name');
 
@@ -69,40 +69,40 @@ task(
     getSDKDeployments__task,
 );
 
-//Mixologist viwers
+//Singularity viewers
 task(
-    'getParticipantMixologistInfo',
+    'getParticipantSingularityInfo',
     'Returns lend & borrow details for a specific address',
-    getParticipantMixologistInfo__task,
+    getParticipantSingularityInfo__task,
 )
-    .addParam('mixologist', 'Mixologist address')
+    .addParam('singularity', 'Singularity address')
     .addParam('participant', 'User address');
 
 task(
-    'getMixologistTotals',
-    'Returns mixologist totals info',
-    getMixologistTotals__task,
-).addParam('mixologist', 'Mixologist address');
+    'getSingularityTotals',
+    'Returns singularity totals info',
+    getSingularityTotals__task,
+).addParam('singularity', 'Singularity address');
 
-//Mixologist setters
+//Singularity setters
 task(
     'setColleteralSwapPath',
-    'Updates collateral swap path for Mixologist',
+    'Updates collateral swap path for Singularity',
     setCollateralSwapPath__task,
 )
-    .addParam('mixologist', 'Mixologist address')
+    .addParam('singularity', 'Singularity address')
     .addParam('path', 'Collateral swap path []');
 
 task(
     'setTapSwapPath',
-    'Updates TAP swap path for Mixologist',
+    'Updates TAP swap path for Singularity',
     setTapSwapPath__task,
 )
-    .addParam('mixologist', 'Mixologist address')
+    .addParam('singularity', 'Singularity address')
     .addParam('path', 'TAP swap path []');
 
-task('setBorrowCap', 'Set borrow cap for Mixologist', setBorrowCap__task)
-    .addParam('mixologist', 'Mixologist address')
+task('setBorrowCap', 'Set borrow cap for Singularity', setBorrowCap__task)
+    .addParam('singularity', 'Singularity address')
     .addParam('cap', 'Borrow cap value');
 
 task(
@@ -110,7 +110,7 @@ task(
     'Updates LiquidationQueue bid swapper',
     setLiquidationQueueBidSwapper__task,
 )
-    .addParam('mixologist', 'Mixologist address')
+    .addParam('singularity', 'Singularity address')
     .addParam('swapper', 'Swapper address');
 
 task(
@@ -118,7 +118,7 @@ task(
     'Updates LiquidationQueue execution swapper',
     setLiquidationQueueExecutionSwapper__task,
 )
-    .addParam('mixologist', 'Mixologist address')
+    .addParam('singularity', 'Singularity address')
     .addParam('swapper', 'Swapper address');
 
 task(
@@ -126,7 +126,7 @@ task(
     'Updates LiquidationQueue',
     setLiquidationQueue__task,
 )
-    .addParam('mixologist', 'Mixologist address')
+    .addParam('singularity', 'Singularity address')
     .addParam('liquidationQueue', 'LiquidationQueue address')
     .addParam('meta', 'LiquidationQueue meta object');
 

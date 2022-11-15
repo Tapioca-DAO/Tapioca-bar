@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 import '@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol';
-import '../../mixologist/legacy/mocks/ERC20Mock.sol';
+import '../../singularity/legacy/mocks/ERC20Mock.sol';
 import '../../usd0/IUSD0.sol';
 
 contract CurvePoolMock {

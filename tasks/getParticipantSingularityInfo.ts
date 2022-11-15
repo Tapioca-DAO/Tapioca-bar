@@ -1,34 +1,34 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import _ from 'lodash';
-import { getMixologistContract, getDeployment } from './utils';
+import { getSingularityContract, getDeployment } from './utils';
 
 //Execution example:
-//      npx hardhat getParticipantMixologistInfo --mixologist "<address>" --participant "<address>"
+//      npx hardhat getParticipantMixologistInfo --singularity "<address>" --participant "<address>"
 export const getDetails = async (
     taskArgs: any,
     hre: HardhatRuntimeEnvironment,
 ) => {
     const userAddress = taskArgs['participant'];
-    const { mixologistContract, mixologistAddress } =
-        await getMixologistContract(taskArgs, hre);
+    const { singularityContract, singularityAddress } =
+        await getSingularityContract(taskArgs, hre);
 
     const mixologistHelperContract = await getDeployment(
         hre,
-        'MixologistHelperContract',
+        'SingularityHelper',
     );
     const yieldBoxContract = await getDeployment(hre, 'YieldBox');
 
-    const assetId = await mixologistContract.assetId();
-    const collateralId = await mixologistContract.collateralId();
+    const assetId = await singularityContract.assetId();
+    const collateralId = await singularityContract.collateralId();
 
-    const borrowAmount = await mixologistContract.userBorrowPart(userAddress);
+    const borrowAmount = await singularityContract.userBorrowPart(userAddress);
     const borrowShare = await yieldBoxContract.toShare(
         assetId,
         borrowAmount,
         false,
     );
 
-    const collateralShare = await mixologistContract.userCollateralShare(
+    const collateralShare = await singularityContract.userCollateralShare(
         userAddress,
     );
     const collateralAmount = await yieldBoxContract.toAmount(
@@ -36,16 +36,16 @@ export const getDetails = async (
         collateralShare,
         false,
     );
-    const exchangeRate = await mixologistContract.exchangeRate();
+    const exchangeRate = await singularityContract.exchangeRate();
     const amountToSolvency =
-        await mixologistContract.computeAssetAmountToSolvency(
+        await singularityContract.computeAssetAmountToSolvency(
             userAddress,
             exchangeRate,
         );
 
     const collateralUsedShares =
         await mixologistHelperContract.getCollateralSharesForBorrowPart(
-            mixologistAddress,
+            singularityAddress,
             borrowAmount,
         );
     const collateralUsedAmount = await yieldBoxContract.toAmount(
@@ -66,7 +66,7 @@ export const getDetails = async (
     };
 };
 
-export const getParticipantMixologistInfo__task = async (
+export const getParticipantSingularityInfo__task = async (
     args: any,
     hre: HardhatRuntimeEnvironment,
 ) => {

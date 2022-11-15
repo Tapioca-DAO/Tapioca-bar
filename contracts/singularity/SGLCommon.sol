@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-import './MXStorage.sol';
+import './SGLStorage.sol';
 
-contract MXCommon is MXStorage {
+contract SGLCommon is SGLStorage {
     using RebaseLibrary for Rebase;
 
     // ***************** //
@@ -24,12 +24,12 @@ contract MXCommon is MXStorage {
     /// @dev Checks if the user is solvent in the closed liquidation case at the end of the function body.
     modifier solvent(address from) {
         _;
-        require(_isSolvent(from, exchangeRate), 'Mx: insolvent');
+        require(_isSolvent(from, exchangeRate), 'SGL: insolvent');
     }
 
     bool private initialized;
     modifier onlyOnce() {
-        require(!initialized, 'Mx: initialized');
+        require(!initialized, 'SGL: initialized');
         _;
         initialized = true;
     }
@@ -56,7 +56,7 @@ contract MXCommon is MXStorage {
 
     /// @notice Accrues the interest on the borrowed tokens and handles the accumulation of fees.
     function accrue() public {
-        IMixologist.AccrueInfo memory _accrueInfo = accrueInfo;
+        ISingularity.AccrueInfo memory _accrueInfo = accrueInfo;
         // Number of seconds since accrue was called
         uint256 elapsedTime = block.timestamp - _accrueInfo.lastAccrued;
         if (elapsedTime == 0) {
@@ -218,7 +218,7 @@ contract MXCommon is MXStorage {
         if (skim) {
             require(
                 share <= yieldBox.balanceOf(address(this), _assetId) - total,
-                'Mx: too much'
+                'SGL: too much'
             );
         } else {
             yieldBox.transfer(from, address(this), _assetId, share); // added a 'from' instead of 'msg.sender' -0xGAB
@@ -267,7 +267,7 @@ contract MXCommon is MXStorage {
         emit Transfer(from, address(0), fraction);
         _totalAsset.elastic -= uint128(share);
         _totalAsset.base -= uint128(fraction);
-        require(_totalAsset.base >= 1000, 'Mx: min limit');
+        require(_totalAsset.base >= 1000, 'SGL: min limit');
         totalAsset = _totalAsset;
         emit LogRemoveAsset(from, to, share, fraction);
         yieldBox.transfer(address(this), to, assetId, share);

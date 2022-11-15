@@ -11,6 +11,7 @@ import '../../../yieldbox/contracts/strategies/BaseStrategy.sol';
 
 import './IYearnVault.sol';
 
+
 /*
 
 __/\\\\\\\\\\\\\\\_____/\\\\\\\\\_____/\\\\\\\\\\\\\____/\\\\\\\\\\\_______/\\\\\_____________/\\\\\\\\\_____/\\\\\\\\\____        
@@ -78,6 +79,10 @@ contract YearnStrategy is BaseERC20Strategy, BoringOwnable, ReentrancyGuard {
         return 'Yearn strategy for wrapped native assets';
     }
 
+    function compoundAmount() public pure returns (uint256 result) {
+        return 0;
+    }
+
     // *********************** //
     // *** OWNER FUNCTIONS *** //
     // *********************** //
@@ -88,15 +93,20 @@ contract YearnStrategy is BaseERC20Strategy, BoringOwnable, ReentrancyGuard {
         depositThreshold = amount;
     }
 
+    // ************************ //
+    // *** PUBLIC FUNCTIONS *** //
+    // ************************ //
+    function compound(bool) public {}
+
     // ************************* //
     // *** PRIVATE FUNCTIONS *** //
     // ************************* //
     function _currentBalance() internal view override returns (uint256 amount) {
         uint256 shares = vault.balanceOf(address(this));
         uint256 pricePerShare = vault.pricePerShare();
-        uint256 queued = wrappedNative.balanceOf(address(this));
         uint256 invested = (shares * pricePerShare) / (10**vault.decimals());
-        return invested + queued;
+        uint256 queued = wrappedNative.balanceOf(address(this));
+        return queued + invested;
     }
 
     /// @dev deposits to Yearn or queues tokens if the 'depositThreshold' has not been met yet
@@ -126,9 +136,10 @@ contract YearnStrategy is BaseERC20Strategy, BoringOwnable, ReentrancyGuard {
             uint256 toWithdraw = (((amount - queued) * (10**vault.decimals())) /
                 pricePerShare);
 
-            vault.withdraw(toWithdraw, address(this), 0);
+            uint256 returned = vault.withdraw(toWithdraw, address(this), 0);
         }
         wrappedNative.safeTransfer(to, amount);
+
         emit AmountWithdrawn(to, amount);
     }
 }

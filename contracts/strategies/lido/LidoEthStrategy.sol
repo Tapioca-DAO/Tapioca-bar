@@ -89,6 +89,11 @@ contract LidoEthStrategy is BaseERC20Strategy, BoringOwnable, ReentrancyGuard {
         depositThreshold = amount;
     }
 
+    // ************************ //
+    // *** PUBLIC FUNCTIONS *** //
+    // ************************ //
+    function compound(bool) public {}
+
     // ************************* //
     // *** PRIVATE FUNCTIONS *** //
     // ************************* //

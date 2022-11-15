@@ -8,11 +8,11 @@ import '@boringcrypto/boring-solidity/contracts/libraries/BoringRebase.sol';
 
 import '../../yieldbox/contracts/YieldBox.sol';
 import '../swappers/IMultiSwapper.sol';
-import '../mixologist/interfaces/IOracle.sol';
-import '../mixologist/interfaces/IFlashLoan.sol';
+import '../singularity/interfaces/IOracle.sol';
+import '../singularity/interfaces/IFlashLoan.sol';
 import '../liquidationQueue/ILiquidationQueue.sol';
 import '../IBeachBar.sol';
-import './interfaces/IMixologist.sol';
+import './interfaces/ISingularity.sol';
 
 // solhint-disable max-line-length
 
@@ -30,7 +30,7 @@ __/\\\\\\\\\\\\\\\_____/\\\\\\\\\_____/\\\\\\\\\\\\\____/\\\\\\\\\\\_______/\\\\
 
 */
 
-contract MXStorage is BoringOwnable, ERC20 {
+contract SGLStorage is BoringOwnable, ERC20 {
     using RebaseLibrary for Rebase;
     using BoringERC20 for IERC20;
 
@@ -38,7 +38,7 @@ contract MXStorage is BoringOwnable, ERC20 {
     // *** VARS *** //
     // ************ //
 
-    IMixologist.AccrueInfo public accrueInfo;
+    ISingularity.AccrueInfo public accrueInfo;
 
     IBeachBar public beachBar;
     YieldBox public yieldBox;
@@ -50,7 +50,7 @@ contract MXStorage is BoringOwnable, ERC20 {
 
     // Total amounts
     uint256 public totalCollateralShare; // Total collateral supplied
-    Rebase public totalAsset; // elastic = yieldBox shares held by the Mixologist, base = Total fractions held by asset suppliers
+    Rebase public totalAsset; // elastic = yieldBox shares held by the Singularity, base = Total fractions held by asset suppliers
     Rebase public totalBorrow; // elastic = Total token amount to be repayed by borrowers, base = Total parts of the debt held by borrowers
     uint256 public totalBorrowCap;
 
@@ -190,7 +190,7 @@ contract MXStorage is BoringOwnable, ERC20 {
         return
             string(
                 abi.encodePacked(
-                    'Tapioca Mixologist ',
+                    'Tapioca Singularity ',
                     collateral.safeName(),
                     '/',
                     asset.safeName(),

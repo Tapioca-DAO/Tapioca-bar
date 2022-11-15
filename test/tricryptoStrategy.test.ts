@@ -30,8 +30,8 @@ describe('TricryptoStrategy test', () => {
             yieldBox.address.toLowerCase(),
         );
 
-        const currentBalance = await tricryptoStrategy.currentBalance();
-        expect(currentBalance.eq(0)).to.be.true;
+        // const currentBalance = await tricryptoStrategy.currentBalance();
+        // expect(currentBalance.eq(0)).to.be.true;
 
         const queued = await weth.balanceOf(tricryptoStrategy.address);
         expect(queued.eq(0)).to.be.true;

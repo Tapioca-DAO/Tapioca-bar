@@ -32,9 +32,6 @@ describe('StargateStrategy test', () => {
             yieldBox.address.toLowerCase(),
         );
 
-        const currentBalance = await stargateStrategy.currentBalance();
-        expect(currentBalance.eq(0)).to.be.true;
-
         const queued = await weth.balanceOf(stargateStrategy.address);
         expect(queued.eq(0)).to.be.true;
     });
@@ -116,6 +113,7 @@ describe('StargateStrategy test', () => {
         );
         expect(strategyWethBalance.gt(0)).to.be.true;
         expect(lpStakingBalance.eq(0)).to.be.true;
+
         share = await yieldBox.toShare(
             wethStrategyAssetId,
             amount.mul(3),
@@ -215,7 +213,11 @@ describe('StargateStrategy test', () => {
         expect(lpStakingBalance.gt(0)).to.be.true;
 
         const stakedAmount = await weth.balanceOf(lpStakingContract.address);
-        share = await yieldBox.toShare(wethStrategyAssetId, stakedAmount, false);
+        share = await yieldBox.toShare(
+            wethStrategyAssetId,
+            stakedAmount,
+            false,
+        );
         await yieldBox.withdraw(
             wethStrategyAssetId,
             deployer.address,
@@ -293,6 +295,7 @@ describe('StargateStrategy test', () => {
         expect(strategyWethBalance.gt(0)).to.be.true;
         expect(lpStakingBalance.eq(0)).to.be.true;
 
+        share = await yieldBox.toShare(wethStrategyAssetId, amount, false);
         await yieldBox.withdraw(
             wethStrategyAssetId,
             deployer.address,
@@ -301,11 +304,13 @@ describe('StargateStrategy test', () => {
             share,
         );
 
-        strategyWethBalance = await weth.balanceOf(stargateStrategy.address);
+        const finalStrategyWethBalance = await weth.balanceOf(
+            stargateStrategy.address,
+        );
         lpStakingBalance = await lpToken.balanceOf(
             await stargateStrategy.lpStaking(),
         );
-        expect(strategyWethBalance.eq(0)).to.be.true;
+        expect(finalStrategyWethBalance.lt(strategyWethBalance)).to.be.true;
         expect(lpStakingBalance.eq(0)).to.be.true;
     });
 });

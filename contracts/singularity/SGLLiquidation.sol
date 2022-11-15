@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-import './MXCommon.sol';
+import './SGLCommon.sol';
 
 // solhint-disable max-line-length
 
-contract MXLiquidation is MXCommon {
+contract SGLLiquidation is SGLCommon {
     using RebaseLibrary for Rebase;
     using BoringERC20 for IERC20;
 
@@ -149,7 +149,7 @@ contract MXLiquidation is MXCommon {
                 allBorrowPart += borrowPart;
             }
         }
-        require(allBorrowAmount != 0, 'Mx: solvent');
+        require(allBorrowAmount != 0, 'SGL: solvent');
 
         _totalBorrow.elastic -= uint128(allBorrowAmount);
         _totalBorrow.base -= uint128(allBorrowPart);
@@ -245,7 +245,7 @@ contract MXLiquidation is MXCommon {
                 allBorrowPart += borrowPart;
             }
         }
-        require(allBorrowAmount != 0, 'Mx: solvent');
+        require(allBorrowAmount != 0, 'SGL: solvent');
         _totalBorrow.elastic -= uint128(allBorrowAmount);
         _totalBorrow.base -= uint128(allBorrowPart);
         totalBorrow = _totalBorrow;
@@ -258,7 +258,7 @@ contract MXLiquidation is MXCommon {
         );
 
         // Closed liquidation using a pre-approved swapper
-        require(beachBar.swappers(swapper), 'Mx: Invalid swapper');
+        require(beachBar.swappers(swapper), 'SGL: Invalid swapper');
 
         // Swaps the users collateral for the borrowed asset
         yieldBox.transfer(

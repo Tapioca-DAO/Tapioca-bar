@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-import '../../mixologist/legacy/mocks/ERC20Mock.sol';
+import '../../singularity/legacy/mocks/ERC20Mock.sol';
 
 contract StEthMock is ERC20Mock {
     constructor(uint256 initialSupply) ERC20Mock(initialSupply) {}

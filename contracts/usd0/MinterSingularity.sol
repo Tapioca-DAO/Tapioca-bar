@@ -8,7 +8,7 @@ import '@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol';
 
 import '../IBeachBar.sol';
 import '../swappers/IMultiSwapper.sol';
-import '../mixologist/interfaces/IOracle.sol';
+import '../singularity/interfaces/IOracle.sol';
 import '../../yieldbox/contracts/YieldBox.sol';
 
 // solhint-disable max-line-length
@@ -26,7 +26,7 @@ __/\\\\\\\\\\\\\\\_____/\\\\\\\\\_____/\\\\\\\\\\\\\____/\\\\\\\\\\\_______/\\\\
 
 */
 
-contract MinterMixologist is BoringOwnable, ERC20 {
+contract MinterSingularity is BoringOwnable, ERC20 {
     using RebaseLibrary for Rebase;
     using BoringERC20 for IERC20;
 
@@ -153,7 +153,7 @@ contract MinterMixologist is BoringOwnable, ERC20 {
         require(_isSolvent(from, exchangeRate), 'Mx: insolvent');
     }
 
-    /// @notice Creates the MinterMixologist contract
+    /// @notice Creates the MinterSingularity contract
     constructor(
         IBeachBar tapiocaBar_,
         IERC20 _collateral,
@@ -198,7 +198,7 @@ contract MinterMixologist is BoringOwnable, ERC20 {
         return
             string(
                 abi.encodePacked(
-                    'tmm',
+                    'tmsgl',
                     collateral.safeSymbol(),
                     '/',
                     asset.symbol(),
@@ -212,7 +212,7 @@ contract MinterMixologist is BoringOwnable, ERC20 {
         return
             string(
                 abi.encodePacked(
-                    'Tapioca MinterMixologist ',
+                    'Tapioca MinterSingularity ',
                     collateral.safeName(),
                     '/',
                     asset.name(),

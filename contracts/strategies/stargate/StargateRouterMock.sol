@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import '@boringcrypto/boring-solidity/contracts/interfaces/IERC20.sol';
 import '@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol';
 
-import '../../mixologist/legacy/mocks/ERC20Mock.sol';
+import '../../singularity/legacy/mocks/ERC20Mock.sol';
 
 contract StargateRouterMock {
     using BoringERC20 for IERC20;

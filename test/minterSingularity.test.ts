@@ -4,32 +4,32 @@ import { register } from './test.utils';
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 import _ from 'lodash';
 
-describe('MinterMixologist test', () => {
+describe('MinterSingularity test', () => {
     it('should test initial values', async () => {
-        const { wethMinterMixologist, usd0, bar, weth, wethAssetId } =
+        const { wethMinterSingularity, usd0, bar, weth, wethAssetId } =
             await loadFixture(register);
 
-        const savedAssetId = await wethMinterMixologist.assetId();
+        const savedAssetId = await wethMinterSingularity.assetId();
         const beachBarUsd0Id = await bar.usdoAssetId();
         expect(savedAssetId.eq(beachBarUsd0Id)).to.be.true;
 
-        const savedAsset = await wethMinterMixologist.asset();
+        const savedAsset = await wethMinterSingularity.asset();
         const barUsd0 = await bar.usdoToken();
         expect(barUsd0.toLowerCase()).eq(savedAsset.toLowerCase());
 
-        const savedCollateralId = await wethMinterMixologist.collateralId();
+        const savedCollateralId = await wethMinterSingularity.collateralId();
         expect(savedCollateralId.eq(wethAssetId)).to.be.true;
 
-        const savedCollateral = await wethMinterMixologist.collateral();
+        const savedCollateral = await wethMinterSingularity.collateral();
         expect(weth.address.toLowerCase()).eq(savedCollateral.toLowerCase());
 
-        const borrowingFee = await wethMinterMixologist.borrowingFee();
+        const borrowingFee = await wethMinterSingularity.borrowingFee();
         expect(borrowingFee.eq(0)).to.be.true;
     });
 
     it('should add collateral', async () => {
         const {
-            wethMinterMixologist,
+            wethMinterSingularity,
             weth,
             wethAssetId,
             yieldBox,
@@ -38,7 +38,7 @@ describe('MinterMixologist test', () => {
         } = await loadFixture(register);
 
         await weth.approve(yieldBox.address, ethers.constants.MaxUint256);
-        await yieldBox.setApprovalForAll(wethMinterMixologist.address, true);
+        await yieldBox.setApprovalForAll(wethMinterSingularity.address, true);
 
         const wethMintVal = ethers.BigNumber.from((1e18).toString()).mul(10);
         await weth.freeMint(wethMintVal);
@@ -55,7 +55,7 @@ describe('MinterMixologist test', () => {
             valShare,
         );
         await expect(
-            wethMinterMixologist
+            wethMinterSingularity
                 .connect(eoa1)
                 .addCollateral(
                     deployer.address,
@@ -64,26 +64,26 @@ describe('MinterMixologist test', () => {
                     valShare,
                 ),
         ).to.be.reverted;
-        await wethMinterMixologist.addCollateral(
+        await wethMinterSingularity.addCollateral(
             deployer.address,
             deployer.address,
             false,
             valShare,
         );
 
-        let collateralShares = await wethMinterMixologist.userCollateralShare(
+        let collateralShares = await wethMinterSingularity.userCollateralShare(
             deployer.address,
         );
         expect(collateralShares.gt(0)).to.be.true;
         expect(collateralShares.eq(valShare)).to.be.true;
 
-        await wethMinterMixologist.removeCollateral(
+        await wethMinterSingularity.removeCollateral(
             deployer.address,
             deployer.address,
             collateralShares,
         );
 
-        collateralShares = await wethMinterMixologist.userCollateralShare(
+        collateralShares = await wethMinterSingularity.userCollateralShare(
             deployer.address,
         );
         expect(collateralShares.eq(0)).to.be.true;
@@ -91,7 +91,7 @@ describe('MinterMixologist test', () => {
 
     it('should borrow and repay', async () => {
         const {
-            wethMinterMixologist,
+            wethMinterSingularity,
             weth,
             wethAssetId,
             yieldBox,
@@ -103,7 +103,7 @@ describe('MinterMixologist test', () => {
         } = await loadFixture(register);
 
         await weth.approve(yieldBox.address, ethers.constants.MaxUint256);
-        await yieldBox.setApprovalForAll(wethMinterMixologist.address, true);
+        await yieldBox.setApprovalForAll(wethMinterSingularity.address, true);
 
         const wethMintVal = ethers.BigNumber.from((1e18).toString()).mul(10);
         await weth.freeMint(wethMintVal);
@@ -119,7 +119,7 @@ describe('MinterMixologist test', () => {
             0,
             valShare,
         );
-        await wethMinterMixologist.addCollateral(
+        await wethMinterSingularity.addCollateral(
             deployer.address,
             deployer.address,
             false,
@@ -132,13 +132,13 @@ describe('MinterMixologist test', () => {
             .div(100)
             .mul(__wethUsdcPrice.div((1e18).toString()));
 
-        await wethMinterMixologist.borrow(
+        await wethMinterSingularity.borrow(
             deployer.address,
             deployer.address,
             usdoBorrowVal,
         );
 
-        let userBorrowPart = await wethMinterMixologist.userBorrowPart(
+        let userBorrowPart = await wethMinterSingularity.userBorrowPart(
             deployer.address,
         );
         expect(userBorrowPart.gt(0)).to.be.true;
@@ -147,7 +147,7 @@ describe('MinterMixologist test', () => {
             await bar.usdoAssetId(),
             await yieldBox.balanceOf(
                 deployer.address,
-                await wethMinterMixologist.assetId(),
+                await wethMinterSingularity.assetId(),
             ),
             false,
         );
@@ -157,11 +157,11 @@ describe('MinterMixologist test', () => {
         timeTravel(10 * 86400);
 
         //repay
-        userBorrowPart = await wethMinterMixologist.userBorrowPart(
+        userBorrowPart = await wethMinterSingularity.userBorrowPart(
             deployer.address,
         );
         await expect(
-            wethMinterMixologist.repay(
+            wethMinterSingularity.repay(
                 deployer.address,
                 deployer.address,
                 userBorrowPart,
@@ -172,18 +172,18 @@ describe('MinterMixologist test', () => {
         await usd0.mint(deployer.address, usd0Extra);
         await usd0.approve(yieldBox.address, usd0Extra);
         await yieldBox.depositAsset(
-            await wethMinterMixologist.assetId(),
+            await wethMinterSingularity.assetId(),
             deployer.address,
             deployer.address,
             usd0Extra,
             0,
         );
-        await wethMinterMixologist.repay(
+        await wethMinterSingularity.repay(
             deployer.address,
             deployer.address,
             userBorrowPart,
         );
-        userBorrowPart = await wethMinterMixologist.userBorrowPart(
+        userBorrowPart = await wethMinterSingularity.userBorrowPart(
             deployer.address,
         );
         expect(userBorrowPart.eq(0)).to.be.true;
@@ -191,7 +191,7 @@ describe('MinterMixologist test', () => {
 
     it('should liquidate', async () => {
         const {
-            wethMinterMixologist,
+            wethMinterSingularity,
             weth,
             wethAssetId,
             yieldBox,
@@ -204,14 +204,14 @@ describe('MinterMixologist test', () => {
         } = await loadFixture(register);
 
         await weth.approve(yieldBox.address, ethers.constants.MaxUint256);
-        await yieldBox.setApprovalForAll(wethMinterMixologist.address, true);
+        await yieldBox.setApprovalForAll(wethMinterSingularity.address, true);
 
         await weth
             .connect(eoa1)
             .approve(yieldBox.address, ethers.constants.MaxUint256);
         await yieldBox
             .connect(eoa1)
-            .setApprovalForAll(wethMinterMixologist.address, true);
+            .setApprovalForAll(wethMinterSingularity.address, true);
 
         const wethMintVal = ethers.BigNumber.from((1e18).toString()).mul(10);
         await weth.connect(eoa1).freeMint(wethMintVal);
@@ -223,7 +223,7 @@ describe('MinterMixologist test', () => {
         await yieldBox
             .connect(eoa1)
             .depositAsset(wethAssetId, eoa1.address, eoa1.address, 0, valShare);
-        await wethMinterMixologist
+        await wethMinterSingularity
             .connect(eoa1)
             .addCollateral(eoa1.address, eoa1.address, false, valShare);
 
@@ -233,14 +233,14 @@ describe('MinterMixologist test', () => {
             .div(100)
             .mul(__wethUsdcPrice.div((1e18).toString()));
 
-        await wethMinterMixologist
+        await wethMinterSingularity
             .connect(eoa1)
             .borrow(eoa1.address, eoa1.address, usdoBorrowVal);
 
         // Can't liquidate
         const swapData = new ethers.utils.AbiCoder().encode(['uint256'], [1]);
         await expect(
-            wethMinterMixologist.liquidate(
+            wethMinterSingularity.liquidate(
                 [eoa1.address],
                 [usdoBorrowVal],
                 multiSwapper.address,
@@ -252,22 +252,22 @@ describe('MinterMixologist test', () => {
         await usd0WethOracle.set(__usd0WethPrice.add(priceDrop));
 
         const userCollateralShareBefore =
-            await wethMinterMixologist.userCollateralShare(eoa1.address);
+            await wethMinterSingularity.userCollateralShare(eoa1.address);
 
         const liquidatorAmountBefore = await yieldBox.toAmount(
-            await wethMinterMixologist.assetId(),
+            await wethMinterSingularity.assetId(),
             await yieldBox.balanceOf(
                 deployer.address,
-                await wethMinterMixologist.assetId(),
+                await wethMinterSingularity.assetId(),
             ),
             false,
         );
 
-        const borrowPart = await wethMinterMixologist.userBorrowPart(
+        const borrowPart = await wethMinterSingularity.userBorrowPart(
             eoa1.address,
         );
         await expect(
-            wethMinterMixologist.liquidate(
+            wethMinterSingularity.liquidate(
                 [eoa1.address],
                 [borrowPart],
                 ethers.constants.AddressZero,
@@ -275,7 +275,7 @@ describe('MinterMixologist test', () => {
             ),
         ).to.be.reverted;
         await expect(
-            wethMinterMixologist.liquidate(
+            wethMinterSingularity.liquidate(
                 [eoa1.address],
                 [borrowPart],
                 multiSwapper.address,
@@ -283,7 +283,7 @@ describe('MinterMixologist test', () => {
             ),
         ).to.not.be.reverted;
         await expect(
-            wethMinterMixologist.liquidate(
+            wethMinterSingularity.liquidate(
                 [eoa1.address],
                 [borrowPart],
                 ethers.constants.AddressZero,
@@ -291,10 +291,10 @@ describe('MinterMixologist test', () => {
             ),
         ).to.be.reverted;
         const liquidatorAmountAfter = await yieldBox.toAmount(
-            await wethMinterMixologist.assetId(),
+            await wethMinterSingularity.assetId(),
             await yieldBox.balanceOf(
                 deployer.address,
-                await wethMinterMixologist.assetId(),
+                await wethMinterSingularity.assetId(),
             ),
             false,
         );
@@ -302,11 +302,11 @@ describe('MinterMixologist test', () => {
         expect(liquidatorAmountAfter.gt(liquidatorAmountBefore)).to.be.true;
 
         const userCollateralShareAfter =
-            await wethMinterMixologist.userCollateralShare(eoa1.address);
+            await wethMinterSingularity.userCollateralShare(eoa1.address);
         expect(userCollateralShareBefore.gt(userCollateralShareAfter)).to.be
             .true;
 
-        const userBorrowPartAfter = await wethMinterMixologist.userBorrowPart(
+        const userBorrowPartAfter = await wethMinterSingularity.userBorrowPart(
             eoa1.address,
         );
         expect(userBorrowPartAfter.eq(0)).to.be.true;
@@ -315,7 +315,7 @@ describe('MinterMixologist test', () => {
     it('should update borrowing fee and withdraw fees with partial repayment', async () => {
         const {
             bar,
-            wethMinterMixologist,
+            wethMinterSingularity,
             weth,
             usd0,
             wethAssetId,
@@ -328,19 +328,19 @@ describe('MinterMixologist test', () => {
         } = await loadFixture(register);
 
         const feeAmount = 50000; //50%
-        await wethMinterMixologist
+        await wethMinterSingularity
             .connect(deployer)
             .updateBorrowingFee(feeAmount);
 
         await weth.approve(yieldBox.address, ethers.constants.MaxUint256);
-        await yieldBox.setApprovalForAll(wethMinterMixologist.address, true);
+        await yieldBox.setApprovalForAll(wethMinterSingularity.address, true);
 
         await weth
             .connect(eoa1)
             .approve(yieldBox.address, ethers.constants.MaxUint256);
         await yieldBox
             .connect(eoa1)
-            .setApprovalForAll(wethMinterMixologist.address, true);
+            .setApprovalForAll(wethMinterSingularity.address, true);
 
         const wethMintVal = ethers.BigNumber.from((1e18).toString()).mul(10);
         await weth.connect(eoa1).freeMint(wethMintVal);
@@ -352,7 +352,7 @@ describe('MinterMixologist test', () => {
         await yieldBox
             .connect(eoa1)
             .depositAsset(wethAssetId, eoa1.address, eoa1.address, 0, valShare);
-        await wethMinterMixologist
+        await wethMinterSingularity
             .connect(eoa1)
             .addCollateral(eoa1.address, eoa1.address, false, valShare);
 
@@ -363,7 +363,7 @@ describe('MinterMixologist test', () => {
             .mul(__wethUsdcPrice.div((1e18).toString()));
 
         await expect(
-            wethMinterMixologist
+            wethMinterSingularity
                 .connect(eoa1)
                 .borrow(eoa1.address, eoa1.address, usdoBorrowVal),
         ).to.be.revertedWith('Mx: insolvent');
@@ -374,10 +374,10 @@ describe('MinterMixologist test', () => {
             .mul(10)
             .div(100)
             .mul(__wethUsdcPrice.div((1e18).toString()));
-        await wethMinterMixologist
+        await wethMinterSingularity
             .connect(eoa1)
             .borrow(eoa1.address, eoa1.address, usdoBorrowVal);
-        const userBorrowPart = await wethMinterMixologist.userBorrowPart(
+        const userBorrowPart = await wethMinterSingularity.userBorrowPart(
             eoa1.address,
         );
         const usdoBorrowValWithFee = wethMintVal
@@ -391,16 +391,16 @@ describe('MinterMixologist test', () => {
             .true;
 
         const feeToAddress = await bar.feeTo();
-        const wethMinterBalance = await wethMinterMixologist.balanceOf(
+        const wethMinterBalance = await wethMinterSingularity.balanceOf(
             feeToAddress,
         );
         expect(wethMinterBalance.eq(0)).to.be.true;
 
         let yieldBoxBalanceOfFeeToInAsset = await yieldBox.toAmount(
-            await wethMinterMixologist.assetId(),
+            await wethMinterSingularity.assetId(),
             await yieldBox.balanceOf(
                 deployer.address,
-                await wethMinterMixologist.assetId(),
+                await wethMinterSingularity.assetId(),
             ),
             false,
         );
@@ -421,7 +421,7 @@ describe('MinterMixologist test', () => {
         await yieldBox
             .connect(eoa1)
             .depositAsset(
-                await wethMinterMixologist.assetId(),
+                await wethMinterSingularity.assetId(),
                 eoa1.address,
                 eoa1.address,
                 usd0Extra,
@@ -430,24 +430,24 @@ describe('MinterMixologist test', () => {
 
         timeTravel(100 * 86400);
 
-        let userBorrowedAmount = await wethMinterMixologist.userBorrowPart(
+        let userBorrowedAmount = await wethMinterSingularity.userBorrowPart(
             eoa1.address,
         );
         const repaymentAmount = userBorrowedAmount.div(10);
 
-        await wethMinterMixologist
+        await wethMinterSingularity
             .connect(eoa1)
             .repay(eoa1.address, eoa1.address, repaymentAmount);
-        userBorrowedAmount = await wethMinterMixologist.userBorrowPart(
+        userBorrowedAmount = await wethMinterSingularity.userBorrowPart(
             eoa1.address,
         );
         expect(userBorrowedAmount.gt(0)).to.be.true;
 
         await expect(
-            wethMinterMixologist.depositFeesToYieldBox(multiSwapper.address, {
+            wethMinterSingularity.depositFeesToYieldBox(multiSwapper.address, {
                 minAssetAmount: ethers.BigNumber.from((1e10).toString()),
             }),
-        ).to.emit(wethMinterMixologist, 'LogYieldBoxFeesDeposit');
+        ).to.emit(wethMinterSingularity, 'LogYieldBoxFeesDeposit');
 
         yieldBoxBalanceOfFeeVeTap = await yieldBox.toAmount(
             tapAssetId,
@@ -466,7 +466,7 @@ describe('MinterMixologist test', () => {
     it('should update borrowing fee and withdraw fees', async () => {
         const {
             bar,
-            wethMinterMixologist,
+            wethMinterSingularity,
             weth,
             usd0,
             wethAssetId,
@@ -478,19 +478,19 @@ describe('MinterMixologist test', () => {
         } = await loadFixture(register);
 
         const feeAmount = 50000; //50%
-        await wethMinterMixologist
+        await wethMinterSingularity
             .connect(deployer)
             .updateBorrowingFee(feeAmount);
 
         await weth.approve(yieldBox.address, ethers.constants.MaxUint256);
-        await yieldBox.setApprovalForAll(wethMinterMixologist.address, true);
+        await yieldBox.setApprovalForAll(wethMinterSingularity.address, true);
 
         await weth
             .connect(eoa1)
             .approve(yieldBox.address, ethers.constants.MaxUint256);
         await yieldBox
             .connect(eoa1)
-            .setApprovalForAll(wethMinterMixologist.address, true);
+            .setApprovalForAll(wethMinterSingularity.address, true);
 
         const wethMintVal = ethers.BigNumber.from((1e18).toString()).mul(10);
         await weth.connect(eoa1).freeMint(wethMintVal);
@@ -502,7 +502,7 @@ describe('MinterMixologist test', () => {
         await yieldBox
             .connect(eoa1)
             .depositAsset(wethAssetId, eoa1.address, eoa1.address, 0, valShare);
-        await wethMinterMixologist
+        await wethMinterSingularity
             .connect(eoa1)
             .addCollateral(eoa1.address, eoa1.address, false, valShare);
 
@@ -513,7 +513,7 @@ describe('MinterMixologist test', () => {
             .mul(__wethUsdcPrice.div((1e18).toString()));
 
         await expect(
-            wethMinterMixologist
+            wethMinterSingularity
                 .connect(eoa1)
                 .borrow(eoa1.address, eoa1.address, usdoBorrowVal),
         ).to.be.revertedWith('Mx: insolvent');
@@ -524,10 +524,10 @@ describe('MinterMixologist test', () => {
             .mul(10)
             .div(100)
             .mul(__wethUsdcPrice.div((1e18).toString()));
-        await wethMinterMixologist
+        await wethMinterSingularity
             .connect(eoa1)
             .borrow(eoa1.address, eoa1.address, usdoBorrowVal);
-        const userBorrowPart = await wethMinterMixologist.userBorrowPart(
+        const userBorrowPart = await wethMinterSingularity.userBorrowPart(
             eoa1.address,
         );
         const usdoBorrowValWithFee = wethMintVal
@@ -541,16 +541,16 @@ describe('MinterMixologist test', () => {
             .true;
 
         const feeToAddress = await bar.feeTo();
-        const wethMinterBalance = await wethMinterMixologist.balanceOf(
+        const wethMinterBalance = await wethMinterSingularity.balanceOf(
             feeToAddress,
         );
         expect(wethMinterBalance.eq(0)).to.be.true;
 
         let yieldBoxBalanceOfFeeToInAsset = await yieldBox.toAmount(
-            await wethMinterMixologist.assetId(),
+            await wethMinterSingularity.assetId(),
             await yieldBox.balanceOf(
                 deployer.address,
-                await wethMinterMixologist.assetId(),
+                await wethMinterSingularity.assetId(),
             ),
             false,
         );
@@ -571,31 +571,31 @@ describe('MinterMixologist test', () => {
         await yieldBox
             .connect(eoa1)
             .depositAsset(
-                await wethMinterMixologist.assetId(),
+                await wethMinterSingularity.assetId(),
                 eoa1.address,
                 eoa1.address,
                 usd0Extra,
                 0,
             );
 
-        let userBorrowedAmount = await wethMinterMixologist.userBorrowPart(
+        let userBorrowedAmount = await wethMinterSingularity.userBorrowPart(
             eoa1.address,
         );
 
-        await wethMinterMixologist
+        await wethMinterSingularity
             .connect(eoa1)
             .repay(eoa1.address, eoa1.address, userBorrowedAmount);
-        userBorrowedAmount = await wethMinterMixologist.userBorrowPart(
+        userBorrowedAmount = await wethMinterSingularity.userBorrowPart(
             eoa1.address,
         );
         expect(userBorrowedAmount.eq(0)).to.be.true;
 
         //deposit fees to yieldBox
         await expect(
-            wethMinterMixologist.depositFeesToYieldBox(multiSwapper.address, {
+            wethMinterSingularity.depositFeesToYieldBox(multiSwapper.address, {
                 minAssetAmount: ethers.BigNumber.from((1e10).toString()),
             }),
-        ).to.emit(wethMinterMixologist, 'LogYieldBoxFeesDeposit');
+        ).to.emit(wethMinterSingularity, 'LogYieldBoxFeesDeposit');
 
         yieldBoxBalanceOfFeeVeTap = await yieldBox.toAmount(
             tapAssetId,
@@ -612,7 +612,7 @@ describe('MinterMixologist test', () => {
 
     it('should have multiple borrowers and check fees accrued over time', async () => {
         const {
-            wethMinterMixologist,
+            wethMinterSingularity,
             weth,
             wethAssetId,
             yieldBox,
@@ -625,7 +625,7 @@ describe('MinterMixologist test', () => {
             eoas,
         } = await loadFixture(register);
 
-        await wethMinterMixologist.updateBorrowingFee(5e2); //0.5%
+        await wethMinterSingularity.updateBorrowingFee(5e2); //0.5%
 
         const wethMintVal = ethers.BigNumber.from((1e18).toString()).mul(10);
         let usdoBorrowVal = wethMintVal
@@ -640,7 +640,7 @@ describe('MinterMixologist test', () => {
                 .approve(yieldBox.address, ethers.constants.MaxUint256);
             await yieldBox
                 .connect(eoa)
-                .setApprovalForAll(wethMinterMixologist.address, true);
+                .setApprovalForAll(wethMinterSingularity.address, true);
 
             await weth.connect(eoa).freeMint(wethMintVal);
             const valShare = await yieldBox.toShare(
@@ -658,7 +658,7 @@ describe('MinterMixologist test', () => {
                     0,
                     valShare,
                 );
-            await wethMinterMixologist
+            await wethMinterSingularity
                 .connect(eoa)
                 .addCollateral(eoa.address, eoa.address, false, valShare);
         }
@@ -667,7 +667,7 @@ describe('MinterMixologist test', () => {
         for (var i = 0; i < eoas.length; i++) {
             const eoa = eoas[i];
 
-            await wethMinterMixologist
+            await wethMinterSingularity
                 .connect(eoa)
                 .borrow(eoa.address, eoa.address, usdoBorrowVal);
 
@@ -676,7 +676,7 @@ describe('MinterMixologist test', () => {
 
         for (var i = 0; i < eoas.length; i++) {
             const eoa = eoas[i];
-            const userBorrowPart = await wethMinterMixologist.userBorrowPart(
+            const userBorrowPart = await wethMinterSingularity.userBorrowPart(
                 eoa.address,
             );
             expect(userBorrowPart.gte(usdoBorrowVal)).to.be.true; //slightly bigger because of the opening borrow fee
@@ -690,7 +690,7 @@ describe('MinterMixologist test', () => {
                 await bar.usdoAssetId(),
                 await yieldBox.balanceOf(
                     eoa.address,
-                    await wethMinterMixologist.assetId(),
+                    await wethMinterSingularity.assetId(),
                 ),
                 false,
             );
@@ -707,7 +707,7 @@ describe('MinterMixologist test', () => {
             await yieldBox
                 .connect(eoa)
                 .depositAsset(
-                    await wethMinterMixologist.assetId(),
+                    await wethMinterSingularity.assetId(),
                     eoa.address,
                     eoa.address,
                     usd0Extra,
@@ -715,9 +715,9 @@ describe('MinterMixologist test', () => {
                 );
 
             const userBorrowedAmount =
-                await wethMinterMixologist.userBorrowPart(eoa.address);
+                await wethMinterSingularity.userBorrowPart(eoa.address);
 
-            await wethMinterMixologist
+            await wethMinterSingularity
                 .connect(eoa)
                 .repay(eoa.address, eoa.address, userBorrowedAmount);
         }
@@ -728,13 +728,13 @@ describe('MinterMixologist test', () => {
                 await bar.usdoAssetId(),
                 await yieldBox.balanceOf(
                     eoa.address,
-                    await wethMinterMixologist.assetId(),
+                    await wethMinterSingularity.assetId(),
                 ),
                 false,
             );
             expect(usd0Balance.lt(usd0Extra)).to.be.true;
 
-            const userBorrowPart = await wethMinterMixologist.userBorrowPart(
+            const userBorrowPart = await wethMinterSingularity.userBorrowPart(
                 eoa.address,
             );
             expect(userBorrowPart.eq(0)).to.be.true;
@@ -753,10 +753,10 @@ describe('MinterMixologist test', () => {
 
         //deposit fees to yieldBox
         await expect(
-            wethMinterMixologist.depositFeesToYieldBox(multiSwapper.address, {
+            wethMinterSingularity.depositFeesToYieldBox(multiSwapper.address, {
                 minAssetAmount: ethers.BigNumber.from((1e18).toString()),
             }),
-        ).to.emit(wethMinterMixologist, 'LogYieldBoxFeesDeposit');
+        ).to.emit(wethMinterSingularity, 'LogYieldBoxFeesDeposit');
 
         const yieldBoxBalanceOfFeeVeTap = await yieldBox.toAmount(
             await bar.tapAssetId(),
@@ -771,7 +771,7 @@ describe('MinterMixologist test', () => {
 
     it('should have multiple borrowers, do partial repayments and check fees accrued over time', async () => {
         const {
-            wethMinterMixologist,
+            wethMinterSingularity,
             weth,
             wethAssetId,
             yieldBox,
@@ -784,7 +784,7 @@ describe('MinterMixologist test', () => {
             eoas,
         } = await loadFixture(register);
 
-        await wethMinterMixologist.updateBorrowingFee(5e2); //0.5%
+        await wethMinterSingularity.updateBorrowingFee(5e2); //0.5%
 
         const wethMintVal = ethers.BigNumber.from((1e18).toString()).mul(10);
         let usdoBorrowVal = wethMintVal
@@ -799,7 +799,7 @@ describe('MinterMixologist test', () => {
                 .approve(yieldBox.address, ethers.constants.MaxUint256);
             await yieldBox
                 .connect(eoa)
-                .setApprovalForAll(wethMinterMixologist.address, true);
+                .setApprovalForAll(wethMinterSingularity.address, true);
 
             await weth.connect(eoa).freeMint(wethMintVal);
             const valShare = await yieldBox.toShare(
@@ -817,7 +817,7 @@ describe('MinterMixologist test', () => {
                     0,
                     valShare,
                 );
-            await wethMinterMixologist
+            await wethMinterSingularity
                 .connect(eoa)
                 .addCollateral(eoa.address, eoa.address, false, valShare);
         }
@@ -826,7 +826,7 @@ describe('MinterMixologist test', () => {
         for (var i = 0; i < eoas.length; i++) {
             const eoa = eoas[i];
 
-            await wethMinterMixologist
+            await wethMinterSingularity
                 .connect(eoa)
                 .borrow(eoa.address, eoa.address, usdoBorrowVal);
 
@@ -835,7 +835,7 @@ describe('MinterMixologist test', () => {
 
         for (var i = 0; i < eoas.length; i++) {
             const eoa = eoas[i];
-            const userBorrowPart = await wethMinterMixologist.userBorrowPart(
+            const userBorrowPart = await wethMinterSingularity.userBorrowPart(
                 eoa.address,
             );
             expect(userBorrowPart.gte(usdoBorrowVal)).to.be.true; //slightly bigger because of the opening borrow fee
@@ -848,7 +848,7 @@ describe('MinterMixologist test', () => {
                 await bar.usdoAssetId(),
                 await yieldBox.balanceOf(
                     eoa.address,
-                    await wethMinterMixologist.assetId(),
+                    await wethMinterSingularity.assetId(),
                 ),
                 false,
             );
@@ -865,7 +865,7 @@ describe('MinterMixologist test', () => {
             await yieldBox
                 .connect(eoa)
                 .depositAsset(
-                    await wethMinterMixologist.assetId(),
+                    await wethMinterSingularity.assetId(),
                     eoa.address,
                     eoa.address,
                     usd0Extra,
@@ -873,9 +873,9 @@ describe('MinterMixologist test', () => {
                 );
 
             const userBorrowedAmount =
-                await wethMinterMixologist.userBorrowPart(eoa.address);
+                await wethMinterSingularity.userBorrowPart(eoa.address);
 
-            await wethMinterMixologist
+            await wethMinterSingularity
                 .connect(eoa)
                 .repay(eoa.address, eoa.address, userBorrowedAmount.div(2));
         }
@@ -893,10 +893,10 @@ describe('MinterMixologist test', () => {
 
         //deposit fees to yieldBox
         await expect(
-            wethMinterMixologist.depositFeesToYieldBox(multiSwapper.address, {
+            wethMinterSingularity.depositFeesToYieldBox(multiSwapper.address, {
                 minAssetAmount: ethers.BigNumber.from((1e18).toString()),
             }),
-        ).to.emit(wethMinterMixologist, 'LogYieldBoxFeesDeposit');
+        ).to.emit(wethMinterSingularity, 'LogYieldBoxFeesDeposit');
 
         const yieldBoxBalanceOfFeeVeTap = await yieldBox.toAmount(
             await bar.tapAssetId(),
@@ -917,7 +917,7 @@ describe('MinterMixologist test', () => {
             await yieldBox
                 .connect(eoa)
                 .depositAsset(
-                    await wethMinterMixologist.assetId(),
+                    await wethMinterSingularity.assetId(),
                     eoa.address,
                     eoa.address,
                     usd0Extra,
@@ -925,19 +925,19 @@ describe('MinterMixologist test', () => {
                 );
 
             const userBorrowedAmount =
-                await wethMinterMixologist.userBorrowPart(eoa.address);
+                await wethMinterSingularity.userBorrowPart(eoa.address);
 
-            await wethMinterMixologist
+            await wethMinterSingularity
                 .connect(eoa)
                 .repay(eoa.address, eoa.address, userBorrowedAmount);
         }
 
-        const balance = await usd0.balanceOf(wethMinterMixologist.address);
+        const balance = await usd0.balanceOf(wethMinterSingularity.address);
         await expect(
-            wethMinterMixologist.depositFeesToYieldBox(multiSwapper.address, {
+            wethMinterSingularity.depositFeesToYieldBox(multiSwapper.address, {
                 minAssetAmount: ethers.BigNumber.from((1e18).toString()),
             }),
-        ).to.emit(wethMinterMixologist, 'LogYieldBoxFeesDeposit');
+        ).to.emit(wethMinterSingularity, 'LogYieldBoxFeesDeposit');
 
         const yieldBoxFinalBalanceOfFeeVeTap = await yieldBox.toAmount(
             await bar.tapAssetId(),
@@ -954,7 +954,7 @@ describe('MinterMixologist test', () => {
     it('should perform multiple borrow operations, repay everything and withdraw fees', async () => {
         const {
             bar,
-            wethMinterMixologist,
+            wethMinterSingularity,
             weth,
             usd0,
             wethAssetId,
@@ -965,17 +965,17 @@ describe('MinterMixologist test', () => {
             __wethUsdcPrice,
         } = await loadFixture(register);
 
-        await wethMinterMixologist.updateBorrowingFee(5e2); //0.5%
+        await wethMinterSingularity.updateBorrowingFee(5e2); //0.5%
 
         await weth.approve(yieldBox.address, ethers.constants.MaxUint256);
-        await yieldBox.setApprovalForAll(wethMinterMixologist.address, true);
+        await yieldBox.setApprovalForAll(wethMinterSingularity.address, true);
 
         await weth
             .connect(eoa1)
             .approve(yieldBox.address, ethers.constants.MaxUint256);
         await yieldBox
             .connect(eoa1)
-            .setApprovalForAll(wethMinterMixologist.address, true);
+            .setApprovalForAll(wethMinterSingularity.address, true);
 
         const wethMintVal = ethers.BigNumber.from((1e18).toString()).mul(10);
         await weth.connect(eoa1).freeMint(wethMintVal);
@@ -987,7 +987,7 @@ describe('MinterMixologist test', () => {
         await yieldBox
             .connect(eoa1)
             .depositAsset(wethAssetId, eoa1.address, eoa1.address, 0, valShare);
-        await wethMinterMixologist
+        await wethMinterSingularity
             .connect(eoa1)
             .addCollateral(eoa1.address, eoa1.address, false, valShare);
 
@@ -999,21 +999,21 @@ describe('MinterMixologist test', () => {
             .mul(__wethUsdcPrice.div((1e18).toString()));
 
         //borrow 1
-        await wethMinterMixologist
+        await wethMinterSingularity
             .connect(eoa1)
             .borrow(eoa1.address, eoa1.address, usdoBorrowVal);
 
         //borrow 2
-        await wethMinterMixologist
+        await wethMinterSingularity
             .connect(eoa1)
             .borrow(eoa1.address, eoa1.address, usdoBorrowVal);
 
         //borrow 3
-        await wethMinterMixologist
+        await wethMinterSingularity
             .connect(eoa1)
             .borrow(eoa1.address, eoa1.address, usdoBorrowVal);
 
-        let userBorrowPart = await wethMinterMixologist.userBorrowPart(
+        let userBorrowPart = await wethMinterSingularity.userBorrowPart(
             eoa1.address,
         );
 
@@ -1028,23 +1028,26 @@ describe('MinterMixologist test', () => {
         await yieldBox
             .connect(eoa1)
             .depositAsset(
-                await wethMinterMixologist.assetId(),
+                await wethMinterSingularity.assetId(),
                 eoa1.address,
                 eoa1.address,
                 usd0Extra,
                 0,
             );
-        await wethMinterMixologist
+        await wethMinterSingularity
             .connect(eoa1)
             .repay(eoa1.address, eoa1.address, userBorrowPart);
-        userBorrowPart = await wethMinterMixologist.userBorrowPart(
+        userBorrowPart = await wethMinterSingularity.userBorrowPart(
             eoa1.address,
         );
         expect(userBorrowPart.eq(0)).to.be.true;
 
-        await wethMinterMixologist.depositFeesToYieldBox(multiSwapper.address, {
-            minAssetAmount: 1,
-        });
+        await wethMinterSingularity.depositFeesToYieldBox(
+            multiSwapper.address,
+            {
+                minAssetAmount: 1,
+            },
+        );
 
         const feeVeTap = await bar.feeVeTap();
         const yieldBoxBalanceOfFeeVeTapShare = await yieldBox.balanceOf(
@@ -1064,7 +1067,7 @@ describe('MinterMixologist test', () => {
         const { bar } = await loadFixture(register);
 
         const minterFactory = await ethers.getContractFactory(
-            'MinterMixologist',
+            'MinterSingularity',
         );
 
         await expect(
@@ -1079,77 +1082,78 @@ describe('MinterMixologist test', () => {
         ).to.be.revertedWith('Mx: bad pair');
     });
 
-    
     it('should not allow depositing fees with invalid swapper', async () => {
-        const { wethMinterMixologist, multiSwapper } = await loadFixture(
+        const { wethMinterSingularity, multiSwapper } = await loadFixture(
             register,
         );
 
         await expect(
-            wethMinterMixologist.depositFeesToYieldBox(
+            wethMinterSingularity.depositFeesToYieldBox(
                 ethers.constants.AddressZero,
                 { minAssetAmount: 1 },
             ),
         ).to.be.revertedWith('Mx: Invalid swapper');
 
         await expect(
-            wethMinterMixologist.depositFeesToYieldBox(multiSwapper.address, {
+            wethMinterSingularity.depositFeesToYieldBox(multiSwapper.address, {
                 minAssetAmount: 1,
             }),
-        ).to.not.emit(wethMinterMixologist, 'LogYieldBoxFeesDeposit');
+        ).to.not.emit(wethMinterSingularity, 'LogYieldBoxFeesDeposit');
     });
 
     it('should test setters', async () => {
-        const { wethMinterMixologist, collateralSwapPath, tapSwapPath, eoa1 } =
+        const { wethMinterSingularity, collateralSwapPath, tapSwapPath, eoa1 } =
             await loadFixture(register);
 
         await expect(
-            wethMinterMixologist
+            wethMinterSingularity
                 .connect(eoa1)
                 .setCollateralSwapPath(collateralSwapPath),
         ).to.be.reverted;
         await expect(
-            wethMinterMixologist.connect(eoa1).setTapSwapPath(tapSwapPath),
+            wethMinterSingularity.connect(eoa1).setTapSwapPath(tapSwapPath),
         ).to.be.reverted;
-        await expect(wethMinterMixologist.connect(eoa1).setBorrowCap(100)).to.be
-            .reverted;
-        await expect(wethMinterMixologist.connect(eoa1).updateStabilityFee(100))
-            .to.be.reverted;
+        await expect(wethMinterSingularity.connect(eoa1).setBorrowCap(100)).to
+            .be.reverted;
         await expect(
-            wethMinterMixologist.updateStabilityFee(
+            wethMinterSingularity.connect(eoa1).updateStabilityFee(100),
+        ).to.be.reverted;
+        await expect(
+            wethMinterSingularity.updateStabilityFee(
                 ethers.utils.parseEther('1'),
             ),
         ).to.be.revertedWith('Mx: value not valid');
-        await expect(wethMinterMixologist.connect(eoa1).updateBorrowingFee(100))
-            .to.be.reverted;
         await expect(
-            wethMinterMixologist.updateBorrowingFee(1e5),
+            wethMinterSingularity.connect(eoa1).updateBorrowingFee(100),
+        ).to.be.reverted;
+        await expect(
+            wethMinterSingularity.updateBorrowingFee(1e5),
         ).to.be.revertedWith('Mx: value not valid');
 
         await expect(
-            wethMinterMixologist.setCollateralSwapPath(collateralSwapPath),
-        ).to.emit(wethMinterMixologist, 'LogCollateralSwapPath');
-        await expect(wethMinterMixologist.setTapSwapPath(tapSwapPath)).to.emit(
-            wethMinterMixologist,
+            wethMinterSingularity.setCollateralSwapPath(collateralSwapPath),
+        ).to.emit(wethMinterSingularity, 'LogCollateralSwapPath');
+        await expect(wethMinterSingularity.setTapSwapPath(tapSwapPath)).to.emit(
+            wethMinterSingularity,
             'LogTapSwapPath',
         );
-        await expect(wethMinterMixologist.setBorrowCap(100)).to.emit(
-            wethMinterMixologist,
+        await expect(wethMinterSingularity.setBorrowCap(100)).to.emit(
+            wethMinterSingularity,
             'LogBorrowCapUpdated',
         );
-        await expect(wethMinterMixologist.updateStabilityFee(100)).to.emit(
-            wethMinterMixologist,
+        await expect(wethMinterSingularity.updateStabilityFee(100)).to.emit(
+            wethMinterSingularity,
             'LogStabilityFee',
         );
-        await expect(wethMinterMixologist.updateBorrowingFee(100)).to.emit(
-            wethMinterMixologist,
+        await expect(wethMinterSingularity.updateBorrowingFee(100)).to.emit(
+            wethMinterSingularity,
             'LogBorrowingFee',
         );
     });
 
     it('should not be able to borrow when cap is reached', async () => {
         const {
-            wethMinterMixologist,
+            wethMinterSingularity,
             weth,
             wethAssetId,
             yieldBox,
@@ -1161,7 +1165,7 @@ describe('MinterMixologist test', () => {
         } = await loadFixture(register);
 
         await weth.approve(yieldBox.address, ethers.constants.MaxUint256);
-        await yieldBox.setApprovalForAll(wethMinterMixologist.address, true);
+        await yieldBox.setApprovalForAll(wethMinterSingularity.address, true);
 
         const wethMintVal = ethers.BigNumber.from((1e18).toString()).mul(10);
         await weth.freeMint(wethMintVal);
@@ -1177,14 +1181,14 @@ describe('MinterMixologist test', () => {
             0,
             valShare,
         );
-        await wethMinterMixologist.addCollateral(
+        await wethMinterSingularity.addCollateral(
             deployer.address,
             deployer.address,
             false,
             valShare,
         );
 
-        await wethMinterMixologist.setBorrowCap(1);
+        await wethMinterSingularity.setBorrowCap(1);
         //borrow
         const usdoBorrowVal = wethMintVal
             .mul(74)
@@ -1192,7 +1196,7 @@ describe('MinterMixologist test', () => {
             .mul(__wethUsdcPrice.div((1e18).toString()));
 
         await expect(
-            wethMinterMixologist.borrow(
+            wethMinterSingularity.borrow(
                 deployer.address,
                 deployer.address,
                 usdoBorrowVal,

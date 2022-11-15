@@ -8,8 +8,11 @@ import '@boringcrypto/boring-solidity/contracts/interfaces/IERC20.sol';
 import '@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol';
 
 import '../../../yieldbox/contracts/strategies/BaseStrategy.sol';
+import '../../swappers/NonYieldBoxMultiSwapper.sol';
 
 import './ILendingPool.sol';
+import './IIncentivesController.sol';
+import './IStkAave.sol';
 
 /*
 
@@ -24,8 +27,6 @@ __/\\\\\\\\\\\\\\\_____/\\\\\\\\\_____/\\\\\\\\\\\\\____/\\\\\\\\\\\_______/\\\\
         _______\///________\///________\///__\///______________\///////////_______\/////_____________\/////////__\///________\///__
 */
 
-//TODO: handle rewards deposits to yieldbox
-
 //Wrapped-native strategy for AAVE
 contract AaveStrategy is BaseERC20Strategy, BoringOwnable, ReentrancyGuard {
     using BoringERC20 for IERC20;
@@ -34,7 +35,14 @@ contract AaveStrategy is BaseERC20Strategy, BoringOwnable, ReentrancyGuard {
     // *** VARS *** //
     // ************ //
     IERC20 public immutable wrappedNative;
+    NonYieldBoxMultiSwapper public swapper;
+
+    //AAVE
+    IStkAave public immutable stakedRewardToken;
+    IERC20 public immutable rewardToken;
+    IERC20 public immutable receiptToken;
     ILendingPool public immutable lendingPool;
+    IIncentivesController public immutable incentivesController;
 
     /// @notice Queues tokens up to depositThreshold
     /// @dev When the amount of tokens is greater than the threshold, a deposit operation to AAVE is performed
@@ -43,6 +51,7 @@ contract AaveStrategy is BaseERC20Strategy, BoringOwnable, ReentrancyGuard {
     // ************** //
     // *** EVENTS *** //
     // ************** //
+    event MultiSwapper(address indexed _old, address indexed _new);
     event DepositThreshold(uint256 _old, uint256 _new);
     event AmountQueued(uint256 amount);
     event AmountDeposited(uint256 amount);
@@ -53,12 +62,22 @@ contract AaveStrategy is BaseERC20Strategy, BoringOwnable, ReentrancyGuard {
     constructor(
         IYieldBox _yieldBox,
         address _token,
-        address _lendingPool
+        address _lendingPool,
+        address _incentivesController,
+        address _receiptToken,
+        address _multiSwapper
     ) BaseERC20Strategy(_yieldBox, _token) {
         wrappedNative = IERC20(_token);
+        swapper = NonYieldBoxMultiSwapper(_multiSwapper);
+
         lendingPool = ILendingPool(_lendingPool);
+        incentivesController = IIncentivesController(_incentivesController);
+        stakedRewardToken = IStkAave(incentivesController.REWARD_TOKEN());
+        rewardToken = IERC20(stakedRewardToken.REWARD_TOKEN());
+        receiptToken = IERC20(_receiptToken);
 
         wrappedNative.approve(_lendingPool, type(uint256).max);
+        rewardToken.approve(_multiSwapper, type(uint256).max);
     }
 
     // ********************** //
@@ -79,6 +98,20 @@ contract AaveStrategy is BaseERC20Strategy, BoringOwnable, ReentrancyGuard {
         return 'AAVE strategy for wrapped native assets';
     }
 
+    /// @notice returns compounded amounts in wrappedNative
+    function compoundAmount() public view returns (uint256 result) {
+        uint256 claimable = stakedRewardToken.stakerRewardsToClaim(
+            address(this)
+        );
+        result = 0;
+        if (claimable > 0) {
+            address[] memory path = new address[](2); //todo: check if path is right
+            path[0] = address(rewardToken);
+            path[1] = address(wrappedNative);
+            result = swapper.getOutputAmount(path, claimable);
+        }
+    }
+
     // *********************** //
     // *** OWNER FUNCTIONS *** //
     // *********************** //
@@ -89,6 +122,89 @@ contract AaveStrategy is BaseERC20Strategy, BoringOwnable, ReentrancyGuard {
         depositThreshold = amount;
     }
 
+    /// @notice Sets the Swapper address
+    /// @param _swapper The new swapper address
+    function setMultiSwapper(address _swapper) external onlyOwner {
+        emit MultiSwapper(address(swapper), _swapper);
+        swapper = NonYieldBoxMultiSwapper(_swapper);
+    }
+
+    // ************************ //
+    // *** PUBLIC FUNCTIONS *** //
+    // ************************ //
+    function compound(bool _tryStake) public {
+        uint256 aaveBalanceBefore = rewardToken.balanceOf(address(this));
+        //first claim stkAave
+        uint256 unclaimedStkAave = incentivesController.getUserUnclaimedRewards(
+            address(this)
+        );
+
+        if (unclaimedStkAave > 0) {
+            address[] memory tokens = new address[](1);
+            tokens[0] = address(receiptToken);
+            incentivesController.claimRewards(
+                tokens,
+                type(uint256).max,
+                address(this)
+            );
+        }
+        //try to claim AAVE
+        uint256 claimable = stakedRewardToken.stakerRewardsToClaim(
+            address(this)
+        );
+        if (claimable > 0) {
+            stakedRewardToken.claimRewards(address(this), claimable);
+        }
+
+        //try to cooldown
+        uint256 currentCooldown = stakedRewardToken.stakersCooldowns(
+            address(this)
+        );
+        if (currentCooldown > 0) {
+            //we have an active cooldown; check if we need to cooldown again
+            bool daysPassed = (currentCooldown + 12 days) < block.timestamp;
+            if (daysPassed) {
+                stakedRewardToken.cooldown();
+            }
+        } else {
+            stakedRewardToken.cooldown();
+        }
+
+        //try to stake
+        uint256 aaveBalanceAfter = rewardToken.balanceOf(address(this));
+        if (aaveBalanceAfter > aaveBalanceBefore) {
+            uint256 aaveAmount = aaveBalanceAfter - aaveBalanceBefore;
+
+            //swap AAVE to wrappedNative
+            address[] memory path = new address[](2); //todo: check if path is right
+            path[0] = address(rewardToken);
+            path[1] = address(wrappedNative);
+            uint256 calcAmount = swapper.getOutputAmount(path, aaveAmount);
+            uint256 minAmount = (calcAmount * 2_500) / 10_000; //2.5%
+            swapper.swap(
+                address(rewardToken),
+                address(wrappedNative),
+                minAmount,
+                address(this),
+                path,
+                aaveAmount
+            );
+
+            //stake if > depositThreshold
+            uint256 queued = wrappedNative.balanceOf(address(this));
+            if (_tryStake && queued > depositThreshold) {
+                lendingPool.deposit(
+                    address(wrappedNative),
+                    queued,
+                    address(this),
+                    0
+                );
+                emit AmountDeposited(queued);
+                return;
+            }
+        }
+    }
+
     // ************************* //
     // *** PRIVATE FUNCTIONS *** //
     // ************************* //
@@ -96,7 +212,8 @@ contract AaveStrategy is BaseERC20Strategy, BoringOwnable, ReentrancyGuard {
     function _currentBalance() internal view override returns (uint256 amount) {
         (amount, , , , , ) = lendingPool.getUserAccountData(address(this));
         uint256 queued = wrappedNative.balanceOf(address(this));
-        return amount + queued;
+        uint256 claimableRewards = compoundAmount();
+        return amount + queued + claimableRewards;
     }
 
     /// @dev deposits to AAVE or queues tokens if the 'depositThreshold' has not been met yet
@@ -127,12 +244,18 @@ contract AaveStrategy is BaseERC20Strategy, BoringOwnable, ReentrancyGuard {
 
         uint256 queued = wrappedNative.balanceOf(address(this));
         if (amount > queued) {
+            compound(false);
+
             uint256 toWithdraw = amount - queued;
-            lendingPool.withdraw(
+
+            uint256 obtainedWrapped = lendingPool.withdraw(
                 address(wrappedNative),
                 toWithdraw,
                 address(this)
             );
+            if (obtainedWrapped > toWithdraw) {
+                amount += (obtainedWrapped - toWithdraw);
+            }
         }
 
         wrappedNative.safeTransfer(to, amount);

@@ -1,24 +1,24 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import _ from 'lodash';
-import { getDeployment, getMixologistContract } from './utils';
+import { getDeployment, getSingularityContract } from './utils';
 
 //Execution example:
-//      npx hardhat setLiquidationQueue --mixologist "<address>" --liquidationQueue "" --meta "{}"
+//      npx hardhat setLiquidationQueue --singularity "<address>" --liquidationQueue "" --meta "{}"
 export const setLiquidationQueue = async (
     taskArgs: any,
     hre: HardhatRuntimeEnvironment,
 ) => {
     const beachBarContract = await getDeployment(hre, 'BeachBar');
-    const { mixologistContract, mixologistAddress } =
-        await getMixologistContract(taskArgs, hre);
+    const { singularityContract, singularityAddress } =
+        await getSingularityContract(taskArgs, hre);
 
-    const callData = mixologistContract.interface.encodeFunctionData(
+    const callData = singularityContract.interface.encodeFunctionData(
         'setLiquidationQueue',
         [taskArgs['liquidationQueue'], taskArgs['meta']],
     );
 
     await beachBarContract.executeMixologistFn(
-        [mixologistAddress],
+        [singularityAddress],
         [callData],
         true,
     );
@@ -29,7 +29,7 @@ export const setLiquidationQueue__task = async (
     hre: HardhatRuntimeEnvironment,
 ) => {
     console.log(
-        `Setting LiquidationQueue on mixologist: ${args['mixologist']}`,
+        `Setting LiquidationQueue on singularity: ${args['singularity']}`,
     );
     await setLiquidationQueue(args, hre);
     console.log('Execution completed');

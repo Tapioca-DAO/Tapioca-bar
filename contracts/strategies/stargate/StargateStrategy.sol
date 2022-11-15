@@ -8,6 +8,7 @@ import '@boringcrypto/boring-solidity/contracts/interfaces/IERC20.sol';
 import '@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol';
 
 import '../../../yieldbox/contracts/strategies/BaseStrategy.sol';
+import '../../swappers/NonYieldBoxMultiSwapper.sol';
 
 import './IRouter.sol';
 import './IRouterETH.sol';
@@ -32,7 +33,7 @@ __/\\\\\\\\\\\\\\\_____/\\\\\\\\\_____/\\\\\\\\\\\\\____/\\\\\\\\\\\_______/\\\\
 //TODO: decide if we need to start with ETH and wrap it into WETH; stargate allows ETH. not WETH, while others allow WETH, not ETH
 //TODO: handle rewards deposits to yieldbox
 
-//Native strategy for Stargate
+//Wrapped-native strategy for Stargate
 contract StargateStrategy is BaseERC20Strategy, BoringOwnable, ReentrancyGuard {
     using BoringERC20 for IERC20;
 
@@ -40,13 +41,16 @@ contract StargateStrategy is BaseERC20Strategy, BoringOwnable, ReentrancyGuard {
     // *** VARS *** //
     // ************ //
     IERC20 public immutable wrappedNative;
+    NonYieldBoxMultiSwapper public swapper;
+
     IRouterETH public immutable addLiquidityRouter;
     IRouter public immutable router;
     ILPStaking public immutable lpStaking;
 
     uint256 public lpStakingPid;
     uint256 public lpRouterPid;
-    IERC20 public stgNative;
+    IERC20 public stgNative; //ex: stEth
+    IERC20 public stgTokenReward;
 
     /// @notice Queues tokens up to depositThreshold
     /// @dev When the amount of tokens is greater than the threshold, a deposit operation to Stargate is performed
@@ -55,6 +59,7 @@ contract StargateStrategy is BaseERC20Strategy, BoringOwnable, ReentrancyGuard {
     // ************** //
     // *** EVENTS *** //
     // ************** //
+    event MultiSwapper(address indexed _old, address indexed _new);
     event DepositThreshold(uint256 _old, uint256 _new);
     event AmountQueued(uint256 amount);
     event AmountDeposited(uint256 amount);
@@ -66,9 +71,12 @@ contract StargateStrategy is BaseERC20Strategy, BoringOwnable, ReentrancyGuard {
         address _ethRouter,
         address _lpStaking,
         uint256 _stakingPid,
-        address _lpToken
+        address _lpToken,
+        address _multiSwapper
     ) BaseERC20Strategy(_yieldBox, _token) {
         wrappedNative = IERC20(_token);
+        swapper = NonYieldBoxMultiSwapper(_multiSwapper);
+
         addLiquidityRouter = IRouterETH(_ethRouter);
         lpStaking = ILPStaking(_lpStaking);
         lpStakingPid = _stakingPid;
@@ -79,6 +87,8 @@ contract StargateStrategy is BaseERC20Strategy, BoringOwnable, ReentrancyGuard {
         stgNative = IERC20(_lpToken);
         stgNative.approve(_lpStaking, type(uint256).max);
         stgNative.approve(address(router), type(uint256).max);
+
+        stgTokenReward = IERC20(lpStaking.stargate());
     }
 
     // ********************** //
@@ -99,6 +109,21 @@ contract StargateStrategy is BaseERC20Strategy, BoringOwnable, ReentrancyGuard {
         return 'Stargate strategy for wrapped native assets';
     }
 
+    /// @notice returns compounded amounts in wrappedNative
+    function compoundAmount() public view returns (uint256 result) {
+        uint256 claimable = lpStaking.pendingStargate(
+            lpStakingPid,
+            address(this)
+        );
+        result = 0;
+        if (claimable > 0) {
+            address[] memory path = new address[](2);
+            path[0] = address(stgTokenReward);
+            path[1] = address(wrappedNative);
+            result = swapper.getOutputAmount(path, claimable);
+        }
+    }
+
     // *********************** //
     // *** OWNER FUNCTIONS *** //
     // *********************** //
@@ -109,6 +134,53 @@ contract StargateStrategy is BaseERC20Strategy, BoringOwnable, ReentrancyGuard {
         depositThreshold = amount;
     }
 
+    /// @notice Sets the Swapper address
+    /// @param _swapper The new swapper address
+    function setMultiSwapper(address _swapper) external onlyOwner {
+        emit MultiSwapper(address(swapper), _swapper);
+        swapper = NonYieldBoxMultiSwapper(_swapper);
+    }
+
+    // ************************ //
+    // *** PUBLIC FUNCTIONS *** //
+    // ************************ //
+    function compound(bool _tryStake) public {
+        uint256 unclaimed = lpStaking.pendingStargate(
+            lpStakingPid,
+            address(this)
+        );
+
+        if (unclaimed > 0) {
+            uint256 stgBalanceBefore = stgTokenReward.balanceOf(address(this));
+            lpStaking.deposit(2, 0);
+            uint256 stgBalanceAfter = stgTokenReward.balanceOf(address(this));
+
+            if (stgBalanceAfter > stgBalanceBefore) {
+                uint256 stgAmount = stgBalanceAfter - stgBalanceBefore;
+
+                address[] memory path = new address[](2); //todo: check if path is right
+                path[0] = address(stgTokenReward);
+                path[1] = address(wrappedNative);
+                uint256 calcAmount = swapper.getOutputAmount(path, stgAmount);
+                uint256 minAmount = (calcAmount * 2_500) / 10_000; //2.5%
+                swapper.swap(
+                    address(stgTokenReward),
+                    address(wrappedNative),
+                    minAmount,
+                    address(this),
+                    path,
+                    stgAmount
+                );
+
+                //stake if > depositThreshold
+                uint256 queued = wrappedNative.balanceOf(address(this));
+                if (_tryStake && queued > depositThreshold) {
+                    _stake(queued);
+                }
+            }
+        }
+    }
+
     // ************************* //
     // *** PRIVATE FUNCTIONS *** //
     // ************************* //
@@ -116,7 +188,8 @@ contract StargateStrategy is BaseERC20Strategy, BoringOwnable, ReentrancyGuard {
     function _currentBalance() internal view override returns (uint256 amount) {
         uint256 queued = wrappedNative.balanceOf(address(this));
         (amount, ) = lpStaking.userInfo(address(this));
-        return amount + queued;
+        uint256 claimableRewards = compoundAmount();
+        return amount + queued + claimableRewards;
     }
 
     /// @dev deposits to Stargate or queues tokens if the 'depositThreshold' has not been met yet
@@ -124,15 +197,18 @@ contract StargateStrategy is BaseERC20Strategy, BoringOwnable, ReentrancyGuard {
     function _deposited(uint256 amount) internal override nonReentrant {
         uint256 queued = wrappedNative.balanceOf(address(this));
         if (queued > depositThreshold) {
-            INative(address(wrappedNative)).withdraw(queued);
-
-            addLiquidityRouter.addLiquidityETH{value: queued}();
-            uint256 toStake = stgNative.balanceOf(address(this));
-            lpStaking.deposit(lpStakingPid, toStake);
-            emit AmountDeposited(queued);
-            return;
+            _stake(queued);
         }
         emit AmountQueued(amount);
+    }
+
+    function _stake(uint256 amount) private {
+        INative(address(wrappedNative)).withdraw(amount);
+
+        addLiquidityRouter.addLiquidityETH{value: amount}();
+        uint256 toStake = stgNative.balanceOf(address(this));
+        lpStaking.deposit(lpStakingPid, toStake);
+        emit AmountDeposited(amount);
     }
 
     /// @dev burns stgToken in exchange of Native and withdraws from Stargate Staking & Router
@@ -146,6 +222,7 @@ contract StargateStrategy is BaseERC20Strategy, BoringOwnable, ReentrancyGuard {
 
         uint256 queued = wrappedNative.balanceOf(address(this));
         if (amount > queued) {
+            compound(false);
             uint256 toWithdraw = amount - queued;
             lpStaking.withdraw(lpStakingPid, toWithdraw);
             router.instantRedeemLocal(

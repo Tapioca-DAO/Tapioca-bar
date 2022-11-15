@@ -27,8 +27,9 @@ contract LendingPoolMock {
         uint256 amount,
         address to
     ) external returns (uint256) {
-        asset.safeTransfer(to, amount);
-        return amount;
+        uint256 extraAmount = (amount * 1_000) / 10_000; //simulate rewards
+        asset.safeTransfer(to, amount + extraAmount);
+        return amount + extraAmount;
     }
 
     function getUserAccountData(address)

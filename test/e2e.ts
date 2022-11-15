@@ -2,10 +2,10 @@ import { expect } from 'chai';
 import { ethers } from 'hardhat';
 import { register } from './test.utils';
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
-import { MinterMixologist, USD0, WETH9Mock, yieldbox } from '../typechain';
+import { MinterSingularity, USD0, WETH9Mock, yieldbox } from '../typechain';
 import { BigNumber, BigNumberish } from 'ethers';
-import { MixologistHelper } from '../typechain/contracts/mixologist/MixologistHelper';
-import { Mixologist } from '../typechain/contracts/mixologist/Mixologist';
+import { SingularityHelper } from '../typechain/contracts/singularity/SingularityHelper';
+import { Singularity } from '../typechain/contracts/singularity/Singularity';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 
 describe('e2e tests', () => {
@@ -13,14 +13,14 @@ describe('e2e tests', () => {
     ---Lenders---
     - mint WETH
     - deposit WETH into YieldBox
-    - add collateral to Weth-MinterMixologist
-    - deposit WETH into Weth-MinterMixologist
-    - borrow USD0 from Weth-MinterMixologist
-    - lend USD0 to Weth-Usd0-Mixologist
+    - add collateral to Weth-MinterSingularity
+    - deposit WETH into Weth-MinterSingularity
+    - borrow USD0 from Weth-MinterSingularity
+    - lend USD0 to Weth-Usd0-Singularity
 
     ---Borrowers---
-    - add collateral to Weth-Usd0-Mixologist
-    - borrow USD0 from Weth-Usd0-Mixologist
+    - add collateral to Weth-Usd0-Singularity
+    - borrow USD0 from Weth-Usd0-Singularity
     
     ---1/2 Borrowers---
     - repay
@@ -31,10 +31,10 @@ describe('e2e tests', () => {
     it('should use minterMixologist and market to add, borrow and get liquidated', async () => {
         const {
             bar,
-            wethMinterMixologist,
+            wethMinterSingularity,
             usd0,
-            createWethUsd0Mixologist,
-            mixologistHelper,
+            createWethUsd0Singularity,
+            singularityHelper,
             weth,
             wethAssetId,
             yieldBox,
@@ -74,7 +74,7 @@ describe('e2e tests', () => {
             usd0,
             false,
         );
-        const { wethUsdoMixologist } = await createWethUsd0Mixologist(
+        const { wethUsdoSingularity } = await createWethUsd0Singularity(
             usd0,
             weth,
             bar,
@@ -88,37 +88,41 @@ describe('e2e tests', () => {
             false,
         );
 
-        //get USD0 from minter and lent it WETH-USD0 mixologist
+        //get USD0 from minter and lent it WETH-USD0 Singularity
         await addUsd0Module(
             weth,
             wethMintVal,
-            mixologistHelper,
-            wethMinterMixologist,
+            singularityHelper,
+            wethMinterSingularity,
             usdoBorrowVal,
             yieldBox,
             usdoAssetId,
-            wethUsdoMixologist,
+            wethUsdoSingularity,
             lenders,
         );
 
         await approvePlug(
             deployer,
             weth,
-            wethUsdoMixologist,
-            mixologistHelper,
+            wethUsdoSingularity,
+            singularityHelper,
             yieldBox,
             ethers.constants.MaxUint256,
         );
-        await setYieldBoxApprovalPlug(deployer, yieldBox, wethMinterMixologist);
+        await setYieldBoxApprovalPlug(
+            deployer,
+            yieldBox,
+            wethMinterSingularity,
+        );
 
-        // add WETH and borrow USD0 from WETH-USD00-Mixologist
+        // add WETH and borrow USD0 from WETH-USD00-Singularity
         await borrowFromMixologistModule(
             borrowers,
             wethMintVal.div(10),
             usdoBorrowVal.div(10),
             weth,
-            mixologistHelper,
-            wethUsdoMixologist,
+            singularityHelper,
+            wethUsdoSingularity,
             yieldBox,
             usdoAssetId,
             usd0,
@@ -134,8 +138,8 @@ describe('e2e tests', () => {
             usd0,
             deployer,
             usdoBorrowVal,
-            mixologistHelper,
-            wethUsdoMixologist,
+            singularityHelper,
+            wethUsdoSingularity,
             yieldBox,
         );
         await usd0.setMinterStatus(deployer.address, true);
@@ -149,19 +153,19 @@ describe('e2e tests', () => {
             await usd0
                 .connect(repayer)
                 .approve(
-                    mixologistHelper.address,
+                    singularityHelper.address,
                     repayerUsd0Balance.add(repayerUsd0Balance.div(2)),
                 );
-            await wethUsdoMixologist
+            await wethUsdoSingularity
                 .connect(repayer)
                 .approve(
-                    mixologistHelper.address,
+                    singularityHelper.address,
                     repayerUsd0Balance.add(repayerUsd0Balance.div(2)),
                 );
-            await mixologistHelper
+            await singularityHelper
                 .connect(repayer)
                 .depositAndRepay(
-                    wethUsdoMixologist.address,
+                    wethUsdoSingularity.address,
                     repayerUsd0Balance.add(repayerUsd0Balance.div(2)),
                     repayerUsd0Balance,
                 );
@@ -170,24 +174,24 @@ describe('e2e tests', () => {
         //get liquidated
         await liquidateModule(
             liquidateArr,
-            wethUsdoMixologist,
+            wethUsdoSingularity,
             usd0,
             yieldBox,
             wethAssetId,
             deployer,
             timeTravel,
             multiSwapper,
-            mixologistHelper,
+            singularityHelper,
         );
     });
 
     it('should try to use minterMixologist and market to add, borrow and get liquidated, but in a wrong order', async () => {
         const {
             bar,
-            wethMinterMixologist,
+            wethMinterSingularity,
             usd0,
-            createWethUsd0Mixologist,
-            mixologistHelper,
+            createWethUsd0Singularity,
+            singularityHelper,
             weth,
             wethAssetId,
             yieldBox,
@@ -226,7 +230,7 @@ describe('e2e tests', () => {
             usd0,
             false,
         );
-        const { wethUsdoMixologist } = await createWethUsd0Mixologist(
+        const { wethUsdoSingularity } = await createWethUsd0Singularity(
             usd0,
             weth,
             bar,
@@ -243,19 +247,23 @@ describe('e2e tests', () => {
         await approvePlug(
             deployer,
             weth,
-            wethUsdoMixologist,
-            mixologistHelper,
+            wethUsdoSingularity,
+            singularityHelper,
             yieldBox,
             ethers.constants.MaxUint256,
         );
-        await setYieldBoxApprovalPlug(deployer, yieldBox, wethMinterMixologist);
+        await setYieldBoxApprovalPlug(
+            deployer,
+            yieldBox,
+            wethMinterSingularity,
+        );
 
         await mintWethPlug(borrowers[0], weth, wethMintVal);
         await approvePlug(
             borrowers[0],
             weth,
-            wethUsdoMixologist,
-            mixologistHelper,
+            wethUsdoSingularity,
+            singularityHelper,
             yieldBox,
             wethMintVal,
         );
@@ -263,8 +271,8 @@ describe('e2e tests', () => {
         //try to borrow without lender
         await depositAddCollateralAndBorrowPlug(
             borrowers[0],
-            mixologistHelper,
-            wethUsdoMixologist,
+            singularityHelper,
+            wethUsdoSingularity,
             yieldBox,
             usdoAssetId,
             wethMintVal,
@@ -272,19 +280,19 @@ describe('e2e tests', () => {
             true,
             ethers.utils.toUtf8Bytes(''),
             true,
-            'Mx: min limit',
+            'SGL: min limit',
         );
 
         //try to borrow more than available
         await addUsd0Module(
             weth,
             wethMintVal,
-            mixologistHelper,
-            wethMinterMixologist,
+            singularityHelper,
+            wethMinterSingularity,
             usdoBorrowVal,
             yieldBox,
             usdoAssetId,
-            wethUsdoMixologist,
+            wethUsdoSingularity,
             [lenders[0]],
         );
         await mintWethPlug(
@@ -295,15 +303,15 @@ describe('e2e tests', () => {
         await approvePlug(
             borrowers[borrowers.length - 1],
             weth,
-            wethUsdoMixologist,
-            mixologistHelper,
+            wethUsdoSingularity,
+            singularityHelper,
             yieldBox,
             wethMintVal.mul(10),
         );
         await depositAddCollateralAndBorrowPlug(
             borrowers[borrowers.length - 1],
-            mixologistHelper,
-            wethUsdoMixologist,
+            singularityHelper,
+            wethUsdoSingularity,
             yieldBox,
             usdoAssetId,
             wethMintVal.mul(10),
@@ -311,7 +319,7 @@ describe('e2e tests', () => {
             true,
             ethers.utils.toUtf8Bytes(''),
             true,
-            'Mx: no return data',
+            'SGL: no return data',
         );
 
         const borrowersMiddle = Math.ceil(borrowers.length / 2);
@@ -324,25 +332,25 @@ describe('e2e tests', () => {
         await approvePlug(
             repayArr[0],
             usd0,
-            wethUsdoMixologist,
-            mixologistHelper,
+            wethUsdoSingularity,
+            singularityHelper,
             yieldBox,
             usdoBorrowVal,
         );
         await depositAndRepayPlug(
             repayArr[0],
-            mixologistHelper,
-            wethUsdoMixologist,
+            singularityHelper,
+            wethUsdoSingularity,
             usdoBorrowVal,
             usdoBorrowVal,
             true,
-            'Mx: no return data',
+            'SGL: no return data',
         );
 
         //try to liquidate
         const liquidationQueue = await ethers.getContractAt(
             'LiquidationQueue',
-            await wethUsdoMixologist.liquidationQueue(),
+            await wethUsdoSingularity.liquidationQueue(),
         );
         const extraUsd0 = ethers.utils.parseEther('100000');
 
@@ -350,8 +358,8 @@ describe('e2e tests', () => {
         await approvePlug(
             deployer,
             usd0,
-            wethUsdoMixologist,
-            mixologistHelper,
+            wethUsdoSingularity,
+            singularityHelper,
             yieldBox,
             extraUsd0,
         );
@@ -373,21 +381,21 @@ describe('e2e tests', () => {
             liquidateArr,
             usd0,
             yieldBox,
-            wethUsdoMixologist,
+            wethUsdoSingularity,
             wethAssetId,
             multiSwapper,
             true,
-            'Mx: solvent',
+            'SGL: solvent',
         );
     });
 
     it('should borrow and repay in multipe small operations', async () => {
         const {
             bar,
-            wethMinterMixologist,
+            wethMinterSingularity,
             usd0,
-            createWethUsd0Mixologist,
-            mixologistHelper,
+            createWethUsd0Singularity,
+            singularityHelper,
             weth,
             wethAssetId,
             yieldBox,
@@ -422,7 +430,7 @@ describe('e2e tests', () => {
             usd0,
             false,
         );
-        const { wethUsdoMixologist } = await createWethUsd0Mixologist(
+        const { wethUsdoSingularity } = await createWethUsd0Singularity(
             usd0,
             weth,
             bar,
@@ -436,16 +444,16 @@ describe('e2e tests', () => {
             false,
         );
 
-        //get USD0 from minter and lent it WETH-USD0 mixologist
+        //get USD0 from minter and lent it WETH-USD0 Singularity
         await addUsd0Module(
             weth,
             wethMintVal,
-            mixologistHelper,
-            wethMinterMixologist,
+            singularityHelper,
+            wethMinterSingularity,
             usdoBorrowVal,
             yieldBox,
             usdoAssetId,
-            wethUsdoMixologist,
+            wethUsdoSingularity,
             [deployer],
         );
 
@@ -459,8 +467,8 @@ describe('e2e tests', () => {
             await approvePlug(
                 borrower,
                 weth,
-                wethUsdoMixologist,
-                mixologistHelper,
+                wethUsdoSingularity,
+                singularityHelper,
                 yieldBox,
                 borrowerCollateralValue,
             );
@@ -470,8 +478,8 @@ describe('e2e tests', () => {
             );
             await depositAddCollateralAndBorrowPlug(
                 borrower,
-                mixologistHelper,
-                wethUsdoMixologist,
+                singularityHelper,
+                wethUsdoSingularity,
                 yieldBox,
                 usdoAssetId,
                 borrowerCollateralValue,
@@ -486,7 +494,7 @@ describe('e2e tests', () => {
             expect(finalBorrowerUsd0Balance.gt(previousBorrowerUsd0Balance)).to
                 .be.true;
         }
-        const totalBorrowed = await wethUsdoMixologist.userBorrowPart(
+        const totalBorrowed = await wethUsdoSingularity.userBorrowPart(
             borrower.address,
         );
         expect(totalBorrowed.gt(0)).to.be.true;
@@ -495,29 +503,40 @@ describe('e2e tests', () => {
         await approvePlug(
             borrower,
             usd0,
-            wethUsdoMixologist,
-            mixologistHelper,
+            wethUsdoSingularity,
+            singularityHelper,
             yieldBox,
             ethers.constants.MaxUint256,
         );
 
         for (var i = 0; i < 10; i++) {
-            await depositAndRepayPlug(borrower, mixologistHelper, wethUsdoMixologist, repayPart.mul(2), repayPart);
+            await depositAndRepayPlug(
+                borrower,
+                singularityHelper,
+                wethUsdoSingularity,
+                repayPart.mul(2),
+                repayPart,
+            );
         }
 
-        const borrowedAfterRepayment = await wethUsdoMixologist.userBorrowPart(
+        const borrowedAfterRepayment = await wethUsdoSingularity.userBorrowPart(
             borrower.address,
         );
         expect(borrowedAfterRepayment.lt(totalBorrowed)).to.be.true;
 
         await mintUsd0Plug(borrower, usd0, borrowedAfterRepayment.mul(2));
-        await depositAndRepayPlug(borrower, mixologistHelper, wethUsdoMixologist, borrowedAfterRepayment.mul(2), borrowedAfterRepayment);
+        await depositAndRepayPlug(
+            borrower,
+            singularityHelper,
+            wethUsdoSingularity,
+            borrowedAfterRepayment.mul(2),
+            borrowedAfterRepayment,
+        );
 
-        const finalBorrowed = await wethUsdoMixologist.userBorrowPart(
+        const finalBorrowed = await wethUsdoSingularity.userBorrowPart(
             borrower.address,
         );
         expect(finalBorrowed.eq(0)).to.be.true;
-
     });
 });
 
@@ -542,13 +561,13 @@ async function mintUsd0Plug(
 async function approvePlug(
     signer: SignerWithAddress,
     token: any,
-    mixologist: any,
-    mixologistHelper: MixologistHelper,
+    Singularity: any,
+    singularityHelper: SingularityHelper,
     yieldBox: any,
     val: BigNumberish,
 ) {
-    await token.connect(signer).approve(mixologistHelper.address, val);
-    await mixologist.connect(signer).approve(mixologistHelper.address, val);
+    await token.connect(signer).approve(singularityHelper.address, val);
+    await Singularity.connect(signer).approve(singularityHelper.address, val);
     await token.approve(yieldBox.address, val);
 }
 
@@ -571,8 +590,8 @@ async function setYieldBoxApprovalPlug(
 
 async function depositAddCollateralAndBorrowPlug(
     signer: SignerWithAddress,
-    mixologistHelper: MixologistHelper,
-    mixologist: any,
+    singularityHelper: SingularityHelper,
+    Singularity: any,
     yieldBox: any,
     assetId: BigNumberish,
     collateralValue: BigNumberish,
@@ -586,10 +605,10 @@ async function depositAddCollateralAndBorrowPlug(
 
     if (shouldRevert) {
         await expect(
-            mixologistHelper
+            singularityHelper
                 .connect(signer)
                 .depositAddCollateralAndBorrow(
-                    mixologist.address,
+                    Singularity.address,
                     collateralValue,
                     borrowValue,
                     withdraw,
@@ -598,10 +617,10 @@ async function depositAddCollateralAndBorrowPlug(
         ).to.be.revertedWith(revertMessage!);
         return { share, amount };
     }
-    await mixologistHelper
+    await singularityHelper
         .connect(signer)
         .depositAddCollateralAndBorrow(
-            mixologist.address,
+            Singularity.address,
             collateralValue,
             borrowValue,
             withdraw,
@@ -619,26 +638,26 @@ async function depositAddCollateralAndBorrowPlug(
 
 async function addAssetToMixologistPlug(
     signer: SignerWithAddress,
-    mixologist: any,
+    Singularity: any,
     shareValue: BigNumberish,
 ) {
-    let addAssetFn = mixologist.interface.encodeFunctionData('addAsset', [
+    let addAssetFn = Singularity.interface.encodeFunctionData('addAsset', [
         signer.address,
         signer.address,
         false,
         shareValue,
     ]);
-    await mixologist.connect(signer).execute([addAssetFn], true);
+    await Singularity.connect(signer).execute([addAssetFn], true);
 
-    const lentAssetBalance = await mixologist.balanceOf(signer.address);
+    const lentAssetBalance = await Singularity.balanceOf(signer.address);
     expect(lentAssetBalance.eq(shareValue)).to.be.true;
     return { lentAssetBalance };
 }
 
 async function depositAndRepayPlug(
     signer: SignerWithAddress,
-    mixologistHelper: MixologistHelper,
-    mixologist: Mixologist,
+    singularityHelper: SingularityHelper,
+    Singularity: Singularity,
     depositVal: BigNumberish,
     repayVal: BigNumberish,
     shouldRevert?: boolean,
@@ -646,33 +665,33 @@ async function depositAndRepayPlug(
 ) {
     if (shouldRevert) {
         await expect(
-            mixologistHelper
+            singularityHelper
                 .connect(signer)
-                .depositAndRepay(mixologist.address, depositVal, repayVal),
+                .depositAndRepay(Singularity.address, depositVal, repayVal),
         ).to.be.revertedWith(revertMessage!);
         return;
     }
 
-    const previousBorrowAmount = await mixologist.userBorrowPart(
+    const previousBorrowAmount = await Singularity.userBorrowPart(
         signer.address,
     );
-    await mixologistHelper
+    await singularityHelper
         .connect(signer)
-        .depositAndRepay(mixologist.address, depositVal, repayVal);
-    const finalBorrowAmount = await mixologist.userBorrowPart(signer.address);
+        .depositAndRepay(Singularity.address, depositVal, repayVal);
+    const finalBorrowAmount = await Singularity.userBorrowPart(signer.address);
 
     expect(finalBorrowAmount.lt(previousBorrowAmount)).to.be.true;
 }
 
 async function priceDropPlug(
     signer: SignerWithAddress,
-    mixologist: Mixologist,
+    Singularity: Singularity,
 ) {
     const oracle = await ethers.getContractAt(
         'OracleMock',
-        await mixologist.oracle(),
+        await Singularity.oracle(),
     );
-    const oracleData = await mixologist.oracleData();
+    const oracleData = await Singularity.oracleData();
     const currentPrice = (await oracle.peek(oracleData))[1];
     const priceDrop = currentPrice.mul(80).div(100);
     await oracle.connect(signer).set(currentPrice.add(priceDrop));
@@ -716,7 +735,7 @@ async function liquidatePlug(
     liquidateArr: any[],
     asset: any,
     yieldBox: any,
-    mixologist: Mixologist,
+    Singularity: Singularity,
     collateralId: BigNumberish,
     multiSwapper: any,
     shouldRevert?: boolean,
@@ -730,7 +749,7 @@ async function liquidatePlug(
         const amount = await asset.balanceOf(lq.address);
         liquidateValues.push(amount);
         liquidateAddresses.push(lq.address);
-        const collateralShare = await mixologist.userCollateralShare(
+        const collateralShare = await Singularity.userCollateralShare(
             lq.address,
         );
         const collateralAmount = await yieldBox.toAmount(
@@ -745,7 +764,7 @@ async function liquidatePlug(
 
     if (shouldRevert) {
         await expect(
-            mixologist.liquidate(
+            Singularity.liquidate(
                 liquidateAddresses,
                 liquidateValues,
                 multiSwapper.address,
@@ -755,7 +774,7 @@ async function liquidatePlug(
         ).to.be.revertedWith(revertMessage!);
         return;
     }
-    await mixologist.liquidate(
+    await Singularity.liquidate(
         liquidateAddresses,
         liquidateValues,
         multiSwapper.address,
@@ -765,7 +784,7 @@ async function liquidatePlug(
 
     for (var i = 0; i < liquidateArr.length; i++) {
         const lq = liquidateArr[i];
-        const collateralShare = await mixologist.userCollateralShare(
+        const collateralShare = await Singularity.userCollateralShare(
             lq.address,
         );
         const collateralAmount = await yieldBox.toAmount(
@@ -781,12 +800,12 @@ async function liquidatePlug(
 async function addUsd0Module(
     weth: WETH9Mock,
     wethMintVal: BigNumberish,
-    mixologistHelper: MixologistHelper,
-    wethMinterMixologist: MinterMixologist,
+    singularityHelper: SingularityHelper,
+    wethMinterSingularity: MinterSingularity,
     usdoBorrowVal: BigNumberish,
     yieldBox: any,
     usdoAssetId: BigNumberish,
-    wethUsdoMixologist: Mixologist,
+    wethUsdoSingularity: Singularity,
     lenders: any[],
 ) {
     // deposit, add collateral and borrow UDS0
@@ -797,16 +816,16 @@ async function addUsd0Module(
         await approvePlug(
             lender,
             weth,
-            wethMinterMixologist,
-            mixologistHelper,
+            wethMinterSingularity,
+            singularityHelper,
             yieldBox,
             wethMintVal,
         );
 
         const { share, amount } = await depositAddCollateralAndBorrowPlug(
             lender,
-            mixologistHelper,
-            wethMinterMixologist,
+            singularityHelper,
+            wethMinterSingularity,
             yieldBox,
             usdoAssetId,
             wethMintVal,
@@ -816,10 +835,10 @@ async function addUsd0Module(
         );
 
         //lend USD0 to WethUSD0Mixologist
-        await setYieldBoxApprovalPlug(lender, yieldBox, wethUsdoMixologist);
+        await setYieldBoxApprovalPlug(lender, yieldBox, wethUsdoSingularity);
         await addAssetToMixologistPlug(
             lender,
-            wethUsdoMixologist,
+            wethUsdoSingularity,
             share.div(2),
         );
     }
@@ -830,8 +849,8 @@ async function borrowFromMixologistModule(
     wethMintVal: BigNumber,
     usdoBorrowVal: BigNumber,
     weth: WETH9Mock,
-    mixologistHelper: MixologistHelper,
-    wethUsdoMixologist: Mixologist,
+    singularityHelper: SingularityHelper,
+    wethUsdoSingularity: Singularity,
     yieldBox: any,
     usdoAssetId: BigNumberish,
     usd0: USD0,
@@ -844,16 +863,16 @@ async function borrowFromMixologistModule(
         await approvePlug(
             borrower,
             weth,
-            wethUsdoMixologist,
-            mixologistHelper,
+            wethUsdoSingularity,
+            singularityHelper,
             yieldBox,
             wethMintVal,
         );
 
         await depositAddCollateralAndBorrowPlug(
             borrower,
-            mixologistHelper,
-            wethUsdoMixologist,
+            singularityHelper,
+            wethUsdoSingularity,
             yieldBox,
             usdoAssetId,
             wethMintVal,
@@ -872,8 +891,8 @@ async function repayModule(
     usd0: USD0,
     deployer: SignerWithAddress,
     usdoBorrowVal: BigNumber,
-    mixologistHelper: MixologistHelper,
-    wethUsdoMixologist: Mixologist,
+    singularityHelper: SingularityHelper,
+    wethUsdoSingularity: Singularity,
     yieldBox: any,
 ) {
     await mintUsd0Plug(deployer, usd0, usdoBorrowVal.mul(100));
@@ -889,16 +908,16 @@ async function repayModule(
         await approvePlug(
             repayer,
             usd0,
-            wethUsdoMixologist,
-            mixologistHelper,
+            wethUsdoSingularity,
+            singularityHelper,
             yieldBox,
             repayerUsd0Balance.add(transferVal),
         );
 
         await depositAndRepayPlug(
             repayer,
-            mixologistHelper,
-            wethUsdoMixologist,
+            singularityHelper,
+            wethUsdoSingularity,
             repayerUsd0Balance.add(transferVal),
             repayerUsd0Balance,
         );
@@ -907,29 +926,29 @@ async function repayModule(
 
 async function liquidateModule(
     liquidateArr: any[],
-    wethUsdoMixologist: Mixologist,
+    wethUsdoSingularity: Singularity,
     usd0: USD0,
     yieldBox: any,
     wethAssetId: BigNumberish,
     deployer: SignerWithAddress,
     timeTravel: any,
     multiSwapper: any,
-    mixologistHelper: any,
+    singularityHelper: any,
 ) {
     const liquidationQueue = await ethers.getContractAt(
         'LiquidationQueue',
-        await wethUsdoMixologist.liquidationQueue(),
+        await wethUsdoSingularity.liquidationQueue(),
     );
     const extraUsd0 = ethers.utils.parseEther('100000');
 
-    await priceDropPlug(deployer, wethUsdoMixologist);
+    await priceDropPlug(deployer, wethUsdoSingularity);
 
     await mintUsd0Plug(deployer, usd0, extraUsd0);
     await approvePlug(
         deployer,
         usd0,
-        wethUsdoMixologist,
-        mixologistHelper,
+        wethUsdoSingularity,
+        singularityHelper,
         yieldBox,
         extraUsd0,
     );
@@ -952,7 +971,7 @@ async function liquidateModule(
         liquidateArr,
         usd0,
         yieldBox,
-        wethUsdoMixologist,
+        wethUsdoSingularity,
         wethAssetId,
         multiSwapper,
     );

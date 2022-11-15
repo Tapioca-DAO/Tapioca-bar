@@ -4,11 +4,11 @@ pragma solidity ^0.8.0;
 import '@boringcrypto/boring-solidity/contracts/ERC20.sol';
 import '@boringcrypto/boring-solidity/contracts/libraries/BoringRebase.sol';
 
-import './interfaces/IMixologist.sol';
+import './interfaces/ISingularity.sol';
 import '../../yieldbox/contracts/YieldBox.sol';
 
-/// @title Useful helper functions for `Mixologist`.
-contract MixologistHelper {
+/// @title Useful helper functions for `Singularity`.
+contract SingularityHelper {
     using RebaseLibrary for Rebase;
 
     struct MarketInfo {
@@ -25,13 +25,13 @@ contract MixologistHelper {
         uint256 currentExchangeRate;
         uint256 spotExchangeRate;
         uint256 oracleExchangeRate;
-        IMixologist.AccrueInfo accrueInfo;
+        ISingularity.AccrueInfo accrueInfo;
     }
 
     // ********************** //
     // *** VIEW FUNCTIONS *** //
     // ********************** //
-    function marketsInfo(address who, IMixologist[] memory markets)
+    function marketsInfo(address who, ISingularity[] memory markets)
         external
         view
         returns (MarketInfo[] memory)
@@ -41,38 +41,40 @@ contract MixologistHelper {
 
         Rebase memory _totalAsset;
         Rebase memory _totalBorrowed;
-        IMixologist.AccrueInfo memory _accrueInfo;
+        ISingularity.AccrueInfo memory _accrueInfo;
         for (uint256 i = 0; i < len; i++) {
-            IMixologist mx = markets[i];
+            ISingularity sgl = markets[i];
 
-            result[i].collateral = mx.collateral();
-            result[i].asset = mx.asset();
-            result[i].oracle = mx.oracle();
-            result[i].oracleData = mx.oracleData();
-            result[i].totalCollateralShare = mx.totalCollateralShare();
-            result[i].userCollateralShare = mx.userCollateralShare(who);
-            (uint128 totalAssetElastic, uint128 totalAssetBase) = mx
+            result[i].collateral = sgl.collateral();
+            result[i].asset = sgl.asset();
+            result[i].oracle = sgl.oracle();
+            result[i].oracleData = sgl.oracleData();
+            result[i].totalCollateralShare = sgl.totalCollateralShare();
+            result[i].userCollateralShare = sgl.userCollateralShare(who);
+            (uint128 totalAssetElastic, uint128 totalAssetBase) = sgl
                 .totalAsset();
             _totalAsset = Rebase(totalAssetElastic, totalAssetBase);
             result[i].totalAsset = _totalAsset;
-            result[i].userAssetFraction = mx.balanceOf(who);
-            (uint128 totalBorrowElastic, uint128 totalBorrowBase) = mx
+            result[i].userAssetFraction = sgl.balanceOf(who);
+            (uint128 totalBorrowElastic, uint128 totalBorrowBase) = sgl
                 .totalBorrow();
             _totalBorrowed = Rebase(totalBorrowElastic, totalBorrowBase);
             result[i].totalBorrow = _totalBorrowed;
-            result[i].userBorrowPart = mx.userBorrowPart(who);
+            result[i].userBorrowPart = sgl.userBorrowPart(who);
 
-            result[i].currentExchangeRate = mx.exchangeRate();
-            (, result[i].oracleExchangeRate) = mx.oracle().peek(
-                mx.oracleData()
+            result[i].currentExchangeRate = sgl.exchangeRate();
+            (, result[i].oracleExchangeRate) = sgl.oracle().peek(
+                sgl.oracleData()
             );
-            result[i].spotExchangeRate = mx.oracle().peekSpot(mx.oracleData());
+            result[i].spotExchangeRate = sgl.oracle().peekSpot(
+                sgl.oracleData()
+            );
             (
                 uint64 interestPerSecond,
                 uint64 lastBlockAccrued,
                 uint128 feesEarnedFraction
-            ) = mx.accrueInfo();
-            _accrueInfo = IMixologist.AccrueInfo(
+            ) = sgl.accrueInfo();
+            _accrueInfo = ISingularity.AccrueInfo(
                 interestPerSecond,
                 lastBlockAccrued,
                 feesEarnedFraction
@@ -87,10 +89,10 @@ contract MixologistHelper {
     // *** PUBLIC FUNCTIONS *** //
     // ************************ //
 
-    /// @notice deposits asset to YieldBox and lends it to Mixologist
+    /// @notice deposits asset to YieldBox and lends it to Singularity
     /// @param mixologist the mixologist address
     /// @param _amount the amount to lend
-    function depositAndAddAsset(IMixologist mixologist, uint256 _amount)
+    function depositAndAddAsset(ISingularity mixologist, uint256 _amount)
         external
     {
         uint256 assetId = mixologist.assetId();
@@ -109,14 +111,14 @@ contract MixologistHelper {
         mixologist.addAsset(address(this), msg.sender, false, _share);
     }
 
-    /// @notice deposts collateral to YieldBox, adds collateral to Mixologist, borrows and can withdraw to personal address
+    /// @notice deposts collateral to YieldBox, adds collateral to Singularity, borrows and can withdraw to personal address
     /// @param mixologist the mixologist address
     /// @param _collateralAmount the collateral amount to add
     /// @param _borrowAmount the amount to borrow
     /// @param withdraw_ if true, withdraws from YieldBox to `msg.sender`
     /// @param _withdrawData custom withdraw data; ignore if you need to withdraw on the same chain
     function depositAddCollateralAndBorrow(
-        IMixologist mixologist,
+        ISingularity mixologist,
         uint256 _collateralAmount,
         uint256 _borrowAmount,
         bool withdraw_,
@@ -162,7 +164,7 @@ contract MixologistHelper {
     /// @param _depositAmount the amount to deposit
     /// @param _repayAmount the amount to be repayed
     function depositAndRepay(
-        IMixologist mixologist,
+        ISingularity mixologist,
         uint256 _depositAmount,
         uint256 _repayAmount
     ) public {
@@ -194,7 +196,7 @@ contract MixologistHelper {
     /// @param _collateralAmount collateral amount to be removed
     /// @param withdraw_ if true withdraws to sender address
     function depositRepayAndRemoveCollateral(
-        IMixologist mixologist,
+        ISingularity mixologist,
         uint256 _depositAmount,
         uint256 _repayAmount,
         uint256 _collateralAmount,
@@ -230,7 +232,7 @@ contract MixologistHelper {
     // ************************* //
     function _withdraw(
         bytes calldata _withdrawData,
-        IMixologist mixologist,
+        ISingularity mixologist,
         YieldBox yieldBox,
         uint256 _amount
     ) private {
@@ -264,7 +266,7 @@ contract MixologistHelper {
         );
     }
 
-    function _setApprovalForYieldBox(IMixologist mixologist, YieldBox yieldBox)
+    function _setApprovalForYieldBox(ISingularity mixologist, YieldBox yieldBox)
         private
     {
         bool isApproved = yieldBox.isApprovedForAll(

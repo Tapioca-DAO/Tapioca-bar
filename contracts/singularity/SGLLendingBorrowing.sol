@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-import './MXCommon.sol';
+import './SGLCommon.sol';
 
-contract MXLendingBorrowing is MXCommon {
+contract SGLLendingBorrowing is SGLCommon {
     using RebaseLibrary for Rebase;
     using BoringERC20 for IERC20;
 
@@ -105,7 +105,7 @@ contract MXLendingBorrowing is MXCommon {
         borrower.onFlashLoan(msg.sender, asset, amount, feeAmount, data);
         require(
             yieldBox.amountOf(address(this), assetId) >= amount + feeAmount,
-            'Mx: insufficient funds'
+            'SGL: insufficient funds'
         );
 
         totalAsset.base = _totalAsset.base + uint128(feeFraction);
@@ -141,14 +141,14 @@ contract MXLendingBorrowing is MXCommon {
         (totalBorrow, part) = totalBorrow.add(amount + feeAmount, true);
         require(
             totalBorrowCap == 0 || totalBorrow.base <= totalBorrowCap,
-            'Mx: borrow cap reached'
+            'SGL: borrow cap reached'
         );
         userBorrowPart[from] += part;
         emit LogBorrow(from, to, amount, feeAmount, part);
 
         share = yieldBox.toShare(assetId, amount, false);
         Rebase memory _totalAsset = totalAsset;
-        require(_totalAsset.base >= 1000, 'Mx: min limit');
+        require(_totalAsset.base >= 1000, 'SGL: min limit');
         _totalAsset.elastic -= uint128(share);
         totalAsset = _totalAsset;
 
