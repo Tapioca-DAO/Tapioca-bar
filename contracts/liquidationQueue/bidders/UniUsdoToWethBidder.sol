@@ -6,7 +6,7 @@ import '@boringcrypto/boring-solidity/contracts/BoringOwnable.sol';
 import '../../IBeachBar.sol';
 import '../ILiquidationQueue.sol';
 import '../../swappers/IMultiSwapper.sol';
-import '../../mixologist/interfaces/IMixologist.sol';
+import '../../singularity/interfaces/ISingularity.sol';
 import '../../../yieldbox/contracts/interfaces/IYieldBox.sol';
 
 /*
@@ -62,7 +62,7 @@ contract UniUsdoToWethBidder is BoringOwnable {
     /// @param tokenInId Token in asset id
     /// @param amountOut Token out amount
     function getInputAmount(
-        IMixologist mixologist,
+        ISingularity mixologist,
         uint256 tokenInId,
         uint256 amountOut,
         bytes calldata
@@ -88,7 +88,7 @@ contract UniUsdoToWethBidder is BoringOwnable {
     /// @notice returns the amount of collateral
     /// @param amountIn Stablecoin amount
     function getOutputAmount(
-        IMixologist mixologist,
+        ISingularity mixologist,
         uint256 tokenInId,
         uint256 amountIn,
         bytes calldata
@@ -118,7 +118,7 @@ contract UniUsdoToWethBidder is BoringOwnable {
     /// @param amountIn Stablecoin amount
     /// @param data extra data used for the swap operation
     function swap(
-        IMixologist mixologist,
+        ISingularity mixologist,
         uint256 tokenInId,
         uint256 amountIn,
         bytes calldata data

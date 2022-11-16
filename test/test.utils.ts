@@ -6,7 +6,7 @@ import {
     BeachBar,
     CurveStableToUsdoBidder,
     ERC20Mock,
-    Mixologist,
+    Singularity,
     OracleMock,
     USD0,
     WETH9Mock,
@@ -147,6 +147,713 @@ async function registerYieldBox(wethAddress: string, staging?: boolean) {
     return { uriBuilder, yieldBox };
 }
 
+async function deployStargateRouterMock(
+    wethAddress: string,
+    staging?: boolean,
+) {
+    const stargateRouterMock = await (
+        await ethers.getContractFactory('StargateRouterMock')
+    ).deploy(wethAddress, { gasPrice: gasPrice });
+    await stargateRouterMock.deployed();
+
+    log(
+        `Deployed StargateRouterMock ${stargateRouterMock.address} with args [${wethAddress}]`,
+        staging,
+    );
+    await verifyEtherscan(stargateRouterMock.address, [wethAddress], staging);
+
+    return { stargateRouterMock };
+}
+
+async function deployStargateRouterETHMock(
+    stargateRouterMockAddress: string,
+    wethAddress: string,
+    __uniFactory: any,
+    __uniRouter: any,
+    deployerAddress: string,
+    staging?: boolean,
+) {
+    if (stargateRouterMockAddress == ethers.constants.AddressZero) {
+        const { stargateRouterMock } = await deployStargateRouterMock(
+            wethAddress,
+            staging,
+        );
+        stargateRouterMockAddress = stargateRouterMock.address;
+    }
+
+    const lpTokenMock = await (
+        await ethers.getContractFactory('ERC20Mock')
+    ).deploy(ethers.utils.parseEther('100000'), { gasPrice: gasPrice });
+    await lpTokenMock.deployed();
+
+    const wethPairAmount = ethers.BigNumber.from(1e6).mul((1e18).toString());
+    const lpTokenPairAmount = ethers.BigNumber.from(1e6).mul((1e18).toString());
+    const weth = await ethers.getContractAt('WETH9Mock', wethAddress);
+    await addUniV2Liquidity(
+        deployerAddress,
+        lpTokenMock,
+        weth,
+        lpTokenPairAmount,
+        wethPairAmount,
+        __uniFactory,
+        __uniRouter,
+        true,
+    );
+
+    const stargateRouterETHMock = await (
+        await ethers.getContractFactory('RouterETHMock')
+    ).deploy(stargateRouterMockAddress, lpTokenMock.address, {
+        gasPrice: gasPrice,
+    });
+    await stargateRouterETHMock.deployed();
+    log(
+        `Deployed RouterETHMock ${stargateRouterETHMock.address} with args [${stargateRouterMockAddress}, ${lpTokenMock.address}]`,
+        staging,
+    );
+
+    await verifyEtherscan(
+        stargateRouterETHMock.address,
+        [stargateRouterMockAddress, lpTokenMock.address],
+        staging,
+    );
+
+    return { stargateRouterETHMock, lpTokenMock };
+}
+
+async function deployStargateLpStakingMock(
+    deployerAddress: string,
+    wethAddress: string,
+    stgRewardAddress: string,
+    lpTokenAddress: string,
+    __uniFactory: any,
+    __uniRouter: any,
+    staging?: boolean,
+) {
+    if (stgRewardAddress == ethers.constants.AddressZero) {
+        const stgTokenMock = await (
+            await ethers.getContractFactory('ERC20Mock')
+        ).deploy(ethers.utils.parseEther('100000'), { gasPrice: gasPrice });
+        await stgTokenMock.deployed();
+
+        const wethPairAmount = ethers.BigNumber.from(1e6).mul(
+            (1e18).toString(),
+        );
+        const stgTokenPairAmount = ethers.BigNumber.from(1e6).mul(
+            (1e18).toString(),
+        );
+        const weth = await ethers.getContractAt('WETH9Mock', wethAddress);
+        await addUniV2Liquidity(
+            deployerAddress,
+            stgTokenMock,
+            weth,
+            stgTokenPairAmount,
+            wethPairAmount,
+            __uniFactory,
+            __uniRouter,
+            true,
+        );
+
+        stgRewardAddress = stgTokenMock.address;
+    }
+
+    const lpStakingMock = await (
+        await ethers.getContractFactory('LPStakingMock')
+    ).deploy(lpTokenAddress, stgRewardAddress, { gasPrice: gasPrice });
+    await lpStakingMock.deployed();
+    log(
+        `Deployed LPStakingMock ${lpStakingMock.address} with args [${lpStakingMock.address},${stgRewardAddress}]`,
+        staging,
+    );
+    await verifyEtherscan(
+        lpStakingMock.address,
+        [lpStakingMock.address, stgRewardAddress],
+        staging,
+    );
+
+    return { lpStakingMock };
+}
+
+async function registerStargateStrategy(
+    yieldBoxAddres: string,
+    wethAddress: string,
+    routerEth: string,
+    lpStaking: string,
+    lpStakingPid: string,
+    lpToken: string,
+    swapperAddress: string,
+    __uniFactory: any,
+    __uniRouter: any,
+    deployerAddress: string,
+    staging?: boolean,
+) {
+    if (routerEth == ethers.constants.AddressZero) {
+        const { stargateRouterETHMock, lpTokenMock } =
+            await deployStargateRouterETHMock(
+                ethers.constants.AddressZero,
+                wethAddress,
+                __uniFactory,
+                __uniRouter,
+                deployerAddress,
+                staging,
+            );
+        routerEth = stargateRouterETHMock.address;
+        lpToken = lpTokenMock.address;
+    }
+
+    if (lpStaking == ethers.constants.AddressZero) {
+        const { lpStakingMock } = await deployStargateLpStakingMock(
+            deployerAddress,
+            wethAddress,
+            ethers.constants.AddressZero,
+            lpToken,
+            __uniFactory,
+            __uniRouter,
+            staging,
+        );
+        lpStaking = lpStakingMock.address;
+    }
+
+    const stargateStrategy = await (
+        await ethers.getContractFactory('StargateStrategy')
+    ).deploy(
+        yieldBoxAddres,
+        wethAddress,
+        routerEth,
+        lpStaking,
+        lpStakingPid,
+        lpToken,
+        swapperAddress,
+        {
+            gasPrice: gasPrice,
+        },
+    );
+    await stargateStrategy.deployed();
+
+    log(
+        `Deployed StargateStrategy ${stargateStrategy.address} with args [${yieldBoxAddres},${wethAddress},${routerEth},${lpStaking},${lpStakingPid},${lpToken},${swapperAddress}]`,
+        staging,
+    );
+    await verifyEtherscan(
+        stargateStrategy.address,
+        [
+            yieldBoxAddres,
+            wethAddress,
+            routerEth,
+            lpStaking,
+            lpStakingPid,
+            lpToken,
+            swapperAddress,
+        ],
+        staging,
+    );
+
+    return { stargateStrategy };
+}
+
+async function deployStEtEThMock(staging?: boolean) {
+    const stEthMock = await (
+        await ethers.getContractFactory('StEthMock')
+    ).deploy(ethers.utils.parseEther('100000'), { gasPrice: gasPrice });
+    await stEthMock.deployed();
+
+    log(
+        `Deployed StEthMock ${
+            stEthMock.address
+        } with args [${ethers.utils.parseEther('100000')}]`,
+        staging,
+    );
+    await verifyEtherscan(
+        stEthMock.address,
+        [ethers.utils.parseEther('100000')],
+        staging,
+    );
+
+    return { stEthMock };
+}
+
+async function deployCurveStEthPoolMock(
+    stEthAddress: string,
+    staging?: boolean,
+) {
+    if (stEthAddress == ethers.constants.AddressZero) {
+        const { stEthMock } = await deployStEtEThMock(staging);
+        stEthAddress = stEthMock.address;
+    }
+    const curveStEthPoolMock = await (
+        await ethers.getContractFactory('CurveEthStEthPoolMock')
+    ).deploy(stEthAddress, { gasPrice: gasPrice });
+    await curveStEthPoolMock.deployed();
+
+    log(
+        `Deployed CurveEthStEthPoolMock ${curveStEthPoolMock.address} with args [${stEthAddress}]`,
+        staging,
+    );
+    await verifyEtherscan(curveStEthPoolMock.address, [stEthAddress], staging);
+
+    return { curveStEthPoolMock };
+}
+
+async function registerLidoStEthStrategy(
+    wethAddress: string,
+    yieldBoxAddres: string,
+    stEthAddress: string,
+    curveSthEThPoolAddress: string,
+    staging?: boolean,
+) {
+    if (stEthAddress == ethers.constants.AddressZero) {
+        const { stEthMock } = await deployStEtEThMock(staging);
+        stEthAddress = stEthMock.address;
+    }
+    if (curveSthEThPoolAddress == ethers.constants.AddressZero) {
+        const { curveStEthPoolMock } = await deployCurveStEthPoolMock(
+            stEthAddress,
+        );
+        curveSthEThPoolAddress = curveStEthPoolMock.address;
+    }
+
+    const lidoEthStrategy = await (
+        await ethers.getContractFactory('LidoEthStrategy')
+    ).deploy(
+        yieldBoxAddres,
+        wethAddress,
+        stEthAddress,
+        curveSthEThPoolAddress,
+        { gasPrice: gasPrice },
+    );
+    await lidoEthStrategy.deployed();
+
+    log(
+        `Deployed LidoEthStrategy ${lidoEthStrategy.address} with args [${yieldBoxAddres},${wethAddress},${stEthAddress},${curveSthEThPoolAddress}]`,
+        staging,
+    );
+    await verifyEtherscan(
+        lidoEthStrategy.address,
+        [yieldBoxAddres, wethAddress, stEthAddress, curveSthEThPoolAddress],
+        staging,
+    );
+
+    return { lidoEthStrategy };
+}
+
+async function deployTricryptoMinter(
+    rewardTokenAddress: string,
+    staging?: boolean,
+) {
+    if (rewardTokenAddress == ethers.constants.AddressZero) {
+        const crvTokenMock = await (
+            await ethers.getContractFactory('ERC20Mock')
+        ).deploy(ethers.utils.parseEther('100000'), { gasPrice: gasPrice });
+        await crvTokenMock.deployed();
+
+        rewardTokenAddress = crvTokenMock.address;
+    }
+
+    const curveMinterMock = await (
+        await ethers.getContractFactory('CurveMinterMock')
+    ).deploy(rewardTokenAddress, { gasPrice: gasPrice });
+    await curveMinterMock.deployed();
+
+    log(
+        `Deployed CurveMinterMock ${curveMinterMock.address} with args [${rewardTokenAddress}]`,
+        staging,
+    );
+    await verifyEtherscan(
+        curveMinterMock.address,
+        [rewardTokenAddress],
+        staging,
+    );
+    return { curveMinterMock };
+}
+
+async function deployTricryptoLpGaugeMock(
+    liquidityPoolAddress: string,
+    wethAddress: string,
+    rewardAddress: string,
+    staging?: boolean,
+) {
+    if (liquidityPoolAddress == ethers.constants.AddressZero) {
+        const { liquidityPoolMock } = await deployTricryptoLiquidityPoolMock(
+            wethAddress,
+            staging,
+        );
+        liquidityPoolAddress = liquidityPoolMock.address;
+    }
+
+    const liquidityPoolContract = await ethers.getContractAt(
+        'ITricryptoLiquidityPool',
+        liquidityPoolAddress,
+    );
+    const lpTokenAddress = await liquidityPoolContract.token();
+    const lpGaugeMock = await (
+        await ethers.getContractFactory('TricryptoLPGaugeMock')
+    ).deploy(lpTokenAddress, rewardAddress, { gasPrice: gasPrice });
+    await lpGaugeMock.deployed();
+
+    log(
+        `Deployed TricryptoLPGaugeMock ${lpGaugeMock.address} with args [${lpTokenAddress},${rewardAddress}]`,
+        staging,
+    );
+    await verifyEtherscan(
+        lpGaugeMock.address,
+        [lpTokenAddress, rewardAddress],
+        staging,
+    );
+    return { lpGaugeMock };
+}
+
+async function deployTricryptoLiquidityPoolMock(
+    wethAddress: string,
+    staging?: boolean,
+) {
+    const liquidityPoolMock = await (
+        await ethers.getContractFactory('TricryptoLiquidityPoolMock')
+    ).deploy(wethAddress, { gasPrice: gasPrice });
+    await liquidityPoolMock.deployed();
+
+    log(
+        `Deployed TricryptoLiquidityPoolMock ${liquidityPoolMock.address} with args [${wethAddress}]`,
+        staging,
+    );
+    await verifyEtherscan(liquidityPoolMock.address, [wethAddress], staging);
+
+    return { liquidityPoolMock };
+}
+
+async function deployTricryptoLPGetter(
+    liquidityPoolAddress: string,
+    wethAddress: string,
+    wbtcAddress: string,
+    usdtAddress: string,
+    staging?: boolean,
+) {
+    const tricryptoLPGtter = await (
+        await ethers.getContractFactory('TricryptoLPGetter')
+    ).deploy(liquidityPoolAddress, usdtAddress, wbtcAddress, wethAddress, {
+        gasPrice: gasPrice,
+    });
+    await tricryptoLPGtter.deployed();
+
+    log(
+        `Deployed TricryptoLPGetter ${tricryptoLPGtter.address} with args [${liquidityPoolAddress},${usdtAddress},${wbtcAddress},${wethAddress}]`,
+        staging,
+    );
+    await verifyEtherscan(
+        tricryptoLPGtter.address,
+        [liquidityPoolAddress, usdtAddress, wbtcAddress, wethAddress],
+        staging,
+    );
+
+    return { tricryptoLPGtter };
+}
+
+async function registerTricryptoStrategy(
+    wethAddress: string,
+    usdtAddress: string,
+    wbtcAddress: string,
+    yieldBoxAddres: string,
+    liquidityPoolAddress: string,
+    lpGaugeAddress: string,
+    lpGetterAddress: string,
+    rewardTokenAddress: string,
+    tricryptoMinterAddress: string,
+    __uniFactory: any,
+    __uniRouter: any,
+    deployerAddress: string,
+    swapper: string,
+    staging?: boolean,
+) {
+    if (liquidityPoolAddress == ethers.constants.AddressZero) {
+        const { liquidityPoolMock } = await deployTricryptoLiquidityPoolMock(
+            wethAddress,
+            staging,
+        );
+        liquidityPoolAddress = liquidityPoolMock.address;
+    }
+    if (rewardTokenAddress == ethers.constants.AddressZero) {
+        const crvTokenMock = await (
+            await ethers.getContractFactory('ERC20Mock')
+        ).deploy(ethers.utils.parseEther('100000'), { gasPrice: gasPrice });
+        await crvTokenMock.deployed();
+
+        rewardTokenAddress = crvTokenMock.address;
+
+        const weth = await ethers.getContractAt('WETH9Mock', wethAddress);
+        const wethPairAmount = ethers.BigNumber.from(1e6).mul(
+            (1e18).toString(),
+        );
+        const crvPairAmount = ethers.BigNumber.from(1e6).mul((1e18).toString());
+        await addUniV2Liquidity(
+            deployerAddress,
+            crvTokenMock,
+            weth,
+            crvPairAmount,
+            wethPairAmount,
+            __uniFactory,
+            __uniRouter,
+            true,
+        );
+    }
+
+    if (lpGaugeAddress == ethers.constants.AddressZero) {
+        const { lpGaugeMock } = await deployTricryptoLpGaugeMock(
+            liquidityPoolAddress,
+            wethAddress,
+            rewardTokenAddress,
+            staging,
+        );
+        lpGaugeAddress = lpGaugeMock.address;
+    }
+    let tricryptoLPGtter: any;
+    if (lpGetterAddress == ethers.constants.AddressZero) {
+        const tricryptoLPGetterDeployment = await deployTricryptoLPGetter(
+            liquidityPoolAddress,
+            wethAddress,
+            wbtcAddress,
+            usdtAddress,
+        );
+        lpGetterAddress = tricryptoLPGetterDeployment.tricryptoLPGtter.address;
+        tricryptoLPGtter = tricryptoLPGetterDeployment.tricryptoLPGtter;
+    }
+
+    if (tricryptoMinterAddress == ethers.constants.AddressZero) {
+        const { curveMinterMock } = await deployTricryptoMinter(
+            rewardTokenAddress,
+            staging,
+        );
+        tricryptoMinterAddress = curveMinterMock.address;
+    }
+
+    const tricryptoStrategy = await (
+        await ethers.getContractFactory('TricryptoStrategy')
+    ).deploy(
+        yieldBoxAddres,
+        wethAddress,
+        lpGaugeAddress,
+        lpGetterAddress,
+        tricryptoMinterAddress,
+        swapper,
+        {
+            gasPrice: gasPrice,
+        },
+    );
+    await tricryptoStrategy.deployed();
+
+    log(
+        `Deployed TricryptoStrategy ${tricryptoStrategy.address} with args [${yieldBoxAddres},${wethAddress},${lpGaugeAddress},${lpGetterAddress},${tricryptoMinterAddress},${swapper}]`,
+        staging,
+    );
+    await verifyEtherscan(
+        tricryptoStrategy.address,
+        [
+            yieldBoxAddres,
+            wethAddress,
+            lpGaugeAddress,
+            lpGetterAddress,
+            tricryptoMinterAddress,
+            swapper,
+        ],
+        staging,
+    );
+
+    return { tricryptoStrategy, tricryptoLPGtter };
+}
+
+async function deployAaveLendingPoolMock(
+    assetAddress: string,
+    staging?: boolean,
+) {
+    const lendingPoolMock = await (
+        await ethers.getContractFactory('LendingPoolMock')
+    ).deploy(assetAddress, { gasPrice: gasPrice });
+    await lendingPoolMock.deployed();
+    log(
+        `Deployed LendingPoolMock ${lendingPoolMock.address} with args [${assetAddress}]`,
+        staging,
+    );
+    await verifyEtherscan(lendingPoolMock.address, [assetAddress], staging);
+
+    return { lendingPoolMock };
+}
+
+async function deployStkAaveMock(
+    deployerAddress: string,
+    wethAddress: string,
+    __uniFactory: any,
+    __uniRouter: any,
+    staging?: boolean,
+) {
+    const stkAaveMock = await (
+        await ethers.getContractFactory('StkAaveMock')
+    ).deploy({ gasPrice: gasPrice });
+    await stkAaveMock.deployed();
+
+    log(`Deployed StkAaveMock ${stkAaveMock.address} with no args`, staging);
+    await verifyEtherscan(stkAaveMock.address, [], staging);
+
+    const weth = await ethers.getContractAt('WETH9Mock', wethAddress);
+    const aaveTokenContract = await ethers.getContractAt(
+        'ERC20Mock',
+        await stkAaveMock.REWARD_TOKEN(),
+    );
+    const wethPairAmount = ethers.BigNumber.from(1e6).mul((1e18).toString());
+    const aavePairAmount = ethers.BigNumber.from(1e6).mul((1e18).toString());
+    await addUniV2Liquidity(
+        deployerAddress,
+        weth,
+        aaveTokenContract,
+        wethPairAmount,
+        aavePairAmount,
+        __uniFactory,
+        __uniRouter,
+        true,
+    );
+    return { stkAaveMock };
+}
+
+async function deployAaveIncentivesControllerMock(
+    stkAaveTokenAddress: string,
+    wethAddress: string,
+    __uniFactory: any,
+    __uniRouter: any,
+    staging?: boolean,
+) {
+    if (stkAaveTokenAddress == ethers.constants.AddressZero) {
+        const { stkAaveMock } = await deployStkAaveMock(
+            wethAddress,
+            __uniFactory,
+            __uniRouter,
+            staging,
+        );
+        stkAaveTokenAddress = stkAaveMock.address;
+    }
+
+    const incentivesControllerMock = await (
+        await ethers.getContractFactory('IncentivesControllerMock')
+    ).deploy(stkAaveTokenAddress, { gasPrice: gasPrice });
+    await incentivesControllerMock.deployed();
+
+    log(
+        `Deployed IncentivesControllerMock ${incentivesControllerMock.address} with args [${stkAaveTokenAddress}]`,
+        staging,
+    );
+    await verifyEtherscan(
+        incentivesControllerMock.address,
+        [stkAaveTokenAddress],
+        staging,
+    );
+    return { incentivesControllerMock };
+}
+async function registerAaveStrategy(
+    deployerAddress: string,
+    wethAddress: string,
+    yieldBoxAddres: string,
+    lendingPoolAddress: string,
+    stkAaveAddress: string,
+    receiptAaveAddress: string,
+    incentivesControllerAddress: string,
+    aaveSwapperAddress: string,
+    __uniFactory: any,
+    __uniRouter: any,
+    staging?: boolean,
+) {
+    if (lendingPoolAddress == ethers.constants.AddressZero) {
+        const { lendingPoolMock } = await deployAaveLendingPoolMock(
+            wethAddress,
+            staging,
+        );
+        lendingPoolAddress = lendingPoolMock.address;
+    }
+
+    if (stkAaveAddress == ethers.constants.AddressZero) {
+        const { stkAaveMock } = await deployStkAaveMock(
+            deployerAddress,
+            wethAddress,
+            __uniFactory,
+            __uniRouter,
+            staging,
+        );
+        stkAaveAddress = stkAaveMock.address;
+    }
+    if (incentivesControllerAddress == ethers.constants.AddressZero) {
+        const { incentivesControllerMock } =
+            await deployAaveIncentivesControllerMock(
+                stkAaveAddress,
+                wethAddress,
+                __uniFactory,
+                __uniRouter,
+                staging,
+            );
+        incentivesControllerAddress = incentivesControllerMock.address;
+    }
+
+    const aaveStrategy = await (
+        await ethers.getContractFactory('AaveStrategy')
+    ).deploy(
+        yieldBoxAddres,
+        wethAddress,
+        lendingPoolAddress,
+        incentivesControllerAddress,
+        receiptAaveAddress,
+        aaveSwapperAddress,
+        {
+            gasPrice: gasPrice,
+        },
+    );
+    await aaveStrategy.deployed();
+
+    log(
+        `Deployed AaveStrategy ${aaveStrategy.address} with args [${yieldBoxAddres},${wethAddress},${lendingPoolAddress}]`,
+        staging,
+    );
+    await verifyEtherscan(
+        aaveStrategy.address,
+        [yieldBoxAddres, wethAddress, lendingPoolAddress],
+        staging,
+    );
+    return { aaveStrategy };
+}
+
+async function deployYearnVaultMock(assetAddress: string, staging?: boolean) {
+    const vaultMock = await (
+        await ethers.getContractFactory('YearnVaultMock')
+    ).deploy(assetAddress, { gasPrice: gasPrice });
+    await vaultMock.deployed();
+    log(
+        `Deployed YearnVaultMock ${vaultMock.address} with args [${assetAddress}]`,
+        staging,
+    );
+    await verifyEtherscan(vaultMock.address, [assetAddress], staging);
+
+    return { vaultMock };
+}
+async function registerYearnStrategy(
+    wethAddress: string,
+    yieldBoxAddres: string,
+    vaultAddress: string,
+    staging?: boolean,
+) {
+    if (vaultAddress == ethers.constants.AddressZero) {
+        const { vaultMock } = await deployYearnVaultMock(wethAddress, staging);
+        vaultAddress = vaultMock.address;
+    }
+
+    const yearnStrategy = await (
+        await ethers.getContractFactory('YearnStrategy')
+    ).deploy(yieldBoxAddres, wethAddress, vaultAddress, { gasPrice: gasPrice });
+    await yearnStrategy.deployed();
+
+    log(
+        `Deployed YearnStrategy ${yearnStrategy.address} with args [${yieldBoxAddres},${wethAddress},${vaultAddress}]`,
+        staging,
+    );
+    await verifyEtherscan(
+        yearnStrategy.address,
+        [yieldBoxAddres, wethAddress, vaultAddress],
+        staging,
+    );
+    return { yearnStrategy };
+}
+
 async function registerBeachBar(
     yieldBox: string,
     tapAddress: string,
@@ -217,6 +924,56 @@ async function deployProxyDeployer() {
     return { proxyDeployer };
 }
 
+async function addUniV2Liquidity(
+    deployerAddress: string,
+    token1: any,
+    token2: any,
+    token1Amount: BigNumberish,
+    token2Amount: BigNumberish,
+    __uniFactory: UniswapV2Factory,
+    __uniRouter: UniswapV2Router02,
+    createPair?: boolean,
+) {
+    if (createPair) {
+        await (
+            await __uniFactory.createPair(token1.address, token2.address, {
+                gasPrice: gasPrice,
+            })
+        ).wait();
+    }
+    if (token1.freeMint !== undefined) {
+        await token1.freeMint(token1Amount, { gasPrice: gasPrice });
+    } else {
+        await token1.mint(deployerAddress, token1Amount, {
+            gasPrice: gasPrice,
+        });
+    }
+    if (token2.freeMint !== undefined) {
+        await token2.freeMint(token2Amount, { gasPrice: gasPrice });
+    } else {
+        await token2.mint(deployerAddress, token2Amount, {
+            gasPrice: gasPrice,
+        });
+    }
+    await token1.approve(__uniRouter.address, token1Amount, {
+        gasPrice: gasPrice,
+    });
+    await token2.approve(__uniRouter.address, token2Amount, {
+        gasPrice: gasPrice,
+    });
+    await __uniRouter.addLiquidity(
+        token1.address,
+        token2.address,
+        token1Amount,
+        token2Amount,
+        token1Amount,
+        token2Amount,
+        deployerAddress,
+        Math.floor(Date.now() / 1000) + 1000 * 60, // 1min margin
+        { gasPrice: gasPrice },
+    );
+}
+
 async function addUniV2UsdoWethLiquidity(
     deployerAddress: string,
     usdo: ERC20Mock,
@@ -228,25 +985,14 @@ async function addUniV2UsdoWethLiquidity(
     const usdoPairAmount = wethPairAmount.mul(
         __wethUsdcPrice.div((1e18).toString()),
     );
-    await weth.freeMint(wethPairAmount, { gasPrice: gasPrice });
-    await usdo.freeMint(usdoPairAmount, { gasPrice: gasPrice });
-
-    await weth.approve(__uniRouter.address, wethPairAmount, {
-        gasPrice: gasPrice,
-    });
-    await usdo.approve(__uniRouter.address, usdoPairAmount, {
-        gasPrice: gasPrice,
-    });
-    await __uniRouter.addLiquidity(
-        weth.address,
-        usdo.address,
-        wethPairAmount,
-        usdoPairAmount,
-        wethPairAmount,
-        usdoPairAmount,
+    await addUniV2Liquidity(
         deployerAddress,
-        Math.floor(Date.now() / 1000) + 1000 * 60, // 1min margin
-        { gasPrice: gasPrice },
+        weth,
+        usdo,
+        wethPairAmount,
+        usdoPairAmount,
+        __uniFactory,
+        __uniRouter,
     );
 }
 
@@ -259,45 +1005,20 @@ async function createUniV2Usd0Pairs(
     usdo: USD0,
 ) {
     // Create WETH<>USD0 pair
-    await (
-        await uniFactory.createPair(weth.address, usdo.address, {
-            gasPrice: gasPrice,
-        })
-    ).wait();
-
     const wethPairAmount = ethers.BigNumber.from(1e6).mul((1e18).toString());
     const usdoPairAmount = wethPairAmount.mul(
         __wethUsdcPrice.div((1e18).toString()),
     );
-
-    await (await weth.freeMint(wethPairAmount, { gasPrice: gasPrice })).wait();
-    await (
-        await usdo.mint(deployerAddress, usdoPairAmount, { gasPrice: gasPrice })
-    ).wait();
-
-    await (
-        await weth.approve(uniRouter.address, wethPairAmount, {
-            gasPrice: gasPrice,
-        })
-    ).wait();
-    await (
-        await usdo.approve(uniRouter.address, usdoPairAmount, {
-            gasPrice: gasPrice,
-        })
-    ).wait();
-    await (
-        await uniRouter.addLiquidity(
-            weth.address,
-            usdo.address,
-            wethPairAmount,
-            usdoPairAmount,
-            wethPairAmount,
-            usdoPairAmount,
-            deployerAddress,
-            Math.floor(Date.now() / 1000) + 1000 * 60, // 1min margin
-            { gasPrice: gasPrice },
-        )
-    ).wait();
+    await addUniV2Liquidity(
+        deployerAddress,
+        weth,
+        usdo,
+        wethPairAmount,
+        usdoPairAmount,
+        uniFactory,
+        uniRouter,
+        true,
+    );
 
     const __wethUsdoMockPair = await uniFactory.getPair(
         weth.address,
@@ -305,45 +1026,19 @@ async function createUniV2Usd0Pairs(
     );
 
     // Create TAP<>USD0 pair
-    await (
-        await uniFactory.createPair(tap.address, usdo.address, {
-            gasPrice: gasPrice,
-        })
-    ).wait();
     const tapPairAmount = ethers.BigNumber.from(1e6).mul((1e18).toString());
     const usdoTapPairAmount = ethers.BigNumber.from(1e6).mul((1e18).toString());
 
-    await (await tap.freeMint(tapPairAmount, { gasPrice: gasPrice })).wait();
-    await (
-        await usdo.mint(deployerAddress, usdoTapPairAmount, {
-            gasPrice: gasPrice,
-        })
-    ).wait();
-
-    await (
-        await tap.approve(uniRouter.address, tapPairAmount, {
-            gasPrice: gasPrice,
-        })
-    ).wait();
-    await (
-        await usdo.approve(uniRouter.address, usdoTapPairAmount, {
-            gasPrice: gasPrice,
-        })
-    ).wait();
-
-    await (
-        await uniRouter.addLiquidity(
-            tap.address,
-            usdo.address,
-            tapPairAmount,
-            usdoTapPairAmount,
-            tapPairAmount,
-            usdoTapPairAmount,
-            deployerAddress,
-            Math.floor(Date.now() / 1000) + 1000 * 60, // 1min margin
-            { gasPrice: gasPrice },
-        )
-    ).wait();
+    await addUniV2Liquidity(
+        deployerAddress,
+        tap,
+        usdo,
+        tapPairAmount,
+        usdoTapPairAmount,
+        uniFactory,
+        uniRouter,
+        true,
+    );
 
     const __tapUsdoMockPair = await uniFactory.getPair(
         tap.address,
@@ -441,6 +1136,31 @@ async function uniV2EnvironnementSetup(
     return { __wethUsdcMockPair, __wethTapMockPair, __uniFactory, __uniRouter };
 }
 
+async function registerNonYieldBoxMultiSwapper(
+    __uniFactoryAddress: string,
+    __uniFactoryPairCodeHash: string,
+    staging?: boolean,
+) {
+    const nonYieldBoxMultiSwapper = await (
+        await ethers.getContractFactory('NonYieldBoxMultiSwapper')
+    ).deploy(__uniFactoryAddress, __uniFactoryPairCodeHash, {
+        gasPrice: gasPrice,
+    });
+    await nonYieldBoxMultiSwapper.deployed();
+    log(
+        `Deployed MultiSwapper ${nonYieldBoxMultiSwapper.address} with args [${__uniFactoryAddress}, ${__uniFactoryPairCodeHash}]`,
+        staging,
+    );
+
+    await verifyEtherscan(
+        nonYieldBoxMultiSwapper.address,
+        [__uniFactoryAddress, __uniFactoryPairCodeHash],
+        staging,
+    );
+
+    return { nonYieldBoxMultiSwapper };
+}
+
 async function registerMultiSwapper(
     bar: BeachBar,
     __uniFactoryAddress: string,
@@ -474,7 +1194,7 @@ async function registerMultiSwapper(
 
 async function deployMediumRiskMC(bar: BeachBar, staging?: boolean) {
     const mediumRiskMC = await (
-        await ethers.getContractFactory('Mixologist')
+        await ethers.getContractFactory('Singularity')
     ).deploy({ gasPrice: gasPrice });
     await mediumRiskMC.deployed();
     log(
@@ -494,7 +1214,7 @@ async function deployMediumRiskMC(bar: BeachBar, staging?: boolean) {
     return { mediumRiskMC };
 }
 
-async function registerMixologist(
+async function registerSingularity(
     mediumRiskMC: string,
     yieldBox: YieldBox,
     bar: BeachBar,
@@ -507,21 +1227,21 @@ async function registerMixologist(
     tapSwapPath: string[],
     staging?: boolean,
 ) {
-    const _mxLiquidationModule = await (
-        await ethers.getContractFactory('MXLiquidation')
+    const _sglLiquidationModule = await (
+        await ethers.getContractFactory('SGLLiquidation')
     ).deploy({ gasPrice: gasPrice });
-    await _mxLiquidationModule.deployed();
+    await _sglLiquidationModule.deployed();
     log(
-        `Deployed WethUsdcMXLiquidationModule ${_mxLiquidationModule.address} with no arguments`,
+        `Deployed WethUsdcSGLLiquidationModule ${_sglLiquidationModule.address} with no arguments`,
         staging,
     );
 
-    const _mxLendingBorrowingModule = await (
-        await ethers.getContractFactory('MXLendingBorrowing')
+    const _sglLendingBorrowingModule = await (
+        await ethers.getContractFactory('SGLLendingBorrowing')
     ).deploy({ gasPrice: gasPrice });
-    await _mxLendingBorrowingModule.deployed();
+    await _sglLendingBorrowingModule.deployed();
     log(
-        `Deployed WethUsdcMXLendingBorrowing ${_mxLendingBorrowingModule.address} with no arguments`,
+        `Deployed WethUsdcSGLLendingBorrowing ${_sglLendingBorrowingModule.address} with no arguments`,
         staging,
     );
 
@@ -539,8 +1259,8 @@ async function registerMixologist(
             'address[]',
         ],
         [
-            _mxLiquidationModule.address,
-            _mxLendingBorrowingModule.address,
+            _sglLiquidationModule.address,
+            _sglLendingBorrowingModule.address,
             bar.address,
             weth.address,
             wethAssetId,
@@ -552,26 +1272,26 @@ async function registerMixologist(
         ],
     );
     await (
-        await bar.registerMixologist(mediumRiskMC, data, true, {
+        await bar.registerSingularity(mediumRiskMC, data, true, {
             gasPrice: gasPrice,
         })
     ).wait();
-    log(`WethUsdcMixologist registered on BeachBar`, staging);
+    log(`WethUsdcSingularity registered on BeachBar`, staging);
 
-    const wethUsdcMixologist = await ethers.getContractAt(
-        'Mixologist',
+    const wethUsdcSingularity = await ethers.getContractAt(
+        'Singularity',
         await yieldBox.clonesOf(
             mediumRiskMC,
             (await yieldBox.clonesOfCount(mediumRiskMC)).sub(1),
         ),
     );
 
-    await verifyEtherscan(wethUsdcMixologist.address, [], staging);
+    await verifyEtherscan(wethUsdcSingularity.address, [], staging);
 
     return {
-        wethUsdcMixologist,
-        _mxLiquidationModule,
-        _mxLendingBorrowingModule,
+        wethUsdcSingularity,
+        _sglLiquidationModule,
+        _sglLendingBorrowingModule,
     };
 }
 
@@ -649,34 +1369,34 @@ async function deployCurveStableToUsdoBidder(
     return { stableToUsdoBidder, curveSwapper };
 }
 
-async function createWethUsd0Mixologist(
+async function createWethUsd0Singularity(
     usd0: USD0,
     weth: WETH9Mock,
     bar: BeachBar,
     usdoAssetId: any,
     wethAssetId: any,
     tapSwapPath: any,
-    mediumRiskMC: Mixologist,
+    mediumRiskMC: Singularity,
     yieldBox: YieldBox,
     usdc: ERC20Mock,
     stableToUsdoBidder: CurveStableToUsdoBidder,
     staging?: boolean,
 ) {
-    const _mxLiquidationModule = await (
-        await ethers.getContractFactory('MXLiquidation')
+    const _sglLiquidationModule = await (
+        await ethers.getContractFactory('SGLLiquidation')
     ).deploy({ gasPrice: gasPrice });
-    await _mxLiquidationModule.deployed();
+    await _sglLiquidationModule.deployed();
     log(
-        `Deployed WethUsd0MXLiquidationModule ${_mxLiquidationModule.address} with no arguments`,
+        `Deployed WethUsd0SGLLiquidationModule ${_sglLiquidationModule.address} with no arguments`,
         staging,
     );
 
-    const _mxLendingBorrowingModule = await (
-        await ethers.getContractFactory('MXLendingBorrowing')
+    const _sglLendingBorrowingModule = await (
+        await ethers.getContractFactory('SGLLendingBorrowing')
     ).deploy({ gasPrice: gasPrice });
-    await _mxLendingBorrowingModule.deployed();
+    await _sglLendingBorrowingModule.deployed();
     log(
-        `Deployed WethUsd0MXLendingBorrowingModule ${_mxLendingBorrowingModule.address} with no arguments`,
+        `Deployed WethUsd0SGLLendingBorrowingModule ${_sglLendingBorrowingModule.address} with no arguments`,
         staging,
     );
 
@@ -710,8 +1430,8 @@ async function createWethUsd0Mixologist(
             'address[]',
         ],
         [
-            _mxLiquidationModule.address,
-            _mxLendingBorrowingModule.address,
+            _sglLiquidationModule.address,
+            _sglLendingBorrowingModule.address,
             bar.address,
             usd0.address,
             usdoAssetId,
@@ -722,34 +1442,34 @@ async function createWethUsd0Mixologist(
             tapSwapPath,
         ],
     );
-    await bar.registerMixologist(mediumRiskMC.address, data, false, {
+    await bar.registerSingularity(mediumRiskMC.address, data, false, {
         gasPrice: gasPrice,
     });
 
     const clonesCount = await yieldBox.clonesOfCount(mediumRiskMC.address);
     log(`Clones count of MediumRiskMC ${clonesCount}`, staging);
 
-    const wethUsdoMixologist = await ethers.getContractAt(
-        'Mixologist',
+    const wethUsdoSingularity = await ethers.getContractAt(
+        'Singularity',
         await yieldBox.clonesOf(
             mediumRiskMC.address,
             (await yieldBox.clonesOfCount(mediumRiskMC.address)).sub(1),
         ),
     );
     log(
-        `Deployed WethUsd0Mixologist at ${wethUsdoMixologist.address} with no arguments`,
+        `Deployed WethUsd0Singularity at ${wethUsdoSingularity.address} with no arguments`,
         staging,
     );
 
     //Deploy & set LiquidationQueue
-    await usd0.setMinterStatus(wethUsdoMixologist.address, true, {
+    await usd0.setMinterStatus(wethUsdoSingularity.address, true, {
         gasPrice: gasPrice,
     });
-    await usd0.setBurnerStatus(wethUsdoMixologist.address, true, {
+    await usd0.setBurnerStatus(wethUsdoSingularity.address, true, {
         gasPrice: gasPrice,
     });
     log(
-        `Updated Usd0 Minter and Burner status for WethUsd0Mixologist`,
+        `Updated Usd0 Minter and Burner status for WethUsd0Singularity`,
         staging,
     );
 
@@ -766,7 +1486,7 @@ async function createWethUsd0Mixologist(
         ethers.Wallet.createRandom().privateKey,
         ethers.provider,
     );
-    log(`WethUsd0Mixologist feeCollector ${feeCollector.address}`, staging);
+    log(`WethUsd0Singularity feeCollector ${feeCollector.address}`, staging);
 
     const LQ_META = {
         activationTime: 600, // 10min
@@ -778,19 +1498,19 @@ async function createWethUsd0Mixologist(
         usdoSwapper: stableToUsdoBidder.address,
     };
 
-    await liquidationQueue.init(LQ_META, wethUsdoMixologist.address, {
+    await liquidationQueue.init(LQ_META, wethUsdoSingularity.address, {
         gasPrice: gasPrice,
     });
     log(`LiquidationQueue initialized`);
 
-    const payload = wethUsdoMixologist.interface.encodeFunctionData(
+    const payload = wethUsdoSingularity.interface.encodeFunctionData(
         'setLiquidationQueue',
         [liquidationQueue.address],
     );
 
     await (
-        await bar.executeMixologistFn(
-            [wethUsdoMixologist.address],
+        await bar.executeSingularityFn(
+            [wethUsdoSingularity.address],
             [payload],
             true,
             {
@@ -798,14 +1518,14 @@ async function createWethUsd0Mixologist(
             },
         )
     ).wait();
-    log(`WethUsd0LiquidationQueue was set for WethUsd0Mixologist`, staging);
+    log(`WethUsd0LiquidationQueue was set for WethUsd0Singularity`, staging);
 
-    return { wethUsdoMixologist };
+    return { wethUsdoSingularity };
 }
 
 async function registerLiquidationQueue(
     bar: BeachBar,
-    mixologist: Mixologist,
+    singularity: Singularity,
     feeCollector: string,
     staging?: boolean,
 ) {
@@ -827,20 +1547,20 @@ async function registerLiquidationQueue(
         bidExecutionSwapper: ethers.constants.AddressZero,
         usdoSwapper: ethers.constants.AddressZero,
     };
-    await liquidationQueue.init(LQ_META, mixologist.address);
+    await liquidationQueue.init(LQ_META, singularity.address);
     log(`LiquidationQueue initialized`, staging);
 
-    const payload = mixologist.interface.encodeFunctionData(
+    const payload = singularity.interface.encodeFunctionData(
         'setLiquidationQueue',
         [liquidationQueue.address],
     );
 
     await (
-        await bar.executeMixologistFn([mixologist.address], [payload], true, {
+        await bar.executeSingularityFn([singularity.address], [payload], true, {
             gasPrice: gasPrice,
         })
     ).wait();
-    log(`WethUsdcLiquidationQueue was set for WethUsdcMixologist`, staging);
+    log(`WethUsdcLiquidationQueue was set for WethUsdcSingularity`, staging);
 
     await verifyEtherscan(
         liquidationQueue.address,
@@ -851,7 +1571,7 @@ async function registerLiquidationQueue(
     return { liquidationQueue, LQ_META };
 }
 
-async function registerMinterMixologist(
+async function registerMinterSingularity(
     bar: BeachBar,
     wethCollateral: WETH9Mock,
     wethCollateralId: BigNumberish,
@@ -860,8 +1580,8 @@ async function registerMinterMixologist(
     collateralSwapPath: string[],
     staging?: boolean,
 ) {
-    const wethMinterMixologist = await (
-        await ethers.getContractFactory('MinterMixologist')
+    const wethMinterSingularity = await (
+        await ethers.getContractFactory('MinterSingularity')
     ).deploy(
         bar.address,
         wethCollateral.address,
@@ -871,10 +1591,10 @@ async function registerMinterMixologist(
         collateralSwapPath,
         { gasPrice: gasPrice },
     );
-    await wethMinterMixologist.deployed();
+    await wethMinterSingularity.deployed();
     log(
-        `Deployed WethMinterMixologist ${
-            wethMinterMixologist.address
+        `Deployed WethMinterSingularity ${
+            wethMinterSingularity.address
         } with args [${bar.address},${
             wethCollateral.address
         },${wethCollateralId},${oracle.address},${JSON.stringify(
@@ -884,7 +1604,7 @@ async function registerMinterMixologist(
     );
 
     await verifyEtherscan(
-        wethMinterMixologist.address,
+        wethMinterSingularity.address,
         [
             bar.address,
             wethCollateral.address,
@@ -896,7 +1616,7 @@ async function registerMinterMixologist(
         staging,
     );
 
-    return { wethMinterMixologist };
+    return { wethMinterSingularity };
 }
 
 const verifyEtherscan = async (
@@ -1021,20 +1741,32 @@ export async function register(staging?: boolean) {
     );
     log(`Deployed MultiSwapper ${multiSwapper.address}`, staging);
 
+    // ------------------- 5.1 Deploy MultiSwapper -------------------
+    log('Registering NonYieldBoxMultiSwapper', staging);
+    const { nonYieldBoxMultiSwapper } = await registerNonYieldBoxMultiSwapper(
+        __uniFactory.address,
+        await __uniFactory.pairCodeHash(),
+        staging,
+    );
+    log(
+        `Deployed NonYieldBoxMultiSwapper ${nonYieldBoxMultiSwapper.address}`,
+        staging,
+    );
+
     // ------------------- 6 Deploy MediumRisk master contract -------------------
     log('Deploying MediumRiskMC', staging);
     const { mediumRiskMC } = await deployMediumRiskMC(bar, staging);
     log(`Deployed MediumRiskMC ${mediumRiskMC.address}`, staging);
 
     // ------------------- 7 Deploy WethUSDC medium risk MC clone-------------------
-    log('Deploying WethUsdcMixologist', staging);
+    log('Deploying WethUsdcSingularity', staging);
     const collateralSwapPath = [usdc.address, weth.address];
     const tapSwapPath = [weth.address, tap.address];
     const {
-        wethUsdcMixologist,
-        _mxLendingBorrowingModule,
-        _mxLiquidationModule,
-    } = await registerMixologist(
+        wethUsdcSingularity,
+        _sglLendingBorrowingModule,
+        _sglLiquidationModule,
+    } = await registerSingularity(
         mediumRiskMC.address,
         yieldBox,
         bar,
@@ -1047,16 +1779,16 @@ export async function register(staging?: boolean) {
         tapSwapPath,
         staging,
     );
-    log(`Deployed WethUsdcMixologist ${wethUsdcMixologist.address}`, staging);
+    log(`Deployed WethUsdcSingularity ${wethUsdcSingularity.address}`, staging);
 
     // ------------------- 8 Set feeTo & feeVeTap -------------------
     log('Setting feeTo and feeVeTap', staging);
-    const mixologistFeeTo = ethers.Wallet.createRandom();
-    const mixologistFeeVeTap = ethers.Wallet.createRandom();
-    await bar.setFeeTo(mixologistFeeTo.address, { gasPrice: gasPrice });
-    await bar.setFeeVeTap(mixologistFeeVeTap.address, { gasPrice: gasPrice });
+    const singularityFeeTo = ethers.Wallet.createRandom();
+    const singularityFeeVeTap = ethers.Wallet.createRandom();
+    await bar.setFeeTo(singularityFeeTo.address, { gasPrice: gasPrice });
+    await bar.setFeeVeTap(singularityFeeVeTap.address, { gasPrice: gasPrice });
     log(
-        `feeTo ${mixologistFeeTo} and feeVeTap ${mixologistFeeVeTap} were set for WethUsdcMixologist`,
+        `feeTo ${singularityFeeTo} and feeVeTap ${singularityFeeVeTap} were set for WethUsdcSingularity`,
         staging,
     );
 
@@ -1068,7 +1800,7 @@ export async function register(staging?: boolean) {
     );
     const { liquidationQueue, LQ_META } = await registerLiquidationQueue(
         bar,
-        wethUsdcMixologist,
+        wethUsdcSingularity,
         feeCollector.address,
         staging,
     );
@@ -1087,32 +1819,106 @@ export async function register(staging?: boolean) {
     await bar.setUsdoToken(usd0.address, { gasPrice: gasPrice });
     log(`USD0 was set on BeachBar`, staging);
 
-    // ------------------- 12 Register MinterMixologist -------------------
-    log('Deploying WethMinterMixologist', staging);
-    const minterMixologistCollateralSwapPath = [weth.address, usd0.address];
-    const minterMixologistTapSwapPath = [usd0.address, tap.address];
-    const { wethMinterMixologist } = await registerMinterMixologist(
+    // ------------------- 11.1 Deploy AAVE Strategy -------------------
+    log('Deploying AaveStrategy', staging);
+    const { aaveStrategy } = await registerAaveStrategy(
+        deployer.address,
+        weth.address,
+        yieldBox.address,
+        ethers.constants.AddressZero, //lending pool
+        ethers.constants.AddressZero, //stkAave
+        ethers.constants.AddressZero, //receipt
+        ethers.constants.AddressZero, //incentives controller
+        nonYieldBoxMultiSwapper.address, //swapper
+        __uniFactory,
+        __uniRouter,
+        staging,
+    );
+    log(`Deployed AaveStrategy ${aaveStrategy.address}`, staging);
+
+    // ------------------- 11.2 Deploy Yearn Strategy -------------------
+    log('Deploying YearnStrategy', staging);
+    const { yearnStrategy } = await registerYearnStrategy(
+        weth.address,
+        yieldBox.address,
+        ethers.constants.AddressZero,
+        staging,
+    );
+    log(`Deployed YearnStrategy ${yearnStrategy.address}`, staging);
+
+    // ------------------- 11.3 Deploy Stargate Strategy -------------------
+    log('Deploying StargateStrategy', staging);
+    const { stargateStrategy } = await registerStargateStrategy(
+        yieldBox.address,
+        weth.address,
+        ethers.constants.AddressZero,
+        ethers.constants.AddressZero,
+        '0',
+        ethers.constants.AddressZero,
+        nonYieldBoxMultiSwapper.address,
+        __uniFactory,
+        __uniRouter,
+        deployer.address,
+        staging,
+    );
+    log(`Deployed StargateStrategy ${stargateStrategy.address}`, staging);
+
+    // ------------------- 11.4 Deploy Tricrypto Strategy -------------------
+    log('Deploying TricryptoStrategy', staging);
+    const { tricryptoStrategy, tricryptoLPGtter } =
+        await registerTricryptoStrategy(
+            weth.address,
+            usdc.address,
+            usdc.address,
+            yieldBox.address,
+            ethers.constants.AddressZero,
+            ethers.constants.AddressZero,
+            ethers.constants.AddressZero,
+            ethers.constants.AddressZero,
+            ethers.constants.AddressZero,
+            __uniFactory,
+            __uniRouter,
+            deployer.address,
+            nonYieldBoxMultiSwapper.address,
+            staging,
+        );
+
+    // ------------------- 11.5 Deploy Lido-Eth Strategy -------------------
+    log('Deploying Lido ETH', staging);
+    const { lidoEthStrategy } = await registerLidoStEthStrategy(
+        weth.address,
+        yieldBox.address,
+        ethers.constants.AddressZero,
+        ethers.constants.AddressZero,
+        staging,
+    );
+
+    // ------------------- 12 Register MinterSingularity -------------------
+    log('Deploying WethMinterSingularity', staging);
+    const minterSingularityCollateralSwapPath = [weth.address, usd0.address];
+    const minterSingularityTapSwapPath = [usd0.address, tap.address];
+    const { wethMinterSingularity } = await registerMinterSingularity(
         bar,
         weth,
         wethAssetId,
         usd0WethOracle,
-        minterMixologistTapSwapPath,
-        minterMixologistCollateralSwapPath,
+        minterSingularityTapSwapPath,
+        minterSingularityCollateralSwapPath,
         staging,
     );
     log(
-        `WethMinterMixologist deployed ${wethMinterMixologist.address}`,
+        `WethMinterSingularity deployed ${wethMinterSingularity.address}`,
         staging,
     );
 
     // ------------------- 13 Set Minter and Burner for USD0 -------------------
-    await usd0.setMinterStatus(wethMinterMixologist.address, true, {
+    await usd0.setMinterStatus(wethMinterSingularity.address, true, {
         gasPrice: gasPrice,
     });
-    await usd0.setBurnerStatus(wethMinterMixologist.address, true, {
+    await usd0.setBurnerStatus(wethMinterSingularity.address, true, {
         gasPrice: gasPrice,
     });
-    log('Minter and Burner roles set for WethMinterMixologist', staging);
+    log('Minter and Burner roles set for WethMinterSingularity', staging);
 
     // ------------------- 14 Create weth-usd0 pair -------------------
     log('Creating WethUSDO and TapUSDO pairs', staging);
@@ -1130,14 +1936,14 @@ export async function register(staging?: boolean) {
         staging,
     );
 
-    // ------------------- 15 Create MixologistHelper -------------------
-    log('Deploying MixologistHelper', staging);
-    const mixologistHelper = await (
-        await ethers.getContractFactory('MixologistHelper')
+    // ------------------- 15 Create SingularityHelper -------------------
+    log('Deploying SingularityHelper', staging);
+    const singularityHelper = await (
+        await ethers.getContractFactory('SingularityHelper')
     ).deploy({ gasPrice: gasPrice });
-    await mixologistHelper.deployed();
+    await singularityHelper.deployed();
     log(
-        `Deployed MixologistHelper ${mixologistHelper.address} with no args`,
+        `Deployed SingularityHelper ${singularityHelper.address} with no args`,
         staging,
     );
 
@@ -1166,15 +1972,15 @@ export async function register(staging?: boolean) {
             `Deployed CurveStableToUsdoBidder ${stableToUsdoBidder.address}`,
             staging,
         );
-        // ------------------- 18 Create WethUsd0Mixologist -------------------
-        log('Deploying WethUsd0Mixologist', staging);
+        // ------------------- 18 Create WethUsd0Singularity -------------------
+        log('Deploying WethUsd0Singularty', staging);
         const usd0AssetId = await yieldBox.ids(
             1,
             usd0.address,
             ethers.constants.AddressZero,
             0,
         );
-        const { wethUsdoMixologist } = await createWethUsd0Mixologist(
+        const { wethUsdoSingularity } = await createWethUsd0Singularity(
             usd0,
             weth,
             bar,
@@ -1188,7 +1994,7 @@ export async function register(staging?: boolean) {
             staging,
         );
         log(
-            `Deployed WethUsd0Mixologist ${wethUsdoMixologist.address}`,
+            `Deployed WethUsd0Singularity ${wethUsdoSingularity.address}`,
             staging,
         );
     }
@@ -1224,28 +2030,36 @@ export async function register(staging?: boolean) {
         tap,
         tapSwapPath,
         collateralSwapPath,
-        minterMixologistTapSwapPath,
-        minterMixologistCollateralSwapPath,
+        minterSingularityTapSwapPath,
+        minterSingularityCollateralSwapPath,
         wethUsdcOracle,
         usd0WethOracle,
         yieldBox,
         bar,
-        wethMinterMixologist,
-        wethUsdcMixologist,
-        _mxLiquidationModule,
-        _mxLendingBorrowingModule,
-        mixologistHelper,
+        wethMinterSingularity,
+        wethUsdcSingularity,
+        _sglLiquidationModule,
+        _sglLendingBorrowingModule,
+        singularityHelper,
         eoa1,
         multiSwapper,
-        mixologistFeeTo,
-        mixologistFeeVeTap,
+        nonYieldBoxMultiSwapper,
+        singularityFeeTo,
+        singularityFeeVeTap,
         liquidationQueue,
         LQ_META,
         feeCollector,
         usdoToWethBidder,
         mediumRiskMC,
         proxyDeployer,
-        registerMixologist,
+        aaveStrategy,
+        yearnStrategy,
+        stargateStrategy,
+        tricryptoStrategy,
+        tricryptoLPGtter,
+        lidoEthStrategy,
+        registerSingularity,
+        deployTricryptoLPGetter,
         __uniFactory,
         __uniRouter,
         __wethUsdcMockPair,
@@ -1269,7 +2083,7 @@ export async function register(staging?: boolean) {
             await _weth.approve(yieldBox.address, ethers.constants.MaxUint256)
         ).wait();
         await (
-            await _yieldBox.setApprovalForAll(wethUsdcMixologist.address, true)
+            await _yieldBox.setApprovalForAll(wethUsdcSingularity.address, true)
         ).wait();
     };
 
@@ -1283,11 +2097,11 @@ export async function register(staging?: boolean) {
     ) => {
         const _account = account ?? deployer;
         const _yieldBox = account ? yieldBox.connect(account) : yieldBox;
-        const _wethUsdcMixologist = account
-            ? wethUsdcMixologist.connect(account)
-            : wethUsdcMixologist;
+        const _wethUsdcSingularity = account
+            ? wethUsdcSingularity.connect(account)
+            : wethUsdcSingularity;
 
-        const id = await _wethUsdcMixologist.assetId();
+        const id = await _wethUsdcSingularity.assetId();
         const _valShare = await _yieldBox.toShare(id, amount, false);
         await (
             await _yieldBox.depositAsset(
@@ -1299,7 +2113,7 @@ export async function register(staging?: boolean) {
             )
         ).wait();
         await (
-            await _wethUsdcMixologist.addAsset(
+            await _wethUsdcSingularity.addAsset(
                 _account.address,
                 _account.address,
                 false,
@@ -1314,11 +2128,11 @@ export async function register(staging?: boolean) {
     ) => {
         const _account = account ?? deployer;
         const _yieldBox = account ? yieldBox.connect(account) : yieldBox;
-        const _wethUsdcMixologist = account
-            ? wethUsdcMixologist.connect(account)
-            : wethUsdcMixologist;
+        const _wethUsdcSingularity = account
+            ? wethUsdcSingularity.connect(account)
+            : wethUsdcSingularity;
 
-        const id = await _wethUsdcMixologist.collateralId();
+        const id = await _wethUsdcSingularity.collateralId();
         await (
             await _yieldBox.depositAsset(
                 id,
@@ -1330,7 +2144,7 @@ export async function register(staging?: boolean) {
         ).wait();
         const _valShare = await _yieldBox.balanceOf(_account.address, id);
         await (
-            await _wethUsdcMixologist.addCollateral(
+            await _wethUsdcSingularity.addCollateral(
                 _account.address,
                 _account.address,
                 false,
@@ -1342,14 +2156,14 @@ export async function register(staging?: boolean) {
     const initContracts = async () => {
         await (await weth.freeMint(1000)).wait();
         const mintValShare = await yieldBox.toShare(
-            await wethUsdcMixologist.assetId(),
+            await wethUsdcSingularity.assetId(),
             1000,
             false,
         );
         await (await weth.approve(yieldBox.address, 1000)).wait();
         await (
             await yieldBox.depositAsset(
-                await wethUsdcMixologist.assetId(),
+                await wethUsdcSingularity.assetId(),
                 deployer.address,
                 deployer.address,
                 0,
@@ -1357,10 +2171,10 @@ export async function register(staging?: boolean) {
             )
         ).wait();
         await (
-            await yieldBox.setApprovalForAll(wethUsdcMixologist.address, true)
+            await yieldBox.setApprovalForAll(wethUsdcSingularity.address, true)
         ).wait();
         await (
-            await wethUsdcMixologist.addAsset(
+            await wethUsdcSingularity.addAsset(
                 deployer.address,
                 deployer.address,
                 false,
@@ -1379,7 +2193,7 @@ export async function register(staging?: boolean) {
         deployCurveStableToUsdoBidder,
         registerUsd0Contract,
         addUniV2UsdoWethLiquidity,
-        createWethUsd0Mixologist,
+        createWethUsd0Singularity,
     };
 
     return { ...initialSetup, ...utilFuncs, verifyEtherscanQueue };

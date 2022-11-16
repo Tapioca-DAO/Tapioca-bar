@@ -20,18 +20,18 @@ describe('BeachBar test', () => {
         expect(length.gt(0)).to.be.true;
     });
 
-    it('should not allow registering mixologist without a proper master contract', async () => {
+    it('should not allow registering singularity without a proper master contract', async () => {
         const { bar } = await loadFixture(register);
 
         await expect(
-            bar.registerMixologist(
+            bar.registerSingularity(
                 ethers.constants.AddressZero,
                 ethers.utils.toUtf8Bytes(''),
                 false,
             ),
         ).to.be.revertedWith('BeachBar: MC not registered');
     });
-
+""
     it('should not allow registering the same master contract twice', async () => {
         const { bar, mediumRiskMC } = await loadFixture(register);
 
@@ -44,7 +44,7 @@ describe('BeachBar test', () => {
         const { bar } = await loadFixture(register);
 
         await expect(
-            bar.executeMixologistFn(
+            bar.executeSingularityFn(
                 [ethers.constants.AddressZero],
                 [ethers.utils.toUtf8Bytes('')],
                 true,
@@ -52,7 +52,7 @@ describe('BeachBar test', () => {
         ).to.be.revertedWith('BeachBar: MC not registered');
     });
 
-    it('should list all mixologist registered markets', async () => {
+    it('should list all singularity registered markets', async () => {
         const { bar } = await loadFixture(register);
         const markets = await bar.tapiocaMarkets();
         expect(markets[0]).to.not.eq(ethers.constants.AddressZero);
@@ -62,7 +62,7 @@ describe('BeachBar test', () => {
         const { bar } = await loadFixture(register);
 
         const newMC = await (
-            await ethers.getContractFactory('Mixologist')
+            await ethers.getContractFactory('Singularity')
         ).deploy();
         await newMC.deployed();
 

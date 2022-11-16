@@ -1,17 +1,16 @@
 // SPDX-License-Identifier: UNLICENSED
-
 pragma solidity ^0.8.0;
 
 import '@boringcrypto/boring-solidity/contracts/BoringOwnable.sol';
 
 import '../yieldbox/contracts/YieldBox.sol';
-import './mixologist/interfaces/IMixologist.sol';
+import './singularity/interfaces/ISingularity.sol';
 import './IBeachBar.sol';
 
 // TODO: Permissionless market deployment
 ///     + asset registration? (toggle to renounce ownership so users can call)
 /// @title Global market registry
-/// @notice Mixologist management
+/// @notice Singularity management
 contract BeachBar is BoringOwnable {
     /// @notice returns the YieldBox contract
     YieldBox public immutable yieldBox;
@@ -30,7 +29,7 @@ contract BeachBar is BoringOwnable {
     /// @notice master contracts registered
     IBeachBar.MasterContract[] public masterContracts;
 
-    // Used to check if a master contract is registered to be used as a Mixologist template
+    // Used to check if a master contract is registered to be used as a Singularity template
     mapping(address => bool) isMasterContractRegistered;
 
     /// @notice protocol fees
@@ -64,7 +63,7 @@ contract BeachBar is BoringOwnable {
 
     event ProtocolWithdrawal(address[] markets, uint256 timestamp);
     event RegisterMasterContract(address location, IBeachBar.ContractType risk);
-    event RegisterMixologist(address location, address masterContract);
+    event RegisterSingularity(address location, address masterContract);
     event FeeToUpdate(address newFeeTo);
     event FeeVeTapUpdate(address newFeeVeTap);
     event SwapperUpdate(address swapper, bool isRegistered);
@@ -85,7 +84,7 @@ contract BeachBar is BoringOwnable {
     // *** VIEW FUNCTIONS *** //
     // ********************** //
 
-    /// @notice Get all the Mixologist contract addresses
+    /// @notice Get all the Singularity contract addresses
     /// @return markets list of available markets
     function tapiocaMarkets() public view returns (address[] memory markets) {
         uint256 _masterContractLength = masterContracts.length;
@@ -151,7 +150,7 @@ contract BeachBar is BoringOwnable {
 
         unchecked {
             for (uint256 i = 0; i < length; ) {
-                IMixologist(markets[i]).depositFeesToYieldBox(
+                ISingularity(markets[i]).depositFeesToYieldBox(
                     singleSwapper ? swappers_[0] : swappers_[i],
                     singleSwapper ? swapData_[0] : swapData_[i]
                 );
@@ -203,11 +202,11 @@ contract BeachBar is BoringOwnable {
         emit RegisterMasterContract(mcAddress, contractType_);
     }
 
-    /// @notice Register a Mixologist
+    /// @notice Registera a Singularity
     /// @param mc The address of the master contract which must be already registered
-    /// @param data The init data of the Mixologist
+    /// @param data The init data of the Singularity
     /// @param useCreate2 Whether to use create2 or not
-    function registerMixologist(
+    function registerSingularity(
         address mc,
         bytes calldata data,
         bool useCreate2
@@ -219,11 +218,11 @@ contract BeachBar is BoringOwnable {
         returns (address _contract)
     {
         _contract = yieldBox.deploy(mc, data, useCreate2);
-        emit RegisterMixologist(_contract, mc);
+        emit RegisterSingularity(_contract, mc);
     }
 
-    /// @notice Execute an only owner function inside of a Mixologist market
-    function executeMixologistFn(
+    /// @notice Execute an only owner function inside of a Singularity market
+    function executeSingularityFn(
         address[] calldata mc,
         bytes[] memory data,
         bool forceSuccess
@@ -278,7 +277,7 @@ contract BeachBar is BoringOwnable {
         returns (string memory)
     {
         // If the _res length is less than 68, then the transaction failed silently (without a revert message)
-        if (_returnData.length < 68) return 'Mx: no return data';
+        if (_returnData.length < 68) return 'SGL: no return data';
         // solhint-disable-next-line no-inline-assembly
         assembly {
             // Slice the sighash.

@@ -7,7 +7,7 @@ describe('Bidders test', () => {
     it('should test name', async () => {
         const {
             usdoToWethBidder,
-            wethUsdcMixologist,
+            wethUsdcSingularity,
             usdc,
             usd0,
             bar,
@@ -30,7 +30,7 @@ describe('Bidders test', () => {
     it('should not get input or output amount', async () => {
         const {
             usdoToWethBidder,
-            wethUsdcMixologist,
+            wethUsdcSingularity,
             usdc,
             usd0,
             bar,
@@ -39,7 +39,7 @@ describe('Bidders test', () => {
 
         await expect(
             usdoToWethBidder.getInputAmount(
-                wethUsdcMixologist.address,
+                wethUsdcSingularity.address,
                 150,
                 1,
                 ethers.utils.toUtf8Bytes(''),
@@ -56,7 +56,7 @@ describe('Bidders test', () => {
     it('should set swappers', async () => {
         const {
             usdoToWethBidder,
-            wethUsdcMixologist,
+            wethUsdcSingularity,
             usdc,
             bar,
             multiSwapper,
@@ -79,7 +79,7 @@ describe('Bidders test', () => {
     it('should not swap', async () => {
         const {
             usdoToWethBidder,
-            wethUsdcMixologist,
+            wethUsdcSingularity,
             usdc,
             bar,
             yieldBox,
@@ -95,7 +95,7 @@ describe('Bidders test', () => {
 
         await expect(
             usdoToWethBidder.swap(
-                wethUsdcMixologist.address,
+                wethUsdcSingularity.address,
                 1,
                 1,
                 ethers.utils.toUtf8Bytes(''),
@@ -111,7 +111,7 @@ describe('Bidders test', () => {
 
         await expect(
             stableToUsdoBidder.swap(
-                wethUsdcMixologist.address,
+                wethUsdcSingularity.address,
                 usdoAssetId,
                 1,
                 ethers.utils.toUtf8Bytes(''),
@@ -120,7 +120,7 @@ describe('Bidders test', () => {
 
         await expect(
             usdoToWethBidder.swap(
-                wethUsdcMixologist.address,
+                wethUsdcSingularity.address,
                 usdoAssetId,
                 1,
                 ethers.utils.toUtf8Bytes(''),
@@ -130,7 +130,7 @@ describe('Bidders test', () => {
 
     it('should get inputAmout for CurveStableToUsdoBidder', async () => {
         const {
-            wethUsdcMixologist,
+            wethUsdcSingularity,
             usdc,
             usd0,
             bar,
@@ -160,7 +160,7 @@ describe('Bidders test', () => {
 
         await expect(
             await stableToUsdoBidder.getInputAmount(
-                wethUsdcMixologist.address,
+                wethUsdcSingularity.address,
                 usdoAssetId,
                 100,
                 ethers.utils.toUtf8Bytes(''),
@@ -169,7 +169,7 @@ describe('Bidders test', () => {
 
         await expect(
             await stableToUsdoBidder.getInputAmount(
-                wethUsdcMixologist.address,
+                wethUsdcSingularity.address,
                 usdcAssetId,
                 100,
                 ethers.utils.toUtf8Bytes(''),

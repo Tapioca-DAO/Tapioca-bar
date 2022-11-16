@@ -9,12 +9,12 @@ export const getBeachBarMarkets = async (hre: HardhatRuntimeEnvironment) => {
     const markets = [];
 
     for (const address of addresses) {
-        const mixologist = await hre.ethers.getContractAt(
-            'Mixologist',
+        const singularity = await hre.ethers.getContractAt(
+            'Singularity',
             address,
         );
         markets.push({
-            [await mixologist.name()]: address,
+            [await singularity.name()]: address,
         });
     }
 

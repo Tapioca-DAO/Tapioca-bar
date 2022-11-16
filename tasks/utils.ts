@@ -25,18 +25,18 @@ export const getDeployment = async (
     return contract;
 };
 
-export const getMixologistContract = async (
+export const getSingularityContract = async (
     taskArgs: any,
     hre: HardhatRuntimeEnvironment,
 ) => {
-    const mixologistAddress = taskArgs['mixologist'];
-    if (!hre.ethers.utils.isAddress(mixologistAddress)) {
-        throw new Error('[-] Mixologist address not valid');
+    const singularityAddress = taskArgs['singularity'];
+    if (!hre.ethers.utils.isAddress(singularityAddress)) {
+        throw new Error('[-] Singularity address not valid');
     }
 
-    const mixologistContract = await hre.ethers.getContractAt(
-        'Mixologist',
-        mixologistAddress,
+    const singularityContract = await hre.ethers.getContractAt(
+        'Singularity',
+        singularityAddress,
     );
-    return { mixologistContract, mixologistAddress };
+    return { singularityContract, singularityAddress };
 };

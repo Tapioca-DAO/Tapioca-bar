@@ -11,27 +11,27 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const chainId = await hre.getChainId();
     const contracts: TContract[] = [];
 
-    console.log('\nDeploying MXLiquidation');
-    await deploy('MXLiquidation', {
+    console.log('\nDeploying SGLLiquidation');
+    await deploy('SGLLiquidation', {
         from: deployer,
         log: true,
     });
-    await verify(hre, 'MXLiquidation', []);
-    const mxLiquidation = await deployments.get('MXLiquidation');
+    await verify(hre, 'SGLLiquidation', []);
+    const sglLiquidation = await deployments.get('SGLLiquidation');
     contracts.push({
-        name: 'MXLiquidation',
-        address: mxLiquidation.address,
+        name: 'SGLLiquidation',
+        address: sglLiquidation.address,
         meta: {},
     });
     console.log('Done');
 
-    console.log('\nDeploying MXLendingBorrowing');
-    await deploy('MXLendingBorrowing', { from: deployer, log: true });
-    await verify(hre, 'MXLendingBorrowing', []);
-    const mxLendingBorrowing = await deployments.get('MXLendingBorrowing');
+    console.log('\nDeploying SGLLendingBorrowing');
+    await deploy('SGLLendingBorrowing', { from: deployer, log: true });
+    await verify(hre, 'SGLLendingBorrowing', []);
+    const sglLendingBorrowing = await deployments.get('SGLLendingBorrowing');
     contracts.push({
-        name: 'MXLendingBorrowing',
-        address: mxLendingBorrowing.address,
+        name: 'SGLLendingBorrowing',
+        address: sglLendingBorrowing.address,
         meta: {},
     });
     console.log('Done');
@@ -40,4 +40,4 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 };
 
 export default func;
-func.tags = ['MixologistModules'];
+func.tags = ['SingularitytModules'];

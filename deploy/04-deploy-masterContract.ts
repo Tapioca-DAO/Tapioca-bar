@@ -13,7 +13,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
     console.log('\n Deploying MasterContract');
     await deploy('MediumRiskMC', {
-        contract: 'Mixologist',
+        contract: 'Singularity',
         from: deployer,
         log: true,
     });

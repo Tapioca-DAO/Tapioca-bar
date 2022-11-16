@@ -45,7 +45,7 @@ export const constants: { [key: string]: any } = {
                 address: '0x306547aa4B4241D73ae1e7A5465D277d06C40cbC',
             },
         ],
-        mx_ETH: {
+        sgl_ETH: {
             collateralAddress: '0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6', //weth
             assetAddress: '0xD52343b83BCE11B4A03ED4434b9AAfdc633bB39b',
             oracleAddress: '0x08aa8c316b485a1a73356f662a9881d7b31bf427', //mock
@@ -53,7 +53,7 @@ export const constants: { [key: string]: any } = {
             hasExecutionBidder: false,
             executionBidder: '0x0000000000000000000000000000000000000000',
         },
-        minterMx_ETH: {
+        minterSGL_ETH: {
             collateralAddress: '0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6',
             oracleAddress: '0x08aa8c316b485a1a73356f662a9881d7b31bf427', //mock
         },
@@ -85,7 +85,7 @@ export const constants: { [key: string]: any } = {
                 address: '0x4663B30afc168A6D1810fA6857a74d04bf632E54',
             },
         ],
-        mx_ETH: {
+        sgl_ETH: {
             collateralAddress: '0x84C7dD519Ea924bf1Cf6613f9127F26D7aB801D0', //weth
             assetAddress: '0x9F737c63B04f8544A88b8Fb55Fa897252E79bED9',
             oracleAddress: '0x41dC15C448aB9141254EEd98F562a407E915d3b1', //mock
@@ -93,7 +93,7 @@ export const constants: { [key: string]: any } = {
             hasExecutionBidder: false,
             executionBidder: '0x0000000000000000000000000000000000000000',
         },
-        minterMx_ETH: {
+        minterSGL_ETH: {
             collateralAddress: '0x84C7dD519Ea924bf1Cf6613f9127F26D7aB801D0',
             oracleAddress: '0x41dC15C448aB9141254EEd98F562a407E915d3b1', //mock
         },
@@ -125,14 +125,14 @@ export const constants: { [key: string]: any } = {
             },
         ],
         //markets
-        mx_ETH: {
+        sgl_ETH: {
             collateralAddress: '0x0000000000000000000000000000000000000000', //tETH address
             oracleAddress: '0x0000000000000000000000000000000000000000', //tETH-USD0 oracle
             minBidAmount: 20, //min USD0 bid amount
             hasExecutionBidder: false, //if false, bidExecutionSwapper is not set
             executionBidder: '0x0000000000000000000000000000000000000000', //bidExecutionSwapper address
         },
-        mx_AVAX: {
+        sgl_AVAX: {
             collateralAddress: '0x0000000000000000000000000000000000000000', //tAVAX address
             oracleAddress: '0x0000000000000000000000000000000000000000', //tAVAX-USD0 oracle
             minBidAmount: 20, //min USD0 bid amount
@@ -221,7 +221,7 @@ export const registerMinterMarket = async (
     const chainId = await hre.getChainId();
     name = name.toUpperCase();
 
-    const marketData = constants[chainId][`minterMx_${name.toUpperCase()}`];
+    const marketData = constants[chainId][`minterSGL_${name.toUpperCase()}`];
 
     let yieldBoxAddress = constants[chainId].yieldBoxAddress;
     if (
@@ -267,13 +267,13 @@ export const registerMinterMarket = async (
         collateralSwapPath,
     ];
 
-    await deploy('MinterMixologist', {
+    await deploy('MinterSingularity', {
         from: deployer,
         log: true,
         args,
     });
-    await verify(hre, 'MinterMixologist', args);
-    const deployedMinter = await deployments.get('MinterMixologist');
+    await verify(hre, 'MinterSingularity', args);
+    const deployedMinter = await deployments.get('MinterSingularity');
     console.log(
         `Done. Deployed on ${deployedMinter.address} with args ${args}`,
     );
@@ -292,7 +292,7 @@ export const registerMinterMarket = async (
 
     return new Promise(async (resolve) =>
         resolve({
-            name: `minterMX_${name}`,
+            name: `minterSGL_${name}`,
             address: deployedMinter.address,
             meta: { constructorArguments: args },
         }),
@@ -309,7 +309,7 @@ export const registerMarket = async (
     const chainId = await hre.getChainId();
     name = name.toUpperCase();
 
-    const marketData = constants[chainId][`mx_${name}`];
+    const marketData = constants[chainId][`sgl_${name}`];
     let assetAddress = marketData.assetAddress;
 
     let yieldBoxAddress = constants[chainId].yieldBoxAddress;
@@ -346,8 +346,8 @@ export const registerMarket = async (
     const collateralSwapPath = [marketData.collateralAddress, assetAddress];
     const tapSwapPath = [assetAddress, constants[chainId].tapAddress];
 
-    const mxLiquidation = await deployments.get('MXLiquidation');
-    const mxLendingBorrowing = await deployments.get('MXLendingBorrowing');
+    const sglLiquidation = await deployments.get('SGLLiquidation');
+    const sglLendingBorrowing = await deployments.get('SGLLendingBorrowing');
 
     const data = new hre.ethers.utils.AbiCoder().encode(
         [
@@ -363,8 +363,8 @@ export const registerMarket = async (
             'address[]',
         ],
         [
-            mxLiquidation.address,
-            mxLendingBorrowing.address,
+            sglLiquidation.address,
+            sglLendingBorrowing.address,
             beachBar.address,
             assetAddress,
             assetId,
@@ -382,13 +382,13 @@ export const registerMarket = async (
         (e) => e.name === 'MediumRiskMC',
     );
 
-    console.log(`\nRegistering mx_${name}`);
+    console.log(`\nRegistering sgl_${name}`);
     await (
-        await beachBar.registerMixologist(masterContract.address, data, true)
+        await beachBar.registerSingularity(masterContract.address, data, true)
     ).wait();
 
     const market = await hre.ethers.getContractAt(
-        'Mixologist',
+        'Singularity',
         await yieldBox.clonesOf(
             masterContract.address,
             (await yieldBox.clonesOfCount(masterContract.address)).sub(1),
@@ -399,7 +399,7 @@ export const registerMarket = async (
 
     return new Promise(async (resolve) =>
         resolve({
-            name: `mx_${name}`,
+            name: `sgl_${name}`,
             address: market.address,
             meta: {},
         }),
@@ -431,24 +431,24 @@ export const registerLiquidationQueue = async (
     const deploymentsJson = readJSONFromFile();
     const marketData: TContract = _.find(
         deploymentsJson[chainId],
-        (e) => e.name === `mx_${name}`,
+        (e) => e.name === `sgl_${name}`,
     );
     if (!marketData) {
         throw new Error(`[-] Market ${name} not found`);
     }
-    const mixologistContract = await hre.ethers.getContractAt(
-        'Mixologist',
+    const singularityContract = await hre.ethers.getContractAt(
+        'Singularity',
         marketData.address,
     );
     const stableToUsdoBidder = await deployments.get('CurveStableToUsdoBidder');
     const LQ_META = {
         activationTime: 600, // 10min
         minBidAmount: hre.ethers.BigNumber.from((1e18).toString()).mul(
-            constants[chainId][`mx_${name}`].minBidAmount,
+            constants[chainId][`sgl_${name}`].minBidAmount,
         ),
         feeCollector: constants[chainId].feeCollector,
-        bidExecutionSwapper: constants[chainId][`mx_${name}`].hasExecutionBidder
-            ? constants[chainId][`mx_${name}`].executionBidder
+        bidExecutionSwapper: constants[chainId][`sgl_${name}`].hasExecutionBidder
+            ? constants[chainId][`sgl_${name}`].executionBidder
             : hre.ethers.constants.AddressZero,
         usdoSwapper: stableToUsdoBidder.address,
     };
@@ -457,10 +457,10 @@ export const registerLiquidationQueue = async (
         'LiquidationQueue',
         deployedLQ.address,
     );
-    await (await lqContract.init(LQ_META, mixologistContract.address)).wait();
+    await (await lqContract.init(LQ_META, singularityContract.address)).wait();
     console.log(`Done`);
 
-    console.log(`\nSetting ${name} LiquidationQueue on Mixologist`);
+    console.log(`\nSetting ${name} LiquidationQueue on Singularity`);
     const beachBarContract = await hre.ethers.getContractAt(
         'BeachBar',
         (
@@ -468,13 +468,13 @@ export const registerLiquidationQueue = async (
         ).address,
     );
 
-    const payload = mixologistContract.interface.encodeFunctionData(
+    const payload = singularityContract.interface.encodeFunctionData(
         'setLiquidationQueue',
         [deployedLQ.address],
     );
 
     await (
-        await beachBarContract.executeMixologistFn(
+        await beachBarContract.executeSingularityFn(
             [marketData.address],
             [payload],
             true,

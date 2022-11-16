@@ -234,7 +234,7 @@ describe('LiquidationQueue test', () => {
             weth,
             usdc,
             yieldBox,
-            wethUsdcMixologist,
+            wethUsdcSingularity,
             wethUsdcOracle,
             multiSwapper,
             BN,
@@ -242,8 +242,8 @@ describe('LiquidationQueue test', () => {
         } = await loadFixture(register);
 
         const POOL = 5;
-        const marketAssetId = await wethUsdcMixologist.assetId();
-        const marketColId = await wethUsdcMixologist.collateralId();
+        const marketAssetId = await wethUsdcSingularity.assetId();
+        const marketColId = await wethUsdcSingularity.collateralId();
         const lqAssetId = await liquidationQueue.lqAssetId();
 
         // Bid and activate
@@ -284,8 +284,8 @@ describe('LiquidationQueue test', () => {
 
         await yieldBox
             .connect(eoa1)
-            .setApprovalForAll(wethUsdcMixologist.address, true);
-        await wethUsdcMixologist
+            .setApprovalForAll(wethUsdcSingularity.address, true);
+        await wethUsdcSingularity
             .connect(eoa1)
             .addAsset(
                 eoa1.address,
@@ -310,14 +310,14 @@ describe('LiquidationQueue test', () => {
             usdcAmount,
             0,
         );
-        await yieldBox.setApprovalForAll(wethUsdcMixologist.address, true);
-        await wethUsdcMixologist.addCollateral(
+        await yieldBox.setApprovalForAll(wethUsdcSingularity.address, true);
+        await wethUsdcSingularity.addCollateral(
             deployer.address,
             deployer.address,
             false,
             await yieldBox.toShare(marketColId, usdcAmount, false),
         );
-        await wethUsdcMixologist.borrow(
+        await wethUsdcSingularity.borrow(
             deployer.address,
             deployer.address,
             borrowAmount,
@@ -326,24 +326,24 @@ describe('LiquidationQueue test', () => {
         // Try to liquidate but with failure since price hasn't changed
         const data = new ethers.utils.AbiCoder().encode(['uint256'], [1]);
         await expect(
-            wethUsdcMixologist.liquidate(
+            wethUsdcSingularity.liquidate(
                 [deployer.address],
-                [await wethUsdcMixologist.userBorrowPart(deployer.address)],
+                [await wethUsdcSingularity.userBorrowPart(deployer.address)],
                 ethers.constants.AddressZero,
                 data,
                 data,
             ),
-        ).to.be.revertedWith('Mx: solvent');
+        ).to.be.revertedWith('SGL: solvent');
 
         // Make some price movement and liquidate
         const priceDrop = __wethUsdcPrice.mul(5).div(100);
         await wethUsdcOracle.set(__wethUsdcPrice.add(priceDrop));
-        await wethUsdcMixologist.updateExchangeRate();
+        await wethUsdcSingularity.updateExchangeRate();
 
         await expect(
-            wethUsdcMixologist.liquidate(
+            wethUsdcSingularity.liquidate(
                 [deployer.address],
-                [await wethUsdcMixologist.userBorrowPart(deployer.address)],
+                [await wethUsdcSingularity.userBorrowPart(deployer.address)],
                 multiSwapper.address,
                 data,
                 data,
@@ -351,14 +351,14 @@ describe('LiquidationQueue test', () => {
         ).to.not.be.reverted;
 
         await expect(
-            wethUsdcMixologist.liquidate(
+            wethUsdcSingularity.liquidate(
                 [deployer.address],
-                [await wethUsdcMixologist.userBorrowPart(deployer.address)],
+                [await wethUsdcSingularity.userBorrowPart(deployer.address)],
                 multiSwapper.address,
                 data,
                 data,
             ),
-        ).to.be.revertedWith('Mx: solvent');
+        ).to.be.revertedWith('SGL: solvent');
 
         // Check that LQ balances has been added
         expect(await liquidationQueue.balancesDue(deployer.address)).to.not.eq(
@@ -372,12 +372,12 @@ describe('LiquidationQueue test', () => {
     });
 
     it('should get the market', async () => {
-        const { liquidationQueue, wethUsdcMixologist } = await loadFixture(
+        const { liquidationQueue, wethUsdcSingularity } = await loadFixture(
             register,
         );
 
         const market = await liquidationQueue.market();
-        const mixologistName = await wethUsdcMixologist.name();
+        const mixologistName = await wethUsdcSingularity.name();
         expect(market.length > 0).to.be.true;
         expect(market).to.eq(mixologistName);
     });
@@ -477,7 +477,7 @@ describe('LiquidationQueue test', () => {
         const {
             yieldBox,
             liquidationQueue,
-            wethUsdcMixologist,
+            wethUsdcSingularity,
             LQ_META,
             weth,
             usdc,
@@ -487,8 +487,8 @@ describe('LiquidationQueue test', () => {
             timeTravel,
         } = await loadFixture(register);
 
-        const mixologistAssetId = await wethUsdcMixologist.assetId();
-        const mixologistCollateralId = await wethUsdcMixologist.collateralId();
+        const mixologistAssetId = await wethUsdcSingularity.assetId();
+        const mixologistCollateralId = await wethUsdcSingularity.collateralId();
         const lqAssetId = await liquidationQueue.lqAssetId();
         expect(lqAssetId, '✖️ Wrong asset id').to.eq(mixologistAssetId);
         expect(lqAssetId, '✖️ Wrong collateral id').to.not.eq(
@@ -759,19 +759,19 @@ describe('LiquidationQueue test', () => {
             );
             for (const account of firstHalf) {
                 const mixologistBalanceOfAccountBefore =
-                    await wethUsdcMixologist.balanceOf(account.address);
+                    await wethUsdcSingularity.balanceOf(account.address);
                 await expect(
                     mixologistBalanceOfAccountBefore,
                     `✖️ Account ${firstHalf.indexOf(
                         account,
-                    )} mixologist balance before is not right`,
+                    )} singularity balance before is not right`,
                 ).to.eq(0);
 
                 await yieldBox
                     .connect(account)
-                    .setApprovalForAll(wethUsdcMixologist.address, true);
+                    .setApprovalForAll(wethUsdcSingularity.address, true);
 
-                await wethUsdcMixologist
+                await wethUsdcSingularity
                     .connect(account)
                     .addAsset(
                         account.address,
@@ -781,7 +781,7 @@ describe('LiquidationQueue test', () => {
                     );
 
                 const mixologistBalanceOfAccountAfter =
-                    await wethUsdcMixologist.balanceOf(account.address);
+                    await wethUsdcSingularity.balanceOf(account.address);
 
                 await expect(
                     parseFloat(
@@ -791,7 +791,7 @@ describe('LiquidationQueue test', () => {
                     ),
                     `✖️ Account ${firstHalf.indexOf(
                         account,
-                    )} mixologist balance after lend operation is not right`,
+                    )} singularity balance after lend operation is not right`,
                 ).to.eq(parseFloat(ethers.utils.formatEther(lendValShare)));
             }
 
@@ -821,13 +821,13 @@ describe('LiquidationQueue test', () => {
                 //register collateral
                 await yieldBox
                     .connect(account)
-                    .setApprovalForAll(wethUsdcMixologist.address, true);
+                    .setApprovalForAll(wethUsdcSingularity.address, true);
                 const collateralShare = await yieldBox.toShare(
                     mixologistCollateralId,
                     usdcDepositVal,
                     false,
                 );
-                await wethUsdcMixologist
+                await wethUsdcSingularity
                     .connect(account)
                     .addCollateral(
                         account.address,
@@ -836,13 +836,13 @@ describe('LiquidationQueue test', () => {
                         collateralShare,
                     );
 
-                await wethUsdcMixologist
+                await wethUsdcSingularity
                     .connect(account)
                     .borrow(account.address, account.address, borrowVal);
 
                 // Can't liquidate yet
                 await expect(
-                    wethUsdcMixologist.liquidate(
+                    wethUsdcSingularity.liquidate(
                         [account.address],
                         [borrowVal],
                         multiSwapper.address,
@@ -870,7 +870,7 @@ describe('LiquidationQueue test', () => {
                 lqAssetId,
             );
 
-            await wethUsdcMixologist
+            await wethUsdcSingularity
                 .connect(accounts[0])
                 .liquidate(
                     liqudatableAccounts,
@@ -947,7 +947,7 @@ describe('LiquidationQueue test', () => {
     });
 
     it('should not allow initializing LQ twice', async () => {
-        const { liquidationQueue, deployer, wethUsdcMixologist } =
+        const { liquidationQueue, deployer, wethUsdcSingularity } =
             await loadFixture(register);
 
         const LQ_META = {
@@ -959,7 +959,7 @@ describe('LiquidationQueue test', () => {
             usdoSwapper: ethers.constants.AddressZero,
         };
         await expect(
-            liquidationQueue.init(LQ_META, wethUsdcMixologist.address),
+            liquidationQueue.init(LQ_META, wethUsdcSingularity.address),
         ).to.be.revertedWith('LQ: Initialized');
     });
 
@@ -979,7 +979,7 @@ describe('LiquidationQueue test', () => {
                 BN(1e18).toString(),
                 ethers.utils.toUtf8Bytes(''),
             ),
-        ).to.be.revertedWith('LQ: Only Mixologist');
+        ).to.be.revertedWith('LQ: Only Singularity');
     });
 
     it('should bid with USDC through external swapper', async () => {
@@ -988,7 +988,7 @@ describe('LiquidationQueue test', () => {
             bar,
             yieldBox,
             liquidationQueue,
-            wethUsdcMixologist,
+            wethUsdcSingularity,
             usdc,
             usdcAssetId,
             LQ_META,
@@ -1002,22 +1002,22 @@ describe('LiquidationQueue test', () => {
         const { stableToUsdoBidder, curveSwapper } =
             await deployCurveStableToUsdoBidder(bar, usdc, usd0);
 
-        const usdofnData = wethUsdcMixologist.interface.encodeFunctionData(
+        const usdofnData = wethUsdcSingularity.interface.encodeFunctionData(
             'updateLQUsdoSwapper',
             [stableToUsdoBidder.address],
         );
-        await bar.executeMixologistFn(
-            [wethUsdcMixologist.address],
+        await bar.executeSingularityFn(
+            [wethUsdcSingularity.address],
             [usdofnData],
             true,
         );
 
-        const executionfnData = wethUsdcMixologist.interface.encodeFunctionData(
+        const executionfnData = wethUsdcSingularity.interface.encodeFunctionData(
             'updateLQExecutionSwapper',
             [usdoToWethBidder.address],
         );
-        await bar.executeMixologistFn(
-            [wethUsdcMixologist.address],
+        await bar.executeSingularityFn(
+            [wethUsdcSingularity.address],
             [executionfnData],
             true,
         );
@@ -1079,7 +1079,7 @@ describe('LiquidationQueue test', () => {
 
         const testingUsdoToUsdcAmount =
             await stableToUsdoBidder.getOutputAmount(
-                wethUsdcMixologist.address,
+                wethUsdcSingularity.address,
                 usdcAssetId,
                 toBid,
                 ethers.utils.toUtf8Bytes(''),
@@ -1124,7 +1124,7 @@ describe('LiquidationQueue test', () => {
             bar,
             yieldBox,
             liquidationQueue,
-            wethUsdcMixologist,
+            wethUsdcSingularity,
             usdc,
             usd0,
             weth,
@@ -1142,22 +1142,22 @@ describe('LiquidationQueue test', () => {
             usd0,
         );
 
-        const usdofnData = wethUsdcMixologist.interface.encodeFunctionData(
+        const usdofnData = wethUsdcSingularity.interface.encodeFunctionData(
             'updateLQUsdoSwapper',
             [stableToUsdoBidder.address],
         );
-        await bar.executeMixologistFn(
-            [wethUsdcMixologist.address],
+        await bar.executeSingularityFn(
+            [wethUsdcSingularity.address],
             [usdofnData],
             true,
         );
 
-        const executionfnData = wethUsdcMixologist.interface.encodeFunctionData(
+        const executionfnData = wethUsdcSingularity.interface.encodeFunctionData(
             'updateLQExecutionSwapper',
             [usdoToWethBidder.address],
         );
-        await bar.executeMixologistFn(
-            [wethUsdcMixologist.address],
+        await bar.executeSingularityFn(
+            [wethUsdcSingularity.address],
             [executionfnData],
             true,
         );
@@ -1197,7 +1197,7 @@ describe('LiquidationQueue test', () => {
             [LQ_META.minBidAmount.div(1e3), LQ_META.minBidAmount],
         );
         const testOutput = await stableToUsdoBidder.getOutputAmount(
-            wethUsdcMixologist.address,
+            wethUsdcSingularity.address,
             usdoAssetId,
             toBid,
             ethers.utils.toUtf8Bytes(''),
@@ -1228,7 +1228,7 @@ describe('LiquidationQueue test', () => {
             bar,
             yieldBox,
             liquidationQueue,
-            wethUsdcMixologist,
+            wethUsdcSingularity,
             usdc,
             usd0,
             weth,
@@ -1250,22 +1250,22 @@ describe('LiquidationQueue test', () => {
             usd0,
         );
 
-        const usdofnData = wethUsdcMixologist.interface.encodeFunctionData(
+        const usdofnData = wethUsdcSingularity.interface.encodeFunctionData(
             'updateLQUsdoSwapper',
             [stableToUsdoBidder.address],
         );
-        await bar.executeMixologistFn(
-            [wethUsdcMixologist.address],
+        await bar.executeSingularityFn(
+            [wethUsdcSingularity.address],
             [usdofnData],
             true,
         );
 
-        const executionfnData = wethUsdcMixologist.interface.encodeFunctionData(
+        const executionfnData = wethUsdcSingularity.interface.encodeFunctionData(
             'updateLQExecutionSwapper',
             [usdoToWethBidder.address],
         );
-        await bar.executeMixologistFn(
-            [wethUsdcMixologist.address],
+        await bar.executeSingularityFn(
+            [wethUsdcSingularity.address],
             [executionfnData],
             true,
         );
@@ -1369,7 +1369,7 @@ describe('LiquidationQueue test', () => {
             bar,
             yieldBox,
             liquidationQueue,
-            wethUsdcMixologist,
+            wethUsdcSingularity,
             usdc,
             usd0,
             usdcAssetId,
@@ -1391,22 +1391,22 @@ describe('LiquidationQueue test', () => {
             usd0,
         );
 
-        const usdofnData = wethUsdcMixologist.interface.encodeFunctionData(
+        const usdofnData = wethUsdcSingularity.interface.encodeFunctionData(
             'updateLQUsdoSwapper',
             [stableToUsdoBidder.address],
         );
-        await bar.executeMixologistFn(
-            [wethUsdcMixologist.address],
+        await bar.executeSingularityFn(
+            [wethUsdcSingularity.address],
             [usdofnData],
             true,
         );
 
-        const executionfnData = wethUsdcMixologist.interface.encodeFunctionData(
+        const executionfnData = wethUsdcSingularity.interface.encodeFunctionData(
             'updateLQExecutionSwapper',
             [usdoToWethBidder.address],
         );
-        await bar.executeMixologistFn(
-            [wethUsdcMixologist.address],
+        await bar.executeSingularityFn(
+            [wethUsdcSingularity.address],
             [executionfnData],
             true,
         );
@@ -1466,8 +1466,8 @@ describe('LiquidationQueue test', () => {
 
         const accounts = await ethers.getSigners();
 
-        const mixologistAssetId = await wethUsdcMixologist.assetId();
-        const mixologistCollateralId = await wethUsdcMixologist.collateralId();
+        const mixologistAssetId = await wethUsdcSingularity.assetId();
+        const mixologistCollateralId = await wethUsdcSingularity.collateralId();
         const lqAssetId = await liquidationQueue.lqAssetId();
 
         //Lend from first account & borrow from the 2nd
@@ -1489,10 +1489,10 @@ describe('LiquidationQueue test', () => {
 
         // --- lend
         const mixologistBalanceOfAccountBefore =
-            await wethUsdcMixologist.balanceOf(accounts[0].address);
+            await wethUsdcSingularity.balanceOf(accounts[0].address);
         await expect(
             mixologistBalanceOfAccountBefore,
-            '✖️ Account 0 mixologist balance before is not right',
+            '✖️ Account 0 singularity balance before is not right',
         ).to.eq(0);
 
         await weth
@@ -1511,9 +1511,9 @@ describe('LiquidationQueue test', () => {
 
         await yieldBox
             .connect(accounts[0])
-            .setApprovalForAll(wethUsdcMixologist.address, true);
+            .setApprovalForAll(wethUsdcSingularity.address, true);
 
-        await wethUsdcMixologist
+        await wethUsdcSingularity
             .connect(accounts[0])
             .addAsset(
                 accounts[0].address,
@@ -1523,13 +1523,13 @@ describe('LiquidationQueue test', () => {
             );
 
         const mixologistBalanceOfAccountAfter =
-            await wethUsdcMixologist.balanceOf(accounts[0].address);
+            await wethUsdcSingularity.balanceOf(accounts[0].address);
 
         await expect(
             parseFloat(
                 ethers.utils.formatEther(mixologistBalanceOfAccountAfter),
             ),
-            '✖️ Account 0 mixologist balance after lend operation is not right',
+            '✖️ Account 0 singularity balance after lend operation is not right',
         ).to.eq(parseFloat(ethers.utils.formatEther(lendValShare)));
 
         // --- borrow
@@ -1555,13 +1555,13 @@ describe('LiquidationQueue test', () => {
             );
         await yieldBox
             .connect(accounts[1])
-            .setApprovalForAll(wethUsdcMixologist.address, true);
+            .setApprovalForAll(wethUsdcSingularity.address, true);
         const collateralShare = await yieldBox.toShare(
             mixologistCollateralId,
             usdcDepositVal,
             false,
         );
-        await wethUsdcMixologist
+        await wethUsdcSingularity
             .connect(accounts[1])
             .addCollateral(
                 accounts[1].address,
@@ -1569,14 +1569,14 @@ describe('LiquidationQueue test', () => {
                 false,
                 collateralShare,
             );
-        await wethUsdcMixologist
+        await wethUsdcSingularity
             .connect(accounts[1])
             .borrow(accounts[1].address, accounts[1].address, borrowVal);
 
         //  ---liquidate now
         const swapData = new ethers.utils.AbiCoder().encode(['uint256'], [1]);
         await expect(
-            wethUsdcMixologist.liquidate(
+            wethUsdcSingularity.liquidate(
                 [accounts[1].address],
                 [borrowVal],
                 multiSwapper.address,
@@ -1593,7 +1593,7 @@ describe('LiquidationQueue test', () => {
             lqAssetId,
         );
 
-        await wethUsdcMixologist
+        await wethUsdcSingularity
             .connect(accounts[0])
             .liquidate(
                 [accounts[1].address],
@@ -1618,7 +1618,7 @@ describe('LiquidationQueue test', () => {
             bar,
             yieldBox,
             liquidationQueue,
-            wethUsdcMixologist,
+            wethUsdcSingularity,
             usdc,
             usd0,
             usdcAssetId,
@@ -1640,22 +1640,22 @@ describe('LiquidationQueue test', () => {
             usd0,
         );
 
-        const usdofnData = wethUsdcMixologist.interface.encodeFunctionData(
+        const usdofnData = wethUsdcSingularity.interface.encodeFunctionData(
             'updateLQUsdoSwapper',
             [stableToUsdoBidder.address],
         );
-        await bar.executeMixologistFn(
-            [wethUsdcMixologist.address],
+        await bar.executeSingularityFn(
+            [wethUsdcSingularity.address],
             [usdofnData],
             true,
         );
 
-        const executionfnData = wethUsdcMixologist.interface.encodeFunctionData(
+        const executionfnData = wethUsdcSingularity.interface.encodeFunctionData(
             'updateLQExecutionSwapper',
             [usdoToWethBidder.address],
         );
-        await bar.executeMixologistFn(
-            [wethUsdcMixologist.address],
+        await bar.executeSingularityFn(
+            [wethUsdcSingularity.address],
             [executionfnData],
             true,
         );
@@ -1754,8 +1754,8 @@ describe('LiquidationQueue test', () => {
                 .activateBid(accounts[2].address, POOL),
         ).to.emit(liquidationQueue, 'ActivateBid');
 
-        const mixologistAssetId = await wethUsdcMixologist.assetId();
-        const mixologistCollateralId = await wethUsdcMixologist.collateralId();
+        const mixologistAssetId = await wethUsdcSingularity.assetId();
+        const mixologistCollateralId = await wethUsdcSingularity.collateralId();
         const lqAssetId = await liquidationQueue.lqAssetId();
 
         //Lend from first account & borrow from the 2nd
@@ -1778,10 +1778,10 @@ describe('LiquidationQueue test', () => {
 
         // --- lend
         const mixologistBalanceOfAccountBefore =
-            await wethUsdcMixologist.balanceOf(accounts[0].address);
+            await wethUsdcSingularity.balanceOf(accounts[0].address);
         await expect(
             mixologistBalanceOfAccountBefore,
-            '✖️ Account 0 mixologist balance before is not right',
+            '✖️ Account 0 singularity balance before is not right',
         ).to.eq(0);
 
         await weth.connect(accounts[0]).approve(yieldBox.address, lentAmount);
@@ -1798,9 +1798,9 @@ describe('LiquidationQueue test', () => {
 
         await yieldBox
             .connect(accounts[0])
-            .setApprovalForAll(wethUsdcMixologist.address, true);
+            .setApprovalForAll(wethUsdcSingularity.address, true);
 
-        await wethUsdcMixologist
+        await wethUsdcSingularity
             .connect(accounts[0])
             .addAsset(
                 accounts[0].address,
@@ -1810,13 +1810,13 @@ describe('LiquidationQueue test', () => {
             );
 
         const mixologistBalanceOfAccountAfter =
-            await wethUsdcMixologist.balanceOf(accounts[0].address);
+            await wethUsdcSingularity.balanceOf(accounts[0].address);
 
         await expect(
             parseFloat(
                 ethers.utils.formatEther(mixologistBalanceOfAccountAfter),
             ),
-            '✖️ Account 0 mixologist balance after lend operation is not right',
+            '✖️ Account 0 singularity balance after lend operation is not right',
         ).to.eq(parseFloat(ethers.utils.formatEther(lendValShare)));
 
         // --- borrow
@@ -1842,13 +1842,13 @@ describe('LiquidationQueue test', () => {
             );
         await yieldBox
             .connect(accounts[1])
-            .setApprovalForAll(wethUsdcMixologist.address, true);
+            .setApprovalForAll(wethUsdcSingularity.address, true);
         const collateralShare = await yieldBox.toShare(
             mixologistCollateralId,
             usdcDepositVal,
             false,
         );
-        await wethUsdcMixologist
+        await wethUsdcSingularity
             .connect(accounts[1])
             .addCollateral(
                 accounts[1].address,
@@ -1856,14 +1856,14 @@ describe('LiquidationQueue test', () => {
                 false,
                 collateralShare,
             );
-        await wethUsdcMixologist
+        await wethUsdcSingularity
             .connect(accounts[1])
             .borrow(accounts[1].address, accounts[1].address, borrowVal);
 
         //  ---liquidate now
         const swapData = new ethers.utils.AbiCoder().encode(['uint256'], [1]);
         await expect(
-            wethUsdcMixologist.liquidate(
+            wethUsdcSingularity.liquidate(
                 [accounts[1].address],
                 [borrowVal],
                 multiSwapper.address,
@@ -1880,7 +1880,7 @@ describe('LiquidationQueue test', () => {
             lqAssetId,
         );
 
-        await wethUsdcMixologist
+        await wethUsdcSingularity
             .connect(accounts[0])
             .liquidate(
                 [accounts[1].address],

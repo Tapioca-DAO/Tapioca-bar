@@ -1,23 +1,23 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import _ from 'lodash';
-import { getDeployment, getMixologistContract } from './utils';
+import { getDeployment, getSingularityContract } from './utils';
 
 //Execution example:
-//      npx hardhat setColleteralSwapPath --mixologist "<address>" --path "[<address1>,<address2>]"
+//      npx hardhat setColleteralSwapPath --singularity "<address>" --path "[<address1>,<address2>]"
 export const setPath = async (
     taskArgs: any,
     hre: HardhatRuntimeEnvironment,
 ) => {
     const beachBarContract = await getDeployment(hre, 'BeachBar');
-    const { mixologistContract, mixologistAddress } =
-        await getMixologistContract(taskArgs, hre);
+    const { singularityContract, singularityAddress } =
+        await getSingularityContract(taskArgs, hre);
 
-    const callData = mixologistContract.interface.encodeFunctionData(
+    const callData = singularityContract.interface.encodeFunctionData(
         'setCollateralSwapPath',
         [taskArgs['path']],
     );
 
-    await beachBarContract.executeMixologistFn([mixologistAddress], [callData],true);
+    await beachBarContract.executeMixologistFn([singularityAddress], [callData],true);
 };
 
 export const setCollateralSwapPath__task = async (
@@ -25,7 +25,7 @@ export const setCollateralSwapPath__task = async (
     hre: HardhatRuntimeEnvironment,
 ) => {
     console.log(
-        `Setting collateralSwapPath ('${args['path']}') on mixologist: ${args['mixologist']}`,
+        `Setting collateralSwapPath ('${args['path']}') on singularity: ${args['singularity']}`,
     );
     await setPath(args, hre);
     console.log('Execution completed');
