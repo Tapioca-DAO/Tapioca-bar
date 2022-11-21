@@ -3,7 +3,7 @@ import _ from 'lodash';
 import { getSingularityContract, getDeployment } from './utils';
 
 //Execution example:
-//      npx hardhat getParticipantMixologistInfo --singularity "<address>" --participant "<address>"
+//      npx hardhat getParticipantSingularityInfo --singularity "<address>" --participant "<address>"
 export const getDetails = async (
     taskArgs: any,
     hre: HardhatRuntimeEnvironment,

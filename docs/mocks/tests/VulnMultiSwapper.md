@@ -13,7 +13,7 @@
 ### counterfeitSwap
 
 ```solidity
-function counterfeitSwap(contract BeachBar beachbar, uint256 assetId, address target) external nonpayable
+function counterfeitSwap(contract Penrose penrose, uint256 assetId, address target) external nonpayable
 ```
 
 
@@ -24,7 +24,7 @@ function counterfeitSwap(contract BeachBar beachbar, uint256 assetId, address ta
 
 | Name | Type | Description |
 |---|---|---|
-| beachbar | contract BeachBar | undefined |
+| penrose | contract Penrose | undefined |
 | assetId | uint256 | undefined |
 | target | address | undefined |
 

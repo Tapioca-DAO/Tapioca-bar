@@ -308,8 +308,8 @@ contract SGLCommon is SGLStorage {
             );
     }
 
-    /// @dev Compute the amount of `mixologist.assetId` from `fraction`
-    /// `fraction` can be `mixologist.accrueInfo.feeFraction` or `mixologist.balanceOf`
+    /// @dev Compute the amount of `singularity.assetId` from `fraction`
+    /// `fraction` can be `singularity.accrueInfo.feeFraction` or `singularity.balanceOf`
     function _getAmountForAssetFraction(uint256 fraction)
         internal
         view

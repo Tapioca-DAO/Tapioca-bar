@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 import '@boringcrypto/boring-solidity/contracts/BoringOwnable.sol';
 import '@boringcrypto/boring-solidity/contracts/interfaces/IERC20.sol';
 
-import '../IBeachBar.sol';
+import '../IPenrose.sol';
 import './ILiquidationQueue.sol';
 import '../singularity/interfaces/ISingularity.sol';
 import '../../yieldbox/contracts/interfaces/IStrategy.sol';
@@ -26,15 +26,15 @@ contract LiquidationQueue is ILiquidationQueue {
     /// @notice returns metadata information
     LiquidationQueueMeta public liquidationQueueMeta;
     /// @notice targeted market
-    ISingularity public mixologist;
-    /// @notice BeachBar addres
-    IBeachBar public beachBar;
+    ISingularity public singularity;
+    /// @notice Penrose addres
+    IPenrose public penrose;
     /// @notice YieldBox address
     YieldBox public yieldBox;
 
-    /// @notice liquidation queue BeachBar asset id
+    /// @notice liquidation queue Penrose asset id
     uint256 public lqAssetId;
-    /// @notice mixologist asset id
+    /// @notice singularity asset id
     uint256 public marketAssetId;
     /// @notice asset that is being liquidated
     uint256 public liquidatedAssetId;
@@ -151,19 +151,19 @@ contract LiquidationQueue is ILiquidationQueue {
 
         liquidationQueueMeta = _liquidationQueueMeta;
 
-        mixologist = ISingularity(_mixologist);
-        liquidatedAssetId = mixologist.collateralId();
-        marketAssetId = mixologist.assetId();
-        beachBar = IBeachBar(mixologist.beachBar());
-        yieldBox = YieldBox(mixologist.yieldBox());
+        singularity = ISingularity(_mixologist);
+        liquidatedAssetId = singularity.collateralId();
+        marketAssetId = singularity.assetId();
+        penrose = IPenrose(singularity.penrose());
+        yieldBox = YieldBox(singularity.yieldBox());
 
         lqAssetId = _registerAsset();
 
-        IERC20(mixologist.asset()).approve(
+        IERC20(singularity.asset()).approve(
             address(yieldBox),
             type(uint256).max
         );
-        yieldBox.setApprovalForAll(address(mixologist), true);
+        yieldBox.setApprovalForAll(address(singularity), true);
 
         // We initialize the pools to save gas on conditionals later on.
         for (uint256 i = 0; i <= MAX_BID_POOLS; ) {
@@ -180,7 +180,7 @@ contract LiquidationQueue is ILiquidationQueue {
 
     /// @notice returns targeted market
     function market() public view returns (string memory) {
-        return mixologist.name();
+        return singularity.name();
     }
 
     /// @notice returns order book size
@@ -283,7 +283,7 @@ contract LiquidationQueue is ILiquidationQueue {
             'LQ: USD0 swapper not set'
         );
 
-        uint256 usdoAssetId = beachBar.usdoAssetId();
+        uint256 usdoAssetId = penrose.usdoAssetId();
         yieldBox.transfer(
             msg.sender,
             address(liquidationQueueMeta.usdoSwapper),
@@ -292,7 +292,7 @@ contract LiquidationQueue is ILiquidationQueue {
         );
 
         uint256 usdoAmount = liquidationQueueMeta.usdoSwapper.swap(
-            address(mixologist),
+            address(singularity),
             stableAssetId,
             amountIn,
             data
@@ -302,7 +302,7 @@ contract LiquidationQueue is ILiquidationQueue {
 
         uint256 usdoValueInLqAsset = bidder.swapOnExecute
             ? liquidationQueueMeta.bidExecutionSwapper.getOutputAmount(
-                address(mixologist),
+                address(singularity),
                 usdoAssetId,
                 usdoAmount,
                 data
@@ -384,8 +384,8 @@ contract LiquidationQueue is ILiquidationQueue {
             orderBookEntry.bidInfo.liquidatedAssetAmount,
             orderBookEntry.bidInfo.swapOnExecute
                 ? liquidationQueueMeta.bidExecutionSwapper.getOutputAmount(
-                    address(mixologist),
-                    beachBar.usdoAssetId(),
+                    address(singularity),
+                    penrose.usdoAssetId(),
                     orderBookEntry.bidInfo.usdoAmount,
                     ''
                 )
@@ -414,8 +414,8 @@ contract LiquidationQueue is ILiquidationQueue {
             lqAssetValue = liquidationQueueMeta
                 .bidExecutionSwapper
                 .getOutputAmount(
-                    address(mixologist),
-                    beachBar.usdoAssetId(),
+                    address(singularity),
+                    penrose.usdoAssetId(),
                     amountRemoved,
                     ''
                 );
@@ -426,7 +426,7 @@ contract LiquidationQueue is ILiquidationQueue {
         ); //save gas
 
         // Transfer assets
-        uint256 assetId = isUsdo ? beachBar.usdoAssetId() : lqAssetId;
+        uint256 assetId = isUsdo ? penrose.usdoAssetId() : lqAssetId;
         yieldBox.transfer(
             address(this),
             user,
@@ -503,7 +503,7 @@ contract LiquidationQueue is ILiquidationQueue {
             bidIndexes.pop();
         }
         // Transfer assets
-        uint256 assetId = isUsdo ? beachBar.usdoAssetId() : lqAssetId;
+        uint256 assetId = isUsdo ? penrose.usdoAssetId() : lqAssetId;
         yieldBox.transfer(
             address(this),
             user,
@@ -515,8 +515,8 @@ contract LiquidationQueue is ILiquidationQueue {
             lqAssetValue = liquidationQueueMeta
                 .bidExecutionSwapper
                 .getOutputAmount(
-                    address(mixologist),
-                    beachBar.usdoAssetId(),
+                    address(singularity),
+                    penrose.usdoAssetId(),
                     amountRemoved,
                     ''
                 );
@@ -559,7 +559,7 @@ contract LiquidationQueue is ILiquidationQueue {
     /// @notice Execute the liquidation call by executing the bids placed in the pools in ASC order.
     /// @dev Should only be called from Singularity.
     ///      Singularity should send the `collateralAmountToLiquidate` to this contract before calling this function.
-    /// Tx will fail if it can't transfer allowed BeachBar asset from Singularity.
+    /// Tx will fail if it can't transfer allowed Penrose asset from Singularity.
     /// @param collateralAmountToLiquidate The amount of collateral to liquidate.
     /// @param swapData Swap data necessary for swapping USD0 to market asset; necessary only if bidder added USD0
     /// @return totalAmountExecuted The amount of asset that was executed.
@@ -572,11 +572,11 @@ contract LiquidationQueue is ILiquidationQueue {
         override
         returns (uint256 totalAmountExecuted, uint256 totalCollateralLiquidated)
     {
-        require(msg.sender == address(mixologist), 'LQ: Only Singularity');
+        require(msg.sender == address(singularity), 'LQ: Only Singularity');
         BidExecutionData memory data;
 
         (data.curPoolId, data.isBidAvail) = getNextAvailBidPool();
-        data.exchangeRate = mixologist.exchangeRate();
+        data.exchangeRate = singularity.exchangeRate();
         // We loop through all the bids for each pools until all the collateral is liquidated
         // or no more bid are available.
         while (collateralAmountToLiquidate > 0 && data.isBidAvail) {
@@ -704,7 +704,7 @@ contract LiquidationQueue is ILiquidationQueue {
             yieldBox.depositAsset(
                 marketAssetId,
                 address(this),
-                address(mixologist),
+                address(singularity),
                 toSend,
                 0
             );
@@ -714,7 +714,7 @@ contract LiquidationQueue is ILiquidationQueue {
     /// @notice updates the bid swapper address
     /// @param _swapper thew new ICollateralSwaper contract address
     function setBidExecutionSwapper(address _swapper) external override {
-        require(msg.sender == address(mixologist), 'unauthorized');
+        require(msg.sender == address(singularity), 'unauthorized');
         emit BidSwapperUpdated(
             liquidationQueueMeta.bidExecutionSwapper,
             _swapper
@@ -725,7 +725,7 @@ contract LiquidationQueue is ILiquidationQueue {
     /// @notice updates the bid swapper address
     /// @param _swapper thew new ICollateralSwaper contract address
     function setUsdoSwapper(address _swapper) external override {
-        require(msg.sender == address(mixologist), 'unauthorized');
+        require(msg.sender == address(singularity), 'unauthorized');
         emit UsdoSwapperUpdated(liquidationQueueMeta.usdoSwapper, _swapper);
         liquidationQueueMeta.usdoSwapper = IBidder(_swapper);
     }
@@ -743,8 +743,8 @@ contract LiquidationQueue is ILiquidationQueue {
             : entry.liquidatedAssetAmount;
         uint256 liquidatedAssetAmount = entry.swapOnExecute
             ? liquidationQueueMeta.bidExecutionSwapper.getOutputAmount(
-                address(mixologist),
-                beachBar.usdoAssetId(),
+                address(singularity),
+                penrose.usdoAssetId(),
                 entry.usdoAmount,
                 ''
             )
@@ -779,9 +779,9 @@ contract LiquidationQueue is ILiquidationQueue {
             yieldBox.transfer(
                 address(this),
                 address(liquidationQueueMeta.bidExecutionSwapper),
-                beachBar.usdoAssetId(),
+                penrose.usdoAssetId(),
                 yieldBox.toShare(
-                    beachBar.usdoAssetId(),
+                    penrose.usdoAssetId(),
                     entry.usdoAmount,
                     false
                 )
@@ -790,8 +790,8 @@ contract LiquidationQueue is ILiquidationQueue {
             finalCollateralAmount = liquidationQueueMeta
                 .bidExecutionSwapper
                 .swap(
-                    address(mixologist),
-                    beachBar.usdoAssetId(),
+                    address(singularity),
+                    penrose.usdoAssetId(),
                     entry.usdoAmount,
                     swapData
                 );
@@ -824,12 +824,12 @@ contract LiquidationQueue is ILiquidationQueue {
         );
 
         //Execute the swap if USD0 was provided and it's different from the liqudation asset id
-        uint256 usdoAssetId = beachBar.usdoAssetId();
+        uint256 usdoAssetId = penrose.usdoAssetId();
         if (entry.swapOnExecute) {
             finalUsdoAmount = liquidationQueueMeta
                 .bidExecutionSwapper
                 .getInputAmount(
-                    address(mixologist),
+                    address(singularity),
                     usdoAssetId,
                     finalDiscountedCollateralAmount,
                     ''
@@ -844,7 +844,7 @@ contract LiquidationQueue is ILiquidationQueue {
             uint256 returnedCollateral = liquidationQueueMeta
                 .bidExecutionSwapper
                 .swap(
-                    address(mixologist),
+                    address(singularity),
                     usdoAssetId,
                     finalUsdoAmount,
                     swapData
@@ -866,7 +866,7 @@ contract LiquidationQueue is ILiquidationQueue {
         bidder.liquidatedAssetAmount = isUsdo ? 0 : amount;
         bidder.timestamp = block.timestamp;
         bidder.isUsdo = isUsdo;
-        bidder.swapOnExecute = isUsdo && lqAssetId != beachBar.usdoAssetId();
+        bidder.swapOnExecute = isUsdo && lqAssetId != penrose.usdoAssetId();
 
         bidPools[pool][user] = bidder;
 
@@ -895,7 +895,7 @@ contract LiquidationQueue is ILiquidationQueue {
         }
     }
 
-    /// @notice Create an asset inside of BeachBar that will hold the funds.
+    /// @notice Create an asset inside of Penrose that will hold the funds.
     function _registerAsset() internal returns (uint256) {
         (, address contractAddress, , ) = yieldBox.assets(marketAssetId);
         return

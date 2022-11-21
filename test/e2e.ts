@@ -28,7 +28,7 @@ describe('e2e tests', () => {
     ---1/2 Borrowers---
     - get liquidated
     */
-    it('should use minterMixologist and market to add, borrow and get liquidated', async () => {
+    it('should use minterSingularity and market to add, borrow and get liquidated', async () => {
         const {
             bar,
             wethMinterSingularity,
@@ -116,7 +116,7 @@ describe('e2e tests', () => {
         );
 
         // add WETH and borrow USD0 from WETH-USD00-Singularity
-        await borrowFromMixologistModule(
+        await borrowFromSingularityModule(
             borrowers,
             wethMintVal.div(10),
             usdoBorrowVal.div(10),
@@ -185,7 +185,7 @@ describe('e2e tests', () => {
         );
     });
 
-    it('should try to use minterMixologist and market to add, borrow and get liquidated, but in a wrong order', async () => {
+    it('should try to use minterSingularity and market to add, borrow and get liquidated, but in a wrong order', async () => {
         const {
             bar,
             wethMinterSingularity,
@@ -636,7 +636,7 @@ async function depositAddCollateralAndBorrowPlug(
     return { share, amount };
 }
 
-async function addAssetToMixologistPlug(
+async function addAssetToSingularityPlug(
     signer: SignerWithAddress,
     Singularity: any,
     shareValue: BigNumberish,
@@ -834,9 +834,9 @@ async function addUsd0Module(
             ethers.utils.toUtf8Bytes(''),
         );
 
-        //lend USD0 to WethUSD0Mixologist
+        //lend USD0 to WethUSD0Singularity
         await setYieldBoxApprovalPlug(lender, yieldBox, wethUsdoSingularity);
-        await addAssetToMixologistPlug(
+        await addAssetToSingularityPlug(
             lender,
             wethUsdoSingularity,
             share.div(2),
@@ -844,7 +844,7 @@ async function addUsd0Module(
     }
 }
 
-async function borrowFromMixologistModule(
+async function borrowFromSingularityModule(
     borrowers: any[],
     wethMintVal: BigNumber,
     usdoBorrowVal: BigNumber,

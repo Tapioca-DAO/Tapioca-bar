@@ -3,7 +3,7 @@ import { ethers } from 'hardhat';
 import { register } from './test.utils';
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 
-describe('BeachBar test', () => {
+describe('Penrose test', () => {
     it('Should display Tapioca markets', async () => {
         const { bar } = await loadFixture(register);
 
@@ -29,7 +29,7 @@ describe('BeachBar test', () => {
                 ethers.utils.toUtf8Bytes(''),
                 false,
             ),
-        ).to.be.revertedWith('BeachBar: MC not registered');
+        ).to.be.revertedWith('Penrose: MC not registered');
     });
 ""
     it('should not allow registering the same master contract twice', async () => {
@@ -37,7 +37,7 @@ describe('BeachBar test', () => {
 
         await expect(
             bar.registerMasterContract(mediumRiskMC.address, 1),
-        ).to.be.revertedWith('BeachBar: MC registered');
+        ).to.be.revertedWith('Penrose: MC registered');
     });
 
     it('should not allow executing without a proper master contract', async () => {
@@ -49,7 +49,7 @@ describe('BeachBar test', () => {
                 [ethers.utils.toUtf8Bytes('')],
                 true,
             ),
-        ).to.be.revertedWith('BeachBar: MC not registered');
+        ).to.be.revertedWith('Penrose: MC not registered');
     });
 
     it('should list all singularity registered markets', async () => {
@@ -86,6 +86,6 @@ describe('BeachBar test', () => {
                     },
                 ],
             ),
-        ).to.be.revertedWith('BeachBar: zero address');
+        ).to.be.revertedWith('Penrose: zero address');
     });
 });

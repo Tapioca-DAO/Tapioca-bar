@@ -8,7 +8,7 @@ export const setLiquidationQueue = async (
     taskArgs: any,
     hre: HardhatRuntimeEnvironment,
 ) => {
-    const beachBarContract = await getDeployment(hre, 'BeachBar');
+    const penroseContract = await getDeployment(hre, 'Penrose');
     const { singularityContract, singularityAddress } =
         await getSingularityContract(taskArgs, hre);
 
@@ -17,7 +17,7 @@ export const setLiquidationQueue = async (
         [taskArgs['liquidationQueue'], taskArgs['meta']],
     );
 
-    await beachBarContract.executeMixologistFn(
+    await penroseContract.executeSingularityFn(
         [singularityAddress],
         [callData],
         true,

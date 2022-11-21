@@ -11,12 +11,12 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const chainId = await hre.getChainId();
     const contracts: TContract[] = [];
 
-    const beachBar = await deployments.get('BeachBar');
+    const penrose = await deployments.get('Penrose');
 
     console.log('\n Deploying MultiSwapper');
     const args = [
         constants[chainId].uniV2Factory,
-        beachBar.address,
+        penrose.address,
         constants[chainId].uniV2PairHash,
     ];
     await deploy('MultiSwapper', {
@@ -40,12 +40,12 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     await updateDeployments(contracts, chainId);
 
     console.log('\n Setting MultiSwapper');
-    const beachBarContract = await hre.ethers.getContractAt(
-        'BeachBar',
-        beachBar.address,
+    const penroseContract = await hre.ethers.getContractAt(
+        'Penrose',
+        penrose.address,
     );
     await (
-        await beachBarContract.setSwapper(deployedMultiSwapper.address, true)
+        await penroseContract.setSwapper(deployedMultiSwapper.address, true)
     ).wait();
     console.log('Done');
 };
