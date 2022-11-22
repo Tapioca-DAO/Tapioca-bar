@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import '@boringcrypto/boring-solidity/contracts/BoringOwnable.sol';
 
-import '../../IBeachBar.sol';
+import '../../IPenrose.sol';
 import '../ILiquidationQueue.sol';
 import '../../libraries/ICurvePool.sol';
 import '../../swappers/ICurveSwapper.sol';
@@ -60,24 +60,24 @@ contract CurveStableToUsdoBidder is BoringOwnable {
     /// @notice returns the amount of collateral
     /// @param amountIn Stablecoin amount
     function getOutputAmount(
-        ISingularity mixologist,
+        ISingularity singularity,
         uint256 tokenInId,
         uint256 amountIn,
         bytes calldata
     ) external view returns (uint256) {
         require(
-            IBeachBar(mixologist.beachBar()).usdoToken() != address(0),
+            IPenrose(singularity.penrose()).usdoToken() != address(0),
             'USD0 not set'
         );
 
-        uint256 usdoAssetId = IBeachBar(mixologist.beachBar()).usdoAssetId();
+        uint256 usdoAssetId = IPenrose(singularity.penrose()).usdoAssetId();
         if (tokenInId == usdoAssetId) {
             return amountIn;
         }
 
         return
             _getOutput(
-                IYieldBox(mixologist.yieldBox()),
+                IYieldBox(singularity.yieldBox()),
                 tokenInId,
                 usdoAssetId,
                 amountIn
@@ -88,24 +88,24 @@ contract CurveStableToUsdoBidder is BoringOwnable {
     /// @param tokenInId Token in asset id
     /// @param amountOut Token out amount
     function getInputAmount(
-        ISingularity mixologist,
+        ISingularity singularity,
         uint256 tokenInId,
         uint256 amountOut,
         bytes calldata
     ) external view returns (uint256) {
         require(
-            IBeachBar(mixologist.beachBar()).usdoToken() != address(0),
+            IPenrose(singularity.penrose()).usdoToken() != address(0),
             'USD0 not set'
         );
 
-        uint256 usdoAssetId = IBeachBar(mixologist.beachBar()).usdoAssetId();
+        uint256 usdoAssetId = IPenrose(singularity.penrose()).usdoAssetId();
         if (tokenInId == usdoAssetId) {
             return amountOut;
         }
 
         return
             _getOutput(
-                IYieldBox(mixologist.yieldBox()),
+                IYieldBox(singularity.yieldBox()),
                 usdoAssetId,
                 tokenInId,
                 amountOut
@@ -121,21 +121,21 @@ contract CurveStableToUsdoBidder is BoringOwnable {
     /// @param amountIn Stablecoin amount
     /// @param data extra data used for the swap operation
     function swap(
-        ISingularity mixologist,
+        ISingularity singularity,
         uint256 tokenInId,
         uint256 amountIn,
         bytes calldata data
     ) external returns (uint256) {
         require(
-            IBeachBar(mixologist.beachBar()).usdoToken() != address(0),
+            IPenrose(singularity.penrose()).usdoToken() != address(0),
             'USD0 not set'
         );
-        IYieldBox yieldBox = IYieldBox(mixologist.yieldBox());
+        IYieldBox yieldBox = IYieldBox(singularity.yieldBox());
         ILiquidationQueue liquidationQueue = ILiquidationQueue(
-            mixologist.liquidationQueue()
+            singularity.liquidationQueue()
         );
 
-        uint256 usdoAssetId = IBeachBar(mixologist.beachBar()).usdoAssetId();
+        uint256 usdoAssetId = IPenrose(singularity.penrose()).usdoAssetId();
         require(msg.sender == address(liquidationQueue), 'only LQ');
         if (tokenInId == usdoAssetId) {
             yieldBox.transfer(

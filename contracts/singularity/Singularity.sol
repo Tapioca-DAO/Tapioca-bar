@@ -45,7 +45,7 @@ contract Singularity is SGLCommon {
         (
             address _liquidationModule,
             address _lendingBorrowingModule,
-            IBeachBar tapiocaBar_,
+            IPenrose tapiocaBar_,
             IERC20 _asset,
             uint256 _assetId,
             IERC20 _collateral,
@@ -58,7 +58,7 @@ contract Singularity is SGLCommon {
                 (
                     address,
                     address,
-                    IBeachBar,
+                    IPenrose,
                     IERC20,
                     uint256,
                     IERC20,
@@ -71,9 +71,9 @@ contract Singularity is SGLCommon {
 
         liquidationModule = SGLLiquidation(_liquidationModule);
         lendingBorrowingModule = SGLLendingBorrowing(_lendingBorrowingModule);
-        beachBar = tapiocaBar_;
+        penrose = tapiocaBar_;
         yieldBox = YieldBox(tapiocaBar_.yieldBox());
-        owner = address(beachBar);
+        owner = address(penrose);
 
         require(
             address(_collateral) != address(0) &&
@@ -142,8 +142,8 @@ contract Singularity is SGLCommon {
         return _getCollateralSharesForBorrowPart(borrowPart);
     }
 
-    /// @notice Compute the amount of `mixologist.assetId` from `fraction`
-    /// `fraction` can be `mixologist.accrueInfo.feeFraction` or `mixologist.balanceOf`
+    /// @notice Compute the amount of `singularity.assetId` from `fraction`
+    /// `fraction` can be `singularity.accrueInfo.feeFraction` or `singularity.balanceOf`
     /// @param fraction The fraction.
     /// @return amount The amount.
     function getAmountForAssetFraction(uint256 fraction)
@@ -339,7 +339,7 @@ contract Singularity is SGLCommon {
     /// @notice Withdraw the fees accumulated in `accrueInfo.feesEarnedFraction` to the balance of `feeTo`.
     function withdrawFeesEarned() public {
         accrue();
-        address _feeTo = beachBar.feeTo();
+        address _feeTo = penrose.feeTo();
         uint256 _feesEarnedFraction = accrueInfo.feesEarnedFraction;
         balanceOf[_feeTo] += _feesEarnedFraction;
         emit Transfer(address(0), _feeTo, _feesEarnedFraction);
@@ -350,14 +350,14 @@ contract Singularity is SGLCommon {
     /// @notice Withdraw the balance of `feeTo`, swap asset into TAP and deposit it to yieldBox of `feeTo`
     function depositFeesToYieldBox(
         IMultiSwapper swapper,
-        IBeachBar.SwapData calldata swapData
+        IPenrose.SwapData calldata swapData
     ) public {
         if (accrueInfo.feesEarnedFraction > 0) {
             withdrawFeesEarned();
         }
-        require(beachBar.swappers(swapper), 'Mx: Invalid swapper');
-        address _feeTo = beachBar.feeTo();
-        address _feeVeTap = beachBar.feeVeTap();
+        require(penrose.swappers(swapper), 'SGL: Invalid swapper');
+        address _feeTo = penrose.feeTo();
+        address _feeVeTap = penrose.feeVeTap();
 
         uint256 feeShares = _removeAsset(
             _feeTo,
@@ -370,7 +370,7 @@ contract Singularity is SGLCommon {
 
         (uint256 tapAmount, ) = swapper.swap(
             assetId,
-            beachBar.tapAssetId(),
+            penrose.tapAssetId(),
             swapData.minAssetAmount,
             _feeVeTap,
             tapSwapPath,

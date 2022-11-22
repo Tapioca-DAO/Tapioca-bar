@@ -258,7 +258,7 @@ contract SGLLiquidation is SGLCommon {
         );
 
         // Closed liquidation using a pre-approved swapper
-        require(beachBar.swappers(swapper), 'SGL: Invalid swapper');
+        require(penrose.swappers(swapper), 'SGL: Invalid swapper');
 
         // Swaps the users collateral for the borrowed asset
         yieldBox.transfer(
@@ -287,7 +287,7 @@ contract SGLLiquidation is SGLCommon {
         uint256 feeShare = (extraShare * PROTOCOL_FEE) / PROTOCOL_FEE_DIVISOR; // 10% of profit goes to fee.
         uint256 callerShare = (extraShare * CALLER_FEE) / CALLER_FEE_DIVISOR; //  1%  of profit goes to caller.
 
-        yieldBox.transfer(address(this), beachBar.feeTo(), assetId, feeShare);
+        yieldBox.transfer(address(this), penrose.feeTo(), assetId, feeShare);
         yieldBox.transfer(address(this), msg.sender, assetId, callerShare);
 
         totalAsset.elastic += uint128(returnedShare - feeShare - callerShare);

@@ -11,7 +11,7 @@ import '../swappers/IMultiSwapper.sol';
 import '../singularity/interfaces/IOracle.sol';
 import '../singularity/interfaces/IFlashLoan.sol';
 import '../liquidationQueue/ILiquidationQueue.sol';
-import '../IBeachBar.sol';
+import '../IPenrose.sol';
 import './interfaces/ISingularity.sol';
 
 // solhint-disable max-line-length
@@ -40,7 +40,7 @@ contract SGLStorage is BoringOwnable, ERC20 {
 
     ISingularity.AccrueInfo public accrueInfo;
 
-    IBeachBar public beachBar;
+    IPenrose public penrose;
     YieldBox public yieldBox;
     ILiquidationQueue public liquidationQueue;
     IERC20 public collateral;

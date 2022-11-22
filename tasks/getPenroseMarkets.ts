@@ -2,10 +2,10 @@ import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import _ from 'lodash';
 import { getDeployment } from './utils';
 
-export const getBeachBarMarkets = async (hre: HardhatRuntimeEnvironment) => {
-    const beachBarContract = await getDeployment(hre, 'BeachBar');
+export const getPenroseMarkets = async (hre: HardhatRuntimeEnvironment) => {
+    const penroseContract = await getDeployment(hre, 'Penrose');
 
-    const addresses = await beachBarContract.tapiocaMarkets();
+    const addresses = await penroseContract.tapiocaMarkets();
     const markets = [];
 
     for (const address of addresses) {
@@ -21,9 +21,9 @@ export const getBeachBarMarkets = async (hre: HardhatRuntimeEnvironment) => {
     return markets;
 };
 
-export const getBeachBarMarkets__task = async (
+export const getPenroseMarkets__task = async (
     args: any,
     hre: HardhatRuntimeEnvironment,
 ) => {
-    console.log(await getBeachBarMarkets(hre));
+    console.log(await getPenroseMarkets(hre));
 };

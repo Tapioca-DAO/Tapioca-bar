@@ -1,4 +1,4 @@
-# MixologistHelper
+# SingularityHelper
 
 
 
@@ -6,14 +6,14 @@
 
 
 
-*This contract provides useful helper functions for `Mixologist`.*
+*This contract provides useful helper functions for `Singularity`.*
 
 ## Methods
 
 ### getAmountForAssetFraction
 
 ```solidity
-function getAmountForAssetFraction(contract Mixologist mixologist, uint256 fraction) external view returns (uint256)
+function getAmountForAssetFraction(contract Singularity mixologist, uint256 fraction) external view returns (uint256)
 ```
 
 
@@ -24,7 +24,7 @@ function getAmountForAssetFraction(contract Mixologist mixologist, uint256 fract
 
 | Name | Type | Description |
 |---|---|---|
-| mixologist | contract Mixologist | undefined |
+| mixologist | contract Singularity | undefined |
 | fraction | uint256 | undefined |
 
 #### Returns
@@ -36,7 +36,7 @@ function getAmountForAssetFraction(contract Mixologist mixologist, uint256 fract
 ### getCollateralSharesForBorrowPart
 
 ```solidity
-function getCollateralSharesForBorrowPart(contract Mixologist mixologist, uint256 borrowPart) external view returns (uint256)
+function getCollateralSharesForBorrowPart(contract Singularity mixologist, uint256 borrowPart) external view returns (uint256)
 ```
 
 
@@ -47,7 +47,7 @@ function getCollateralSharesForBorrowPart(contract Mixologist mixologist, uint25
 
 | Name | Type | Description |
 |---|---|---|
-| mixologist | contract Mixologist | undefined |
+| mixologist | contract Singularity | undefined |
 | borrowPart | uint256 | undefined |
 
 #### Returns

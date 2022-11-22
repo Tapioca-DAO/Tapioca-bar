@@ -816,7 +816,7 @@ describe('Singularity test', () => {
 
         // Confirm fees accumulation
         expect(userBorrowPart.gt(wethBorrowVal));
-        // Withdraw fees from BeachBar
+        // Withdraw fees from Penrose
         await expect(
             bar.withdrawAllProtocolFees(
                 [multiSwapper.address],
@@ -1044,7 +1044,7 @@ describe('Singularity test', () => {
                 ethers.constants.AddressZero,
                 { minAssetAmount: 1 },
             ),
-        ).to.be.revertedWith('Mx: Invalid swapper');
+        ).to.be.revertedWith('SGL: Invalid swapper');
     });
 
     it('should not be allowed to initialize twice', async () => {

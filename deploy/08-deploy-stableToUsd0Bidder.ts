@@ -11,12 +11,12 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const chainId = await hre.getChainId();
     const contracts: TContract[] = [];
 
-    const beachBar = await deployments.get('BeachBar');
+    const penrose = await deployments.get('Penrose');
 
     console.log('\n Deploying CurveSwapper');
     const curveSwapperArgs = [
         constants[chainId].crvStablePool,
-        beachBar.address,
+        penrose.address,
     ];
     await deploy('CurveSwapper', {
         from: deployer,

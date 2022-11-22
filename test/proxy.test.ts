@@ -248,7 +248,7 @@ describe('SGLProxy', () => {
             ['uint16', 'uint256'],
             [1, 2250000],
         );
-        await proxySrc.setMinDstGasLookup(
+        await proxySrc.setMinDstGas(
             await lzEndpointDst.getChainId(),
             1,
             1,
@@ -625,7 +625,7 @@ describe('SGLProxy', () => {
             ['uint16', 'uint256'],
             [1, 2250000],
         );
-        await proxySrc.setMinDstGasLookup(
+        await proxySrc.setMinDstGas(
             await lzEndpointDst.getChainId(),
             1,
             1,
@@ -762,7 +762,7 @@ describe('SGLProxy', () => {
             ['uint16', 'uint256'],
             [1, 2250000],
         );
-        await proxySrc.setMinDstGasLookup(
+        await proxySrc.setMinDstGas(
             await lzEndpointDst.getChainId(),
             1,
             1,
@@ -922,7 +922,7 @@ describe('SGLProxy', () => {
             ['uint16', 'uint256'],
             [1, 2250000],
         );
-        await proxySrc.setMinDstGasLookup(
+        await proxySrc.setMinDstGas(
             await lzEndpointDst.getChainId(),
             1,
             1,
@@ -984,7 +984,7 @@ describe('SGLProxy', () => {
             ['uint16', 'uint256'],
             [1, 2250000],
         );
-        await proxySrc.setMinDstGasLookup(
+        await proxySrc.setMinDstGas(
             await lzEndpointDst.getChainId(),
             1,
             1,
@@ -1146,7 +1146,7 @@ describe('SGLProxy', () => {
             ['uint16', 'uint256'],
             [1, 2250000],
         );
-        await proxySrc.setMinDstGasLookup(
+        await proxySrc.setMinDstGas(
             await lzEndpointDst.getChainId(),
             1,
             1,
@@ -1301,7 +1301,7 @@ describe('SGLProxy', () => {
         borrowPart = await singularityDst.userBorrowPart(eoa1.address);
         expect(borrowPart.eq(0)).to.be.true;
 
-        // Withdraw fees from BeachBar
+        // Withdraw fees from Penrose
         await expect(
             bar.withdrawAllProtocolFees(
                 [
@@ -1399,7 +1399,7 @@ describe('SGLProxy', () => {
             ['uint16', 'uint256'],
             [1, 2250000],
         );
-        await proxySrc.setMinDstGasLookup(
+        await proxySrc.setMinDstGas(
             await lzEndpointDst.getChainId(),
             1,
             1,
@@ -1597,11 +1597,11 @@ async function setupUsd0Environment(
     const proxySrcSingularitySrcStatus = await proxySrc.singularities(
         singularitySrc.address,
     );
-    const proxySrcMixologistDstStatus = await proxySrc.singularities(
+    const proxySrcSingularityDstStatus = await proxySrc.singularities(
         singularityDst.address,
     );
     expect(proxySrcSingularitySrcStatus).to.be.true;
-    expect(proxySrcMixologistDstStatus).to.be.false;
+    expect(proxySrcSingularityDstStatus).to.be.false;
 
     const proxyDstSingularitySrcStatus = await proxyDst.singularities(
         singularitySrc.address,
@@ -1718,11 +1718,11 @@ async function setupEnvironment(
     const proxySrcSingularitySrcStatus = await proxySrc.singularities(
         singularitySrc.address,
     );
-    const proxySrcMixologistDstStatus = await proxySrc.singularities(
+    const proxySrcSingularityDstStatus = await proxySrc.singularities(
         singularityDst.address,
     );
     expect(proxySrcSingularitySrcStatus).to.be.true;
-    expect(proxySrcMixologistDstStatus).to.be.false;
+    expect(proxySrcSingularityDstStatus).to.be.false;
 
     const proxyDstSingularitySrcStatus = await proxyDst.singularities(
         singularitySrc.address,

@@ -125,7 +125,7 @@ contract Mixologist is ERC20, BoringOwnable {
 
     bool private initialized;
     modifier onlyOnce() {
-        require(!initialized, 'Mx: initialized');
+        require(!initialized, 'Singularity: initialized');
         _;
         initialized = true;
     }

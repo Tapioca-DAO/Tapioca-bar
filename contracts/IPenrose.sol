@@ -5,7 +5,7 @@ pragma solidity ^0.8.0;
 import './usd0/IUSD0.sol';
 import './swappers/IMultiSwapper.sol';
 
-interface IBeachBar {
+interface IPenrose {
     /// @notice swap extra data
     struct SwapData {
         uint256 minAssetAmount;

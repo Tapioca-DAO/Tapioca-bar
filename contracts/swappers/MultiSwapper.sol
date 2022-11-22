@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 import '@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol';
-import '../IBeachBar.sol';
+import '../IPenrose.sol';
 import '../libraries/IUniswapV2Factory.sol';
 import '../libraries/UniswapV2Library.sol';
 import '../libraries/IUniswapV2Pair.sol';
@@ -22,11 +22,11 @@ contract MultiSwapper {
 
     /// @notice creates a new MultiSwapper contract
     /// @param _factory UniswapV2Factory address
-    /// @param _tapiocaBar BeachBar address
+    /// @param _tapiocaBar Penrose address
     /// @param _pairCodeHash UniswapV2 pair code hash
     constructor(
         address _factory,
-        IBeachBar _tapiocaBar,
+        IPenrose _tapiocaBar,
         bytes32 _pairCodeHash
     ) {
         factory = _factory;
