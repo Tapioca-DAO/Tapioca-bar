@@ -3,7 +3,7 @@ import { BigNumber, BigNumberish } from 'ethers';
 import hre, { ethers, getChainId } from 'hardhat';
 import { any } from 'hardhat/internal/core/params/argumentTypes';
 import {
-    BeachBar,
+    Penrose,
     CurveStableToUsdoBidder,
     ERC20Mock,
     Singularity,
@@ -1437,17 +1437,17 @@ async function registerYearnStrategy(
     return { yearnStrategy };
 }
 
-async function registerBeachBar(
+async function registerPenrose(
     yieldBox: string,
     tapAddress: string,
     staging?: boolean,
 ) {
     const bar = await (
-        await ethers.getContractFactory('BeachBar')
+        await ethers.getContractFactory('Penrose')
     ).deploy(yieldBox, tapAddress, { gasPrice: gasPrice });
     await bar.deployed();
     log(
-        `Deployed BeachBar ${bar.address} with args [${yieldBox}, ${tapAddress}]`,
+        `Deployed Penrose ${bar.address} with args [${yieldBox}, ${tapAddress}]`,
         staging,
     );
     await verifyEtherscan(bar.address, [yieldBox, tapAddress], staging);
@@ -1455,9 +1455,9 @@ async function registerBeachBar(
     return { bar };
 }
 
-async function setBeachBarAssets(
+async function setPenroseAssets(
     yieldBox: YieldBox,
-    bar: BeachBar,
+    bar: Penrose,
     wethAddress: string,
     usdcAddress: string,
 ) {
@@ -1745,7 +1745,7 @@ async function registerNonYieldBoxMultiSwapper(
 }
 
 async function registerMultiSwapper(
-    bar: BeachBar,
+    bar: Penrose,
     __uniFactoryAddress: string,
     __uniFactoryPairCodeHash: string,
     staging?: boolean,
@@ -1764,7 +1764,7 @@ async function registerMultiSwapper(
     await (
         await bar.setSwapper(multiSwapper.address, true, { gasPrice: gasPrice })
     ).wait();
-    log(`Swapper was set on BeachBar`, staging);
+    log(`Swapper was set on Penrose`, staging);
 
     await verifyEtherscan(
         multiSwapper.address,
@@ -1775,7 +1775,7 @@ async function registerMultiSwapper(
     return { multiSwapper };
 }
 
-async function deployMediumRiskMC(bar: BeachBar, staging?: boolean) {
+async function deployMediumRiskMC(bar: Penrose, staging?: boolean) {
     const mediumRiskMC = await (
         await ethers.getContractFactory('Singularity')
     ).deploy({ gasPrice: gasPrice });
@@ -1790,7 +1790,7 @@ async function deployMediumRiskMC(bar: BeachBar, staging?: boolean) {
             gasPrice: gasPrice,
         })
     ).wait();
-    log(`MediumRiskMC was set on BeachBar`, staging);
+    log(`MediumRiskMC was set on Penrose`, staging);
 
     await verifyEtherscan(mediumRiskMC.address, [], staging);
 
@@ -1800,7 +1800,7 @@ async function deployMediumRiskMC(bar: BeachBar, staging?: boolean) {
 async function registerSingularity(
     mediumRiskMC: string,
     yieldBox: YieldBox,
-    bar: BeachBar,
+    bar: Penrose,
     weth: WETH9Mock,
     wethAssetId: BigNumberish,
     usdc: ERC20Mock,
@@ -1859,7 +1859,7 @@ async function registerSingularity(
             gasPrice: gasPrice,
         })
     ).wait();
-    log(`WethUsdcSingularity registered on BeachBar`, staging);
+    log(`WethUsdcSingularity registered on Penrose`, staging);
 
     const wethUsdcSingularity = await ethers.getContractAt(
         'Singularity',
@@ -1901,7 +1901,7 @@ async function registerUniUsdoToWethBidder(
     return { usdoToWethBidder };
 }
 async function deployCurveStableToUsdoBidder(
-    bar: BeachBar,
+    bar: Penrose,
     usdc: ERC20Mock,
     usdo: USD0,
     staging?: boolean,
@@ -1955,7 +1955,7 @@ async function deployCurveStableToUsdoBidder(
 async function createWethUsd0Singularity(
     usd0: USD0,
     weth: WETH9Mock,
-    bar: BeachBar,
+    bar: Penrose,
     usdoAssetId: any,
     wethAssetId: any,
     tapSwapPath: any,
@@ -2107,7 +2107,7 @@ async function createWethUsd0Singularity(
 }
 
 async function registerLiquidationQueue(
-    bar: BeachBar,
+    bar: Penrose,
     singularity: Singularity,
     feeCollector: string,
     staging?: boolean,
@@ -2155,7 +2155,7 @@ async function registerLiquidationQueue(
 }
 
 async function registerMinterSingularity(
-    bar: BeachBar,
+    bar: Penrose,
     wethCollateral: WETH9Mock,
     wethCollateralId: BigNumberish,
     oracle: OracleMock,
@@ -2277,25 +2277,25 @@ export async function register(staging?: boolean) {
     );
     log(`Deployed YieldBox ${yieldBox.address}`, staging);
 
-    // ------------------- 2.1 Deploy BeachBar -------------------
-    log('Deploying BeachBar', staging);
-    const { bar } = await registerBeachBar(
+    // ------------------- 2.1 Deploy Penrose -------------------
+    log('Deploying Penrose', staging);
+    const { bar } = await registerPenrose(
         yieldBox.address,
         tap.address,
         staging,
     );
-    log(`Deployed BeachBar ${bar.address}`, staging);
+    log(`Deployed Penrose ${bar.address}`, staging);
 
-    // -------------------  3 Add asset types to BeachBar -------------------
-    log('Setting BeachBar assets', staging);
-    const { usdcAssetId, wethAssetId } = await setBeachBarAssets(
+    // -------------------  3 Add asset types to Penrose -------------------
+    log('Setting Penrose assets', staging);
+    const { usdcAssetId, wethAssetId } = await setPenroseAssets(
         yieldBox,
         bar,
         weth.address,
         usdc.address,
     );
     log(
-        `BeachBar assets were set USDC: ${usdcAssetId}, WETH: ${wethAssetId}`,
+        `Penrose assets were set USDC: ${usdcAssetId}, WETH: ${wethAssetId}`,
         staging,
     );
 
@@ -2398,9 +2398,9 @@ export async function register(staging?: boolean) {
     );
     log(`USD0 registered ${usd0.address}`, staging);
 
-    // ------------------- 11 Set USD0 on BeachBar -------------------
+    // ------------------- 11 Set USD0 on Penrose -------------------
     await bar.setUsdoToken(usd0.address, { gasPrice: gasPrice });
-    log(`USD0 was set on BeachBar`, staging);
+    log(`USD0 was set on Penrose`, staging);
 
     // ------------------- 11.1 Deploy AAVE Strategy -------------------
     log('Deploying AaveStrategy', staging);

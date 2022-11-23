@@ -30,16 +30,16 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
     await updateDeployments(contracts, chainId);
 
-    const beachBarContract = await hre.ethers.getContractAt(
-        'BeachBar',
+    const penroseContract = await hre.ethers.getContractAt(
+        'Penrose',
         (
-            await deployments.get('BeachBar')
+            await deployments.get('Penrose')
         ).address,
     );
 
-    console.log('\n Setting MasterContract on BeachBar');
+    console.log('\n Setting MasterContract on Penrose');
     await (
-        await beachBarContract.registerMasterContract(mediumRiskMC.address, 1)
+        await penroseContract.registerMasterContract(mediumRiskMC.address, 1)
     ).wait();
     console.log(`Done`);
 };

@@ -5,13 +5,13 @@ import '@boringcrypto/boring-solidity/contracts/BoringOwnable.sol';
 
 import '../yieldbox/contracts/YieldBox.sol';
 import './singularity/interfaces/ISingularity.sol';
-import './IBeachBar.sol';
+import './IPenrose.sol';
 
 // TODO: Permissionless market deployment
 ///     + asset registration? (toggle to renounce ownership so users can call)
 /// @title Global market registry
 /// @notice Singularity management
-contract BeachBar is BoringOwnable {
+contract Penrose is BoringOwnable {
     /// @notice returns the YieldBox contract
     YieldBox public immutable yieldBox;
 
@@ -27,7 +27,7 @@ contract BeachBar is BoringOwnable {
     uint256 public usdoAssetId;
 
     /// @notice master contracts registered
-    IBeachBar.MasterContract[] public masterContracts;
+    IPenrose.MasterContract[] public masterContracts;
 
     // Used to check if a master contract is registered to be used as a Singularity template
     mapping(address => bool) isMasterContractRegistered;
@@ -41,7 +41,7 @@ contract BeachBar is BoringOwnable {
     /// @notice whitelisted swappers
     mapping(IMultiSwapper => bool) public swappers;
 
-    /// @notice creates a BeachBar contract
+    /// @notice creates a Penrose contract
     /// @param _yieldBox YieldBox contract address
     /// @param tapToken_ TapOFT contract address
     constructor(YieldBox _yieldBox, IERC20 tapToken_) {
@@ -62,7 +62,7 @@ contract BeachBar is BoringOwnable {
     // ************** //
 
     event ProtocolWithdrawal(address[] markets, uint256 timestamp);
-    event RegisterMasterContract(address location, IBeachBar.ContractType risk);
+    event RegisterMasterContract(address location, IPenrose.ContractType risk);
     event RegisterSingularity(address location, address masterContract);
     event FeeToUpdate(address newFeeTo);
     event FeeVeTapUpdate(address newFeeVeTap);
@@ -75,7 +75,7 @@ contract BeachBar is BoringOwnable {
     modifier registeredMasterContract(address mc) {
         require(
             isMasterContractRegistered[mc] == true,
-            'BeachBar: MC not registered'
+            'Penrose: MC not registered'
         );
         _;
     }
@@ -138,9 +138,9 @@ contract BeachBar is BoringOwnable {
     /// @param swappers_ One or more swappers to convert the asset to TAP.
     function withdrawAllProtocolFees(
         IMultiSwapper[] calldata swappers_,
-        IBeachBar.SwapData[] calldata swapData_
+        IPenrose.SwapData[] calldata swapData_
     ) public {
-        require(address(swappers_[0]) != address(0), 'BeachBar: zero address');
+        require(address(swappers_[0]) != address(0), 'Penrose: zero address');
 
         uint256 _masterContractLength = masterContracts.length;
         bool singleSwapper = swappers_.length != _masterContractLength;
@@ -186,14 +186,14 @@ contract BeachBar is BoringOwnable {
     /// @param contractType_ The risk type of the contract
     function registerMasterContract(
         address mcAddress,
-        IBeachBar.ContractType contractType_
+        IPenrose.ContractType contractType_
     ) external onlyOwner {
         require(
             isMasterContractRegistered[mcAddress] == false,
-            'BeachBar: MC registered'
+            'Penrose: MC registered'
         );
 
-        IBeachBar.MasterContract memory mc;
+        IPenrose.MasterContract memory mc;
         mc.location = mcAddress;
         mc.risk = contractType_;
         masterContracts.push(mc);
@@ -237,7 +237,7 @@ contract BeachBar is BoringOwnable {
         for (uint256 i = 0; i < len; ) {
             require(
                 isMasterContractRegistered[yieldBox.masterContractOf(mc[i])],
-                'BeachBar: MC not registered'
+                'Penrose: MC not registered'
             );
             (success[i], result[i]) = mc[i].call(data[i]);
             if (forceSuccess) {

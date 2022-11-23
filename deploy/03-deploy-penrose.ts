@@ -12,42 +12,42 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const chainId = await hre.getChainId();
     const contracts: TContract[] = [];
 
-    console.log('\n Deploying BeachBar');
+    console.log('\n Deploying Penrose');
     const yieldBoxContract = await getDeployment(hre, 'YieldBox');
 
     const args = [yieldBoxContract.address, constants[chainId].tapAddress];
-    await deploy('BeachBar', {
+    await deploy('Penrose', {
         from: deployer,
         log: true,
         args,
     });
-    await verify(hre, 'BeachBar', args);
-    const deployedBeachBar = await deployments.get('BeachBar');
+    await verify(hre, 'Penrose', args);
+    const deployedPenrose = await deployments.get('Penrose');
     contracts.push({
-        name: 'BeachBar',
-        address: deployedBeachBar.address,
+        name: 'Penrose',
+        address: deployedPenrose.address,
         meta: { constructorArguments: args },
     });
     console.log(
         `Done. Deployed on ${
-            deployedBeachBar.address
+            deployedPenrose.address
         } with args ${JSON.stringify(args)}`,
     );
 
     await updateDeployments(contracts, chainId);
 
     console.log('\n Setting feeTo & feeVeTo');
-    const beachBarContract = await hre.ethers.getContractAt(
-        'BeachBar',
-        deployedBeachBar.address,
+    const penroseContract = await hre.ethers.getContractAt(
+        'Penrose',
+        deployedPenrose.address,
     );
 
-    await (await beachBarContract.setFeeTo(constants[chainId].feeTo)).wait();
+    await (await penroseContract.setFeeTo(constants[chainId].feeTo)).wait();
     await (
-        await beachBarContract.setFeeVeTap(constants[chainId].feeVeTo)
+        await penroseContract.setFeeVeTap(constants[chainId].feeVeTo)
     ).wait();
     console.log('Done');
 };
 
 export default func;
-func.tags = ['BeachBar'];
+func.tags = ['Penrose'];

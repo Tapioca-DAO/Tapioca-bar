@@ -1,4 +1,4 @@
-# BeachBar
+# Penrose
 
 
 
@@ -21,13 +21,13 @@ Needs to be called by `pendingOwner` to claim ownership.
 
 
 
-### executeMixologistFn
+### executeSingularityFn
 
 ```solidity
-function executeMixologistFn(address[] mc, bytes[] data) external nonpayable returns (bool[] success, bytes[] result)
+function executeSingularityFn(address[] mc, bytes[] data) external nonpayable returns (bool[] success, bytes[] result)
 ```
 
-Execute an only owner function inside of a Mixologist market
+Execute an only owner function inside of a Singularity market
 
 
 
@@ -170,13 +170,13 @@ Register a master contract
 | mcAddress | address | The address of the contract |
 | contractType_ | enum ContractType | The risk type of the contract |
 
-### registerMixologist
+### registerSingularity
 
 ```solidity
-function registerMixologist(address mc, bytes data, bool useCreate2) external payable returns (address _contract)
+function registerSingularity(address mc, bytes data, bool useCreate2) external payable returns (address _contract)
 ```
 
-Register a Mixologist
+Register a Singularity
 
 
 
@@ -185,7 +185,7 @@ Register a Mixologist
 | Name | Type | Description |
 |---|---|---|
 | mc | address | The address of the master contract which must be already registered |
-| data | bytes | The init data of the Mixologist |
+| data | bytes | The init data of the Singularity |
 | useCreate2 | bool | Whether to use create2 or not |
 
 #### Returns
@@ -305,7 +305,7 @@ function tapToken() external view returns (contract IERC20)
 function tapiocaMarkets() external view returns (address[] markets)
 ```
 
-Get all the Mixologist contract addresses
+Get all the Singularity contract addresses
 
 
 
@@ -454,10 +454,10 @@ event RegisterMasterContract(address location, enum ContractType risk)
 | location  | address | undefined |
 | risk  | enum ContractType | undefined |
 
-### RegisterMixologist
+### RegisterSingularity
 
 ```solidity
-event RegisterMixologist(address location, address masterContract)
+event RegisterSingularity(address location, address masterContract)
 ```
 
 

@@ -1,19 +1,19 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import '../../BeachBar.sol';
+import '../../Penrose.sol';
 
 contract VulnMultiSwapper {
     function counterfeitSwap(
-        BeachBar beachbar,
+        Penrose penrose,
         uint256 assetId,
         address target
     ) public {
-        beachbar.yieldBox().withdraw(
+        penrose.yieldBox().withdraw(
             assetId,
             target,
             msg.sender,
-            beachbar.yieldBox().amountOf(target, assetId),
+            penrose.yieldBox().amountOf(target, assetId),
             0
         );
     }

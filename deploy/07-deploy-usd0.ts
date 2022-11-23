@@ -34,12 +34,12 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     await updateDeployments(contracts, chainId);
 
     console.log('\n Setting USD0');
-    const beachBar = await deployments.get('BeachBar');
-    const beachBarContract = await hre.ethers.getContractAt(
-        'BeachBar',
-        beachBar.address,
+    const penrose = await deployments.get('Penrose');
+    const penroseContract = await hre.ethers.getContractAt(
+        'Penrose',
+        penrose.address,
     );
-    await (await beachBarContract.setUsdoToken(deployedUSD0.address)).wait();
+    await (await penroseContract.setUsdoToken(deployedUSD0.address)).wait();
     console.log('Done');
 };
 

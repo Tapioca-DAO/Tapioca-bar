@@ -99,7 +99,7 @@ function executeBids(uint256 collateralAmountToLiquidate) external nonpayable re
 
 Execute the liquidation call by executing the bids placed in the pools in ASC order.
 
-*Should only be called from Mixologist.      Mixologist should send the `collateralAmountToLiquidate` to this contract before calling this function. Tx will fail if it can&#39;t transfer allowed BeachBar asset from Mixologist.*
+*Should only be called from Singularity.      Singularity should send the `collateralAmountToLiquidate` to this contract before calling this function. Tx will fail if it can&#39;t transfer allowed Penrose asset from Singularity.*
 
 #### Parameters
 

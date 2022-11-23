@@ -3,7 +3,7 @@ import { task } from 'hardhat/config';
 import { deployMarket__task } from './tasks/deployMarket';
 import { deployMinterMarket__task } from './tasks/deployMinterMarket';
 import { exportSDK__task } from './tasks/exportSDK';
-import { getBeachBarMarkets__task } from './tasks/getBeachBarMarkets';
+import { getPenroseMarkets__task } from './tasks/getPenroseMarkets';
 import {
     getLocalDeployments__task,
     getSDKDeployments__task,
@@ -36,7 +36,7 @@ task(
 task(
     'markets',
     'Display the list of deployed markets for the current chain ID.',
-    getBeachBarMarkets__task,
+    getPenroseMarkets__task,
 );
 
 task(

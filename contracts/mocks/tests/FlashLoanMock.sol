@@ -25,13 +25,13 @@ contract FlashLoanMockSuccess is IFlashBorrower {
         uint256 fee,
         bytes calldata
     ) external {
-        ISingularity mixologist = ISingularity(msg.sender);
-        IYieldBox yieldBox = IYieldBox(mixologist.yieldBox());
+        ISingularity singularity = ISingularity(msg.sender);
+        IYieldBox yieldBox = IYieldBox(singularity.yieldBox());
 
         token.approve(address(yieldBox), amount + fee);
 
         yieldBox.depositAsset(
-            mixologist.assetId(),
+            singularity.assetId(),
             address(this),
             msg.sender,
             amount + fee,

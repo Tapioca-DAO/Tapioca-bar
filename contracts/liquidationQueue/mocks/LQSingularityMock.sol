@@ -2,17 +2,17 @@
 pragma solidity ^0.8.0;
 
 import '../ILiquidationQueue.sol';
-import '../../IBeachBar.sol';
+import '../../IPenrose.sol';
 
-contract LQMixologistMock {
-    IBeachBar immutable beachBar;
+contract LQSingularityMock {
+    IPenrose immutable penrose;
 
     uint256 immutable assetId;
 
     uint256 constant EXCHANGE_RATE_PRECISION = 1e18;
 
-    constructor(IBeachBar _beachBar, uint256 _assetId) {
-        beachBar = _beachBar;
+    constructor(IPenrose _penrose, uint256 _assetId) {
+        penrose = _penrose;
         assetId = _assetId;
     }
 

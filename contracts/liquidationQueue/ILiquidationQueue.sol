@@ -49,7 +49,7 @@ interface ILiquidationQueue {
         uint256 discountedBidderAmount;
     }
 
-    function init(LiquidationQueueMeta calldata, address mixologist) external;
+    function init(LiquidationQueueMeta calldata, address singularity) external;
 
     function onlyOnce() external view returns (bool);
 
