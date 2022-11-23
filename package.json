@@ -19,7 +19,7 @@
         "deploy:usd0": "hardhat deploy --tags USD0 --network",
         "deploy:yieldBox": "hardhat deploy --tags YieldBox --network",
         "deploy:yieldBoxAssets": "hardhat deploy --tags YieldBoxAssets --network",
-        "deploy:beachBar": "hardhat deploy --tags BeachBar --network",
+        "deploy:penrose": "hardhat deploy --tags Penrose --network",
         "deploy:masterContract": "hardhat deploy --tags MasterContract --network",
         "deploy:singularityHelper": "hardhat deploy --tags SingularityHelper --network",
         "deploy:multiSwapperV2": "hardhat deploy --tags MultiSwapperV2 --network",

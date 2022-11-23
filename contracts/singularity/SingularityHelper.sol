@@ -90,13 +90,13 @@ contract SingularityHelper {
     // ************************ //
 
     /// @notice deposits asset to YieldBox and lends it to Singularity
-    /// @param mixologist the mixologist address
+    /// @param singularity the singularity address
     /// @param _amount the amount to lend
-    function depositAndAddAsset(ISingularity mixologist, uint256 _amount)
+    function depositAndAddAsset(ISingularity singularity, uint256 _amount)
         external
     {
-        uint256 assetId = mixologist.assetId();
-        YieldBox yieldBox = YieldBox(mixologist.yieldBox());
+        uint256 assetId = singularity.assetId();
+        YieldBox yieldBox = YieldBox(singularity.yieldBox());
 
         (, address assetAddress, , ) = yieldBox.assets(assetId);
         _extractTokens(assetAddress, _amount);
@@ -107,26 +107,26 @@ contract SingularityHelper {
         yieldBox.depositAsset(assetId, address(this), address(this), 0, _share);
 
         //add asset
-        _setApprovalForYieldBox(mixologist, yieldBox);
-        mixologist.addAsset(address(this), msg.sender, false, _share);
+        _setApprovalForYieldBox(singularity, yieldBox);
+        singularity.addAsset(address(this), msg.sender, false, _share);
     }
 
     /// @notice deposts collateral to YieldBox, adds collateral to Singularity, borrows and can withdraw to personal address
-    /// @param mixologist the mixologist address
+    /// @param singularity the singularity address
     /// @param _collateralAmount the collateral amount to add
     /// @param _borrowAmount the amount to borrow
     /// @param withdraw_ if true, withdraws from YieldBox to `msg.sender`
     /// @param _withdrawData custom withdraw data; ignore if you need to withdraw on the same chain
     function depositAddCollateralAndBorrow(
-        ISingularity mixologist,
+        ISingularity singularity,
         uint256 _collateralAmount,
         uint256 _borrowAmount,
         bool withdraw_,
         bytes calldata _withdrawData
     ) external payable {
-        YieldBox yieldBox = YieldBox(mixologist.yieldBox());
+        YieldBox yieldBox = YieldBox(singularity.yieldBox());
 
-        uint256 collateralId = mixologist.collateralId();
+        uint256 collateralId = singularity.collateralId();
 
         (, address collateralAddress, , ) = yieldBox.assets(collateralId);
         _extractTokens(collateralAddress, _collateralAmount);
@@ -147,29 +147,29 @@ contract SingularityHelper {
         );
 
         //add collateral
-        _setApprovalForYieldBox(mixologist, yieldBox);
-        mixologist.addCollateral(address(this), msg.sender, false, _share);
+        _setApprovalForYieldBox(singularity, yieldBox);
+        singularity.addCollateral(address(this), msg.sender, false, _share);
 
         //borrow
         address borrowReceiver = withdraw_ ? address(this) : msg.sender;
-        mixologist.borrow(msg.sender, borrowReceiver, _borrowAmount);
+        singularity.borrow(msg.sender, borrowReceiver, _borrowAmount);
 
         if (withdraw_) {
-            _withdraw(_withdrawData, mixologist, yieldBox, _borrowAmount);
+            _withdraw(_withdrawData, singularity, yieldBox, _borrowAmount);
         }
     }
 
     /// @notice deposits to YieldBox and repays borrowed amount
-    /// @param mixologist the mixologist address
+    /// @param singularity the singularity address
     /// @param _depositAmount the amount to deposit
     /// @param _repayAmount the amount to be repayed
     function depositAndRepay(
-        ISingularity mixologist,
+        ISingularity singularity,
         uint256 _depositAmount,
         uint256 _repayAmount
     ) public {
-        uint256 assetId = mixologist.assetId();
-        YieldBox yieldBox = YieldBox(mixologist.yieldBox());
+        uint256 assetId = singularity.assetId();
+        YieldBox yieldBox = YieldBox(singularity.yieldBox());
 
         (, address assetAddress, , ) = yieldBox.assets(assetId);
         _extractTokens(assetAddress, _depositAmount);
@@ -185,40 +185,40 @@ contract SingularityHelper {
         );
 
         //repay
-        _setApprovalForYieldBox(mixologist, yieldBox);
-        mixologist.repay(address(this), msg.sender, false, _repayAmount);
+        _setApprovalForYieldBox(singularity, yieldBox);
+        singularity.repay(address(this), msg.sender, false, _repayAmount);
     }
 
     /// @notice deposits to YieldBox, repays borrowed amount and removes collateral
-    /// @param mixologist the mixologist address
+    /// @param singularity the singularity address
     /// @param _depositAmount the amount to deposit
     /// @param _repayAmount the amount to be repayed
     /// @param _collateralAmount collateral amount to be removed
     /// @param withdraw_ if true withdraws to sender address
     function depositRepayAndRemoveCollateral(
-        ISingularity mixologist,
+        ISingularity singularity,
         uint256 _depositAmount,
         uint256 _repayAmount,
         uint256 _collateralAmount,
         bool withdraw_
     ) external {
-        YieldBox yieldBox = YieldBox(mixologist.yieldBox());
+        YieldBox yieldBox = YieldBox(singularity.yieldBox());
 
-        depositAndRepay(mixologist, _depositAmount, _repayAmount);
+        depositAndRepay(singularity, _depositAmount, _repayAmount);
 
         //remove collateral
         address receiver = withdraw_ ? address(this) : msg.sender;
         uint256 collateralShare = yieldBox.toShare(
-            mixologist.collateralId(),
+            singularity.collateralId(),
             _collateralAmount,
             false
         );
-        mixologist.removeCollateral(msg.sender, receiver, collateralShare);
+        singularity.removeCollateral(msg.sender, receiver, collateralShare);
 
         //withdraw
         if (withdraw_) {
             yieldBox.withdraw(
-                mixologist.collateralId(),
+                singularity.collateralId(),
                 address(this),
                 msg.sender,
                 _collateralAmount,
@@ -232,7 +232,7 @@ contract SingularityHelper {
     // ************************* //
     function _withdraw(
         bytes calldata _withdrawData,
-        ISingularity mixologist,
+        ISingularity singularity,
         YieldBox yieldBox,
         uint256 _amount
     ) private {
@@ -248,7 +248,7 @@ contract SingularityHelper {
         }
         if (!_otherChain) {
             yieldBox.withdraw(
-                mixologist.assetId(),
+                singularity.assetId(),
                 address(this),
                 msg.sender,
                 _amount,
@@ -257,7 +257,7 @@ contract SingularityHelper {
             return;
         }
 
-        mixologist.withdrawTo{value: msg.value}(
+        singularity.withdrawTo{value: msg.value}(
             _destChain,
             _receiver,
             _amount,
@@ -266,19 +266,19 @@ contract SingularityHelper {
         );
     }
 
-    function _setApprovalForYieldBox(ISingularity mixologist, YieldBox yieldBox)
+    function _setApprovalForYieldBox(ISingularity singularity, YieldBox yieldBox)
         private
     {
         bool isApproved = yieldBox.isApprovedForAll(
             address(this),
-            address(mixologist)
+            address(singularity)
         );
         if (!isApproved) {
-            yieldBox.setApprovalForAll(address(mixologist), true);
+            yieldBox.setApprovalForAll(address(singularity), true);
         }
         isApproved = yieldBox.isApprovedForAll(
             address(this),
-            address(mixologist)
+            address(singularity)
         );
     }
 

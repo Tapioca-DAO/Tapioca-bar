@@ -3,7 +3,7 @@
 pragma solidity ^0.8.0;
 
 import './IOracle.sol';
-import '../../IBeachBar.sol';
+import '../../IPenrose.sol';
 import '../../swappers/IMultiSwapper.sol';
 
 interface ISingularity {
@@ -120,7 +120,7 @@ interface ISingularity {
 
     function balanceOf(address) external view returns (uint256);
 
-    function beachBar() external view returns (address);
+    function penrose() external view returns (address);
 
     function borrow(
         address from,
@@ -250,7 +250,7 @@ interface ISingularity {
 
     function withdrawFees() external;
 
-    function depositFeesToYieldBox(IMultiSwapper, IBeachBar.SwapData calldata)
+    function depositFeesToYieldBox(IMultiSwapper, IPenrose.SwapData calldata)
         external;
 
     function yieldBox() external view returns (address payable);

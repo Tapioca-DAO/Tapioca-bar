@@ -103,8 +103,8 @@ export const constants: { [key: string]: any } = {
     //optimism
     '10': {
         ...supportedChains['optimism'],
-        feeTo: '0x0000000000000000000000000000000000000000', //for BeachBar
-        feeVeTo: '0x0000000000000000000000000000000000000000', //for BeachBar
+        feeTo: '0x0000000000000000000000000000000000000000', //for Penrose
+        feeVeTo: '0x0000000000000000000000000000000000000000', //for Penrose
         lqFeeCollector: '0x0000000000000000000000000000000000000000', //for LiquidationQueue
         yieldBoxAddress: '0x0000000000000000000000000000000000000000', //can be omitted/address(0) if we need to deploy it
         tapAddress: '0x0000000000000000000000000000000000000000', //TapOFT address
@@ -232,10 +232,10 @@ export const registerMinterMarket = async (
         yieldBoxAddress = deployedYieldBox.address;
     }
 
-    const beachBar = await hre.ethers.getContractAt(
-        'BeachBar',
+    const penrose = await hre.ethers.getContractAt(
+        'Penrose',
         (
-            await deployments.get('BeachBar')
+            await deployments.get('Penrose')
         ).address,
     );
     const yieldBox = await hre.ethers.getContractAt(
@@ -259,7 +259,7 @@ export const registerMinterMarket = async (
     const tapSwapPath = [usd0Deployed.address, constants[chainId].tapAddress];
 
     const args = [
-        beachBar.address,
+        penrose.address,
         marketData.collateralAddress,
         collateralId,
         marketData.oracleAddress,
@@ -321,10 +321,10 @@ export const registerMarket = async (
         yieldBoxAddress = deployedYieldBox.address;
     }
 
-    const beachBar = await hre.ethers.getContractAt(
-        'BeachBar',
+    const penrose = await hre.ethers.getContractAt(
+        'Penrose',
         (
-            await deployments.get('BeachBar')
+            await deployments.get('Penrose')
         ).address,
     );
     const yieldBox = await hre.ethers.getContractAt(
@@ -365,7 +365,7 @@ export const registerMarket = async (
         [
             sglLiquidation.address,
             sglLendingBorrowing.address,
-            beachBar.address,
+            penrose.address,
             assetAddress,
             assetId,
             marketData.collateralAddress,
@@ -384,7 +384,7 @@ export const registerMarket = async (
 
     console.log(`\nRegistering sgl_${name}`);
     await (
-        await beachBar.registerSingularity(masterContract.address, data, true)
+        await penrose.registerSingularity(masterContract.address, data, true)
     ).wait();
 
     const market = await hre.ethers.getContractAt(
@@ -462,10 +462,10 @@ export const registerLiquidationQueue = async (
     console.log(`Done`);
 
     console.log(`\nSetting ${name} LiquidationQueue on Singularity`);
-    const beachBarContract = await hre.ethers.getContractAt(
-        'BeachBar',
+    const penroseContract = await hre.ethers.getContractAt(
+        'Penrose',
         (
-            await deployments.get('BeachBar')
+            await deployments.get('Penrose')
         ).address,
     );
 
@@ -475,7 +475,7 @@ export const registerLiquidationQueue = async (
     );
 
     await (
-        await beachBarContract.executeSingularityFn(
+        await penroseContract.executeSingularityFn(
             [marketData.address],
             [payload],
             true,

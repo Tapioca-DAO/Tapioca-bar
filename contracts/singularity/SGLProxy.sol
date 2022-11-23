@@ -42,7 +42,7 @@ contract SGLProxy is NonblockingLzApp {
 
     event ReceiveFromChain(
         uint16 indexed _srcChainId,
-        address indexed _dstMixologist,
+        address indexed _dstSingularity,
         bytes _sglPayload
     );
     event SendToChain(
@@ -51,7 +51,7 @@ contract SGLProxy is NonblockingLzApp {
         bytes _sglPayload
     );
     event SetUseCustomAdapterParams(bool _useCustomAdapterParams);
-    event LogSingularityStatus(address indexed mixologist, bool status);
+    event LogSingularityStatus(address indexed singularity, bool status);
     event LogEnforce(bool _old, bool _new);
 
     /// @notice creates a new SGLProxy contract
@@ -195,7 +195,8 @@ contract SGLProxy is NonblockingLzApp {
             sglPayload,
             _refundAddress,
             _zroPaymentAddress,
-            _adapterParams
+            _adapterParams,
+            msg.value
         );
 
         emit SendToChain(_dstChainId, _from, sglPayload);

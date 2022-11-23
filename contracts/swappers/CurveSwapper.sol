@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 import '../libraries/ICurvePool.sol';
 import '../../yieldbox/contracts/YieldBox.sol';
-import '../IBeachBar.sol';
+import '../IPenrose.sol';
 import '@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol';
 
 /*
@@ -32,8 +32,8 @@ contract CurveSwapper {
 
     /// @notice creates a new CurveSwapper contract
     /// @param _curvePool CurvePool address
-    /// @param _bar BeachBar address
-    constructor(ICurvePool _curvePool, IBeachBar _bar) {
+    /// @param _bar Penrose address
+    constructor(ICurvePool _curvePool, IPenrose _bar) {
         curvePool = _curvePool;
         yieldBox = YieldBox(_bar.yieldBox());
     }

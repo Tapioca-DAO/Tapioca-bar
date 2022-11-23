@@ -1,4 +1,4 @@
-# Mixologist
+# Singularity
 
 
 
@@ -201,10 +201,10 @@ function balanceOf(address) external view returns (uint256)
 |---|---|---|
 | _0 | uint256 | undefined |
 
-### beachBar
+### penrose
 
 ```solidity
-function beachBar() external view returns (contract BeachBar)
+function penrose() external view returns (contract Penrose)
 ```
 
 
@@ -216,7 +216,7 @@ function beachBar() external view returns (contract BeachBar)
 
 | Name | Type | Description |
 |---|---|---|
-| _0 | contract BeachBar | undefined |
+| _0 | contract Penrose | undefined |
 
 ### borrow
 

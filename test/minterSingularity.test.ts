@@ -10,8 +10,8 @@ describe('MinterSingularity test', () => {
             await loadFixture(register);
 
         const savedAssetId = await wethMinterSingularity.assetId();
-        const beachBarUsd0Id = await bar.usdoAssetId();
-        expect(savedAssetId.eq(beachBarUsd0Id)).to.be.true;
+        const penroseUsd0Id = await bar.usdoAssetId();
+        expect(savedAssetId.eq(penroseUsd0Id)).to.be.true;
 
         const savedAsset = await wethMinterSingularity.asset();
         const barUsd0 = await bar.usdoToken();
@@ -366,7 +366,7 @@ describe('MinterSingularity test', () => {
             wethMinterSingularity
                 .connect(eoa1)
                 .borrow(eoa1.address, eoa1.address, usdoBorrowVal),
-        ).to.be.revertedWith('Mx: insolvent');
+        ).to.be.revertedWith('SGL: insolvent');
 
         const totalSupplyBefore = await usd0.totalSupply();
 
@@ -516,7 +516,7 @@ describe('MinterSingularity test', () => {
             wethMinterSingularity
                 .connect(eoa1)
                 .borrow(eoa1.address, eoa1.address, usdoBorrowVal),
-        ).to.be.revertedWith('Mx: insolvent');
+        ).to.be.revertedWith('SGL: insolvent');
 
         const totalSupplyBefore = await usd0.totalSupply();
 
@@ -1079,7 +1079,7 @@ describe('MinterSingularity test', () => {
                 [],
                 [],
             ),
-        ).to.be.revertedWith('Mx: bad pair');
+        ).to.be.revertedWith('SGL: bad pair');
     });
 
     it('should not allow depositing fees with invalid swapper', async () => {
@@ -1092,7 +1092,7 @@ describe('MinterSingularity test', () => {
                 ethers.constants.AddressZero,
                 { minAssetAmount: 1 },
             ),
-        ).to.be.revertedWith('Mx: Invalid swapper');
+        ).to.be.revertedWith('SGL: Invalid swapper');
 
         await expect(
             wethMinterSingularity.depositFeesToYieldBox(multiSwapper.address, {
@@ -1122,13 +1122,13 @@ describe('MinterSingularity test', () => {
             wethMinterSingularity.updateStabilityFee(
                 ethers.utils.parseEther('1'),
             ),
-        ).to.be.revertedWith('Mx: value not valid');
+        ).to.be.revertedWith('SGL: value not valid');
         await expect(
             wethMinterSingularity.connect(eoa1).updateBorrowingFee(100),
         ).to.be.reverted;
         await expect(
             wethMinterSingularity.updateBorrowingFee(1e5),
-        ).to.be.revertedWith('Mx: value not valid');
+        ).to.be.revertedWith('SGL: value not valid');
 
         await expect(
             wethMinterSingularity.setCollateralSwapPath(collateralSwapPath),
@@ -1201,6 +1201,6 @@ describe('MinterSingularity test', () => {
                 deployer.address,
                 usdoBorrowVal,
             ),
-        ).to.be.revertedWith('Mx: borrow cap reached');
+        ).to.be.revertedWith('SGL: borrow cap reached');
     });
 });

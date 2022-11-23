@@ -5,11 +5,11 @@ import '@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol';
 
 /// Modified from https://github.com/sushiswap/kashi-lending/blob/master/contracts/interfaces/ISwapper.sol
 interface ISwapper {
-    /// @notice Withdraws 'amountFrom' of token 'from' from the BeachBar account for this swapper.
+    /// @notice Withdraws 'amountFrom' of token 'from' from the Penrose account for this swapper.
     /// Swaps it for at least 'amountToMin' of token 'to'.
-    /// Transfers the swapped tokens of 'to' into the BeachBar using a plain ERC20 transfer.
-    /// Returns the amount of tokens 'to' transferred to BeachBar.
-    /// (The BeachBar skim function will be used by the caller to get the swapped funds).
+    /// Transfers the swapped tokens of 'to' into the Penrose using a plain ERC20 transfer.
+    /// Returns the amount of tokens 'to' transferred to Penrose.
+    /// (The Penrose skim function will be used by the caller to get the swapped funds).
     function swap(
         IERC20 fromToken,
         uint256 fromTokenId,
@@ -22,12 +22,12 @@ interface ISwapper {
 
     /// @notice Calculates the amount of token 'from' needed to complete the swap (amountFrom),
     /// this should be less than or equal to amountFromMax.
-    /// Withdraws 'amountFrom' of token 'from' from the BeachBar account for this swapper.
+    /// Withdraws 'amountFrom' of token 'from' from the Penrose account for this swapper.
     /// Swaps it for exactly 'exactAmountTo' of token 'to'.
-    /// Transfers the swapped tokens of 'to' into the BeachBar using a plain ERC20 transfer.
-    /// Transfers allocated, but unused 'from' tokens within the BeachBar to 'refundTo' (amountFromMax - amountFrom).
-    /// Returns the amount of 'from' tokens withdrawn from BeachBar (amountFrom).
-    /// (The BeachBar skim function will be used by the caller to get the swapped funds).
+    /// Transfers the swapped tokens of 'to' into the Penrose using a plain ERC20 transfer.
+    /// Transfers allocated, but unused 'from' tokens within the Penrose to 'refundTo' (amountFromMax - amountFrom).
+    /// Returns the amount of 'from' tokens withdrawn from Penrose (amountFrom).
+    /// (The Penrose skim function will be used by the caller to get the swapped funds).
     function swapExact(
         IERC20 fromToken,
         uint256 fromTokenId,
