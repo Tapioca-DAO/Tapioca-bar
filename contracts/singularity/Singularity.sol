@@ -7,6 +7,8 @@ import './SGLLendingBorrowing.sol';
 
 import '../singularity/interfaces/ISendFrom.sol';
 
+import 'hardhat/console.sol';
+
 // solhint-disable max-line-length
 
 /*
@@ -97,6 +99,19 @@ contract Singularity is SGLCommon {
     // ********************** //
     // *** VIEW FUNCTIONS *** //
     // ********************** //
+    /// @notice returns Total yieldBox shares for user
+    /// @param _user The user to check shares for
+    /// @param _assetId The asset id to check shares for
+    function yieldBoxShares(address _user, uint256 _assetId)
+        external
+        view
+        returns (uint256)
+    {
+        return
+            yieldBox.balanceOf(_user, _assetId) +
+            _yieldBoxShares[_user][_assetId];
+    }
+
     /// @notice Return the amount of collateral for a `user` to be solvent. Returns 0 if user already solvent.
     /// @dev We use a `CLOSED_COLLATERIZATION_RATE` that is a safety buffer when making the user solvent again,
     ///      To prevent from being liquidated. This function is valid only if user is not solvent by `_isSolvent()`.
@@ -362,7 +377,8 @@ contract Singularity is SGLCommon {
         uint256 feeShares = _removeAsset(
             _feeTo,
             address(this),
-            balanceOf[_feeTo]
+            balanceOf[_feeTo],
+            false
         );
         if (feeShares == 0) return;
 

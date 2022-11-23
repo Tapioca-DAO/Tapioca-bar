@@ -57,8 +57,6 @@ contract AaveStrategy is BaseERC20Strategy, BoringOwnable, ReentrancyGuard {
     event AmountDeposited(uint256 amount);
     event AmountWithdrawn(address indexed to, uint256 amount);
 
-    // 0x7d2768de32b0b80b7a3454c06bdac94a69ddc7a9; aave lending pool ETH
-
     constructor(
         IYieldBox _yieldBox,
         address _token,

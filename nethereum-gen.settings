@@ -1,0 +1,7 @@
+{
+    "projectName": "TapiocaBar",
+    "namespace": "TapiocaBar.Contracts",
+    "lang": 0,
+    "autoCodeGen": true,
+    "projectPath": "../"
+}

@@ -1572,6 +1572,15 @@ describe('Singularity test', () => {
             await yieldBox.toShare(assetId, wethMintVal.mul(10), false),
         );
 
+        const wethYieldShareFromSGLAfter =
+            await wethUsdcSingularity.yieldBoxShares(deployer.address, assetId);
+
+        expect(
+            wethYieldShareFromSGLAfter.eq(
+                await yieldBox.toShare(assetId, wethMintVal.mul(10), false),
+            ),
+        ).to.be.true;
+
         for (var i = 0; i < eoas.length; i++) {
             const eoa = eoas[i];
             await usdc.connect(eoa).freeMint(usdcMintVal);
@@ -1612,5 +1621,302 @@ describe('Singularity test', () => {
                 deployer.address,
             ),
         ).not.to.be.reverted;
+    });
+
+    it('should test yieldBoxShares', async () => {
+        const {
+            eoa1,
+            weth,
+            yieldBox,
+            deployer,
+            wethUsdcSingularity,
+            approveTokensAndSetBarApproval,
+            wethDepositAndAddAsset,
+        } = await loadFixture(register);
+
+        await approveTokensAndSetBarApproval();
+        await approveTokensAndSetBarApproval(eoa1);
+
+        const assetId = await wethUsdcSingularity.assetId();
+        const wethMintVal = ethers.BigNumber.from((1e18).toString()).mul(10);
+
+        await weth.freeMint(wethMintVal);
+        await wethDepositAndAddAsset(wethMintVal);
+
+        let deployerYieldBoxShares = await wethUsdcSingularity.yieldBoxShares(
+            deployer.address,
+            assetId,
+        );
+        let eoa1YieldBoxShares = await wethUsdcSingularity.yieldBoxShares(
+            eoa1.address,
+            assetId,
+        );
+        let yieldBoxSharesForSgl = await yieldBox.balanceOf(
+            wethUsdcSingularity.address,
+            assetId,
+        );
+        let yieldBoxSharesForDeployer = await yieldBox.balanceOf(
+            deployer.address,
+            assetId,
+        );
+        let yieldBoxSharesForEoa1 = await yieldBox.balanceOf(
+            eoa1.address,
+            assetId,
+        );
+
+        await weth.connect(eoa1).freeMint(wethMintVal);
+        await wethDepositAndAddAsset(wethMintVal, eoa1);
+
+        deployerYieldBoxShares = await wethUsdcSingularity.yieldBoxShares(
+            deployer.address,
+            assetId,
+        );
+        eoa1YieldBoxShares = await wethUsdcSingularity.yieldBoxShares(
+            eoa1.address,
+            assetId,
+        );
+        yieldBoxSharesForSgl = await yieldBox.balanceOf(
+            wethUsdcSingularity.address,
+            assetId,
+        );
+        yieldBoxSharesForDeployer = await yieldBox.balanceOf(
+            deployer.address,
+            assetId,
+        );
+        yieldBoxSharesForEoa1 = await yieldBox.balanceOf(eoa1.address, assetId);
+        expect(
+            eoa1YieldBoxShares
+                .add(deployerYieldBoxShares)
+                .eq(
+                    yieldBoxSharesForSgl
+                        .add(yieldBoxSharesForDeployer)
+                        .add(yieldBoxSharesForEoa1),
+                ),
+        ).to.be.true;
+
+        deployerYieldBoxShares = await wethUsdcSingularity.yieldBoxShares(
+            deployer.address,
+            assetId,
+        );
+        eoa1YieldBoxShares = await wethUsdcSingularity.yieldBoxShares(
+            eoa1.address,
+            assetId,
+        );
+        yieldBoxSharesForSgl = await yieldBox.balanceOf(
+            wethUsdcSingularity.address,
+            assetId,
+        );
+        yieldBoxSharesForDeployer = await yieldBox.balanceOf(
+            deployer.address,
+            assetId,
+        );
+        yieldBoxSharesForEoa1 = await yieldBox.balanceOf(eoa1.address, assetId);
+        expect(
+            eoa1YieldBoxShares
+                .add(deployerYieldBoxShares)
+                .eq(
+                    yieldBoxSharesForSgl
+                        .add(yieldBoxSharesForDeployer)
+                        .add(yieldBoxSharesForEoa1),
+                ),
+        ).to.be.true;
+
+        await weth.connect(eoa1).freeMint(wethMintVal);
+        await wethDepositAndAddAsset(wethMintVal, eoa1);
+
+        deployerYieldBoxShares = await wethUsdcSingularity.yieldBoxShares(
+            deployer.address,
+            assetId,
+        );
+        eoa1YieldBoxShares = await wethUsdcSingularity.yieldBoxShares(
+            eoa1.address,
+            assetId,
+        );
+        yieldBoxSharesForSgl = await yieldBox.balanceOf(
+            wethUsdcSingularity.address,
+            assetId,
+        );
+        yieldBoxSharesForDeployer = await yieldBox.balanceOf(
+            deployer.address,
+            assetId,
+        );
+        yieldBoxSharesForEoa1 = await yieldBox.balanceOf(eoa1.address, assetId);
+        expect(
+            eoa1YieldBoxShares
+                .add(deployerYieldBoxShares)
+                .eq(
+                    yieldBoxSharesForSgl
+                        .add(yieldBoxSharesForDeployer)
+                        .add(yieldBoxSharesForEoa1),
+                ),
+        ).to.be.true;
+        const mintValShare = await yieldBox.toShare(
+            assetId,
+            wethMintVal,
+            false,
+        );
+        await wethUsdcSingularity.removeAsset(
+            deployer.address,
+            deployer.address,
+            mintValShare,
+        );
+
+        deployerYieldBoxShares = await wethUsdcSingularity.yieldBoxShares(
+            deployer.address,
+            assetId,
+        );
+        eoa1YieldBoxShares = await wethUsdcSingularity.yieldBoxShares(
+            eoa1.address,
+            assetId,
+        );
+        yieldBoxSharesForSgl = await yieldBox.balanceOf(
+            wethUsdcSingularity.address,
+            assetId,
+        );
+        yieldBoxSharesForDeployer = await yieldBox.balanceOf(
+            deployer.address,
+            assetId,
+        );
+        yieldBoxSharesForEoa1 = await yieldBox.balanceOf(eoa1.address, assetId);
+        expect(
+            eoa1YieldBoxShares
+                .add(deployerYieldBoxShares)
+                .eq(
+                    yieldBoxSharesForSgl
+                        .add(yieldBoxSharesForDeployer)
+                        .add(yieldBoxSharesForEoa1),
+                ),
+        ).to.be.true;
+
+        await weth.freeMint(wethMintVal.mul(3));
+        await wethDepositAndAddAsset(wethMintVal.mul(3));
+
+        deployerYieldBoxShares = await wethUsdcSingularity.yieldBoxShares(
+            deployer.address,
+            assetId,
+        );
+        eoa1YieldBoxShares = await wethUsdcSingularity.yieldBoxShares(
+            eoa1.address,
+            assetId,
+        );
+        yieldBoxSharesForSgl = await yieldBox.balanceOf(
+            wethUsdcSingularity.address,
+            assetId,
+        );
+        yieldBoxSharesForDeployer = await yieldBox.balanceOf(
+            deployer.address,
+            assetId,
+        );
+        yieldBoxSharesForEoa1 = await yieldBox.balanceOf(eoa1.address, assetId);
+        expect(
+            eoa1YieldBoxShares
+                .add(deployerYieldBoxShares)
+                .eq(
+                    yieldBoxSharesForSgl
+                        .add(yieldBoxSharesForDeployer)
+                        .add(yieldBoxSharesForEoa1),
+                ),
+        ).to.be.true;
+
+        await wethUsdcSingularity.removeAsset(
+            deployer.address,
+            deployer.address,
+            mintValShare.mul(3),
+        );
+        await yieldBox.withdraw(
+            assetId,
+            deployer.address,
+            deployer.address,
+            0,
+            mintValShare.mul(4),
+        );
+
+        deployerYieldBoxShares = await wethUsdcSingularity.yieldBoxShares(
+            deployer.address,
+            assetId,
+        );
+        eoa1YieldBoxShares = await wethUsdcSingularity.yieldBoxShares(
+            eoa1.address,
+            assetId,
+        );
+        yieldBoxSharesForSgl = await yieldBox.balanceOf(
+            wethUsdcSingularity.address,
+            assetId,
+        );
+        yieldBoxSharesForDeployer = await yieldBox.balanceOf(
+            deployer.address,
+            assetId,
+        );
+        yieldBoxSharesForEoa1 = await yieldBox.balanceOf(eoa1.address, assetId);
+        expect(
+            eoa1YieldBoxShares
+                .add(deployerYieldBoxShares)
+                .eq(
+                    yieldBoxSharesForSgl
+                        .add(yieldBoxSharesForDeployer)
+                        .add(yieldBoxSharesForEoa1),
+                ),
+        ).to.be.true;
+
+        await wethUsdcSingularity
+            .connect(eoa1)
+            .removeAsset(eoa1.address, eoa1.address, mintValShare);
+
+        deployerYieldBoxShares = await wethUsdcSingularity.yieldBoxShares(
+            deployer.address,
+            assetId,
+        );
+        eoa1YieldBoxShares = await wethUsdcSingularity.yieldBoxShares(
+            eoa1.address,
+            assetId,
+        );
+        yieldBoxSharesForSgl = await yieldBox.balanceOf(
+            wethUsdcSingularity.address,
+            assetId,
+        );
+        yieldBoxSharesForDeployer = await yieldBox.balanceOf(
+            deployer.address,
+            assetId,
+        );
+        yieldBoxSharesForEoa1 = await yieldBox.balanceOf(eoa1.address, assetId);
+        expect(
+            eoa1YieldBoxShares
+                .add(deployerYieldBoxShares)
+                .eq(
+                    yieldBoxSharesForSgl
+                        .add(yieldBoxSharesForDeployer)
+                        .add(yieldBoxSharesForEoa1),
+                ),
+        ).to.be.true;
+
+        await yieldBox
+            .connect(eoa1)
+            .withdraw(assetId, eoa1.address, eoa1.address, 0, mintValShare);
+        deployerYieldBoxShares = await wethUsdcSingularity.yieldBoxShares(
+            deployer.address,
+            assetId,
+        );
+        eoa1YieldBoxShares = await wethUsdcSingularity.yieldBoxShares(
+            eoa1.address,
+            assetId,
+        );
+        yieldBoxSharesForSgl = await yieldBox.balanceOf(
+            wethUsdcSingularity.address,
+            assetId,
+        );
+        yieldBoxSharesForDeployer = await yieldBox.balanceOf(
+            deployer.address,
+            assetId,
+        );
+        yieldBoxSharesForEoa1 = await yieldBox.balanceOf(eoa1.address, assetId);
+        expect(
+            eoa1YieldBoxShares
+                .add(deployerYieldBoxShares)
+                .eq(
+                    yieldBoxSharesForSgl
+                        .add(yieldBoxSharesForDeployer)
+                        .add(yieldBoxSharesForEoa1),
+                ),
+        ).to.be.true;
     });
 });

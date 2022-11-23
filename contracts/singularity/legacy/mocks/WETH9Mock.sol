@@ -14,10 +14,6 @@ contract WETH9Mock {
     mapping(address => uint256) public balanceOf;
     mapping(address => mapping(address => uint256)) public allowance;
 
-    /*fallback () external payable {
-        deposit();
-    }*/
-
     function freeMint(uint256 _val) public {
         balanceOf[msg.sender] += _val;
     }

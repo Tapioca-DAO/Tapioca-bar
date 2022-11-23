@@ -813,6 +813,589 @@ async function registerAaveStrategy(
     return { aaveStrategy };
 }
 
+async function deployStablePoolMock(staging?: boolean) {
+    const stablePoolMock = await (
+        await ethers.getContractFactory('ComposableStablePoolMock')
+    ).deploy({
+        gasPrice: gasPrice,
+    });
+    await stablePoolMock.deployed();
+
+    log(
+        `Deployed ComposableStablePoolMock ${stablePoolMock.address} with no arguments`,
+        staging,
+    );
+
+    await verifyEtherscan(stablePoolMock.address, [], staging);
+
+    return { stablePoolMock };
+}
+
+async function deployGaugeMock(
+    stablePoolAddress: string,
+    wethAddress: string,
+    deployerAddress: string,
+    __uniFactory: any,
+    __uniRouter: any,
+    staging?: boolean,
+) {
+    if (stablePoolAddress == ethers.constants.AddressZero) {
+        const { stablePoolMock } = await deployStablePoolMock(staging);
+        stablePoolAddress = stablePoolMock.address;
+    }
+
+    const wethPairAmount = ethers.BigNumber.from(1e6).mul((1e18).toString());
+    const rewardPairAmount = ethers.BigNumber.from(1e6).mul((1e18).toString());
+    const weth = await ethers.getContractAt('WETH9Mock', wethAddress);
+
+    const rewardTokenInitialBalance = ethers.utils.parseEther('100000000');
+    const rewardToken1 = await (
+        await ethers.getContractFactory('ERC20Mock')
+    ).deploy(rewardTokenInitialBalance, {
+        gasPrice: gasPrice,
+    });
+    await rewardToken1.deployed();
+    log(
+        `Deployed RewardToken1 ${rewardToken1.address} with args [${rewardTokenInitialBalance}]`,
+        staging,
+    );
+    await verifyEtherscan(
+        rewardToken1.address,
+        [rewardTokenInitialBalance],
+        staging,
+    );
+
+    await addUniV2Liquidity(
+        deployerAddress,
+        rewardToken1,
+        weth,
+        rewardPairAmount,
+        wethPairAmount,
+        __uniFactory,
+        __uniRouter,
+        true,
+    );
+
+    const rewardToken2 = await (
+        await ethers.getContractFactory('ERC20Mock')
+    ).deploy(rewardTokenInitialBalance, {
+        gasPrice: gasPrice,
+    });
+    await rewardToken2.deployed();
+    log(
+        `Deployed RewardToken2 ${rewardToken2.address} with args [${rewardTokenInitialBalance}]`,
+        staging,
+    );
+    await verifyEtherscan(
+        rewardToken2.address,
+        [rewardTokenInitialBalance],
+        staging,
+    );
+
+    await addUniV2Liquidity(
+        deployerAddress,
+        rewardToken2,
+        weth,
+        rewardPairAmount,
+        wethPairAmount,
+        __uniFactory,
+        __uniRouter,
+        true,
+    );
+
+    const gaugeMock = await (
+        await ethers.getContractFactory('BalancerGaugeMock')
+    ).deploy(stablePoolAddress, rewardToken1.address, rewardToken2.address, {
+        gasPrice: gasPrice,
+    });
+    await gaugeMock.deployed();
+    log(
+        `Deployed BalancerGaugeMock ${gaugeMock.address} with args [${stablePoolAddress},${rewardToken1.address},${rewardToken2.address}]`,
+        staging,
+    );
+    await verifyEtherscan(
+        gaugeMock.address,
+        [stablePoolAddress, rewardToken1.address, rewardToken2.address],
+        staging,
+    );
+
+    return { gaugeMock, rewardToken1, rewardToken2 };
+}
+async function deployBalancerVaultMock(
+    stablePoolAddress: string,
+    staging?: boolean,
+) {
+    if (stablePoolAddress == ethers.constants.AddressZero) {
+        const { stablePoolMock } = await deployStablePoolMock(staging);
+        stablePoolAddress = stablePoolMock.address;
+    }
+
+    const vaultMock = await (
+        await ethers.getContractFactory('BalancerVaultMock')
+    ).deploy(stablePoolAddress, {
+        gasPrice: gasPrice,
+    });
+    await vaultMock.deployed();
+
+    log(
+        `Deployed BalancerVaultMock ${vaultMock.address} with no args [${stablePoolAddress}]`,
+        staging,
+    );
+
+    await verifyEtherscan(vaultMock.address, [stablePoolAddress], staging);
+
+    return { vaultMock };
+}
+
+async function registerBalancerStrategy(
+    wethAddress: string,
+    yieldBoxAddres: string,
+    stablePoolAddress: string, //lp token
+    vaultAddress: string,
+    gaugeAddress: string,
+    noOfRewardTokens: number,
+    poolId: string,
+    multiSwapperAddress: string,
+    __uniFactory: any,
+    __uniRouter: any,
+    deployerAddress: string,
+    staging?: boolean,
+) {
+    if (stablePoolAddress == ethers.constants.AddressZero) {
+        const { stablePoolMock } = await deployStablePoolMock(staging);
+        stablePoolAddress = stablePoolMock.address;
+    }
+    if (gaugeAddress == ethers.constants.AddressZero) {
+        const { gaugeMock, rewardToken1, rewardToken2 } = await deployGaugeMock(
+            stablePoolAddress,
+            wethAddress,
+            deployerAddress,
+            __uniFactory,
+            __uniRouter,
+            staging,
+        );
+        gaugeAddress = gaugeMock.address;
+    }
+
+    if (vaultAddress == ethers.constants.AddressZero) {
+        const { vaultMock } = await deployBalancerVaultMock(
+            stablePoolAddress,
+            staging,
+        );
+        vaultAddress = vaultMock.address;
+    }
+
+    const balancerStrategy = await (
+        await ethers.getContractFactory('BalancerStrategy')
+    ).deploy(
+        yieldBoxAddres,
+        wethAddress,
+        vaultAddress,
+        gaugeAddress,
+        poolId,
+        noOfRewardTokens,
+        multiSwapperAddress,
+        {
+            gasPrice: gasPrice,
+        },
+    );
+    await balancerStrategy.deployed();
+    log(
+        `Deployed BalancerStrategy ${balancerStrategy.address} with args [${yieldBoxAddres},${wethAddress},${vaultAddress},${gaugeAddress},${poolId},${noOfRewardTokens}]`,
+        staging,
+    );
+    await verifyEtherscan(
+        balancerStrategy.address,
+        [
+            yieldBoxAddres,
+            wethAddress,
+            vaultAddress,
+            gaugeAddress,
+            poolId,
+            noOfRewardTokens,
+        ],
+        staging,
+    );
+
+    return { balancerStrategy };
+}
+
+async function deployConvexRewardPool(
+    lpTokenAddress: string,
+    wethAddress: string,
+    deployerAddress: string,
+    __uniFactory: any,
+    __uniRouter: any,
+    staging?: boolean,
+) {
+    const cvxTokenMock = await (
+        await ethers.getContractFactory('ERC20Mock')
+    ).deploy(ethers.utils.parseEther('10000000'), {
+        gasPrice: gasPrice,
+    });
+    await cvxTokenMock.deployed();
+
+    log(
+        `Deployed CvxTokenMock ${
+            cvxTokenMock.address
+        } with args [${ethers.utils.parseEther('10000000')}]`,
+        staging,
+    );
+
+    await verifyEtherscan(
+        cvxTokenMock.address,
+        [ethers.utils.parseEther('10000000')],
+        staging,
+    );
+
+    const wethPairAmount = ethers.BigNumber.from(1e6).mul((1e18).toString());
+    const rewardPairAmount = ethers.BigNumber.from(1e6).mul((1e18).toString());
+    const weth = await ethers.getContractAt('WETH9Mock', wethAddress);
+    await addUniV2Liquidity(
+        deployerAddress,
+        cvxTokenMock,
+        weth,
+        rewardPairAmount,
+        wethPairAmount,
+        __uniFactory,
+        __uniRouter,
+        true,
+    );
+
+    //--
+    const convexRewardPoolMock = await (
+        await ethers.getContractFactory('ConvexRewardPoolMock')
+    ).deploy(lpTokenAddress, cvxTokenMock.address, {
+        gasPrice: gasPrice,
+    });
+    await convexRewardPoolMock.deployed();
+
+    log(
+        `Deployed ConvexRewardPoolMock ${convexRewardPoolMock.address} with args [${lpTokenAddress},${cvxTokenMock.address}]`,
+        staging,
+    );
+    await verifyEtherscan(
+        convexRewardPoolMock.address,
+        [lpTokenAddress, cvxTokenMock.address],
+        staging,
+    );
+    return { cvxTokenMock, convexRewardPoolMock };
+}
+
+async function deployConvexBoosterMock(
+    lpTokenAddress: string,
+    rewardPoolAddress: string,
+    staging?: boolean,
+) {
+    const receiptTokenMock = await (
+        await ethers.getContractFactory('ERC20Mock')
+    ).deploy(ethers.utils.parseEther('10000000'), {
+        gasPrice: gasPrice,
+    });
+    await receiptTokenMock.deployed();
+
+    log(
+        `Deployed ReceiptTokenMock ${
+            receiptTokenMock.address
+        } with args [${ethers.utils.parseEther('10000000')}]`,
+        staging,
+    );
+
+    await verifyEtherscan(
+        receiptTokenMock.address,
+        [ethers.utils.parseEther('10000000')],
+        staging,
+    );
+
+    //--
+    const convexBoosterMock = await (
+        await ethers.getContractFactory('ConvexBoosterMock')
+    ).deploy(lpTokenAddress, receiptTokenMock.address, rewardPoolAddress, {
+        gasPrice: gasPrice,
+    });
+    await convexBoosterMock.deployed();
+
+    log(
+        `Deployed ConvexBoosterMock ${receiptTokenMock.address} with args [${lpTokenAddress},${receiptTokenMock.address},${rewardPoolAddress}]`,
+        staging,
+    );
+
+    await verifyEtherscan(
+        receiptTokenMock.address,
+        [lpTokenAddress, receiptTokenMock.address, rewardPoolAddress],
+        staging,
+    );
+
+    return { receiptTokenMock, convexBoosterMock };
+}
+
+async function deployConvexZapMock(
+    wethAddress: string,
+    deployerAddress: string,
+    __uniFactory: any,
+    __uniRouter: any,
+    staging?: boolean,
+) {
+    const reward1Mock = await (
+        await ethers.getContractFactory('ERC20Mock')
+    ).deploy(ethers.utils.parseEther('10000000'), {
+        gasPrice: gasPrice,
+    });
+    await reward1Mock.deployed();
+
+    log(
+        `Deployed Reward1 ${
+            reward1Mock.address
+        } with args [${ethers.utils.parseEther('10000000')}]`,
+        staging,
+    );
+
+    await verifyEtherscan(
+        reward1Mock.address,
+        [ethers.utils.parseEther('10000000')],
+        staging,
+    );
+
+    //--
+
+    const reward2Mock = await (
+        await ethers.getContractFactory('ERC20Mock')
+    ).deploy(ethers.utils.parseEther('10000000'), {
+        gasPrice: gasPrice,
+    });
+    await reward2Mock.deployed();
+
+    log(
+        `Deployed Reward2 ${
+            reward2Mock.address
+        } with args [${ethers.utils.parseEther('10000000')}]`,
+        staging,
+    );
+
+    await verifyEtherscan(
+        reward2Mock.address,
+        [ethers.utils.parseEther('10000000')],
+        staging,
+    );
+
+    const wethPairAmount = ethers.BigNumber.from(1e6).mul((1e18).toString());
+    const rewardPairAmount = ethers.BigNumber.from(1e6).mul((1e18).toString());
+    const weth = await ethers.getContractAt('WETH9Mock', wethAddress);
+    await addUniV2Liquidity(
+        deployerAddress,
+        reward1Mock,
+        weth,
+        rewardPairAmount,
+        wethPairAmount,
+        __uniFactory,
+        __uniRouter,
+        true,
+    );
+    await addUniV2Liquidity(
+        deployerAddress,
+        reward2Mock,
+        weth,
+        rewardPairAmount,
+        wethPairAmount,
+        __uniFactory,
+        __uniRouter,
+        true,
+    );
+
+    //-
+    const convexZapMock = await (
+        await ethers.getContractFactory('ConvexZapMock')
+    ).deploy(reward1Mock.address, reward2Mock.address, {
+        gasPrice: gasPrice,
+    });
+    await convexZapMock.deployed();
+
+    log(
+        `Deployed ConvexZapMock ${convexZapMock.address} with args [${reward1Mock.address},${reward2Mock.address}]`,
+        staging,
+    );
+
+    await verifyEtherscan(
+        convexZapMock.address,
+        [reward1Mock.address, reward2Mock.address],
+        staging,
+    );
+
+    return { reward1Mock, reward2Mock, convexZapMock };
+}
+
+async function registerConvexStrategy(
+    yieldBoxAddress: string,
+    wethAddress: string,
+    usdtAddress: string,
+    wbtcAddress: string,
+    curveLiquidityPoolAddress: string,
+    lpGetterAddress: string,
+    boosterAddress: string,
+    rewardPoolAddress: string,
+    zapAddress: string,
+    poolId: number,
+    __uniFactory: any,
+    __uniRouter: any,
+    deployerAddress: string,
+    swapperAddress: string,
+    staging?: boolean,
+) {
+    if (curveLiquidityPoolAddress == ethers.constants.AddressZero) {
+        const { liquidityPoolMock } = await deployTricryptoLiquidityPoolMock(
+            wethAddress,
+            staging,
+        );
+        curveLiquidityPoolAddress = liquidityPoolMock.address;
+    }
+
+    const liquidityPoolContract = await ethers.getContractAt(
+        'ITricryptoLiquidityPool',
+        curveLiquidityPoolAddress,
+    );
+    const lpTokenAddress = await liquidityPoolContract.token();
+
+    let tricryptoLPGtter: any;
+    if (lpGetterAddress == ethers.constants.AddressZero) {
+        const tricryptoLPGetterDeployment = await deployTricryptoLPGetter(
+            curveLiquidityPoolAddress,
+            wethAddress,
+            wbtcAddress,
+            usdtAddress,
+        );
+        lpGetterAddress = tricryptoLPGetterDeployment.tricryptoLPGtter.address;
+        tricryptoLPGtter = tricryptoLPGetterDeployment.tricryptoLPGtter;
+    }
+
+    let cvxMock;
+    if (rewardPoolAddress == ethers.constants.AddressZero) {
+        const { cvxTokenMock, convexRewardPoolMock } =
+            await deployConvexRewardPool(
+                lpTokenAddress,
+                wethAddress,
+                deployerAddress,
+                __uniFactory,
+                __uniRouter,
+                staging,
+            );
+        cvxMock = cvxTokenMock;
+        rewardPoolAddress = convexRewardPoolMock.address;
+    }
+
+    let receiptToken;
+    if (boosterAddress == ethers.constants.AddressZero) {
+        const { receiptTokenMock, convexBoosterMock } =
+            await deployConvexBoosterMock(
+                lpTokenAddress,
+                rewardPoolAddress,
+                staging,
+            );
+        receiptToken = receiptTokenMock;
+        boosterAddress = convexBoosterMock.address;
+    }
+
+    let cvxReward1Token, cvxReward2Token;
+    if (zapAddress == ethers.constants.AddressZero) {
+        const { reward1Mock, reward2Mock, convexZapMock } =
+            await deployConvexZapMock(
+                wethAddress,
+                deployerAddress,
+                __uniFactory,
+                __uniRouter,
+                staging,
+            );
+        cvxReward1Token = reward1Mock;
+        cvxReward2Token = reward2Mock;
+        zapAddress = convexZapMock.address;
+    }
+
+    const convexTricryptoStrategy = await (
+        await ethers.getContractFactory('ConvexTricryptoStrategy')
+    ).deploy(
+        yieldBoxAddress,
+        wethAddress,
+        boosterAddress,
+        zapAddress,
+        lpGetterAddress,
+        poolId,
+        swapperAddress,
+        {
+            gasPrice: gasPrice,
+        },
+    );
+    await convexTricryptoStrategy.deployed();
+
+    log(
+        `Deployed ConvexTricryptoStrategy ${convexTricryptoStrategy.address} with args [${yieldBoxAddress},${wethAddress},${boosterAddress},${zapAddress},${lpGetterAddress},${poolId},${swapperAddress}]`,
+        staging,
+    );
+
+    await verifyEtherscan(
+        convexTricryptoStrategy.address,
+        [
+            yieldBoxAddress,
+            wethAddress,
+            boosterAddress,
+            zapAddress,
+            lpGetterAddress,
+            poolId,
+            swapperAddress,
+        ],
+        staging,
+    );
+
+    return { convexTricryptoStrategy, cvxReward1Token, cvxReward2Token };
+}
+
+async function deployCToken(wethAddress: string, staging?: boolean) {
+    const cTokenMock = await (
+        await ethers.getContractFactory('CTokenMock')
+    ).deploy(wethAddress, {
+        gasPrice: gasPrice,
+    });
+    await cTokenMock.deployed();
+
+    log(
+        `Deployed CTokenMock ${cTokenMock.address} with args [${wethAddress}]`,
+        staging,
+    );
+
+    await verifyEtherscan(cTokenMock.address, [wethAddress], staging);
+
+    return { cTokenMock };
+}
+
+async function registerCompoundStrategy(
+    yieldBoxAddres: string,
+    wethAddress: string,
+    cTokenAddress: string,
+    staging?: boolean,
+) {
+    if (cTokenAddress == ethers.constants.AddressZero) {
+        const { cTokenMock } = await deployCToken(wethAddress, staging);
+        cTokenAddress = cTokenMock.address;
+    }
+
+    const compoundStrategy = await (
+        await ethers.getContractFactory('CompoundStrategy')
+    ).deploy(yieldBoxAddres, wethAddress, cTokenAddress, {
+        gasPrice: gasPrice,
+    });
+    await compoundStrategy.deployed();
+
+    log(
+        `Deployed CompoundStrategy ${compoundStrategy.address} with args [${yieldBoxAddres},${wethAddress},${cTokenAddress}]`,
+        staging,
+    );
+
+    await verifyEtherscan(
+        compoundStrategy.address,
+        [yieldBoxAddres, wethAddress, cTokenAddress],
+        staging,
+    );
+    return { compoundStrategy };
+}
+
 async function deployYearnVaultMock(assetAddress: string, staging?: boolean) {
     const vaultMock = await (
         await ethers.getContractFactory('YearnVaultMock')
@@ -1882,14 +2465,70 @@ export async function register(staging?: boolean) {
             nonYieldBoxMultiSwapper.address,
             staging,
         );
+    log(`Deployed TricryptoStrategy ${tricryptoStrategy.address}`, staging);
 
     // ------------------- 11.5 Deploy Lido-Eth Strategy -------------------
-    log('Deploying Lido ETH', staging);
+    log('Deploying Lido ETH Strategy', staging);
     const { lidoEthStrategy } = await registerLidoStEthStrategy(
         weth.address,
         yieldBox.address,
         ethers.constants.AddressZero,
         ethers.constants.AddressZero,
+        staging,
+    );
+    log(`Deployed Lido ETH Strategy ${lidoEthStrategy.address}`, staging);
+
+    // ------------------- 11.6 Deploy Compound Strategy -------------------
+    log('Deploying CompoundStrategy', staging);
+    const { compoundStrategy } = await registerCompoundStrategy(
+        yieldBox.address,
+        weth.address,
+        ethers.constants.AddressZero,
+        staging,
+    );
+    log(`Deployed CompoundStrategy ${compoundStrategy.address}`, staging);
+
+    // ------------------- 11.7 Deploy Balancer Strategy -------------------
+    log('Deploying BalancerStrategy', staging);
+    const { balancerStrategy } = await registerBalancerStrategy(
+        weth.address,
+        yieldBox.address,
+        ethers.constants.AddressZero,
+        ethers.constants.AddressZero,
+        ethers.constants.AddressZero,
+        2,
+        '0x8159462d255c1d24915cb51ec361f700174cd99400000000000000000000075d',
+        nonYieldBoxMultiSwapper.address,
+        __uniFactory,
+        __uniRouter,
+        deployer.address,
+        staging,
+    );
+    log(`Deployed BalancerStrategy ${balancerStrategy.address}`, staging);
+
+    // registerConvexStrategy
+    // ------------------- 11.8 Deploy ConvexTricrypto Strategy -------------------
+    log('Deploying ConvexTricryptoStrategy', staging);
+    const { convexTricryptoStrategy, cvxReward1Token, cvxReward2Token } =
+        await registerConvexStrategy(
+            yieldBox.address,
+            weth.address,
+            weth.address,
+            weth.address,
+            ethers.constants.AddressZero,
+            ethers.constants.AddressZero,
+            ethers.constants.AddressZero,
+            ethers.constants.AddressZero,
+            ethers.constants.AddressZero,
+            1,
+            __uniFactory,
+            __uniRouter,
+            deployer.address,
+            nonYieldBoxMultiSwapper.address,
+            staging,
+        );
+    log(
+        `Deployed ConvexTricryptoStrategy ${convexTricryptoStrategy.address}`,
         staging,
     );
 
@@ -2058,6 +2697,11 @@ export async function register(staging?: boolean) {
         tricryptoStrategy,
         tricryptoLPGtter,
         lidoEthStrategy,
+        compoundStrategy,
+        balancerStrategy,
+        convexTricryptoStrategy,
+        cvxReward1Token,
+        cvxReward2Token,
         registerSingularity,
         deployTricryptoLPGetter,
         __uniFactory,

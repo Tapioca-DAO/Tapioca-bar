@@ -11,7 +11,6 @@ import '../../../yieldbox/contracts/strategies/BaseStrategy.sol';
 
 import './IYearnVault.sol';
 
-
 /*
 
 __/\\\\\\\\\\\\\\\_____/\\\\\\\\\_____/\\\\\\\\\\\\\____/\\\\\\\\\\\_______/\\\\\_____________/\\\\\\\\\_____/\\\\\\\\\____        
@@ -79,6 +78,7 @@ contract YearnStrategy is BaseERC20Strategy, BoringOwnable, ReentrancyGuard {
         return 'Yearn strategy for wrapped native assets';
     }
 
+    /// @notice returns compounded amounts in wrappedNative
     function compoundAmount() public pure returns (uint256 result) {
         return 0;
     }
@@ -136,7 +136,7 @@ contract YearnStrategy is BaseERC20Strategy, BoringOwnable, ReentrancyGuard {
             uint256 toWithdraw = (((amount - queued) * (10**vault.decimals())) /
                 pricePerShare);
 
-            uint256 returned = vault.withdraw(toWithdraw, address(this), 0);
+            vault.withdraw(toWithdraw, address(this), 0);
         }
         wrappedNative.safeTransfer(to, amount);
 

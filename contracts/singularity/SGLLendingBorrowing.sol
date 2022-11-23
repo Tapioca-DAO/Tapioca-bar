@@ -127,6 +127,11 @@ contract SGLLendingBorrowing is SGLCommon {
         totalCollateralShare -= share;
         emit LogRemoveCollateral(from, to, share);
         yieldBox.transfer(address(this), to, collateralId, share);
+        if (share > _yieldBoxShares[from][collateralId]) {
+            _yieldBoxShares[from][collateralId] = 0; //accrues in time
+        } else {
+            _yieldBoxShares[from][collateralId] -= share;
+        }
     }
 
     /// @dev Concrete implementation of `borrow`.

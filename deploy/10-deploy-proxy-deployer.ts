@@ -37,7 +37,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     console.log(`\nDeploying SGLProxy`);
     await proxyDeployerContract.deployWithCreate2(
         constants[chainId].address,
-        salt
+        salt,
     );
     console.log(`Done`);
     const count = await proxyDeployerContract.proxiesCount();

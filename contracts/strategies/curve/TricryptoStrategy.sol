@@ -183,7 +183,8 @@ contract TricryptoStrategy is
         uint256 lpBalance = lpGauge.balanceOf(address(this));
         uint256 assetAmount = lpGetter.calcLpToWeth(lpBalance);
         uint256 queued = wrappedNative.balanceOf(address(this));
-        return assetAmount + queued;
+        // uint256 compoundAmount = compoundAmount();//TODO: not view
+        return assetAmount + queued; //+ compoundAmount;
     }
 
     /// @dev deposits to Curve Tricrypto or queues tokens if the 'depositThreshold' has not been met yet

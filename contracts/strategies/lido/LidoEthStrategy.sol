@@ -79,6 +79,11 @@ contract LidoEthStrategy is BaseERC20Strategy, BoringOwnable, ReentrancyGuard {
         return 'Lido-ETH strategy for wrapped native assets';
     }
 
+    /// @notice returns compounded amounts in wrappedNative
+    function compoundAmount() public pure returns (uint256 result) {
+        return 0;
+    }
+
     // *********************** //
     // *** OWNER FUNCTIONS *** //
     // *********************** //

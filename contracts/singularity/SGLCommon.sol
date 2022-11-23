@@ -149,7 +149,7 @@ contract SGLCommon is SGLStorage {
     ) public allowed(from) returns (uint256 share) {
         accrue();
 
-        share = _removeAsset(from, to, fraction);
+        share = _removeAsset(from, to, fraction, true);
     }
 
     /// @notice Adds assets to the lending pair.
@@ -215,6 +215,8 @@ contract SGLCommon is SGLStorage {
         uint256 total,
         bool skim
     ) internal {
+        _yieldBoxShares[from][_assetId] += share;
+
         if (skim) {
             require(
                 share <= yieldBox.balanceOf(address(this), _assetId) - total,
@@ -245,6 +247,7 @@ contract SGLCommon is SGLStorage {
         totalAsset = _totalAsset.add(share, fraction);
         balanceOf[to] += fraction;
         emit Transfer(address(0), to, fraction);
+
         _addTokens(from, assetId, share, totalAssetShare, skim);
         emit LogAddAsset(skim ? address(yieldBox) : from, to, share, fraction);
     }
@@ -254,7 +257,8 @@ contract SGLCommon is SGLStorage {
     function _removeAsset(
         address from,
         address to,
-        uint256 fraction
+        uint256 fraction,
+        bool updateYieldBoxShares
     ) internal returns (uint256 share) {
         if (totalAsset.base == 0) {
             return 0;
@@ -271,6 +275,13 @@ contract SGLCommon is SGLStorage {
         totalAsset = _totalAsset;
         emit LogRemoveAsset(from, to, share, fraction);
         yieldBox.transfer(address(this), to, assetId, share);
+        if (updateYieldBoxShares) {
+            if (share > _yieldBoxShares[from][assetId]) {
+                _yieldBoxShares[from][assetId] = 0; //some assets accrue in time
+            } else {
+                _yieldBoxShares[from][assetId] -= share;
+            }
+        }
     }
 
     function _getCollateralAmountForShare(uint256 share)

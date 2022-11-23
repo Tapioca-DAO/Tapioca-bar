@@ -3,7 +3,7 @@ import { expect } from 'chai';
 import { register } from './test.utils';
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 
-describe('MixologistHelper test', () => {
+describe('SingularityHelper test', () => {
     it('Should deposit to yieldBox & add asset to singularity through Mx helper', async () => {
         const {
             weth,
@@ -182,7 +182,7 @@ describe('MixologistHelper test', () => {
             );
     });
 
-    it('should deposit, repay, remove collateral and withdraw through Mx helper', async () => {
+    it('should deposit, repay, remove collateral and withdraw through SGL helper', async () => {
         const {
             usdcAssetId,
             weth,
