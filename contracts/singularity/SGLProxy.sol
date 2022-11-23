@@ -195,8 +195,7 @@ contract SGLProxy is NonblockingLzApp {
             sglPayload,
             _refundAddress,
             _zroPaymentAddress,
-            _adapterParams,
-            msg.value
+            _adapterParams
         );
 
         emit SendToChain(_dstChainId, _from, sglPayload);
