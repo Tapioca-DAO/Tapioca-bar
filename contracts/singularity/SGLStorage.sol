@@ -53,6 +53,7 @@ contract SGLStorage is BoringOwnable, ERC20 {
     Rebase public totalAsset; // elastic = yieldBox shares held by the Singularity, base = Total fractions held by asset suppliers
     Rebase public totalBorrow; // elastic = Total token amount to be repayed by borrowers, base = Total parts of the debt held by borrowers
     uint256 public totalBorrowCap;
+    mapping(address => mapping(uint256 => uint256)) internal _yieldBoxShares;
 
     // User balances
     mapping(address => uint256) public userCollateralShare;

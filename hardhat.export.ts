@@ -2,6 +2,7 @@ import * as dotenv from 'dotenv';
 
 import '@nomicfoundation/hardhat-toolbox';
 import '@nomicfoundation/hardhat-chai-matchers';
+import '@nomiclabs/hardhat-vyper';
 import { HardhatUserConfig } from 'hardhat/config';
 import 'hardhat-deploy';
 import 'hardhat-contract-sizer';
@@ -30,7 +31,7 @@ let supportedChains: { [key: string]: HttpNetworkConfig } = SDK.API.utils
         {},
     );
 
-const config: HardhatUserConfig & { dodoc?: any } = {
+const config: HardhatUserConfig & { dodoc?: any; vyper: any } = {
     solidity: {
         compilers: [
             {
@@ -47,7 +48,7 @@ const config: HardhatUserConfig & { dodoc?: any } = {
                 settings: {
                     optimizer: {
                         enabled: true,
-                        runs: 999,
+                        runs: 200,
                     },
                 },
             },
@@ -56,11 +57,14 @@ const config: HardhatUserConfig & { dodoc?: any } = {
                 settings: {
                     optimizer: {
                         enabled: true,
-                        runs: 999,
+                        runs: 200,
                     },
                 },
             },
         ],
+    },
+    vyper: {
+        compilers: [{ version: '0.2.16' }],
     },
     namedAccounts: {
         deployer: 0,
@@ -68,6 +72,9 @@ const config: HardhatUserConfig & { dodoc?: any } = {
     defaultNetwork: 'hardhat',
     networks: {
         hardhat: {
+            forking: {
+                url: `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_KEY}`,
+            },
             hardfork: 'merge',
             allowUnlimitedContractSize: true,
             accounts: {

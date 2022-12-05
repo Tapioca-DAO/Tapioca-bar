@@ -34,11 +34,11 @@ export const constants: { [key: string]: any } = {
         assets: [
             {
                 name: 'USDC',
-                address: '0x07865c6e87b9f70255377e024ace6630c1eaa37f',
+                address: '0x93FBA3AA589A1BC9120e0a8AA514fE8f839853F5', //'0x07865c6e87b9f70255377e024ace6630c1eaa37f',
             },
             {
                 name: 'WETH',
-                address: '0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6',
+                address: '0xe1E3E81B5b868cAB59a27Fa8D30C5225c5D55FC4', //'0xe1E3E81B5b868cAB59a27Fa8D30C5225c5D55FC4',
             },
             {
                 name: 'TAP',
@@ -46,15 +46,15 @@ export const constants: { [key: string]: any } = {
             },
         ],
         sgl_ETH: {
-            collateralAddress: '0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6', //weth
-            assetAddress: '0xD52343b83BCE11B4A03ED4434b9AAfdc633bB39b',
+            collateralAddress: '0xe1E3E81B5b868cAB59a27Fa8D30C5225c5D55FC4', //weth
+            assetAddress: '0xf64364494212954c20B0762fcB1ebB6DC3e85441',
             oracleAddress: '0x08aa8c316b485a1a73356f662a9881d7b31bf427', //mock
             minBidAmount: 20,
             hasExecutionBidder: false,
             executionBidder: '0x0000000000000000000000000000000000000000',
         },
         minterSGL_ETH: {
-            collateralAddress: '0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6',
+            collateralAddress: '0xe1E3E81B5b868cAB59a27Fa8D30C5225c5D55FC4',
             oracleAddress: '0x08aa8c316b485a1a73356f662a9881d7b31bf427', //mock
         },
     },
@@ -74,11 +74,11 @@ export const constants: { [key: string]: any } = {
         assets: [
             {
                 name: 'USDC',
-                address: '0xdEE65CaD824eD001a03215941FEb7c85D3E0aA94',
+                address: '0xb72e878a9c806f975c8e0e916afa6a328a764359', //'0xdEE65CaD824eD001a03215941FEb7c85D3E0aA94',
             },
             {
                 name: 'WETH',
-                address: '0x84C7dD519Ea924bf1Cf6613f9127F26D7aB801D0',
+                address: '0xa3e6cCe9165Dd2C42dFA89e446d44520431d383d', //'0x84C7dD519Ea924bf1Cf6613f9127F26D7aB801D0',
             },
             {
                 name: 'TAP',
@@ -86,15 +86,15 @@ export const constants: { [key: string]: any } = {
             },
         ],
         sgl_ETH: {
-            collateralAddress: '0x84C7dD519Ea924bf1Cf6613f9127F26D7aB801D0', //weth
-            assetAddress: '0x9F737c63B04f8544A88b8Fb55Fa897252E79bED9',
+            collateralAddress: '0xa3e6cCe9165Dd2C42dFA89e446d44520431d383d', //weth
+            assetAddress: '0xBD46Fa5C363E222c4cEf7589100F6486926C0D56',
             oracleAddress: '0x41dC15C448aB9141254EEd98F562a407E915d3b1', //mock
             minBidAmount: 20,
             hasExecutionBidder: false,
             executionBidder: '0x0000000000000000000000000000000000000000',
         },
         minterSGL_ETH: {
-            collateralAddress: '0x84C7dD519Ea924bf1Cf6613f9127F26D7aB801D0',
+            collateralAddress: '0xa3e6cCe9165Dd2C42dFA89e446d44520431d383d',
             oracleAddress: '0x41dC15C448aB9141254EEd98F562a407E915d3b1', //mock
         },
     },
@@ -447,7 +447,8 @@ export const registerLiquidationQueue = async (
             constants[chainId][`sgl_${name}`].minBidAmount,
         ),
         feeCollector: constants[chainId].feeCollector,
-        bidExecutionSwapper: constants[chainId][`sgl_${name}`].hasExecutionBidder
+        bidExecutionSwapper: constants[chainId][`sgl_${name}`]
+            .hasExecutionBidder
             ? constants[chainId][`sgl_${name}`].executionBidder
             : hre.ethers.constants.AddressZero,
         usdoSwapper: stableToUsdoBidder.address,

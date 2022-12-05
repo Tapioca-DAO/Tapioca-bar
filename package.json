@@ -15,6 +15,7 @@
         "deploy:mainnet": "npx hardhat deploy --network mainnet",
         "deploy:testnet": "npx hardhat run scripts/exportStagingAddresses.ts --network rinkeby",
         "deploy:testEnv": "hardhat deploy --tags testEnv --network",
+        "deploy:mockTokens": "hardhat deploy --tags MockTokens --network",
         "deploy:usd0": "hardhat deploy --tags USD0 --network",
         "deploy:yieldBox": "hardhat deploy --tags YieldBox --network",
         "deploy:yieldBoxAssets": "hardhat deploy --tags YieldBoxAssets --network",
@@ -69,6 +70,7 @@
         "write-json-file": "4.3.0"
     },
     "dependencies": {
+        "@nomiclabs/hardhat-vyper": "^3.0.1",
         "husky": "^8.0.1",
         "load-json-file": "^7.0.1",
         "lodash": "^4.17.21",

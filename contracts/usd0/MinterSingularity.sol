@@ -130,8 +130,8 @@ contract MinterSingularity is BoringOwnable, ERC20 {
     uint256 internal constant CALLER_FEE = 90000; // 90%
     uint256 private constant PROTOCOL_FEE = 10000; // 10%
 
-    uint256 private constant MAX_BORROWING_FEE = 8e4; //at 80% for testing; TBD
-    uint256 private constant MAX_STABILITY_FEE = 8e17; //at 80% for testing; TBD
+    uint256 private constant MAX_BORROWING_FEE = 8e4; //at 80% for testing; TODO
+    uint256 private constant MAX_STABILITY_FEE = 8e17; //at 80% for testing; TODO
 
     // ***************** //
     // *** MODIFIERS *** //
