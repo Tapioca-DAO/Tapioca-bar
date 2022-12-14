@@ -1,9 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
-import '../libraries/ICurvePool.sol';
-import '../../yieldbox/contracts/YieldBox.sol';
-import '../IPenrose.sol';
 import '@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol';
+
+import './ISwapper.sol';
+import '../IPenrose.sol';
+import '../../yieldbox/contracts/YieldBox.sol';
+
+import '../libraries/ICurvePool.sol';
 
 /*
 
@@ -20,7 +23,7 @@ __/\\\\\\\\\\\\\\\_____/\\\\\\\\\_____/\\\\\\\\\\\\\____/\\\\\\\\\\\_______/\\\\
 */
 
 /// @title Curve pool swapper
-contract CurveSwapper {
+contract CurveSwapper is ISwapper {
     using BoringERC20 for IERC20;
 
     // ************ //
@@ -41,16 +44,16 @@ contract CurveSwapper {
     // ********************** //
     // *** VIEW FUNCTIONS *** //
     // ********************** //
-
     /// @notice returns the possible output amount for input share
     /// @param tokenInId YieldBox asset id
-    /// @param tokenIndexes The input and the output Curve's pool indexes
     /// @param shareIn Shares to get the amount for
+    /// @param dexData Custom DEX data for query execution
     function getOutputAmount(
         uint256 tokenInId,
-        uint256[] calldata tokenIndexes,
-        uint256 shareIn
-    ) external view returns (uint256 amountOut) {
+        uint256 shareIn,
+        bytes calldata dexData
+    ) external view override returns (uint256 amountOut) {
+        uint256[] memory tokenIndexes = abi.decode(dexData, (uint256[]));
         uint256 amountIn = yieldBox.toAmount(tokenInId, shareIn, false);
         amountOut = curvePool.get_dy(
             int128(int256(tokenIndexes[0])),
@@ -59,26 +62,38 @@ contract CurveSwapper {
         );
     }
 
+    function getInputAmount(
+        uint256,
+        uint256,
+        bytes calldata
+    ) external pure returns (uint256) {
+        revert('Not implemented');
+    }
+
     // ************************ //
     // *** PUBLIC FUNCTIONS *** //
     // ************************ //
-
     /// @notice swaps token in with token out
     /// @dev returns both amount and shares
     /// @param tokenInId YieldBox asset id
     /// @param tokenOutId YieldBox asset id
-    /// @param tokenIndexes The input and the output Curve's pool indexes
     /// @param shareIn Shares to be swapped
-    /// @param amountOutMin Minimum amount to be received
     /// @param to Receiver address
+    /// @param amountOutMin Minimum amount to be received
+    /// @param dexData Custom DEX data for query execution
+    /// @dev dexData examples:
+    ///     - for UniV2, it should contain address[] swapPath
+    ///     - for Curve, it should contain uint256[] tokenIndexes
     function swap(
         uint256 tokenInId,
         uint256 tokenOutId,
-        uint256[] calldata tokenIndexes,
         uint256 shareIn,
+        address to,
         uint256 amountOutMin,
-        address to
-    ) external returns (uint256 amountOut, uint256 shareOut) {
+        bytes calldata dexData
+    ) external override returns (uint256 amountOut, uint256 shareOut) {
+        uint256[] memory tokenIndexes = abi.decode(dexData, (uint256[]));
+
         (uint256 amountIn, ) = yieldBox.withdraw(
             tokenInId,
             address(this),

@@ -3,7 +3,7 @@
 pragma solidity ^0.8.0;
 
 import './usd0/IUSD0.sol';
-import './swappers/IMultiSwapper.sol';
+import './swappers/ISwapper.sol';
 
 interface IPenrose {
     /// @notice swap extra data
@@ -24,7 +24,7 @@ interface IPenrose {
         ContractType risk;
     }
 
-    function swappers(IMultiSwapper swapper) external view returns (bool);
+    function swappers(ISwapper swapper) external view returns (bool);
 
     function yieldBox() external view returns (address payable);
 
