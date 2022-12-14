@@ -429,31 +429,6 @@ async function uniV2EnvironnementSetup(
     return { __wethUsdcMockPair, __wethTapMockPair, __uniFactory, __uniRouter };
 }
 
-async function registerNonYieldBoxMultiSwapper(
-    __uniFactoryAddress: string,
-    __uniFactoryPairCodeHash: string,
-    staging?: boolean,
-) {
-    const nonYieldBoxMultiSwapper = await (
-        await ethers.getContractFactory('NonYieldBoxMultiSwapper')
-    ).deploy(__uniFactoryAddress, __uniFactoryPairCodeHash, {
-        gasPrice: gasPrice,
-    });
-    await nonYieldBoxMultiSwapper.deployed();
-    log(
-        `Deployed MultiSwapper ${nonYieldBoxMultiSwapper.address} with args [${__uniFactoryAddress}, ${__uniFactoryPairCodeHash}]`,
-        staging,
-    );
-
-    await verifyEtherscan(
-        nonYieldBoxMultiSwapper.address,
-        [__uniFactoryAddress, __uniFactoryPairCodeHash],
-        staging,
-    );
-
-    return { nonYieldBoxMultiSwapper };
-}
-
 async function registerMultiSwapper(
     bar: Penrose,
     __uniFactoryAddress: string,
@@ -1034,18 +1009,6 @@ export async function register(staging?: boolean) {
     );
     log(`Deployed MultiSwapper ${multiSwapper.address}`, staging);
 
-    // ------------------- 5.1 Deploy MultiSwapper -------------------
-    log('Registering NonYieldBoxMultiSwapper', staging);
-    const { nonYieldBoxMultiSwapper } = await registerNonYieldBoxMultiSwapper(
-        __uniFactory.address,
-        await __uniFactory.pairCodeHash(),
-        staging,
-    );
-    log(
-        `Deployed NonYieldBoxMultiSwapper ${nonYieldBoxMultiSwapper.address}`,
-        staging,
-    );
-
     // ------------------- 6 Deploy MediumRisk master contract -------------------
     log('Deploying MediumRiskMC', staging);
     const { mediumRiskMC } = await deployMediumRiskMC(bar, staging);
@@ -1074,14 +1037,12 @@ export async function register(staging?: boolean) {
     );
     log(`Deployed WethUsdcSingularity ${wethUsdcSingularity.address}`, staging);
 
-    // ------------------- 8 Set feeTo & feeVeTap -------------------
+    // ------------------- 8 Set feeTo -------------------
     log('Setting feeTo and feeVeTap', staging);
     const singularityFeeTo = ethers.Wallet.createRandom();
-    const singularityFeeVeTap = ethers.Wallet.createRandom();
     await bar.setFeeTo(singularityFeeTo.address, { gasPrice: gasPrice });
-    await bar.setFeeVeTap(singularityFeeVeTap.address, { gasPrice: gasPrice });
     log(
-        `feeTo ${singularityFeeTo} and feeVeTap ${singularityFeeVeTap} were set for WethUsdcSingularity`,
+        `feeTo ${singularityFeeTo} were set for WethUsdcSingularity`,
         staging,
     );
 
@@ -1262,9 +1223,7 @@ export async function register(staging?: boolean) {
         singularityHelper,
         eoa1,
         multiSwapper,
-        nonYieldBoxMultiSwapper,
         singularityFeeTo,
-        singularityFeeVeTap,
         liquidationQueue,
         LQ_META,
         feeCollector,

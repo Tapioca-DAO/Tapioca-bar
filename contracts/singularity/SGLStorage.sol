@@ -156,7 +156,6 @@ contract SGLStorage is BoringOwnable, ERC20 {
 
     uint256 internal constant EXCHANGE_RATE_PRECISION = 1e18;
 
-    uint256 internal constant ORDER_BOOK_LIQUIDATION_MULTIPLIER = 127000; // add 27%
     uint256 internal constant LIQUIDATION_MULTIPLIER = 112000; // add 12%
     uint256 internal constant LIQUIDATION_MULTIPLIER_PRECISION = 1e5;
 

@@ -406,7 +406,7 @@ describe('MinterSingularity test', () => {
         );
         expect(yieldBoxBalanceOfFeeToInAsset.eq(0)).to.be.true;
 
-        const feeVeTap = await bar.feeVeTap();
+        const feeVeTap = await bar.feeTo();
         const tapAssetId = await bar.tapAssetId();
         let yieldBoxBalanceOfFeeVeTap = await yieldBox.toAmount(
             tapAssetId,
@@ -556,7 +556,7 @@ describe('MinterSingularity test', () => {
         );
         expect(yieldBoxBalanceOfFeeToInAsset.eq(0)).to.be.true;
 
-        const feeVeTap = await bar.feeVeTap();
+        const feeVeTap = await bar.feeTo();
         const tapAssetId = await bar.tapAssetId();
         let yieldBoxBalanceOfFeeVeTap = await yieldBox.toAmount(
             tapAssetId,
@@ -744,7 +744,7 @@ describe('MinterSingularity test', () => {
         const yieldBoxBalanceOfFeeVeTapBefore = await yieldBox.toAmount(
             await bar.tapAssetId(),
             await yieldBox.balanceOf(
-                await bar.feeVeTap(),
+                await bar.feeTo(),
                 await bar.tapAssetId(),
             ),
             false,
@@ -761,7 +761,7 @@ describe('MinterSingularity test', () => {
         const yieldBoxBalanceOfFeeVeTap = await yieldBox.toAmount(
             await bar.tapAssetId(),
             await yieldBox.balanceOf(
-                await bar.feeVeTap(),
+                await bar.feeTo(),
                 await bar.tapAssetId(),
             ),
             false,
@@ -884,7 +884,7 @@ describe('MinterSingularity test', () => {
         const yieldBoxBalanceOfFeeVeTapBefore = await yieldBox.toAmount(
             await bar.tapAssetId(),
             await yieldBox.balanceOf(
-                await bar.feeVeTap(),
+                await bar.feeTo(),
                 await bar.tapAssetId(),
             ),
             false,
@@ -901,7 +901,7 @@ describe('MinterSingularity test', () => {
         const yieldBoxBalanceOfFeeVeTap = await yieldBox.toAmount(
             await bar.tapAssetId(),
             await yieldBox.balanceOf(
-                await bar.feeVeTap(),
+                await bar.feeTo(),
                 await bar.tapAssetId(),
             ),
             false,
@@ -942,7 +942,7 @@ describe('MinterSingularity test', () => {
         const yieldBoxFinalBalanceOfFeeVeTap = await yieldBox.toAmount(
             await bar.tapAssetId(),
             await yieldBox.balanceOf(
-                await bar.feeVeTap(),
+                await bar.feeTo(),
                 await bar.tapAssetId(),
             ),
             false,
@@ -1049,7 +1049,7 @@ describe('MinterSingularity test', () => {
             },
         );
 
-        const feeVeTap = await bar.feeVeTap();
+        const feeVeTap = await bar.feeTo();
         const yieldBoxBalanceOfFeeVeTapShare = await yieldBox.balanceOf(
             feeVeTap,
             await bar.tapAssetId(),

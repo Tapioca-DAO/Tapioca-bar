@@ -357,7 +357,6 @@ contract MinterSingularity is BoringOwnable, ERC20 {
         emit LogWithdrawFees(penrose.feeTo(), balance);
 
         address _feeTo = penrose.feeTo();
-        address _feeVeTap = penrose.feeVeTap();
 
         if (balanceOf[_feeTo] > 0) {
             uint256 feeShares = yieldBox.toShare(
@@ -386,7 +385,7 @@ contract MinterSingularity is BoringOwnable, ERC20 {
                 assetId,
                 penrose.tapAssetId(),
                 swapData.minAssetAmount,
-                _feeVeTap,
+                _feeTo,
                 tapSwapPath,
                 feeShares
             );

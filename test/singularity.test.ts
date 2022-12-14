@@ -742,8 +742,7 @@ describe('Singularity test', () => {
             usdcDepositAndAddCollateral,
             wethDepositAndAddAsset,
             multiSwapper,
-            singularityFeeVeTap,
-            singularityHelper,
+            singularityFeeTo,
             __wethUsdcPrice,
             timeTravel,
         } = await loadFixture(register);
@@ -827,7 +826,7 @@ describe('Singularity test', () => {
         const tapAmountHarvested = await yieldBox.toAmount(
             await bar.tapAssetId(),
             await yieldBox.balanceOf(
-                singularityFeeVeTap.address,
+                singularityFeeTo.address,
                 await bar.tapAssetId(),
             ),
             false,
