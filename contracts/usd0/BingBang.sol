@@ -26,7 +26,7 @@ __/\\\\\\\\\\\\\\\_____/\\\\\\\\\_____/\\\\\\\\\\\\\____/\\\\\\\\\\\_______/\\\\
 
 */
 
-contract MinterSingularity is BoringOwnable, ERC20 {
+contract BingBang is BoringOwnable, ERC20 {
     using RebaseLibrary for Rebase;
     using BoringERC20 for IERC20;
 
@@ -153,17 +153,17 @@ contract MinterSingularity is BoringOwnable, ERC20 {
         require(_isSolvent(from, exchangeRate), 'SGL: insolvent');
     }
 
-    /// @notice Creates the MinterSingularity contract
+    /// @notice Creates the BingBang contract
     constructor(
-        IPenrose tapiocaBar_,
+        IPenrose penrose_,
         IERC20 _collateral,
         uint256 _collateralId,
         IOracle _oracle,
         address[] memory _tapSwapPath,
         address[] memory _collateralSwapPath
     ) {
-        penrose = tapiocaBar_;
-        yieldBox = YieldBox(tapiocaBar_.yieldBox());
+        penrose = penrose_;
+        yieldBox = YieldBox(penrose_.yieldBox());
         owner = address(penrose);
 
         tapSwapPath = _tapSwapPath;
@@ -212,7 +212,7 @@ contract MinterSingularity is BoringOwnable, ERC20 {
         return
             string(
                 abi.encodePacked(
-                    'Tapioca MinterSingularity ',
+                    'Tapioca BingBang ',
                     collateral.safeName(),
                     '/',
                     asset.name(),
