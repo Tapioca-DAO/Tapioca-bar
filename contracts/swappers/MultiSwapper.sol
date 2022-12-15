@@ -49,7 +49,7 @@ contract MultiSwapper is ISwapper {
         uint256 tokenInId,
         uint256 shareIn,
         bytes calldata dexData
-    ) external override view returns (uint256 amountOut) {
+    ) external view override returns (uint256 amountOut) {
         address[] memory path = abi.decode(dexData, (address[]));
         uint256 amountIn = yieldBox.toAmount(tokenInId, shareIn, false);
         uint256[] memory amounts = UniswapV2Library.getAmountsOut(
@@ -71,7 +71,7 @@ contract MultiSwapper is ISwapper {
         uint256 tokenOutId,
         uint256 shareOut,
         bytes calldata dexData
-    ) external override view returns (uint256 amountIn) {
+    ) external view override returns (uint256 amountIn) {
         address[] memory path = abi.decode(dexData, (address[]));
         uint256 amountOut = yieldBox.toAmount(tokenOutId, shareOut, false);
         uint256[] memory amounts = UniswapV2Library.getAmountsIn(
