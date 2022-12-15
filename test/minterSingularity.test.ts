@@ -366,7 +366,7 @@ describe('MinterSingularity test', () => {
             wethMinterSingularity
                 .connect(eoa1)
                 .borrow(eoa1.address, eoa1.address, usdoBorrowVal),
-        ).to.be.revertedWith('SGL: insolvent');
+        ).to.be.revertedWith('BingBang: insolvent');
 
         const totalSupplyBefore = await usd0.totalSupply();
 
@@ -407,10 +407,12 @@ describe('MinterSingularity test', () => {
         expect(yieldBoxBalanceOfFeeToInAsset.eq(0)).to.be.true;
 
         const feeVeTap = await bar.feeVeTap();
-        const tapAssetId = await bar.tapAssetId();
         let yieldBoxBalanceOfFeeVeTap = await yieldBox.toAmount(
-            tapAssetId,
-            await yieldBox.balanceOf(feeVeTap, tapAssetId),
+            await wethMinterSingularity.collateralId(),
+            await yieldBox.balanceOf(
+                feeVeTap,
+                await wethMinterSingularity.collateralId(),
+            ),
             false,
         );
         expect(yieldBoxBalanceOfFeeVeTap.eq(0)).to.be.true;
@@ -445,13 +447,16 @@ describe('MinterSingularity test', () => {
 
         await expect(
             wethMinterSingularity.depositFeesToYieldBox(multiSwapper.address, {
-                minAssetAmount: ethers.BigNumber.from((1e10).toString()),
+                minAssetAmount: '1',
             }),
         ).to.emit(wethMinterSingularity, 'LogYieldBoxFeesDeposit');
 
         yieldBoxBalanceOfFeeVeTap = await yieldBox.toAmount(
-            tapAssetId,
-            await yieldBox.balanceOf(feeVeTap, tapAssetId),
+            await wethMinterSingularity.collateralId(),
+            await yieldBox.balanceOf(
+                feeVeTap,
+                await wethMinterSingularity.collateralId(),
+            ),
             false,
         );
 
@@ -516,7 +521,7 @@ describe('MinterSingularity test', () => {
             wethMinterSingularity
                 .connect(eoa1)
                 .borrow(eoa1.address, eoa1.address, usdoBorrowVal),
-        ).to.be.revertedWith('SGL: insolvent');
+        ).to.be.revertedWith('BingBang: insolvent');
 
         const totalSupplyBefore = await usd0.totalSupply();
 
@@ -546,6 +551,9 @@ describe('MinterSingularity test', () => {
         );
         expect(wethMinterBalance.eq(0)).to.be.true;
 
+        const collateralAddress = await wethMinterSingularity.collateral();
+        const collateralId = await wethMinterSingularity.collateralId();
+
         let yieldBoxBalanceOfFeeToInAsset = await yieldBox.toAmount(
             await wethMinterSingularity.assetId(),
             await yieldBox.balanceOf(
@@ -557,13 +565,12 @@ describe('MinterSingularity test', () => {
         expect(yieldBoxBalanceOfFeeToInAsset.eq(0)).to.be.true;
 
         const feeVeTap = await bar.feeVeTap();
-        const tapAssetId = await bar.tapAssetId();
-        let yieldBoxBalanceOfFeeVeTap = await yieldBox.toAmount(
-            tapAssetId,
-            await yieldBox.balanceOf(feeVeTap, tapAssetId),
+        let yieldBoxBalanceOfFee = await yieldBox.toAmount(
+            collateralId,
+            await yieldBox.balanceOf(feeVeTap, collateralId),
             false,
         );
-        expect(yieldBoxBalanceOfFeeVeTap.eq(0)).to.be.true;
+        expect(yieldBoxBalanceOfFee.eq(0)).to.be.true;
 
         const usd0Extra = ethers.BigNumber.from((1e18).toString()).mul(600);
         await usd0.connect(deployer).mint(eoa1.address, usd0Extra);
@@ -591,22 +598,31 @@ describe('MinterSingularity test', () => {
         expect(userBorrowedAmount.eq(0)).to.be.true;
 
         //deposit fees to yieldBox
+        const assetId = await wethMinterSingularity.assetId();
+        const feeShareIn = await yieldBox.toShare(
+            assetId,
+            await usd0.balanceOf(wethMinterSingularity.address),
+            false,
+        );
+        const calcAmount = await multiSwapper.getOutputAmount(
+            assetId,
+            [usd0.address, collateralAddress],
+            feeShareIn,
+        );
         await expect(
             wethMinterSingularity.depositFeesToYieldBox(multiSwapper.address, {
-                minAssetAmount: ethers.BigNumber.from((1e10).toString()),
+                minAssetAmount: calcAmount.div(2),
             }),
         ).to.emit(wethMinterSingularity, 'LogYieldBoxFeesDeposit');
 
-        yieldBoxBalanceOfFeeVeTap = await yieldBox.toAmount(
-            tapAssetId,
-            await yieldBox.balanceOf(feeVeTap, tapAssetId),
+        yieldBoxBalanceOfFee = await yieldBox.toAmount(
+            collateralId,
+            await yieldBox.balanceOf(feeVeTap, collateralId),
             false,
         );
-        expect(yieldBoxBalanceOfFeeVeTap.gt(0)).to.be.true;
+        expect(yieldBoxBalanceOfFee.gt(0)).to.be.true;
         expect(
-            usdoBorrowValWithFee
-                .sub(usdoBorrowVal)
-                .gte(yieldBoxBalanceOfFeeVeTap),
+            usdoBorrowValWithFee.sub(usdoBorrowVal).gte(yieldBoxBalanceOfFee),
         ).to.be.true;
     });
 
@@ -741,32 +757,33 @@ describe('MinterSingularity test', () => {
         }
 
         //----------------
-        const yieldBoxBalanceOfFeeVeTapBefore = await yieldBox.toAmount(
-            await bar.tapAssetId(),
+        const yieldBoxBalanceOfFeeBefore = await yieldBox.toAmount(
+            await wethMinterSingularity.collateralId(),
             await yieldBox.balanceOf(
-                await bar.feeVeTap(),
-                await bar.tapAssetId(),
+                await wethMinterSingularity.collateral(),
+                await wethMinterSingularity.collateralId(),
             ),
             false,
         );
-        expect(yieldBoxBalanceOfFeeVeTapBefore.eq(0)).to.be.true;
+        expect(yieldBoxBalanceOfFeeBefore.eq(0)).to.be.true;
 
         //deposit fees to yieldBox
         await expect(
             wethMinterSingularity.depositFeesToYieldBox(multiSwapper.address, {
-                minAssetAmount: ethers.BigNumber.from((1e18).toString()),
+                minAssetAmount: '1',
             }),
         ).to.emit(wethMinterSingularity, 'LogYieldBoxFeesDeposit');
 
-        const yieldBoxBalanceOfFeeVeTap = await yieldBox.toAmount(
-            await bar.tapAssetId(),
+        const feeVeTap = await bar.feeVeTap();
+        const yieldBoxBalanceOfFee = await yieldBox.toAmount(
+            await wethMinterSingularity.collateralId(),
             await yieldBox.balanceOf(
-                await bar.feeVeTap(),
-                await bar.tapAssetId(),
+                feeVeTap,
+                await wethMinterSingularity.collateralId(),
             ),
             false,
         );
-        expect(yieldBoxBalanceOfFeeVeTap.gt(0)).to.be.true;
+        expect(yieldBoxBalanceOfFee.gt(0)).to.be.true;
     });
 
     it('should have multiple borrowers, do partial repayments and check fees accrued over time', async () => {
@@ -881,32 +898,32 @@ describe('MinterSingularity test', () => {
         }
 
         //----------------
-        const yieldBoxBalanceOfFeeVeTapBefore = await yieldBox.toAmount(
-            await bar.tapAssetId(),
+        const yieldBoxBalanceOfFeeBefore = await yieldBox.toAmount(
+            await wethMinterSingularity.collateralId(),
             await yieldBox.balanceOf(
-                await bar.feeVeTap(),
-                await bar.tapAssetId(),
+                await wethMinterSingularity.collateral(),
+                await wethMinterSingularity.collateralId(),
             ),
             false,
         );
-        expect(yieldBoxBalanceOfFeeVeTapBefore.eq(0)).to.be.true;
+        expect(yieldBoxBalanceOfFeeBefore.eq(0)).to.be.true;
 
         //deposit fees to yieldBox
         await expect(
             wethMinterSingularity.depositFeesToYieldBox(multiSwapper.address, {
-                minAssetAmount: ethers.BigNumber.from((1e18).toString()),
+                minAssetAmount: '1',
             }),
         ).to.emit(wethMinterSingularity, 'LogYieldBoxFeesDeposit');
 
-        const yieldBoxBalanceOfFeeVeTap = await yieldBox.toAmount(
-            await bar.tapAssetId(),
+        const yieldBoxBalanceOfFeeVe = await yieldBox.toAmount(
+            await wethMinterSingularity.collateralId(),
             await yieldBox.balanceOf(
                 await bar.feeVeTap(),
-                await bar.tapAssetId(),
+                await wethMinterSingularity.collateralId(),
             ),
             false,
         );
-        expect(yieldBoxBalanceOfFeeVeTap.gt(0)).to.be.true;
+        expect(yieldBoxBalanceOfFeeVe.gt(0)).to.be.true;
 
         for (var i = 0; i < eoas.length; i++) {
             timeTravel(10 * 86400);
@@ -935,20 +952,20 @@ describe('MinterSingularity test', () => {
         const balance = await usd0.balanceOf(wethMinterSingularity.address);
         await expect(
             wethMinterSingularity.depositFeesToYieldBox(multiSwapper.address, {
-                minAssetAmount: ethers.BigNumber.from((1e18).toString()),
+                minAssetAmount: '1',
             }),
         ).to.emit(wethMinterSingularity, 'LogYieldBoxFeesDeposit');
 
-        const yieldBoxFinalBalanceOfFeeVeTap = await yieldBox.toAmount(
-            await bar.tapAssetId(),
+        const yieldBoxFinalBalanceOfFeeVe = await yieldBox.toAmount(
+            await wethMinterSingularity.collateralId(),
             await yieldBox.balanceOf(
                 await bar.feeVeTap(),
-                await bar.tapAssetId(),
+                await wethMinterSingularity.collateralId(),
             ),
             false,
         );
-        expect(yieldBoxFinalBalanceOfFeeVeTap.gt(yieldBoxBalanceOfFeeVeTap)).to
-            .be.true;
+        expect(yieldBoxFinalBalanceOfFeeVe.gt(yieldBoxBalanceOfFeeVe)).to.be
+            .true;
     });
 
     it('should perform multiple borrow operations, repay everything and withdraw fees', async () => {
@@ -1052,15 +1069,15 @@ describe('MinterSingularity test', () => {
         const feeVeTap = await bar.feeVeTap();
         const yieldBoxBalanceOfFeeVeTapShare = await yieldBox.balanceOf(
             feeVeTap,
-            await bar.tapAssetId(),
+            await wethMinterSingularity.collateralId(),
         );
-        const yieldBoxBalanceOfFeeVeTapAmount = await yieldBox.toAmount(
-            await bar.tapAssetId(),
+        const yieldBoxBalanceOfFeeVeAmount = await yieldBox.toAmount(
+            await wethMinterSingularity.collateralId(),
             yieldBoxBalanceOfFeeVeTapShare,
             false,
         );
 
-        expect(yieldBoxBalanceOfFeeVeTapAmount.gt(0)).to.be.true;
+        expect(yieldBoxBalanceOfFeeVeAmount.gt(0)).to.be.true;
     });
 
     it('should allow initialization with wrong values', async () => {
@@ -1076,10 +1093,8 @@ describe('MinterSingularity test', () => {
                 ethers.constants.AddressZero,
                 1,
                 ethers.constants.AddressZero,
-                [],
-                [],
             ),
-        ).to.be.revertedWith('SGL: bad pair');
+        ).to.be.revertedWith('BingBang: bad pair');
     });
 
     it('should not allow depositing fees with invalid swapper', async () => {
@@ -1092,7 +1107,7 @@ describe('MinterSingularity test', () => {
                 ethers.constants.AddressZero,
                 { minAssetAmount: 1 },
             ),
-        ).to.be.revertedWith('SGL: Invalid swapper');
+        ).to.be.revertedWith('BingBang: Invalid swapper');
 
         await expect(
             wethMinterSingularity.depositFeesToYieldBox(multiSwapper.address, {
@@ -1105,14 +1120,6 @@ describe('MinterSingularity test', () => {
         const { wethMinterSingularity, collateralSwapPath, tapSwapPath, eoa1 } =
             await loadFixture(register);
 
-        await expect(
-            wethMinterSingularity
-                .connect(eoa1)
-                .setCollateralSwapPath(collateralSwapPath),
-        ).to.be.reverted;
-        await expect(
-            wethMinterSingularity.connect(eoa1).setTapSwapPath(tapSwapPath),
-        ).to.be.reverted;
         await expect(wethMinterSingularity.connect(eoa1).setBorrowCap(100)).to
             .be.reverted;
         await expect(
@@ -1122,21 +1129,14 @@ describe('MinterSingularity test', () => {
             wethMinterSingularity.updateStabilityFee(
                 ethers.utils.parseEther('1'),
             ),
-        ).to.be.revertedWith('SGL: value not valid');
+        ).to.be.revertedWith('BingBang: value not valid');
         await expect(
             wethMinterSingularity.connect(eoa1).updateBorrowingFee(100),
         ).to.be.reverted;
         await expect(
             wethMinterSingularity.updateBorrowingFee(1e5),
-        ).to.be.revertedWith('SGL: value not valid');
+        ).to.be.revertedWith('BingBang: value not valid');
 
-        await expect(
-            wethMinterSingularity.setCollateralSwapPath(collateralSwapPath),
-        ).to.emit(wethMinterSingularity, 'LogCollateralSwapPath');
-        await expect(wethMinterSingularity.setTapSwapPath(tapSwapPath)).to.emit(
-            wethMinterSingularity,
-            'LogTapSwapPath',
-        );
         await expect(wethMinterSingularity.setBorrowCap(100)).to.emit(
             wethMinterSingularity,
             'LogBorrowCapUpdated',
@@ -1201,6 +1201,6 @@ describe('MinterSingularity test', () => {
                 deployer.address,
                 usdoBorrowVal,
             ),
-        ).to.be.revertedWith('SGL: borrow cap reached');
+        ).to.be.revertedWith('BingBang: borrow cap reached');
     });
 });

@@ -277,7 +277,7 @@ contract SGLLiquidation is SGLCommon {
             assetId,
             minAssetMount,
             address(this),
-            collateralSwapPath,
+            _collateralToAssetSwapPath(),
             allCollateralShare
         );
 

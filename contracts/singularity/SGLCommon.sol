@@ -172,6 +172,27 @@ contract SGLCommon is SGLStorage {
     // ************************** //
     // *** PRIVATE FUNCTIONS *** //
     // ************************* //
+    /// @notice construct Uniswap path
+    function _collateralToAssetSwapPath()
+        internal
+        view
+        returns (address[] memory path)
+    {
+        path = new address[](2);
+        path[0] = address(collateral);
+        path[1] = address(asset);
+    }
+
+    function _assetToCollateralSwapPath()
+        internal
+        view
+        returns (address[] memory path)
+    {
+        path = new address[](2);
+        path[0] = address(asset);
+        path[1] = address(collateral);
+    }
+
     /// @notice Concrete implementation of `isSolvent`. Includes a parameter to allow caching `exchangeRate`.
     /// @param _exchangeRate The exchange rate. Used to cache the `exchangeRate` between calls.
     function _isSolvent(address user, uint256 _exchangeRate)

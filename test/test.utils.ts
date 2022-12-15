@@ -869,8 +869,6 @@ async function registerMinterSingularity(
     wethCollateral: WETH9Mock,
     wethCollateralId: BigNumberish,
     oracle: OracleMock,
-    tapSwapPath: string[],
-    collateralSwapPath: string[],
     staging?: boolean,
 ) {
     const wethMinterSingularity = await (
@@ -880,32 +878,17 @@ async function registerMinterSingularity(
         wethCollateral.address,
         wethCollateralId,
         oracle.address,
-        tapSwapPath,
-        collateralSwapPath,
         { gasPrice: gasPrice },
     );
     await wethMinterSingularity.deployed();
     log(
-        `Deployed WethMinterSingularity ${
-            wethMinterSingularity.address
-        } with args [${bar.address},${
-            wethCollateral.address
-        },${wethCollateralId},${oracle.address},${JSON.stringify(
-            tapSwapPath,
-        )},${JSON.stringify(collateralSwapPath)}]`,
+        `Deployed WethMinterSingularity ${wethMinterSingularity.address} with args [${bar.address},${wethCollateral.address},${wethCollateralId},${oracle.address}]`,
         staging,
     );
 
     await verifyEtherscan(
         wethMinterSingularity.address,
-        [
-            bar.address,
-            wethCollateral.address,
-            wethCollateralId,
-            oracle.address,
-            tapSwapPath,
-            collateralSwapPath,
-        ],
+        [bar.address, wethCollateral.address, wethCollateralId, oracle.address],
         staging,
     );
 
@@ -1121,8 +1104,6 @@ export async function register(staging?: boolean) {
         weth,
         wethAssetId,
         usd0WethOracle,
-        minterSingularityTapSwapPath,
-        minterSingularityCollateralSwapPath,
         staging,
     );
     log(

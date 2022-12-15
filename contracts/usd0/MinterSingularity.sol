@@ -11,6 +11,8 @@ import '../swappers/IMultiSwapper.sol';
 import '../singularity/interfaces/IOracle.sol';
 import '../../yieldbox/contracts/YieldBox.sol';
 
+import 'hardhat/console.sol';
+
 // solhint-disable max-line-length
 /*
 
@@ -68,8 +70,6 @@ contract MinterSingularity is BoringOwnable, ERC20 {
 
     IOracle oracle;
     bytes public oracleData;
-    address[] tapSwapPath; // Asset -> Tap
-    address[] collateralSwapPath; // Collateral -> Asset
 
     //errors
     error NotApproved(address _from, address _operator);
@@ -112,8 +112,6 @@ contract MinterSingularity is BoringOwnable, ERC20 {
     event LogBorrowCapUpdated(uint256 _oldVal, uint256 _newVal);
     event LogStabilityFee(uint256 _oldFee, uint256 _newFee);
     event LogBorrowingFee(uint256 _oldVal, uint256 _newVal);
-    event LogCollateralSwapPath();
-    event LogTapSwapPath();
 
     // ***************** //
     // *** CONSTANTS *** //
@@ -150,7 +148,7 @@ contract MinterSingularity is BoringOwnable, ERC20 {
     /// @dev Checks if the user is solvent in the closed liquidation case at the end of the function body.
     modifier solvent(address from) {
         _;
-        require(_isSolvent(from, exchangeRate), 'SGL: insolvent');
+        require(_isSolvent(from, exchangeRate), 'BingBang: insolvent');
     }
 
     /// @notice Creates the MinterSingularity contract
@@ -158,16 +156,11 @@ contract MinterSingularity is BoringOwnable, ERC20 {
         IPenrose tapiocaBar_,
         IERC20 _collateral,
         uint256 _collateralId,
-        IOracle _oracle,
-        address[] memory _tapSwapPath,
-        address[] memory _collateralSwapPath
+        IOracle _oracle
     ) {
         penrose = tapiocaBar_;
         yieldBox = YieldBox(tapiocaBar_.yieldBox());
         owner = address(penrose);
-
-        tapSwapPath = _tapSwapPath;
-        collateralSwapPath = _collateralSwapPath;
 
         address _asset = penrose.usdoToken();
 
@@ -175,7 +168,7 @@ contract MinterSingularity is BoringOwnable, ERC20 {
             address(_collateral) != address(0) &&
                 address(_asset) != address(0) &&
                 address(_oracle) != address(0),
-            'SGL: bad pair'
+            'BingBang: bad pair'
         );
 
         asset = IUSD0(_asset);
@@ -349,7 +342,7 @@ contract MinterSingularity is BoringOwnable, ERC20 {
         IMultiSwapper swapper,
         IPenrose.SwapData calldata swapData
     ) public {
-        require(penrose.swappers(swapper), 'SGL: Invalid swapper');
+        require(penrose.swappers(swapper), 'BingBang: Invalid swapper');
 
         uint256 balance = asset.balanceOf(address(this));
         balanceOf[penrose.feeTo()] += balance;
@@ -382,16 +375,16 @@ contract MinterSingularity is BoringOwnable, ERC20 {
                 assetId,
                 feeShares
             );
-            (uint256 tapAmount, ) = swapper.swap(
+            (uint256 colAmount, ) = swapper.swap(
                 assetId,
-                penrose.tapAssetId(),
+                collateralId,
                 swapData.minAssetAmount,
                 _feeVeTap,
-                tapSwapPath,
+                _assetToCollateralSwapPath(),
                 feeShares
             );
 
-            emit LogYieldBoxFeesDeposit(feeShares, tapAmount);
+            emit LogYieldBoxFeesDeposit(feeShares, colAmount);
         }
     }
 
@@ -422,24 +415,6 @@ contract MinterSingularity is BoringOwnable, ERC20 {
     // *********************** //
     // *** OWNER FUNCTIONS *** //
     // *********************** //
-
-    /// @notice Used to set the swap path of closed liquidations
-    /// @param _collateralSwapPath The Uniswap path .
-    function setCollateralSwapPath(address[] calldata _collateralSwapPath)
-        public
-        onlyOwner
-    {
-        collateralSwapPath = _collateralSwapPath;
-        emit LogCollateralSwapPath();
-    }
-
-    /// @notice Used to set the swap path of Asset -> TAP
-    /// @param _tapSwapPath The Uniswap path .
-    function setTapSwapPath(address[] calldata _tapSwapPath) public onlyOwner {
-        tapSwapPath = _tapSwapPath;
-        emit LogTapSwapPath();
-    }
-
     /// @notice sets max borrowable amount
     function setBorrowCap(uint256 _cap) external onlyOwner {
         emit LogBorrowCapUpdated(totalBorrowCap, _cap);
@@ -449,7 +424,10 @@ contract MinterSingularity is BoringOwnable, ERC20 {
     /// @notice Updates the stability fee
     /// @param _stabilityFee the new value
     function updateStabilityFee(uint64 _stabilityFee) external onlyOwner {
-        require(_stabilityFee <= MAX_STABILITY_FEE, 'SGL: value not valid');
+        require(
+            _stabilityFee <= MAX_STABILITY_FEE,
+            'BingBang: value not valid'
+        );
         emit LogStabilityFee(accrueInfo.stabilityFee, _stabilityFee);
         accrueInfo.stabilityFee = _stabilityFee;
     }
@@ -457,7 +435,10 @@ contract MinterSingularity is BoringOwnable, ERC20 {
     /// @notice Updates the borrowing fee
     /// @param _borrowingFee the new value
     function updateBorrowingFee(uint256 _borrowingFee) external onlyOwner {
-        require(_borrowingFee <= MAX_BORROWING_FEE, 'SGL: value not valid');
+        require(
+            _borrowingFee <= MAX_BORROWING_FEE,
+            'BingBang: value not valid'
+        );
         emit LogBorrowingFee(borrowingFee, _borrowingFee);
         borrowingFee = _borrowingFee;
     }
@@ -465,6 +446,27 @@ contract MinterSingularity is BoringOwnable, ERC20 {
     // ************************* //
     // *** PRIVATE FUNCTIONS *** //
     // ************************* //
+
+    /// @notice construct Uniswap path
+    function _collateralToAssetSwapPath()
+        private
+        view
+        returns (address[] memory path)
+    {
+        path = new address[](2);
+        path[0] = address(collateral);
+        path[1] = address(asset);
+    }
+
+    function _assetToCollateralSwapPath()
+        private
+        view
+        returns (address[] memory path)
+    {
+        path = new address[](2);
+        path[0] = address(asset);
+        path[1] = address(collateral);
+    }
 
     /// @notice Concrete implementation of `isSolvent`. Includes a parameter to allow caching `exchangeRate`.
     /// @param _exchangeRate The exchange rate. Used to cache the `exchangeRate` between calls.
@@ -546,7 +548,7 @@ contract MinterSingularity is BoringOwnable, ERC20 {
                 allBorrowPart += borrowPart;
             }
         }
-        require(allBorrowAmount != 0, 'SGL: solvent');
+        require(allBorrowAmount != 0, 'BingBang: solvent');
         _totalBorrow.elastic -= uint128(allBorrowAmount);
         _totalBorrow.base -= uint128(allBorrowPart);
         totalBorrow = _totalBorrow;
@@ -559,7 +561,7 @@ contract MinterSingularity is BoringOwnable, ERC20 {
         );
 
         // Closed liquidation using a pre-approved swapper
-        require(penrose.swappers(swapper), 'SGL: Invalid swapper');
+        require(penrose.swappers(swapper), 'BingBang: Invalid swapper');
 
         // Swaps the users collateral for the borrowed asset
         yieldBox.transfer(
@@ -579,7 +581,7 @@ contract MinterSingularity is BoringOwnable, ERC20 {
             assetId,
             minAssetMount,
             address(this),
-            collateralSwapPath,
+            _collateralToAssetSwapPath(),
             allCollateralShare
         );
         uint256 balanceAfter = yieldBox.balanceOf(address(this), assetId);
@@ -591,7 +593,7 @@ contract MinterSingularity is BoringOwnable, ERC20 {
 
         require(
             feeShare + callerShare == extraShare,
-            'SGL: fee values not valid'
+            'BingBang: fee values not valid'
         );
 
         yieldBox.transfer(address(this), penrose.feeTo(), assetId, feeShare);
@@ -616,7 +618,7 @@ contract MinterSingularity is BoringOwnable, ERC20 {
         if (skim) {
             require(
                 share <= yieldBox.balanceOf(address(this), _tokenId) - total,
-                'SGL: too much'
+                'BingBang: too much'
             );
         } else {
             yieldBox.transfer(from, address(this), _tokenId, share);
@@ -670,7 +672,7 @@ contract MinterSingularity is BoringOwnable, ERC20 {
         (totalBorrow, part) = totalBorrow.add(amount + feeAmount, true);
         require(
             totalBorrowCap == 0 || totalBorrow.base <= totalBorrowCap,
-            'SGL: borrow cap reached'
+            'BingBang: borrow cap reached'
         );
 
         userBorrowPart[from] += part;

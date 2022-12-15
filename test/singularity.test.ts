@@ -824,11 +824,11 @@ describe('Singularity test', () => {
             ),
         ).to.emit(wethUsdcSingularity, 'LogYieldBoxFeesDeposit');
 
-        const tapAmountHarvested = await yieldBox.toAmount(
-            await bar.tapAssetId(),
+        const amountHarvested = await yieldBox.toAmount(
+            await wethUsdcSingularity.collateralId(),
             await yieldBox.balanceOf(
                 singularityFeeVeTap.address,
-                await bar.tapAssetId(),
+                await wethUsdcSingularity.collateralId(),
             ),
             false,
         );
@@ -836,7 +836,7 @@ describe('Singularity test', () => {
         const acceptableHarvestMargin = feesAmountInAsset.sub(
             feesAmountInAsset.mul(31).div(10000),
         );
-        expect(tapAmountHarvested.gte(acceptableHarvestMargin)).to.be.true;
+        expect(amountHarvested.gte(acceptableHarvestMargin)).to.be.true;
     });
 
     it('Should make a flashloan', async () => {
@@ -1008,32 +1008,6 @@ describe('Singularity test', () => {
                 share,
             ),
         ).to.be.revertedWith('SGL: min limit');
-    });
-
-    it('should set new swap paths', async () => {
-        const { collateralSwapPath, tapSwapPath, wethUsdcSingularity, bar } =
-            await loadFixture(register);
-
-        const collateralSwapCalldata =
-            wethUsdcSingularity.interface.encodeFunctionData(
-                'setCollateralSwapPath',
-                [collateralSwapPath],
-            );
-        await bar.executeSingularityFn(
-            [wethUsdcSingularity.address],
-            [collateralSwapCalldata],
-            true,
-        );
-
-        const tapSwapCalldata =
-            wethUsdcSingularity.interface.encodeFunctionData('setTapSwapPath', [
-                tapSwapPath,
-            ]);
-        await bar.executeSingularityFn(
-            [wethUsdcSingularity.address],
-            [tapSwapCalldata],
-            true,
-        );
     });
 
     it('deposit fees to yieldbox should not work for inexistent swapper', async () => {

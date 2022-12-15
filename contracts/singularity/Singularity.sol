@@ -52,9 +52,7 @@ contract Singularity is SGLCommon {
             uint256 _assetId,
             IERC20 _collateral,
             uint256 _collateralId,
-            IOracle _oracle,
-            address[] memory _collateralSwapPath,
-            address[] memory _tapSwapPath
+            IOracle _oracle
         ) = abi.decode(
                 data,
                 (
@@ -65,9 +63,7 @@ contract Singularity is SGLCommon {
                     uint256,
                     IERC20,
                     uint256,
-                    IOracle,
-                    address[],
-                    address[]
+                    IOracle
                 )
             );
 
@@ -88,8 +84,6 @@ contract Singularity is SGLCommon {
         assetId = _assetId;
         collateralId = _collateralId;
         oracle = _oracle;
-        collateralSwapPath = _collateralSwapPath;
-        tapSwapPath = _tapSwapPath;
 
         accrueInfo.interestPerSecond = uint64(STARTING_INTEREST_PER_SECOND); // 1% APR, with 1e18 being 100%
 
@@ -384,16 +378,16 @@ contract Singularity is SGLCommon {
 
         yieldBox.transfer(address(this), address(swapper), assetId, feeShares);
 
-        (uint256 tapAmount, ) = swapper.swap(
+        (uint256 ethAmount, ) = swapper.swap(
             assetId,
-            penrose.tapAssetId(),
+            collateralId,
             swapData.minAssetAmount,
             _feeVeTap,
-            tapSwapPath,
+            _assetToCollateralSwapPath(),
             feeShares
         );
 
-        emit LogYieldBoxFeesDeposit(feeShares, tapAmount);
+        emit LogYieldBoxFeesDeposit(feeShares, ethAmount);
     }
 
     /// @notice Withdraw to another layer
@@ -434,21 +428,6 @@ contract Singularity is SGLCommon {
     // *********************** //
     // *** OWNER FUNCTIONS *** //
     // *********************** //
-    /// @notice Used to set the swap path of closed liquidations
-    /// @param _collateralSwapPath The Uniswap path .
-    function setCollateralSwapPath(address[] calldata _collateralSwapPath)
-        public
-        onlyOwner
-    {
-        collateralSwapPath = _collateralSwapPath;
-    }
-
-    /// @notice Used to set the swap path of Asset -> TAP
-    /// @param _tapSwapPath The Uniswap path .
-    function setTapSwapPath(address[] calldata _tapSwapPath) public onlyOwner {
-        tapSwapPath = _tapSwapPath;
-    }
-
     /// @notice Set a new LiquidationQueue.
     /// @param _liquidationQueue The address of the new LiquidationQueue contract.
     function setLiquidationQueue(ILiquidationQueue _liquidationQueue)
@@ -478,6 +457,8 @@ contract Singularity is SGLCommon {
     // ************************* //
     // *** PRIVATE FUNCTIONS *** //
     // ************************* //
+   
+
     function _getRevertMsg(bytes memory _returnData)
         private
         pure
