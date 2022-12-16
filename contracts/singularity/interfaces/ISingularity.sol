@@ -224,6 +224,22 @@ interface ISingularity {
         view
         returns (uint128 elastic, uint128 base);
 
+    function callerFee() external view returns (uint256);
+
+    function protocolFee() external view returns (uint256);
+
+    function borrowOpeningFee() external view returns (uint256);
+
+    function flashloanFee() external view returns (uint256);
+
+    function liquidationMultiplier() external view returns (uint256);
+
+    function orderBookLiquidationMultiplier() external view returns (uint256);
+
+    function closedCollateralizationRate() external view returns (uint256);
+
+    function lqCollateralizationRate() external view returns (uint256);
+
     function totalCollateralShare() external view returns (uint256);
 
     function totalSupply() external view returns (uint256);
