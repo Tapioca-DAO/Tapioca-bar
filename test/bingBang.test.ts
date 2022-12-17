@@ -4,7 +4,7 @@ import { register } from './test.utils';
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 import _ from 'lodash';
 
-describe('MinterSingularity test', () => {
+describe('BingBang test', () => {
     it('should test initial values', async () => {
         const { wethMinterSingularity, usd0, bar, weth, wethAssetId } =
             await loadFixture(register);
@@ -1067,7 +1067,7 @@ describe('MinterSingularity test', () => {
         const { bar } = await loadFixture(register);
 
         const minterFactory = await ethers.getContractFactory(
-            'MinterSingularity',
+            'BingBang',
         );
 
         await expect(
