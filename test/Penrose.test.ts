@@ -7,7 +7,7 @@ describe('Penrose test', () => {
     it('Should display Tapioca markets', async () => {
         const { bar } = await loadFixture(register);
 
-        const markets = await bar.tapiocaMarkets();
+        const markets = await bar.singularityMarkets();
 
         expect(markets.length).equal(1);
     });
@@ -15,7 +15,7 @@ describe('Penrose test', () => {
     it('should return length of master contracts', async () => {
         const { bar } = await loadFixture(register);
 
-        const length = await bar.masterContractLength();
+        const length = await bar.singularityMasterContractLength();
 
         expect(length.gt(0)).to.be.true;
     });
@@ -36,7 +36,7 @@ describe('Penrose test', () => {
         const { bar, mediumRiskMC } = await loadFixture(register);
 
         await expect(
-            bar.registerMasterContract(mediumRiskMC.address, 1),
+            bar.registerSingularityMasterContract(mediumRiskMC.address, 1),
         ).to.be.revertedWith('Penrose: MC registered');
     });
 
@@ -44,7 +44,7 @@ describe('Penrose test', () => {
         const { bar } = await loadFixture(register);
 
         await expect(
-            bar.executeSingularityFn(
+            bar.executeMarketFn(
                 [ethers.constants.AddressZero],
                 [ethers.utils.toUtf8Bytes('')],
                 true,
@@ -54,7 +54,7 @@ describe('Penrose test', () => {
 
     it('should list all singularity registered markets', async () => {
         const { bar } = await loadFixture(register);
-        const markets = await bar.tapiocaMarkets();
+        const markets = await bar.singularityMarkets();
         expect(markets[0]).to.not.eq(ethers.constants.AddressZero);
     });
 
@@ -66,11 +66,11 @@ describe('Penrose test', () => {
         ).deploy();
         await newMC.deployed();
 
-        const mcLengthBefore = await bar.masterContractLength();
+        const mcLengthBefore = await bar.singularityMasterContractLength();
 
-        await (await bar.registerMasterContract(newMC.address, 1)).wait();
+        await (await bar.registerSingularityMasterContract(newMC.address, 1)).wait();
 
-        const mcLength = await bar.masterContractLength();
+        const mcLength = await bar.singularityMasterContractLength();
         expect(mcLength.eq(mcLengthBefore.add(1))).to.be.true;
     });
 
@@ -78,7 +78,7 @@ describe('Penrose test', () => {
         const { bar } = await loadFixture(register);
 
         await expect(
-            bar.withdrawAllProtocolFees(
+            bar.withdrawAllSingularityFees(
                 [ethers.constants.AddressZero],
                 [
                     {

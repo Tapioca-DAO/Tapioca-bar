@@ -17,7 +17,7 @@ export const setPath = async (
         [taskArgs['path']],
     );
 
-    await penroseContract.executeSingularityFn([singularityAddress], [callData],true);
+    await penroseContract.executeMarketFn([singularityAddress], [callData],true);
 };
 
 export const setCollateralSwapPath__task = async (

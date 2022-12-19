@@ -27,10 +27,12 @@ contract Penrose is BoringOwnable {
     uint256 public usdoAssetId;
 
     /// @notice master contracts registered
-    IPenrose.MasterContract[] public masterContracts;
+    IPenrose.MasterContract[] public singularityMasterContracts;
+    IPenrose.MasterContract[] public bingbangMasterContracts;
 
-    // Used to check if a master contract is registered to be used as a Singularity template
-    mapping(address => bool) isMasterContractRegistered;
+    // Used to check if a master contract is registered
+    mapping(address => bool) isSingularityMasterContractRegistered;
+    mapping(address => bool) isBingBangMasterContractRegistered;
 
     /// @notice protocol fees
     address public feeTo;
@@ -60,10 +62,17 @@ contract Penrose is BoringOwnable {
     // **************//
     // *** EVENTS *** //
     // ************** //
-
     event ProtocolWithdrawal(address[] markets, uint256 timestamp);
-    event RegisterMasterContract(address location, IPenrose.ContractType risk);
+    event RegisterSingularityMasterContract(
+        address location,
+        IPenrose.ContractType risk
+    );
+    event RegisterBingBangMasterContract(
+        address location,
+        IPenrose.ContractType risk
+    );
     event RegisterSingularity(address location, address masterContract);
+    event RegisterBingBang(address location, address masterContract);
     event FeeToUpdate(address newFeeTo);
     event FeeVeTapUpdate(address newFeeVeTap);
     event SwapperUpdate(address swapper, bool isRegistered);
@@ -72,9 +81,17 @@ contract Penrose is BoringOwnable {
     // ******************//
     // *** MODIFIERS *** //
     // ***************** //
-    modifier registeredMasterContract(address mc) {
+    modifier registeredSingularityMasterContract(address mc) {
         require(
-            isMasterContractRegistered[mc] == true,
+            isSingularityMasterContractRegistered[mc] == true,
+            'Penrose: MC not registered'
+        );
+        _;
+    }
+
+    modifier registeredBingBangMasterContract(address mc) {
+        require(
+            isBingBangMasterContractRegistered[mc] == true,
             'Penrose: MC not registered'
         );
         _;
@@ -86,46 +103,28 @@ contract Penrose is BoringOwnable {
 
     /// @notice Get all the Singularity contract addresses
     /// @return markets list of available markets
-    function tapiocaMarkets() public view returns (address[] memory markets) {
-        uint256 _masterContractLength = masterContracts.length;
-        uint256 marketsLength = 0;
-
-        unchecked {
-            // We first compute the length of the markets array
-            for (uint256 i = 0; i < _masterContractLength; ) {
-                marketsLength += yieldBox.clonesOfCount(
-                    masterContracts[i].location
-                );
-
-                ++i;
-            }
-        }
-
-        markets = new address[](marketsLength);
-
-        uint256 marketIndex;
-        uint256 clonesOfLength;
-
-        unchecked {
-            // We populate the array
-            for (uint256 i = 0; i < _masterContractLength; ) {
-                address mcLocation = masterContracts[i].location;
-                clonesOfLength = yieldBox.clonesOfCount(mcLocation);
-
-                // Loop through clones of the current MC.
-                for (uint256 j = 0; j < clonesOfLength; ) {
-                    markets[marketIndex] = yieldBox.clonesOf(mcLocation, j);
-                    ++marketIndex;
-                    ++j;
-                }
-                ++i;
-            }
-        }
+    function singularityMarkets()
+        public
+        view
+        returns (address[] memory markets)
+    {
+        markets = _getMasterContractLength(singularityMasterContracts);
     }
 
-    /// @notice Get the length of `masterContracts`
-    function masterContractLength() public view returns (uint256) {
-        return masterContracts.length;
+    /// @notice Get all the BingBang contract addresses
+    /// @return markets list of available markets
+    function bingBangMarkets() public view returns (address[] memory markets) {
+        markets = _getMasterContractLength(bingbangMasterContracts);
+    }
+
+    /// @notice Get the length of `singularityMasterContracts`
+    function singularityMasterContractLength() public view returns (uint256) {
+        return singularityMasterContracts.length;
+    }
+
+    /// @notice Get the length of `bingbangMasterContracts`
+    function bingBangMasterContractLength() public view returns (uint256) {
+        return bingbangMasterContracts.length;
     }
 
     // ************************ //
@@ -136,27 +135,40 @@ contract Penrose is BoringOwnable {
     /// @dev `swappers_` can have one element that'll be used for all clones. Or one swapper per MasterContract.
     /// @dev Fees are withdrawn in TAP and sent to the FeeDistributor contract
     /// @param swappers_ One or more swappers to convert the asset to TAP.
-    function withdrawAllProtocolFees(
+    function withdrawAllSingularityFees(
         IMultiSwapper[] calldata swappers_,
         IPenrose.SwapData[] calldata swapData_
     ) public {
         require(address(swappers_[0]) != address(0), 'Penrose: zero address');
+        address[] memory markets = singularityMarkets();
 
-        uint256 _masterContractLength = masterContracts.length;
-        bool singleSwapper = swappers_.length != _masterContractLength;
+        _withdrawAllProtocolFees(
+            swappers_,
+            swapData_,
+            singularityMasterContracts,
+            markets
+        );
 
-        address[] memory markets = tapiocaMarkets();
-        uint256 length = markets.length;
+        emit ProtocolWithdrawal(markets, block.timestamp);
+    }
 
-        unchecked {
-            for (uint256 i = 0; i < length; ) {
-                ISingularity(markets[i]).depositFeesToYieldBox(
-                    singleSwapper ? swappers_[0] : swappers_[i],
-                    singleSwapper ? swapData_[0] : swapData_[i]
-                );
-                ++i;
-            }
-        }
+    /// @notice Loop through the master contracts and call `depositFeesToYieldBox()` to each one of their clones.
+    /// @dev `swappers_` can have one element that'll be used for all clones. Or one swapper per MasterContract.
+    /// @dev Fees are withdrawn in TAP and sent to the FeeDistributor contract
+    /// @param swappers_ One or more swappers to convert the asset to TAP.
+    function withdrawAllBingBangFees(
+        IMultiSwapper[] calldata swappers_,
+        IPenrose.SwapData[] calldata swapData_
+    ) public {
+        require(address(swappers_[0]) != address(0), 'Penrose: zero address');
+        address[] memory markets = bingBangMarkets();
+
+        _withdrawAllProtocolFees(
+            swappers_,
+            swapData_,
+            bingbangMasterContracts,
+            markets
+        );
 
         emit ProtocolWithdrawal(markets, block.timestamp);
     }
@@ -181,28 +193,49 @@ contract Penrose is BoringOwnable {
         emit UsdoTokenUpdated(_usdoToken, usdoAssetId);
     }
 
-    /// @notice Register a master contract
+    /// @notice Register a Singularity master contract
     /// @param mcAddress The address of the contract
     /// @param contractType_ The risk type of the contract
-    function registerMasterContract(
+    function registerSingularityMasterContract(
         address mcAddress,
         IPenrose.ContractType contractType_
     ) external onlyOwner {
         require(
-            isMasterContractRegistered[mcAddress] == false,
+            isSingularityMasterContractRegistered[mcAddress] == false,
             'Penrose: MC registered'
         );
 
         IPenrose.MasterContract memory mc;
         mc.location = mcAddress;
         mc.risk = contractType_;
-        masterContracts.push(mc);
-        isMasterContractRegistered[mcAddress] = true;
+        singularityMasterContracts.push(mc);
+        isSingularityMasterContractRegistered[mcAddress] = true;
 
-        emit RegisterMasterContract(mcAddress, contractType_);
+        emit RegisterSingularityMasterContract(mcAddress, contractType_);
     }
 
-    /// @notice Registera a Singularity
+    /// @notice Register a BingBang master contract
+    /// @param mcAddress The address of the contract
+    /// @param contractType_ The risk type of the contract
+    function registerBingBangMasterContract(
+        address mcAddress,
+        IPenrose.ContractType contractType_
+    ) external onlyOwner {
+        require(
+            isBingBangMasterContractRegistered[mcAddress] == false,
+            'Penrose: MC registered'
+        );
+
+        IPenrose.MasterContract memory mc;
+        mc.location = mcAddress;
+        mc.risk = contractType_;
+        bingbangMasterContracts.push(mc);
+        isBingBangMasterContractRegistered[mcAddress] = true;
+
+        emit RegisterBingBangMasterContract(mcAddress, contractType_);
+    }
+
+    /// @notice Registers a Singularity market
     /// @param mc The address of the master contract which must be already registered
     /// @param data The init data of the Singularity
     /// @param useCreate2 Whether to use create2 or not
@@ -214,15 +247,34 @@ contract Penrose is BoringOwnable {
         external
         payable
         onlyOwner
-        registeredMasterContract(mc)
+        registeredSingularityMasterContract(mc)
         returns (address _contract)
     {
         _contract = yieldBox.deploy(mc, data, useCreate2);
         emit RegisterSingularity(_contract, mc);
     }
 
-    /// @notice Execute an only owner function inside of a Singularity market
-    function executeSingularityFn(
+    /// @notice Registers a BingBang market
+    /// @param mc The address of the master contract which must be already registered
+    /// @param data The init data of the BingBang contract
+    /// @param useCreate2 Whether to use create2 or not
+    function registerBingBang(
+        address mc,
+        bytes calldata data,
+        bool useCreate2
+    )
+        external
+        payable
+        onlyOwner
+        registeredBingBangMasterContract(mc)
+        returns (address _contract)
+    {
+        _contract = yieldBox.deploy(mc, data, useCreate2);
+        emit RegisterBingBang(_contract, mc);
+    }
+
+    /// @notice Execute an only owner function inside of a Singularity or a BingBang market
+    function executeMarketFn(
         address[] calldata mc,
         bytes[] memory data,
         bool forceSuccess
@@ -236,7 +288,12 @@ contract Penrose is BoringOwnable {
         result = new bytes[](len);
         for (uint256 i = 0; i < len; ) {
             require(
-                isMasterContractRegistered[yieldBox.masterContractOf(mc[i])],
+                isSingularityMasterContractRegistered[
+                    yieldBox.masterContractOf(mc[i])
+                ] ||
+                    isBingBangMasterContractRegistered[
+                        yieldBox.masterContractOf(mc[i])
+                    ],
                 'Penrose: MC not registered'
             );
             (success[i], result[i]) = mc[i].call(data[i]);
@@ -284,5 +341,66 @@ contract Penrose is BoringOwnable {
             _returnData := add(_returnData, 0x04)
         }
         return abi.decode(_returnData, (string)); // All that remains is the revert string
+    }
+
+    function _withdrawAllProtocolFees(
+        IMultiSwapper[] calldata swappers_,
+        IPenrose.SwapData[] calldata swapData_,
+        IPenrose.MasterContract[] memory array_,
+        address[] memory markets_
+    ) private {
+        require(address(swappers_[0]) != address(0), 'Penrose: zero address');
+        uint256 _masterContractLength = array_.length;
+        bool singleSwapper = swappers_.length != _masterContractLength;
+
+        uint256 length = markets_.length;
+        unchecked {
+            for (uint256 i = 0; i < length; ) {
+                IFee(markets_[i]).depositFeesToYieldBox(
+                    singleSwapper ? swappers_[0] : swappers_[i],
+                    singleSwapper ? swapData_[0] : swapData_[i]
+                );
+                ++i;
+            }
+        }
+    }
+
+    function _getMasterContractLength(IPenrose.MasterContract[] memory array)
+        public
+        view
+        returns (address[] memory markets)
+    {
+        uint256 _masterContractLength = array.length;
+        uint256 marketsLength = 0;
+
+        unchecked {
+            // We first compute the length of the markets array
+            for (uint256 i = 0; i < _masterContractLength; ) {
+                marketsLength += yieldBox.clonesOfCount(array[i].location);
+
+                ++i;
+            }
+        }
+
+        markets = new address[](marketsLength);
+
+        uint256 marketIndex;
+        uint256 clonesOfLength;
+
+        unchecked {
+            // We populate the array
+            for (uint256 i = 0; i < _masterContractLength; ) {
+                address mcLocation = array[i].location;
+                clonesOfLength = yieldBox.clonesOfCount(mcLocation);
+
+                // Loop through clones of the current MC.
+                for (uint256 j = 0; j < clonesOfLength; ) {
+                    markets[marketIndex] = yieldBox.clonesOf(mcLocation, j);
+                    ++marketIndex;
+                    ++j;
+                }
+                ++i;
+            }
+        }
     }
 }

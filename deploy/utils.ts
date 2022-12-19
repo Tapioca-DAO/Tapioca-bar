@@ -475,7 +475,7 @@ export const registerLiquidationQueue = async (
     );
 
     await (
-        await penroseContract.executeSingularityFn(
+        await penroseContract.executeMarketFn(
             [marketData.address],
             [payload],
             true,

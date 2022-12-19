@@ -153,15 +153,27 @@ contract MinterSingularity is BoringOwnable, ERC20 {
         require(_isSolvent(from, exchangeRate), 'SGL: insolvent');
     }
 
-    /// @notice Creates the MinterSingularity contract
-    constructor(
-        IPenrose tapiocaBar_,
-        IERC20 _collateral,
-        uint256 _collateralId,
-        IOracle _oracle,
-        address[] memory _tapSwapPath,
-        address[] memory _collateralSwapPath
-    ) {
+    bool private initialized;
+    modifier onlyOnce() {
+        require(!initialized, 'SGL: initialized');
+        _;
+        initialized = true;
+    }
+
+    /// @notice The init function that acts as a constructor
+    function init(bytes calldata data) external onlyOnce {
+        (
+            IPenrose tapiocaBar_,
+            IERC20 _collateral,
+            uint256 _collateralId,
+            IOracle _oracle,
+            address[] memory _tapSwapPath,
+            address[] memory _collateralSwapPath
+        ) = abi.decode(
+                data,
+                (IPenrose, IERC20, uint256, IOracle, address[], address[])
+            );
+
         penrose = tapiocaBar_;
         yieldBox = YieldBox(tapiocaBar_.yieldBox());
         owner = address(penrose);
@@ -187,8 +199,6 @@ contract MinterSingularity is BoringOwnable, ERC20 {
         accrueInfo.stabilityFee = 317097920; // aprox 1% APR, with 1e18 being 100%
 
         updateExchangeRate();
-
-        owner = msg.sender;
     }
 
     // ********************** //

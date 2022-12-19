@@ -17,7 +17,7 @@ export const setPath = async (
         [taskArgs['path']],
     );
 
-    await penroseContract.executeSingularityFn(
+    await penroseContract.executeMarketFn(
         [singularityAddress],
         [callData],
         true,

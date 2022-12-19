@@ -3,8 +3,7 @@
 pragma solidity ^0.8.0;
 
 import './IOracle.sol';
-import '../../IPenrose.sol';
-import '../../swappers/IMultiSwapper.sol';
+import '../../IFee.sol';
 
 interface ISingularity {
     struct AccrueInfo {
