@@ -1,7 +1,7 @@
 import '@nomiclabs/hardhat-ethers';
 import { task } from 'hardhat/config';
 import { deployMarket__task } from './tasks/deployMarket';
-import { deployMinterMarket__task } from './tasks/deployMinterMarket';
+import { deployBingBang__task } from './tasks/deployMinterMarket';
 import { exportSDK__task } from './tasks/exportSDK';
 import { getPenroseMarkets__task } from './tasks/getPenroseMarkets';
 import {
@@ -46,9 +46,9 @@ task(
 ).addParam('name', 'Market name');
 
 task(
-    'deployMinterMarket',
-    'Deploy a MinterSingularity market',
-    deployMinterMarket__task,
+    'deployBingBang',
+    'Deploy a BingBang market',
+    deployBingBang__task,
 ).addParam('name', 'Market name');
 
 task(
