@@ -92,7 +92,7 @@ contract SGLCommon is SGLStorage {
             false
         ) + _totalBorrow.elastic;
 
-        uint256 feeAmount = (extraAmount * PROTOCOL_FEE) / PROTOCOL_FEE_DIVISOR; // % of interest paid goes to fee
+        uint256 feeAmount = (extraAmount * protocolFee) / FEE_PRECISION; // % of interest paid goes to fee
         feeFraction = (feeAmount * _totalAsset.base) / fullAssetAmount;
         _accrueInfo.feesEarnedFraction += uint128(feeFraction);
         totalAsset.base = _totalAsset.base + uint128(feeFraction);
@@ -192,7 +192,7 @@ contract SGLCommon is SGLStorage {
                 collateralId,
                 collateralShare *
                     (EXCHANGE_RATE_PRECISION / COLLATERIZATION_RATE_PRECISION) *
-                    CLOSED_COLLATERIZATION_RATE,
+                    closedCollateralizationRate,
                 false
             ) >=
             // Moved exchangeRate here instead of dividing the other side to preserve more precision
@@ -284,14 +284,6 @@ contract SGLCommon is SGLStorage {
         }
     }
 
-    function _getCollateralAmountForShare(uint256 share)
-        internal
-        view
-        returns (uint256)
-    {
-        return yieldBox.toAmount(collateralId, share, false);
-    }
-
     /// @dev Return the equivalent of collateral borrow part in asset amount.
     function _getAmountForBorrowPart(uint256 borrowPart)
         internal
@@ -299,39 +291,5 @@ contract SGLCommon is SGLStorage {
         returns (uint256)
     {
         return totalBorrow.toElastic(borrowPart, false);
-    }
-
-    /// @dev Calculate the collateral shares that are needed for `borrowPart`,
-    /// taking the current exchange rate into account.
-    function _getCollateralSharesForBorrowPart(uint256 borrowPart)
-        internal
-        view
-        returns (uint256)
-    {
-        uint256 borrowAmount = totalBorrow.toElastic(borrowPart, false);
-        return
-            yieldBox.toShare(
-                collateralId,
-                (borrowAmount * LIQUIDATION_MULTIPLIER * exchangeRate) /
-                    (LIQUIDATION_MULTIPLIER_PRECISION *
-                        EXCHANGE_RATE_PRECISION),
-                false
-            );
-    }
-
-    /// @dev Compute the amount of `singularity.assetId` from `fraction`
-    /// `fraction` can be `singularity.accrueInfo.feeFraction` or `singularity.balanceOf`
-    function _getAmountForAssetFraction(uint256 fraction)
-        internal
-        view
-        returns (uint256)
-    {
-        Rebase memory _totalAsset = totalAsset;
-        return
-            yieldBox.toAmount(
-                assetId,
-                (fraction * _totalAsset.elastic) / _totalAsset.base,
-                false
-            );
     }
 }

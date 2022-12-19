@@ -2,7 +2,7 @@ import { expect } from 'chai';
 import { ethers } from 'hardhat';
 import { register } from './test.utils';
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
-import { MinterSingularity, USD0, WETH9Mock, yieldbox } from '../typechain';
+import { BingBang, USD0, WETH9Mock, yieldbox } from '../typechain';
 import { BigNumber, BigNumberish } from 'ethers';
 import { SingularityHelper } from '../typechain/contracts/singularity/SingularityHelper';
 import { Singularity } from '../typechain/contracts/singularity/Singularity';
@@ -13,9 +13,9 @@ describe('e2e tests', () => {
     ---Lenders---
     - mint WETH
     - deposit WETH into YieldBox
-    - add collateral to Weth-MinterSingularity
-    - deposit WETH into Weth-MinterSingularity
-    - borrow USD0 from Weth-MinterSingularity
+    - add collateral to Weth-BingBang
+    - deposit WETH into Weth-BingBang
+    - borrow USD0 from Weth-BingBang
     - lend USD0 to Weth-Usd0-Singularity
 
     ---Borrowers---
@@ -801,7 +801,7 @@ async function addUsd0Module(
     weth: WETH9Mock,
     wethMintVal: BigNumberish,
     singularityHelper: SingularityHelper,
-    wethMinterSingularity: MinterSingularity,
+    wethMinterSingularity: BingBang,
     usdoBorrowVal: BigNumberish,
     yieldBox: any,
     usdoAssetId: BigNumberish,

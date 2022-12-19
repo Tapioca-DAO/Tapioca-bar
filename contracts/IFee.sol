@@ -3,9 +3,9 @@
 pragma solidity ^0.8.0;
 
 import './IPenrose.sol';
-import './swappers/IMultiSwapper.sol';
+import './swappers/ISwapper.sol';
 
 interface IFee {
-    function depositFeesToYieldBox(IMultiSwapper, IPenrose.SwapData calldata)
+    function depositFeesToYieldBox(ISwapper, IPenrose.SwapData calldata)
         external;
 }

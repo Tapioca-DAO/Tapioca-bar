@@ -651,12 +651,18 @@ describe('Singularity test', () => {
             eoa1.address,
         );
         const minCollateralShareRepay =
-            await wethUsdcSingularity.getCollateralSharesForBorrowPart(
+            await singularityHelper.getCollateralSharesForBorrowPart(
+                wethUsdcSingularity.address,
                 borrowVal.mul(50).div(100000).add(borrowVal),
+                ethers.BigNumber.from((1e5).toString()),
+                ethers.BigNumber.from((1e18).toString()),
             );
         const userCollateralShareToRepay =
-            await wethUsdcSingularity.getCollateralSharesForBorrowPart(
+            await singularityHelper.getCollateralSharesForBorrowPart(
+                wethUsdcSingularity.address,
                 userBorrowPart,
+                ethers.BigNumber.from((1e5).toString()),
+                ethers.BigNumber.from((1e18).toString()),
             );
 
         expect(userCollateralShareToRepay).to.be.eq(minCollateralShareRepay);
@@ -808,7 +814,8 @@ describe('Singularity test', () => {
             .repay(eoa1.address, eoa1.address, false, userBorrowPart);
 
         const feesAmountInAsset =
-            await wethUsdcSingularity.getAmountForAssetFraction(
+            await singularityHelper.getAmountForAssetFraction(
+                wethUsdcSingularity.address,
                 (
                     await wethUsdcSingularity.accrueInfo()
                 ).feesEarnedFraction,
@@ -1467,6 +1474,7 @@ describe('Singularity test', () => {
             usdcDepositAndAddCollateral,
             wethDepositAndAddAsset,
             wethUsdcSingularity,
+            singularityHelper,
             __wethUsdcPrice,
             weth,
             eoa1,
@@ -1491,10 +1499,10 @@ describe('Singularity test', () => {
             wethAmount,
         );
 
-        const amountFromShares =
-            await wethUsdcSingularity.getAmountForBorrowPart(
-                await wethUsdcSingularity.userBorrowPart(deployer.address),
-            );
+        const amountFromShares = await singularityHelper.getAmountForBorrowPart(
+            wethUsdcSingularity.address,
+            await wethUsdcSingularity.userBorrowPart(deployer.address),
+        );
 
         expect(amountFromShares).to.be.approximately(
             wethAmount,
@@ -1512,6 +1520,7 @@ describe('Singularity test', () => {
             wethUsdcSingularity,
             __wethUsdcPrice,
             eoa1,
+            singularityHelper,
         } = await loadFixture(register);
 
         const wethAmount = BN(1e18).mul(1);
@@ -1528,7 +1537,8 @@ describe('Singularity test', () => {
         await usdcDepositAndAddCollateral(usdcAmount.mul(2), eoa1);
 
         const collateralAmount =
-            await wethUsdcSingularity.getCollateralAmountForShare(
+            await singularityHelper.getCollateralAmountForShare(
+                wethUsdcSingularity.address,
                 await wethUsdcSingularity.userCollateralShare(deployer.address),
             );
 

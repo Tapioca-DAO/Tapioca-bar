@@ -509,7 +509,7 @@ async function deployMediumRiskMC(bar: Penrose, staging?: boolean) {
 
 async function deployMediumRiskBingBangMC(bar: Penrose, staging?: boolean) {
     const mediumRiskBingBangMC = await (
-        await ethers.getContractFactory('MinterSingularity')
+        await ethers.getContractFactory('BingBang')
     ).deploy({ gasPrice: gasPrice });
     await mediumRiskBingBangMC.deployed();
     log(
@@ -921,7 +921,7 @@ async function registerMinterSingularity(
     log(`WethBingBang registered on Penrose`, staging);
 
     const wethMinterSingularity = await ethers.getContractAt(
-        'MinterSingularity',
+        'BingBang',
         await yieldBox.clonesOf(
             mediumRiskBingBangMC,
             (await yieldBox.clonesOfCount(mediumRiskBingBangMC)).sub(1),
@@ -1142,7 +1142,7 @@ export async function register(staging?: boolean) {
     await bar.setUsdoToken(usd0.address, { gasPrice: gasPrice });
     log(`USD0 was set on Penrose`, staging);
 
-    // ------------------- 12 Register MinterSingularity -------------------
+    // ------------------- 12 Register BingBang -------------------
     log('Deploying WethMinterSingularity', staging);
     const minterSingularityCollateralSwapPath = [weth.address, usd0.address];
     const minterSingularityTapSwapPath = [usd0.address, tap.address];

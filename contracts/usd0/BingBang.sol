@@ -7,7 +7,7 @@ import '@boringcrypto/boring-solidity/contracts/libraries/BoringRebase.sol';
 import '@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol';
 
 import '../IPenrose.sol';
-import '../swappers/IMultiSwapper.sol';
+import '../swappers/ISwapper.sol';
 import '../singularity/interfaces/IOracle.sol';
 import '../../yieldbox/contracts/YieldBox.sol';
 
@@ -26,7 +26,7 @@ __/\\\\\\\\\\\\\\\_____/\\\\\\\\\_____/\\\\\\\\\\\\\____/\\\\\\\\\\\_______/\\\\
 
 */
 
-contract MinterSingularity is BoringOwnable, ERC20 {
+contract BingBang is BoringOwnable, ERC20 {
     using RebaseLibrary for Rebase;
     using BoringERC20 for IERC20;
 
@@ -70,6 +70,10 @@ contract MinterSingularity is BoringOwnable, ERC20 {
     bytes public oracleData;
     address[] tapSwapPath; // Asset -> Tap
     address[] collateralSwapPath; // Collateral -> Asset
+
+    uint256 public callerFee; // 90%
+    uint256 public protocolFee; // 10%
+    uint256 public collateralizationRate; // 75%
 
     //errors
     error NotApproved(address _from, address _operator);
@@ -118,20 +122,15 @@ contract MinterSingularity is BoringOwnable, ERC20 {
     // ***************** //
     // *** CONSTANTS *** //
     // ***************** //
-    uint256 private constant EXCHANGE_RATE_PRECISION = 1e18;
-    uint256 private constant COLLATERIZATION_RATE_PRECISION = 1e5; // Must be less than EXCHANGE_RATE_PRECISION (due to optimization in math)
-    uint256 internal constant LIQUIDATION_MULTIPLIER_PRECISION = 1e5;
-    uint256 private constant BORROW_OPENING_FEE_PRECISION = 1e5;
-    uint256 private constant PROTOCOL_FEE_DIVISOR = 1e5;
-    uint256 internal constant CALLER_FEE_DIVISOR = 1e5;
-
-    uint256 internal constant CLOSED_COLLATERIZATION_RATE = 75000; // 75%
-    uint256 internal constant LIQUIDATION_MULTIPLIER = 112000; // add 12%
-    uint256 internal constant CALLER_FEE = 90000; // 90%
-    uint256 private constant PROTOCOL_FEE = 10000; // 10%
+    uint256 private constant LIQUIDATION_MULTIPLIER = 112000; // add 12%
 
     uint256 private constant MAX_BORROWING_FEE = 8e4; //at 80% for testing; TODO
     uint256 private constant MAX_STABILITY_FEE = 8e17; //at 80% for testing; TODO
+
+    uint256 private constant FEE_PRECISION = 1e5;
+    uint256 private constant EXCHANGE_RATE_PRECISION = 1e18;
+    uint256 private constant COLLATERIZATION_RATE_PRECISION = 1e5; // Must be less than EXCHANGE_RATE_PRECISION (due to optimization in math)
+    uint256 private constant LIQUIDATION_MULTIPLIER_PRECISION = 1e5;
 
     // ***************** //
     // *** MODIFIERS *** //
@@ -150,12 +149,12 @@ contract MinterSingularity is BoringOwnable, ERC20 {
     /// @dev Checks if the user is solvent in the closed liquidation case at the end of the function body.
     modifier solvent(address from) {
         _;
-        require(_isSolvent(from, exchangeRate), 'SGL: insolvent');
+        require(_isSolvent(from, exchangeRate), 'BingBang: insolvent');
     }
 
     bool private initialized;
     modifier onlyOnce() {
-        require(!initialized, 'SGL: initialized');
+        require(!initialized, 'BingBang: initialized');
         _;
         initialized = true;
     }
@@ -187,7 +186,7 @@ contract MinterSingularity is BoringOwnable, ERC20 {
             address(_collateral) != address(0) &&
                 address(_asset) != address(0) &&
                 address(_oracle) != address(0),
-            'SGL: bad pair'
+            'BingBang: bad pair'
         );
 
         asset = IUSD0(_asset);
@@ -199,6 +198,10 @@ contract MinterSingularity is BoringOwnable, ERC20 {
         accrueInfo.stabilityFee = 317097920; // aprox 1% APR, with 1e18 being 100%
 
         updateExchangeRate();
+
+        callerFee = 90000; // 90%
+        protocolFee = 10000; // 10%
+        collateralizationRate = 75000; // 75%
     }
 
     // ********************** //
@@ -222,7 +225,7 @@ contract MinterSingularity is BoringOwnable, ERC20 {
         return
             string(
                 abi.encodePacked(
-                    'Tapioca MinterSingularity ',
+                    'Tapioca BingBang ',
                     collateral.safeName(),
                     '/',
                     asset.name(),
@@ -356,10 +359,10 @@ contract MinterSingularity is BoringOwnable, ERC20 {
 
     /// @notice Withdraw the balance of `feeTo`, swap asset into TAP and deposit it to yieldBox of `feeTo`
     function depositFeesToYieldBox(
-        IMultiSwapper swapper,
+        ISwapper swapper,
         IPenrose.SwapData calldata swapData
     ) public {
-        require(penrose.swappers(swapper), 'SGL: Invalid swapper');
+        require(penrose.swappers(swapper), 'BingBang: Invalid swapper');
 
         uint256 balance = asset.balanceOf(address(this));
         balanceOf[penrose.feeTo()] += balance;
@@ -395,10 +398,10 @@ contract MinterSingularity is BoringOwnable, ERC20 {
             (uint256 tapAmount, ) = swapper.swap(
                 assetId,
                 penrose.tapAssetId(),
-                swapData.minAssetAmount,
+                feeShares,
                 _feeVeTap,
-                tapSwapPath,
-                feeShares
+                swapData.minAssetAmount,
+                abi.encode(tapSwapPath)
             );
 
             emit LogYieldBoxFeesDeposit(feeShares, tapAmount);
@@ -413,7 +416,7 @@ contract MinterSingularity is BoringOwnable, ERC20 {
     function liquidate(
         address[] calldata users,
         uint256[] calldata maxBorrowParts,
-        IMultiSwapper swapper,
+        ISwapper swapper,
         bytes calldata collateralToAssetSwapData
     ) external {
         // Oracle can fail but we still need to allow liquidations
@@ -432,6 +435,29 @@ contract MinterSingularity is BoringOwnable, ERC20 {
     // *********************** //
     // *** OWNER FUNCTIONS *** //
     // *********************** //
+    /// @notice sets the protocol fee
+    /// @dev can only be called by the owner
+    /// @param _val the new value
+    function setProtocolFee(uint256 _val) external onlyOwner {
+        require(_val <= FEE_PRECISION, 'BingBang: not valid');
+        protocolFee = _val;
+    }
+
+    /// @notice sets the caller fee
+    /// @dev can only be called by the owner
+    /// @param _val the new value
+    function setCallerFee(uint256 _val) external onlyOwner {
+        require(_val <= FEE_PRECISION, 'BingBang: not valid');
+        callerFee = _val;
+    }
+
+    /// @notice sets the collateralization rate
+    /// @dev can only be called by the owner
+    /// @param _val the new value
+    function setCollateralizationRate(uint256 _val) external onlyOwner {
+        require(_val <= COLLATERIZATION_RATE_PRECISION, 'BingBang: not valid');
+        collateralizationRate = _val;
+    }
 
     /// @notice Used to set the swap path of closed liquidations
     /// @param _collateralSwapPath The Uniswap path .
@@ -459,7 +485,10 @@ contract MinterSingularity is BoringOwnable, ERC20 {
     /// @notice Updates the stability fee
     /// @param _stabilityFee the new value
     function updateStabilityFee(uint64 _stabilityFee) external onlyOwner {
-        require(_stabilityFee <= MAX_STABILITY_FEE, 'SGL: value not valid');
+        require(
+            _stabilityFee <= MAX_STABILITY_FEE,
+            'BingBang: value not valid'
+        );
         emit LogStabilityFee(accrueInfo.stabilityFee, _stabilityFee);
         accrueInfo.stabilityFee = _stabilityFee;
     }
@@ -467,7 +496,10 @@ contract MinterSingularity is BoringOwnable, ERC20 {
     /// @notice Updates the borrowing fee
     /// @param _borrowingFee the new value
     function updateBorrowingFee(uint256 _borrowingFee) external onlyOwner {
-        require(_borrowingFee <= MAX_BORROWING_FEE, 'SGL: value not valid');
+        require(
+            _borrowingFee <= MAX_BORROWING_FEE,
+            'BingBang: value not valid'
+        );
         emit LogBorrowingFee(borrowingFee, _borrowingFee);
         borrowingFee = _borrowingFee;
     }
@@ -495,7 +527,7 @@ contract MinterSingularity is BoringOwnable, ERC20 {
                 collateralId,
                 collateralShare *
                     (EXCHANGE_RATE_PRECISION / COLLATERIZATION_RATE_PRECISION) *
-                    CLOSED_COLLATERIZATION_RATE,
+                    collateralizationRate,
                 false
             ) >=
             // Moved exchangeRate here instead of dividing the other side to preserve more precision
@@ -512,7 +544,7 @@ contract MinterSingularity is BoringOwnable, ERC20 {
     function _closedLiquidation(
         address[] calldata users,
         uint256[] calldata maxBorrowParts,
-        IMultiSwapper swapper,
+        ISwapper swapper,
         uint256 _exchangeRate,
         bytes calldata swapData
     ) private {
@@ -556,7 +588,7 @@ contract MinterSingularity is BoringOwnable, ERC20 {
                 allBorrowPart += borrowPart;
             }
         }
-        require(allBorrowAmount != 0, 'SGL: solvent');
+        require(allBorrowAmount != 0, 'BingBang: solvent');
         _totalBorrow.elastic -= uint128(allBorrowAmount);
         _totalBorrow.base -= uint128(allBorrowPart);
         totalBorrow = _totalBorrow;
@@ -569,7 +601,7 @@ contract MinterSingularity is BoringOwnable, ERC20 {
         );
 
         // Closed liquidation using a pre-approved swapper
-        require(penrose.swappers(swapper), 'SGL: Invalid swapper');
+        require(penrose.swappers(swapper), 'BingBang: Invalid swapper');
 
         // Swaps the users collateral for the borrowed asset
         yieldBox.transfer(
@@ -587,21 +619,21 @@ contract MinterSingularity is BoringOwnable, ERC20 {
         swapper.swap(
             collateralId,
             assetId,
-            minAssetMount,
+            allCollateralShare,
             address(this),
-            collateralSwapPath,
-            allCollateralShare
+            minAssetMount,
+            abi.encode(collateralSwapPath)
         );
         uint256 balanceAfter = yieldBox.balanceOf(address(this), assetId);
 
         uint256 returnedShare = balanceAfter - balanceBefore;
         uint256 extraShare = returnedShare - allBorrowShare;
-        uint256 feeShare = (extraShare * PROTOCOL_FEE) / PROTOCOL_FEE_DIVISOR; // 10% of profit goes to fee.
-        uint256 callerShare = (extraShare * CALLER_FEE) / CALLER_FEE_DIVISOR; //  90%  of profit goes to caller.
+        uint256 feeShare = (extraShare * protocolFee) / FEE_PRECISION; // 10% of profit goes to fee.
+        uint256 callerShare = (extraShare * callerFee) / FEE_PRECISION; //  90%  of profit goes to caller.
 
         require(
             feeShare + callerShare == extraShare,
-            'SGL: fee values not valid'
+            'BingBang: fee values not valid'
         );
 
         yieldBox.transfer(address(this), penrose.feeTo(), assetId, feeShare);
@@ -626,7 +658,7 @@ contract MinterSingularity is BoringOwnable, ERC20 {
         if (skim) {
             require(
                 share <= yieldBox.balanceOf(address(this), _tokenId) - total,
-                'SGL: too much'
+                'BingBang: too much'
             );
         } else {
             yieldBox.transfer(from, address(this), _tokenId, share);
@@ -674,13 +706,12 @@ contract MinterSingularity is BoringOwnable, ERC20 {
         address to,
         uint256 amount
     ) internal returns (uint256 part, uint256 share) {
-        uint256 feeAmount = (amount * borrowingFee) /
-            BORROW_OPENING_FEE_PRECISION; // A flat % fee is charged for any borrow
+        uint256 feeAmount = (amount * borrowingFee) / FEE_PRECISION; // A flat % fee is charged for any borrow
 
         (totalBorrow, part) = totalBorrow.add(amount + feeAmount, true);
         require(
             totalBorrowCap == 0 || totalBorrow.base <= totalBorrowCap,
-            'SGL: borrow cap reached'
+            'BingBang: borrow cap reached'
         );
 
         userBorrowPart[from] += part;

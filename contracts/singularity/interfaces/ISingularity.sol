@@ -161,7 +161,7 @@ interface ISingularity {
         address[] calldata users,
         uint256[] calldata borrowParts,
         address to,
-        IMultiSwapper swapper,
+        ISwapper swapper,
         bool open
     ) external;
 
@@ -210,9 +210,9 @@ interface ISingularity {
 
     function setFeeTo(address newFeeTo) external;
 
-    function setSwapper(IMultiSwapper swapper, bool enable) external;
+    function setSwapper(ISwapper swapper, bool enable) external;
 
-    function swappers(IMultiSwapper) external view returns (bool);
+    function swappers(ISwapper) external view returns (bool);
 
     function symbol() external view returns (string memory);
 
@@ -222,6 +222,22 @@ interface ISingularity {
         external
         view
         returns (uint128 elastic, uint128 base);
+
+    function callerFee() external view returns (uint256);
+
+    function protocolFee() external view returns (uint256);
+
+    function borrowOpeningFee() external view returns (uint256);
+
+    function flashloanFee() external view returns (uint256);
+
+    function liquidationMultiplier() external view returns (uint256);
+
+    function orderBookLiquidationMultiplier() external view returns (uint256);
+
+    function closedCollateralizationRate() external view returns (uint256);
+
+    function lqCollateralizationRate() external view returns (uint256);
 
     function totalCollateralShare() external view returns (uint256);
 
@@ -249,7 +265,7 @@ interface ISingularity {
 
     function withdrawFees() external;
 
-    function depositFeesToYieldBox(IMultiSwapper, IPenrose.SwapData calldata)
+    function depositFeesToYieldBox(ISwapper, IPenrose.SwapData calldata)
         external;
 
     function yieldBox() external view returns (address payable);

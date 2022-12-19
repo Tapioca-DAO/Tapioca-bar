@@ -12,6 +12,9 @@ import './IPenrose.sol';
 /// @title Global market registry
 /// @notice Singularity management
 contract Penrose is BoringOwnable {
+    // ************ //
+    // *** VARS *** //
+    // ************ //
     /// @notice returns the YieldBox contract
     YieldBox public immutable yieldBox;
 
@@ -41,7 +44,7 @@ contract Penrose is BoringOwnable {
     address public feeVeTap;
 
     /// @notice whitelisted swappers
-    mapping(IMultiSwapper => bool) public swappers;
+    mapping(ISwapper => bool) public swappers;
 
     /// @notice creates a Penrose contract
     /// @param _yieldBox YieldBox contract address
@@ -136,7 +139,7 @@ contract Penrose is BoringOwnable {
     /// @dev Fees are withdrawn in TAP and sent to the FeeDistributor contract
     /// @param swappers_ One or more swappers to convert the asset to TAP.
     function withdrawAllSingularityFees(
-        IMultiSwapper[] calldata swappers_,
+        ISwapper[] calldata swappers_,
         IPenrose.SwapData[] calldata swapData_
     ) public {
         require(address(swappers_[0]) != address(0), 'Penrose: zero address');
@@ -157,7 +160,7 @@ contract Penrose is BoringOwnable {
     /// @dev Fees are withdrawn in TAP and sent to the FeeDistributor contract
     /// @param swappers_ One or more swappers to convert the asset to TAP.
     function withdrawAllBingBangFees(
-        IMultiSwapper[] calldata swappers_,
+        ISwapper[] calldata swappers_,
         IPenrose.SwapData[] calldata swapData_
     ) public {
         require(address(swappers_[0]) != address(0), 'Penrose: zero address');
@@ -320,7 +323,7 @@ contract Penrose is BoringOwnable {
     /// MasterContract Only Admin function.
     /// @param swapper The address of the swapper contract that conforms to `ISwapper`.
     /// @param enable True to enable the swapper. To disable use False.
-    function setSwapper(IMultiSwapper swapper, bool enable) external onlyOwner {
+    function setSwapper(ISwapper swapper, bool enable) external onlyOwner {
         swappers[swapper] = enable;
         emit SwapperUpdate(address(swapper), enable);
     }
@@ -344,7 +347,7 @@ contract Penrose is BoringOwnable {
     }
 
     function _withdrawAllProtocolFees(
-        IMultiSwapper[] calldata swappers_,
+        ISwapper[] calldata swappers_,
         IPenrose.SwapData[] calldata swapData_,
         IPenrose.MasterContract[] memory array_,
         address[] memory markets_

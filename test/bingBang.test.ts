@@ -4,7 +4,7 @@ import { register } from './test.utils';
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 import _ from 'lodash';
 
-describe('MinterSingularity test', () => {
+describe('BingBang test', () => {
     it('should test initial values', async () => {
         const { wethMinterSingularity, usd0, bar, weth, wethAssetId } =
             await loadFixture(register);
@@ -373,7 +373,7 @@ describe('MinterSingularity test', () => {
             wethMinterSingularity
                 .connect(eoa1)
                 .borrow(eoa1.address, eoa1.address, usdoBorrowVal),
-        ).to.be.revertedWith('SGL: insolvent');
+        ).to.be.revertedWith('BingBang: insolvent');
 
         const totalSupplyBefore = await usd0.totalSupply();
 
@@ -531,7 +531,7 @@ describe('MinterSingularity test', () => {
             wethMinterSingularity
                 .connect(eoa1)
                 .borrow(eoa1.address, eoa1.address, usdoBorrowVal),
-        ).to.be.revertedWith('SGL: insolvent');
+        ).to.be.revertedWith('BingBang: insolvent');
 
         const totalSupplyBefore = await usd0.totalSupply();
 
@@ -1115,7 +1115,7 @@ describe('MinterSingularity test', () => {
                 ethers.constants.AddressZero,
                 { minAssetAmount: 1 },
             ),
-        ).to.be.revertedWith('SGL: Invalid swapper');
+        ).to.be.revertedWith('BingBang: Invalid swapper');
 
         await expect(
             wethMinterSingularity.depositFeesToYieldBox(multiSwapper.address, {
@@ -1269,6 +1269,6 @@ describe('MinterSingularity test', () => {
                 deployer.address,
                 usdoBorrowVal,
             ),
-        ).to.be.revertedWith('SGL: borrow cap reached');
+        ).to.be.revertedWith('BingBang: borrow cap reached');
     });
 });

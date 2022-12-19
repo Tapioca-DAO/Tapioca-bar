@@ -1,41 +1,49 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-import '@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol';
-
-/// Modified from https://github.com/sushiswap/kashi-lending/blob/master/contracts/interfaces/ISwapper.sol
 interface ISwapper {
-    /// @notice Withdraws 'amountFrom' of token 'from' from the Penrose account for this swapper.
-    /// Swaps it for at least 'amountToMin' of token 'to'.
-    /// Transfers the swapped tokens of 'to' into the Penrose using a plain ERC20 transfer.
-    /// Returns the amount of tokens 'to' transferred to Penrose.
-    /// (The Penrose skim function will be used by the caller to get the swapped funds).
-    function swap(
-        IERC20 fromToken,
-        uint256 fromTokenId,
-        IERC20 toToken,
-        uint256 toTokenId,
-        address recipient,
-        uint256 shareToMin,
-        uint256 shareFrom
-    ) external returns (uint256 extraShare, uint256 shareReturned);
+    /// @notice returns the possible output amount for input share
+    /// @param tokenInId YieldBox asset id
+    /// @param shareIn Shares to get the amount for
+    /// @param dexData Custom DEX data for query execution
+    /// @dev dexData examples:
+    ///     - for UniV2, it should contain address[] swapPath
+    ///     - for Curve, it should contain uint256[] tokenIndexes
+    function getOutputAmount(
+        uint256 tokenInId,
+        uint256 shareIn,
+        bytes calldata dexData
+    ) external view returns (uint256 amountOut);
 
-    /// @notice Calculates the amount of token 'from' needed to complete the swap (amountFrom),
-    /// this should be less than or equal to amountFromMax.
-    /// Withdraws 'amountFrom' of token 'from' from the Penrose account for this swapper.
-    /// Swaps it for exactly 'exactAmountTo' of token 'to'.
-    /// Transfers the swapped tokens of 'to' into the Penrose using a plain ERC20 transfer.
-    /// Transfers allocated, but unused 'from' tokens within the Penrose to 'refundTo' (amountFromMax - amountFrom).
-    /// Returns the amount of 'from' tokens withdrawn from Penrose (amountFrom).
-    /// (The Penrose skim function will be used by the caller to get the swapped funds).
-    function swapExact(
-        IERC20 fromToken,
-        uint256 fromTokenId,
-        IERC20 toToken,
-        uint256 toTokenId,
-        address recipient,
-        address refundTo,
-        uint256 shareFromSupplied,
-        uint256 shareToExact
-    ) external returns (uint256 shareUsed, uint256 shareReturned);
+    /// @notice returns necessary input amount for a fixed output amount
+    /// @param tokenOutId YieldBox asset id
+    /// @param shareOut Shares out to compute the amount for
+    /// @param dexData Custom DEX data for query execution
+    /// @dev dexData examples:
+    ///     - for UniV2, it should contain address[] swapPath
+    function getInputAmount(
+        uint256 tokenOutId,
+        uint256 shareOut,
+        bytes calldata dexData
+    ) external view returns (uint256 amountIn);
+
+    /// @notice swaps token in with token out
+    /// @dev returns both amount and shares
+    /// @param tokenInId YieldBox asset id
+    /// @param tokenOutId YieldBox asset id
+    /// @param shareIn Shares to be swapped
+    /// @param to Receiver address
+    /// @param amountOutMin Minimum amount to be received
+    /// @param dexData Custom DEX data for query execution
+    /// @dev dexData examples:
+    ///     - for UniV2, it should contain address[] swapPath
+    ///     - for Curve, it should contain uint256[] tokenIndexes
+    function swap(
+        uint256 tokenInId,
+        uint256 tokenOutId,
+        uint256 shareIn,
+        address to,
+        uint256 amountOutMin,
+        bytes calldata dexData
+    ) external returns (uint256 amountOut, uint256 shareOut);
 }

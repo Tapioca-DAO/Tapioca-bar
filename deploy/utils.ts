@@ -267,13 +267,13 @@ export const registerMinterMarket = async (
         collateralSwapPath,
     ];
 
-    await deploy('MinterSingularity', {
+    await deploy('BingBang', {
         from: deployer,
         log: true,
         args,
     });
-    await verify(hre, 'MinterSingularity', args);
-    const deployedMinter = await deployments.get('MinterSingularity');
+    await verify(hre, 'BingBang', args);
+    const deployedMinter = await deployments.get('BingBang');
     console.log(
         `Done. Deployed on ${deployedMinter.address} with args ${args}`,
     );
