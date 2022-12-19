@@ -7,8 +7,6 @@ import './SGLLendingBorrowing.sol';
 
 import '../singularity/interfaces/ISendFrom.sol';
 
-import 'hardhat/console.sol';
-
 // solhint-disable max-line-length
 
 /*
@@ -94,6 +92,19 @@ contract Singularity is SGLCommon {
         accrueInfo.interestPerSecond = uint64(STARTING_INTEREST_PER_SECOND); // 1% APR, with 1e18 being 100%
 
         updateExchangeRate();
+
+        //default fees
+        callerFee = 1000; // 1%
+        protocolFee = 10000; // 10%
+        borrowOpeningFee = 50; // 0.05%
+        flashloanFee = 90; // 0.09%
+
+        //liquidation
+        liquidationMultiplier = 112000; //12%
+        orderBookLiquidationMultiplier = 127000; //27%
+
+        closedCollateralizationRate = 75000;
+        lqCollateralizationRate = 25000;
     }
 
     // ********************** //
@@ -132,52 +143,6 @@ contract Singularity is SGLCommon {
             )
         );
         amountToSolvency = abi.decode(result, (uint256));
-    }
-
-    /// @notice Calculate the collateral amount off the shares.
-    /// @param share The shares.
-    /// @return amount The amount.
-    function getCollateralAmountForShare(uint256 share)
-        public
-        view
-        returns (uint256 amount)
-    {
-        return _getCollateralAmountForShare(share);
-    }
-
-    /// @notice Calculate the collateral shares that are needed for `borrowPart`,
-    /// taking the current exchange rate into account.
-    /// @param borrowPart The borrow part.
-    /// @return collateralShares The collateral shares.
-    function getCollateralSharesForBorrowPart(uint256 borrowPart)
-        public
-        view
-        returns (uint256 collateralShares)
-    {
-        return _getCollateralSharesForBorrowPart(borrowPart);
-    }
-
-    /// @notice Compute the amount of `singularity.assetId` from `fraction`
-    /// `fraction` can be `singularity.accrueInfo.feeFraction` or `singularity.balanceOf`
-    /// @param fraction The fraction.
-    /// @return amount The amount.
-    function getAmountForAssetFraction(uint256 fraction)
-        public
-        view
-        returns (uint256 amount)
-    {
-        return _getAmountForAssetFraction(fraction);
-    }
-
-    /// @notice Return the equivalent of borrow part in asset amount.
-    /// @param borrowPart The amount of borrow part to convert.
-    /// @return amount The equivalent of borrow part in asset amount.
-    function getAmountForBorrowPart(uint256 borrowPart)
-        public
-        view
-        returns (uint256 amount)
-    {
-        return _getAmountForBorrowPart(borrowPart);
     }
 
     // ************************ //
@@ -433,6 +398,71 @@ contract Singularity is SGLCommon {
     // *********************** //
     // *** OWNER FUNCTIONS *** //
     // *********************** //
+    /// @notice sets the collateralization rate used for LiquidationQueue type liquidations
+    /// @dev can only be called by the owner
+    /// @param _val the new value
+    function setLqCollateralizationRate(uint256 _val) external onlyOwner {
+        require(_val <= COLLATERIZATION_RATE_PRECISION, 'SGL: not valid');
+        lqCollateralizationRate = _val;
+    }
+
+    /// @notice sets closed collateralization rate
+    /// @dev can only be called by the owner
+    /// @param _val the new value
+    function setClosedCollateralizationRate(uint256 _val) external onlyOwner {
+        require(_val <= COLLATERIZATION_RATE_PRECISION, 'SGL: not valid');
+        closedCollateralizationRate = _val;
+    }
+
+    /// @notice sets the liquidation multiplier
+    /// @dev can only be called by the owner
+    /// @param _val the new value
+    function setLiquidationMultiplier(uint256 _val) external onlyOwner {
+        liquidationMultiplier = _val;
+    }
+
+    /// @notice sets the order book multiplier
+    /// @dev can only be called by the owner
+    /// @param _val the new value
+    function setOrderBookLiquidationMultiplier(uint256 _val)
+        external
+        onlyOwner
+    {
+        orderBookLiquidationMultiplier = _val;
+    }
+
+    /// @notice sets the flashloan fee
+    /// @dev can only be called by the owner
+    /// @param _val the new value
+    function setFlashloanFee(uint256 _val) external onlyOwner {
+        require(_val <= FEE_PRECISION, 'SGL: not valid');
+        flashloanFee = _val;
+    }
+
+    /// @notice sets the borrowing opening fee
+    /// @dev can only be called by the owner
+    /// @param _val the new value
+    function setBorrowOpeningFee(uint256 _val) external onlyOwner {
+        require(_val <= FEE_PRECISION, 'SGL: not valid');
+        borrowOpeningFee = _val;
+    }
+
+    /// @notice sets the liquidator fee
+    /// @dev can only be called by the owner
+    /// @param _val the new value
+    function setCallerFee(uint256 _val) external onlyOwner {
+        require(_val <= FEE_PRECISION, 'SGL: not valid');
+        callerFee = _val;
+    }
+
+    /// @notice sets the protocol fee
+    /// @dev can only be called by the owner
+    /// @param _val the new value
+    function setProtocolFee(uint256 _val) external onlyOwner {
+        require(_val <= FEE_PRECISION, 'SGL: not valid');
+        protocolFee = _val;
+    }
+
     /// @notice Used to set the swap path of closed liquidations
     /// @param _collateralSwapPath The Uniswap path .
     function setCollateralSwapPath(address[] calldata _collateralSwapPath)
@@ -492,22 +522,26 @@ contract Singularity is SGLCommon {
         return abi.decode(_returnData, (string)); // All that remains is the revert string
     }
 
-    function _executeModule(Module _module, bytes memory _data)
-        private
-        returns (bytes memory returnData)
-    {
+    function _extractModule(Module _module) private view returns (address) {
         address module;
-        bool success = true;
-
         if (_module == Module.LendingBorrowing) {
             module = address(lendingBorrowingModule);
         } else if (_module == Module.Liquidation) {
             module = address(liquidationModule);
         }
-
         if (module == address(0)) {
             revert('SGL: module not set');
         }
+
+        return module;
+    }
+
+    function _executeModule(Module _module, bytes memory _data)
+        private
+        returns (bytes memory returnData)
+    {
+        bool success = true;
+        address module = _extractModule(_module);
 
         (success, returnData) = module.delegatecall(_data);
         if (!success) {
@@ -520,18 +554,8 @@ contract Singularity is SGLCommon {
         view
         returns (bytes memory returnData)
     {
-        address module;
         bool success = true;
-
-        if (_module == Module.LendingBorrowing) {
-            module = address(lendingBorrowingModule);
-        } else if (_module == Module.Liquidation) {
-            module = address(liquidationModule);
-        }
-
-        if (module == address(0)) {
-            revert('SGL: module not set');
-        }
+        address module = _extractModule(_module);
 
         (success, returnData) = module.staticcall(_data);
         if (!success) {

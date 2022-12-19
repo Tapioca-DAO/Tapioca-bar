@@ -12,6 +12,9 @@ import './IPenrose.sol';
 /// @title Global market registry
 /// @notice Singularity management
 contract Penrose is BoringOwnable {
+    // ************ //
+    // *** VARS *** //
+    // ************ //
     /// @notice returns the YieldBox contract
     YieldBox public immutable yieldBox;
 
@@ -38,6 +41,17 @@ contract Penrose is BoringOwnable {
     /// @notice whitelisted swappers
     mapping(ISwapper => bool) public swappers;
 
+    // **************//
+    // *** EVENTS *** //
+    // ************** //
+    event ProtocolWithdrawal(address[] markets, uint256 timestamp);
+    event RegisterMasterContract(address location, IPenrose.ContractType risk);
+    event RegisterSingularity(address location, address masterContract);
+    event FeeToUpdate(address newFeeTo);
+    event FeeVeTapUpdate(address newFeeVeTap);
+    event SwapperUpdate(address swapper, bool isRegistered);
+    event UsdoTokenUpdated(address indexed usdoToken, uint256 assetId);
+
     /// @notice creates a Penrose contract
     /// @param _yieldBox YieldBox contract address
     /// @param tapToken_ TapOFT contract address
@@ -53,18 +67,6 @@ contract Penrose is BoringOwnable {
             )
         );
     }
-
-    // **************//
-    // *** EVENTS *** //
-    // ************** //
-
-    event ProtocolWithdrawal(address[] markets, uint256 timestamp);
-    event RegisterMasterContract(address location, IPenrose.ContractType risk);
-    event RegisterSingularity(address location, address masterContract);
-    event FeeToUpdate(address newFeeTo);
-    event FeeVeTapUpdate(address newFeeVeTap);
-    event SwapperUpdate(address swapper, bool isRegistered);
-    event UsdoTokenUpdated(address indexed usdoToken, uint256 assetId);
 
     // ******************//
     // *** MODIFIERS *** //

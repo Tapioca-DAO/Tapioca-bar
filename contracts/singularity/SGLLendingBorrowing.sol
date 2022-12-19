@@ -96,7 +96,7 @@ contract SGLLendingBorrowing is SGLCommon {
         bytes memory data
     ) public {
         Rebase memory _totalAsset = totalAsset;
-        uint256 feeAmount = (amount * FLASHLOAN_FEE) / FLASHLOAN_FEE_PRECISION;
+        uint256 feeAmount = (amount * flashloanFee) / FEE_PRECISION;
         uint256 feeFraction = (yieldBox.toShare(assetId, feeAmount, false) *
             _totalAsset.base) / _totalAsset.elastic;
 
@@ -140,8 +140,7 @@ contract SGLLendingBorrowing is SGLCommon {
         address to,
         uint256 amount
     ) internal returns (uint256 part, uint256 share) {
-        uint256 feeAmount = (amount * BORROW_OPENING_FEE) /
-            BORROW_OPENING_FEE_PRECISION; // A flat % fee is charged for any borrow
+        uint256 feeAmount = (amount * borrowOpeningFee) / FEE_PRECISION; // A flat % fee is charged for any borrow
 
         (totalBorrow, part) = totalBorrow.add(amount + feeAmount, true);
         require(

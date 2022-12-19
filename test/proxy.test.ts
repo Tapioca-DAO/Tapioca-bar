@@ -1146,6 +1146,7 @@ describe('SGLProxy', () => {
             usdcAssetId,
             eoa1,
             multiSwapper,
+            singularityHelper,
             __wethUsdcPrice,
         } = await loadFixture(register);
 
@@ -1342,7 +1343,9 @@ describe('SGLProxy', () => {
             false,
         );
         const feesAmountInAsset =
-            await singularityDst.getAmountForAssetFraction(
+            await singularityHelper.getAmountForAssetFraction(
+                singularityDst.address,
+
                 (
                     await singularityDst.accrueInfo()
                 ).feesEarnedFraction,
