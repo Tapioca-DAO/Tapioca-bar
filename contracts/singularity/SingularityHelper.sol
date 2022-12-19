@@ -85,6 +85,84 @@ contract SingularityHelper {
         return result;
     }
 
+    /// @notice Calculate the collateral amount off the shares.
+    /// @param singularity the singularity address
+    /// @param share The shares.
+    /// @return amount The amount.
+    function getCollateralAmountForShare(
+        ISingularity singularity,
+        uint256 share
+    ) public view returns (uint256 amount) {
+        IYieldBox yieldBox = IYieldBox(singularity.yieldBox());
+        return yieldBox.toAmount(singularity.collateralId(), share, false);
+    }
+
+    /// @notice Calculate the collateral shares that are needed for `borrowPart`,
+    /// taking the current exchange rate into account.
+    /// @param singularity the singularity address
+    /// @param borrowPart The borrow part.
+    /// @return collateralShares The collateral shares.
+    function getCollateralSharesForBorrowPart(
+        ISingularity singularity,
+        uint256 borrowPart,
+        uint256 liquidationMultiplierPrecision,
+        uint256 exchangeRatePrecision
+    ) public view returns (uint256 collateralShares) {
+        Rebase memory _totalBorrowed;
+        (uint128 totalBorrowElastic, uint128 totalBorrowBase) = singularity
+            .totalBorrow();
+        _totalBorrowed = Rebase(totalBorrowElastic, totalBorrowBase);
+
+        IYieldBox yieldBox = IYieldBox(singularity.yieldBox());
+        uint256 borrowAmount = _totalBorrowed.toElastic(borrowPart, false);
+        return
+            yieldBox.toShare(
+                singularity.collateralId(),
+                (borrowAmount *
+                    singularity.liquidationMultiplier() *
+                    singularity.exchangeRate()) /
+                    (liquidationMultiplierPrecision * exchangeRatePrecision),
+                false
+            );
+    }
+
+    /// @notice Compute the amount of `singularity.assetId` from `fraction`
+    /// `fraction` can be `singularity.accrueInfo.feeFraction` or `singularity.balanceOf`
+    /// @param singularity the singularity address
+    /// @param fraction The fraction.
+    /// @return amount The amount.
+    function getAmountForAssetFraction(
+        ISingularity singularity,
+        uint256 fraction
+    ) public view returns (uint256 amount) {
+        (uint128 totalAssetElastic, uint128 totalAssetBase) = singularity
+            .totalAsset();
+
+        IYieldBox yieldBox = IYieldBox(singularity.yieldBox());
+        return
+            yieldBox.toAmount(
+                singularity.assetId(),
+                (fraction * totalAssetElastic) / totalAssetBase,
+                false
+            );
+    }
+
+    /// @notice Return the equivalent of borrow part in asset amount.
+    /// @param singularity the singularity address
+    /// @param borrowPart The amount of borrow part to convert.
+    /// @return amount The equivalent of borrow part in asset amount.
+    function getAmountForBorrowPart(
+        ISingularity singularity,
+        uint256 borrowPart
+    ) public view returns (uint256 amount) {
+        Rebase memory _totalBorrowed;
+        (uint128 totalBorrowElastic, uint128 totalBorrowBase) = singularity
+            .totalBorrow();
+        _totalBorrowed = Rebase(totalBorrowElastic, totalBorrowBase);
+
+        return _totalBorrowed.toElastic(borrowPart, false);
+    }
+
     // ************************ //
     // *** PUBLIC FUNCTIONS *** //
     // ************************ //
@@ -266,9 +344,10 @@ contract SingularityHelper {
         );
     }
 
-    function _setApprovalForYieldBox(ISingularity singularity, YieldBox yieldBox)
-        private
-    {
+    function _setApprovalForYieldBox(
+        ISingularity singularity,
+        YieldBox yieldBox
+    ) private {
         bool isApproved = yieldBox.isApprovedForAll(
             address(this),
             address(singularity)

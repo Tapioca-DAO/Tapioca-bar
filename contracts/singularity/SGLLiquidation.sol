@@ -35,7 +35,7 @@ contract SGLLiquidation is SGLCommon {
             collateralId,
             (collateralShare *
                 (EXCHANGE_RATE_PRECISION / COLLATERIZATION_RATE_PRECISION) *
-                LQ_COLLATERIZATION_RATE),
+                lqCollateralizationRate),
             false
         ) / _exchangeRate;
         // Obviously it's not `borrowPart` anymore but `borrowAmount`
@@ -125,7 +125,7 @@ contract SGLLiquidation is SGLCommon {
                 }
                 uint256 collateralShare = yieldBox.toShare(
                     collateralId,
-                    (borrowAmount * _exchangeRate * LIQUIDATION_MULTIPLIER) /
+                    (borrowAmount * _exchangeRate * liquidationMultiplier) /
                         (EXCHANGE_RATE_PRECISION *
                             LIQUIDATION_MULTIPLIER_PRECISION),
                     false
@@ -179,7 +179,7 @@ contract SGLLiquidation is SGLCommon {
         uint256 returnedShare = yieldBox.balanceOf(address(this), assetId) -
             uint256(totalAsset.elastic);
         uint256 extraShare = returnedShare - allBorrowShare;
-        uint256 callerShare = (extraShare * CALLER_FEE) / CALLER_FEE_DIVISOR; // 1% goes to caller
+        uint256 callerShare = (extraShare * callerFee) / FEE_PRECISION; // 1% goes to caller
 
         yieldBox.transfer(address(this), msg.sender, assetId, callerShare);
 
@@ -226,7 +226,7 @@ contract SGLLiquidation is SGLCommon {
                 );
                 uint256 collateralShare = yieldBox.toShare(
                     collateralId,
-                    (borrowAmount * LIQUIDATION_MULTIPLIER * _exchangeRate) /
+                    (borrowAmount * liquidationMultiplier * _exchangeRate) /
                         (LIQUIDATION_MULTIPLIER_PRECISION *
                             EXCHANGE_RATE_PRECISION),
                     false
@@ -284,8 +284,8 @@ contract SGLLiquidation is SGLCommon {
         uint256 returnedShare = yieldBox.balanceOf(address(this), assetId) -
             uint256(totalAsset.elastic);
         uint256 extraShare = returnedShare - allBorrowShare;
-        uint256 feeShare = (extraShare * PROTOCOL_FEE) / PROTOCOL_FEE_DIVISOR; // 10% of profit goes to fee.
-        uint256 callerShare = (extraShare * CALLER_FEE) / CALLER_FEE_DIVISOR; //  1%  of profit goes to caller.
+        uint256 feeShare = (extraShare * protocolFee) / FEE_PRECISION; // x% of profit goes to fee.
+        uint256 callerShare = (extraShare * callerFee) / FEE_PRECISION; //  y%  of profit goes to caller.
 
         yieldBox.transfer(address(this), penrose.feeTo(), assetId, feeShare);
         yieldBox.transfer(address(this), msg.sender, assetId, callerShare);

@@ -72,10 +72,10 @@ contract LiquidationQueue is ILiquidationQueue {
     /// @dev user => amountDue.
     mapping(address => uint256) public balancesDue;
 
+
     // ***************** //
     // *** CONSTANTS *** //
     // ***************** //
-
     uint256 constant MAX_BID_POOLS = 10; // Maximum amount of pools.
     // `amount` * ((`bidPool` * `PREMIUM_FACTOR`) / `PREMIUM_FACTOR_PRECISION`) = premium.
     uint256 constant PREMIUM_FACTOR = 100; // Premium factor.

@@ -72,6 +72,19 @@ contract SGLStorage is BoringOwnable, ERC20 {
     address[] collateralSwapPath; // Collateral -> Asset
     address[] tapSwapPath; // Asset -> Tap
 
+    // Fees
+    uint256 public callerFee; //1%
+    uint256 public protocolFee; //10%
+    uint256 public borrowOpeningFee; //0.05%
+    uint256 public flashloanFee; //0.09%
+
+    //Liquidation
+    uint256 public liquidationMultiplier; //12%
+    uint256 public orderBookLiquidationMultiplier; //27%
+
+    uint256 public closedCollateralizationRate; // 75%
+    uint256 public lqCollateralizationRate; // 25%
+
     //errors
     error NotApproved(address _from, address _operator);
 
@@ -138,9 +151,8 @@ contract SGLStorage is BoringOwnable, ERC20 {
     // ***************** //
     // *** CONSTANTS *** //
     // ***************** //
-    uint256 internal constant CLOSED_COLLATERIZATION_RATE = 75000; // 75%
-    uint256 internal constant LQ_COLLATERIZATION_RATE = 25000; // 25%
     uint256 internal constant COLLATERIZATION_RATE_PRECISION = 1e5; // Must be less than EXCHANGE_RATE_PRECISION (due to optimization in math)
+
     uint256 internal constant MINIMUM_TARGET_UTILIZATION = 7e17; // 70%
     uint256 internal constant MAXIMUM_TARGET_UTILIZATION = 8e17; // 80%
     uint256 internal constant UTILIZATION_PRECISION = 1e18;
@@ -155,20 +167,10 @@ contract SGLStorage is BoringOwnable, ERC20 {
     uint256 internal constant INTEREST_ELASTICITY = 28800e36; // Half or double in 28800 seconds (8 hours) if linear
 
     uint256 internal constant EXCHANGE_RATE_PRECISION = 1e18;
-
-    uint256 internal constant ORDER_BOOK_LIQUIDATION_MULTIPLIER = 127000; // add 27%
-    uint256 internal constant LIQUIDATION_MULTIPLIER = 112000; // add 12%
     uint256 internal constant LIQUIDATION_MULTIPLIER_PRECISION = 1e5;
 
     // Fees
-    uint256 internal constant CALLER_FEE = 1000; // 1%
-    uint256 internal constant CALLER_FEE_DIVISOR = 1e5;
-    uint256 internal constant PROTOCOL_FEE = 10000; // 10%
-    uint256 internal constant PROTOCOL_FEE_DIVISOR = 1e5;
-    uint256 internal constant BORROW_OPENING_FEE = 50; // 0.05%
-    uint256 internal constant BORROW_OPENING_FEE_PRECISION = 1e5;
-    uint256 internal constant FLASHLOAN_FEE = 90; // 0.09%
-    uint256 internal constant FLASHLOAN_FEE_PRECISION = 1e5;
+    uint256 internal constant FEE_PRECISION = 1e5;
 
     // ********************** //
     // *** VIEW FUNCTIONS *** //
