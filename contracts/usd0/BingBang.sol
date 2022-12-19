@@ -7,7 +7,7 @@ import '@boringcrypto/boring-solidity/contracts/libraries/BoringRebase.sol';
 import '@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol';
 
 import '../IPenrose.sol';
-import '../swappers/IMultiSwapper.sol';
+import '../swappers/ISwapper.sol';
 import '../singularity/interfaces/IOracle.sol';
 import '../../yieldbox/contracts/YieldBox.sol';
 
@@ -346,7 +346,7 @@ contract BingBang is BoringOwnable, ERC20 {
 
     /// @notice Withdraw the balance of `feeTo`, swap asset into TAP and deposit it to yieldBox of `feeTo`
     function depositFeesToYieldBox(
-        IMultiSwapper swapper,
+        ISwapper swapper,
         IPenrose.SwapData calldata swapData
     ) public {
         require(penrose.swappers(swapper), 'SGL: Invalid swapper');
@@ -385,10 +385,10 @@ contract BingBang is BoringOwnable, ERC20 {
             (uint256 tapAmount, ) = swapper.swap(
                 assetId,
                 penrose.tapAssetId(),
-                swapData.minAssetAmount,
+                feeShares,
                 _feeVeTap,
-                tapSwapPath,
-                feeShares
+                swapData.minAssetAmount,
+                abi.encode(tapSwapPath)
             );
 
             emit LogYieldBoxFeesDeposit(feeShares, tapAmount);
@@ -403,7 +403,7 @@ contract BingBang is BoringOwnable, ERC20 {
     function liquidate(
         address[] calldata users,
         uint256[] calldata maxBorrowParts,
-        IMultiSwapper swapper,
+        ISwapper swapper,
         bytes calldata collateralToAssetSwapData
     ) external {
         // Oracle can fail but we still need to allow liquidations
@@ -502,7 +502,7 @@ contract BingBang is BoringOwnable, ERC20 {
     function _closedLiquidation(
         address[] calldata users,
         uint256[] calldata maxBorrowParts,
-        IMultiSwapper swapper,
+        ISwapper swapper,
         uint256 _exchangeRate,
         bytes calldata swapData
     ) private {
@@ -577,10 +577,10 @@ contract BingBang is BoringOwnable, ERC20 {
         swapper.swap(
             collateralId,
             assetId,
-            minAssetMount,
+            allCollateralShare,
             address(this),
-            collateralSwapPath,
-            allCollateralShare
+            minAssetMount,
+            abi.encode(collateralSwapPath)
         );
         uint256 balanceAfter = yieldBox.balanceOf(address(this), assetId);
 
