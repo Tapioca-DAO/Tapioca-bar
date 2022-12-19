@@ -940,10 +940,10 @@ describe('BingBang test', () => {
         ).to.emit(wethMinterSingularity, 'LogYieldBoxFeesDeposit');
 
         const yieldBoxFinalBalanceOfFeeVeTap = await yieldBox.toAmount(
-            await bar.tapAssetId(),
-            await yieldBox.balanceOf(
-                await bar.feeTo(),
-                await bar.tapAssetId(),
+              await bar.tapAssetId(),
+              await yieldBox.balanceOf(
+              await bar.feeTo(),
+              await bar.tapAssetId(),
             ),
             false,
         );
