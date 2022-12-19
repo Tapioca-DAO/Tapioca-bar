@@ -71,6 +71,8 @@
     },
     "dependencies": {
         "@nomiclabs/hardhat-vyper": "^3.0.1",
+        "@uniswap/v3-core": "^1.0.1",
+        "@uniswap/v3-periphery": "^1.4.3",
         "husky": "^8.0.1",
         "load-json-file": "^7.0.1",
         "lodash": "^4.17.21",
