@@ -381,8 +381,7 @@ contract BingBang is BoringOwnable, ERC20 {
                 feeShares,
                 _feeVeTap,
                 swapData.minAssetAmount,
-                abi.encode(tapSwapPath)
-
+                abi.encode(_assetToCollateralSwapPath())
             );
 
             emit LogYieldBoxFeesDeposit(feeShares, colAmount);
@@ -583,8 +582,7 @@ contract BingBang is BoringOwnable, ERC20 {
             allCollateralShare,
             address(this),
             minAssetMount,
-            abi.encode(collateralSwapPath)
-
+            abi.encode(_collateralToAssetSwapPath())
         );
         uint256 balanceAfter = yieldBox.balanceOf(address(this), assetId);
 

@@ -384,8 +384,7 @@ contract Singularity is SGLCommon {
             feeShares,
             _feeVeTap,
             swapData.minAssetAmount,
-            abi.encode(tapSwapPath)
-
+            abi.encode(_assetToCollateralSwapPath())
         );
 
         emit LogYieldBoxFeesDeposit(feeShares, ethAmount);
@@ -458,7 +457,6 @@ contract Singularity is SGLCommon {
     // ************************* //
     // *** PRIVATE FUNCTIONS *** //
     // ************************* //
-   
 
     function _getRevertMsg(bytes memory _returnData)
         private

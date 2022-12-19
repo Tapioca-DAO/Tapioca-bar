@@ -606,8 +606,11 @@ describe('BingBang test', () => {
         );
         const calcAmount = await multiSwapper.getOutputAmount(
             assetId,
-            [usd0.address, collateralAddress],
             feeShareIn,
+            ethers.utils.defaultAbiCoder.encode(
+                ['address[]'],
+                [[usd0.address, collateralAddress]],
+            ),
         );
         await expect(
             wethMinterSingularity.depositFeesToYieldBox(multiSwapper.address, {
@@ -1083,9 +1086,7 @@ describe('BingBang test', () => {
     it('should allow initialization with wrong values', async () => {
         const { bar } = await loadFixture(register);
 
-        const minterFactory = await ethers.getContractFactory(
-            'BingBang',
-        );
+        const minterFactory = await ethers.getContractFactory('BingBang');
 
         await expect(
             minterFactory.deploy(
