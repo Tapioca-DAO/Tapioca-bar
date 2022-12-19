@@ -232,7 +232,10 @@ describe('SGLProxy', () => {
             .connect(eoa1)
             .executeOnChain(
                 await lzEndpointDst.getChainId(),
-                ethers.utils.solidityPack(['address'], [singularityDst.address]),
+                ethers.utils.solidityPack(
+                    ['address'],
+                    [singularityDst.address],
+                ),
                 [addCollateralFn],
                 ethers.utils.toUtf8Bytes(''),
                 { value: ethers.utils.parseEther('1') },
@@ -248,11 +251,7 @@ describe('SGLProxy', () => {
             ['uint16', 'uint256'],
             [1, 2250000],
         );
-        await proxySrc.setMinDstGas(
-            await lzEndpointDst.getChainId(),
-            1,
-            1,
-        );
+        await proxySrc.setMinDstGas(await lzEndpointDst.getChainId(), 1, 1);
         await proxySrc.setUseCustomAdapterParams(true);
 
         const usdoBorrowVal = wethDepositAmount
@@ -269,7 +268,10 @@ describe('SGLProxy', () => {
             .connect(eoa1)
             .executeOnChain(
                 await lzEndpointDst.getChainId(),
-                ethers.utils.solidityPack(['address'], [singularityDst.address]),
+                ethers.utils.solidityPack(
+                    ['address'],
+                    [singularityDst.address],
+                ),
                 [borrowFn],
                 adapterParam,
                 { value: ethers.utils.parseEther('10') },
@@ -537,7 +539,10 @@ describe('SGLProxy', () => {
         await expect(
             proxySrc.executeOnChain(
                 await lzEndpointDst.getChainId(),
-                ethers.utils.solidityPack(['address'], [singularityDst.address]),
+                ethers.utils.solidityPack(
+                    ['address'],
+                    [singularityDst.address],
+                ),
                 [],
                 ethers.utils.toUtf8Bytes(''),
             ),
@@ -595,7 +600,10 @@ describe('SGLProxy', () => {
         await expect(
             proxySrc.executeOnChain(
                 await lzEndpointDst.getChainId(),
-                ethers.utils.solidityPack(['address'], [singularityDst.address]),
+                ethers.utils.solidityPack(
+                    ['address'],
+                    [singularityDst.address],
+                ),
                 [],
                 ethers.utils.toUtf8Bytes(''),
             ),
@@ -625,11 +633,7 @@ describe('SGLProxy', () => {
             ['uint16', 'uint256'],
             [1, 2250000],
         );
-        await proxySrc.setMinDstGas(
-            await lzEndpointDst.getChainId(),
-            1,
-            1,
-        );
+        await proxySrc.setMinDstGas(await lzEndpointDst.getChainId(), 1, 1);
         await proxySrc.setUseCustomAdapterParams(true);
 
         await proxySrc.executeOnChain(
@@ -741,7 +745,10 @@ describe('SGLProxy', () => {
             .connect(eoa1)
             .executeOnChain(
                 await lzEndpointDst.getChainId(),
-                ethers.utils.solidityPack(['address'], [singularityDst.address]),
+                ethers.utils.solidityPack(
+                    ['address'],
+                    [singularityDst.address],
+                ),
                 [addCollateralFn],
                 ethers.utils.toUtf8Bytes(''),
                 { value: ethers.utils.parseEther('2') },
@@ -762,11 +769,7 @@ describe('SGLProxy', () => {
             ['uint16', 'uint256'],
             [1, 2250000],
         );
-        await proxySrc.setMinDstGas(
-            await lzEndpointDst.getChainId(),
-            1,
-            1,
-        );
+        await proxySrc.setMinDstGas(await lzEndpointDst.getChainId(), 1, 1);
         await proxySrc.setUseCustomAdapterParams(true);
 
         const borrowFn = singularityDst.interface.encodeFunctionData('borrow', [
@@ -778,7 +781,10 @@ describe('SGLProxy', () => {
             .connect(eoa1)
             .executeOnChain(
                 await lzEndpointDst.getChainId(),
-                ethers.utils.solidityPack(['address'], [singularityDst.address]),
+                ethers.utils.solidityPack(
+                    ['address'],
+                    [singularityDst.address],
+                ),
                 [borrowFn],
                 adapterParam,
                 { value: ethers.utils.parseEther('10') },
@@ -809,7 +815,10 @@ describe('SGLProxy', () => {
             .connect(eoa1)
             .executeOnChain(
                 await lzEndpointDst.getChainId(),
-                ethers.utils.solidityPack(['address'], [singularityDst.address]),
+                ethers.utils.solidityPack(
+                    ['address'],
+                    [singularityDst.address],
+                ),
                 [repayFn],
                 adapterParam,
                 { value: ethers.utils.parseEther('10') },
@@ -922,17 +931,16 @@ describe('SGLProxy', () => {
             ['uint16', 'uint256'],
             [1, 2250000],
         );
-        await proxySrc.setMinDstGas(
-            await lzEndpointDst.getChainId(),
-            1,
-            1,
-        );
+        await proxySrc.setMinDstGas(await lzEndpointDst.getChainId(), 1, 1);
         await proxySrc.setUseCustomAdapterParams(true);
         await proxySrc
             .connect(eoa1)
             .executeOnChain(
                 await lzEndpointDst.getChainId(),
-                ethers.utils.solidityPack(['address'], [singularityDst.address]),
+                ethers.utils.solidityPack(
+                    ['address'],
+                    [singularityDst.address],
+                ),
                 [addCollateralFn, borrowFn],
                 adapterParam,
                 { value: ethers.utils.parseEther('10') },
@@ -984,11 +992,7 @@ describe('SGLProxy', () => {
             ['uint16', 'uint256'],
             [1, 2250000],
         );
-        await proxySrc.setMinDstGas(
-            await lzEndpointDst.getChainId(),
-            1,
-            1,
-        );
+        await proxySrc.setMinDstGas(await lzEndpointDst.getChainId(), 1, 1);
         await proxySrc.setUseCustomAdapterParams(true);
 
         // Approve singularityDst actions
@@ -1054,7 +1058,10 @@ describe('SGLProxy', () => {
             .connect(eoa1)
             .executeOnChain(
                 await lzEndpointDst.getChainId(),
-                ethers.utils.solidityPack(['address'], [singularityDst.address]),
+                ethers.utils.solidityPack(
+                    ['address'],
+                    [singularityDst.address],
+                ),
                 [addCollateralFn],
                 adapterParam,
                 { value: ethers.utils.parseEther('10') },
@@ -1080,7 +1087,10 @@ describe('SGLProxy', () => {
             .connect(eoa1)
             .executeOnChain(
                 await lzEndpointDst.getChainId(),
-                ethers.utils.solidityPack(['address'], [singularityDst.address]),
+                ethers.utils.solidityPack(
+                    ['address'],
+                    [singularityDst.address],
+                ),
                 [borrowFn],
                 adapterParam,
                 { value: ethers.utils.parseEther('10') },
@@ -1136,6 +1146,7 @@ describe('SGLProxy', () => {
             usdcAssetId,
             eoa1,
             multiSwapper,
+            singularityHelper,
             __wethUsdcPrice,
         } = await loadFixture(register);
 
@@ -1146,11 +1157,7 @@ describe('SGLProxy', () => {
             ['uint16', 'uint256'],
             [1, 2250000],
         );
-        await proxySrc.setMinDstGas(
-            await lzEndpointDst.getChainId(),
-            1,
-            1,
-        );
+        await proxySrc.setMinDstGas(await lzEndpointDst.getChainId(), 1, 1);
         await proxySrc.setUseCustomAdapterParams(true);
 
         // --- Lending ---
@@ -1236,7 +1243,10 @@ describe('SGLProxy', () => {
             .connect(eoa1)
             .executeOnChain(
                 await lzEndpointDst.getChainId(),
-                ethers.utils.solidityPack(['address'], [singularityDst.address]),
+                ethers.utils.solidityPack(
+                    ['address'],
+                    [singularityDst.address],
+                ),
                 [addCollateralFn],
                 adapterParam,
                 { value: ethers.utils.parseEther('10') },
@@ -1262,7 +1272,10 @@ describe('SGLProxy', () => {
             .connect(eoa1)
             .executeOnChain(
                 await lzEndpointDst.getChainId(),
-                ethers.utils.solidityPack(['address'], [singularityDst.address]),
+                ethers.utils.solidityPack(
+                    ['address'],
+                    [singularityDst.address],
+                ),
                 [borrowFn],
                 adapterParam,
                 { value: ethers.utils.parseEther('10') },
@@ -1293,7 +1306,10 @@ describe('SGLProxy', () => {
             .connect(eoa1)
             .executeOnChain(
                 await lzEndpointDst.getChainId(),
-                ethers.utils.solidityPack(['address'], [singularityDst.address]),
+                ethers.utils.solidityPack(
+                    ['address'],
+                    [singularityDst.address],
+                ),
                 [repayFn],
                 adapterParam,
                 { value: ethers.utils.parseEther('10') },
@@ -1326,11 +1342,13 @@ describe('SGLProxy', () => {
             ),
             false,
         );
-        const feesAmountInAsset = await singularityDst.getAmountForAssetFraction(
-            (
-                await singularityDst.accrueInfo()
-            ).feesEarnedFraction,
-        );
+        const feesAmountInAsset =
+            await singularityHelper.getAmountForAssetFraction(
+                singularityDst.address,
+                (
+                    await singularityDst.accrueInfo()
+                ).feesEarnedFraction,
+            );
         // 0.31%
         const acceptableHarvestMargin = feesAmountInAsset.sub(
             feesAmountInAsset.mul(31).div(10000),
@@ -1399,11 +1417,7 @@ describe('SGLProxy', () => {
             ['uint16', 'uint256'],
             [1, 2250000],
         );
-        await proxySrc.setMinDstGas(
-            await lzEndpointDst.getChainId(),
-            1,
-            1,
-        );
+        await proxySrc.setMinDstGas(await lzEndpointDst.getChainId(), 1, 1);
         await proxySrc.setUseCustomAdapterParams(true);
 
         const flashLoanFn = singularityDst.interface.encodeFunctionData(

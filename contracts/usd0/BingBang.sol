@@ -71,6 +71,10 @@ contract BingBang is BoringOwnable, ERC20 {
     IOracle oracle;
     bytes public oracleData;
 
+    uint256 public callerFee; // 90%
+    uint256 public protocolFee; // 10%
+    uint256 public collateralizationRate; // 75%
+
     //errors
     error NotApproved(address _from, address _operator);
 
@@ -116,20 +120,15 @@ contract BingBang is BoringOwnable, ERC20 {
     // ***************** //
     // *** CONSTANTS *** //
     // ***************** //
-    uint256 private constant EXCHANGE_RATE_PRECISION = 1e18;
-    uint256 private constant COLLATERIZATION_RATE_PRECISION = 1e5; // Must be less than EXCHANGE_RATE_PRECISION (due to optimization in math)
-    uint256 internal constant LIQUIDATION_MULTIPLIER_PRECISION = 1e5;
-    uint256 private constant BORROW_OPENING_FEE_PRECISION = 1e5;
-    uint256 private constant PROTOCOL_FEE_DIVISOR = 1e5;
-    uint256 internal constant CALLER_FEE_DIVISOR = 1e5;
-
-    uint256 internal constant CLOSED_COLLATERIZATION_RATE = 75000; // 75%
-    uint256 internal constant LIQUIDATION_MULTIPLIER = 112000; // add 12%
-    uint256 internal constant CALLER_FEE = 90000; // 90%
-    uint256 private constant PROTOCOL_FEE = 10000; // 10%
+    uint256 private constant LIQUIDATION_MULTIPLIER = 112000; // add 12%
 
     uint256 private constant MAX_BORROWING_FEE = 8e4; //at 80% for testing; TODO
     uint256 private constant MAX_STABILITY_FEE = 8e17; //at 80% for testing; TODO
+
+    uint256 private constant FEE_PRECISION = 1e5;
+    uint256 private constant EXCHANGE_RATE_PRECISION = 1e18;
+    uint256 private constant COLLATERIZATION_RATE_PRECISION = 1e5; // Must be less than EXCHANGE_RATE_PRECISION (due to optimization in math)
+    uint256 private constant LIQUIDATION_MULTIPLIER_PRECISION = 1e5;
 
     // ***************** //
     // *** MODIFIERS *** //
@@ -180,6 +179,10 @@ contract BingBang is BoringOwnable, ERC20 {
         accrueInfo.stabilityFee = 317097920; // aprox 1% APR, with 1e18 being 100%
 
         updateExchangeRate();
+
+        callerFee = 90000; // 90%
+        protocolFee = 10000; // 10%
+        collateralizationRate = 75000; // 75%
 
         owner = msg.sender;
     }
@@ -415,6 +418,30 @@ contract BingBang is BoringOwnable, ERC20 {
     // *********************** //
     // *** OWNER FUNCTIONS *** //
     // *********************** //
+    /// @notice sets the protocol fee
+    /// @dev can only be called by the owner
+    /// @param _val the new value
+    function setProtocolFee(uint256 _val) external onlyOwner {
+        require(_val <= FEE_PRECISION, 'BingBang: not valid');
+        protocolFee = _val;
+    }
+
+    /// @notice sets the caller fee
+    /// @dev can only be called by the owner
+    /// @param _val the new value
+    function setCallerFee(uint256 _val) external onlyOwner {
+        require(_val <= FEE_PRECISION, 'BingBang: not valid');
+        callerFee = _val;
+    }
+
+    /// @notice sets the collateralization rate
+    /// @dev can only be called by the owner
+    /// @param _val the new value
+    function setCollateralizationRate(uint256 _val) external onlyOwner {
+        require(_val <= COLLATERIZATION_RATE_PRECISION, 'BingBang: not valid');
+        collateralizationRate = _val;
+    }
+
     /// @notice sets max borrowable amount
     function setBorrowCap(uint256 _cap) external onlyOwner {
         emit LogBorrowCapUpdated(totalBorrowCap, _cap);
@@ -487,7 +514,7 @@ contract BingBang is BoringOwnable, ERC20 {
                 collateralId,
                 collateralShare *
                     (EXCHANGE_RATE_PRECISION / COLLATERIZATION_RATE_PRECISION) *
-                    CLOSED_COLLATERIZATION_RATE,
+                    collateralizationRate,
                 false
             ) >=
             // Moved exchangeRate here instead of dividing the other side to preserve more precision
@@ -588,8 +615,8 @@ contract BingBang is BoringOwnable, ERC20 {
 
         uint256 returnedShare = balanceAfter - balanceBefore;
         uint256 extraShare = returnedShare - allBorrowShare;
-        uint256 feeShare = (extraShare * PROTOCOL_FEE) / PROTOCOL_FEE_DIVISOR; // 10% of profit goes to fee.
-        uint256 callerShare = (extraShare * CALLER_FEE) / CALLER_FEE_DIVISOR; //  90%  of profit goes to caller.
+        uint256 feeShare = (extraShare * protocolFee) / FEE_PRECISION; // 10% of profit goes to fee.
+        uint256 callerShare = (extraShare * callerFee) / FEE_PRECISION; //  90%  of profit goes to caller.
 
         require(
             feeShare + callerShare == extraShare,
@@ -666,8 +693,7 @@ contract BingBang is BoringOwnable, ERC20 {
         address to,
         uint256 amount
     ) internal returns (uint256 part, uint256 share) {
-        uint256 feeAmount = (amount * borrowingFee) /
-            BORROW_OPENING_FEE_PRECISION; // A flat % fee is charged for any borrow
+        uint256 feeAmount = (amount * borrowingFee) / FEE_PRECISION; // A flat % fee is charged for any borrow
 
         (totalBorrow, part) = totalBorrow.add(amount + feeAmount, true);
         require(
