@@ -65,7 +65,7 @@ contract SGLLiquidation is SGLCommon {
     function liquidate(
         address[] calldata users,
         uint256[] calldata maxBorrowParts,
-        IMultiSwapper swapper,
+        ISwapper swapper,
         bytes calldata collateralToAssetSwapData,
         bytes calldata usdoToBorrowedSwapData
     ) external {
@@ -201,7 +201,7 @@ contract SGLLiquidation is SGLCommon {
     function _closedLiquidation(
         address[] calldata users,
         uint256[] calldata maxBorrowParts,
-        IMultiSwapper swapper,
+        ISwapper swapper,
         uint256 _exchangeRate,
         bytes calldata swapData
     ) private {
@@ -275,10 +275,10 @@ contract SGLLiquidation is SGLCommon {
         swapper.swap(
             collateralId,
             assetId,
-            minAssetMount,
+            allCollateralShare,
             address(this),
-            _collateralToAssetSwapPath(),
-            allCollateralShare
+            minAssetMount,
+            abi.encode(collateralSwapPath)
         );
 
         uint256 returnedShare = yieldBox.balanceOf(address(this), assetId) -

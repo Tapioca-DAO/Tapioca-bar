@@ -5,7 +5,7 @@ import '@boringcrypto/boring-solidity/contracts/BoringOwnable.sol';
 
 import '../../IPenrose.sol';
 import '../ILiquidationQueue.sol';
-import '../../swappers/IMultiSwapper.sol';
+import '../../swappers/ISwapper.sol';
 import '../../singularity/interfaces/ISingularity.sol';
 import '../../../yieldbox/contracts/interfaces/IYieldBox.sol';
 
@@ -32,7 +32,7 @@ contract UniUsdoToWethBidder is BoringOwnable {
     // ************ //
 
     /// @notice UniswapV2 swapper
-    IMultiSwapper public univ2Swapper;
+    ISwapper public univ2Swapper;
 
     /// @notice YieldBox WETH asset id
     uint256 wethId;
@@ -45,7 +45,7 @@ contract UniUsdoToWethBidder is BoringOwnable {
     /// @notice Creates a new UniUsdoToWethBidder contract
     /// @param uniV2Swapper_ UniswapV2 swapper address
     /// @param _wethAssetId YieldBox WETH asset id
-    constructor(IMultiSwapper uniV2Swapper_, uint256 _wethAssetId) {
+    constructor(ISwapper uniV2Swapper_, uint256 _wethAssetId) {
         univ2Swapper = uniV2Swapper_;
         wethId = _wethAssetId;
     }
@@ -82,7 +82,7 @@ contract UniUsdoToWethBidder is BoringOwnable {
         path[0] = tokenInAddress;
         path[1] = tokenOutAddress;
 
-        return univ2Swapper.getInputAmount(wethId, path, shareOut);
+        return univ2Swapper.getInputAmount(wethId, shareOut, abi.encode(path));
     }
 
     /// @notice returns the amount of collateral
@@ -166,7 +166,7 @@ contract UniUsdoToWethBidder is BoringOwnable {
     /// @notice sets the UniV2 swapper
     /// @dev used for WETH to USDC swap
     /// @param _swapper The UniV2 pool swapper address
-    function setUniswapSwapper(IMultiSwapper _swapper) external onlyOwner {
+    function setUniswapSwapper(ISwapper _swapper) external onlyOwner {
         emit UniV2SwapperUpdated(address(univ2Swapper), address(_swapper));
         univ2Swapper = _swapper;
     }
@@ -195,10 +195,10 @@ contract UniUsdoToWethBidder is BoringOwnable {
         (uint256 outAmount, ) = univ2Swapper.swap(
             tokenInId,
             tokenOutId,
-            minAmount,
+            tokenInShare,
             to,
-            swapPath,
-            tokenInShare
+            minAmount,
+            abi.encode(swapPath)
         );
 
         return outAmount;
@@ -216,6 +216,6 @@ contract UniUsdoToWethBidder is BoringOwnable {
         swapPath[0] = tokenInAddress;
         swapPath[1] = tokenOutAddress;
         uint256 tokenInShare = yieldBox.toShare(tokenInId, amountIn, false);
-        return univ2Swapper.getOutputAmount(tokenInId, swapPath, tokenInShare);
+        return univ2Swapper.getOutputAmount(tokenInId, tokenInShare, abi.encode(swapPath));
     }
 }
