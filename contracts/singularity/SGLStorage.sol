@@ -7,7 +7,7 @@ import '@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol';
 import '@boringcrypto/boring-solidity/contracts/libraries/BoringRebase.sol';
 
 import '../../yieldbox/contracts/YieldBox.sol';
-import '../swappers/IMultiSwapper.sol';
+import '../swappers/ISwapper.sol';
 import '../singularity/interfaces/IOracle.sol';
 import '../singularity/interfaces/IFlashLoan.sol';
 import '../liquidationQueue/ILiquidationQueue.sol';

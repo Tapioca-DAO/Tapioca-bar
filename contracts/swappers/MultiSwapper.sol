@@ -2,15 +2,17 @@
 pragma solidity ^0.8.0;
 
 import '@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol';
+
+import './ISwapper.sol';
 import '../IPenrose.sol';
+import '../../yieldbox/contracts/YieldBox.sol';
+
 import '../libraries/IUniswapV2Factory.sol';
 import '../libraries/UniswapV2Library.sol';
 import '../libraries/IUniswapV2Pair.sol';
-import '../../yieldbox/contracts//YieldBox.sol';
 
 /// Modified from https://github.com/sushiswap/kashi-lending/blob/master/contracts/swappers/SushiSwapMultiSwapper.sol
-
-contract MultiSwapper {
+contract MultiSwapper is ISwapper {
     using BoringERC20 for IERC20;
 
     // ************ //
@@ -37,11 +39,18 @@ contract MultiSwapper {
     // ********************** //
     // *** VIEW FUNCTIONS *** //
     // ********************** //
+    /// @notice returns the possible output amount for input share
+    /// @param tokenInId YieldBox asset id
+    /// @param shareIn Shares to get the amount for
+    /// @param dexData Custom DEX data for query execution
+    /// @dev dexData examples:
+    ///     - for UniV2, it should contain address[] swapPath
     function getOutputAmount(
         uint256 tokenInId,
-        address[] calldata path,
-        uint256 shareIn
-    ) external view returns (uint256 amountOut) {
+        uint256 shareIn,
+        bytes calldata dexData
+    ) external view override returns (uint256 amountOut) {
+        address[] memory path = abi.decode(dexData, (address[]));
         uint256 amountIn = yieldBox.toAmount(tokenInId, shareIn, false);
         uint256[] memory amounts = UniswapV2Library.getAmountsOut(
             factory,
@@ -52,11 +61,18 @@ contract MultiSwapper {
         amountOut = amounts[amounts.length - 1];
     }
 
+    /// @notice returns necessary input amount for a fixed output amount
+    /// @param tokenOutId YieldBox asset id
+    /// @param shareOut Shares out to compute the amount for
+    /// @param dexData Custom DEX data for query execution
+    /// @dev dexData examples:
+    ///     - for UniV2, it should contain address[] swapPath
     function getInputAmount(
         uint256 tokenOutId,
-        address[] calldata path,
-        uint256 shareOut
-    ) external view returns (uint256 amountIn) {
+        uint256 shareOut,
+        bytes calldata dexData
+    ) external view override returns (uint256 amountIn) {
+        address[] memory path = abi.decode(dexData, (address[]));
         uint256 amountOut = yieldBox.toAmount(tokenOutId, shareOut, false);
         uint256[] memory amounts = UniswapV2Library.getAmountsIn(
             factory,
@@ -70,14 +86,25 @@ contract MultiSwapper {
     // ************************ //
     // *** PUBLIC FUNCTIONS *** //
     // ************************ //
+    /// @notice swaps token in with token out
+    /// @dev returns both amount and shares
+    /// @param tokenInId YieldBox asset id
+    /// @param tokenOutId YieldBox asset id
+    /// @param shareIn Shares to be swapped
+    /// @param to Receiver address
+    /// @param amountOutMin Minimum amount to be received
+    /// @param dexData Custom DEX data for query execution
+    /// @dev dexData examples:
+    ///     - for UniV2, it should contain address[] swapPath
     function swap(
         uint256 tokenInId,
         uint256 tokenOutId,
-        uint256 amountMinOut,
+        uint256 shareIn,
         address to,
-        address[] calldata path,
-        uint256 shareIn
-    ) external returns (uint256 amountOut, uint256 shareOut) {
+        uint256 amountOutMin,
+        bytes calldata dexData
+    ) external override returns (uint256 amountOut, uint256 shareOut) {
+        address[] memory path = abi.decode(dexData, (address[]));
         (uint256 amountIn, ) = yieldBox.withdraw(
             tokenInId,
             address(this),
@@ -88,7 +115,7 @@ contract MultiSwapper {
 
         amountOut = _swapExactTokensForTokens(
             amountIn,
-            amountMinOut,
+            amountOutMin,
             path,
             address(this)
         );

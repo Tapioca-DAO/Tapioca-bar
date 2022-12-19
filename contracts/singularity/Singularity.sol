@@ -309,7 +309,7 @@ contract Singularity is SGLCommon {
     function liquidate(
         address[] calldata users,
         uint256[] calldata maxBorrowParts,
-        IMultiSwapper swapper,
+        ISwapper swapper,
         bytes calldata collateralToAssetSwapData,
         bytes calldata usdoToBorrowedSwapData
     ) external {
@@ -364,7 +364,7 @@ contract Singularity is SGLCommon {
 
     /// @notice Withdraw the balance of `feeTo`, swap asset into TAP and deposit it to yieldBox of `feeTo`
     function depositFeesToYieldBox(
-        IMultiSwapper swapper,
+        ISwapper swapper,
         IPenrose.SwapData calldata swapData
     ) public {
         if (accrueInfo.feesEarnedFraction > 0) {
@@ -386,10 +386,10 @@ contract Singularity is SGLCommon {
         (uint256 tapAmount, ) = swapper.swap(
             assetId,
             penrose.tapAssetId(),
+            feeShares,
+            _feeTo,
             swapData.minAssetAmount,
-            _feeTo, //TODO: complete with feeTwTap
-            tapSwapPath,
-            feeShares
+            abi.encode(tapSwapPath)
         );
 
         emit LogYieldBoxFeesDeposit(feeShares, tapAmount);
