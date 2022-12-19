@@ -1333,7 +1333,7 @@ describe('SGLProxy', () => {
             ),
         ).to.emit(singularityDst, 'LogYieldBoxFeesDeposit');
 
-        const mixologistFeeVeTap = await bar.feeVeTap();
+        const mixologistFeeVeTap = await bar.feeTo();
         const tapAmountHarvested = await yieldBox.toAmount(
             await bar.tapAssetId(),
             await yieldBox.balanceOf(
@@ -1345,6 +1345,7 @@ describe('SGLProxy', () => {
         const feesAmountInAsset =
             await singularityHelper.getAmountForAssetFraction(
                 singularityDst.address,
+
                 (
                     await singularityDst.accrueInfo()
                 ).feesEarnedFraction,

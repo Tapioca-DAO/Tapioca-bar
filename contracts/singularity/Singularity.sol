@@ -337,7 +337,6 @@ contract Singularity is SGLCommon {
         }
         require(penrose.swappers(swapper), 'SGL: Invalid swapper');
         address _feeTo = penrose.feeTo();
-        address _feeVeTap = penrose.feeVeTap();
 
         uint256 feeShares = _removeAsset(
             _feeTo,
@@ -353,7 +352,7 @@ contract Singularity is SGLCommon {
             assetId,
             penrose.tapAssetId(),
             feeShares,
-            _feeVeTap,
+            _feeTo,
             swapData.minAssetAmount,
             abi.encode(tapSwapPath)
         );

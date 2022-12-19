@@ -38,9 +38,6 @@ contract Penrose is BoringOwnable {
     /// @notice protocol fees
     address public feeTo;
 
-    /// @notice TAP distributor fees
-    address public feeVeTap;
-
     /// @notice whitelisted swappers
     mapping(ISwapper => bool) public swappers;
 
@@ -253,12 +250,6 @@ contract Penrose is BoringOwnable {
     function setFeeTo(address feeTo_) external onlyOwner {
         feeTo = feeTo_;
         emit FeeToUpdate(feeTo_);
-    }
-
-    /// @notice Set TAP distributors fees address
-    function setFeeVeTap(address feeVeTap_) external onlyOwner {
-        feeVeTap = feeVeTap_;
-        emit FeeVeTapUpdate(feeVeTap_);
     }
 
     /// @notice Used to register and enable or disable swapper contracts used in closed liquidations.

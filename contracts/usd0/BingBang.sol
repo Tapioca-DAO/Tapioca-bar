@@ -360,8 +360,6 @@ contract BingBang is BoringOwnable, ERC20 {
         emit LogWithdrawFees(penrose.feeTo(), balance);
 
         address _feeTo = penrose.feeTo();
-        address _feeVeTap = penrose.feeVeTap();
-
         if (balanceOf[_feeTo] > 0) {
             uint256 feeShares = yieldBox.toShare(
                 assetId,
@@ -389,7 +387,7 @@ contract BingBang is BoringOwnable, ERC20 {
                 assetId,
                 penrose.tapAssetId(),
                 feeShares,
-                _feeVeTap,
+                _feeTo,
                 swapData.minAssetAmount,
                 abi.encode(tapSwapPath)
             );
