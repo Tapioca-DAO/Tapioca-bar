@@ -1006,7 +1006,7 @@ describe('LiquidationQueue test', () => {
             'updateLQUsdoSwapper',
             [stableToUsdoBidder.address],
         );
-        await bar.executeSingularityFn(
+        await bar.executeMarketFn(
             [wethUsdcSingularity.address],
             [usdofnData],
             true,
@@ -1016,7 +1016,7 @@ describe('LiquidationQueue test', () => {
             'updateLQExecutionSwapper',
             [usdoToWethBidder.address],
         );
-        await bar.executeSingularityFn(
+        await bar.executeMarketFn(
             [wethUsdcSingularity.address],
             [executionfnData],
             true,
@@ -1146,7 +1146,7 @@ describe('LiquidationQueue test', () => {
             'updateLQUsdoSwapper',
             [stableToUsdoBidder.address],
         );
-        await bar.executeSingularityFn(
+        await bar.executeMarketFn(
             [wethUsdcSingularity.address],
             [usdofnData],
             true,
@@ -1156,7 +1156,7 @@ describe('LiquidationQueue test', () => {
             'updateLQExecutionSwapper',
             [usdoToWethBidder.address],
         );
-        await bar.executeSingularityFn(
+        await bar.executeMarketFn(
             [wethUsdcSingularity.address],
             [executionfnData],
             true,
@@ -1254,7 +1254,7 @@ describe('LiquidationQueue test', () => {
             'updateLQUsdoSwapper',
             [stableToUsdoBidder.address],
         );
-        await bar.executeSingularityFn(
+        await bar.executeMarketFn(
             [wethUsdcSingularity.address],
             [usdofnData],
             true,
@@ -1264,7 +1264,7 @@ describe('LiquidationQueue test', () => {
             'updateLQExecutionSwapper',
             [usdoToWethBidder.address],
         );
-        await bar.executeSingularityFn(
+        await bar.executeMarketFn(
             [wethUsdcSingularity.address],
             [executionfnData],
             true,
@@ -1395,7 +1395,7 @@ describe('LiquidationQueue test', () => {
             'updateLQUsdoSwapper',
             [stableToUsdoBidder.address],
         );
-        await bar.executeSingularityFn(
+        await bar.executeMarketFn(
             [wethUsdcSingularity.address],
             [usdofnData],
             true,
@@ -1405,7 +1405,7 @@ describe('LiquidationQueue test', () => {
             'updateLQExecutionSwapper',
             [usdoToWethBidder.address],
         );
-        await bar.executeSingularityFn(
+        await bar.executeMarketFn(
             [wethUsdcSingularity.address],
             [executionfnData],
             true,
@@ -1644,7 +1644,7 @@ describe('LiquidationQueue test', () => {
             'updateLQUsdoSwapper',
             [stableToUsdoBidder.address],
         );
-        await bar.executeSingularityFn(
+        await bar.executeMarketFn(
             [wethUsdcSingularity.address],
             [usdofnData],
             true,
@@ -1654,7 +1654,7 @@ describe('LiquidationQueue test', () => {
             'updateLQExecutionSwapper',
             [usdoToWethBidder.address],
         );
-        await bar.executeSingularityFn(
+        await bar.executeMarketFn(
             [wethUsdcSingularity.address],
             [executionfnData],
             true,

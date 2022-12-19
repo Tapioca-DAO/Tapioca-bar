@@ -149,20 +149,32 @@ contract BingBang is BoringOwnable, ERC20 {
     /// @dev Checks if the user is solvent in the closed liquidation case at the end of the function body.
     modifier solvent(address from) {
         _;
-        require(_isSolvent(from, exchangeRate), 'SGL: insolvent');
+        require(_isSolvent(from, exchangeRate), 'BingBang: insolvent');
     }
 
-    /// @notice Creates the BingBang contract
-    constructor(
-        IPenrose penrose_,
-        IERC20 _collateral,
-        uint256 _collateralId,
-        IOracle _oracle,
-        address[] memory _tapSwapPath,
-        address[] memory _collateralSwapPath
-    ) {
-        penrose = penrose_;
-        yieldBox = YieldBox(penrose_.yieldBox());
+    bool private initialized;
+    modifier onlyOnce() {
+        require(!initialized, 'BingBang: initialized');
+        _;
+        initialized = true;
+    }
+
+    /// @notice The init function that acts as a constructor
+    function init(bytes calldata data) external onlyOnce {
+        (
+            IPenrose tapiocaBar_,
+            IERC20 _collateral,
+            uint256 _collateralId,
+            IOracle _oracle,
+            address[] memory _tapSwapPath,
+            address[] memory _collateralSwapPath
+        ) = abi.decode(
+                data,
+                (IPenrose, IERC20, uint256, IOracle, address[], address[])
+            );
+
+        penrose = tapiocaBar_;
+        yieldBox = YieldBox(tapiocaBar_.yieldBox());
         owner = address(penrose);
 
         tapSwapPath = _tapSwapPath;
@@ -174,7 +186,7 @@ contract BingBang is BoringOwnable, ERC20 {
             address(_collateral) != address(0) &&
                 address(_asset) != address(0) &&
                 address(_oracle) != address(0),
-            'SGL: bad pair'
+            'BingBang: bad pair'
         );
 
         asset = IUSD0(_asset);
@@ -190,8 +202,6 @@ contract BingBang is BoringOwnable, ERC20 {
         callerFee = 90000; // 90%
         protocolFee = 10000; // 10%
         collateralizationRate = 75000; // 75%
-
-        owner = msg.sender;
     }
 
     // ********************** //
@@ -352,7 +362,7 @@ contract BingBang is BoringOwnable, ERC20 {
         ISwapper swapper,
         IPenrose.SwapData calldata swapData
     ) public {
-        require(penrose.swappers(swapper), 'SGL: Invalid swapper');
+        require(penrose.swappers(swapper), 'BingBang: Invalid swapper');
 
         uint256 balance = asset.balanceOf(address(this));
         balanceOf[penrose.feeTo()] += balance;
@@ -473,7 +483,10 @@ contract BingBang is BoringOwnable, ERC20 {
     /// @notice Updates the stability fee
     /// @param _stabilityFee the new value
     function updateStabilityFee(uint64 _stabilityFee) external onlyOwner {
-        require(_stabilityFee <= MAX_STABILITY_FEE, 'SGL: value not valid');
+        require(
+            _stabilityFee <= MAX_STABILITY_FEE,
+            'BingBang: value not valid'
+        );
         emit LogStabilityFee(accrueInfo.stabilityFee, _stabilityFee);
         accrueInfo.stabilityFee = _stabilityFee;
     }
@@ -481,7 +494,10 @@ contract BingBang is BoringOwnable, ERC20 {
     /// @notice Updates the borrowing fee
     /// @param _borrowingFee the new value
     function updateBorrowingFee(uint256 _borrowingFee) external onlyOwner {
-        require(_borrowingFee <= MAX_BORROWING_FEE, 'SGL: value not valid');
+        require(
+            _borrowingFee <= MAX_BORROWING_FEE,
+            'BingBang: value not valid'
+        );
         emit LogBorrowingFee(borrowingFee, _borrowingFee);
         borrowingFee = _borrowingFee;
     }
@@ -570,7 +586,7 @@ contract BingBang is BoringOwnable, ERC20 {
                 allBorrowPart += borrowPart;
             }
         }
-        require(allBorrowAmount != 0, 'SGL: solvent');
+        require(allBorrowAmount != 0, 'BingBang: solvent');
         _totalBorrow.elastic -= uint128(allBorrowAmount);
         _totalBorrow.base -= uint128(allBorrowPart);
         totalBorrow = _totalBorrow;
@@ -583,7 +599,7 @@ contract BingBang is BoringOwnable, ERC20 {
         );
 
         // Closed liquidation using a pre-approved swapper
-        require(penrose.swappers(swapper), 'SGL: Invalid swapper');
+        require(penrose.swappers(swapper), 'BingBang: Invalid swapper');
 
         // Swaps the users collateral for the borrowed asset
         yieldBox.transfer(
@@ -615,7 +631,7 @@ contract BingBang is BoringOwnable, ERC20 {
 
         require(
             feeShare + callerShare == extraShare,
-            'SGL: fee values not valid'
+            'BingBang: fee values not valid'
         );
 
         yieldBox.transfer(address(this), penrose.feeTo(), assetId, feeShare);
@@ -640,7 +656,7 @@ contract BingBang is BoringOwnable, ERC20 {
         if (skim) {
             require(
                 share <= yieldBox.balanceOf(address(this), _tokenId) - total,
-                'SGL: too much'
+                'BingBang: too much'
             );
         } else {
             yieldBox.transfer(from, address(this), _tokenId, share);
@@ -693,7 +709,7 @@ contract BingBang is BoringOwnable, ERC20 {
         (totalBorrow, part) = totalBorrow.add(amount + feeAmount, true);
         require(
             totalBorrowCap == 0 || totalBorrow.base <= totalBorrowCap,
-            'SGL: borrow cap reached'
+            'BingBang: borrow cap reached'
         );
 
         userBorrowPart[from] += part;

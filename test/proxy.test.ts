@@ -1319,7 +1319,7 @@ describe('SGLProxy', () => {
 
         // Withdraw fees from Penrose
         await expect(
-            bar.withdrawAllProtocolFees(
+            bar.withdrawAllSingularityFees(
                 [
                     multiSwapper.address,
                     multiSwapper.address,

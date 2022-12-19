@@ -14,7 +14,7 @@ export const setCap = async (taskArgs: any, hre: HardhatRuntimeEnvironment) => {
         [taskArgs['cap']],
     );
 
-    await penroseContract.executeSingularityFn(
+    await penroseContract.executeMarketFn(
         [singularityAddress],
         [callData],
         true,

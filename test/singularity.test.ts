@@ -448,7 +448,7 @@ describe('Singularity test', () => {
             'setBorrowCap',
             [wethBorrowVal.div(2)],
         );
-        await bar.executeSingularityFn(
+        await bar.executeMarketFn(
             [wethUsdcSingularity.address],
             [borrowCapData],
             true,
@@ -466,7 +466,7 @@ describe('Singularity test', () => {
             'setBorrowCap',
             [0],
         );
-        await bar.executeSingularityFn(
+        await bar.executeMarketFn(
             [wethUsdcSingularity.address],
             [borrowCapData],
             true,
@@ -825,7 +825,7 @@ describe('Singularity test', () => {
         expect(userBorrowPart.gt(wethBorrowVal));
         // Withdraw fees from Penrose
         await expect(
-            bar.withdrawAllProtocolFees(
+            bar.withdrawAllSingularityFees(
                 [multiSwapper.address],
                 [{ minAssetAmount: 1 }],
             ),
@@ -1026,7 +1026,7 @@ describe('Singularity test', () => {
                 'setCollateralSwapPath',
                 [collateralSwapPath],
             );
-        await bar.executeSingularityFn(
+        await bar.executeMarketFn(
             [wethUsdcSingularity.address],
             [collateralSwapCalldata],
             true,
@@ -1036,7 +1036,7 @@ describe('Singularity test', () => {
             wethUsdcSingularity.interface.encodeFunctionData('setTapSwapPath', [
                 tapSwapPath,
             ]);
-        await bar.executeSingularityFn(
+        await bar.executeMarketFn(
             [wethUsdcSingularity.address],
             [tapSwapCalldata],
             true,
@@ -1305,7 +1305,7 @@ describe('Singularity test', () => {
         );
 
         await (
-            await bar.executeSingularityFn(
+            await bar.executeMarketFn(
                 [wethUsdoSingularity.address],
                 [payload],
                 true,
