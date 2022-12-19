@@ -874,7 +874,7 @@ async function registerMinterSingularity(
     staging?: boolean,
 ) {
     const wethMinterSingularity = await (
-        await ethers.getContractFactory('MinterSingularity')
+        await ethers.getContractFactory('BingBang')
     ).deploy(
         bar.address,
         wethCollateral.address,
@@ -1112,7 +1112,7 @@ export async function register(staging?: boolean) {
     await bar.setUsdoToken(usd0.address, { gasPrice: gasPrice });
     log(`USD0 was set on Penrose`, staging);
 
-    // ------------------- 12 Register MinterSingularity -------------------
+    // ------------------- 12 Register BingBang -------------------
     log('Deploying WethMinterSingularity', staging);
     const minterSingularityCollateralSwapPath = [weth.address, usd0.address];
     const minterSingularityTapSwapPath = [usd0.address, tap.address];

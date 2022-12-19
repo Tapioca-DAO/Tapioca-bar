@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 
 import './IOracle.sol';
 import '../../IPenrose.sol';
-import '../../swappers/IMultiSwapper.sol';
+import '../../swappers/ISwapper.sol';
 
 interface ISingularity {
     struct AccrueInfo {
@@ -162,7 +162,7 @@ interface ISingularity {
         address[] calldata users,
         uint256[] calldata borrowParts,
         address to,
-        IMultiSwapper swapper,
+        ISwapper swapper,
         bool open
     ) external;
 
@@ -211,9 +211,9 @@ interface ISingularity {
 
     function setFeeTo(address newFeeTo) external;
 
-    function setSwapper(IMultiSwapper swapper, bool enable) external;
+    function setSwapper(ISwapper swapper, bool enable) external;
 
-    function swappers(IMultiSwapper) external view returns (bool);
+    function swappers(ISwapper) external view returns (bool);
 
     function symbol() external view returns (string memory);
 
@@ -266,7 +266,7 @@ interface ISingularity {
 
     function withdrawFees() external;
 
-    function depositFeesToYieldBox(IMultiSwapper, IPenrose.SwapData calldata)
+    function depositFeesToYieldBox(ISwapper, IPenrose.SwapData calldata)
         external;
 
     function yieldBox() external view returns (address payable);

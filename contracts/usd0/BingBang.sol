@@ -7,7 +7,7 @@ import '@boringcrypto/boring-solidity/contracts/libraries/BoringRebase.sol';
 import '@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol';
 
 import '../IPenrose.sol';
-import '../swappers/IMultiSwapper.sol';
+import '../swappers/ISwapper.sol';
 import '../singularity/interfaces/IOracle.sol';
 import '../../yieldbox/contracts/YieldBox.sol';
 
@@ -26,7 +26,7 @@ __/\\\\\\\\\\\\\\\_____/\\\\\\\\\_____/\\\\\\\\\\\\\____/\\\\\\\\\\\_______/\\\\
 
 */
 
-contract MinterSingularity is BoringOwnable, ERC20 {
+contract BingBang is BoringOwnable, ERC20 {
     using RebaseLibrary for Rebase;
     using BoringERC20 for IERC20;
 
@@ -152,17 +152,17 @@ contract MinterSingularity is BoringOwnable, ERC20 {
         require(_isSolvent(from, exchangeRate), 'SGL: insolvent');
     }
 
-    /// @notice Creates the MinterSingularity contract
+    /// @notice Creates the BingBang contract
     constructor(
-        IPenrose tapiocaBar_,
+        IPenrose penrose_,
         IERC20 _collateral,
         uint256 _collateralId,
         IOracle _oracle,
         address[] memory _tapSwapPath,
         address[] memory _collateralSwapPath
     ) {
-        penrose = tapiocaBar_;
-        yieldBox = YieldBox(tapiocaBar_.yieldBox());
+        penrose = penrose_;
+        yieldBox = YieldBox(penrose_.yieldBox());
         owner = address(penrose);
 
         tapSwapPath = _tapSwapPath;
@@ -215,7 +215,7 @@ contract MinterSingularity is BoringOwnable, ERC20 {
         return
             string(
                 abi.encodePacked(
-                    'Tapioca MinterSingularity ',
+                    'Tapioca BingBang ',
                     collateral.safeName(),
                     '/',
                     asset.name(),
@@ -349,7 +349,7 @@ contract MinterSingularity is BoringOwnable, ERC20 {
 
     /// @notice Withdraw the balance of `feeTo`, swap asset into TAP and deposit it to yieldBox of `feeTo`
     function depositFeesToYieldBox(
-        IMultiSwapper swapper,
+        ISwapper swapper,
         IPenrose.SwapData calldata swapData
     ) public {
         require(penrose.swappers(swapper), 'SGL: Invalid swapper');
@@ -388,10 +388,10 @@ contract MinterSingularity is BoringOwnable, ERC20 {
             (uint256 tapAmount, ) = swapper.swap(
                 assetId,
                 penrose.tapAssetId(),
-                swapData.minAssetAmount,
+                feeShares,
                 _feeVeTap,
-                tapSwapPath,
-                feeShares
+                swapData.minAssetAmount,
+                abi.encode(tapSwapPath)
             );
 
             emit LogYieldBoxFeesDeposit(feeShares, tapAmount);
@@ -406,7 +406,7 @@ contract MinterSingularity is BoringOwnable, ERC20 {
     function liquidate(
         address[] calldata users,
         uint256[] calldata maxBorrowParts,
-        IMultiSwapper swapper,
+        ISwapper swapper,
         bytes calldata collateralToAssetSwapData
     ) external {
         // Oracle can fail but we still need to allow liquidations
@@ -528,7 +528,7 @@ contract MinterSingularity is BoringOwnable, ERC20 {
     function _closedLiquidation(
         address[] calldata users,
         uint256[] calldata maxBorrowParts,
-        IMultiSwapper swapper,
+        ISwapper swapper,
         uint256 _exchangeRate,
         bytes calldata swapData
     ) private {
@@ -603,10 +603,10 @@ contract MinterSingularity is BoringOwnable, ERC20 {
         swapper.swap(
             collateralId,
             assetId,
-            minAssetMount,
+            allCollateralShare,
             address(this),
-            collateralSwapPath,
-            allCollateralShare
+            minAssetMount,
+            abi.encode(collateralSwapPath)
         );
         uint256 balanceAfter = yieldBox.balanceOf(address(this), assetId);
 
