@@ -448,7 +448,7 @@ describe('Singularity test', () => {
             'setBorrowCap',
             [wethBorrowVal.div(2)],
         );
-        await bar.executeSingularityFn(
+        await bar.executeMarketFn(
             [wethUsdcSingularity.address],
             [borrowCapData],
             true,
@@ -466,7 +466,7 @@ describe('Singularity test', () => {
             'setBorrowCap',
             [0],
         );
-        await bar.executeSingularityFn(
+        await bar.executeMarketFn(
             [wethUsdcSingularity.address],
             [borrowCapData],
             true,
@@ -748,10 +748,10 @@ describe('Singularity test', () => {
             usdcDepositAndAddCollateral,
             wethDepositAndAddAsset,
             multiSwapper,
-            singularityFeeVeTap,
-            singularityHelper,
+            singularityFeeTo,
             __wethUsdcPrice,
             timeTravel,
+            singularityHelper
         } = await loadFixture(register);
 
         const assetId = await wethUsdcSingularity.assetId();
@@ -825,7 +825,7 @@ describe('Singularity test', () => {
         expect(userBorrowPart.gt(wethBorrowVal));
         // Withdraw fees from Penrose
         await expect(
-            bar.withdrawAllProtocolFees(
+            bar.withdrawAllSingularityFees(
                 [multiSwapper.address],
                 [{ minAssetAmount: 1 }],
             ),
@@ -834,7 +834,7 @@ describe('Singularity test', () => {
         const amountHarvested = await yieldBox.toAmount(
             await wethUsdcSingularity.collateralId(),
             await yieldBox.balanceOf(
-                singularityFeeVeTap.address,
+                singularityFeeTo.address,
                 await wethUsdcSingularity.collateralId(),
             ),
             false,
@@ -1279,7 +1279,7 @@ describe('Singularity test', () => {
         );
 
         await (
-            await bar.executeSingularityFn(
+            await bar.executeMarketFn(
                 [wethUsdoSingularity.address],
                 [payload],
                 true,

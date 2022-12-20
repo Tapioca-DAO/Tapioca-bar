@@ -17,7 +17,7 @@ export const setLiquidationQueue = async (
         [taskArgs['liquidationQueue'], taskArgs['meta']],
     );
 
-    await penroseContract.executeSingularityFn(
+    await penroseContract.executeMarketFn(
         [singularityAddress],
         [callData],
         true,

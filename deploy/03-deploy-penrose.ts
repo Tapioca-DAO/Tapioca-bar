@@ -43,9 +43,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     );
 
     await (await penroseContract.setFeeTo(constants[chainId].feeTo)).wait();
-    await (
-        await penroseContract.setFeeVeTap(constants[chainId].feeVeTo)
-    ).wait();
     console.log('Done');
 };
 

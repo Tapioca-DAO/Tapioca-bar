@@ -5,7 +5,7 @@ import { getDeployment } from './utils';
 export const getPenroseMarkets = async (hre: HardhatRuntimeEnvironment) => {
     const penroseContract = await getDeployment(hre, 'Penrose');
 
-    const addresses = await penroseContract.tapiocaMarkets();
+    const addresses = await penroseContract.singularityMarkets();
     const markets = [];
 
     for (const address of addresses) {

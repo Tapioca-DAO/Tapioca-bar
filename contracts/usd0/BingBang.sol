@@ -150,15 +150,24 @@ contract BingBang is BoringOwnable, ERC20 {
         require(_isSolvent(from, exchangeRate), 'BingBang: insolvent');
     }
 
-    /// @notice Creates the BingBang contract
-    constructor(
-        IPenrose penrose_,
-        IERC20 _collateral,
-        uint256 _collateralId,
-        IOracle _oracle
-    ) {
-        penrose = penrose_;
-        yieldBox = YieldBox(penrose_.yieldBox());
+    bool private initialized;
+    modifier onlyOnce() {
+        require(!initialized, 'BingBang: initialized');
+        _;
+        initialized = true;
+    }
+
+    /// @notice The init function that acts as a constructor
+    function init(bytes calldata data) external onlyOnce {
+        (
+            IPenrose tapiocaBar_,
+            IERC20 _collateral,
+            uint256 _collateralId,
+            IOracle _oracle
+        ) = abi.decode(data, (IPenrose, IERC20, uint256, IOracle));
+
+        penrose = tapiocaBar_;
+        yieldBox = YieldBox(tapiocaBar_.yieldBox());
         owner = address(penrose);
 
         address _asset = penrose.usdoToken();
@@ -183,8 +192,6 @@ contract BingBang is BoringOwnable, ERC20 {
         callerFee = 90000; // 90%
         protocolFee = 10000; // 10%
         collateralizationRate = 75000; // 75%
-
-        owner = msg.sender;
     }
 
     // ********************** //
@@ -353,8 +360,6 @@ contract BingBang is BoringOwnable, ERC20 {
         emit LogWithdrawFees(penrose.feeTo(), balance);
 
         address _feeTo = penrose.feeTo();
-        address _feeVeTap = penrose.feeVeTap();
-
         if (balanceOf[_feeTo] > 0) {
             uint256 feeShares = yieldBox.toShare(
                 assetId,
@@ -382,7 +387,7 @@ contract BingBang is BoringOwnable, ERC20 {
                 assetId,
                 collateralId,
                 feeShares,
-                _feeVeTap,
+                _feeTo,
                 swapData.minAssetAmount,
                 abi.encode(_assetToCollateralSwapPath())
             );
