@@ -872,20 +872,11 @@ async function registerMinterSingularity(
     wethCollateral: WETH9Mock,
     wethCollateralId: BigNumberish,
     oracle: OracleMock,
-    tapSwapPath: string[],
-    collateralSwapPath: string[],
     staging?: boolean,
 ) {
     const data = new ethers.utils.AbiCoder().encode(
-        ['address', 'address', 'uint256', 'address', 'address[]', 'address[]'],
-        [
-            bar.address,
-            wethCollateral.address,
-            wethCollateralId,
-            oracle.address,
-            tapSwapPath,
-            collateralSwapPath,
-        ],
+        ['address', 'address', 'uint256', 'address'],
+        [bar.address, wethCollateral.address, wethCollateralId, oracle.address],
     );
 
     await (
@@ -1071,10 +1062,7 @@ export async function register(staging?: boolean) {
     log('Setting feeTo and feeVeTap', staging);
     const singularityFeeTo = ethers.Wallet.createRandom();
     await bar.setFeeTo(singularityFeeTo.address, { gasPrice: gasPrice });
-    log(
-        `feeTo ${singularityFeeTo} were set for WethUsdcSingularity`,
-        staging,
-    );
+    log(`feeTo ${singularityFeeTo} were set for WethUsdcSingularity`, staging);
 
     // ------------------- 9 Deploy & set LiquidationQueue -------------------
     log('Registering LiquidationQueue', staging);
@@ -1114,8 +1102,6 @@ export async function register(staging?: boolean) {
         weth,
         wethAssetId,
         usd0WethOracle,
-        minterSingularityTapSwapPath,
-        minterSingularityCollateralSwapPath,
         staging,
     );
     log(

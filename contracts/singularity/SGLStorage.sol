@@ -69,8 +69,6 @@ contract SGLStorage is BoringOwnable, ERC20 {
 
     IOracle public oracle;
     bytes public oracleData;
-    address[] collateralSwapPath; // Collateral -> Asset
-    address[] tapSwapPath; // Asset -> Tap
 
     // Fees
     uint256 public callerFee; //1%
@@ -140,7 +138,7 @@ contract SGLStorage is BoringOwnable, ERC20 {
         uint256 feeAmount,
         address indexed receiver
     );
-    event LogYieldBoxFeesDeposit(uint256 feeShares, uint256 tapAmount);
+    event LogYieldBoxFeesDeposit(uint256 feeShares, uint256 ethAmount);
     event LogApprovalForAll(
         address indexed _from,
         address indexed _operator,
