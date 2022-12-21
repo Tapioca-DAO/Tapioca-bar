@@ -751,7 +751,7 @@ describe('Singularity test', () => {
             singularityFeeTo,
             __wethUsdcPrice,
             timeTravel,
-            singularityHelper
+            singularityHelper,
         } = await loadFixture(register);
 
         const assetId = await wethUsdcSingularity.assetId();
@@ -937,6 +937,7 @@ describe('Singularity test', () => {
                 'address',
                 'address[]',
                 'address[]',
+                'uint256',
             ],
             [
                 _sglLiquidationModule.address,
@@ -949,6 +950,7 @@ describe('Singularity test', () => {
                 wethUsdcOracle.address,
                 [],
                 [],
+                ethers.utils.parseEther('1'),
             ],
         );
 
@@ -1145,6 +1147,7 @@ describe('Singularity test', () => {
                 'address',
                 'address[]',
                 'address[]',
+                'uint256',
             ],
             [
                 ethers.constants.AddressZero,
@@ -1157,6 +1160,7 @@ describe('Singularity test', () => {
                 wethUsdcOracle.address,
                 collateralSwapPath,
                 tapSwapPath,
+                ethers.utils.parseEther('1'),
             ],
         );
         await (
@@ -1243,6 +1247,7 @@ describe('Singularity test', () => {
                 'address',
                 'address[]',
                 'address[]',
+                'uint256',
             ],
             [
                 _sglLiquidationModule.address,
@@ -1255,6 +1260,7 @@ describe('Singularity test', () => {
                 wethUsdcOracle.address,
                 collateralSwapPath,
                 tapSwapPath,
+                ethers.utils.parseEther('1'),
             ],
         );
         await bar.registerSingularity(mediumRiskMC.address, data, true);

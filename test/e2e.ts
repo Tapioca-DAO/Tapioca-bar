@@ -85,6 +85,7 @@ describe('e2e tests', () => {
             yieldBox,
             usdc,
             stableToUsdoBidder,
+            ethers.utils.parseEther("1"),
             false,
         );
 
@@ -241,6 +242,7 @@ describe('e2e tests', () => {
             yieldBox,
             usdc,
             stableToUsdoBidder,
+            ethers.utils.parseEther("1"),
             false,
         );
 
@@ -441,6 +443,7 @@ describe('e2e tests', () => {
             yieldBox,
             usdc,
             stableToUsdoBidder,
+            ethers.utils.parseEther("1"),
             false,
         );
 

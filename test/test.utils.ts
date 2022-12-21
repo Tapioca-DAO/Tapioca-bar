@@ -519,6 +519,7 @@ async function registerSingularity(
     wethUsdcOracle: OracleMock,
     collateralSwapPath: string[],
     tapSwapPath: string[],
+    exchangeRatePrecision?: BigNumberish,
     staging?: boolean,
 ) {
     const _sglLiquidationModule = await (
@@ -551,6 +552,7 @@ async function registerSingularity(
             'address',
             'address[]',
             'address[]',
+            'uint256',
         ],
         [
             _sglLiquidationModule.address,
@@ -563,6 +565,7 @@ async function registerSingularity(
             wethUsdcOracle.address,
             collateralSwapPath,
             tapSwapPath,
+            exchangeRatePrecision ?? 0,
         ],
     );
     await (
@@ -674,6 +677,7 @@ async function createWethUsd0Singularity(
     yieldBox: YieldBox,
     usdc: ERC20Mock,
     stableToUsdoBidder: CurveStableToUsdoBidder,
+    exchangePrecision?:BigNumberish,
     staging?: boolean,
 ) {
     const _sglLiquidationModule = await (
@@ -722,6 +726,7 @@ async function createWethUsd0Singularity(
             'address',
             'address[]',
             'address[]',
+            'uint256',
         ],
         [
             _sglLiquidationModule.address,
@@ -734,6 +739,7 @@ async function createWethUsd0Singularity(
             wethUsd0Oracle.address,
             collateralSwapPath,
             tapSwapPath,
+            exchangePrecision,
         ],
     );
     await bar.registerSingularity(mediumRiskMC.address, data, false, {
@@ -1063,6 +1069,7 @@ export async function register(staging?: boolean) {
         wethUsdcOracle,
         collateralSwapPath,
         tapSwapPath,
+        ethers.utils.parseEther('1'),
         staging,
     );
     log(`Deployed WethUsdcSingularity ${wethUsdcSingularity.address}`, staging);
@@ -1071,10 +1078,7 @@ export async function register(staging?: boolean) {
     log('Setting feeTo and feeVeTap', staging);
     const singularityFeeTo = ethers.Wallet.createRandom();
     await bar.setFeeTo(singularityFeeTo.address, { gasPrice: gasPrice });
-    log(
-        `feeTo ${singularityFeeTo} were set for WethUsdcSingularity`,
-        staging,
-    );
+    log(`feeTo ${singularityFeeTo} were set for WethUsdcSingularity`, staging);
 
     // ------------------- 9 Deploy & set LiquidationQueue -------------------
     log('Registering LiquidationQueue', staging);
@@ -1203,6 +1207,7 @@ export async function register(staging?: boolean) {
             yieldBox,
             usdc,
             stableToUsdoBidder,
+            ethers.utils.parseEther("1"),
             staging,
         );
         log(

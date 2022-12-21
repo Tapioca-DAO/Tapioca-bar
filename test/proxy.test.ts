@@ -1585,6 +1585,7 @@ async function setupUsd0Environment(
         yieldBox,
         usdc,
         stableToUsdoBidderSrc,
+        ethers.utils.parseEther("1"),
         false,
     );
     const singularitySrc = srcSingularityDeployments.wethUsdoSingularity;
@@ -1600,6 +1601,7 @@ async function setupUsd0Environment(
         yieldBox,
         usdc,
         stableToUsdoBidderDst,
+        ethers.utils.parseEther("1"),
         false,
     );
     const singularityDst = dstSingularityDeployments.wethUsdoSingularity;
@@ -1708,6 +1710,8 @@ async function setupEnvironment(
         wethUsdcOracle,
         collateralSwapPath,
         tapSwapPath,
+        ethers.utils.parseEther("1"),
+        false
     );
     const singularitySrc = srcSingularityDeployments.wethUsdcSingularity;
 
@@ -1722,6 +1726,8 @@ async function setupEnvironment(
         wethUsdcOracle,
         collateralSwapPath,
         tapSwapPath,
+        ethers.utils.parseEther("1"),
+        false
     );
     const singularityDst = dstSingularityDeployments.wethUsdcSingularity;
 
