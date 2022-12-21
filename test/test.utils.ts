@@ -880,10 +880,11 @@ async function registerMinterSingularity(
     oracle: OracleMock,
     tapSwapPath: string[],
     collateralSwapPath: string[],
+    exchangeRatePrecision?:BigNumberish,
     staging?: boolean,
 ) {
     const data = new ethers.utils.AbiCoder().encode(
-        ['address', 'address', 'uint256', 'address', 'address[]', 'address[]'],
+        ['address', 'address', 'uint256', 'address', 'address[]', 'address[]','uint256'],
         [
             bar.address,
             wethCollateral.address,
@@ -891,6 +892,7 @@ async function registerMinterSingularity(
             oracle.address,
             tapSwapPath,
             collateralSwapPath,
+            exchangeRatePrecision
         ],
     );
 
@@ -1120,6 +1122,7 @@ export async function register(staging?: boolean) {
         usd0WethOracle,
         minterSingularityTapSwapPath,
         minterSingularityCollateralSwapPath,
+        ethers.utils.parseEther("1"),
         staging,
     );
     log(

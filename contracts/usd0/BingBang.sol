@@ -128,7 +128,7 @@ contract BingBang is BoringOwnable, ERC20 {
     uint256 private constant MAX_STABILITY_FEE = 8e17; //at 80% for testing; TODO
 
     uint256 private constant FEE_PRECISION = 1e5;
-    uint256 private constant EXCHANGE_RATE_PRECISION = 1e18;
+    uint256 private EXCHANGE_RATE_PRECISION; //not costant, but can only be set in the 'init' method
     uint256 private constant COLLATERIZATION_RATE_PRECISION = 1e5; // Must be less than EXCHANGE_RATE_PRECISION (due to optimization in math)
     uint256 private constant LIQUIDATION_MULTIPLIER_PRECISION = 1e5;
 
@@ -167,10 +167,19 @@ contract BingBang is BoringOwnable, ERC20 {
             uint256 _collateralId,
             IOracle _oracle,
             address[] memory _tapSwapPath,
-            address[] memory _collateralSwapPath
+            address[] memory _collateralSwapPath,
+            uint256 _exchangeRatePrecision
         ) = abi.decode(
                 data,
-                (IPenrose, IERC20, uint256, IOracle, address[], address[])
+                (
+                    IPenrose,
+                    IERC20,
+                    uint256,
+                    IOracle,
+                    address[],
+                    address[],
+                    uint256
+                )
             );
 
         penrose = tapiocaBar_;
@@ -202,6 +211,10 @@ contract BingBang is BoringOwnable, ERC20 {
         callerFee = 90000; // 90%
         protocolFee = 10000; // 10%
         collateralizationRate = 75000; // 75%
+
+        EXCHANGE_RATE_PRECISION = _exchangeRatePrecision > 0
+            ? _exchangeRatePrecision
+            : 0;
     }
 
     // ********************** //
