@@ -1,0 +1,14 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+import '@boringcrypto/boring-solidity/contracts/ERC20.sol';
+
+import './ERC20Mock.sol';
+
+contract ERC20FactoryMock {
+    ERC20Mock public last;
+
+    function deployToken(uint256 _supply, uint8 _decimals) external {
+        ERC20Mock tkn = new ERC20Mock(_supply, _decimals);
+        last = tkn;
+    }
+}

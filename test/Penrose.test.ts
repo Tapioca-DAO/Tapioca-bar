@@ -9,7 +9,7 @@ describe('Penrose test', () => {
 
         const markets = await bar.singularityMarkets();
 
-        expect(markets.length).equal(1);
+        expect(markets.length).equal(2); //weth-usdc & wbtc-usdc
     });
 
     it('should return length of master contracts', async () => {
@@ -31,7 +31,7 @@ describe('Penrose test', () => {
             ),
         ).to.be.revertedWith('Penrose: MC not registered');
     });
-""
+    ('');
     it('should not allow registering the same master contract twice', async () => {
         const { bar, mediumRiskMC } = await loadFixture(register);
 
@@ -68,7 +68,9 @@ describe('Penrose test', () => {
 
         const mcLengthBefore = await bar.singularityMasterContractLength();
 
-        await (await bar.registerSingularityMasterContract(newMC.address, 1)).wait();
+        await (
+            await bar.registerSingularityMasterContract(newMC.address, 1)
+        ).wait();
 
         const mcLength = await bar.singularityMasterContractLength();
         expect(mcLength.eq(mcLengthBefore.add(1))).to.be.true;

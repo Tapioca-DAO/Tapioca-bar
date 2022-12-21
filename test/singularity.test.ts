@@ -563,6 +563,91 @@ describe('Singularity test', () => {
         ).to.not.be.reverted;
     });
 
+    it.skip('Should lend WBTC, deposit Usdc collateral and borrow WBTC and be liquidated for price drop', async () => {
+        const {
+            usdc,
+            wbtc,
+            yieldBox,
+            wbtcDepositAndAddAsset,
+            usdcDepositAndAddCollateralWbtcSingularity,
+            eoa1,
+            approveTokensAndSetBarApproval,
+            deployer,
+            wbtcUsdcSingularity,
+            multiSwapper,
+            wbtcUsdcOracle,
+            __wbtcUsdcPrice,
+        } = await loadFixture(register);
+
+        const assetId = await wbtcUsdcSingularity.assetId();
+        const collateralId = await wbtcUsdcSingularity.collateralId();
+        const wbtcMintVal = ethers.BigNumber.from((1e8).toString()).mul(1);
+        const usdcMintVal = wbtcMintVal
+            .mul(1e10)
+            .mul(__wbtcUsdcPrice.div((1e18).toString()));
+
+        // We get asset
+        await wbtc.freeMint(wbtcMintVal);
+        await usdc.connect(eoa1).freeMint(usdcMintVal);
+
+        // We approve external operators
+        await approveTokensAndSetBarApproval();
+        await approveTokensAndSetBarApproval(eoa1);
+
+        // We lend WBTC as deployer
+        await wbtcDepositAndAddAsset(wbtcMintVal);
+        expect(
+            await wbtcUsdcSingularity.balanceOf(deployer.address),
+        ).to.be.equal(await yieldBox.toShare(assetId, wbtcMintVal, false));
+
+        // We deposit USDC collateral
+        await usdcDepositAndAddCollateralWbtcSingularity(usdcMintVal, eoa1);
+        expect(
+            await wbtcUsdcSingularity.userCollateralShare(eoa1.address),
+        ).equal(await yieldBox.toShare(collateralId, usdcMintVal, false));
+
+        // We borrow 74% collateral, max is 75%
+        const wbtcBorrowVal = usdcMintVal
+            .mul(74)
+            .div(100)
+            .div(__wbtcUsdcPrice.div((1e18).toString()))
+            .div(1e10);
+
+        await wbtcUsdcSingularity
+            .connect(eoa1)
+            .borrow(eoa1.address, eoa1.address, wbtcBorrowVal.toString());
+        await yieldBox
+            .connect(eoa1)
+            .withdraw(assetId, eoa1.address, eoa1.address, wbtcBorrowVal, 0);
+
+        const data = new ethers.utils.AbiCoder().encode(['uint256'], [1]);
+        // Can't liquidate
+        await expect(
+            wbtcUsdcSingularity.liquidate(
+                [eoa1.address],
+                [wbtcBorrowVal],
+                multiSwapper.address,
+                data,
+                data,
+            ),
+        ).to.be.reverted;
+
+        // Can be liquidated price drop (USDC/WETH)
+        const priceDrop = __wbtcUsdcPrice.mul(20).div(100);
+
+        await wbtcUsdcOracle.set(__wbtcUsdcPrice.add(priceDrop));
+
+        await expect(
+            wbtcUsdcSingularity.liquidate(
+                [eoa1.address],
+                [wbtcBorrowVal],
+                multiSwapper.address,
+                data,
+                data,
+            ),
+        ).to.not.be.reverted;
+    });
+
     it('Should accumulate fees for lender', async () => {
         const {
             usdc,
@@ -751,7 +836,7 @@ describe('Singularity test', () => {
             singularityFeeTo,
             __wethUsdcPrice,
             timeTravel,
-            singularityHelper
+            singularityHelper,
         } = await loadFixture(register);
 
         const assetId = await wethUsdcSingularity.assetId();
@@ -826,7 +911,7 @@ describe('Singularity test', () => {
         // Withdraw fees from Penrose
         await expect(
             bar.withdrawAllSingularityFees(
-                [multiSwapper.address],
+                [multiSwapper.address, multiSwapper.address],
                 [{ minAssetAmount: 1 }],
             ),
         ).to.emit(wethUsdcSingularity, 'LogYieldBoxFeesDeposit');
