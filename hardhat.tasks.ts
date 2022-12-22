@@ -52,13 +52,13 @@ task(
     'deployMarket',
     'Deploy a Singularity market, a Liquidation Queue and initialize it.',
     deployMarket__task,
-).addParam('name', 'Market name');
+)
+    .addParam('name', 'Market name')
+    .addParam('exchangeRatePrecision', 'Collateral decimals');
 
-task(
-    'deployBingBang',
-    'Deploy a BingBang market',
-    deployBingBang__task,
-).addParam('name', 'Market name');
+task('deployBingBang', 'Deploy a BingBang market', deployBingBang__task)
+    .addParam('name', 'Market name')
+    .addParam('exchangeRatePrecision', 'Collateral decimals');
 
 task('deployOracleMock', 'Deploy Oracle mock', deployOracleMock__task).addParam(
     'name',

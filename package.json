@@ -15,7 +15,7 @@
         "deploy:mainnet": "npx hardhat deploy --network mainnet",
         "deploy:testnet": "npx hardhat run scripts/exportStagingAddresses.ts --network rinkeby",
         "deploy:testEnv": "hardhat deploy --tags testEnv --network",
-        "deploy:mockTokens": "hardhat deploy --tags MockTokens --network",
+        "deploy:mocks": "hardhat deploy --tags Mocks --network",
         "deploy:usd0": "hardhat deploy --tags USD0 --network",
         "deploy:yieldBox": "hardhat deploy --tags YieldBox --network",
         "deploy:yieldBoxAssets": "hardhat deploy --tags YieldBoxAssets --network",

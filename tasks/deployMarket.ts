@@ -9,7 +9,11 @@ export const deployMarket__task = async (
     taskArgs: any,
     hre: HardhatRuntimeEnvironment,
 ) => {
-    const marketObj = await registerMarket(hre, taskArgs.name);
+    const marketObj = await registerMarket(
+        hre,
+        taskArgs.name,
+        taskArgs.exchangeRatePrecision,
+    );
     await updateDeployments([marketObj], await hre.getChainId());
 
     const lqObject = await registerLiquidationQueue(hre, taskArgs.name);

@@ -208,15 +208,19 @@ export const updateDeployments = async (
 export const deployOracleMock = async (
     hre: HardhatRuntimeEnvironment,
     name: string,
+    mockFactory: string,
 ): Promise<TContract> => {
     const { deployments, getNamedAccounts } = hre;
     const { deploy } = deployments;
     const { deployer } = await getNamedAccounts();
     name = name.toLowerCase();
 
-    await deploy('OracleMockFactory', { from: deployer, log: true });
-    await verify(hre, 'OracleMockFactory', []);
-    const oracleFactory = await deployments.get('OracleMockFactory');
+    if (hre.ethers.utils.isAddress(mockFactory)) {
+        await deploy('OracleMockFactory', { from: deployer, log: true });
+        await verify(hre, 'OracleMockFactory', []);
+        const oracleFactory = await deployments.get('OracleMockFactory');
+        mockFactory = oracleFactory.address;
+    }
     const oracleFactoryContract = await hre.ethers.getContractAt(
         'OracleMockFactory',
         oracleFactory.address,
@@ -252,6 +256,7 @@ export const deployOracleMock = async (
 export const registerBingBangMarket = async (
     hre: HardhatRuntimeEnvironment,
     name: string,
+    exchangeRatePrecision: string,
 ): Promise<TContract> => {
     const { deployments, getNamedAccounts } = hre;
     const { deploy } = deployments;
@@ -294,17 +299,15 @@ export const registerBingBangMarket = async (
         marketData.collateralAddress,
         usd0Deployed.address,
     ];
-    const tapSwapPath = [usd0Deployed.address, constants[chainId].tapAddress];
 
     const data = new hre.ethers.utils.AbiCoder().encode(
-        ['address', 'address', 'uint256', 'address', 'address[]', 'address[]'],
+        ['address', 'address', 'uint256', 'address', 'uint256'],
         [
             penrose.address,
             marketData.collateralAddress,
             collateralId,
             marketData.oracleAddress,
-            tapSwapPath,
-            collateralSwapPath,
+            exchangeRatePrecision,
         ],
     );
 
@@ -357,6 +360,7 @@ export const registerBingBangMarket = async (
 export const registerMarket = async (
     hre: HardhatRuntimeEnvironment,
     name: string,
+    exchangeRatePrecision: string,
 ): Promise<TContract> => {
     const { deployments, getNamedAccounts } = hre;
     const { deploy } = deployments;
@@ -414,8 +418,7 @@ export const registerMarket = async (
             'address',
             'uint256',
             'address',
-            'address[]',
-            'address[]',
+            'uint256',
         ],
         [
             sglLiquidation.address,
@@ -426,8 +429,7 @@ export const registerMarket = async (
             marketData.collateralAddress,
             collateralId,
             marketData.oracleAddress,
-            collateralSwapPath,
-            tapSwapPath,
+            exchangeRatePrecision,
         ],
     );
 
