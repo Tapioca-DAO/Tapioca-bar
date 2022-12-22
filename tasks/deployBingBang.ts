@@ -5,6 +5,6 @@ export const deployBingBang__task = async (
     taskArgs: any,
     hre: HardhatRuntimeEnvironment,
 ) => {
-    const marketObj = await registerBingBangMarket(hre, taskArgs.name);
+    const marketObj = await registerBingBangMarket(hre, taskArgs.name, taskArgs.exchangeRatePrecision);
     await updateDeployments([marketObj], await hre.getChainId());
 };

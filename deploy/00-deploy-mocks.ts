@@ -11,8 +11,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const chainId = await hre.getChainId();
     const contracts: TContract[] = [];
 
-    console.log('\n Deploying Mock tokens');
-    // const args = [hre.ethers.utils.parseEther('10000000000')];
+    console.log('\n Deploying WETH...');
     await deploy('WETH9Mock', {
         from: deployer,
         log: true,
@@ -28,6 +27,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         `Done. Deployed WETH9Mock on ${deployedWeth.address} with no arguments`,
     );
 
+    console.log('\n Deploying ERC20FactoryMock...');
     await deploy('ERC20FactoryMock', {
         from: deployer,
         log: true,
@@ -47,6 +47,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         `Done. Deployed ERC20FactoryMock on ${deployedERC20Factory.address} with no arguments`,
     );
 
+    console.log('\n Deploying USDC...');
     await erc20FactoryContract.deployToken(
         hre.ethers.utils.parseEther('10000000000'),
         18,
@@ -69,6 +70,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         `Done. Deployed ERC20Mock-USDC on ${deployedUsdc.address} with args [${usdcArgs}]`,
     );
 
+    console.log('\n Deploying WBTC...');
     await erc20FactoryContract.deployToken(
         hre.ethers.utils.parseEther('10000'),
         8,
@@ -88,8 +90,25 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         `Done. Deployed ERC20Mock-WBTC on ${deployedWbtc.address} with args [${wbtcArgs}]`,
     );
 
+    console.log('\n Deploying OracleMockFactory...');
+    await deploy('OracleMockFactory', {
+        from: deployer,
+        log: true,
+    });
+    await verify(hre, 'OracleMockFactory', []);
+    const deployedOracleMockFactory = await deployments.get(
+        'OracleMockFactory',
+    );
+    contracts.push({
+        name: 'OracleMockFactory',
+        address: deployedOracleMockFactory.address,
+        meta: {},
+    });
+    console.log(
+        `Done. Deployed OracleMockFactory on ${deployedOracleMockFactory.address} with no arguments`,
+    );
     await updateDeployments(contracts, chainId);
 };
 
 export default func;
-func.tags = ['MockTokens'];
+func.tags = ['Mocks'];
