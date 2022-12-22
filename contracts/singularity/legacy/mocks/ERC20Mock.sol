@@ -5,10 +5,11 @@ import '@boringcrypto/boring-solidity/contracts/ERC20.sol';
 contract ERC20Mock is ERC20WithSupply {
     string public name = 'Test Token';
     string public symbol = 'TT';
-    uint8 public decimals = 18;
+    uint8 public decimals;
 
-    constructor(uint256 _initialAmount) {
+    constructor(uint256 _initialAmount, uint8 _decimals) {
         totalSupply = _initialAmount;
+        decimals = _decimals;
     }
 
     function freeMint(uint256 _val) public {

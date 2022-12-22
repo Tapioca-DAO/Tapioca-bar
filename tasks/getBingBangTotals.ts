@@ -1,23 +1,22 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import _ from 'lodash';
-import { getSingularityContract, getDeployment } from './utils';
+import { getBingBangContract, getDeployment } from './utils';
 
 //Execution example:
-//      npx hardhat getSingularityTotals --market "<address>"
+//      npx hardhat getBingBangTotals --market "<address>"
 export const getTotals = async (
     taskArgs: any,
     hre: HardhatRuntimeEnvironment,
 ) => {
-    const { singularityContract } = await getSingularityContract(taskArgs, hre);
+    const { bingBangContract } = await getBingBangContract(taskArgs, hre);
     const yieldBoxContract = await getDeployment(hre, 'YieldBox');
 
-    const collateralId = await singularityContract.collateralId();
+    const collateralId = await bingBangContract.collateralId();
 
-    const borrowCap = await singularityContract.totalBorrowCap();
-    const totalBorrowed = await singularityContract.totalBorrow();
-    const totalAsset = await singularityContract.totalAsset();
-    const totalCollateralShare =
-        await singularityContract.totalCollateralShare();
+    const borrowCap = await bingBangContract.totalBorrowCap();
+    const totalBorrowed = await bingBangContract.totalBorrow();
+    const totalAsset = await bingBangContract.totalAsset();
+    const totalCollateralShare = await bingBangContract.totalCollateralShare();
     const totalCollateralAmount = yieldBoxContract.toAmount(
         collateralId,
         totalCollateralShare,
@@ -35,7 +34,7 @@ export const getTotals = async (
     };
 };
 
-export const getSingularityTotals__task = async (
+export const getBingBangTotals__task = async (
     args: any,
     hre: HardhatRuntimeEnvironment,
 ) => {

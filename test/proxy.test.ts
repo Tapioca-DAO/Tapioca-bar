@@ -1709,7 +1709,7 @@ async function setupEnvironment(
         collateralSwapPath,
         tapSwapPath,
     );
-    const singularitySrc = srcSingularityDeployments.wethUsdcSingularity;
+    const singularitySrc = srcSingularityDeployments.singularityMarket;
 
     const dstSingularityDeployments = await registerSingularity(
         mediumRiskMC.address,
@@ -1723,7 +1723,7 @@ async function setupEnvironment(
         collateralSwapPath,
         tapSwapPath,
     );
-    const singularityDst = dstSingularityDeployments.wethUsdcSingularity;
+    const singularityDst = dstSingularityDeployments.singularityMarket;
 
     await proxySrc.updateSingularityStatus(singularitySrc.address, true);
     await proxyDst.updateSingularityStatus(singularityDst.address, true);

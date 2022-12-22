@@ -28,7 +28,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         `Done. Deployed MediumRiskMC on ${mediumRiskMC.address} with no arguments`,
     );
 
-    await updateDeployments(contracts, chainId);
 
     const penroseContract = await hre.ethers.getContractAt(
         'Penrose',
@@ -39,9 +38,36 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
     console.log('\n Setting MasterContract on Penrose');
     await (
-        await penroseContract.registerMasterContract(mediumRiskMC.address, 1)
+        await penroseContract.registerSingularityMasterContract(mediumRiskMC.address, 1)
     ).wait();
     console.log(`Done`);
+
+
+    console.log('\n Deploying BingBangMasterContract');
+    await deploy('BingBangMediumRiskMC', {
+        contract: 'BingBang',
+        from: deployer,
+        log: true,
+    });
+    await verify(hre, 'BingBangMediumRiskMC', []);
+    const bingBangMediumRiskMC = await deployments.get('BingBangMediumRiskMC');
+    contracts.push({
+        name: 'BingBangMediumRiskMC',
+        address: bingBangMediumRiskMC.address,
+        meta: {},
+    });
+    console.log(
+        `Done. Deployed BingBangMediumRiskMC on ${bingBangMediumRiskMC.address} with no arguments`,
+    );
+    console.log('\n Setting BingBangMasterContract on Penrose');
+    await (
+        await penroseContract.registerBingBangMasterContract(bingBangMediumRiskMC.address, 1)
+    ).wait();
+    console.log(`Done`);
+
+
+    await updateDeployments(contracts, chainId);
+
 };
 
 export default func;

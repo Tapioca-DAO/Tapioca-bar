@@ -2,28 +2,28 @@ import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import _ from 'lodash';
 import { getDeployment } from './utils';
 
-export const getPenroseMarkets = async (hre: HardhatRuntimeEnvironment) => {
+export const getBingBangMarkets = async (hre: HardhatRuntimeEnvironment) => {
     const penroseContract = await getDeployment(hre, 'Penrose');
 
-    const addresses = await penroseContract.singularityMarkets();
+    const addresses = await penroseContract.bingBangMarkets();
     const markets = [];
 
     for (const address of addresses) {
-        const singularity = await hre.ethers.getContractAt(
-            'Singularity',
+        const bingBang = await hre.ethers.getContractAt(
+            'BingBang',
             address,
         );
         markets.push({
-            [await singularity.name()]: address,
+            [await bingBang.name()]: address,
         });
     }
 
     return markets;
 };
 
-export const getPenroseMarkets__task = async (
+export const getBingBangMarkets__task = async (
     args: any,
     hre: HardhatRuntimeEnvironment,
 ) => {
-    console.log(await getPenroseMarkets(hre));
+    console.log(await getBingBangMarkets(hre));
 };

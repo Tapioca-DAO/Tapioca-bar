@@ -5,6 +5,6 @@ export const deployOracleMock__task = async (
     taskArgs: any,
     hre: HardhatRuntimeEnvironment,
 ) => {
-    const oracleObj = await deployOracleMock(hre);
+    const oracleObj = await deployOracleMock(hre,taskArgs.name);
     await updateDeployments([oracleObj], await hre.getChainId());
 };
