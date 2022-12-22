@@ -1,22 +1,26 @@
 import '@nomiclabs/hardhat-ethers';
 import { task } from 'hardhat/config';
 import { deployMarket__task } from './tasks/deployMarket';
-import { deployBingBang__task } from './tasks/deployMinterMarket';
+import { deployBingBang__task } from './tasks/deployBingBang';
 import { exportSDK__task } from './tasks/exportSDK';
-import { getPenroseMarkets__task } from './tasks/getPenroseMarkets';
+import { getSingularityMarkets__task } from './tasks/getSingularityMarkets';
+import { getBingBangMarkets__task } from './tasks/getBingBangMarkets';
 import {
     getLocalDeployments__task,
     getSDKDeployments__task,
 } from './tasks/getDeployments';
-import { setCollateralSwapPath__task } from './tasks/setCollateralSwapPath';
-import { setTapSwapPath__task } from './tasks/setTapSwapPath';
 import { setBorrowCap__task } from './tasks/setBorrowCap';
 import { registerYieldBoxAsset__task } from './tasks/registerYieldBoxAsset';
 import { setLiquidationQueueBidSwapper__task } from './tasks/setLiquidationQueueBidSwapper';
 import { setLiquidationQueueExecutionSwapper__task } from './tasks/setLiquidationQueueExecutionSwapper';
 import { setLiquidationQueue__task } from './tasks/setLiquidationQueue';
+
 import { getParticipantSingularityInfo__task } from './tasks/getParticipantSingularityInfo';
+import { getParticipantBingBangInfo__task } from './tasks/getParticipantBingBangInfo';
+
 import { getSingularityTotals__task } from './tasks/getSingularityTotals';
+import { getBingBangTotals__task } from './tasks/getBingBangTotals';
+
 import { deployOracleMock__task } from './tasks/deployOracleMock';
 
 task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
@@ -34,9 +38,14 @@ task(
 ).addFlag('mainnet', 'Using the current chain ID deployments.');
 
 task(
-    'markets',
-    'Display the list of deployed markets for the current chain ID.',
-    getPenroseMarkets__task,
+    'singularityMarkets',
+    'Display the list of deployed Singularity markets for the current chain ID.',
+    getSingularityMarkets__task,
+);
+task(
+    'bingBangMarkets',
+    'Display the list of deployed BingBang markets for the current chain ID.',
+    getBingBangMarkets__task,
 );
 
 task(
@@ -51,10 +60,9 @@ task(
     deployBingBang__task,
 ).addParam('name', 'Market name');
 
-task(
-    'deployOracleMock',
-    'Deploy USDC-WETH Oracle mock',
-    deployOracleMock__task,
+task('deployOracleMock', 'Deploy Oracle mock', deployOracleMock__task).addParam(
+    'name',
+    'Market name',
 );
 
 task(
@@ -69,7 +77,6 @@ task(
     getSDKDeployments__task,
 );
 
-//Singularity viewers
 task(
     'getParticipantSingularityInfo',
     'Returns lend & borrow details for a specific address',
@@ -79,30 +86,27 @@ task(
     .addParam('participant', 'User address');
 
 task(
+    'getParticipantBingBangInfo',
+    'Returns lend & borrow details for a specific address',
+    getParticipantBingBangInfo__task,
+)
+    .addParam('singularity', 'Singularity address')
+    .addParam('participant', 'User address');
+
+task(
     'getSingularityTotals',
-    'Returns singularity totals info',
+    'Returns Singularity totals info',
     getSingularityTotals__task,
 ).addParam('singularity', 'Singularity address');
-
-//Singularity setters
 task(
-    'setColleteralSwapPath',
-    'Updates collateral swap path for Singularity',
-    setCollateralSwapPath__task,
-)
-    .addParam('singularity', 'Singularity address')
-    .addParam('path', 'Collateral swap path []');
-
-task(
-    'setTapSwapPath',
-    'Updates TAP swap path for Singularity',
-    setTapSwapPath__task,
-)
-    .addParam('singularity', 'Singularity address')
-    .addParam('path', 'TAP swap path []');
+    'getBingBangTotals',
+    'Returns BingBang totals info',
+    getBingBangTotals__task,
+).addParam('bingBang', 'BingBang address');
 
 task('setBorrowCap', 'Set borrow cap for Singularity', setBorrowCap__task)
-    .addParam('singularity', 'Singularity address')
+    .addParam('singularity', 'Singularity address', ' ')
+    .addParam('bingBang', 'BingBang address', ' ')
     .addParam('cap', 'Borrow cap value');
 
 task(

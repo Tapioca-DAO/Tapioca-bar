@@ -2,6 +2,15 @@
 pragma solidity ^0.8.0;
 import '../../interfaces/IOracle.sol';
 
+contract OracleMockFactory {
+    address public last;
+
+    function deployOracle() external {
+        OracleMock oracle = new OracleMock();
+        last = address(oracle);
+    }
+}
+
 contract OracleMock is IOracle {
     uint256 public rate;
     bool public success;

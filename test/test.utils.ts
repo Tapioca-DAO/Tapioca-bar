@@ -948,7 +948,7 @@ async function registerLiquidationQueue(
     return { liquidationQueue, LQ_META };
 }
 
-async function registerMinterSingularity(
+async function registerBingBangMarket(
     mediumRiskBingBangMC: string,
     yieldBox: YieldBox,
     bar: Penrose,
@@ -1255,7 +1255,7 @@ export async function register(staging?: boolean) {
     log('Deploying WethMinterSingularity', staging);
     const minterSingularityCollateralSwapPath = [weth.address, usd0.address];
     const minterSingularityTapSwapPath = [usd0.address, tap.address];
-    const { wethMinterSingularity } = await registerMinterSingularity(
+    const { wethMinterSingularity } = await registerBingBangMarket(
         mediumRiskBingBangMC.address,
         yieldBox,
         bar,
