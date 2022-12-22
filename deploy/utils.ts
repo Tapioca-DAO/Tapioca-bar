@@ -41,12 +41,24 @@ export const constants: { [key: string]: any } = {
                 address: '0xe1E3E81B5b868cAB59a27Fa8D30C5225c5D55FC4', //'0xe1E3E81B5b868cAB59a27Fa8D30C5225c5D55FC4',
             },
             {
+                name: 'WBTC',
+                address: '0xC04B0d3107736C32e19F1c62b2aF67BE61d63a05',
+            },
+            {
                 name: 'TAP',
                 address: '0x306547aa4B4241D73ae1e7A5465D277d06C40cbC',
             },
         ],
         sgl_ETH: {
             collateralAddress: '0xe1E3E81B5b868cAB59a27Fa8D30C5225c5D55FC4', //weth
+            assetAddress: '0xf64364494212954c20B0762fcB1ebB6DC3e85441',
+            oracleAddress: '0x08aa8c316b485a1a73356f662a9881d7b31bf427', //mock
+            minBidAmount: 20,
+            hasExecutionBidder: false,
+            executionBidder: '0x0000000000000000000000000000000000000000',
+        },
+        sgl_BTC: {
+            collateralAddress: '0xC04B0d3107736C32e19F1c62b2aF67BE61d63a05', //weth
             assetAddress: '0xf64364494212954c20B0762fcB1ebB6DC3e85441',
             oracleAddress: '0x08aa8c316b485a1a73356f662a9881d7b31bf427', //mock
             minBidAmount: 20,
@@ -81,6 +93,10 @@ export const constants: { [key: string]: any } = {
                 address: '0xa3e6cCe9165Dd2C42dFA89e446d44520431d383d', //'0x84C7dD519Ea924bf1Cf6613f9127F26D7aB801D0',
             },
             {
+                name: 'WBTC',
+                address: '0x1e1fdb53451C5262A5ba449271789C7F551a9142',
+            },
+            {
                 name: 'TAP',
                 address: '0x4663B30afc168A6D1810fA6857a74d04bf632E54',
             },
@@ -89,6 +105,14 @@ export const constants: { [key: string]: any } = {
             collateralAddress: '0xa3e6cCe9165Dd2C42dFA89e446d44520431d383d', //weth
             assetAddress: '0xBD46Fa5C363E222c4cEf7589100F6486926C0D56',
             oracleAddress: '0x41dC15C448aB9141254EEd98F562a407E915d3b1', //mock
+            minBidAmount: 20,
+            hasExecutionBidder: false,
+            executionBidder: '0x0000000000000000000000000000000000000000',
+        },
+        sgl_BTC: {
+            collateralAddress: '0x1e1fdb53451C5262A5ba449271789C7F551a9142', //weth
+            assetAddress: '0xBD46Fa5C363E222c4cEf7589100F6486926C0D56',
+            oracleAddress: '0x08aa8c316b485a1a73356f662a9881d7b31bf427', //mock
             minBidAmount: 20,
             hasExecutionBidder: false,
             executionBidder: '0x0000000000000000000000000000000000000000',
@@ -183,15 +207,26 @@ export const updateDeployments = async (
 
 export const deployOracleMock = async (
     hre: HardhatRuntimeEnvironment,
+    name: string,
 ): Promise<TContract> => {
     const { deployments, getNamedAccounts } = hre;
     const { deploy } = deployments;
     const { deployer } = await getNamedAccounts();
+    name = name.toLowerCase();
 
-    console.log('\nDeploying OracleMock');
-    await deploy('OracleMock', { from: deployer, log: true });
+    await deploy('OracleMockFactory', { from: deployer, log: true });
+    await verify(hre, 'OracleMockFactory', []);
+    const oracleFactory = await deployments.get('OracleMockFactory');
+    const oracleFactoryContract = await hre.ethers.getContractAt(
+        'OracleMockFactory',
+        oracleFactory.address,
+    );
+    console.log('Done');
+
+    console.log(`\nDeploying OracleMock for ${name}`);
+    await oracleFactoryContract.deployOracle();
+    const oracleMock = await oracleFactoryContract.last();
     await verify(hre, 'OracleMock', []);
-    const oracleMock = await deployments.get('OracleMock');
     console.log('Done');
 
     console.log(`\nSetting mock price`);
@@ -199,8 +234,11 @@ export const deployOracleMock = async (
         'OracleMock',
         oracleMock.address,
     );
-    const __wethUsdcPrice = hre.ethers.utils.parseEther('1000');
-    await oracleContract.set(__wethUsdcPrice);
+    const price =
+        name == 'btc'
+            ? hre.ethers.utils.parseEther('10000')
+            : hre.ethers.utils.parseEther('1000');
+    await oracleContract.set(price);
     console.log('Done');
 
     return new Promise(async (resolve) =>
@@ -211,7 +249,7 @@ export const deployOracleMock = async (
         }),
     );
 };
-export const registerMinterMarket = async (
+export const registerBingBangMarket = async (
     hre: HardhatRuntimeEnvironment,
     name: string,
 ): Promise<TContract> => {
@@ -258,25 +296,42 @@ export const registerMinterMarket = async (
     ];
     const tapSwapPath = [usd0Deployed.address, constants[chainId].tapAddress];
 
-    const args = [
-        penrose.address,
-        marketData.collateralAddress,
-        collateralId,
-        marketData.oracleAddress,
-        tapSwapPath,
-        collateralSwapPath,
-    ];
+    const data = new hre.ethers.utils.AbiCoder().encode(
+        ['address', 'address', 'uint256', 'address', 'address[]', 'address[]'],
+        [
+            penrose.address,
+            marketData.collateralAddress,
+            collateralId,
+            marketData.oracleAddress,
+            tapSwapPath,
+            collateralSwapPath,
+        ],
+    );
+
+    const deploymentsJson = readJSONFromFile();
+    const masterContract = _.find(
+        deploymentsJson[chainId],
+        (e) => e.name === 'BingBangMediumRiskMC',
+    );
+    console.log(`\nRegistering bingBang_${name}`);
+    await (
+        await penrose.registerBingBang(masterContract.address, data, true)
+    ).wait();
 
     await deploy('BingBang', {
         from: deployer,
         log: true,
-        args,
     });
-    await verify(hre, 'BingBang', args);
-    const deployedMinter = await deployments.get('BingBang');
-    console.log(
-        `Done. Deployed on ${deployedMinter.address} with args ${args}`,
+    const deployedMinter = await hre.ethers.getContractAt(
+        'BingBang',
+        await yieldBox.clonesOf(
+            masterContract.address,
+            (await yieldBox.clonesOfCount(masterContract.address)).sub(1),
+        ),
     );
+    console.log('Done');
+    //No need to verify as the same contract type was previously verified
+
     console.log(`\nSetting minter and burner role for USD0`);
     const usd0Contract = await hre.ethers.getContractAt(
         'USD0',
@@ -292,9 +347,9 @@ export const registerMinterMarket = async (
 
     return new Promise(async (resolve) =>
         resolve({
-            name: `minterSGL_${name}`,
+            name: `bingBang_${name}`,
             address: deployedMinter.address,
-            meta: { constructorArguments: args },
+            meta: {},
         }),
     );
 };

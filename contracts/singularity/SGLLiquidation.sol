@@ -278,7 +278,7 @@ contract SGLLiquidation is SGLCommon {
             allCollateralShare,
             address(this),
             minAssetMount,
-            abi.encode(collateralSwapPath)
+            abi.encode(_collateralToAssetSwapPath())
         );
 
         uint256 returnedShare = yieldBox.balanceOf(address(this), assetId) -

@@ -11,6 +11,8 @@ import '../swappers/ISwapper.sol';
 import '../singularity/interfaces/IOracle.sol';
 import '../../yieldbox/contracts/YieldBox.sol';
 
+import 'hardhat/console.sol';
+
 // solhint-disable max-line-length
 /*
 
@@ -68,8 +70,6 @@ contract BingBang is BoringOwnable, ERC20 {
 
     IOracle oracle;
     bytes public oracleData;
-    address[] tapSwapPath; // Asset -> Tap
-    address[] collateralSwapPath; // Collateral -> Asset
 
     uint256 public callerFee; // 90%
     uint256 public protocolFee; // 10%
@@ -116,8 +116,6 @@ contract BingBang is BoringOwnable, ERC20 {
     event LogBorrowCapUpdated(uint256 _oldVal, uint256 _newVal);
     event LogStabilityFee(uint256 _oldFee, uint256 _newFee);
     event LogBorrowingFee(uint256 _oldVal, uint256 _newVal);
-    event LogCollateralSwapPath();
-    event LogTapSwapPath();
 
     // ***************** //
     // *** CONSTANTS *** //
@@ -166,28 +164,12 @@ contract BingBang is BoringOwnable, ERC20 {
             IERC20 _collateral,
             uint256 _collateralId,
             IOracle _oracle,
-            address[] memory _tapSwapPath,
-            address[] memory _collateralSwapPath,
             uint256 _exchangeRatePrecision
-        ) = abi.decode(
-                data,
-                (
-                    IPenrose,
-                    IERC20,
-                    uint256,
-                    IOracle,
-                    address[],
-                    address[],
-                    uint256
-                )
-            );
+        ) = abi.decode(data, (IPenrose, IERC20, uint256, IOracle,uint256));
 
         penrose = tapiocaBar_;
         yieldBox = YieldBox(tapiocaBar_.yieldBox());
         owner = address(penrose);
-
-        tapSwapPath = _tapSwapPath;
-        collateralSwapPath = _collateralSwapPath;
 
         address _asset = penrose.usdoToken();
 
@@ -406,16 +388,16 @@ contract BingBang is BoringOwnable, ERC20 {
                 assetId,
                 feeShares
             );
-            (uint256 tapAmount, ) = swapper.swap(
+            (uint256 colAmount, ) = swapper.swap(
                 assetId,
-                penrose.tapAssetId(),
+                collateralId,
                 feeShares,
                 _feeTo,
                 swapData.minAssetAmount,
-                abi.encode(tapSwapPath)
+                abi.encode(_assetToCollateralSwapPath())
             );
 
-            emit LogYieldBoxFeesDeposit(feeShares, tapAmount);
+            emit LogYieldBoxFeesDeposit(feeShares, colAmount);
         }
     }
 
@@ -470,23 +452,6 @@ contract BingBang is BoringOwnable, ERC20 {
         collateralizationRate = _val;
     }
 
-    /// @notice Used to set the swap path of closed liquidations
-    /// @param _collateralSwapPath The Uniswap path .
-    function setCollateralSwapPath(address[] calldata _collateralSwapPath)
-        public
-        onlyOwner
-    {
-        collateralSwapPath = _collateralSwapPath;
-        emit LogCollateralSwapPath();
-    }
-
-    /// @notice Used to set the swap path of Asset -> TAP
-    /// @param _tapSwapPath The Uniswap path .
-    function setTapSwapPath(address[] calldata _tapSwapPath) public onlyOwner {
-        tapSwapPath = _tapSwapPath;
-        emit LogTapSwapPath();
-    }
-
     /// @notice sets max borrowable amount
     function setBorrowCap(uint256 _cap) external onlyOwner {
         emit LogBorrowCapUpdated(totalBorrowCap, _cap);
@@ -518,6 +483,27 @@ contract BingBang is BoringOwnable, ERC20 {
     // ************************* //
     // *** PRIVATE FUNCTIONS *** //
     // ************************* //
+
+    /// @notice construct Uniswap path
+    function _collateralToAssetSwapPath()
+        private
+        view
+        returns (address[] memory path)
+    {
+        path = new address[](2);
+        path[0] = address(collateral);
+        path[1] = address(asset);
+    }
+
+    function _assetToCollateralSwapPath()
+        private
+        view
+        returns (address[] memory path)
+    {
+        path = new address[](2);
+        path[0] = address(asset);
+        path[1] = address(collateral);
+    }
 
     /// @notice Concrete implementation of `isSolvent`. Includes a parameter to allow caching `exchangeRate`.
     /// @param _exchangeRate The exchange rate. Used to cache the `exchangeRate` between calls.
@@ -633,7 +619,7 @@ contract BingBang is BoringOwnable, ERC20 {
             allCollateralShare,
             address(this),
             minAssetMount,
-            abi.encode(collateralSwapPath)
+            abi.encode(_collateralToAssetSwapPath())
         );
         uint256 balanceAfter = yieldBox.balanceOf(address(this), assetId);
 

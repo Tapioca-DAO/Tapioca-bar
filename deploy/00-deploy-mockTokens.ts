@@ -28,22 +28,66 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         `Done. Deployed WETH9Mock on ${deployedWeth.address} with no arguments`,
     );
 
-    const args = [hre.ethers.utils.parseEther('10000000000').toString()];
-    await deploy('ERC20Mock', {
+    await deploy('ERC20FactoryMock', {
         from: deployer,
         log: true,
-        args,
     });
-    await verify(hre, 'ERC20Mock', args);
-    const deployedUsdc = await deployments.get('ERC20Mock');
+    await verify(hre, 'ERC20FactoryMock', []);
+    const deployedERC20Factory = await deployments.get('ERC20FactoryMock');
     contracts.push({
-        name: 'ERC20Mock',
+        name: 'ERC20FactoryMock',
+        address: deployedERC20Factory.address,
+        meta: {},
+    });
+    const erc20FactoryContract = await hre.ethers.getContractAt(
+        'ERC20FactoryMock',
+        deployedERC20Factory.address,
+    );
+    console.log(
+        `Done. Deployed ERC20FactoryMock on ${deployedERC20Factory.address} with no arguments`,
+    );
+
+    await erc20FactoryContract.deployToken(
+        hre.ethers.utils.parseEther('10000000000'),
+        18,
+    );
+    const deployedUsdc = await hre.ethers.getContractAt(
+        'ERC20Mock',
+        await erc20FactoryContract.last(),
+    );
+    const usdcArgs = [
+        hre.ethers.utils.parseEther('10000000000').toString(),
+        18,
+    ];
+    await verify(hre, 'ERC20Mock', usdcArgs);
+    contracts.push({
+        name: 'ERC20Mock-USDC',
         address: deployedUsdc.address,
-        meta: { constructorArguments: args },
+        meta: { constructorArguments: usdcArgs },
     });
     console.log(
-        `Done. Deployed ERC20Mock on ${deployedUsdc.address} with no args [${args}]`,
+        `Done. Deployed ERC20Mock-USDC on ${deployedUsdc.address} with args [${usdcArgs}]`,
     );
+
+    await erc20FactoryContract.deployToken(
+        hre.ethers.utils.parseEther('10000'),
+        8,
+    );
+    const deployedWbtc = await hre.ethers.getContractAt(
+        'ERC20Mock',
+        await erc20FactoryContract.last(),
+    );
+    const wbtcArgs = [hre.ethers.utils.parseEther('10000000000').toString(), 8];
+    await verify(hre, 'ERC20Mock', wbtcArgs);
+    contracts.push({
+        name: 'ERC20Mock-WBTC',
+        address: deployedWbtc.address,
+        meta: { constructorArguments: wbtcArgs },
+    });
+    console.log(
+        `Done. Deployed ERC20Mock-WBTC on ${deployedWbtc.address} with args [${wbtcArgs}]`,
+    );
+
     await updateDeployments(contracts, chainId);
 };
 
