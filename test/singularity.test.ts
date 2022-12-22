@@ -563,7 +563,7 @@ describe('Singularity test', () => {
         ).to.not.be.reverted;
     });
 
-    it.skip('Should lend WBTC, deposit Usdc collateral and borrow WBTC and be liquidated for price drop', async () => {
+    it('Should lend WBTC, deposit Usdc collateral and borrow WBTC and be liquidated for price drop', async () => {
         const {
             usdc,
             wbtc,
@@ -1022,6 +1022,7 @@ describe('Singularity test', () => {
                 'address',
                 'address[]',
                 'address[]',
+                'uint256',
             ],
             [
                 _sglLiquidationModule.address,
@@ -1034,6 +1035,7 @@ describe('Singularity test', () => {
                 wethUsdcOracle.address,
                 [],
                 [],
+                ethers.utils.parseEther('1'),
             ],
         );
 
@@ -1187,8 +1189,6 @@ describe('Singularity test', () => {
             wethAssetId,
             usdcAssetId,
             wethUsdcOracle,
-            collateralSwapPath,
-            tapSwapPath,
             mediumRiskMC,
             deployer,
         } = await loadFixture(register);
@@ -1202,8 +1202,7 @@ describe('Singularity test', () => {
                 'address',
                 'uint256',
                 'address',
-                'address[]',
-                'address[]',
+                'uint256',
             ],
             [
                 ethers.constants.AddressZero,
@@ -1214,8 +1213,7 @@ describe('Singularity test', () => {
                 usdc.address,
                 usdcAssetId,
                 wethUsdcOracle.address,
-                collateralSwapPath,
-                tapSwapPath,
+                ethers.utils.parseEther('1'),
             ],
         );
         await (
@@ -1257,7 +1255,6 @@ describe('Singularity test', () => {
             usdcAssetId,
             mediumRiskMC,
             wethUsdcOracle,
-            tapSwapPath,
             usdc,
             usd0,
             __wethUsdcPrice,
@@ -1300,8 +1297,7 @@ describe('Singularity test', () => {
                 'address',
                 'uint256',
                 'address',
-                'address[]',
-                'address[]',
+                'uint256',
             ],
             [
                 _sglLiquidationModule.address,
@@ -1312,8 +1308,7 @@ describe('Singularity test', () => {
                 weth.address,
                 wethAssetId,
                 wethUsdcOracle.address,
-                collateralSwapPath,
-                tapSwapPath,
+                ethers.utils.parseEther('1'),
             ],
         );
         await bar.registerSingularity(mediumRiskMC.address, data, true);

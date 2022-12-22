@@ -22,8 +22,6 @@ describe('SGLProxy', () => {
         usdc: any,
         usdcAssetId: any,
         wethUsdcOracle: any,
-        collateralSwapPath: any,
-        tapSwapPath: any,
         registerSingularity: any;
 
     beforeEach(async () => {
@@ -37,8 +35,6 @@ describe('SGLProxy', () => {
         usdc = registerInfo.usdc;
         usdcAssetId = registerInfo.usdcAssetId;
         wethUsdcOracle = registerInfo.wethUsdcOracle;
-        collateralSwapPath = registerInfo.collateralSwapPath;
-        tapSwapPath = registerInfo.tapSwapPath;
         registerSingularity = registerInfo.registerSingularity;
 
         loadSetup = async () => {
@@ -59,8 +55,6 @@ describe('SGLProxy', () => {
                 usdc,
                 usdcAssetId,
                 wethUsdcOracle,
-                collateralSwapPath,
-                tapSwapPath,
                 registerSingularity,
             );
             return {
@@ -86,7 +80,6 @@ describe('SGLProxy', () => {
             usdc,
             wethAssetId,
             wethUsdcOracle,
-            tapSwapPath,
             eoa1,
             deployCurveStableToUsdoBidder,
             __wethUsdcPrice,
@@ -115,7 +108,6 @@ describe('SGLProxy', () => {
                 usdc,
                 weth,
                 wethAssetId,
-                tapSwapPath,
                 createWethUsd0Singularity,
                 deployCurveStableToUsdoBidder,
             );
@@ -319,7 +311,6 @@ describe('SGLProxy', () => {
             usdc,
             wethAssetId,
             wethUsdcOracle,
-            tapSwapPath,
             eoa1,
             singularityHelper,
             deployCurveStableToUsdoBidder,
@@ -349,7 +340,6 @@ describe('SGLProxy', () => {
                 usdc,
                 weth,
                 wethAssetId,
-                tapSwapPath,
                 createWethUsd0Singularity,
                 deployCurveStableToUsdoBidder,
             );
@@ -1453,7 +1443,6 @@ async function setupUsd0Environment(
     usdc: any,
     collateral: any,
     collateralId: any,
-    tapSwapPath: any,
     registerSingularity: any,
     registerBidder: any,
 ) {
@@ -1580,11 +1569,10 @@ async function setupUsd0Environment(
         bar,
         usd0SrcId,
         collateralId,
-        tapSwapPath,
         mediumRiskMC,
         yieldBox,
-        usdc,
         stableToUsdoBidderSrc,
+        ethers.utils.parseEther('1'),
         false,
     );
     const singularitySrc = srcSingularityDeployments.wethUsdoSingularity;
@@ -1595,11 +1583,10 @@ async function setupUsd0Environment(
         bar,
         usd0DstId,
         collateralId,
-        tapSwapPath,
         mediumRiskMC,
         yieldBox,
-        usdc,
         stableToUsdoBidderDst,
+        ethers.utils.parseEther('1'),
         false,
     );
     const singularityDst = dstSingularityDeployments.wethUsdoSingularity;
@@ -1649,8 +1636,6 @@ async function setupEnvironment(
     usdc: any,
     usdcAssetId: any,
     wethUsdcOracle: any,
-    collateralSwapPath: any,
-    tapSwapPath: any,
     registerSingularity: any,
 ) {
     //omnichain configuration
@@ -1706,8 +1691,8 @@ async function setupEnvironment(
         usdc,
         usdcAssetId,
         wethUsdcOracle,
-        collateralSwapPath,
-        tapSwapPath,
+        ethers.utils.parseEther('1'),
+        false,
     );
     const singularitySrc = srcSingularityDeployments.singularityMarket;
 
@@ -1720,8 +1705,8 @@ async function setupEnvironment(
         usdc,
         usdcAssetId,
         wethUsdcOracle,
-        collateralSwapPath,
-        tapSwapPath,
+        ethers.utils.parseEther('1'),
+        false,
     );
     const singularityDst = dstSingularityDeployments.singularityMarket;
 

@@ -164,7 +164,7 @@ contract SGLStorage is BoringOwnable, ERC20 {
     uint64 internal constant MAXIMUM_INTEREST_PER_SECOND = 317097920000; // approx 1000% APR
     uint256 internal constant INTEREST_ELASTICITY = 28800e36; // Half or double in 28800 seconds (8 hours) if linear
 
-    uint256 internal constant EXCHANGE_RATE_PRECISION = 1e18;
+    uint256 internal EXCHANGE_RATE_PRECISION; //mutable but can only be set in the init method
     uint256 internal constant LIQUIDATION_MULTIPLIER_PRECISION = 1e5;
 
     // Fees

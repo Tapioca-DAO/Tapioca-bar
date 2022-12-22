@@ -40,7 +40,6 @@ describe('e2e tests', () => {
             yieldBox,
             deployer,
             eoas,
-            tapSwapPath,
             mediumRiskMC,
             usdc,
             multiSwapper,
@@ -80,11 +79,10 @@ describe('e2e tests', () => {
             bar,
             usdoAssetId,
             wethAssetId,
-            tapSwapPath,
             mediumRiskMC,
             yieldBox,
-            usdc,
             stableToUsdoBidder,
+            ethers.utils.parseEther('1'),
             false,
         );
 
@@ -197,7 +195,6 @@ describe('e2e tests', () => {
             yieldBox,
             deployer,
             eoas,
-            tapSwapPath,
             mediumRiskMC,
             usdc,
             multiSwapper,
@@ -236,11 +233,10 @@ describe('e2e tests', () => {
             bar,
             usdoAssetId,
             wethAssetId,
-            tapSwapPath,
             mediumRiskMC,
             yieldBox,
-            usdc,
             stableToUsdoBidder,
+            ethers.utils.parseEther('1'),
             false,
         );
 
@@ -401,7 +397,6 @@ describe('e2e tests', () => {
             yieldBox,
             deployer,
             eoas,
-            tapSwapPath,
             mediumRiskMC,
             usdc,
             multiSwapper,
@@ -436,11 +431,10 @@ describe('e2e tests', () => {
             bar,
             usdoAssetId,
             wethAssetId,
-            tapSwapPath,
             mediumRiskMC,
             yieldBox,
-            usdc,
             stableToUsdoBidder,
+            ethers.utils.parseEther('1'),
             false,
         );
 

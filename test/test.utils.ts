@@ -600,8 +600,7 @@ async function registerSingularity(
     usdc: ERC20Mock,
     usdcAssetId: BigNumberish,
     wethUsdcOracle: OracleMock,
-    collateralSwapPath: string[],
-    tapSwapPath: string[],
+    exchangeRatePrecision?: BigNumberish,
     staging?: boolean,
 ) {
     const _sglLiquidationModule = await (
@@ -632,8 +631,7 @@ async function registerSingularity(
             'address',
             'uint256',
             'address',
-            'address[]',
-            'address[]',
+            'uint256',
         ],
         [
             _sglLiquidationModule.address,
@@ -644,8 +642,7 @@ async function registerSingularity(
             usdc.address,
             usdcAssetId,
             wethUsdcOracle.address,
-            collateralSwapPath,
-            tapSwapPath,
+            exchangeRatePrecision ?? 0,
         ],
     );
     await (
@@ -752,11 +749,10 @@ async function createWethUsd0Singularity(
     bar: Penrose,
     usdoAssetId: any,
     wethAssetId: any,
-    tapSwapPath: any,
     mediumRiskMC: Singularity,
     yieldBox: YieldBox,
-    usdc: ERC20Mock,
     stableToUsdoBidder: CurveStableToUsdoBidder,
+    exchangePrecision?: BigNumberish,
     staging?: boolean,
 ) {
     const _sglLiquidationModule = await (
@@ -803,8 +799,7 @@ async function createWethUsd0Singularity(
             'address',
             'uint256',
             'address',
-            'address[]',
-            'address[]',
+            'uint256',
         ],
         [
             _sglLiquidationModule.address,
@@ -815,8 +810,7 @@ async function createWethUsd0Singularity(
             weth.address,
             wethAssetId,
             wethUsd0Oracle.address,
-            collateralSwapPath,
-            tapSwapPath,
+            exchangePrecision,
         ],
     );
     await bar.registerSingularity(mediumRiskMC.address, data, false, {
@@ -955,11 +949,18 @@ async function registerBingBangMarket(
     wethCollateral: WETH9Mock,
     wethCollateralId: BigNumberish,
     oracle: OracleMock,
+    exchangeRatePrecision?: BigNumberish,
     staging?: boolean,
 ) {
     const data = new ethers.utils.AbiCoder().encode(
-        ['address', 'address', 'uint256', 'address'],
-        [bar.address, wethCollateral.address, wethCollateralId, oracle.address],
+        ['address', 'address', 'uint256', 'address', 'uint256'],
+        [
+            bar.address,
+            wethCollateral.address,
+            wethCollateralId,
+            oracle.address,
+            exchangeRatePrecision,
+        ],
     );
 
     await (
@@ -1143,13 +1144,6 @@ export async function register(staging?: boolean) {
 
     // ------------------- 7 Deploy WethUSDC medium risk MC clone-------------------
     log('Deploying WethUsdcSingularity', staging);
-    const collateralSwapPath = [usdc.address, weth.address];
-    const tapSwapPath = [weth.address, tap.address];
-    // const {
-    //     wethUsdcSingularity,
-    //     _sglLendingBorrowingModule,
-    //     _sglLiquidationModule,
-    // }
     const wethUsdcSingularityData = await registerSingularity(
         mediumRiskMC.address,
         yieldBox,
@@ -1159,8 +1153,7 @@ export async function register(staging?: boolean) {
         usdc,
         usdcAssetId,
         wethUsdcOracle,
-        collateralSwapPath,
-        tapSwapPath,
+        ethers.utils.parseEther('1'),
         staging,
     );
     const wethUsdcSingularity = wethUsdcSingularityData.singularityMarket;
@@ -1180,8 +1173,7 @@ export async function register(staging?: boolean) {
         usdc,
         usdcAssetId,
         wbtcUsdcOracle,
-        collateralWbtcSwapPath,
-        tapSwapPath,
+        (1e8).toString(),
         staging,
     );
     const wbtcUsdcSingularity = wbtcUsdcSingularityData.singularityMarket;
@@ -1253,6 +1245,7 @@ export async function register(staging?: boolean) {
         weth,
         wethAssetId,
         usd0WethOracle,
+        ethers.utils.parseEther('1'),
         staging,
     );
     log(
@@ -1335,11 +1328,10 @@ export async function register(staging?: boolean) {
             bar,
             usd0AssetId,
             wethAssetId,
-            tapSwapPath,
             mediumRiskMC,
             yieldBox,
-            usdc,
             stableToUsdoBidder,
+            ethers.utils.parseEther('1'),
             staging,
         );
         log(
@@ -1381,8 +1373,6 @@ export async function register(staging?: boolean) {
         wbtcAssetId,
         erc20Factory,
         tap,
-        tapSwapPath,
-        collateralSwapPath,
         collateralWbtcSwapPath,
         minterSingularityTapSwapPath,
         minterSingularityCollateralSwapPath,
