@@ -1308,19 +1308,15 @@ describe('SGLProxy', () => {
         expect(borrowPart.eq(0)).to.be.true;
 
         // Withdraw fees from Penrose
+        const markets = await bar.singularityMarkets();
+        let swappers = [];
+        let swapData = [];
+        for (var i = 0; i < markets.length; i++) {
+            swappers.push(multiSwapper.address);
+            swapData.push({ minAssetAmount: 1 });
+        }
         await expect(
-            bar.withdrawAllSingularityFees(
-                [
-                    multiSwapper.address,
-                    multiSwapper.address,
-                    multiSwapper.address,
-                ],
-                [
-                    { minAssetAmount: 1 },
-                    { minAssetAmount: 1 },
-                    { minAssetAmount: 1 },
-                ],
-            ),
+            bar.withdrawAllSingularityFees(markets, swappers, swapData),
         ).to.emit(singularityDst, 'LogYieldBoxFeesDeposit');
 
         const mixologistFeeVeTap = await bar.feeTo();
