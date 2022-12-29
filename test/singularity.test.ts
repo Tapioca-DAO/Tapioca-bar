@@ -917,10 +917,10 @@ describe('Singularity test', () => {
         ).to.emit(wethUsdcSingularity, 'LogYieldBoxFeesDeposit');
 
         const amountHarvested = await yieldBox.toAmount(
-            await wethUsdcSingularity.collateralId(),
+            await bar.wethAssetId(),
             await yieldBox.balanceOf(
                 singularityFeeTo.address,
-                await wethUsdcSingularity.collateralId(),
+                await bar.wethAssetId(),
             ),
             false,
         );

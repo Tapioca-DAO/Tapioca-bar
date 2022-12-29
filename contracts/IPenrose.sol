@@ -39,4 +39,8 @@ interface IPenrose {
     function feeTo() external view returns (address);
 
     function feeVeTap() external view returns (address);
+
+    function wethToken() external view returns (address);
+
+    function wethAssetId() external view returns (uint256);
 }

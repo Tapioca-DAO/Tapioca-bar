@@ -29,6 +29,12 @@ contract Penrose is BoringOwnable {
     /// @notice returns USD0 asset id registered in the YieldBox contract
     uint256 public usdoAssetId;
 
+    /// @notice returns the WETH contract
+    IERC20 public immutable wethToken;
+
+    /// @notice returns WETH asset id registered in the YieldBox contract
+    uint256 public immutable wethAssetId;
+
     /// @notice master contracts registered
     IPenrose.MasterContract[] public singularityMasterContracts;
     IPenrose.MasterContract[] public bingbangMasterContracts;
@@ -46,13 +52,27 @@ contract Penrose is BoringOwnable {
     /// @notice creates a Penrose contract
     /// @param _yieldBox YieldBox contract address
     /// @param tapToken_ TapOFT contract address
-    constructor(YieldBox _yieldBox, IERC20 tapToken_) {
+    constructor(
+        YieldBox _yieldBox,
+        IERC20 tapToken_,
+        IERC20 wethToken_
+    ) {
         yieldBox = _yieldBox;
         tapToken = tapToken_;
         tapAssetId = uint96(
             _yieldBox.registerAsset(
                 TokenType.ERC20,
                 address(tapToken_),
+                IStrategy(address(0)),
+                0
+            )
+        );
+
+        wethToken = wethToken_;
+        wethAssetId = uint96(
+            _yieldBox.registerAsset(
+                TokenType.ERC20,
+                address(wethToken_),
                 IStrategy(address(0)),
                 0
             )
