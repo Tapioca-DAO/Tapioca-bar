@@ -414,7 +414,7 @@ describe('BingBang test', () => {
         expect(yieldBoxBalanceOfFeeToInAsset.eq(0)).to.be.true;
 
         const feeVeTap = await bar.feeTo();
-      
+
         let yieldBoxBalanceOfFeeVeTap = await yieldBox.toAmount(
             await wethMinterSingularity.collateralId(),
             await yieldBox.balanceOf(
@@ -1219,7 +1219,6 @@ describe('BingBang test', () => {
             [updateBorrowingFeeFn],
             true,
         );
-       
     });
 
     it('should not be able to borrow when cap is reached', async () => {
@@ -1230,9 +1229,7 @@ describe('BingBang test', () => {
             yieldBox,
             deployer,
             bar,
-            usd0,
             __wethUsdcPrice,
-            timeTravel,
         } = await loadFixture(register);
 
         await weth.approve(yieldBox.address, ethers.constants.MaxUint256);
@@ -1282,5 +1279,162 @@ describe('BingBang test', () => {
                 usdoBorrowVal,
             ),
         ).to.be.revertedWith('BingBang: borrow cap reached');
+    });
+
+    it('actions should not work when paused', async () => {
+        const {
+            wethMinterSingularity,
+            weth,
+            wethAssetId,
+            yieldBox,
+            deployer,
+            bar,
+            usd0,
+            __wethUsdcPrice,
+            timeTravel,
+        } = await loadFixture(register);
+
+        const setConservatorData =
+            wethMinterSingularity.interface.encodeFunctionData(
+                'setConservator',
+                [deployer.address],
+            );
+        await bar.executeMarketFn(
+            [wethMinterSingularity.address],
+            [setConservatorData],
+            true,
+        );
+
+        await weth.approve(yieldBox.address, ethers.constants.MaxUint256);
+        await yieldBox.setApprovalForAll(wethMinterSingularity.address, true);
+
+        const wethMintVal = ethers.BigNumber.from((1e18).toString()).mul(10);
+        await weth.freeMint(wethMintVal);
+        const valShare = await yieldBox.toShare(
+            wethAssetId,
+            wethMintVal,
+            false,
+        );
+        await yieldBox.depositAsset(
+            wethAssetId,
+            deployer.address,
+            deployer.address,
+            0,
+            valShare,
+        );
+
+        await wethMinterSingularity.updatePause(true);
+
+        const pauseState = await wethMinterSingularity.paused();
+        expect(pauseState).to.be.true;
+
+        await expect(
+            wethMinterSingularity.addCollateral(
+                deployer.address,
+                deployer.address,
+                false,
+                valShare,
+            ),
+        ).to.be.revertedWith('BingBang: paused');
+
+        await wethMinterSingularity.updatePause(false);
+
+        await wethMinterSingularity.addCollateral(
+            deployer.address,
+            deployer.address,
+            false,
+            valShare,
+        );
+
+        await wethMinterSingularity.updatePause(true);
+
+        //borrow
+        const usdoBorrowVal = wethMintVal
+            .mul(74)
+            .div(100)
+            .mul(__wethUsdcPrice.div((1e18).toString()));
+
+        await expect(
+            wethMinterSingularity.borrow(
+                deployer.address,
+                deployer.address,
+                usdoBorrowVal,
+            ),
+        ).to.be.revertedWith('BingBang: paused');
+
+        await wethMinterSingularity.updatePause(false);
+
+        await expect(
+            wethMinterSingularity.borrow(
+                deployer.address,
+                deployer.address,
+                usdoBorrowVal,
+            ),
+        ).to.not.be.reverted;
+
+        const usd0Extra = ethers.BigNumber.from((1e18).toString()).mul(500);
+        await usd0.mint(deployer.address, usd0Extra);
+        await usd0.approve(yieldBox.address, usd0Extra);
+        await yieldBox.depositAsset(
+            await wethMinterSingularity.assetId(),
+            deployer.address,
+            deployer.address,
+            usd0Extra,
+            0,
+        );
+        const userBorrowPart = await wethMinterSingularity.userBorrowPart(
+            deployer.address,
+        );
+
+        await wethMinterSingularity.updatePause(true);
+
+        await expect(
+            wethMinterSingularity.repay(
+                deployer.address,
+                deployer.address,
+                userBorrowPart,
+            ),
+        ).to.be.revertedWith('BingBang: paused');
+
+        await wethMinterSingularity.updatePause(false);
+
+        await expect(
+            wethMinterSingularity.repay(
+                deployer.address,
+                deployer.address,
+                userBorrowPart,
+            ),
+        ).not.to.be.reverted;
+
+        await wethMinterSingularity.updatePause(true);
+
+        let collateralShares = await wethMinterSingularity.userCollateralShare(
+            deployer.address,
+        );
+        expect(collateralShares.gt(0)).to.be.true;
+        expect(collateralShares.eq(valShare)).to.be.true;
+
+        await expect(
+            wethMinterSingularity.removeCollateral(
+                deployer.address,
+                deployer.address,
+                collateralShares,
+            ),
+        ).to.be.revertedWith('BingBang: paused');
+
+        await wethMinterSingularity.updatePause(false);
+
+        await expect(
+            wethMinterSingularity.removeCollateral(
+                deployer.address,
+                deployer.address,
+                collateralShares,
+            ),
+        ).not.to.be.reverted;
+
+        collateralShares = await wethMinterSingularity.userCollateralShare(
+            deployer.address,
+        );
+        expect(collateralShares.eq(0)).to.be.true;
     });
 });

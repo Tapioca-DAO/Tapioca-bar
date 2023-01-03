@@ -15,6 +15,11 @@ contract Penrose is BoringOwnable {
     // ************ //
     // *** VARS *** //
     // ************ //
+    /// @notice returns the Conservator address
+    address public conservator;
+    /// @notice returns the pause state of the contract
+    bool public paused;
+
     /// @notice returns the YieldBox contract
     YieldBox public immutable yieldBox;
 
@@ -77,6 +82,8 @@ contract Penrose is BoringOwnable {
     event FeeVeTapUpdate(address newFeeVeTap);
     event SwapperUpdate(address swapper, bool isRegistered);
     event UsdoTokenUpdated(address indexed usdoToken, uint256 assetId);
+    event ConservatorUpdated(address indexed old, address indexed _new);
+    event PausedUpdated(bool oldState, bool newState);
 
     // ******************//
     // *** MODIFIERS *** //
@@ -94,6 +101,11 @@ contract Penrose is BoringOwnable {
             isBingBangMasterContractRegistered[mc] == true,
             'Penrose: MC not registered'
         );
+        _;
+    }
+
+    modifier notPaused() {
+        require(!paused, 'Penrose: paused');
         _;
     }
 
@@ -138,7 +150,7 @@ contract Penrose is BoringOwnable {
     function withdrawAllSingularityFees(
         ISwapper[] calldata swappers_,
         IPenrose.SwapData[] calldata swapData_
-    ) public {
+    ) public notPaused {
         require(address(swappers_[0]) != address(0), 'Penrose: zero address');
         address[] memory markets = singularityMarkets();
 
@@ -159,7 +171,7 @@ contract Penrose is BoringOwnable {
     function withdrawAllBingBangFees(
         ISwapper[] calldata swappers_,
         IPenrose.SwapData[] calldata swapData_
-    ) public {
+    ) public notPaused {
         require(address(swappers_[0]) != address(0), 'Penrose: zero address');
         address[] memory markets = bingBangMarkets();
 
@@ -176,8 +188,25 @@ contract Penrose is BoringOwnable {
     // *********************** //
     // *** OWNER FUNCTIONS *** //
     // *********************** //
+    /// @notice updates the pause state of the contract
+    /// @param val the new value
+    function updatePause(bool val) external {
+        require(msg.sender == conservator, 'Penrose: unauthorized');
+        require(val != paused, 'Penrose: same state');
+        emit PausedUpdated(paused, val);
+        paused = val;
+    }
 
-    /// @notice Used to set the USD0 token
+    /// @notice Set the Conservator address
+    /// @dev Conservator can pause the contract
+    /// @param _conservator The new address
+    function setConservator(address _conservator) external onlyOwner {
+        require(_conservator != address(0), 'Penrose: address not valid');
+        emit ConservatorUpdated(conservator, _conservator);
+        conservator = _conservator;
+    }
+
+    /// @notice Set the USD0 token
     /// @dev sets usdoToken and usdoAssetId
     /// @param _usdoToken the USD0 token address
     function setUsdoToken(address _usdoToken) external onlyOwner {
@@ -281,6 +310,7 @@ contract Penrose is BoringOwnable {
     )
         external
         onlyOwner
+        notPaused
         returns (bool[] memory success, bytes[] memory result)
     {
         uint256 len = mc.length;

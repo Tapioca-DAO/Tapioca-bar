@@ -1983,4 +1983,65 @@ describe('Singularity test', () => {
                 ),
         ).to.be.true;
     });
+
+    it('actions should not work when the contract is paused', async () => {
+        const {
+            deployer,
+            bar,
+            usdc,
+            BN,
+            approveTokensAndSetBarApproval,
+            usdcDepositAndAddCollateral,
+            wethUsdcSingularity,
+            wethDepositAndAddAsset,
+            weth,
+            __wethUsdcPrice,
+            eoa1,
+            singularityHelper,
+        } = await loadFixture(register);
+
+        const setConservatorData =
+            wethUsdcSingularity.interface.encodeFunctionData('setConservator', [
+                deployer.address,
+            ]);
+        await bar.executeMarketFn(
+            [wethUsdcSingularity.address],
+            [setConservatorData],
+            true,
+        );
+
+        const wethAmount = BN(1e18).mul(1);
+        const usdcAmount = wethAmount
+            .mul(__wethUsdcPrice.mul(2))
+            .div((1e18).toString());
+
+        await wethUsdcSingularity.updatePause(true);
+
+        await usdc.freeMint(usdcAmount);
+        await approveTokensAndSetBarApproval();
+        await expect(
+            usdcDepositAndAddCollateral(usdcAmount),
+        ).to.be.revertedWith('SGL: paused');
+
+        await wethUsdcSingularity.updatePause(false);
+
+        await usdc.freeMint(usdcAmount);
+        await approveTokensAndSetBarApproval();
+        await usdcDepositAndAddCollateral(usdcAmount);
+
+        await wethUsdcSingularity.updatePause(true);
+
+        await approveTokensAndSetBarApproval(eoa1);
+        await weth.connect(eoa1).freeMint(wethAmount);
+        await expect(
+            wethDepositAndAddAsset(wethAmount, eoa1),
+        ).to.be.revertedWith('SGL: paused');
+
+        await wethUsdcSingularity.updatePause(false);
+
+        await approveTokensAndSetBarApproval(eoa1);
+        await weth.connect(eoa1).freeMint(wethAmount);
+        await expect(wethDepositAndAddAsset(wethAmount, eoa1)).not.to.be
+            .reverted;
+    });
 });
