@@ -82,6 +82,7 @@ describe('Penrose test', () => {
         await expect(
             bar.withdrawAllSingularityFees(
                 [ethers.constants.AddressZero],
+                [ethers.constants.AddressZero],
                 [
                     {
                         minAssetAmount: 1,
@@ -99,6 +100,7 @@ describe('Penrose test', () => {
         await expect(
             bar.withdrawAllSingularityFees(
                 [ethers.constants.AddressZero],
+                [ethers.constants.AddressZero],
                 [
                     {
                         minAssetAmount: 1,
@@ -109,6 +111,7 @@ describe('Penrose test', () => {
 
         await expect(
             bar.withdrawAllBingBangFees(
+                [ethers.constants.AddressZero],
                 [ethers.constants.AddressZero],
                 [
                     {

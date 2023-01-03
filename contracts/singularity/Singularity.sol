@@ -345,18 +345,29 @@ contract Singularity is SGLCommon {
         );
         if (feeShares == 0) return;
 
-        yieldBox.transfer(address(this), address(swapper), assetId, feeShares);
+        uint256 wethAssetId = penrose.wethAssetId();
+        uint256 amount = 0;
+        if (assetId != wethAssetId) {
+            yieldBox.transfer(
+                address(this),
+                address(swapper),
+                assetId,
+                feeShares
+            );
 
-        (uint256 ethAmount, ) = swapper.swap(
-            assetId,
-            collateralId,
-            feeShares,
-            _feeTo,
-            swapData.minAssetAmount,
-            abi.encode(_assetToCollateralSwapPath())
-        );
+            (amount, ) = swapper.swap(
+                assetId,
+                penrose.wethAssetId(),
+                feeShares,
+                _feeTo,
+                swapData.minAssetAmount,
+                abi.encode(_assetToWethSwapPath())
+            );
+        } else {
+            yieldBox.transfer(address(this), _feeTo, assetId, feeShares);
+        }
 
-        emit LogYieldBoxFeesDeposit(feeShares, ethAmount);
+        emit LogYieldBoxFeesDeposit(feeShares, amount);
     }
 
     /// @notice Withdraw to another layer
