@@ -921,10 +921,10 @@ describe('Singularity test', () => {
         ).to.emit(wethUsdcSingularity, 'LogYieldBoxFeesDeposit');
 
         const amountHarvested = await yieldBox.toAmount(
-            await wethUsdcSingularity.collateralId(),
+            await bar.wethAssetId(),
             await yieldBox.balanceOf(
                 singularityFeeTo.address,
-                await wethUsdcSingularity.collateralId(),
+                await bar.wethAssetId(),
             ),
             false,
         );
@@ -1573,6 +1573,7 @@ describe('Singularity test', () => {
             usdc,
             weth,
             bar,
+            wethAssetId,
             yieldBox,
             eoa1,
             wethUsdcSingularity,
@@ -1679,17 +1680,13 @@ describe('Singularity test', () => {
         let swappers = [multiSwapper.address];
         let swapData = [{ minAssetAmount: feeMinAmount }];
 
-
         await expect(
             bar.withdrawAllSingularityFees(markets, swappers, swapData),
         ).to.emit(wethUsdcSingularity, 'LogYieldBoxFeesDeposit');
 
         const amountHarvested = await yieldBox.toAmount(
-            await wethUsdcSingularity.collateralId(),
-            await yieldBox.balanceOf(
-                singularityFeeTo.address,
-                await wethUsdcSingularity.collateralId(),
-            ),
+            wethAssetId,
+            await yieldBox.balanceOf(singularityFeeTo.address, wethAssetId),
             false,
         );
         // 0.31%

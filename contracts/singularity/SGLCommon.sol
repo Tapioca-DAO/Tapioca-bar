@@ -183,14 +183,14 @@ contract SGLCommon is SGLStorage {
         path[1] = address(asset);
     }
 
-    function _assetToCollateralSwapPath()
+    function _assetToWethSwapPath()
         internal
         view
         returns (address[] memory path)
     {
         path = new address[](2);
         path[0] = address(asset);
-        path[1] = address(collateral);
+        path[1] = address(penrose.wethToken());
     }
 
     /// @notice Concrete implementation of `isSolvent`. Includes a parameter to allow caching `exchangeRate`.

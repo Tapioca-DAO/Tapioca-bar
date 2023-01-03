@@ -165,7 +165,7 @@ contract BingBang is BoringOwnable, ERC20 {
             uint256 _collateralId,
             IOracle _oracle,
             uint256 _exchangeRatePrecision
-        ) = abi.decode(data, (IPenrose, IERC20, uint256, IOracle,uint256));
+        ) = abi.decode(data, (IPenrose, IERC20, uint256, IOracle, uint256));
 
         penrose = tapiocaBar_;
         yieldBox = YieldBox(tapiocaBar_.yieldBox());
@@ -390,11 +390,11 @@ contract BingBang is BoringOwnable, ERC20 {
             );
             (uint256 colAmount, ) = swapper.swap(
                 assetId,
-                collateralId,
+                penrose.wethAssetId(),
                 feeShares,
                 _feeTo,
                 swapData.minAssetAmount,
-                abi.encode(_assetToCollateralSwapPath())
+                abi.encode(_assetToWethSwapPath())
             );
 
             emit LogYieldBoxFeesDeposit(feeShares, colAmount);
@@ -495,14 +495,14 @@ contract BingBang is BoringOwnable, ERC20 {
         path[1] = address(asset);
     }
 
-    function _assetToCollateralSwapPath()
-        private
+    function _assetToWethSwapPath()
+        internal
         view
         returns (address[] memory path)
     {
         path = new address[](2);
         path[0] = address(asset);
-        path[1] = address(collateral);
+        path[1] = address(penrose.wethToken());
     }
 
     /// @notice Concrete implementation of `isSolvent`. Includes a parameter to allow caching `exchangeRate`.
