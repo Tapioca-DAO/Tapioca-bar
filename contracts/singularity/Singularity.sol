@@ -408,6 +408,24 @@ contract Singularity is SGLCommon {
     // *********************** //
     // *** OWNER FUNCTIONS *** //
     // *********************** //
+    /// @notice Set the Conservator address
+    /// @dev Conservator can pause the contract
+    /// @param _conservator The new address
+    function setConservator(address _conservator) external onlyOwner {
+        require(_conservator != address(0), 'SGL: address not valid');
+        emit ConservatorUpdated(conservator, _conservator);
+        conservator = _conservator;
+    }
+
+    /// @notice updates the pause state of the contract
+    /// @param val the new value
+    function updatePause(bool val) external {
+        require(msg.sender == conservator, 'SGL: unauthorized');
+        require(val != paused, 'SGL: same state');
+        emit PausedUpdated(paused, val);
+        paused = val;
+    }
+
     /// @notice sets the collateralization rate used for LiquidationQueue type liquidations
     /// @dev can only be called by the owner
     /// @param _val the new value
@@ -494,7 +512,7 @@ contract Singularity is SGLCommon {
     }
 
     /// @notice sets max borrowable amount
-    function setBorrowCap(uint256 _cap) external onlyOwner {
+    function setBorrowCap(uint256 _cap) external notPaused onlyOwner {
         emit LogBorrowCapUpdated(totalBorrowCap, _cap);
         totalBorrowCap = _cap;
     }

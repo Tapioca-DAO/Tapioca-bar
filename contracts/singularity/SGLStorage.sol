@@ -47,6 +47,8 @@ contract SGLStorage is BoringOwnable, ERC20 {
     IERC20 public asset;
     uint256 public collateralId;
     uint256 public assetId;
+    bool public paused;
+    address public conservator;
 
     // Total amounts
     uint256 public totalCollateralShare; // Total collateral supplied
@@ -145,6 +147,8 @@ contract SGLStorage is BoringOwnable, ERC20 {
         bool _approved
     );
     event LogBorrowCapUpdated(uint256 _oldVal, uint256 _newVal);
+    event PausedUpdated(bool oldState, bool newState);
+    event ConservatorUpdated(address indexed old, address indexed _new);
 
     // ***************** //
     // *** CONSTANTS *** //
