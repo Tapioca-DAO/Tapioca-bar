@@ -38,5 +38,4 @@ interface IPenrose {
 
     function feeTo() external view returns (address);
 
-    function feeVeTap() external view returns (address);
 }

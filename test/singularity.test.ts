@@ -820,7 +820,7 @@ describe('Singularity test', () => {
         expect(balanceAfter.gt(balanceBefore)).to.be.true;
     });
 
-    it('Should accumulate fees and harvest them as $Tap to feeVeTap', async () => {
+    it('Should accumulate fees and harvest them as collateral', async () => {
         const {
             usdc,
             weth,
@@ -909,11 +909,15 @@ describe('Singularity test', () => {
         // Confirm fees accumulation
         expect(userBorrowPart.gt(wethBorrowVal));
         // Withdraw fees from Penrose
+        const markets = await bar.singularityMarkets();
+        let swappers = [];
+        let swapData = [];
+        for (var i = 0; i < markets.length; i++) {
+            swappers.push(multiSwapper.address);
+            swapData.push({ minAssetAmount: 1 });
+        }
         await expect(
-            bar.withdrawAllSingularityFees(
-                [multiSwapper.address, multiSwapper.address],
-                [{ minAssetAmount: 1 }],
-            ),
+            bar.withdrawAllSingularityFees(markets, swappers, swapData),
         ).to.emit(wethUsdcSingularity, 'LogYieldBoxFeesDeposit');
 
         const amountHarvested = await yieldBox.toAmount(
@@ -1562,6 +1566,137 @@ describe('Singularity test', () => {
             wethAmount,
             wethAmount.mul(1).div(100),
         );
+    });
+
+    it('should compute fee withdrawals and execute', async () => {
+        const {
+            usdc,
+            weth,
+            bar,
+            yieldBox,
+            eoa1,
+            wethUsdcSingularity,
+            deployer,
+            approveTokensAndSetBarApproval,
+            usdcDepositAndAddCollateral,
+            wethDepositAndAddAsset,
+            multiSwapper,
+            singularityFeeTo,
+            __wethUsdcPrice,
+            timeTravel,
+            singularityHelper,
+        } = await loadFixture(register);
+
+        const assetId = await wethUsdcSingularity.assetId();
+        const collateralId = await wethUsdcSingularity.collateralId();
+        const wethMintVal = ethers.BigNumber.from((1e18).toString()).mul(10);
+        const usdcMintVal = wethMintVal.mul(
+            __wethUsdcPrice.div((1e18).toString()),
+        );
+
+        // We get asset
+        await weth.freeMint(wethMintVal);
+        await usdc.connect(eoa1).freeMint(usdcMintVal);
+
+        // We approve external operators
+        await approveTokensAndSetBarApproval();
+        await approveTokensAndSetBarApproval(eoa1);
+
+        // We lend WETH as deployer
+        await wethDepositAndAddAsset(wethMintVal);
+        expect(
+            await wethUsdcSingularity.balanceOf(deployer.address),
+        ).to.be.equal(await yieldBox.toShare(assetId, wethMintVal, false));
+
+        // We deposit USDC collateral
+        await usdcDepositAndAddCollateral(usdcMintVal, eoa1);
+        expect(
+            await wethUsdcSingularity.userCollateralShare(eoa1.address),
+        ).equal(await yieldBox.toShare(collateralId, usdcMintVal, false));
+
+        // We borrow 74% collateral, max is 75%
+        const wethBorrowVal = usdcMintVal
+            .mul(74)
+            .div(100)
+            .div(__wethUsdcPrice.div((1e18).toString()));
+        await wethUsdcSingularity
+            .connect(eoa1)
+            .borrow(eoa1.address, eoa1.address, wethBorrowVal);
+
+        // We jump time to accumulate fees
+        const day = 86400;
+        await timeTravel(180 * day);
+
+        // Repay
+        const userBorrowPart = await wethUsdcSingularity.userBorrowPart(
+            eoa1.address,
+        );
+        await weth.connect(eoa1).freeMint(userBorrowPart);
+
+        await yieldBox
+            .connect(eoa1)
+            .depositAsset(
+                assetId,
+                eoa1.address,
+                eoa1.address,
+                userBorrowPart,
+                0,
+            );
+        await wethUsdcSingularity
+            .connect(eoa1)
+            .repay(eoa1.address, eoa1.address, false, userBorrowPart);
+
+        const feesAmountInAsset =
+            await singularityHelper.getAmountForAssetFraction(
+                wethUsdcSingularity.address,
+                (
+                    await wethUsdcSingularity.accrueInfo()
+                ).feesEarnedFraction,
+            );
+
+        // Confirm fees accumulation
+        expect(userBorrowPart.gt(wethBorrowVal));
+
+        const feeShareIn = await yieldBox.toShare(
+            assetId,
+            feesAmountInAsset,
+            false,
+        );
+        const marketAsset = await wethUsdcSingularity.asset();
+        const marketCollateral = await wethUsdcSingularity.collateral();
+        const marketAssetId = await wethUsdcSingularity.assetId();
+        const feeMinAmount = await multiSwapper.getOutputAmount(
+            marketAssetId,
+            feeShareIn,
+            new ethers.utils.AbiCoder().encode(
+                ['address[]'],
+                [[marketCollateral, marketAsset]],
+            ),
+        );
+
+        // Withdraw fees from Penrose
+        let markets = [wethUsdcSingularity.address];
+        let swappers = [multiSwapper.address];
+        let swapData = [{ minAssetAmount: feeMinAmount }];
+
+
+        await expect(
+            bar.withdrawAllSingularityFees(markets, swappers, swapData),
+        ).to.emit(wethUsdcSingularity, 'LogYieldBoxFeesDeposit');
+
+        const amountHarvested = await yieldBox.toAmount(
+            await wethUsdcSingularity.collateralId(),
+            await yieldBox.balanceOf(
+                singularityFeeTo.address,
+                await wethUsdcSingularity.collateralId(),
+            ),
+            false,
+        );
+        // 0.31%
+        const acceptableHarvestMargin = feesAmountInAsset.sub(
+            feesAmountInAsset.mul(31).div(10000),
+        );
+        expect(amountHarvested.gte(acceptableHarvestMargin)).to.be.true;
     });
 
     it('should get correct collateral amount from collateral shares', async () => {
