@@ -7,6 +7,8 @@ import '../yieldbox/contracts/YieldBox.sol';
 import './singularity/interfaces/ISingularity.sol';
 import './IPenrose.sol';
 
+import 'hardhat/console.sol';
+
 // TODO: Permissionless market deployment
 ///     + asset registration? (toggle to renounce ownership so users can call)
 /// @title Global market registry
@@ -82,7 +84,7 @@ contract Penrose is BoringOwnable {
     // **************//
     // *** EVENTS *** //
     // ************** //
-    event ProtocolWithdrawal(address[] markets, uint256 timestamp);
+    event ProtocolWithdrawal(IFee[] markets, uint256 timestamp);
     event RegisterSingularityMasterContract(
         address location,
         IPenrose.ContractType risk
@@ -156,20 +158,20 @@ contract Penrose is BoringOwnable {
     /// @dev Fees are withdrawn in TAP and sent to the FeeDistributor contract
     /// @param swappers_ One or more swappers to convert the asset to TAP.
     function withdrawAllSingularityFees(
+        IFee[] calldata markets_,
         ISwapper[] calldata swappers_,
         IPenrose.SwapData[] calldata swapData_
     ) public {
-        require(address(swappers_[0]) != address(0), 'Penrose: zero address');
-        address[] memory markets = singularityMarkets();
-
-        _withdrawAllProtocolFees(
-            swappers_,
-            swapData_,
-            singularityMasterContracts,
-            markets
+        require(
+            markets_.length == swappers_.length &&
+                swappers_.length == swapData_.length,
+            'Penrose: length mismatch'
         );
+        require(address(swappers_[0]) != address(0), 'Penrose: zero address');
+        require(address(markets_[0]) != address(0), 'Penrose: zero address');
 
-        emit ProtocolWithdrawal(markets, block.timestamp);
+        _withdrawAllProtocolFees(swappers_, swapData_, markets_);
+        emit ProtocolWithdrawal(markets_, block.timestamp);
     }
 
     /// @notice Loop through the master contracts and call `depositFeesToYieldBox()` to each one of their clones.
@@ -177,20 +179,19 @@ contract Penrose is BoringOwnable {
     /// @dev Fees are withdrawn in TAP and sent to the FeeDistributor contract
     /// @param swappers_ One or more swappers to convert the asset to TAP.
     function withdrawAllBingBangFees(
+        IFee[] calldata markets_,
         ISwapper[] calldata swappers_,
         IPenrose.SwapData[] calldata swapData_
     ) public {
-        require(address(swappers_[0]) != address(0), 'Penrose: zero address');
-        address[] memory markets = bingBangMarkets();
-
-        _withdrawAllProtocolFees(
-            swappers_,
-            swapData_,
-            bingbangMasterContracts,
-            markets
+        require(
+            markets_.length == swappers_.length &&
+                swappers_.length == swapData_.length,
+            'Penrose: length mismatch'
         );
+        require(address(swappers_[0]) != address(0), 'Penrose: zero address');
 
-        emit ProtocolWithdrawal(markets, block.timestamp);
+        _withdrawAllProtocolFees(swappers_, swapData_, markets_);
+        emit ProtocolWithdrawal(markets_, block.timestamp);
     }
 
     // *********************** //
@@ -360,20 +361,12 @@ contract Penrose is BoringOwnable {
     function _withdrawAllProtocolFees(
         ISwapper[] calldata swappers_,
         IPenrose.SwapData[] calldata swapData_,
-        IPenrose.MasterContract[] memory array_,
-        address[] memory markets_
+        IFee[] memory markets_
     ) private {
-        require(address(swappers_[0]) != address(0), 'Penrose: zero address');
-        uint256 _masterContractLength = array_.length;
-        bool singleSwapper = swappers_.length != _masterContractLength;
-
         uint256 length = markets_.length;
         unchecked {
             for (uint256 i = 0; i < length; ) {
-                IFee(markets_[i]).depositFeesToYieldBox(
-                    singleSwapper ? swappers_[0] : swappers_[i],
-                    singleSwapper ? swapData_[0] : swapData_[i]
-                );
+                markets_[i].depositFeesToYieldBox(swappers_[i], swapData_[i]);
                 ++i;
             }
         }
