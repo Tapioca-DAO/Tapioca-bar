@@ -3,7 +3,6 @@ pragma solidity ^0.8.0;
 
 import './SGLCommon.sol';
 
-
 contract SGLLendingBorrowing is SGLCommon {
     using RebaseLibrary for Rebase;
     using BoringERC20 for IERC20;
@@ -21,7 +20,13 @@ contract SGLLendingBorrowing is SGLCommon {
         address from,
         address to,
         uint256 amount
-    ) public solvent(from) allowed(from) returns (uint256 part, uint256 share) {
+    )
+        public
+        notPaused
+        solvent(from)
+        allowed(from)
+        returns (uint256 part, uint256 share)
+    {
         updateExchangeRate();
 
         accrue();
@@ -41,7 +46,7 @@ contract SGLLendingBorrowing is SGLCommon {
         address to,
         bool skim,
         uint256 part
-    ) public allowed(from) returns (uint256 amount) {
+    ) public notPaused allowed(from) returns (uint256 amount) {
         updateExchangeRate();
 
         accrue();
@@ -60,7 +65,7 @@ contract SGLLendingBorrowing is SGLCommon {
         address to,
         bool skim,
         uint256 share
-    ) public allowed(from) {
+    ) public notPaused allowed(from) {
         userCollateralShare[to] += share;
         uint256 oldTotalCollateralShare = totalCollateralShare;
         totalCollateralShare = oldTotalCollateralShare + share;
@@ -76,7 +81,7 @@ contract SGLLendingBorrowing is SGLCommon {
         address from,
         address to,
         uint256 share
-    ) public solvent(from) allowed(from) {
+    ) public notPaused solvent(from) allowed(from) {
         // accrue must be called because we check solvency
         accrue();
 
@@ -95,7 +100,7 @@ contract SGLLendingBorrowing is SGLCommon {
         address receiver,
         uint256 amount,
         bytes memory data
-    ) public {
+    ) public notPaused {
         Rebase memory _totalAsset = totalAsset;
         uint256 feeAmount = (amount * flashloanFee) / FEE_PRECISION;
         uint256 feeFraction = (yieldBox.toShare(assetId, feeAmount, false) *

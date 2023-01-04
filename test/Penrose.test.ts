@@ -82,6 +82,7 @@ describe('Penrose test', () => {
         await expect(
             bar.withdrawAllSingularityFees(
                 [ethers.constants.AddressZero],
+                [ethers.constants.AddressZero],
                 [
                     {
                         minAssetAmount: 1,
@@ -89,5 +90,48 @@ describe('Penrose test', () => {
                 ],
             ),
         ).to.be.revertedWith('Penrose: zero address');
+    });
+    7;
+
+    it('should not allow to call withdraw when paused', async () => {
+        const { bar, deployer } = await loadFixture(register);
+        await bar.setConservator(deployer.address);
+        await bar.updatePause(true);
+        await expect(
+            bar.withdrawAllSingularityFees(
+                [ethers.constants.AddressZero],
+                [ethers.constants.AddressZero],
+                [
+                    {
+                        minAssetAmount: 1,
+                    },
+                ],
+            ),
+        ).to.be.revertedWith('Penrose: paused');
+
+        await expect(
+            bar.withdrawAllBingBangFees(
+                [ethers.constants.AddressZero],
+                [ethers.constants.AddressZero],
+                [
+                    {
+                        minAssetAmount: 1,
+                    },
+                ],
+            ),
+        ).to.be.revertedWith('Penrose: paused');
+    });
+
+    it('should not allow to call execute when paused', async () => {
+        const { bar, deployer } = await loadFixture(register);
+        await bar.setConservator(deployer.address);
+        await bar.updatePause(true);
+        await expect(
+            bar.executeMarketFn(
+                [ethers.constants.AddressZero],
+                [ethers.utils.toUtf8Bytes('')],
+                true,
+            ),
+        ).to.be.revertedWith('Penrose: paused');
     });
 });

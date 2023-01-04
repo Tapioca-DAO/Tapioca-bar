@@ -176,20 +176,27 @@ async function registerYieldBox(wethAddress: string, staging?: boolean) {
 async function registerPenrose(
     yieldBox: string,
     tapAddress: string,
+    wethAddress: string,
     staging?: boolean,
 ) {
     const bar = await (
         await ethers.getContractFactory('Penrose')
-    ).deploy(yieldBox, tapAddress, { gasPrice: gasPrice });
+    ).deploy(yieldBox, tapAddress, wethAddress, { gasPrice: gasPrice });
     await bar.deployed();
     log(
-        `Deployed Penrose ${bar.address} with args [${yieldBox}, ${tapAddress}]`,
+        `Deployed Penrose ${bar.address} with args [${yieldBox}, ${tapAddress}, ${wethAddress}]`,
         staging,
     );
-    await verifyEtherscan(bar.address, [yieldBox, tapAddress], staging);
+    await verifyEtherscan(
+        bar.address,
+        [yieldBox, tapAddress, wethAddress],
+        staging,
+    );
 
     return { bar };
 }
+
+
 
 async function setPenroseAssets(
     yieldBox: YieldBox,
@@ -198,21 +205,7 @@ async function setPenroseAssets(
     usdcAddress: string,
     wbtcAddress: string,
 ) {
-    await (
-        await yieldBox.registerAsset(
-            1,
-            wethAddress,
-            ethers.constants.AddressZero,
-            0,
-            { gasPrice: gasPrice },
-        )
-    ).wait();
-    const wethAssetId = await yieldBox.ids(
-        1,
-        wethAddress,
-        ethers.constants.AddressZero,
-        0,
-    );
+    const wethAssetId = await bar.wethAssetId();
 
     await (
         await yieldBox.registerAsset(
@@ -861,7 +854,7 @@ async function createWethUsd0Singularity(
 
     const LQ_META = {
         activationTime: 600, // 10min
-        minBidAmount: ethers.BigNumber.from((1e18).toString()).mul(1), // 200 USDC
+        minBidAmount: ethers.BigNumber.from((1e18).toString()).mul(1), // 1 USDC
         closeToMinBidAmount: ethers.BigNumber.from((1e18).toString()).mul(202),
         defaultBidAmount: ethers.BigNumber.from((1e18).toString()).mul(400), // 400 USDC
         feeCollector: feeCollector.address,
@@ -911,7 +904,7 @@ async function registerLiquidationQueue(
 
     const LQ_META = {
         activationTime: 600, // 10min
-        minBidAmount: ethers.BigNumber.from((1e18).toString()).mul(1), // 200 USDC
+        minBidAmount: ethers.BigNumber.from((1e18).toString()).mul(1), // 1 USDC
         closeToMinBidAmount: ethers.BigNumber.from((1e18).toString()).mul(202),
         defaultBidAmount: ethers.BigNumber.from((1e18).toString()).mul(400), // 400 USDC
         feeCollector,
@@ -1077,6 +1070,7 @@ export async function register(staging?: boolean) {
     const { bar } = await registerPenrose(
         yieldBox.address,
         tap.address,
+        weth.address,
         staging,
     );
     log(`Deployed Penrose ${bar.address}`, staging);

@@ -75,6 +75,9 @@ contract BingBang is BoringOwnable, ERC20 {
     uint256 public protocolFee; // 10%
     uint256 public collateralizationRate; // 75%
 
+    bool public paused;
+    address public conservator;
+
     //errors
     error NotApproved(address _from, address _operator);
 
@@ -116,6 +119,8 @@ contract BingBang is BoringOwnable, ERC20 {
     event LogBorrowCapUpdated(uint256 _oldVal, uint256 _newVal);
     event LogStabilityFee(uint256 _oldFee, uint256 _newFee);
     event LogBorrowingFee(uint256 _oldVal, uint256 _newVal);
+    event ConservatorUpdated(address indexed old, address indexed _new);
+    event PausedUpdated(bool oldState, bool newState);
 
     // ***************** //
     // *** CONSTANTS *** //
@@ -150,6 +155,11 @@ contract BingBang is BoringOwnable, ERC20 {
         require(_isSolvent(from, exchangeRate), 'BingBang: insolvent');
     }
 
+    modifier notPaused() {
+        require(!paused, 'BingBang: paused');
+        _;
+    }
+
     bool private initialized;
     modifier onlyOnce() {
         require(!initialized, 'BingBang: initialized');
@@ -165,7 +175,7 @@ contract BingBang is BoringOwnable, ERC20 {
             uint256 _collateralId,
             IOracle _oracle,
             uint256 _exchangeRatePrecision
-        ) = abi.decode(data, (IPenrose, IERC20, uint256, IOracle,uint256));
+        ) = abi.decode(data, (IPenrose, IERC20, uint256, IOracle, uint256));
 
         penrose = tapiocaBar_;
         yieldBox = YieldBox(tapiocaBar_.yieldBox());
@@ -299,7 +309,13 @@ contract BingBang is BoringOwnable, ERC20 {
         address from,
         address to,
         uint256 amount
-    ) public solvent(from) allowed(from) returns (uint256 part, uint256 share) {
+    )
+        public
+        notPaused
+        solvent(from)
+        allowed(from)
+        returns (uint256 part, uint256 share)
+    {
         updateExchangeRate();
 
         accrue();
@@ -316,7 +332,7 @@ contract BingBang is BoringOwnable, ERC20 {
         address from,
         address to,
         uint256 part
-    ) public allowed(from) returns (uint256 amount) {
+    ) public notPaused allowed(from) returns (uint256 amount) {
         updateExchangeRate();
 
         accrue();
@@ -335,7 +351,7 @@ contract BingBang is BoringOwnable, ERC20 {
         address to,
         bool skim,
         uint256 share
-    ) public allowed(from) {
+    ) public notPaused allowed(from) {
         userCollateralShare[to] += share;
         uint256 oldTotalCollateralShare = totalCollateralShare;
         totalCollateralShare = oldTotalCollateralShare + share;
@@ -351,7 +367,7 @@ contract BingBang is BoringOwnable, ERC20 {
         address from,
         address to,
         uint256 share
-    ) public solvent(from) allowed(from) {
+    ) public notPaused solvent(from) allowed(from) {
         // accrue must be called because we check solvency
         accrue();
 
@@ -362,7 +378,7 @@ contract BingBang is BoringOwnable, ERC20 {
     function depositFeesToYieldBox(
         ISwapper swapper,
         IPenrose.SwapData calldata swapData
-    ) public {
+    ) public notPaused {
         require(penrose.swappers(swapper), 'BingBang: Invalid swapper');
 
         uint256 balance = asset.balanceOf(address(this));
@@ -396,11 +412,11 @@ contract BingBang is BoringOwnable, ERC20 {
             );
             (uint256 colAmount, ) = swapper.swap(
                 assetId,
-                collateralId,
+                penrose.wethAssetId(),
                 feeShares,
                 _feeTo,
                 swapData.minAssetAmount,
-                abi.encode(_assetToCollateralSwapPath())
+                abi.encode(_assetToWethSwapPath())
             );
 
             emit LogYieldBoxFeesDeposit(feeShares, colAmount);
@@ -417,7 +433,7 @@ contract BingBang is BoringOwnable, ERC20 {
         uint256[] calldata maxBorrowParts,
         ISwapper swapper,
         bytes calldata collateralToAssetSwapData
-    ) external {
+    ) external notPaused {
         // Oracle can fail but we still need to allow liquidations
         (, uint256 _exchangeRate) = updateExchangeRate();
         accrue();
@@ -434,6 +450,24 @@ contract BingBang is BoringOwnable, ERC20 {
     // *********************** //
     // *** OWNER FUNCTIONS *** //
     // *********************** //
+    /// @notice Set the Conservator address
+    /// @dev Conservator can pause the contract
+    /// @param _conservator The new address
+    function setConservator(address _conservator) external onlyOwner {
+        require(_conservator!=address(0),"BingBang: address not valid");
+        emit ConservatorUpdated(conservator, _conservator);
+        conservator = _conservator;
+    }
+
+    /// @notice updates the pause state of the contract
+    /// @param val the new value
+    function updatePause(bool val) external {
+        require(msg.sender == conservator, 'BingBang: unauthorized');
+        require(val != paused, 'BingBang: same state');
+        emit PausedUpdated(paused, val);
+        paused = val;
+    }
+
     /// @notice sets the protocol fee
     /// @dev can only be called by the owner
     /// @param _val the new value
@@ -459,7 +493,7 @@ contract BingBang is BoringOwnable, ERC20 {
     }
 
     /// @notice sets max borrowable amount
-    function setBorrowCap(uint256 _cap) external onlyOwner {
+    function setBorrowCap(uint256 _cap) external onlyOwner notPaused {
         emit LogBorrowCapUpdated(totalBorrowCap, _cap);
         totalBorrowCap = _cap;
     }
@@ -501,14 +535,14 @@ contract BingBang is BoringOwnable, ERC20 {
         path[1] = address(asset);
     }
 
-    function _assetToCollateralSwapPath()
-        private
+    function _assetToWethSwapPath()
+        internal
         view
         returns (address[] memory path)
     {
         path = new address[](2);
         path[0] = address(asset);
-        path[1] = address(collateral);
+        path[1] = address(penrose.wethToken());
     }
 
     /// @notice Concrete implementation of `isSolvent`. Includes a parameter to allow caching `exchangeRate`.

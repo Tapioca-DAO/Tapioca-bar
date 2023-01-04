@@ -61,7 +61,7 @@ describe('USD0', () => {
 
         await expect(
             usd0.connect(normalUser).mint(normalUser.address, amount),
-        ).to.be.revertedWith('unauthorized');
+        ).to.be.revertedWith('USD0: unauthorized');
         await usd0.connect(deployer).mint(normalUser.address, amount);
 
         usd0Balance = await usd0.balanceOf(normalUser.address);
@@ -69,7 +69,7 @@ describe('USD0', () => {
 
         await expect(
             usd0.connect(normalUser).burn(normalUser.address, amount),
-        ).to.be.revertedWith('unauthorized');
+        ).to.be.revertedWith('USD0: unauthorized');
         await usd0.connect(deployer).burn(normalUser.address, amount);
         usd0Balance = await usd0.balanceOf(normalUser.address);
         expect(usd0Balance.eq(0)).to.be.true;

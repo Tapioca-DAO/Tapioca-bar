@@ -21,6 +21,11 @@ contract SGLCommon is SGLStorage {
         _;
     }
 
+    modifier notPaused() {
+        require(!paused, 'SGL: paused');
+        _;
+    }
+
     /// @dev Checks if the user is solvent in the closed liquidation case at the end of the function body.
     modifier solvent(address from) {
         _;
@@ -146,7 +151,7 @@ contract SGLCommon is SGLStorage {
         address from,
         address to,
         uint256 fraction
-    ) public allowed(from) returns (uint256 share) {
+    ) public notPaused allowed(from) returns (uint256 share) {
         accrue();
 
         share = _removeAsset(from, to, fraction, true);
@@ -164,7 +169,7 @@ contract SGLCommon is SGLStorage {
         address to,
         bool skim,
         uint256 share
-    ) public allowed(from) returns (uint256 fraction) {
+    ) public notPaused allowed(from) returns (uint256 fraction) {
         accrue();
         fraction = _addAsset(from, to, skim, share);
     }
@@ -183,14 +188,14 @@ contract SGLCommon is SGLStorage {
         path[1] = address(asset);
     }
 
-    function _assetToCollateralSwapPath()
+    function _assetToWethSwapPath()
         internal
         view
         returns (address[] memory path)
     {
         path = new address[](2);
         path[0] = address(asset);
-        path[1] = address(collateral);
+        path[1] = address(penrose.wethToken());
     }
 
     /// @notice Concrete implementation of `isSolvent`. Includes a parameter to allow caching `exchangeRate`.
