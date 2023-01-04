@@ -9,6 +9,10 @@ interface ILiquidationQueue {
         SUB
     }
 
+    struct PoolInfo {
+        uint256 totalAmount; //liquidated asset amount
+        mapping(address => Bidder) users;
+    }
     struct Bidder {
         bool isUsdo;
         bool swapOnExecute;
@@ -35,7 +39,7 @@ interface ILiquidationQueue {
         IBidder bidExecutionSwapper; //Allows swapping USD0 to collateral when a bid is executed
         IBidder usdoSwapper; //Allows swapping any other stablecoin to USD0
     }
-    
+
     struct BidExecutionData {
         uint256 curPoolId;
         bool isBidAvail;
@@ -60,7 +64,7 @@ interface ILiquidationQueue {
     function getNextAvailBidPool()
         external
         view
-        returns (uint256 i, bool available);
+        returns (uint256 i, bool available, uint256 totalAmount);
 
     function executeBids(
         uint256 collateralAmountToLiquidate,
