@@ -41,7 +41,7 @@ describe('LiquidationQueue test', () => {
         ).to.emit(liquidationQueue, 'Bid');
 
         expect(
-            (await liquidationQueue.bidPools(POOL, deployer.address))
+            (await liquidationQueue.getBidPoolUserInfo(POOL, deployer.address))
                 .liquidatedAssetAmount,
         ).to.equal(LQ_META.minBidAmount);
     });
@@ -92,7 +92,7 @@ describe('LiquidationQueue test', () => {
 
         // Check for deleted bid pool entry queue
         expect(
-            (await liquidationQueue.bidPools(POOL, deployer.address))
+            (await liquidationQueue.getBidPoolUserInfo(POOL, deployer.address))
                 .liquidatedAssetAmount,
         ).to.be.eq(0);
 
@@ -105,7 +105,7 @@ describe('LiquidationQueue test', () => {
 
         expect(
             entry.bidder.toLowerCase() === deployer.address.toLowerCase() &&
-                entry.bidInfo.liquidatedAssetAmount.eq(LQ_META.minBidAmount),
+            entry.bidInfo.liquidatedAssetAmount.eq(LQ_META.minBidAmount),
         ).to.be.true;
 
         // Check order pool info update
@@ -140,12 +140,12 @@ describe('LiquidationQueue test', () => {
         );
 
         await expect(
-            liquidationQueue.removeInactivatedBid(deployer.address, POOL),
+            liquidationQueue.removeBid(deployer.address, POOL),
         ).to.emit(liquidationQueue, 'RemoveBid');
 
         // Check for deleted bid pool entry queue
         expect(
-            (await liquidationQueue.bidPools(POOL, deployer.address))
+            (await liquidationQueue.getBidPoolUserInfo(POOL, deployer.address))
                 .liquidatedAssetAmount,
         ).to.be.eq(0);
 
@@ -159,69 +159,6 @@ describe('LiquidationQueue test', () => {
         ).to.be.eq(LQ_META.minBidAmount);
     });
 
-    it('Should remove an activated bid', async () => {
-        const {
-            liquidationQueue,
-            deployer,
-            weth,
-            LQ_META,
-            yieldBox,
-            timeTravel,
-        } = await loadFixture(register);
-
-        const POOL = 10;
-        const lqAssetId = await liquidationQueue.lqAssetId();
-
-        // Bid and activate
-        await (await weth.freeMint(LQ_META.minBidAmount)).wait();
-        await (
-            await weth.approve(yieldBox.address, LQ_META.minBidAmount)
-        ).wait();
-
-        await yieldBox.depositAsset(
-            lqAssetId,
-            deployer.address,
-            deployer.address,
-            LQ_META.minBidAmount,
-            0,
-        );
-        await yieldBox.setApprovalForAll(liquidationQueue.address, true);
-        await liquidationQueue.bid(
-            deployer.address,
-            POOL,
-            LQ_META.minBidAmount,
-        );
-        await timeTravel(10_000);
-        await liquidationQueue.activateBid(deployer.address, POOL);
-
-        const bidIndexLen = await liquidationQueue.userBidIndexLength(
-            deployer.address,
-            POOL,
-        );
-
-        await expect(
-            liquidationQueue.removeBid(
-                deployer.address,
-                POOL,
-                bidIndexLen.sub(1),
-            ),
-        ).to.emit(liquidationQueue, 'RemoveBid');
-
-        // Check for deleted bid pool entry queue
-        expect(
-            (await liquidationQueue.bidPools(POOL, deployer.address))
-                .liquidatedAssetAmount,
-        ).to.be.eq(0);
-
-        // Check for fund return
-        expect(
-            await yieldBox.toAmount(
-                lqAssetId,
-                await yieldBox.balanceOf(deployer.address, lqAssetId),
-                false,
-            ),
-        ).to.be.eq(LQ_META.minBidAmount);
-    });
 
     it('Should execute bids', async () => {
         const {
@@ -591,8 +528,8 @@ describe('LiquidationQueue test', () => {
             await expect(
                 liquidationQueue
                     .connect(account)
-                    .removeInactivatedBid(account.address, poolId),
-            ).to.be.revertedWith('LQ: bid does not exist');
+                    .removeBid(account.address, poolId),
+            ).to.be.revertedWith('LQ: bid not available');
 
             await yieldBox
                 .connect(account)
@@ -606,7 +543,7 @@ describe('LiquidationQueue test', () => {
                     .activateBid(account.address, poolId),
             ).to.be.revertedWith('LQ: too soon');
 
-            const bidInfo = await liquidationQueue.bidPools(
+            const bidInfo = await liquidationQueue.getBidPoolUserInfo(
                 poolId,
                 account.address,
             );
@@ -621,7 +558,7 @@ describe('LiquidationQueue test', () => {
 
             await liquidationQueue
                 .connect(account)
-                .removeInactivatedBid(account.address, poolId);
+                .removeBid(account.address, poolId);
         }
 
         const firstAccountYieldBoxBalanceBeforeBids = await yieldBox.toAmount(
@@ -648,7 +585,7 @@ describe('LiquidationQueue test', () => {
                     .activateBid(account.address, poolId),
             ).to.emit(liquidationQueue, 'ActivateBid');
 
-            const bidInfo = await liquidationQueue.bidPools(
+            const bidInfo = await liquidationQueue.getBidPoolUserInfo(
                 poolId,
                 account.address,
             );
@@ -683,38 +620,7 @@ describe('LiquidationQueue test', () => {
             ).to.eq(parseFloat(ethers.utils.formatEther(LQ_META.minBidAmount)));
         }
 
-        for (const account of accounts) {
-            const userBidsLength = await liquidationQueue
-                .connect(account)
-                .userBidIndexLength(account.address, poolId);
 
-            await expect(
-                liquidationQueue
-                    .connect(account)
-                    .removeBid(account.address, poolId, userBidsLength.sub(1)),
-            ).to.emit(liquidationQueue, 'RemoveBid');
-
-            expect(
-                (await liquidationQueue.bidPools(poolId, account.address))
-                    .liquidatedAssetAmount,
-            ).to.be.eq(0);
-        }
-
-        const firstAccountYieldBoxBalanceAfterBids = await yieldBox.toAmount(
-            lqAssetId,
-            await yieldBox.balanceOf(accounts[0].address, lqAssetId),
-            false,
-        );
-        expect(
-            parseFloat(
-                ethers.utils.formatEther(firstAccountYieldBoxBalanceBeforeBids),
-            ),
-            '✖️ Balance not right after removing the active bid',
-        ).to.eq(
-            parseFloat(
-                ethers.utils.formatEther(firstAccountYieldBoxBalanceAfterBids),
-            ),
-        );
 
         //should be 0 as no bid was executed
         const firstUserBalanceDue = await liquidationQueue.balancesDue(
@@ -1012,10 +918,11 @@ describe('LiquidationQueue test', () => {
             true,
         );
 
-        const executionfnData = wethUsdcSingularity.interface.encodeFunctionData(
-            'updateLQExecutionSwapper',
-            [usdoToWethBidder.address],
-        );
+        const executionfnData =
+            wethUsdcSingularity.interface.encodeFunctionData(
+                'updateLQExecutionSwapper',
+                [usdoToWethBidder.address],
+            );
         await bar.executeMarketFn(
             [wethUsdcSingularity.address],
             [executionfnData],
@@ -1110,7 +1017,7 @@ describe('LiquidationQueue test', () => {
             ),
         ).to.be.revertedWith('LQ: premium too high');
 
-        const bidPoolInfo = await liquidationQueue.bidPools(
+        const bidPoolInfo = await liquidationQueue.getBidPoolUserInfo(
             POOL,
             deployer.address,
         );
@@ -1152,10 +1059,11 @@ describe('LiquidationQueue test', () => {
             true,
         );
 
-        const executionfnData = wethUsdcSingularity.interface.encodeFunctionData(
-            'updateLQExecutionSwapper',
-            [usdoToWethBidder.address],
-        );
+        const executionfnData =
+            wethUsdcSingularity.interface.encodeFunctionData(
+                'updateLQExecutionSwapper',
+                [usdoToWethBidder.address],
+            );
         await bar.executeMarketFn(
             [wethUsdcSingularity.address],
             [executionfnData],
@@ -1214,7 +1122,7 @@ describe('LiquidationQueue test', () => {
             ),
         ).to.emit(liquidationQueue, 'Bid');
 
-        const bidPoolInfo = await liquidationQueue.bidPools(
+        const bidPoolInfo = await liquidationQueue.getBidPoolUserInfo(
             POOL,
             deployer.address,
         );
@@ -1222,7 +1130,7 @@ describe('LiquidationQueue test', () => {
         expect(bidPoolInfo.usdoAmount.lte(toBid)).to.be.true;
     });
 
-    it('should bid with stable, remove inactive bid, bid again, activate bid and remove activated bid', async () => {
+    it('should bid with stable, remove inactive bid, bid again, activate bid', async () => {
         const {
             deployer,
             bar,
@@ -1260,10 +1168,11 @@ describe('LiquidationQueue test', () => {
             true,
         );
 
-        const executionfnData = wethUsdcSingularity.interface.encodeFunctionData(
-            'updateLQExecutionSwapper',
-            [usdoToWethBidder.address],
-        );
+        const executionfnData =
+            wethUsdcSingularity.interface.encodeFunctionData(
+                'updateLQExecutionSwapper',
+                [usdoToWethBidder.address],
+            );
         await bar.executeMarketFn(
             [wethUsdcSingularity.address],
             [executionfnData],
@@ -1303,7 +1212,7 @@ describe('LiquidationQueue test', () => {
             ),
         ).to.emit(liquidationQueue, 'Bid');
 
-        const bidPoolInfo = await liquidationQueue.bidPools(
+        const bidPoolInfo = await liquidationQueue.getBidPoolUserInfo(
             POOL,
             deployer.address,
         );
@@ -1312,7 +1221,7 @@ describe('LiquidationQueue test', () => {
 
         // Remove inactive bid
         await expect(
-            liquidationQueue.removeInactivatedBid(deployer.address, POOL),
+            liquidationQueue.removeBid(deployer.address, POOL),
         ).to.emit(liquidationQueue, 'RemoveBid');
 
         // Bid again
@@ -1341,26 +1250,6 @@ describe('LiquidationQueue test', () => {
         await expect(
             liquidationQueue.activateBid(deployer.address, POOL),
         ).to.emit(liquidationQueue, 'ActivateBid');
-
-        // Remove bid
-        const bidIndexLen = await liquidationQueue.userBidIndexLength(
-            deployer.address,
-            POOL,
-        );
-
-        await expect(
-            liquidationQueue.removeBid(
-                deployer.address,
-                POOL,
-                bidIndexLen.sub(1),
-            ),
-        ).to.emit(liquidationQueue, 'RemoveBid');
-
-        // Check for deleted bid pool entry queue
-        expect(
-            (await liquidationQueue.bidPools(POOL, deployer.address))
-                .liquidatedAssetAmount,
-        ).to.be.eq(0);
     });
 
     it('should execute bids for stable bidders', async () => {
@@ -1401,10 +1290,11 @@ describe('LiquidationQueue test', () => {
             true,
         );
 
-        const executionfnData = wethUsdcSingularity.interface.encodeFunctionData(
-            'updateLQExecutionSwapper',
-            [usdoToWethBidder.address],
-        );
+        const executionfnData =
+            wethUsdcSingularity.interface.encodeFunctionData(
+                'updateLQExecutionSwapper',
+                [usdoToWethBidder.address],
+            );
         await bar.executeMarketFn(
             [wethUsdcSingularity.address],
             [executionfnData],
@@ -1449,7 +1339,7 @@ describe('LiquidationQueue test', () => {
             ),
         ).to.emit(liquidationQueue, 'Bid');
 
-        const bidPoolInfo = await liquidationQueue.bidPools(
+        const bidPoolInfo = await liquidationQueue.getBidPoolUserInfo(
             POOL,
             deployer.address,
         );
@@ -1650,10 +1540,11 @@ describe('LiquidationQueue test', () => {
             true,
         );
 
-        const executionfnData = wethUsdcSingularity.interface.encodeFunctionData(
-            'updateLQExecutionSwapper',
-            [usdoToWethBidder.address],
-        );
+        const executionfnData =
+            wethUsdcSingularity.interface.encodeFunctionData(
+                'updateLQExecutionSwapper',
+                [usdoToWethBidder.address],
+            );
         await bar.executeMarketFn(
             [wethUsdcSingularity.address],
             [executionfnData],
@@ -1725,14 +1616,14 @@ describe('LiquidationQueue test', () => {
                 ),
         ).to.emit(liquidationQueue, 'Bid');
 
-        const bidPoolInfoDeployer = await liquidationQueue.bidPools(
+        const bidPoolInfoDeployer = await liquidationQueue.getBidPoolUserInfo(
             POOL,
             deployer.address,
         );
         expect(bidPoolInfoDeployer.usdoAmount.gt(LQ_META.minBidAmount)).to.be
             .true;
         expect(bidPoolInfoDeployer.usdoAmount.lte(toBid)).to.be.true;
-        const bidPoolInfoAnotherAccount = await liquidationQueue.bidPools(
+        const bidPoolInfoAnotherAccount = await liquidationQueue.getBidPoolUserInfo(
             POOL,
             accounts[2].address,
         );
@@ -1910,6 +1801,658 @@ describe('LiquidationQueue test', () => {
         );
         expect(acc1BalancesDue.eq(0)).to.be.true;
         expect(deployerBalancesDue.gt(acc2BalancesDue)).to.be.true; //the first bidder
+    });
+
+    it('should try to active when no bids are placed', async () => {
+        const { deployer, liquidationQueue } = await loadFixture(register);
+
+        // Activate bid
+        await expect(
+            liquidationQueue.activateBid(deployer.address, 1),
+        ).to.be.revertedWith('LQ: bid not available');
+    });
+
+    it('bid, activate, try to remove inactive bid', async () => {
+        const {
+            liquidationQueue,
+            deployer,
+            weth,
+            LQ_META,
+            yieldBox,
+            timeTravel,
+        } = await loadFixture(register);
+
+        const POOL = 10;
+
+        await (await weth.freeMint(LQ_META.minBidAmount)).wait();
+        await (
+            await weth.approve(yieldBox.address, LQ_META.minBidAmount)
+        ).wait();
+        await yieldBox.depositAsset(
+            await liquidationQueue.lqAssetId(),
+            deployer.address,
+            deployer.address,
+            LQ_META.minBidAmount,
+            0,
+        );
+
+        await yieldBox.setApprovalForAll(liquidationQueue.address, true);
+        await expect(
+            liquidationQueue.bid(deployer.address, POOL, LQ_META.minBidAmount),
+        ).to.emit(liquidationQueue, 'Bid');
+
+        expect(
+            (await liquidationQueue.getBidPoolUserInfo(POOL, deployer.address))
+                .liquidatedAssetAmount,
+        ).to.equal(LQ_META.minBidAmount);
+
+        await timeTravel(86400);
+
+        await expect(
+            liquidationQueue.activateBid(deployer.address, POOL),
+        ).to.emit(liquidationQueue, 'ActivateBid');
+
+        // Check for deleted bid pool entry queue
+        expect(
+            (await liquidationQueue.getBidPoolUserInfo(POOL, deployer.address))
+                .liquidatedAssetAmount,
+        ).to.be.eq(0);
+
+        // Check for order book entry addition record
+        const lastAdditionIdx = await liquidationQueue.orderBookInfos(POOL);
+        const entry = await liquidationQueue.orderBookEntries(
+            POOL,
+            lastAdditionIdx.nextBidPush - 1,
+        );
+
+        expect(
+            entry.bidder.toLowerCase() === deployer.address.toLowerCase() &&
+            entry.bidInfo.liquidatedAssetAmount.eq(LQ_META.minBidAmount),
+        ).to.be.true;
+
+        // Check order pool info update
+        const poolInfo = await liquidationQueue.orderBookInfos(POOL);
+        expect(poolInfo.nextBidPush).to.be.eq(1);
+
+        await expect(
+            liquidationQueue.removeBid(deployer.address, POOL),
+        ).to.be.revertedWith('LQ: bid not available');
+    });
+
+    it('place a few bids, active all of them', async () => {
+        const {
+            liquidationQueue,
+            deployer,
+            weth,
+            LQ_META,
+            yieldBox,
+            timeTravel,
+        } = await loadFixture(register);
+
+        const POOL = 10;
+
+        await (await weth.freeMint(LQ_META.minBidAmount.mul(3))).wait();
+        await (
+            await weth.approve(yieldBox.address, LQ_META.minBidAmount.mul(3))
+        ).wait();
+        await yieldBox.depositAsset(
+            await liquidationQueue.lqAssetId(),
+            deployer.address,
+            deployer.address,
+            LQ_META.minBidAmount.mul(3),
+            0,
+        );
+
+        await yieldBox.setApprovalForAll(liquidationQueue.address, true);
+
+        //bid 1
+        await liquidationQueue.bid(
+            deployer.address,
+            POOL,
+            LQ_META.minBidAmount,
+        );
+        await timeTravel(86400);
+        await liquidationQueue.activateBid(deployer.address, POOL);
+
+        //bid 2
+        await liquidationQueue.bid(
+            deployer.address,
+            POOL,
+            LQ_META.minBidAmount,
+        );
+        await timeTravel(86400);
+        await liquidationQueue.activateBid(deployer.address, POOL);
+
+        //bid 3
+        await liquidationQueue.bid(
+            deployer.address,
+            POOL,
+            LQ_META.minBidAmount,
+        );
+        await timeTravel(86400);
+        await liquidationQueue.activateBid(deployer.address, POOL);
+
+        const bidIndexLen = await liquidationQueue.userBidIndexLength(
+            deployer.address,
+            POOL,
+        );
+        expect(bidIndexLen.eq(1)).to.be.true; //TODO: fix after confirmation
+
+        // Check for deleted bid pool entry queue
+        expect(
+            (await liquidationQueue.getBidPoolUserInfo(POOL, deployer.address))
+                .liquidatedAssetAmount,
+        ).to.be.eq(0);
+
+        // Check for order book entry addition record
+        const lastAdditionIdx = await liquidationQueue.orderBookInfos(POOL);
+        let entry = await liquidationQueue.orderBookEntries(
+            POOL,
+            lastAdditionIdx.nextBidPush - 1,
+        );
+        expect(
+            entry.bidder.toLowerCase() === deployer.address.toLowerCase() &&
+            entry.bidInfo.liquidatedAssetAmount.eq(LQ_META.minBidAmount),
+        ).to.be.true;
+
+        entry = await liquidationQueue.orderBookEntries(
+            POOL,
+            lastAdditionIdx.nextBidPush - 2,
+        );
+        expect(
+            entry.bidder.toLowerCase() === deployer.address.toLowerCase() &&
+            entry.bidInfo.liquidatedAssetAmount.eq(LQ_META.minBidAmount),
+        ).to.be.true;
+
+        entry = await liquidationQueue.orderBookEntries(
+            POOL,
+            lastAdditionIdx.nextBidPush - 3,
+        );
+        expect(
+            entry.bidder.toLowerCase() === deployer.address.toLowerCase() &&
+            entry.bidInfo.liquidatedAssetAmount.eq(LQ_META.minBidAmount),
+        ).to.be.true;
+        expect(lastAdditionIdx.nextBidPush).to.eq(3);
+    });
+
+    it('should bid, activates id and try to remove inactive bid', async () => {
+        const {
+            liquidationQueue,
+            deployer,
+            weth,
+            LQ_META,
+            yieldBox,
+            timeTravel,
+        } = await loadFixture(register);
+
+        const POOL = 10;
+
+        await (await weth.freeMint(LQ_META.minBidAmount)).wait();
+        await (
+            await weth.approve(yieldBox.address, LQ_META.minBidAmount)
+        ).wait();
+        await yieldBox.depositAsset(
+            await liquidationQueue.lqAssetId(),
+            deployer.address,
+            deployer.address,
+            LQ_META.minBidAmount,
+            0,
+        );
+
+        await yieldBox.setApprovalForAll(liquidationQueue.address, true);
+
+        //bid 1
+        await liquidationQueue.bid(
+            deployer.address,
+            POOL,
+            LQ_META.minBidAmount,
+        );
+        await timeTravel(86400);
+        await liquidationQueue.activateBid(deployer.address, POOL);
+        await expect(
+            liquidationQueue.removeBid(deployer.address, POOL),
+        ).to.be.revertedWith('LQ: bid not available');
+    });
+
+    it('borrow, place bid; collateral drops, call without any bid being active => should rely on close liquidation', async () => {
+        const {
+            deployer,
+            eoa1,
+            __wethUsdcPrice,
+            liquidationQueue,
+            LQ_META,
+            weth,
+            usdc,
+            yieldBox,
+            wethUsdcSingularity,
+            wethUsdcOracle,
+            multiSwapper,
+            BN,
+            timeTravel,
+        } = await loadFixture(register);
+
+        const POOL = 5;
+        const marketAssetId = await wethUsdcSingularity.assetId();
+        const marketColId = await wethUsdcSingularity.collateralId();
+        const lqAssetId = await liquidationQueue.lqAssetId();
+
+        // Bid
+        await (await weth.freeMint(LQ_META.minBidAmount.mul(100))).wait();
+        await (
+            await weth.approve(yieldBox.address, LQ_META.minBidAmount.mul(100))
+        ).wait();
+        await yieldBox.depositAsset(
+            lqAssetId,
+            deployer.address,
+            deployer.address,
+            LQ_META.minBidAmount.mul(100),
+            0,
+        );
+        await yieldBox.setApprovalForAll(liquidationQueue.address, true);
+        await liquidationQueue.bid(
+            deployer.address,
+            POOL,
+            LQ_META.minBidAmount.mul(100),
+        );
+
+        // Mint some weth to deposit as asset with EOA1
+        const wethAmount = BN(1e18).mul(100);
+        await weth.connect(eoa1).freeMint(wethAmount);
+        await weth.connect(eoa1).approve(yieldBox.address, wethAmount);
+
+        await yieldBox
+            .connect(eoa1)
+            .depositAsset(
+                marketAssetId,
+                eoa1.address,
+                eoa1.address,
+                wethAmount,
+                0,
+            );
+
+        await yieldBox
+            .connect(eoa1)
+            .setApprovalForAll(wethUsdcSingularity.address, true);
+        await wethUsdcSingularity
+            .connect(eoa1)
+            .addAsset(
+                eoa1.address,
+                eoa1.address,
+                false,
+                await yieldBox.toShare(marketAssetId, wethAmount, false),
+            );
+
+        // Mint some usdc to deposit as collateral and borrow with deployer
+        const usdcAmount = wethAmount.mul(__wethUsdcPrice.div(BN(1e18)));
+        const borrowAmount = usdcAmount
+            .mul(74)
+            .div(100)
+            .div(__wethUsdcPrice.div(BN(1e18)));
+
+        await usdc.freeMint(usdcAmount);
+        await usdc.approve(yieldBox.address, usdcAmount);
+        await yieldBox.depositAsset(
+            marketColId,
+            deployer.address,
+            deployer.address,
+            usdcAmount,
+            0,
+        );
+        await yieldBox.setApprovalForAll(wethUsdcSingularity.address, true);
+        await wethUsdcSingularity.addCollateral(
+            deployer.address,
+            deployer.address,
+            false,
+            await yieldBox.toShare(marketColId, usdcAmount, false),
+        );
+        const initialCollateral = await wethUsdcSingularity.userCollateralShare(
+            deployer.address,
+        );
+        expect(initialCollateral.gt(0)).to.be.true;
+        await wethUsdcSingularity.borrow(
+            deployer.address,
+            deployer.address,
+            borrowAmount,
+        );
+
+        // Try to liquidate but with failure since price hasn't changed
+        const data = new ethers.utils.AbiCoder().encode(['uint256'], [1]);
+        await expect(
+            wethUsdcSingularity.liquidate(
+                [deployer.address],
+                [await wethUsdcSingularity.userBorrowPart(deployer.address)],
+                ethers.constants.AddressZero,
+                data,
+                data,
+            ),
+        ).to.be.revertedWith('SGL: solvent');
+
+        // Make some price movement and liquidate
+        const priceDrop = __wethUsdcPrice.mul(5).div(100);
+        await wethUsdcOracle.set(__wethUsdcPrice.add(priceDrop));
+        await wethUsdcSingularity.updateExchangeRate();
+
+        await expect(
+            wethUsdcSingularity.liquidate(
+                [deployer.address],
+                [await wethUsdcSingularity.userBorrowPart(deployer.address)],
+                multiSwapper.address,
+                data,
+                data,
+            ),
+        ).to.not.be.reverted;
+
+        await expect(
+            wethUsdcSingularity.liquidate(
+                [deployer.address],
+                [await wethUsdcSingularity.userBorrowPart(deployer.address)],
+                multiSwapper.address,
+                data,
+                data,
+            ),
+        ).to.be.revertedWith('SGL: solvent');
+
+        // Check that LQ balances has been added
+        expect(await liquidationQueue.balancesDue(deployer.address)).to.eq(0);
+
+        const finalBorrowPart = await wethUsdcSingularity.userBorrowPart(
+            deployer.address,
+        );
+        expect(finalBorrowPart.eq(0)).to.be.true;
+
+        const finalCollateral = await wethUsdcSingularity.userCollateralShare(
+            deployer.address,
+        );
+        expect(finalCollateral.lt(initialCollateral.div(5))).to.be.true;
+    });
+
+    it('borrow, place small bid, activate, collateral drops, liquidate => should rely on close liquidation', async () => {
+        const {
+            deployer,
+            eoa1,
+            __wethUsdcPrice,
+            liquidationQueue,
+            LQ_META,
+            weth,
+            usdc,
+            yieldBox,
+            wethUsdcSingularity,
+            wethUsdcOracle,
+            multiSwapper,
+            BN,
+            timeTravel,
+        } = await loadFixture(register);
+
+        const POOL = 5;
+        const marketAssetId = await wethUsdcSingularity.assetId();
+        const marketColId = await wethUsdcSingularity.collateralId();
+        const lqAssetId = await liquidationQueue.lqAssetId();
+
+        // Bid
+        await (await weth.freeMint(LQ_META.minBidAmount)).wait();
+        await (
+            await weth.approve(yieldBox.address, LQ_META.minBidAmount)
+        ).wait();
+        await yieldBox.depositAsset(
+            lqAssetId,
+            deployer.address,
+            deployer.address,
+            LQ_META.minBidAmount,
+            0,
+        );
+        await yieldBox.setApprovalForAll(liquidationQueue.address, true);
+        await liquidationQueue.bid(
+            deployer.address,
+            POOL,
+            LQ_META.minBidAmount,
+        );
+        await timeTravel(86400);
+        await liquidationQueue.activateBid(deployer.address, POOL);
+
+        // Mint some weth to deposit as asset with EOA1
+        const wethAmount = BN(1e18).mul(100);
+        await weth.connect(eoa1).freeMint(wethAmount);
+        await weth.connect(eoa1).approve(yieldBox.address, wethAmount);
+        await yieldBox
+            .connect(eoa1)
+            .depositAsset(
+                marketAssetId,
+                eoa1.address,
+                eoa1.address,
+                wethAmount,
+                0,
+            );
+
+        await yieldBox
+            .connect(eoa1)
+            .setApprovalForAll(wethUsdcSingularity.address, true);
+        await wethUsdcSingularity
+            .connect(eoa1)
+            .addAsset(
+                eoa1.address,
+                eoa1.address,
+                false,
+                await yieldBox.toShare(marketAssetId, wethAmount, false),
+            );
+
+        // Mint some usdc to deposit as collateral and borrow with deployer
+        const usdcAmount = wethAmount.mul(__wethUsdcPrice.div(BN(1e18)));
+        const borrowAmount = usdcAmount
+            .mul(74)
+            .div(100)
+            .div(__wethUsdcPrice.div(BN(1e18)));
+
+        await usdc.freeMint(usdcAmount);
+        await usdc.approve(yieldBox.address, usdcAmount);
+        await yieldBox.depositAsset(
+            marketColId,
+            deployer.address,
+            deployer.address,
+            usdcAmount,
+            0,
+        );
+        await yieldBox.setApprovalForAll(wethUsdcSingularity.address, true);
+        await wethUsdcSingularity.addCollateral(
+            deployer.address,
+            deployer.address,
+            false,
+            await yieldBox.toShare(marketColId, usdcAmount, false),
+        );
+        const initialCollateral = await wethUsdcSingularity.userCollateralShare(
+            deployer.address,
+        );
+        expect(initialCollateral.gt(0)).to.be.true;
+        await wethUsdcSingularity.borrow(
+            deployer.address,
+            deployer.address,
+            borrowAmount,
+        );
+
+        const data = new ethers.utils.AbiCoder().encode(['uint256'], [1]);
+        const priceDrop = __wethUsdcPrice.mul(5).div(100);
+        await wethUsdcOracle.set(__wethUsdcPrice.add(priceDrop));
+        await wethUsdcSingularity.updateExchangeRate();
+
+        const initialBorrowPart = await wethUsdcSingularity.userBorrowPart(
+            deployer.address,
+        );
+        await expect(
+            wethUsdcSingularity.liquidate(
+                [deployer.address],
+                [await wethUsdcSingularity.userBorrowPart(deployer.address)],
+                multiSwapper.address,
+                data,
+                data,
+            ),
+        ).to.not.be.reverted;
+
+        // Check that LQ balances has been added
+        expect(await liquidationQueue.balancesDue(deployer.address)).to.eq(0);
+
+        const finalBorrowPart = await wethUsdcSingularity.userBorrowPart(
+            deployer.address,
+        );
+        expect(finalBorrowPart.eq(0)).to.be.true;
+
+        const finalCollateral = await wethUsdcSingularity.userCollateralShare(
+            deployer.address,
+        );
+        expect(finalCollateral.lt(initialCollateral.div(5))).to.be.true;
+
+        const bidIndexLen = await liquidationQueue.userBidIndexLength(
+            deployer.address,
+            POOL,
+        );
+        expect(bidIndexLen.eq(1)).to.be.true;
+    });
+
+
+    it('borrow, place bid, activate, collateral drops, liquidate => should rely on LQ liquidation', async () => {
+        const {
+            deployer,
+            eoa1,
+            __wethUsdcPrice,
+            liquidationQueue,
+            LQ_META,
+            weth,
+            usdc,
+            yieldBox,
+            wethUsdcSingularity,
+            wethUsdcOracle,
+            multiSwapper,
+            BN,
+            timeTravel,
+        } = await loadFixture(register);
+
+        const POOL = 5;
+        const marketAssetId = await wethUsdcSingularity.assetId();
+        const marketColId = await wethUsdcSingularity.collateralId();
+        const lqAssetId = await liquidationQueue.lqAssetId();
+
+        // Bid
+        await (await weth.freeMint(LQ_META.minBidAmount.mul(100))).wait();
+        await (
+            await weth.approve(yieldBox.address, LQ_META.minBidAmount.mul(100))
+        ).wait();
+        await yieldBox.depositAsset(
+            lqAssetId,
+            deployer.address,
+            deployer.address,
+            LQ_META.minBidAmount.mul(100),
+            0,
+        );
+        await yieldBox.setApprovalForAll(liquidationQueue.address, true);
+        await liquidationQueue.bid(
+            deployer.address,
+            POOL,
+            LQ_META.minBidAmount.mul(100),
+        );
+        await timeTravel(86400);
+        await liquidationQueue.activateBid(deployer.address, POOL);
+
+        // Mint some weth to deposit as asset with EOA1
+        const wethAmount = BN(1e18).mul(100);
+        await weth.connect(eoa1).freeMint(wethAmount);
+        await weth.connect(eoa1).approve(yieldBox.address, wethAmount);
+        await yieldBox
+            .connect(eoa1)
+            .depositAsset(
+                marketAssetId,
+                eoa1.address,
+                eoa1.address,
+                wethAmount,
+                0,
+            );
+
+        await yieldBox
+            .connect(eoa1)
+            .setApprovalForAll(wethUsdcSingularity.address, true);
+        await wethUsdcSingularity
+            .connect(eoa1)
+            .addAsset(
+                eoa1.address,
+                eoa1.address,
+                false,
+                await yieldBox.toShare(marketAssetId, wethAmount, false),
+            );
+
+        // Mint some usdc to deposit as collateral and borrow with deployer
+        const usdcAmount = wethAmount.mul(__wethUsdcPrice.div(BN(1e18)));
+        const borrowAmount = usdcAmount
+            .mul(74)
+            .div(100)
+            .div(__wethUsdcPrice.div(BN(1e18)));
+
+        await usdc.freeMint(usdcAmount);
+        await usdc.approve(yieldBox.address, usdcAmount);
+        await yieldBox.depositAsset(
+            marketColId,
+            deployer.address,
+            deployer.address,
+            usdcAmount,
+            0,
+        );
+        await yieldBox.setApprovalForAll(wethUsdcSingularity.address, true);
+        await wethUsdcSingularity.addCollateral(
+            deployer.address,
+            deployer.address,
+            false,
+            await yieldBox.toShare(marketColId, usdcAmount, false),
+        );
+        const initialCollateral = await wethUsdcSingularity.userCollateralShare(
+            deployer.address,
+        );
+        expect(initialCollateral.gt(0)).to.be.true;
+        await wethUsdcSingularity.borrow(
+            deployer.address,
+            deployer.address,
+            borrowAmount,
+        );
+
+        const data = new ethers.utils.AbiCoder().encode(['uint256'], [1]);
+        const priceDrop = __wethUsdcPrice.mul(2).div(100);
+        await wethUsdcOracle.set(__wethUsdcPrice.add(priceDrop));
+        await wethUsdcSingularity.updateExchangeRate();
+
+        const initialBorrowPart = await wethUsdcSingularity.userBorrowPart(
+            deployer.address,
+        );
+
+         // Check for deleted bid pool entry queue
+         let lastAdditionIdx = await liquidationQueue.orderBookInfos(POOL);
+         let entry = await liquidationQueue.orderBookEntries(
+             POOL,
+             lastAdditionIdx.nextBidPush - 1,
+         );
+        const initialBidAmount = entry.bidInfo.liquidatedAssetAmount;
+        await expect(
+            wethUsdcSingularity.liquidate(
+                [deployer.address],
+                [await wethUsdcSingularity.userBorrowPart(deployer.address)],
+                multiSwapper.address,
+                data,
+                data,
+            ),
+        ).to.not.be.reverted;
+
+        // Check that LQ balances has been added
+        expect((await liquidationQueue.balancesDue(deployer.address)).gt(0)).to.be.true;
+
+        const finalBorrowPart = await wethUsdcSingularity.userBorrowPart(
+            deployer.address,
+        );
+        const finalCollateral = await wethUsdcSingularity.userCollateralShare(
+            deployer.address,
+        );
+        expect(finalBorrowPart.lt(initialBorrowPart)).to.be.true;
+        expect(finalCollateral.lt(initialCollateral)).to.be.true;
+
+        // Check for deleted bid pool entry queue
+        entry = await liquidationQueue.orderBookEntries(
+            POOL,
+            lastAdditionIdx.nextBidPush - 1,
+        );
+        expect(initialBidAmount.gt(entry.bidInfo.liquidatedAssetAmount)).to.be.true;
     });
 });
 

@@ -27,9 +27,9 @@ contract SGLLendingBorrowing is SGLCommon {
         allowed(from)
         returns (uint256 part, uint256 share)
     {
-        accrue();
-
         updateExchangeRate();
+
+        accrue();
 
         (part, share) = _borrow(from, to, amount);
     }
@@ -47,9 +47,9 @@ contract SGLLendingBorrowing is SGLCommon {
         bool skim,
         uint256 part
     ) public notPaused allowed(from) returns (uint256 amount) {
-        accrue();
-
         updateExchangeRate();
+
+        accrue();
 
         amount = _repay(from, to, skim, part);
     }

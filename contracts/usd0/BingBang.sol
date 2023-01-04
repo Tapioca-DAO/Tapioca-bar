@@ -316,7 +316,10 @@ contract BingBang is BoringOwnable, ERC20 {
         allowed(from)
         returns (uint256 part, uint256 share)
     {
+        updateExchangeRate();
+
         accrue();
+
         (part, share) = _borrow(from, to, amount);
     }
 
@@ -330,7 +333,10 @@ contract BingBang is BoringOwnable, ERC20 {
         address to,
         uint256 part
     ) public notPaused allowed(from) returns (uint256 amount) {
+        updateExchangeRate();
+
         accrue();
+        
         amount = _repay(from, to, part);
     }
 

@@ -196,6 +196,8 @@ async function registerPenrose(
     return { bar };
 }
 
+
+
 async function setPenroseAssets(
     yieldBox: YieldBox,
     bar: Penrose,
@@ -852,7 +854,7 @@ async function createWethUsd0Singularity(
 
     const LQ_META = {
         activationTime: 600, // 10min
-        minBidAmount: ethers.BigNumber.from((1e18).toString()).mul(200), // 200 USDC
+        minBidAmount: ethers.BigNumber.from((1e18).toString()).mul(1), // 1 USDC
         closeToMinBidAmount: ethers.BigNumber.from((1e18).toString()).mul(202),
         defaultBidAmount: ethers.BigNumber.from((1e18).toString()).mul(400), // 400 USDC
         feeCollector: feeCollector.address,
@@ -902,7 +904,7 @@ async function registerLiquidationQueue(
 
     const LQ_META = {
         activationTime: 600, // 10min
-        minBidAmount: ethers.BigNumber.from((1e18).toString()).mul(200), // 200 USDC
+        minBidAmount: ethers.BigNumber.from((1e18).toString()).mul(1), // 1 USDC
         closeToMinBidAmount: ethers.BigNumber.from((1e18).toString()).mul(202),
         defaultBidAmount: ethers.BigNumber.from((1e18).toString()).mul(400), // 400 USDC
         feeCollector,

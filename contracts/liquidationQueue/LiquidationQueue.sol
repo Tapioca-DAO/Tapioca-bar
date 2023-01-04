@@ -49,8 +49,9 @@ contract LiquidationQueue is ILiquidationQueue {
     /// @notice Bid pools
     /// @dev x% premium => bid pool
     ///      0 ... 30 range
+    ///      poolId => totalAmount
     ///      poolId => userAddress => userBidInfo.
-    mapping(uint256 => mapping(address => Bidder)) public bidPools;
+    mapping(uint256 => PoolInfo) public bidPools;
 
     /// @notice The actual order book. Entries are stored only once a bid has been activated
     /// @dev poolId => bidIndex => bidEntry).
@@ -71,7 +72,6 @@ contract LiquidationQueue is ILiquidationQueue {
     /// @notice Due balance of users
     /// @dev user => amountDue.
     mapping(address => uint256) public balancesDue;
-
 
     // ***************** //
     // *** CONSTANTS *** //
@@ -221,19 +221,36 @@ contract LiquidationQueue is ILiquidationQueue {
     /// @notice Get the next not empty bid pool in ASC order.
     /// @return i The bid pool id.
     /// @return available True if there is at least 1 bid available across all the order books.
+    /// @return totalAmount Total available liquidated asset amount.
     function getNextAvailBidPool()
         public
         view
         override
-        returns (uint256 i, bool available)
+        returns (
+            uint256 i,
+            bool available,
+            uint256 totalAmount
+        )
     {
         for (; i <= MAX_BID_POOLS; ) {
             if (getOrderBookSize(i) != 0) {
                 available = true;
+                totalAmount = bidPools[i].totalAmount;
                 break;
             }
             ++i;
         }
+    }
+
+    /// @notice returns user data for an existing bid pool
+    /// @param pool the pool identifier
+    /// @param user the user identifier
+    function getBidPoolUserInfo(uint256 pool, address user)
+        external
+        view
+        returns (Bidder memory)
+    {
+        return bidPools[pool].users[user];
     }
 
     /// @notice returns number of pool bids for user
@@ -346,7 +363,9 @@ contract LiquidationQueue is ILiquidationQueue {
     /// @param user The user to activate the bid for.
     /// @param pool The target pool.
     function activateBid(address user, uint256 pool) external {
-        Bidder memory bidder = bidPools[pool][user];
+        Bidder memory bidder = bidPools[pool].users[user];
+
+        require(bidder.timestamp > 0, 'LQ: bid not available'); //fail early
         require(
             block.timestamp >=
                 bidder.timestamp + liquidationQueueMeta.activationTime,
@@ -362,7 +381,7 @@ contract LiquidationQueue is ILiquidationQueue {
 
         // Insert the order book entry and delete the bid entry from the given pool.
         orderBookEntries[pool][poolInfo.nextBidPush] = orderBookEntry;
-        delete bidPools[pool][user];
+        delete bidPools[pool].users[user];
 
         // Add the index to the user bid index.
         userBidIndexes[user][pool].push(poolInfo.nextBidPush);
@@ -376,20 +395,22 @@ contract LiquidationQueue is ILiquidationQueue {
         uint256 bidAmount = orderBookEntry.bidInfo.isUsdo
             ? orderBookEntry.bidInfo.usdoAmount
             : orderBookEntry.bidInfo.liquidatedAssetAmount;
+        uint256 assetValue = orderBookEntry.bidInfo.swapOnExecute
+            ? liquidationQueueMeta.bidExecutionSwapper.getOutputAmount(
+                address(singularity),
+                penrose.usdoAssetId(),
+                orderBookEntry.bidInfo.usdoAmount,
+                ''
+            )
+            : bidAmount;
+        bidPools[pool].totalAmount += assetValue;
         emit ActivateBid(
             msg.sender,
             user,
             pool,
             orderBookEntry.bidInfo.usdoAmount,
             orderBookEntry.bidInfo.liquidatedAssetAmount,
-            orderBookEntry.bidInfo.swapOnExecute
-                ? liquidationQueueMeta.bidExecutionSwapper.getOutputAmount(
-                    address(singularity),
-                    penrose.usdoAssetId(),
-                    orderBookEntry.bidInfo.usdoAmount,
-                    ''
-                )
-                : bidAmount,
+            assetValue,
             block.timestamp
         );
     }
@@ -399,18 +420,19 @@ contract LiquidationQueue is ILiquidationQueue {
     /// @param user The user to send the funds to.
     /// @param pool The pool to remove the bid from.
     /// @return amountRemoved The amount of the bid.
-    function removeInactivatedBid(address user, uint256 pool)
+    function removeBid(address user, uint256 pool)
         external
         returns (uint256 amountRemoved)
     {
-        bool isUsdo = bidPools[pool][msg.sender].isUsdo;
+        bool isUsdo = bidPools[pool].users[msg.sender].isUsdo;
         amountRemoved = isUsdo
-            ? bidPools[pool][msg.sender].usdoAmount
-            : bidPools[pool][msg.sender].liquidatedAssetAmount;
-        delete bidPools[pool][msg.sender];
+            ? bidPools[pool].users[msg.sender].usdoAmount
+            : bidPools[pool].users[msg.sender].liquidatedAssetAmount;
+        require(amountRemoved > 0, 'LQ: bid not available');
+        delete bidPools[pool].users[msg.sender];
 
         uint256 lqAssetValue = amountRemoved;
-        if (bidPools[pool][msg.sender].swapOnExecute) {
+        if (bidPools[pool].users[msg.sender].swapOnExecute) {
             lqAssetValue = liquidationQueueMeta
                 .bidExecutionSwapper
                 .getOutputAmount(
@@ -434,93 +456,6 @@ contract LiquidationQueue is ILiquidationQueue {
             yieldBox.toShare(assetId, amountRemoved, false)
         );
 
-        emit RemoveBid(
-            msg.sender,
-            user,
-            pool,
-            isUsdo ? amountRemoved : 0,
-            isUsdo ? 0 : amountRemoved,
-            lqAssetValue,
-            block.timestamp
-        );
-    }
-
-    /// @notice Remove an activated bid from a given pool.
-    /// @dev Clean the userBidIndex here instead of the `executeBids()` function to save on gas.
-    ///      To prevent DoS attacks on `executeBids()` and gas costs, the last activated bid
-    ///      will take the position of the removed bid.
-    /// @param user The user to send the funds to.
-    /// @param pool The target pool.
-    /// @param bidPosition The position of the bid index inside the `userBidIndexes[msg.sender][pool]`.
-    /// @return amountRemoved The amount of the bid removed.
-    function removeBid(
-        address user,
-        uint256 pool,
-        uint256 bidPosition
-    ) external returns (uint256 amountRemoved) {
-        uint256[] storage bidIndexes = userBidIndexes[msg.sender][pool];
-        uint256 bidIndexesLen = bidIndexes.length;
-        OrderBookPoolInfo memory poolInfo = orderBookInfos[pool];
-
-        uint256 orderBookIndex = bidIndexes[bidPosition];
-        bool isUsdo = orderBookEntries[pool][orderBookIndex].bidInfo.isUsdo;
-
-        amountRemoved = isUsdo
-            ? orderBookEntries[pool][orderBookIndex].bidInfo.usdoAmount
-            : orderBookEntries[pool][orderBookIndex]
-                .bidInfo
-                .liquidatedAssetAmount;
-
-        // Clean expired bids.
-        for (uint256 i = 0; i < bidIndexesLen; ) {
-            if (bidIndexes[i] > poolInfo.nextBidPull) {
-                bidIndexesLen = bidIndexes.length;
-                bidIndexes[i] = bidIndexes[bidIndexesLen - 1];
-                bidIndexes.pop();
-            }
-            unchecked {
-                ++i;
-            }
-        }
-
-        // There might be a case when all bids are expired
-        if (bidIndexes.length > 0) {
-            // Remove bid from the order book by replacing it with the last activated bid.
-            orderBookIndex = bidIndexes[bidPosition];
-            isUsdo = orderBookEntries[pool][orderBookIndex].bidInfo.isUsdo;
-            amountRemoved = isUsdo
-                ? orderBookEntries[pool][orderBookIndex].bidInfo.usdoAmount
-                : orderBookEntries[pool][orderBookIndex]
-                    .bidInfo
-                    .liquidatedAssetAmount;
-            orderBookEntries[pool][orderBookIndex] = orderBookEntries[pool][
-                poolInfo.nextBidPush - 1
-            ];
-
-            // Remove latest userBidIndex
-            bidIndexesLen = bidIndexes.length;
-            bidIndexes[bidPosition] = bidIndexes[bidIndexesLen - 1];
-            bidIndexes.pop();
-        }
-        // Transfer assets
-        uint256 assetId = isUsdo ? penrose.usdoAssetId() : lqAssetId;
-        yieldBox.transfer(
-            address(this),
-            user,
-            assetId,
-            yieldBox.toShare(assetId, amountRemoved, false)
-        );
-        uint256 lqAssetValue = amountRemoved;
-        if (orderBookEntries[pool][orderBookIndex].bidInfo.swapOnExecute) {
-            lqAssetValue = liquidationQueueMeta
-                .bidExecutionSwapper
-                .getOutputAmount(
-                    address(singularity),
-                    penrose.usdoAssetId(),
-                    amountRemoved,
-                    ''
-                );
-        }
         emit RemoveBid(
             msg.sender,
             user,
@@ -575,7 +510,7 @@ contract LiquidationQueue is ILiquidationQueue {
         require(msg.sender == address(singularity), 'LQ: Only Singularity');
         BidExecutionData memory data;
 
-        (data.curPoolId, data.isBidAvail) = getNextAvailBidPool();
+        (data.curPoolId, data.isBidAvail, ) = getNextAvailBidPool();
         data.exchangeRate = singularity.exchangeRate();
         // We loop through all the bids for each pools until all the collateral is liquidated
         // or no more bid are available.
@@ -640,6 +575,9 @@ contract LiquidationQueue is ILiquidationQueue {
                         .totalPoolCollateralLiquidated += collateralAmountToLiquidate;
                     collateralAmountToLiquidate = 0; // Since we have liquidated all the collateral.
                     data.totalUsdoAmountUsed += finalUsdoAmount;
+
+                    orderBookEntries[data.curPoolId][data.poolInfo.nextBidPull]
+                        .bidInfo = data.orderBookEntry.bidInfo;
                 } else {
                     (
                         uint256 finalCollateralAmount,
@@ -652,7 +590,6 @@ contract LiquidationQueue is ILiquidationQueue {
                             data.curPoolId,
                             swapData
                         );
-
                     // Execute the bid.
                     balancesDue[
                         data.orderBookEntryCopy.bidder
@@ -666,7 +603,8 @@ contract LiquidationQueue is ILiquidationQueue {
                         .totalPoolCollateralLiquidated += finalDiscountedCollateralAmount;
 
                     collateralAmountToLiquidate -= finalDiscountedCollateralAmount;
-
+                    orderBookEntries[data.curPoolId][data.poolInfo.nextBidPull]
+                        .bidInfo = data.orderBookEntry.bidInfo;
                     // Since the current bid was fulfilled, get the next one.
                     unchecked {
                         ++data.poolInfo.nextBidPull;
@@ -678,7 +616,8 @@ contract LiquidationQueue is ILiquidationQueue {
             totalCollateralLiquidated += data.totalPoolCollateralLiquidated;
             orderBookInfos[data.curPoolId] = data.poolInfo; // Update the pool info for the current pool.
             // Look up for the next available bid pool.
-            (data.curPoolId, data.isBidAvail) = getNextAvailBidPool();
+            (data.curPoolId, data.isBidAvail, ) = getNextAvailBidPool();
+            bidPools[data.curPoolId].totalAmount -= totalAmountExecuted;
 
             emit ExecuteBids(
                 msg.sender,
@@ -780,11 +719,7 @@ contract LiquidationQueue is ILiquidationQueue {
                 address(this),
                 address(liquidationQueueMeta.bidExecutionSwapper),
                 penrose.usdoAssetId(),
-                yieldBox.toShare(
-                    penrose.usdoAssetId(),
-                    entry.usdoAmount,
-                    false
-                )
+                yieldBox.toShare(penrose.usdoAssetId(), entry.usdoAmount, false)
             );
 
             finalCollateralAmount = liquidationQueueMeta
@@ -868,7 +803,7 @@ contract LiquidationQueue is ILiquidationQueue {
         bidder.isUsdo = isUsdo;
         bidder.swapOnExecute = isUsdo && lqAssetId != penrose.usdoAssetId();
 
-        bidPools[pool][user] = bidder;
+        bidPools[pool].users[user] = bidder;
 
         emit Bid(
             msg.sender,

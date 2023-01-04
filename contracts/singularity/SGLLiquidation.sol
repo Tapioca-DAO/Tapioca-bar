@@ -74,14 +74,21 @@ contract SGLLiquidation is SGLCommon {
         accrue();
 
         if (address(liquidationQueue) != address(0)) {
-            (, bool bidAvail) = liquidationQueue.getNextAvailBidPool();
+            (, bool bidAvail, uint256 bidAmount) = liquidationQueue
+                .getNextAvailBidPool();
             if (bidAvail) {
-                _orderBookLiquidation(
-                    users,
-                    _exchangeRate,
-                    usdoToBorrowedSwapData
-                );
-                return;
+                uint256 needed = 0;
+                for (uint256 i = 0; i < maxBorrowParts.length; i++) {
+                    needed += maxBorrowParts[i];
+                }
+                if (bidAmount >= needed) {
+                    _orderBookLiquidation(
+                        users,
+                        _exchangeRate,
+                        usdoToBorrowedSwapData
+                    );
+                    return;
+                }
             }
         }
         _closedLiquidation(
@@ -175,6 +182,7 @@ contract SGLLiquidation is SGLCommon {
             yieldBox.toAmount(collateralId, allCollateralShare, true),
             swapData
         );
+
 
         uint256 returnedShare = yieldBox.balanceOf(address(this), assetId) -
             uint256(totalAsset.elastic);
