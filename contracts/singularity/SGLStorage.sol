@@ -9,7 +9,6 @@ import '@boringcrypto/boring-solidity/contracts/libraries/BoringRebase.sol';
 import '../../yieldbox/contracts/YieldBox.sol';
 import '../swappers/ISwapper.sol';
 import '../singularity/interfaces/IOracle.sol';
-import '../singularity/interfaces/IFlashLoan.sol';
 import '../liquidationQueue/ILiquidationQueue.sol';
 import '../IPenrose.sol';
 import './interfaces/ISingularity.sol';
@@ -76,7 +75,6 @@ contract SGLStorage is BoringOwnable, ERC20 {
     uint256 public callerFee; //1%
     uint256 public protocolFee; //10%
     uint256 public borrowOpeningFee; //0.05%
-    uint256 public flashloanFee; //0.09%
 
     //Liquidation
     uint256 public liquidationMultiplier; //12%
@@ -134,12 +132,6 @@ contract SGLStorage is BoringOwnable, ERC20 {
         uint256 part
     );
     event LogWithdrawFees(address indexed feeTo, uint256 feesEarnedFraction);
-    event LogFlashLoan(
-        address indexed borrower,
-        uint256 amount,
-        uint256 feeAmount,
-        address indexed receiver
-    );
     event LogYieldBoxFeesDeposit(uint256 feeShares, uint256 ethAmount);
     event LogApprovalForAll(
         address indexed _from,

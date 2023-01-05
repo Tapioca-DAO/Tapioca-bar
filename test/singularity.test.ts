@@ -935,65 +935,6 @@ describe('Singularity test', () => {
         expect(amountHarvested.gte(acceptableHarvestMargin)).to.be.true;
     });
 
-    it('Should make a flashloan', async () => {
-        const {
-            weth,
-            wethUsdcSingularity,
-            approveTokensAndSetBarApproval,
-            wethDepositAndAddAsset,
-        } = await loadFixture(register);
-
-        const wethMintVal = ethers.BigNumber.from((1e18).toString()).mul(10);
-
-        // We get asset
-        await weth.freeMint(wethMintVal);
-
-        // We approve external operators
-        await approveTokensAndSetBarApproval();
-
-        // We lend WETH as deployer
-        await wethDepositAndAddAsset(wethMintVal);
-
-        // We deploy flashloan operator contracts
-        const maliciousOperator = await (
-            await ethers.getContractFactory('FlashLoanMockAttacker')
-        ).deploy();
-        const operator = await (
-            await ethers.getContractFactory('FlashLoanMockSuccess')
-        ).deploy();
-
-        // Malicious operator
-        await expect(
-            wethUsdcSingularity.flashLoan(
-                maliciousOperator.address,
-                maliciousOperator.address,
-                wethMintVal,
-                ethers.utils.hexlify(0),
-            ),
-        ).to.be.revertedWith('SGL: insufficient funds');
-
-        // Insufficient funds
-        await expect(
-            wethUsdcSingularity.flashLoan(
-                maliciousOperator.address,
-                maliciousOperator.address,
-                wethMintVal,
-                ethers.utils.hexlify(0),
-            ),
-        ).to.be.revertedWith('SGL: insufficient funds');
-
-        await weth.freeMint(wethMintVal.mul(90).div(100_000)); // 0.09% fee
-        await weth.transfer(operator.address, wethMintVal.mul(90).div(100_000));
-        await expect(
-            wethUsdcSingularity.flashLoan(
-                operator.address,
-                operator.address,
-                wethMintVal,
-                ethers.utils.hexlify(0),
-            ),
-        ).to.emit(wethUsdcSingularity, 'LogFlashLoan');
-    });
-
     it('should return ERC20 properties', async () => {
         const { wethUsdcSingularity } = await loadFixture(register);
         const symbol = await wethUsdcSingularity.symbol();

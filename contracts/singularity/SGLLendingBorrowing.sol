@@ -88,38 +88,6 @@ contract SGLLendingBorrowing is SGLCommon {
         _removeCollateral(from, to, share);
     }
 
-    /// @notice Flashloan ability.
-    /// @dev The contract expect the `borrower` to have at the end of `onFlashLoan` `amount` + the incurred fees.
-    /// The borrower is expected to `approve()` yieldBox for this number at the end of its `onFlashLoan()`.
-    /// @param borrower The address of the contract that implements and conforms to `IFlashBorrower` and handles the flashloan.
-    /// @param receiver Address of the token receiver.
-    /// @param amount of the tokens to receive.
-    /// @param data The calldata to pass to the `borrower` contract.
-    function flashLoan(
-        IFlashBorrower borrower,
-        address receiver,
-        uint256 amount,
-        bytes memory data
-    ) public notPaused {
-        Rebase memory _totalAsset = totalAsset;
-        uint256 feeAmount = (amount * flashloanFee) / FEE_PRECISION;
-        uint256 feeFraction = (yieldBox.toShare(assetId, feeAmount, false) *
-            _totalAsset.base) / _totalAsset.elastic;
-
-        yieldBox.withdraw(assetId, address(this), receiver, amount, 0);
-
-        borrower.onFlashLoan(msg.sender, asset, amount, feeAmount, data);
-        require(
-            yieldBox.amountOf(address(this), assetId) >= amount + feeAmount,
-            'SGL: insufficient funds'
-        );
-
-        totalAsset.base = _totalAsset.base + uint128(feeFraction);
-        accrueInfo.feesEarnedFraction += uint128(feeFraction);
-
-        emit LogFlashLoan(address(borrower), amount, feeAmount, receiver);
-    }
-
     // ************************** //
     // *** PRIVATE FUNCTIONS *** //
     // ************************* //

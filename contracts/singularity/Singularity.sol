@@ -93,7 +93,6 @@ contract Singularity is SGLCommon {
         callerFee = 1000; // 1%
         protocolFee = 10000; // 10%
         borrowOpeningFee = 50; // 0.05%
-        flashloanFee = 90; // 0.09%
 
         //liquidation
         liquidationMultiplier = 112000; //12%
@@ -290,31 +289,6 @@ contract Singularity is SGLCommon {
         );
     }
 
-    /// @notice Flashloan ability.
-    /// @dev The contract expect the `borrower` to have at the end of `onFlashLoan` `amount` + the incurred fees.
-    /// The borrower is expected to `approve()` yieldBox for this number at the end of its `onFlashLoan()`.
-    /// @param borrower The address of the contract that implements and conforms to `IFlashBorrower` and handles the flashloan.
-    /// @param receiver Address of the token receiver.
-    /// @param amount of the tokens to receive.
-    /// @param data The calldata to pass to the `borrower` contract.
-    function flashLoan(
-        IFlashBorrower borrower,
-        address receiver,
-        uint256 amount,
-        bytes memory data
-    ) public {
-        _executeModule(
-            Module.LendingBorrowing,
-            abi.encodeWithSelector(
-                SGLLendingBorrowing.flashLoan.selector,
-                borrower,
-                receiver,
-                amount,
-                data
-            )
-        );
-    }
-
     /// @notice Withdraw the fees accumulated in `accrueInfo.feesEarnedFraction` to the balance of `feeTo`.
     function withdrawFeesEarned() public {
         accrue();
@@ -457,14 +431,6 @@ contract Singularity is SGLCommon {
         onlyOwner
     {
         orderBookLiquidationMultiplier = _val;
-    }
-
-    /// @notice sets the flashloan fee
-    /// @dev can only be called by the owner
-    /// @param _val the new value
-    function setFlashloanFee(uint256 _val) external onlyOwner {
-        require(_val <= FEE_PRECISION, 'SGL: not valid');
-        flashloanFee = _val;
     }
 
     /// @notice sets the borrowing opening fee
