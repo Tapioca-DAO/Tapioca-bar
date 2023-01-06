@@ -939,20 +939,25 @@ async function registerBingBangMarket(
     mediumRiskBingBangMC: string,
     yieldBox: YieldBox,
     bar: Penrose,
-    wethCollateral: WETH9Mock,
-    wethCollateralId: BigNumberish,
+    collateral: WETH9Mock | ERC20Mock,
+    collateralId: BigNumberish,
     oracle: OracleMock,
     exchangeRatePrecision?: BigNumberish,
+    debtRateAgainstEth?: BigNumberish,
+    debtRateMin?: BigNumberish,
+    debtRateMax?: BigNumberish,
+    debtStartPoint?: BigNumberish,
     staging?: boolean,
 ) {
     const data = new ethers.utils.AbiCoder().encode(
-        ['address', 'address', 'uint256', 'address', 'uint256'],
+        ['address', 'address', 'uint256', 'address', 'uint256', 'uint256', 'uint256', 'uint256', 'uint256'],
         [
             bar.address,
-            wethCollateral.address,
-            wethCollateralId,
+            collateral.address,
+            collateralId,
             oracle.address,
             exchangeRatePrecision,
+            debtRateAgainstEth, debtRateMin, debtRateMax, debtStartPoint
         ],
     );
 
@@ -961,17 +966,17 @@ async function registerBingBangMarket(
             gasPrice: gasPrice,
         })
     ).wait();
-    log(`WethBingBang registered on Penrose`, staging);
+    log(`BingBang market registered on Penrose`, staging);
 
-    const wethMinterSingularity = await ethers.getContractAt(
+    const bingBangMarket = await ethers.getContractAt(
         'BingBang',
         await yieldBox.clonesOf(
             mediumRiskBingBangMC,
             (await yieldBox.clonesOfCount(mediumRiskBingBangMC)).sub(1),
         ),
     );
-    await verifyEtherscan(wethMinterSingularity.address, [], staging);
-    return { wethMinterSingularity };
+    await verifyEtherscan(bingBangMarket.address, [], staging);
+    return { bingBangMarket };
 }
 
 const verifyEtherscan = async (
@@ -1228,11 +1233,9 @@ export async function register(staging?: boolean) {
     await bar.setUsdoToken(usd0.address, { gasPrice: gasPrice });
     log(`USD0 was set on Penrose`, staging);
 
-    // ------------------- 12 Register BingBang -------------------
+    // ------------------- 12 Register WETH BingBang -------------------
     log('Deploying WethMinterSingularity', staging);
-    const minterSingularityCollateralSwapPath = [weth.address, usd0.address];
-    const minterSingularityTapSwapPath = [usd0.address, tap.address];
-    const { wethMinterSingularity } = await registerBingBangMarket(
+    let bingBangRegData = await registerBingBangMarket(
         mediumRiskBingBangMC.address,
         yieldBox,
         bar,
@@ -1240,21 +1243,50 @@ export async function register(staging?: boolean) {
         wethAssetId,
         usd0WethOracle,
         ethers.utils.parseEther('1'),
+        0, 0, 0, 0, //ignored, as this is the main market
         staging,
     );
+    const wethBingBangMarket = bingBangRegData.bingBangMarket;
+    await bar.setBingBangEthMarket(wethBingBangMarket.address);
     log(
-        `WethMinterSingularity deployed ${wethMinterSingularity.address}`,
+        `WethMinterSingularity deployed ${wethBingBangMarket.address}`,
         staging,
     );
-
+    // ------------------- 12.1 Register BingBang -------------------
+    log('Deploying wbtcBingBangMarket', staging);
+    bingBangRegData = await registerBingBangMarket(
+        mediumRiskBingBangMC.address,
+        yieldBox,
+        bar,
+        wbtc,
+        wbtcAssetId,
+        usd0WethOracle,
+        ethers.utils.parseEther('1'),
+        ethers.utils.parseEther("0.5"),
+        ethers.utils.parseEther("0.005"),
+        ethers.utils.parseEther("0.035"), 
+        0,
+        staging,
+    );
+    const wbtcBingBangMarket = bingBangRegData.bingBangMarket;
+    log(
+        `wbtcBingBangMarket deployed ${wbtcBingBangMarket.address}`,
+        staging,
+    );
     // ------------------- 13 Set Minter and Burner for USD0 -------------------
-    await usd0.setMinterStatus(wethMinterSingularity.address, true, {
+    await usd0.setMinterStatus(wethBingBangMarket.address, true, {
         gasPrice: gasPrice,
     });
-    await usd0.setBurnerStatus(wethMinterSingularity.address, true, {
+    await usd0.setBurnerStatus(wethBingBangMarket.address, true, {
         gasPrice: gasPrice,
     });
-    log('Minter and Burner roles set for WethMinterSingularity', staging);
+    await usd0.setMinterStatus(wbtcBingBangMarket.address, true, {
+        gasPrice: gasPrice,
+    });
+    await usd0.setBurnerStatus(wbtcBingBangMarket.address, true, {
+        gasPrice: gasPrice,
+    });
+    log('Minter and Burner roles set for wethBingBangMarket & wbtcBingBangMarket', staging);
 
     // ------------------- 14 Create weth-usd0 pair -------------------
     log('Creating WethUSDO and TapUSDO pairs', staging);
@@ -1368,14 +1400,13 @@ export async function register(staging?: boolean) {
         erc20Factory,
         tap,
         collateralWbtcSwapPath,
-        minterSingularityTapSwapPath,
-        minterSingularityCollateralSwapPath,
         wethUsdcOracle,
         usd0WethOracle,
         wbtcUsdcOracle,
         yieldBox,
         bar,
-        wethMinterSingularity,
+        wethBingBangMarket,
+        wbtcBingBangMarket,
         wethUsdcSingularity,
         _sglLiquidationModule,
         _sglLendingBorrowingModule,

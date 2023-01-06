@@ -31,7 +31,7 @@ describe('e2e tests', () => {
     it('should use minterSingularity and market to add, borrow and get liquidated', async () => {
         const {
             bar,
-            wethMinterSingularity,
+            wethBingBangMarket,
             usd0,
             createWethUsd0Singularity,
             singularityHelper,
@@ -91,7 +91,7 @@ describe('e2e tests', () => {
             weth,
             wethMintVal,
             singularityHelper,
-            wethMinterSingularity,
+            wethBingBangMarket,
             usdoBorrowVal,
             yieldBox,
             usdoAssetId,
@@ -110,7 +110,7 @@ describe('e2e tests', () => {
         await setYieldBoxApprovalPlug(
             deployer,
             yieldBox,
-            wethMinterSingularity,
+            wethBingBangMarket,
         );
 
         // add WETH and borrow USD0 from WETH-USD00-Singularity
@@ -186,7 +186,7 @@ describe('e2e tests', () => {
     it('should try to use minterSingularity and market to add, borrow and get liquidated, but in a wrong order', async () => {
         const {
             bar,
-            wethMinterSingularity,
+            wethBingBangMarket,
             usd0,
             createWethUsd0Singularity,
             singularityHelper,
@@ -251,7 +251,7 @@ describe('e2e tests', () => {
         await setYieldBoxApprovalPlug(
             deployer,
             yieldBox,
-            wethMinterSingularity,
+            wethBingBangMarket,
         );
 
         await mintWethPlug(borrowers[0], weth, wethMintVal);
@@ -284,7 +284,7 @@ describe('e2e tests', () => {
             weth,
             wethMintVal,
             singularityHelper,
-            wethMinterSingularity,
+            wethBingBangMarket,
             usdoBorrowVal,
             yieldBox,
             usdoAssetId,
@@ -388,7 +388,7 @@ describe('e2e tests', () => {
     it('should borrow and repay in multipe small operations', async () => {
         const {
             bar,
-            wethMinterSingularity,
+            wethBingBangMarket,
             usd0,
             createWethUsd0Singularity,
             singularityHelper,
@@ -443,7 +443,7 @@ describe('e2e tests', () => {
             weth,
             wethMintVal,
             singularityHelper,
-            wethMinterSingularity,
+            wethBingBangMarket,
             usdoBorrowVal,
             yieldBox,
             usdoAssetId,
@@ -795,7 +795,7 @@ async function addUsd0Module(
     weth: WETH9Mock,
     wethMintVal: BigNumberish,
     singularityHelper: SingularityHelper,
-    wethMinterSingularity: BingBang,
+    wethBingBangMarket: BingBang,
     usdoBorrowVal: BigNumberish,
     yieldBox: any,
     usdoAssetId: BigNumberish,
@@ -810,7 +810,7 @@ async function addUsd0Module(
         await approvePlug(
             lender,
             weth,
-            wethMinterSingularity,
+            wethBingBangMarket,
             singularityHelper,
             yieldBox,
             wethMintVal,
@@ -819,7 +819,7 @@ async function addUsd0Module(
         const { share, amount } = await depositAddCollateralAndBorrowPlug(
             lender,
             singularityHelper,
-            wethMinterSingularity,
+            wethBingBangMarket,
             yieldBox,
             usdoAssetId,
             wethMintVal,

@@ -78,6 +78,13 @@ contract BingBang is BoringOwnable, ERC20 {
     bool public paused;
     address public conservator;
 
+    bool private _isEthMarket;
+    uint256 public maxDebtRate;
+    uint256 public minDebtRate;
+    uint256 public debtRateAgainstEthMarket;
+    uint256 public debtStartPoint;
+    uint256 private constant DEBT_PRECISION = 1e18;
+
     //errors
     error NotApproved(address _from, address _operator);
 
@@ -174,8 +181,25 @@ contract BingBang is BoringOwnable, ERC20 {
             IERC20 _collateral,
             uint256 _collateralId,
             IOracle _oracle,
-            uint256 _exchangeRatePrecision
-        ) = abi.decode(data, (IPenrose, IERC20, uint256, IOracle, uint256));
+            uint256 _exchangeRatePrecision,
+            uint256 _debtRateAgainstEth,
+            uint256 _debtRateMin,
+            uint256 _debtRateMax,
+            uint256 _debtStartPoint
+        ) = abi.decode(
+                data,
+                (
+                    IPenrose,
+                    IERC20,
+                    uint256,
+                    IOracle,
+                    uint256,
+                    uint256,
+                    uint256,
+                    uint256,
+                    uint256
+                )
+            );
 
         penrose = tapiocaBar_;
         yieldBox = YieldBox(tapiocaBar_.yieldBox());
@@ -207,6 +231,14 @@ contract BingBang is BoringOwnable, ERC20 {
         EXCHANGE_RATE_PRECISION = _exchangeRatePrecision > 0
             ? _exchangeRatePrecision
             : 0;
+
+        _isEthMarket = collateralId == penrose.wethAssetId();
+        if (!_isEthMarket) {
+            debtRateAgainstEthMarket = _debtRateAgainstEth;
+            maxDebtRate = _debtRateMax;
+            minDebtRate = _debtRateMin;
+            debtStartPoint = _debtStartPoint;
+        }
     }
 
     // ********************** //
@@ -248,6 +280,31 @@ contract BingBang is BoringOwnable, ERC20 {
     // BalanceOf[user] represent a fraction
     function totalSupply() public view override returns (uint256) {
         return asset.totalSupply();
+    }
+
+    function getTotalDebt() external view returns (uint256) {
+        return totalBorrow.elastic;
+    }
+
+    function getDebtRate() external view returns (uint256) {
+        if (_isEthMarket) return 5e15; // 0.5%
+        if (totalBorrow.elastic == 0) return minDebtRate;
+
+        uint256 _ethMarketTotalDebt = BingBang(penrose.bingBangEthMarket())
+            .getTotalDebt();
+        uint256 _currentDebt = totalBorrow.elastic;
+        uint256 _maxDebtPoint = (_ethMarketTotalDebt *
+            debtRateAgainstEthMarket) / 1e18;
+
+        if (_currentDebt >= _maxDebtPoint) return maxDebtRate;
+
+        uint256 debtPercentage = ((_currentDebt - debtStartPoint) *
+            DEBT_PRECISION) / (_maxDebtPoint - debtStartPoint);
+        uint256 debt = ((maxDebtRate - minDebtRate) * debtPercentage) /
+            DEBT_PRECISION +
+            minDebtRate;
+
+        return debt;
     }
 
     // ************************ //
@@ -336,7 +393,7 @@ contract BingBang is BoringOwnable, ERC20 {
         updateExchangeRate();
 
         accrue();
-        
+
         amount = _repay(from, to, part);
     }
 
@@ -454,7 +511,7 @@ contract BingBang is BoringOwnable, ERC20 {
     /// @dev Conservator can pause the contract
     /// @param _conservator The new address
     function setConservator(address _conservator) external onlyOwner {
-        require(_conservator!=address(0),"BingBang: address not valid");
+        require(_conservator != address(0), 'BingBang: address not valid');
         emit ConservatorUpdated(conservator, _conservator);
         conservator = _conservator;
     }
@@ -498,16 +555,9 @@ contract BingBang is BoringOwnable, ERC20 {
         totalBorrowCap = _cap;
     }
 
-    /// @notice Updates the stability fee
-    /// @param _stabilityFee the new value
-    function updateStabilityFee(uint64 _stabilityFee) external onlyOwner {
-        require(
-            _stabilityFee <= MAX_STABILITY_FEE,
-            'BingBang: value not valid'
-        );
-        emit LogStabilityFee(accrueInfo.stabilityFee, _stabilityFee);
-        accrueInfo.stabilityFee = _stabilityFee;
-    }
+    /// @notice Updates the variable debt ratio
+    /// @dev has to be called before accrue
+    function updateDebt() private {}
 
     /// @notice Updates the borrowing fee
     /// @param _borrowingFee the new value
@@ -747,7 +797,7 @@ contract BingBang is BoringOwnable, ERC20 {
 
         (totalBorrow, part) = totalBorrow.add(amount + feeAmount, true);
         require(
-            totalBorrowCap == 0 || totalBorrow.base <= totalBorrowCap,
+            totalBorrowCap == 0 || totalBorrow.elastic <= totalBorrowCap,
             'BingBang: borrow cap reached'
         );
 

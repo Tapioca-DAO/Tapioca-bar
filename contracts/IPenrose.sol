@@ -24,6 +24,8 @@ interface IPenrose {
         ContractType risk;
     }
 
+    function bingBangEthMarket() external view returns (address);
+
     function swappers(ISwapper swapper) external view returns (bool);
 
     function yieldBox() external view returns (address payable);

@@ -253,6 +253,8 @@ export const deployOracleMock = async (
         }),
     );
 };
+
+//TODO: add variable debt param
 export const registerBingBangMarket = async (
     hre: HardhatRuntimeEnvironment,
     name: string,

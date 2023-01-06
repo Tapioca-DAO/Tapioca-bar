@@ -56,6 +56,8 @@ contract Penrose is BoringOwnable {
     /// @notice whitelisted swappers
     mapping(ISwapper => bool) public swappers;
 
+    address public bingBangEthMarket;
+
     /// @notice creates a Penrose contract
     /// @param _yieldBox YieldBox contract address
     /// @param tapToken_ TapOFT contract address
@@ -209,6 +211,10 @@ contract Penrose is BoringOwnable {
     // *********************** //
     // *** OWNER FUNCTIONS *** //
     // *********************** //
+    function setBingBangEthMarket(address _market) external onlyOwner {
+        bingBangEthMarket = _market;
+    }
+
     /// @notice updates the pause state of the contract
     /// @param val the new value
     function updatePause(bool val) external {

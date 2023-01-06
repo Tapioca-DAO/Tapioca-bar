@@ -4,32 +4,32 @@ import { register } from './test.utils';
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 import _ from 'lodash';
 
-describe('BingBang test', () => {
+describe.only('BingBang test', () => {
     it('should test initial values', async () => {
-        const { wethMinterSingularity, usd0, bar, weth, wethAssetId } =
+        const { wethBingBangMarket, usd0, bar, weth, wethAssetId } =
             await loadFixture(register);
 
-        const savedAssetId = await wethMinterSingularity.assetId();
+        const savedAssetId = await wethBingBangMarket.assetId();
         const penroseUsd0Id = await bar.usdoAssetId();
         expect(savedAssetId.eq(penroseUsd0Id)).to.be.true;
 
-        const savedAsset = await wethMinterSingularity.asset();
+        const savedAsset = await wethBingBangMarket.asset();
         const barUsd0 = await bar.usdoToken();
         expect(barUsd0.toLowerCase()).eq(savedAsset.toLowerCase());
 
-        const savedCollateralId = await wethMinterSingularity.collateralId();
+        const savedCollateralId = await wethBingBangMarket.collateralId();
         expect(savedCollateralId.eq(wethAssetId)).to.be.true;
 
-        const savedCollateral = await wethMinterSingularity.collateral();
+        const savedCollateral = await wethBingBangMarket.collateral();
         expect(weth.address.toLowerCase()).eq(savedCollateral.toLowerCase());
 
-        const borrowingFee = await wethMinterSingularity.borrowingFee();
+        const borrowingFee = await wethBingBangMarket.borrowingFee();
         expect(borrowingFee.eq(0)).to.be.true;
     });
 
     it('should add collateral', async () => {
         const {
-            wethMinterSingularity,
+            wethBingBangMarket,
             weth,
             wethAssetId,
             yieldBox,
@@ -38,7 +38,7 @@ describe('BingBang test', () => {
         } = await loadFixture(register);
 
         await weth.approve(yieldBox.address, ethers.constants.MaxUint256);
-        await yieldBox.setApprovalForAll(wethMinterSingularity.address, true);
+        await yieldBox.setApprovalForAll(wethBingBangMarket.address, true);
 
         const wethMintVal = ethers.BigNumber.from((1e18).toString()).mul(10);
         await weth.freeMint(wethMintVal);
@@ -55,7 +55,7 @@ describe('BingBang test', () => {
             valShare,
         );
         await expect(
-            wethMinterSingularity
+            wethBingBangMarket
                 .connect(eoa1)
                 .addCollateral(
                     deployer.address,
@@ -64,26 +64,26 @@ describe('BingBang test', () => {
                     valShare,
                 ),
         ).to.be.reverted;
-        await wethMinterSingularity.addCollateral(
+        await wethBingBangMarket.addCollateral(
             deployer.address,
             deployer.address,
             false,
             valShare,
         );
 
-        let collateralShares = await wethMinterSingularity.userCollateralShare(
+        let collateralShares = await wethBingBangMarket.userCollateralShare(
             deployer.address,
         );
         expect(collateralShares.gt(0)).to.be.true;
         expect(collateralShares.eq(valShare)).to.be.true;
 
-        await wethMinterSingularity.removeCollateral(
+        await wethBingBangMarket.removeCollateral(
             deployer.address,
             deployer.address,
             collateralShares,
         );
 
-        collateralShares = await wethMinterSingularity.userCollateralShare(
+        collateralShares = await wethBingBangMarket.userCollateralShare(
             deployer.address,
         );
         expect(collateralShares.eq(0)).to.be.true;
@@ -91,7 +91,7 @@ describe('BingBang test', () => {
 
     it('should borrow and repay', async () => {
         const {
-            wethMinterSingularity,
+            wethBingBangMarket,
             weth,
             wethAssetId,
             yieldBox,
@@ -103,7 +103,7 @@ describe('BingBang test', () => {
         } = await loadFixture(register);
 
         await weth.approve(yieldBox.address, ethers.constants.MaxUint256);
-        await yieldBox.setApprovalForAll(wethMinterSingularity.address, true);
+        await yieldBox.setApprovalForAll(wethBingBangMarket.address, true);
 
         const wethMintVal = ethers.BigNumber.from((1e18).toString()).mul(10);
         await weth.freeMint(wethMintVal);
@@ -119,7 +119,7 @@ describe('BingBang test', () => {
             0,
             valShare,
         );
-        await wethMinterSingularity.addCollateral(
+        await wethBingBangMarket.addCollateral(
             deployer.address,
             deployer.address,
             false,
@@ -132,13 +132,13 @@ describe('BingBang test', () => {
             .div(100)
             .mul(__wethUsdcPrice.div((1e18).toString()));
 
-        await wethMinterSingularity.borrow(
+        await wethBingBangMarket.borrow(
             deployer.address,
             deployer.address,
             usdoBorrowVal,
         );
 
-        let userBorrowPart = await wethMinterSingularity.userBorrowPart(
+        let userBorrowPart = await wethBingBangMarket.userBorrowPart(
             deployer.address,
         );
         expect(userBorrowPart.gt(0)).to.be.true;
@@ -147,7 +147,7 @@ describe('BingBang test', () => {
             await bar.usdoAssetId(),
             await yieldBox.balanceOf(
                 deployer.address,
-                await wethMinterSingularity.assetId(),
+                await wethBingBangMarket.assetId(),
             ),
             false,
         );
@@ -157,11 +157,11 @@ describe('BingBang test', () => {
         timeTravel(10 * 86400);
 
         //repay
-        userBorrowPart = await wethMinterSingularity.userBorrowPart(
+        userBorrowPart = await wethBingBangMarket.userBorrowPart(
             deployer.address,
         );
         await expect(
-            wethMinterSingularity.repay(
+            wethBingBangMarket.repay(
                 deployer.address,
                 deployer.address,
                 userBorrowPart,
@@ -172,18 +172,18 @@ describe('BingBang test', () => {
         await usd0.mint(deployer.address, usd0Extra);
         await usd0.approve(yieldBox.address, usd0Extra);
         await yieldBox.depositAsset(
-            await wethMinterSingularity.assetId(),
+            await wethBingBangMarket.assetId(),
             deployer.address,
             deployer.address,
             usd0Extra,
             0,
         );
-        await wethMinterSingularity.repay(
+        await wethBingBangMarket.repay(
             deployer.address,
             deployer.address,
             userBorrowPart,
         );
-        userBorrowPart = await wethMinterSingularity.userBorrowPart(
+        userBorrowPart = await wethBingBangMarket.userBorrowPart(
             deployer.address,
         );
         expect(userBorrowPart.eq(0)).to.be.true;
@@ -191,7 +191,7 @@ describe('BingBang test', () => {
 
     it('should liquidate', async () => {
         const {
-            wethMinterSingularity,
+            wethBingBangMarket,
             weth,
             wethAssetId,
             yieldBox,
@@ -204,14 +204,14 @@ describe('BingBang test', () => {
         } = await loadFixture(register);
 
         await weth.approve(yieldBox.address, ethers.constants.MaxUint256);
-        await yieldBox.setApprovalForAll(wethMinterSingularity.address, true);
+        await yieldBox.setApprovalForAll(wethBingBangMarket.address, true);
 
         await weth
             .connect(eoa1)
             .approve(yieldBox.address, ethers.constants.MaxUint256);
         await yieldBox
             .connect(eoa1)
-            .setApprovalForAll(wethMinterSingularity.address, true);
+            .setApprovalForAll(wethBingBangMarket.address, true);
 
         const wethMintVal = ethers.BigNumber.from((1e18).toString()).mul(10);
         await weth.connect(eoa1).freeMint(wethMintVal);
@@ -223,7 +223,7 @@ describe('BingBang test', () => {
         await yieldBox
             .connect(eoa1)
             .depositAsset(wethAssetId, eoa1.address, eoa1.address, 0, valShare);
-        await wethMinterSingularity
+        await wethBingBangMarket
             .connect(eoa1)
             .addCollateral(eoa1.address, eoa1.address, false, valShare);
 
@@ -233,14 +233,14 @@ describe('BingBang test', () => {
             .div(100)
             .mul(__wethUsdcPrice.div((1e18).toString()));
 
-        await wethMinterSingularity
+        await wethBingBangMarket
             .connect(eoa1)
             .borrow(eoa1.address, eoa1.address, usdoBorrowVal);
 
         // Can't liquidate
         const swapData = new ethers.utils.AbiCoder().encode(['uint256'], [1]);
         await expect(
-            wethMinterSingularity.liquidate(
+            wethBingBangMarket.liquidate(
                 [eoa1.address],
                 [usdoBorrowVal],
                 multiSwapper.address,
@@ -252,22 +252,22 @@ describe('BingBang test', () => {
         await usd0WethOracle.set(__usd0WethPrice.add(priceDrop));
 
         const userCollateralShareBefore =
-            await wethMinterSingularity.userCollateralShare(eoa1.address);
+            await wethBingBangMarket.userCollateralShare(eoa1.address);
 
         const liquidatorAmountBefore = await yieldBox.toAmount(
-            await wethMinterSingularity.assetId(),
+            await wethBingBangMarket.assetId(),
             await yieldBox.balanceOf(
                 deployer.address,
-                await wethMinterSingularity.assetId(),
+                await wethBingBangMarket.assetId(),
             ),
             false,
         );
 
-        const borrowPart = await wethMinterSingularity.userBorrowPart(
+        const borrowPart = await wethBingBangMarket.userBorrowPart(
             eoa1.address,
         );
         await expect(
-            wethMinterSingularity.liquidate(
+            wethBingBangMarket.liquidate(
                 [eoa1.address],
                 [borrowPart],
                 ethers.constants.AddressZero,
@@ -275,7 +275,7 @@ describe('BingBang test', () => {
             ),
         ).to.be.reverted;
         await expect(
-            wethMinterSingularity.liquidate(
+            wethBingBangMarket.liquidate(
                 [eoa1.address],
                 [borrowPart],
                 multiSwapper.address,
@@ -283,7 +283,7 @@ describe('BingBang test', () => {
             ),
         ).to.not.be.reverted;
         await expect(
-            wethMinterSingularity.liquidate(
+            wethBingBangMarket.liquidate(
                 [eoa1.address],
                 [borrowPart],
                 ethers.constants.AddressZero,
@@ -291,10 +291,10 @@ describe('BingBang test', () => {
             ),
         ).to.be.reverted;
         const liquidatorAmountAfter = await yieldBox.toAmount(
-            await wethMinterSingularity.assetId(),
+            await wethBingBangMarket.assetId(),
             await yieldBox.balanceOf(
                 deployer.address,
-                await wethMinterSingularity.assetId(),
+                await wethBingBangMarket.assetId(),
             ),
             false,
         );
@@ -302,11 +302,11 @@ describe('BingBang test', () => {
         expect(liquidatorAmountAfter.gt(liquidatorAmountBefore)).to.be.true;
 
         const userCollateralShareAfter =
-            await wethMinterSingularity.userCollateralShare(eoa1.address);
+            await wethBingBangMarket.userCollateralShare(eoa1.address);
         expect(userCollateralShareBefore.gt(userCollateralShareAfter)).to.be
             .true;
 
-        const userBorrowPartAfter = await wethMinterSingularity.userBorrowPart(
+        const userBorrowPartAfter = await wethBingBangMarket.userBorrowPart(
             eoa1.address,
         );
         expect(userBorrowPartAfter.eq(0)).to.be.true;
@@ -315,7 +315,7 @@ describe('BingBang test', () => {
     it('should update borrowing fee and withdraw fees with partial repayment', async () => {
         const {
             bar,
-            wethMinterSingularity,
+            wethBingBangMarket,
             weth,
             usd0,
             wethAssetId,
@@ -329,25 +329,25 @@ describe('BingBang test', () => {
 
         const feeAmount = 50000; //50%
         const borrowFeeUpdateFn =
-            wethMinterSingularity.interface.encodeFunctionData(
+            wethBingBangMarket.interface.encodeFunctionData(
                 'updateBorrowingFee',
                 [feeAmount],
             );
         await bar.executeMarketFn(
-            [wethMinterSingularity.address],
+            [wethBingBangMarket.address],
             [borrowFeeUpdateFn],
             true,
         );
 
         await weth.approve(yieldBox.address, ethers.constants.MaxUint256);
-        await yieldBox.setApprovalForAll(wethMinterSingularity.address, true);
+        await yieldBox.setApprovalForAll(wethBingBangMarket.address, true);
 
         await weth
             .connect(eoa1)
             .approve(yieldBox.address, ethers.constants.MaxUint256);
         await yieldBox
             .connect(eoa1)
-            .setApprovalForAll(wethMinterSingularity.address, true);
+            .setApprovalForAll(wethBingBangMarket.address, true);
 
         const wethMintVal = ethers.BigNumber.from((1e18).toString()).mul(10);
         await weth.connect(eoa1).freeMint(wethMintVal);
@@ -359,7 +359,7 @@ describe('BingBang test', () => {
         await yieldBox
             .connect(eoa1)
             .depositAsset(wethAssetId, eoa1.address, eoa1.address, 0, valShare);
-        await wethMinterSingularity
+        await wethBingBangMarket
             .connect(eoa1)
             .addCollateral(eoa1.address, eoa1.address, false, valShare);
 
@@ -370,7 +370,7 @@ describe('BingBang test', () => {
             .mul(__wethUsdcPrice.div((1e18).toString()));
 
         await expect(
-            wethMinterSingularity
+            wethBingBangMarket
                 .connect(eoa1)
                 .borrow(eoa1.address, eoa1.address, usdoBorrowVal),
         ).to.be.revertedWith('BingBang: insolvent');
@@ -381,10 +381,10 @@ describe('BingBang test', () => {
             .mul(10)
             .div(100)
             .mul(__wethUsdcPrice.div((1e18).toString()));
-        await wethMinterSingularity
+        await wethBingBangMarket
             .connect(eoa1)
             .borrow(eoa1.address, eoa1.address, usdoBorrowVal);
-        const userBorrowPart = await wethMinterSingularity.userBorrowPart(
+        const userBorrowPart = await wethBingBangMarket.userBorrowPart(
             eoa1.address,
         );
         const usdoBorrowValWithFee = wethMintVal
@@ -398,16 +398,16 @@ describe('BingBang test', () => {
             .true;
 
         const feeToAddress = await bar.feeTo();
-        const wethMinterBalance = await wethMinterSingularity.balanceOf(
+        const wethMinterBalance = await wethBingBangMarket.balanceOf(
             feeToAddress,
         );
         expect(wethMinterBalance.eq(0)).to.be.true;
 
         let yieldBoxBalanceOfFeeToInAsset = await yieldBox.toAmount(
-            await wethMinterSingularity.assetId(),
+            await wethBingBangMarket.assetId(),
             await yieldBox.balanceOf(
                 deployer.address,
-                await wethMinterSingularity.assetId(),
+                await wethBingBangMarket.assetId(),
             ),
             false,
         );
@@ -416,10 +416,10 @@ describe('BingBang test', () => {
         const feeVeTap = await bar.feeTo();
 
         let yieldBoxBalanceOfFeeVeTap = await yieldBox.toAmount(
-            await wethMinterSingularity.collateralId(),
+            await wethBingBangMarket.collateralId(),
             await yieldBox.balanceOf(
                 feeVeTap,
-                await wethMinterSingularity.collateralId(),
+                await wethBingBangMarket.collateralId(),
             ),
             false,
         );
@@ -431,7 +431,7 @@ describe('BingBang test', () => {
         await yieldBox
             .connect(eoa1)
             .depositAsset(
-                await wethMinterSingularity.assetId(),
+                await wethBingBangMarket.assetId(),
                 eoa1.address,
                 eoa1.address,
                 usd0Extra,
@@ -440,30 +440,30 @@ describe('BingBang test', () => {
 
         timeTravel(100 * 86400);
 
-        let userBorrowedAmount = await wethMinterSingularity.userBorrowPart(
+        let userBorrowedAmount = await wethBingBangMarket.userBorrowPart(
             eoa1.address,
         );
         const repaymentAmount = userBorrowedAmount.div(10);
 
-        await wethMinterSingularity
+        await wethBingBangMarket
             .connect(eoa1)
             .repay(eoa1.address, eoa1.address, repaymentAmount);
-        userBorrowedAmount = await wethMinterSingularity.userBorrowPart(
+        userBorrowedAmount = await wethBingBangMarket.userBorrowPart(
             eoa1.address,
         );
         expect(userBorrowedAmount.gt(0)).to.be.true;
 
         await expect(
-            wethMinterSingularity.depositFeesToYieldBox(multiSwapper.address, {
+            wethBingBangMarket.depositFeesToYieldBox(multiSwapper.address, {
                 minAssetAmount: '1',
             }),
-        ).to.emit(wethMinterSingularity, 'LogYieldBoxFeesDeposit');
+        ).to.emit(wethBingBangMarket, 'LogYieldBoxFeesDeposit');
 
         yieldBoxBalanceOfFeeVeTap = await yieldBox.toAmount(
-            await wethMinterSingularity.collateralId(),
+            await wethBingBangMarket.collateralId(),
             await yieldBox.balanceOf(
                 feeVeTap,
-                await wethMinterSingularity.collateralId(),
+                await wethBingBangMarket.collateralId(),
             ),
             false,
         );
@@ -479,7 +479,7 @@ describe('BingBang test', () => {
     it('should update borrowing fee and withdraw fees', async () => {
         const {
             bar,
-            wethMinterSingularity,
+            wethBingBangMarket,
             weth,
             usd0,
             wethAssetId,
@@ -493,25 +493,25 @@ describe('BingBang test', () => {
         const feeAmount = 50000; //50%
 
         const borrowFeeUpdateFn =
-            wethMinterSingularity.interface.encodeFunctionData(
+            wethBingBangMarket.interface.encodeFunctionData(
                 'updateBorrowingFee',
                 [feeAmount],
             );
         await bar.executeMarketFn(
-            [wethMinterSingularity.address],
+            [wethBingBangMarket.address],
             [borrowFeeUpdateFn],
             true,
         );
 
         await weth.approve(yieldBox.address, ethers.constants.MaxUint256);
-        await yieldBox.setApprovalForAll(wethMinterSingularity.address, true);
+        await yieldBox.setApprovalForAll(wethBingBangMarket.address, true);
 
         await weth
             .connect(eoa1)
             .approve(yieldBox.address, ethers.constants.MaxUint256);
         await yieldBox
             .connect(eoa1)
-            .setApprovalForAll(wethMinterSingularity.address, true);
+            .setApprovalForAll(wethBingBangMarket.address, true);
 
         const wethMintVal = ethers.BigNumber.from((1e18).toString()).mul(10);
         await weth.connect(eoa1).freeMint(wethMintVal);
@@ -523,7 +523,7 @@ describe('BingBang test', () => {
         await yieldBox
             .connect(eoa1)
             .depositAsset(wethAssetId, eoa1.address, eoa1.address, 0, valShare);
-        await wethMinterSingularity
+        await wethBingBangMarket
             .connect(eoa1)
             .addCollateral(eoa1.address, eoa1.address, false, valShare);
 
@@ -534,7 +534,7 @@ describe('BingBang test', () => {
             .mul(__wethUsdcPrice.div((1e18).toString()));
 
         await expect(
-            wethMinterSingularity
+            wethBingBangMarket
                 .connect(eoa1)
                 .borrow(eoa1.address, eoa1.address, usdoBorrowVal),
         ).to.be.revertedWith('BingBang: insolvent');
@@ -545,10 +545,10 @@ describe('BingBang test', () => {
             .mul(10)
             .div(100)
             .mul(__wethUsdcPrice.div((1e18).toString()));
-        await wethMinterSingularity
+        await wethBingBangMarket
             .connect(eoa1)
             .borrow(eoa1.address, eoa1.address, usdoBorrowVal);
-        const userBorrowPart = await wethMinterSingularity.userBorrowPart(
+        const userBorrowPart = await wethBingBangMarket.userBorrowPart(
             eoa1.address,
         );
         const usdoBorrowValWithFee = wethMintVal
@@ -562,19 +562,19 @@ describe('BingBang test', () => {
             .true;
 
         const feeToAddress = await bar.feeTo();
-        const wethMinterBalance = await wethMinterSingularity.balanceOf(
+        const wethMinterBalance = await wethBingBangMarket.balanceOf(
             feeToAddress,
         );
         expect(wethMinterBalance.eq(0)).to.be.true;
 
-        const collateralAddress = await wethMinterSingularity.collateral();
-        const collateralId = await wethMinterSingularity.collateralId();
+        const collateralAddress = await wethBingBangMarket.collateral();
+        const collateralId = await wethBingBangMarket.collateralId();
 
         let yieldBoxBalanceOfFeeToInAsset = await yieldBox.toAmount(
-            await wethMinterSingularity.assetId(),
+            await wethBingBangMarket.assetId(),
             await yieldBox.balanceOf(
                 deployer.address,
-                await wethMinterSingularity.assetId(),
+                await wethBingBangMarket.assetId(),
             ),
             false,
         );
@@ -594,30 +594,30 @@ describe('BingBang test', () => {
         await yieldBox
             .connect(eoa1)
             .depositAsset(
-                await wethMinterSingularity.assetId(),
+                await wethBingBangMarket.assetId(),
                 eoa1.address,
                 eoa1.address,
                 usd0Extra,
                 0,
             );
 
-        let userBorrowedAmount = await wethMinterSingularity.userBorrowPart(
+        let userBorrowedAmount = await wethBingBangMarket.userBorrowPart(
             eoa1.address,
         );
 
-        await wethMinterSingularity
+        await wethBingBangMarket
             .connect(eoa1)
             .repay(eoa1.address, eoa1.address, userBorrowedAmount);
-        userBorrowedAmount = await wethMinterSingularity.userBorrowPart(
+        userBorrowedAmount = await wethBingBangMarket.userBorrowPart(
             eoa1.address,
         );
         expect(userBorrowedAmount.eq(0)).to.be.true;
 
         //deposit fees to yieldBox
-        const assetId = await wethMinterSingularity.assetId();
+        const assetId = await wethBingBangMarket.assetId();
         const feeShareIn = await yieldBox.toShare(
             assetId,
-            await usd0.balanceOf(wethMinterSingularity.address),
+            await usd0.balanceOf(wethBingBangMarket.address),
             false,
         );
         const calcAmount = await multiSwapper.getOutputAmount(
@@ -629,10 +629,10 @@ describe('BingBang test', () => {
             ),
         );
         await expect(
-            wethMinterSingularity.depositFeesToYieldBox(multiSwapper.address, {
+            wethBingBangMarket.depositFeesToYieldBox(multiSwapper.address, {
                 minAssetAmount: calcAmount.div(2),
             }),
-        ).to.emit(wethMinterSingularity, 'LogYieldBoxFeesDeposit');
+        ).to.emit(wethBingBangMarket, 'LogYieldBoxFeesDeposit');
 
         yieldBoxBalanceOfFee = await yieldBox.toAmount(
             collateralId,
@@ -647,7 +647,7 @@ describe('BingBang test', () => {
 
     it('should have multiple borrowers and check fees accrued over time', async () => {
         const {
-            wethMinterSingularity,
+            wethBingBangMarket,
             weth,
             wethAssetId,
             yieldBox,
@@ -661,12 +661,12 @@ describe('BingBang test', () => {
         } = await loadFixture(register);
 
         const borrowFeeUpdateFn =
-            wethMinterSingularity.interface.encodeFunctionData(
+            wethBingBangMarket.interface.encodeFunctionData(
                 'updateBorrowingFee',
                 [5e2],
             );
         await bar.executeMarketFn(
-            [wethMinterSingularity.address],
+            [wethBingBangMarket.address],
             [borrowFeeUpdateFn],
             true,
         );
@@ -684,7 +684,7 @@ describe('BingBang test', () => {
                 .approve(yieldBox.address, ethers.constants.MaxUint256);
             await yieldBox
                 .connect(eoa)
-                .setApprovalForAll(wethMinterSingularity.address, true);
+                .setApprovalForAll(wethBingBangMarket.address, true);
 
             await weth.connect(eoa).freeMint(wethMintVal);
             const valShare = await yieldBox.toShare(
@@ -702,7 +702,7 @@ describe('BingBang test', () => {
                     0,
                     valShare,
                 );
-            await wethMinterSingularity
+            await wethBingBangMarket
                 .connect(eoa)
                 .addCollateral(eoa.address, eoa.address, false, valShare);
         }
@@ -711,7 +711,7 @@ describe('BingBang test', () => {
         for (var i = 0; i < eoas.length; i++) {
             const eoa = eoas[i];
 
-            await wethMinterSingularity
+            await wethBingBangMarket
                 .connect(eoa)
                 .borrow(eoa.address, eoa.address, usdoBorrowVal);
 
@@ -720,7 +720,7 @@ describe('BingBang test', () => {
 
         for (var i = 0; i < eoas.length; i++) {
             const eoa = eoas[i];
-            const userBorrowPart = await wethMinterSingularity.userBorrowPart(
+            const userBorrowPart = await wethBingBangMarket.userBorrowPart(
                 eoa.address,
             );
             expect(userBorrowPart.gte(usdoBorrowVal)).to.be.true; //slightly bigger because of the opening borrow fee
@@ -734,7 +734,7 @@ describe('BingBang test', () => {
                 await bar.usdoAssetId(),
                 await yieldBox.balanceOf(
                     eoa.address,
-                    await wethMinterSingularity.assetId(),
+                    await wethBingBangMarket.assetId(),
                 ),
                 false,
             );
@@ -751,7 +751,7 @@ describe('BingBang test', () => {
             await yieldBox
                 .connect(eoa)
                 .depositAsset(
-                    await wethMinterSingularity.assetId(),
+                    await wethBingBangMarket.assetId(),
                     eoa.address,
                     eoa.address,
                     usd0Extra,
@@ -759,9 +759,9 @@ describe('BingBang test', () => {
                 );
 
             const userBorrowedAmount =
-                await wethMinterSingularity.userBorrowPart(eoa.address);
+                await wethBingBangMarket.userBorrowPart(eoa.address);
 
-            await wethMinterSingularity
+            await wethBingBangMarket
                 .connect(eoa)
                 .repay(eoa.address, eoa.address, userBorrowedAmount);
         }
@@ -772,13 +772,13 @@ describe('BingBang test', () => {
                 await bar.usdoAssetId(),
                 await yieldBox.balanceOf(
                     eoa.address,
-                    await wethMinterSingularity.assetId(),
+                    await wethBingBangMarket.assetId(),
                 ),
                 false,
             );
             expect(usd0Balance.lt(usd0Extra)).to.be.true;
 
-            const userBorrowPart = await wethMinterSingularity.userBorrowPart(
+            const userBorrowPart = await wethBingBangMarket.userBorrowPart(
                 eoa.address,
             );
             expect(userBorrowPart.eq(0)).to.be.true;
@@ -786,10 +786,10 @@ describe('BingBang test', () => {
 
         //----------------
         const yieldBoxBalanceOfFeeBefore = await yieldBox.toAmount(
-            await wethMinterSingularity.collateralId(),
+            await wethBingBangMarket.collateralId(),
             await yieldBox.balanceOf(
                 await bar.feeTo(),
-                await wethMinterSingularity.collateralId(),
+                await wethBingBangMarket.collateralId(),
             ),
             false,
         );
@@ -797,17 +797,17 @@ describe('BingBang test', () => {
 
         //deposit fees to yieldBox
         await expect(
-            wethMinterSingularity.depositFeesToYieldBox(multiSwapper.address, {
+            wethBingBangMarket.depositFeesToYieldBox(multiSwapper.address, {
                 minAssetAmount: '1',
             }),
-        ).to.emit(wethMinterSingularity, 'LogYieldBoxFeesDeposit');
+        ).to.emit(wethBingBangMarket, 'LogYieldBoxFeesDeposit');
 
         const feeVeTap = await bar.feeTo();
         const yieldBoxBalanceOfFee = await yieldBox.toAmount(
-            await wethMinterSingularity.collateralId(),
+            await wethBingBangMarket.collateralId(),
             await yieldBox.balanceOf(
                 await bar.feeTo(),
-                await wethMinterSingularity.collateralId(),
+                await wethBingBangMarket.collateralId(),
             ),
             false,
         );
@@ -816,7 +816,7 @@ describe('BingBang test', () => {
 
     it('should have multiple borrowers, do partial repayments and check fees accrued over time', async () => {
         const {
-            wethMinterSingularity,
+            wethBingBangMarket,
             weth,
             wethAssetId,
             yieldBox,
@@ -830,12 +830,12 @@ describe('BingBang test', () => {
         } = await loadFixture(register);
 
         const borrowFeeUpdateFn =
-            wethMinterSingularity.interface.encodeFunctionData(
+            wethBingBangMarket.interface.encodeFunctionData(
                 'updateBorrowingFee',
                 [5e2],
             );
         await bar.executeMarketFn(
-            [wethMinterSingularity.address],
+            [wethBingBangMarket.address],
             [borrowFeeUpdateFn],
             true,
         );
@@ -853,7 +853,7 @@ describe('BingBang test', () => {
                 .approve(yieldBox.address, ethers.constants.MaxUint256);
             await yieldBox
                 .connect(eoa)
-                .setApprovalForAll(wethMinterSingularity.address, true);
+                .setApprovalForAll(wethBingBangMarket.address, true);
 
             await weth.connect(eoa).freeMint(wethMintVal);
             const valShare = await yieldBox.toShare(
@@ -871,7 +871,7 @@ describe('BingBang test', () => {
                     0,
                     valShare,
                 );
-            await wethMinterSingularity
+            await wethBingBangMarket
                 .connect(eoa)
                 .addCollateral(eoa.address, eoa.address, false, valShare);
         }
@@ -880,7 +880,7 @@ describe('BingBang test', () => {
         for (var i = 0; i < eoas.length; i++) {
             const eoa = eoas[i];
 
-            await wethMinterSingularity
+            await wethBingBangMarket
                 .connect(eoa)
                 .borrow(eoa.address, eoa.address, usdoBorrowVal);
 
@@ -889,7 +889,7 @@ describe('BingBang test', () => {
 
         for (var i = 0; i < eoas.length; i++) {
             const eoa = eoas[i];
-            const userBorrowPart = await wethMinterSingularity.userBorrowPart(
+            const userBorrowPart = await wethBingBangMarket.userBorrowPart(
                 eoa.address,
             );
             expect(userBorrowPart.gte(usdoBorrowVal)).to.be.true; //slightly bigger because of the opening borrow fee
@@ -902,7 +902,7 @@ describe('BingBang test', () => {
                 await bar.usdoAssetId(),
                 await yieldBox.balanceOf(
                     eoa.address,
-                    await wethMinterSingularity.assetId(),
+                    await wethBingBangMarket.assetId(),
                 ),
                 false,
             );
@@ -919,7 +919,7 @@ describe('BingBang test', () => {
             await yieldBox
                 .connect(eoa)
                 .depositAsset(
-                    await wethMinterSingularity.assetId(),
+                    await wethBingBangMarket.assetId(),
                     eoa.address,
                     eoa.address,
                     usd0Extra,
@@ -927,19 +927,19 @@ describe('BingBang test', () => {
                 );
 
             const userBorrowedAmount =
-                await wethMinterSingularity.userBorrowPart(eoa.address);
+                await wethBingBangMarket.userBorrowPart(eoa.address);
 
-            await wethMinterSingularity
+            await wethBingBangMarket
                 .connect(eoa)
                 .repay(eoa.address, eoa.address, userBorrowedAmount.div(2));
         }
 
         //----------------
         const yieldBoxBalanceOfFeeBefore = await yieldBox.toAmount(
-            await wethMinterSingularity.collateralId(),
+            await wethBingBangMarket.collateralId(),
             await yieldBox.balanceOf(
                 await bar.feeTo(),
-                await wethMinterSingularity.collateralId(),
+                await wethBingBangMarket.collateralId(),
             ),
             false,
         );
@@ -947,16 +947,16 @@ describe('BingBang test', () => {
 
         //deposit fees to yieldBox
         await expect(
-            wethMinterSingularity.depositFeesToYieldBox(multiSwapper.address, {
+            wethBingBangMarket.depositFeesToYieldBox(multiSwapper.address, {
                 minAssetAmount: '1',
             }),
-        ).to.emit(wethMinterSingularity, 'LogYieldBoxFeesDeposit');
+        ).to.emit(wethBingBangMarket, 'LogYieldBoxFeesDeposit');
 
         const yieldBoxBalanceOfFeeVe = await yieldBox.toAmount(
-            await wethMinterSingularity.collateralId(),
+            await wethBingBangMarket.collateralId(),
             await yieldBox.balanceOf(
                 await bar.feeTo(),
-                await wethMinterSingularity.collateralId(),
+                await wethBingBangMarket.collateralId(),
             ),
             false,
         );
@@ -971,7 +971,7 @@ describe('BingBang test', () => {
             await yieldBox
                 .connect(eoa)
                 .depositAsset(
-                    await wethMinterSingularity.assetId(),
+                    await wethBingBangMarket.assetId(),
                     eoa.address,
                     eoa.address,
                     usd0Extra,
@@ -979,25 +979,25 @@ describe('BingBang test', () => {
                 );
 
             const userBorrowedAmount =
-                await wethMinterSingularity.userBorrowPart(eoa.address);
+                await wethBingBangMarket.userBorrowPart(eoa.address);
 
-            await wethMinterSingularity
+            await wethBingBangMarket
                 .connect(eoa)
                 .repay(eoa.address, eoa.address, userBorrowedAmount);
         }
 
-        const balance = await usd0.balanceOf(wethMinterSingularity.address);
+        const balance = await usd0.balanceOf(wethBingBangMarket.address);
         await expect(
-            wethMinterSingularity.depositFeesToYieldBox(multiSwapper.address, {
+            wethBingBangMarket.depositFeesToYieldBox(multiSwapper.address, {
                 minAssetAmount: '1',
             }),
-        ).to.emit(wethMinterSingularity, 'LogYieldBoxFeesDeposit');
+        ).to.emit(wethBingBangMarket, 'LogYieldBoxFeesDeposit');
 
         const yieldBoxFinalBalanceOfFeeVe = await yieldBox.toAmount(
-            await wethMinterSingularity.collateralId(),
+            await wethBingBangMarket.collateralId(),
             await yieldBox.balanceOf(
                 await bar.feeTo(),
-                await wethMinterSingularity.collateralId(),
+                await wethBingBangMarket.collateralId(),
             ),
             false,
         );
@@ -1008,7 +1008,7 @@ describe('BingBang test', () => {
     it('should perform multiple borrow operations, repay everything and withdraw fees', async () => {
         const {
             bar,
-            wethMinterSingularity,
+            wethBingBangMarket,
             weth,
             usd0,
             wethAssetId,
@@ -1020,25 +1020,25 @@ describe('BingBang test', () => {
         } = await loadFixture(register);
 
         const borrowFeeUpdateFn =
-            wethMinterSingularity.interface.encodeFunctionData(
+            wethBingBangMarket.interface.encodeFunctionData(
                 'updateBorrowingFee',
                 [5e2],
             );
         await bar.executeMarketFn(
-            [wethMinterSingularity.address],
+            [wethBingBangMarket.address],
             [borrowFeeUpdateFn],
             true,
         );
 
         await weth.approve(yieldBox.address, ethers.constants.MaxUint256);
-        await yieldBox.setApprovalForAll(wethMinterSingularity.address, true);
+        await yieldBox.setApprovalForAll(wethBingBangMarket.address, true);
 
         await weth
             .connect(eoa1)
             .approve(yieldBox.address, ethers.constants.MaxUint256);
         await yieldBox
             .connect(eoa1)
-            .setApprovalForAll(wethMinterSingularity.address, true);
+            .setApprovalForAll(wethBingBangMarket.address, true);
 
         const wethMintVal = ethers.BigNumber.from((1e18).toString()).mul(10);
         await weth.connect(eoa1).freeMint(wethMintVal);
@@ -1050,7 +1050,7 @@ describe('BingBang test', () => {
         await yieldBox
             .connect(eoa1)
             .depositAsset(wethAssetId, eoa1.address, eoa1.address, 0, valShare);
-        await wethMinterSingularity
+        await wethBingBangMarket
             .connect(eoa1)
             .addCollateral(eoa1.address, eoa1.address, false, valShare);
 
@@ -1062,21 +1062,21 @@ describe('BingBang test', () => {
             .mul(__wethUsdcPrice.div((1e18).toString()));
 
         //borrow 1
-        await wethMinterSingularity
+        await wethBingBangMarket
             .connect(eoa1)
             .borrow(eoa1.address, eoa1.address, usdoBorrowVal);
 
         //borrow 2
-        await wethMinterSingularity
+        await wethBingBangMarket
             .connect(eoa1)
             .borrow(eoa1.address, eoa1.address, usdoBorrowVal);
 
         //borrow 3
-        await wethMinterSingularity
+        await wethBingBangMarket
             .connect(eoa1)
             .borrow(eoa1.address, eoa1.address, usdoBorrowVal);
 
-        let userBorrowPart = await wethMinterSingularity.userBorrowPart(
+        let userBorrowPart = await wethBingBangMarket.userBorrowPart(
             eoa1.address,
         );
 
@@ -1091,21 +1091,21 @@ describe('BingBang test', () => {
         await yieldBox
             .connect(eoa1)
             .depositAsset(
-                await wethMinterSingularity.assetId(),
+                await wethBingBangMarket.assetId(),
                 eoa1.address,
                 eoa1.address,
                 usd0Extra,
                 0,
             );
-        await wethMinterSingularity
+        await wethBingBangMarket
             .connect(eoa1)
             .repay(eoa1.address, eoa1.address, userBorrowPart);
-        userBorrowPart = await wethMinterSingularity.userBorrowPart(
+        userBorrowPart = await wethBingBangMarket.userBorrowPart(
             eoa1.address,
         );
         expect(userBorrowPart.eq(0)).to.be.true;
 
-        await wethMinterSingularity.depositFeesToYieldBox(
+        await wethBingBangMarket.depositFeesToYieldBox(
             multiSwapper.address,
             {
                 minAssetAmount: 1,
@@ -1115,10 +1115,10 @@ describe('BingBang test', () => {
         const feeVeTap = await bar.feeTo();
         const yieldBoxBalanceOfFeeVeTapShare = await yieldBox.balanceOf(
             feeVeTap,
-            await wethMinterSingularity.collateralId(),
+            await wethBingBangMarket.collateralId(),
         );
         const yieldBoxBalanceOfFeeVeAmount = await yieldBox.toAmount(
-            await wethMinterSingularity.collateralId(),
+            await wethBingBangMarket.collateralId(),
             yieldBoxBalanceOfFeeVeTapShare,
             false,
         );
@@ -1127,95 +1127,68 @@ describe('BingBang test', () => {
     });
 
     it('should not allow depositing fees with invalid swapper', async () => {
-        const { wethMinterSingularity, multiSwapper } = await loadFixture(
+        const { wethBingBangMarket, multiSwapper } = await loadFixture(
             register,
         );
 
         await expect(
-            wethMinterSingularity.depositFeesToYieldBox(
+            wethBingBangMarket.depositFeesToYieldBox(
                 ethers.constants.AddressZero,
                 { minAssetAmount: 1 },
             ),
         ).to.be.revertedWith('BingBang: Invalid swapper');
 
         await expect(
-            wethMinterSingularity.depositFeesToYieldBox(multiSwapper.address, {
+            wethBingBangMarket.depositFeesToYieldBox(multiSwapper.address, {
                 minAssetAmount: 1,
             }),
-        ).to.not.emit(wethMinterSingularity, 'LogYieldBoxFeesDeposit');
+        ).to.not.emit(wethBingBangMarket, 'LogYieldBoxFeesDeposit');
     });
 
     it('should test setters', async () => {
         const {
             bar,
-            wethMinterSingularity,
-            collateralSwapPath,
-            tapSwapPath,
+            wethBingBangMarket,
             eoa1,
         } = await loadFixture(register);
 
-        await expect(wethMinterSingularity.connect(eoa1).setBorrowCap(100)).to
+        await expect(wethBingBangMarket.connect(eoa1).setBorrowCap(100)).to
             .be.reverted;
-        await expect(
-            wethMinterSingularity.connect(eoa1).updateStabilityFee(100),
-        ).to.be.reverted;
 
-        let updateStabilityFeeFn =
-            wethMinterSingularity.interface.encodeFunctionData(
-                'updateStabilityFee',
-                [ethers.utils.parseEther('1')],
-            );
         await expect(
-            bar.executeMarketFn(
-                [wethMinterSingularity.address],
-                [updateStabilityFeeFn],
-                true,
-            ),
-        ).to.be.revertedWith('BingBang: value not valid');
-        await expect(
-            wethMinterSingularity.connect(eoa1).updateBorrowingFee(100),
+            wethBingBangMarket.connect(eoa1).updateBorrowingFee(100),
         ).to.be.reverted;
 
         let updateBorrowingFeeFn =
-            wethMinterSingularity.interface.encodeFunctionData(
+            wethBingBangMarket.interface.encodeFunctionData(
                 'updateBorrowingFee',
                 [1e5],
             );
         await expect(
             bar.executeMarketFn(
-                [wethMinterSingularity.address],
+                [wethBingBangMarket.address],
                 [updateBorrowingFeeFn],
                 true,
             ),
         ).to.be.reverted;
 
         let updateBorrowCapFn =
-            wethMinterSingularity.interface.encodeFunctionData('setBorrowCap', [
+            wethBingBangMarket.interface.encodeFunctionData('setBorrowCap', [
                 100,
             ]);
         await bar.executeMarketFn(
-            [wethMinterSingularity.address],
+            [wethBingBangMarket.address],
             [updateBorrowCapFn],
             true,
         );
 
-        updateStabilityFeeFn =
-            wethMinterSingularity.interface.encodeFunctionData('setBorrowCap', [
-                100,
-            ]);
-        await bar.executeMarketFn(
-            [wethMinterSingularity.address],
-            [updateStabilityFeeFn],
-            true,
-        );
-
         updateBorrowingFeeFn =
-            wethMinterSingularity.interface.encodeFunctionData(
+            wethBingBangMarket.interface.encodeFunctionData(
                 'updateBorrowingFee',
                 [100],
             );
         await bar.executeMarketFn(
-            [wethMinterSingularity.address],
+            [wethBingBangMarket.address],
             [updateBorrowingFeeFn],
             true,
         );
@@ -1223,7 +1196,7 @@ describe('BingBang test', () => {
 
     it('should not be able to borrow when cap is reached', async () => {
         const {
-            wethMinterSingularity,
+            wethBingBangMarket,
             weth,
             wethAssetId,
             yieldBox,
@@ -1233,7 +1206,7 @@ describe('BingBang test', () => {
         } = await loadFixture(register);
 
         await weth.approve(yieldBox.address, ethers.constants.MaxUint256);
-        await yieldBox.setApprovalForAll(wethMinterSingularity.address, true);
+        await yieldBox.setApprovalForAll(wethBingBangMarket.address, true);
 
         const wethMintVal = ethers.BigNumber.from((1e18).toString()).mul(10);
         await weth.freeMint(wethMintVal);
@@ -1249,7 +1222,7 @@ describe('BingBang test', () => {
             0,
             valShare,
         );
-        await wethMinterSingularity.addCollateral(
+        await wethBingBangMarket.addCollateral(
             deployer.address,
             deployer.address,
             false,
@@ -1257,11 +1230,11 @@ describe('BingBang test', () => {
         );
 
         const borrowCapUpdateFn =
-            wethMinterSingularity.interface.encodeFunctionData('setBorrowCap', [
+            wethBingBangMarket.interface.encodeFunctionData('setBorrowCap', [
                 1,
             ]);
         await bar.executeMarketFn(
-            [wethMinterSingularity.address],
+            [wethBingBangMarket.address],
             [borrowCapUpdateFn],
             true,
         );
@@ -1273,7 +1246,7 @@ describe('BingBang test', () => {
             .mul(__wethUsdcPrice.div((1e18).toString()));
 
         await expect(
-            wethMinterSingularity.borrow(
+            wethBingBangMarket.borrow(
                 deployer.address,
                 deployer.address,
                 usdoBorrowVal,
@@ -1283,7 +1256,7 @@ describe('BingBang test', () => {
 
     it('actions should not work when paused', async () => {
         const {
-            wethMinterSingularity,
+            wethBingBangMarket,
             weth,
             wethAssetId,
             yieldBox,
@@ -1295,18 +1268,18 @@ describe('BingBang test', () => {
         } = await loadFixture(register);
 
         const setConservatorData =
-            wethMinterSingularity.interface.encodeFunctionData(
+            wethBingBangMarket.interface.encodeFunctionData(
                 'setConservator',
                 [deployer.address],
             );
         await bar.executeMarketFn(
-            [wethMinterSingularity.address],
+            [wethBingBangMarket.address],
             [setConservatorData],
             true,
         );
 
         await weth.approve(yieldBox.address, ethers.constants.MaxUint256);
-        await yieldBox.setApprovalForAll(wethMinterSingularity.address, true);
+        await yieldBox.setApprovalForAll(wethBingBangMarket.address, true);
 
         const wethMintVal = ethers.BigNumber.from((1e18).toString()).mul(10);
         await weth.freeMint(wethMintVal);
@@ -1323,13 +1296,13 @@ describe('BingBang test', () => {
             valShare,
         );
 
-        await wethMinterSingularity.updatePause(true);
+        await wethBingBangMarket.updatePause(true);
 
-        const pauseState = await wethMinterSingularity.paused();
+        const pauseState = await wethBingBangMarket.paused();
         expect(pauseState).to.be.true;
 
         await expect(
-            wethMinterSingularity.addCollateral(
+            wethBingBangMarket.addCollateral(
                 deployer.address,
                 deployer.address,
                 false,
@@ -1337,16 +1310,16 @@ describe('BingBang test', () => {
             ),
         ).to.be.revertedWith('BingBang: paused');
 
-        await wethMinterSingularity.updatePause(false);
+        await wethBingBangMarket.updatePause(false);
 
-        await wethMinterSingularity.addCollateral(
+        await wethBingBangMarket.addCollateral(
             deployer.address,
             deployer.address,
             false,
             valShare,
         );
 
-        await wethMinterSingularity.updatePause(true);
+        await wethBingBangMarket.updatePause(true);
 
         //borrow
         const usdoBorrowVal = wethMintVal
@@ -1355,17 +1328,17 @@ describe('BingBang test', () => {
             .mul(__wethUsdcPrice.div((1e18).toString()));
 
         await expect(
-            wethMinterSingularity.borrow(
+            wethBingBangMarket.borrow(
                 deployer.address,
                 deployer.address,
                 usdoBorrowVal,
             ),
         ).to.be.revertedWith('BingBang: paused');
 
-        await wethMinterSingularity.updatePause(false);
+        await wethBingBangMarket.updatePause(false);
 
         await expect(
-            wethMinterSingularity.borrow(
+            wethBingBangMarket.borrow(
                 deployer.address,
                 deployer.address,
                 usdoBorrowVal,
@@ -1376,65 +1349,182 @@ describe('BingBang test', () => {
         await usd0.mint(deployer.address, usd0Extra);
         await usd0.approve(yieldBox.address, usd0Extra);
         await yieldBox.depositAsset(
-            await wethMinterSingularity.assetId(),
+            await wethBingBangMarket.assetId(),
             deployer.address,
             deployer.address,
             usd0Extra,
             0,
         );
-        const userBorrowPart = await wethMinterSingularity.userBorrowPart(
+        const userBorrowPart = await wethBingBangMarket.userBorrowPart(
             deployer.address,
         );
 
-        await wethMinterSingularity.updatePause(true);
+        await wethBingBangMarket.updatePause(true);
 
         await expect(
-            wethMinterSingularity.repay(
+            wethBingBangMarket.repay(
                 deployer.address,
                 deployer.address,
                 userBorrowPart,
             ),
         ).to.be.revertedWith('BingBang: paused');
 
-        await wethMinterSingularity.updatePause(false);
+        await wethBingBangMarket.updatePause(false);
 
         await expect(
-            wethMinterSingularity.repay(
+            wethBingBangMarket.repay(
                 deployer.address,
                 deployer.address,
                 userBorrowPart,
             ),
         ).not.to.be.reverted;
 
-        await wethMinterSingularity.updatePause(true);
+        await wethBingBangMarket.updatePause(true);
 
-        let collateralShares = await wethMinterSingularity.userCollateralShare(
+        let collateralShares = await wethBingBangMarket.userCollateralShare(
             deployer.address,
         );
         expect(collateralShares.gt(0)).to.be.true;
         expect(collateralShares.eq(valShare)).to.be.true;
 
         await expect(
-            wethMinterSingularity.removeCollateral(
+            wethBingBangMarket.removeCollateral(
                 deployer.address,
                 deployer.address,
                 collateralShares,
             ),
         ).to.be.revertedWith('BingBang: paused');
 
-        await wethMinterSingularity.updatePause(false);
+        await wethBingBangMarket.updatePause(false);
 
         await expect(
-            wethMinterSingularity.removeCollateral(
+            wethBingBangMarket.removeCollateral(
                 deployer.address,
                 deployer.address,
                 collateralShares,
             ),
         ).not.to.be.reverted;
 
-        collateralShares = await wethMinterSingularity.userCollateralShare(
+        collateralShares = await wethBingBangMarket.userCollateralShare(
             deployer.address,
         );
         expect(collateralShares.eq(0)).to.be.true;
     });
+
+    it.only("should test the variable debt", async () => {
+        const {
+            wethBingBangMarket,
+            wbtcBingBangMarket,
+            weth,
+            wethAssetId,
+            wbtc,
+            wbtcAssetId,
+            yieldBox,
+            deployer,
+            bar,
+        } = await loadFixture(register);
+
+
+        //borrow from the main eth market
+        await weth.approve(yieldBox.address, ethers.constants.MaxUint256);
+        await yieldBox.setApprovalForAll(wethBingBangMarket.address, true);
+
+        const wethMintVal = ethers.BigNumber.from((1e18).toString()).mul(50);
+        await weth.freeMint(wethMintVal);
+        const valShare = await yieldBox.toShare(
+            wethAssetId,
+            wethMintVal,
+            false,
+        );
+        await yieldBox.depositAsset(
+            wethAssetId,
+            deployer.address,
+            deployer.address,
+            0,
+            valShare,
+        );
+        await wethBingBangMarket.addCollateral(
+            deployer.address,
+            deployer.address,
+            false,
+            valShare,
+        );
+
+
+        const usdoBorrowVal = ethers.utils.parseEther("10000");
+        await wethBingBangMarket.borrow(
+            deployer.address,
+            deployer.address,
+            usdoBorrowVal,
+        );
+
+        let userBorrowPart = await wethBingBangMarket.userBorrowPart(
+            deployer.address,
+        );
+        expect(userBorrowPart.eq(usdoBorrowVal)).to.be.true;
+
+        const ethMarketTotalDebt = await wethBingBangMarket.getTotalDebt();
+        expect(ethMarketTotalDebt.eq(userBorrowPart)).to.be.true;
+
+        const ethMarketDebtRate = await wethBingBangMarket.getDebtRate();
+        expect(ethMarketDebtRate.eq(ethers.utils.parseEther("0.005"))).to.be.true;
+
+        //wbtc market
+        const initialWbtcDebtRate = await wbtcBingBangMarket.getDebtRate();
+        const minDebtRate = await wbtcBingBangMarket.minDebtRate();
+        expect(initialWbtcDebtRate.eq(minDebtRate)).to.be.true;
+
+        await wbtc.approve(yieldBox.address, ethers.constants.MaxUint256);
+        await yieldBox.setApprovalForAll(wbtcBingBangMarket.address, true);
+
+        const wbtcMintVal = ethers.BigNumber.from((1e18).toString()).mul(50);
+        await wbtc.freeMint(wbtcMintVal);
+        const wbtcValShare = await yieldBox.toShare(
+            wbtcAssetId,
+            wbtcMintVal,
+            false,
+        );
+        await yieldBox.depositAsset(
+            wbtcAssetId,
+            deployer.address,
+            deployer.address,
+            0,
+            wbtcValShare,
+        );
+        await wbtcBingBangMarket.addCollateral(
+            deployer.address,
+            deployer.address,
+            false,
+            wbtcValShare,
+        );
+
+        const wbtcMarketusdoBorrowVal = ethers.utils.parseEther("2987");
+        await wbtcBingBangMarket.borrow(
+            deployer.address,
+            deployer.address,
+            wbtcMarketusdoBorrowVal,
+        );
+
+        userBorrowPart = await wbtcBingBangMarket.userBorrowPart(
+            deployer.address,
+        );
+        expect(userBorrowPart.eq(wbtcMarketusdoBorrowVal)).to.be.true;
+
+        const wbtcMarketTotalDebt = await wbtcBingBangMarket.getTotalDebt();
+        expect(wbtcMarketTotalDebt.eq(userBorrowPart)).to.be.true;
+
+        let currentWbtcDebtRate = await wbtcBingBangMarket.getDebtRate();
+        expect(currentWbtcDebtRate.eq(ethers.utils.parseEther("0.022922"))).to.be.true;
+
+        await wbtcBingBangMarket.borrow(
+            deployer.address,
+            deployer.address,
+            wbtcMarketusdoBorrowVal,
+        );
+
+        currentWbtcDebtRate = await wbtcBingBangMarket.getDebtRate();
+        expect(currentWbtcDebtRate.eq(ethers.utils.parseEther("0.035"))).to.be.true;
+        
+
+    })
 });
