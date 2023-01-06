@@ -552,6 +552,27 @@ async function mintUsd0Plug(
     await usd0.mint(signer.address, val);
 }
 
+async function tokenApprovalPlug(
+    signer: SignerWithAddress,
+    token: any,
+    singularityHelper: SingularityHelper,
+    yieldBox: any,
+    val: BigNumberish,
+) {
+    await token.connect(signer).approve(singularityHelper.address, val);
+    await token.approve(yieldBox.address, val);
+}
+
+async function bingBangApprovePlug(signer: SignerWithAddress,
+    token: any,
+    BingBang: any,
+    singularityHelper: SingularityHelper,
+    yieldBox: any,
+    val: BigNumberish) {
+    await tokenApprovalPlug(signer, token, singularityHelper, yieldBox, val);
+    await BingBang.connect(signer).updateOperator(singularityHelper.address, true);
+}
+
 async function approvePlug(
     signer: SignerWithAddress,
     token: any,
@@ -560,9 +581,8 @@ async function approvePlug(
     yieldBox: any,
     val: BigNumberish,
 ) {
-    await token.connect(signer).approve(singularityHelper.address, val);
+    await tokenApprovalPlug(signer, token, singularityHelper, yieldBox, val);
     await Singularity.connect(signer).approve(singularityHelper.address, val);
-    await token.approve(yieldBox.address, val);
 }
 
 async function transferPlug(
@@ -807,7 +827,7 @@ async function addUsd0Module(
         const lender = lenders[i];
 
         await mintWethPlug(lender, weth, wethMintVal);
-        await approvePlug(
+        await bingBangApprovePlug(
             lender,
             weth,
             wethBingBangMarket,

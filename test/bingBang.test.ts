@@ -4,7 +4,7 @@ import { register } from './test.utils';
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 import _ from 'lodash';
 
-describe.only('BingBang test', () => {
+describe('BingBang test', () => {
     it('should test initial values', async () => {
         const { wethBingBangMarket, usd0, bar, weth, wethAssetId } =
             await loadFixture(register);
@@ -398,9 +398,7 @@ describe.only('BingBang test', () => {
             .true;
 
         const feeToAddress = await bar.feeTo();
-        const wethMinterBalance = await wethBingBangMarket.balanceOf(
-            feeToAddress,
-        );
+        const wethMinterBalance = await wethBingBangMarket.totalFees();
         expect(wethMinterBalance.eq(0)).to.be.true;
 
         let yieldBoxBalanceOfFeeToInAsset = await yieldBox.toAmount(
@@ -562,9 +560,7 @@ describe.only('BingBang test', () => {
             .true;
 
         const feeToAddress = await bar.feeTo();
-        const wethMinterBalance = await wethBingBangMarket.balanceOf(
-            feeToAddress,
-        );
+        const wethMinterBalance = await wethBingBangMarket.totalFees();
         expect(wethMinterBalance.eq(0)).to.be.true;
 
         const collateralAddress = await wethBingBangMarket.collateral();
@@ -1411,7 +1407,7 @@ describe.only('BingBang test', () => {
         expect(collateralShares.eq(0)).to.be.true;
     });
 
-    it.only("should test the variable debt", async () => {
+    it("should test the variable debt", async () => {
         const {
             wethBingBangMarket,
             wbtcBingBangMarket,
@@ -1524,7 +1520,127 @@ describe.only('BingBang test', () => {
 
         currentWbtcDebtRate = await wbtcBingBangMarket.getDebtRate();
         expect(currentWbtcDebtRate.eq(ethers.utils.parseEther("0.035"))).to.be.true;
-        
+    })
+
+    it('should test debt rate accrual over year', async () => {
+        const {
+            bar,
+            wethBingBangMarket,
+            weth,
+            usd0,
+            wethAssetId,
+            yieldBox,
+            eoa1,
+            multiSwapper,
+            timeTravel,
+            __wethUsdcPrice,
+        } = await loadFixture(register);
+
+        const borrowFeeUpdateFn =
+            wethBingBangMarket.interface.encodeFunctionData(
+                'updateBorrowingFee',
+                [0],
+            );
+        await bar.executeMarketFn(
+            [wethBingBangMarket.address],
+            [borrowFeeUpdateFn],
+            true,
+        );
+
+        await weth.approve(yieldBox.address, ethers.constants.MaxUint256);
+        await yieldBox.setApprovalForAll(wethBingBangMarket.address, true);
+
+        await weth
+            .connect(eoa1)
+            .approve(yieldBox.address, ethers.constants.MaxUint256);
+        await yieldBox
+            .connect(eoa1)
+            .setApprovalForAll(wethBingBangMarket.address, true);
+
+        const wethMintVal = ethers.BigNumber.from((1e18).toString()).mul(100);
+        await weth.connect(eoa1).freeMint(wethMintVal);
+        const valShare = await yieldBox.toShare(
+            wethAssetId,
+            wethMintVal,
+            false,
+        );
+
+        await yieldBox
+            .connect(eoa1)
+            .depositAsset(wethAssetId, eoa1.address, eoa1.address, 0, valShare);
+        await wethBingBangMarket
+            .connect(eoa1)
+            .addCollateral(eoa1.address, eoa1.address, false, valShare);
+
+        //borrow
+        let usdoBorrowVal = ethers.utils.parseEther("10000");
+        await wethBingBangMarket
+            .connect(eoa1)
+            .borrow(eoa1.address, eoa1.address, usdoBorrowVal);
+
+        let userBorrowPart = await wethBingBangMarket.userBorrowPart(
+            eoa1.address,
+        );
+        expect(userBorrowPart.eq(usdoBorrowVal)).to.be.true;
+
+        const debtRate = ethers.utils.formatEther(await wethBingBangMarket.getDebtRate());
+        const totalDebtBefore = await wethBingBangMarket.getTotalDebt();
+        await timeTravel(365 * 86400);
+        await wethBingBangMarket.accrue();
+        const totalDebtAfter = await wethBingBangMarket.getTotalDebt();
+
+        const extra = ethers.utils.parseEther((10000 * parseFloat(debtRate)).toString());
+        const debtDifference = totalDebtAfter.sub(totalDebtBefore);
+
+        expect(extra).to.be.approximately(debtDifference, extra.mul(1).div(100));
+    });
+
+    it("should test approval", async () => {
+        const {
+            bar,
+            wethBingBangMarket,
+            weth,
+            usd0,
+            wethAssetId,
+            yieldBox,
+            eoa1,
+            multiSwapper,
+            timeTravel,
+            __wethUsdcPrice,
+            deployer,
+        } = await loadFixture(register);
+
+        await weth.approve(yieldBox.address, ethers.constants.MaxUint256);
+        await yieldBox.setApprovalForAll(wethBingBangMarket.address, true);
+
+        await weth
+            .connect(eoa1)
+            .approve(yieldBox.address, ethers.constants.MaxUint256);
+        await yieldBox
+            .connect(eoa1)
+            .setApprovalForAll(wethBingBangMarket.address, true);
+
+        const wethMintVal = ethers.BigNumber.from((1e18).toString()).mul(100);
+        await weth.connect(deployer).freeMint(wethMintVal);
+        const valShare = await yieldBox.toShare(
+            wethAssetId,
+            wethMintVal,
+            false,
+        );
+
+        await yieldBox
+            .connect(deployer)
+            .depositAsset(wethAssetId, deployer.address, deployer.address, 0, valShare);
+
+        await expect(wethBingBangMarket
+            .connect(eoa1)
+            .addCollateral(deployer.address, deployer.address, false, valShare)).to.be.revertedWithCustomError(wethBingBangMarket, "NotApproved");
+
+        await wethBingBangMarket.updateOperator(eoa1.address, true);
+
+        await expect(wethBingBangMarket
+            .connect(eoa1)
+            .addCollateral(deployer.address, deployer.address, false, valShare)).to.not.be.revertedWithCustomError;
 
     })
 });

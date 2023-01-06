@@ -7,8 +7,6 @@ import '../yieldbox/contracts/YieldBox.sol';
 import './singularity/interfaces/ISingularity.sol';
 import './IPenrose.sol';
 
-import 'hardhat/console.sol';
-
 // TODO: Permissionless market deployment
 ///     + asset registration? (toggle to renounce ownership so users can call)
 /// @title Global market registry
@@ -108,6 +106,7 @@ contract Penrose is BoringOwnable {
     event UsdoTokenUpdated(address indexed usdoToken, uint256 assetId);
     event ConservatorUpdated(address indexed old, address indexed _new);
     event PausedUpdated(bool oldState, bool newState);
+    event BingBangEthMarketSet(address indexed _newAddress);
 
     // ******************//
     // *** MODIFIERS *** //
@@ -211,8 +210,11 @@ contract Penrose is BoringOwnable {
     // *********************** //
     // *** OWNER FUNCTIONS *** //
     // *********************** //
+    /// @notice sets the main BingBang market
+    /// @dev needed for the variable debt computation
     function setBingBangEthMarket(address _market) external onlyOwner {
         bingBangEthMarket = _market;
+        emit BingBangEthMarketSet(_market);
     }
 
     /// @notice updates the pause state of the contract

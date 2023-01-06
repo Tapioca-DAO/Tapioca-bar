@@ -28,15 +28,17 @@ __/\\\\\\\\\\\\\\\_____/\\\\\\\\\_____/\\\\\\\\\\\\\____/\\\\\\\\\\\_______/\\\\
 
 */
 
-contract BingBang is BoringOwnable, ERC20 {
+contract BingBang is BoringOwnable {
     using RebaseLibrary for Rebase;
     using BoringERC20 for IERC20;
 
     // ************ //
     // *** VARS *** //
     // ************ //
+    mapping(address => mapping(address => bool)) public operators;
+
     struct AccrueInfo {
-        uint64 stabilityFee;
+        uint64 debtRate;
         uint64 lastAccrued;
     }
     AccrueInfo public accrueInfo;
@@ -74,6 +76,7 @@ contract BingBang is BoringOwnable, ERC20 {
     uint256 public callerFee; // 90%
     uint256 public protocolFee; // 10%
     uint256 public collateralizationRate; // 75%
+    uint256 public totalFees;
 
     bool public paused;
     address public conservator;
@@ -149,9 +152,7 @@ contract BingBang is BoringOwnable, ERC20 {
     /// If 'from' is msg.sender, it's allowed.
     /// If 'msg.sender' is an address (an operator) that is approved by 'from', it's allowed.
     modifier allowed(address from) virtual {
-        if (
-            from != msg.sender && allowance[from][msg.sender] <= balanceOf[from]
-        ) {
+        if (from != msg.sender && !operators[from][msg.sender]) {
             revert NotApproved(from, msg.sender);
         }
         _;
@@ -220,8 +221,6 @@ contract BingBang is BoringOwnable, ERC20 {
         collateralId = _collateralId;
         oracle = _oracle;
 
-        accrueInfo.stabilityFee = 317097920; // aprox 1% APR, with 1e18 being 100%
-
         updateExchangeRate();
 
         callerFee = 90000; // 90%
@@ -244,49 +243,13 @@ contract BingBang is BoringOwnable, ERC20 {
     // ********************** //
     // *** VIEW FUNCTIONS *** //
     // ********************** //
-    function symbol() public view returns (string memory) {
-        return
-            string(
-                abi.encodePacked(
-                    'tmsgl',
-                    collateral.safeSymbol(),
-                    '/',
-                    asset.symbol(),
-                    '-',
-                    oracle.symbol(oracleData)
-                )
-            );
-    }
-
-    function name() external view returns (string memory) {
-        return
-            string(
-                abi.encodePacked(
-                    'Tapioca BingBang ',
-                    collateral.safeName(),
-                    '/',
-                    asset.name(),
-                    '-',
-                    oracle.name(oracleData)
-                )
-            );
-    }
-
-    function decimals() external view returns (uint8) {
-        return asset.decimals();
-    }
-
-    // totalSupply for ERC20 compatibility
-    // BalanceOf[user] represent a fraction
-    function totalSupply() public view override returns (uint256) {
-        return asset.totalSupply();
-    }
-
+    /// @notice returns total market debt
     function getTotalDebt() external view returns (uint256) {
         return totalBorrow.elastic;
     }
 
-    function getDebtRate() external view returns (uint256) {
+    /// @notice returns the current debt rate
+    function getDebtRate() public view returns (uint256) {
         if (_isEthMarket) return 5e15; // 0.5%
         if (totalBorrow.elastic == 0) return minDebtRate;
 
@@ -310,6 +273,11 @@ contract BingBang is BoringOwnable, ERC20 {
     // ************************ //
     // *** PUBLIC FUNCTIONS *** //
     // ************************ //
+    /// @notice allows 'operator' to act on behalf of the sender
+    /// @param status true/false
+    function updateOperator(address operator, bool status) external {
+        operators[msg.sender][operator] = status;
+    }
 
     /// @notice Gets the exchange rate. I.e how much collateral to buy 1e18 asset.
     /// @dev This function is supposed to be invoked if needed because Oracle queries can be expensive.
@@ -336,6 +304,10 @@ contract BingBang is BoringOwnable, ERC20 {
         if (elapsedTime == 0) {
             return;
         }
+        //update debt rate
+        uint256 annumDebtRate = getDebtRate();
+        _accrueInfo.debtRate = uint64(annumDebtRate / 31536000); //per second
+
         _accrueInfo.lastAccrued = uint64(block.timestamp);
 
         Rebase memory _totalBorrow = totalBorrow;
@@ -345,7 +317,7 @@ contract BingBang is BoringOwnable, ERC20 {
         // Calculate fees
         extraAmount =
             (uint256(_totalBorrow.elastic) *
-                _accrueInfo.stabilityFee *
+                _accrueInfo.debtRate *
                 elapsedTime) /
             1e18;
         _totalBorrow.elastic += uint128(extraAmount);
@@ -353,7 +325,7 @@ contract BingBang is BoringOwnable, ERC20 {
         totalBorrow = _totalBorrow;
         accrueInfo = _accrueInfo;
 
-        emit LogAccrue(extraAmount, _accrueInfo.stabilityFee);
+        emit LogAccrue(extraAmount, _accrueInfo.debtRate);
     }
 
     /// @notice Sender borrows `amount` and transfers it to `to`.
@@ -425,6 +397,8 @@ contract BingBang is BoringOwnable, ERC20 {
         address to,
         uint256 share
     ) public notPaused solvent(from) allowed(from) {
+        updateExchangeRate();
+
         // accrue must be called because we check solvency
         accrue();
 
@@ -439,28 +413,24 @@ contract BingBang is BoringOwnable, ERC20 {
         require(penrose.swappers(swapper), 'BingBang: Invalid swapper');
 
         uint256 balance = asset.balanceOf(address(this));
-        balanceOf[penrose.feeTo()] += balance;
+        totalFees += balance;
 
         emit LogWithdrawFees(penrose.feeTo(), balance);
 
         address _feeTo = penrose.feeTo();
-        if (balanceOf[_feeTo] > 0) {
-            uint256 feeShares = yieldBox.toShare(
-                assetId,
-                balanceOf[_feeTo],
-                false
-            );
+        if (totalFees > 0) {
+            uint256 feeShares = yieldBox.toShare(assetId, totalFees, false);
 
-            asset.approve(address(yieldBox), balanceOf[_feeTo]);
+            asset.approve(address(yieldBox), totalFees);
             yieldBox.depositAsset(
                 assetId,
                 address(this),
                 address(this),
-                balanceOf[_feeTo],
+                totalFees,
                 0
             );
 
-            balanceOf[_feeTo] = 0;
+            totalFees = 0;
             yieldBox.transfer(
                 address(this),
                 address(swapper),
