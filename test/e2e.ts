@@ -142,7 +142,7 @@ describe('e2e tests', () => {
         );
         await usd0.setMinterStatus(deployer.address, true);
         await usd0.mint(deployer.address, usdoBorrowVal.mul(100));
-        for (var i = 0; i < repayArr.length; i++) {
+        for (let i = 0; i < repayArr.length; i++) {
             const repayer = repayArr[i];
             const repayerUsd0Balance = await usd0.balanceOf(repayer.address);
 
@@ -455,7 +455,7 @@ describe('e2e tests', () => {
         const borrowerCollateralValue = wethMintVal.div(100); //0.1 eth
         const borrowerBorrowValue = usdoBorrowVal.div(200); //50
 
-        for (var i = 0; i < 100; i++) {
+        for (let i = 0; i < 100; i++) {
             // deposit, add collateral and borrow UDS0
             await mintWethPlug(borrower, weth, borrowerCollateralValue);
             await approvePlug(
@@ -503,7 +503,7 @@ describe('e2e tests', () => {
             ethers.constants.MaxUint256,
         );
 
-        for (var i = 0; i < 10; i++) {
+        for (let i = 0; i < 10; i++) {
             await depositAndRepayPlug(
                 borrower,
                 singularityHelper,
@@ -570,7 +570,10 @@ async function bigBangApprovePlug(signer: SignerWithAddress,
     yieldBox: any,
     val: BigNumberish) {
     await tokenApprovalPlug(signer, token, singularityHelper, yieldBox, val);
-    await BigBang.connect(signer).updateOperator(singularityHelper.address, true);
+    await BigBang.connect(signer).updateOperator(
+        singularityHelper.address,
+        true,
+    );
 }
 
 async function approvePlug(
@@ -758,7 +761,7 @@ async function liquidatePlug(
     const liquidateValues = [];
     const liquidateAddresses = [];
     const previousCollaterals = [];
-    for (var i = 0; i < liquidateArr.length; i++) {
+    for (let i = 0; i < liquidateArr.length; i++) {
         const lq = liquidateArr[i];
         const amount = await asset.balanceOf(lq.address);
         liquidateValues.push(amount);
@@ -796,7 +799,7 @@ async function liquidatePlug(
         data,
     );
 
-    for (var i = 0; i < liquidateArr.length; i++) {
+    for (let i = 0; i < liquidateArr.length; i++) {
         const lq = liquidateArr[i];
         const collateralShare = await Singularity.userCollateralShare(
             lq.address,
@@ -823,7 +826,7 @@ async function addUsd0Module(
     lenders: any[],
 ) {
     // deposit, add collateral and borrow UDS0
-    for (var i = 0; i < lenders.length; i++) {
+    for (let i = 0; i < lenders.length; i++) {
         const lender = lenders[i];
 
         await mintWethPlug(lender, weth, wethMintVal);
@@ -869,7 +872,7 @@ async function borrowFromSingularityModule(
     usdoAssetId: BigNumberish,
     usd0: USD0,
 ) {
-    for (var i = 0; i < borrowers.length; i++) {
+    for (let i = 0; i < borrowers.length; i++) {
         const borrower = borrowers[i];
 
         // deposit, add collateral and borrow UDS0
@@ -911,7 +914,7 @@ async function repayModule(
 ) {
     await mintUsd0Plug(deployer, usd0, usdoBorrowVal.mul(100));
 
-    for (var i = 0; i < repayArr.length; i++) {
+    for (let i = 0; i < repayArr.length; i++) {
         const repayer = repayArr[i];
 
         const repayerUsd0Balance = await usd0.balanceOf(repayer.address);

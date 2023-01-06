@@ -26,6 +26,8 @@ interface IPenrose {
 
     function bigBangEthMarket() external view returns (address);
 
+    function bigBangEthDebtRate() external view returns (uint256);
+
     function swappers(ISwapper swapper) external view returns (bool);
 
     function yieldBox() external view returns (address payable);

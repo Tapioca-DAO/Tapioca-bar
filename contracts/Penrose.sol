@@ -55,6 +55,7 @@ contract Penrose is BoringOwnable {
     mapping(ISwapper => bool) public swappers;
 
     address public bigBangEthMarket;
+    uint256 public bigBangEthDebtRate;
 
     /// @notice creates a Penrose contract
     /// @param _yieldBox YieldBox contract address
@@ -84,6 +85,8 @@ contract Penrose is BoringOwnable {
                 0
             )
         );
+
+        bigBangEthDebtRate = 5e15;
     }
 
     // **************//
@@ -107,6 +110,7 @@ contract Penrose is BoringOwnable {
     event ConservatorUpdated(address indexed old, address indexed _new);
     event PausedUpdated(bool oldState, bool newState);
     event BigBangEthMarketSet(address indexed _newAddress);
+    event BigBangEthMarketDebtRate(uint256 _rate);
 
     // ******************//
     // *** MODIFIERS *** //
@@ -210,6 +214,13 @@ contract Penrose is BoringOwnable {
     // *********************** //
     // *** OWNER FUNCTIONS *** //
     // *********************** //
+    /// @notice sets the main BigBang market debt rate
+    /// @param _rate the new rate 
+    function setBigBangEthMarketDebtRate(uint256 _rate) external onlyOwner {
+        bigBangEthDebtRate = _rate;
+        emit BigBangEthMarketDebtRate(_rate);
+    }
+
     /// @notice sets the main BigBang market
     /// @dev needed for the variable debt computation
     function setBigBangEthMarket(address _market) external onlyOwner {

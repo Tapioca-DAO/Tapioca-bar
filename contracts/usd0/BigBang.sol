@@ -11,7 +11,6 @@ import '../swappers/ISwapper.sol';
 import '../singularity/interfaces/IOracle.sol';
 import '../../yieldbox/contracts/YieldBox.sol';
 
-
 // solhint-disable max-line-length
 /*
 
@@ -226,9 +225,7 @@ contract BigBang is BoringOwnable {
         protocolFee = 10000; // 10%
         collateralizationRate = 75000; // 75%
 
-        EXCHANGE_RATE_PRECISION = _exchangeRatePrecision > 0
-            ? _exchangeRatePrecision
-            : 0;
+        EXCHANGE_RATE_PRECISION = _exchangeRatePrecision;
 
         _isEthMarket = collateralId == penrose.wethAssetId();
         if (!_isEthMarket) {
@@ -249,7 +246,7 @@ contract BigBang is BoringOwnable {
 
     /// @notice returns the current debt rate
     function getDebtRate() public view returns (uint256) {
-        if (_isEthMarket) return 5e15; // 0.5%
+        if (_isEthMarket) return penrose.bigBangEthDebtRate(); // default 0.5%
         if (totalBorrow.elastic == 0) return minDebtRate;
 
         uint256 _ethMarketTotalDebt = BigBang(penrose.bigBangEthMarket())
@@ -531,10 +528,7 @@ contract BigBang is BoringOwnable {
     /// @notice Updates the borrowing fee
     /// @param _borrowingFee the new value
     function updateBorrowingFee(uint256 _borrowingFee) external onlyOwner {
-        require(
-            _borrowingFee <= MAX_BORROWING_FEE,
-            'BigBang: value not valid'
-        );
+        require(_borrowingFee <= MAX_BORROWING_FEE, 'BigBang: value not valid');
         emit LogBorrowingFee(borrowingFee, _borrowingFee);
         borrowingFee = _borrowingFee;
     }
