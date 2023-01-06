@@ -11,7 +11,6 @@ import '../swappers/ISwapper.sol';
 import '../singularity/interfaces/IOracle.sol';
 import '../../yieldbox/contracts/YieldBox.sol';
 
-import 'hardhat/console.sol';
 
 // solhint-disable max-line-length
 /*
@@ -28,7 +27,7 @@ __/\\\\\\\\\\\\\\\_____/\\\\\\\\\_____/\\\\\\\\\\\\\____/\\\\\\\\\\\_______/\\\\
 
 */
 
-contract BingBang is BoringOwnable {
+contract BigBang is BoringOwnable {
     using RebaseLibrary for Rebase;
     using BoringERC20 for IERC20;
 
@@ -160,17 +159,17 @@ contract BingBang is BoringOwnable {
     /// @dev Checks if the user is solvent in the closed liquidation case at the end of the function body.
     modifier solvent(address from) {
         _;
-        require(_isSolvent(from, exchangeRate), 'BingBang: insolvent');
+        require(_isSolvent(from, exchangeRate), 'BigBang: insolvent');
     }
 
     modifier notPaused() {
-        require(!paused, 'BingBang: paused');
+        require(!paused, 'BigBang: paused');
         _;
     }
 
     bool private initialized;
     modifier onlyOnce() {
-        require(!initialized, 'BingBang: initialized');
+        require(!initialized, 'BigBang: initialized');
         _;
         initialized = true;
     }
@@ -212,7 +211,7 @@ contract BingBang is BoringOwnable {
             address(_collateral) != address(0) &&
                 address(_asset) != address(0) &&
                 address(_oracle) != address(0),
-            'BingBang: bad pair'
+            'BigBang: bad pair'
         );
 
         asset = IUSD0(_asset);
@@ -253,7 +252,7 @@ contract BingBang is BoringOwnable {
         if (_isEthMarket) return 5e15; // 0.5%
         if (totalBorrow.elastic == 0) return minDebtRate;
 
-        uint256 _ethMarketTotalDebt = BingBang(penrose.bingBangEthMarket())
+        uint256 _ethMarketTotalDebt = BigBang(penrose.bigBangEthMarket())
             .getTotalDebt();
         uint256 _currentDebt = totalBorrow.elastic;
         uint256 _maxDebtPoint = (_ethMarketTotalDebt *
@@ -410,7 +409,7 @@ contract BingBang is BoringOwnable {
         ISwapper swapper,
         IPenrose.SwapData calldata swapData
     ) public notPaused {
-        require(penrose.swappers(swapper), 'BingBang: Invalid swapper');
+        require(penrose.swappers(swapper), 'BigBang: Invalid swapper');
 
         uint256 balance = asset.balanceOf(address(this));
         totalFees += balance;
@@ -481,7 +480,7 @@ contract BingBang is BoringOwnable {
     /// @dev Conservator can pause the contract
     /// @param _conservator The new address
     function setConservator(address _conservator) external onlyOwner {
-        require(_conservator != address(0), 'BingBang: address not valid');
+        require(_conservator != address(0), 'BigBang: address not valid');
         emit ConservatorUpdated(conservator, _conservator);
         conservator = _conservator;
     }
@@ -489,8 +488,8 @@ contract BingBang is BoringOwnable {
     /// @notice updates the pause state of the contract
     /// @param val the new value
     function updatePause(bool val) external {
-        require(msg.sender == conservator, 'BingBang: unauthorized');
-        require(val != paused, 'BingBang: same state');
+        require(msg.sender == conservator, 'BigBang: unauthorized');
+        require(val != paused, 'BigBang: same state');
         emit PausedUpdated(paused, val);
         paused = val;
     }
@@ -499,7 +498,7 @@ contract BingBang is BoringOwnable {
     /// @dev can only be called by the owner
     /// @param _val the new value
     function setProtocolFee(uint256 _val) external onlyOwner {
-        require(_val <= FEE_PRECISION, 'BingBang: not valid');
+        require(_val <= FEE_PRECISION, 'BigBang: not valid');
         protocolFee = _val;
     }
 
@@ -507,7 +506,7 @@ contract BingBang is BoringOwnable {
     /// @dev can only be called by the owner
     /// @param _val the new value
     function setCallerFee(uint256 _val) external onlyOwner {
-        require(_val <= FEE_PRECISION, 'BingBang: not valid');
+        require(_val <= FEE_PRECISION, 'BigBang: not valid');
         callerFee = _val;
     }
 
@@ -515,7 +514,7 @@ contract BingBang is BoringOwnable {
     /// @dev can only be called by the owner
     /// @param _val the new value
     function setCollateralizationRate(uint256 _val) external onlyOwner {
-        require(_val <= COLLATERIZATION_RATE_PRECISION, 'BingBang: not valid');
+        require(_val <= COLLATERIZATION_RATE_PRECISION, 'BigBang: not valid');
         collateralizationRate = _val;
     }
 
@@ -534,7 +533,7 @@ contract BingBang is BoringOwnable {
     function updateBorrowingFee(uint256 _borrowingFee) external onlyOwner {
         require(
             _borrowingFee <= MAX_BORROWING_FEE,
-            'BingBang: value not valid'
+            'BigBang: value not valid'
         );
         emit LogBorrowingFee(borrowingFee, _borrowingFee);
         borrowingFee = _borrowingFee;
@@ -645,7 +644,7 @@ contract BingBang is BoringOwnable {
                 allBorrowPart += borrowPart;
             }
         }
-        require(allBorrowAmount != 0, 'BingBang: solvent');
+        require(allBorrowAmount != 0, 'BigBang: solvent');
         _totalBorrow.elastic -= uint128(allBorrowAmount);
         _totalBorrow.base -= uint128(allBorrowPart);
         totalBorrow = _totalBorrow;
@@ -658,7 +657,7 @@ contract BingBang is BoringOwnable {
         );
 
         // Closed liquidation using a pre-approved swapper
-        require(penrose.swappers(swapper), 'BingBang: Invalid swapper');
+        require(penrose.swappers(swapper), 'BigBang: Invalid swapper');
 
         // Swaps the users collateral for the borrowed asset
         yieldBox.transfer(
@@ -690,7 +689,7 @@ contract BingBang is BoringOwnable {
 
         require(
             feeShare + callerShare == extraShare,
-            'BingBang: fee values not valid'
+            'BigBang: fee values not valid'
         );
 
         yieldBox.transfer(address(this), penrose.feeTo(), assetId, feeShare);
@@ -715,7 +714,7 @@ contract BingBang is BoringOwnable {
         if (skim) {
             require(
                 share <= yieldBox.balanceOf(address(this), _tokenId) - total,
-                'BingBang: too much'
+                'BigBang: too much'
             );
         } else {
             yieldBox.transfer(from, address(this), _tokenId, share);
@@ -768,7 +767,7 @@ contract BingBang is BoringOwnable {
         (totalBorrow, part) = totalBorrow.add(amount + feeAmount, true);
         require(
             totalBorrowCap == 0 || totalBorrow.elastic <= totalBorrowCap,
-            'BingBang: borrow cap reached'
+            'BigBang: borrow cap reached'
         );
 
         userBorrowPart[from] += part;

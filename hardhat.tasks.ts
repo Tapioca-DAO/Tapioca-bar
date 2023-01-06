@@ -1,10 +1,10 @@
 import '@nomiclabs/hardhat-ethers';
 import { task } from 'hardhat/config';
 import { deployMarket__task } from './tasks/deployMarket';
-import { deployBingBang__task } from './tasks/deployBingBang';
+import { deployBigBang__task } from './tasks/deployBigBang';
 import { exportSDK__task } from './tasks/exportSDK';
 import { getSingularityMarkets__task } from './tasks/getSingularityMarkets';
-import { getBingBangMarkets__task } from './tasks/getBingBangMarkets';
+import { getBigBangMarkets__task } from './tasks/getBigBangMarkets';
 import {
     getLocalDeployments__task,
     getSDKDeployments__task,
@@ -16,10 +16,10 @@ import { setLiquidationQueueExecutionSwapper__task } from './tasks/setLiquidatio
 import { setLiquidationQueue__task } from './tasks/setLiquidationQueue';
 
 import { getParticipantSingularityInfo__task } from './tasks/getParticipantSingularityInfo';
-import { getParticipantBingBangInfo__task } from './tasks/getParticipantBingBangInfo';
+import { getParticipantBigBangInfo__task } from './tasks/getParticipantBigBangInfo';
 
 import { getSingularityTotals__task } from './tasks/getSingularityTotals';
-import { getBingBangTotals__task } from './tasks/getBingBangTotals';
+import { getBigBangTotals__task } from './tasks/getBigBangTotals';
 
 import { deployOracleMock__task } from './tasks/deployOracleMock';
 
@@ -43,9 +43,9 @@ task(
     getSingularityMarkets__task,
 );
 task(
-    'bingBangMarkets',
-    'Display the list of deployed BingBang markets for the current chain ID.',
-    getBingBangMarkets__task,
+    'bigBangMarkets',
+    'Display the list of deployed BigBang markets for the current chain ID.',
+    getBigBangMarkets__task,
 );
 
 task(
@@ -56,7 +56,7 @@ task(
     .addParam('name', 'Market name')
     .addParam('exchangeRatePrecision', 'Collateral decimals');
 
-task('deployBingBang', 'Deploy a BingBang market', deployBingBang__task)
+task('deployBigBang', 'Deploy a BigBang market', deployBigBang__task)
     .addParam('name', 'Market name')
     .addParam('exchangeRatePrecision', 'Collateral decimals');
 
@@ -86,9 +86,9 @@ task(
     .addParam('participant', 'User address');
 
 task(
-    'getParticipantBingBangInfo',
+    'getParticipantBigBangInfo',
     'Returns lend & borrow details for a specific address',
-    getParticipantBingBangInfo__task,
+    getParticipantBigBangInfo__task,
 )
     .addParam('singularity', 'Singularity address')
     .addParam('participant', 'User address');
@@ -99,14 +99,14 @@ task(
     getSingularityTotals__task,
 ).addParam('singularity', 'Singularity address');
 task(
-    'getBingBangTotals',
-    'Returns BingBang totals info',
-    getBingBangTotals__task,
-).addParam('bingBang', 'BingBang address');
+    'getBigBangTotals',
+    'Returns BigBang totals info',
+    getBigBangTotals__task,
+).addParam('bigBang', 'BigBang address');
 
 task('setBorrowCap', 'Set borrow cap for Singularity', setBorrowCap__task)
     .addParam('singularity', 'Singularity address', ' ')
-    .addParam('bingBang', 'BingBang address', ' ')
+    .addParam('bigBang', 'BigBang address', ' ')
     .addParam('cap', 'Borrow cap value');
 
 task(

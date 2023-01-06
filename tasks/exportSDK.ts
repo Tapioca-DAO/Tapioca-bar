@@ -29,7 +29,7 @@ export const exportSDK__task = async (
         contractNames: [
             'YieldBox',
             'USD0',
-            'BingBang',
+            'BigBang',
             'Penrose',
             'SGLLendingBorrowing',
             'SGLLiquidation',

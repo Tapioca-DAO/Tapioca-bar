@@ -2,7 +2,7 @@ import { expect } from 'chai';
 import { ethers } from 'hardhat';
 import { register } from './test.utils';
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
-import { BingBang, USD0, WETH9Mock, yieldbox } from '../typechain';
+import { BigBang, USD0, WETH9Mock, yieldbox } from '../typechain';
 import { BigNumber, BigNumberish } from 'ethers';
 import { SingularityHelper } from '../typechain/contracts/singularity/SingularityHelper';
 import { Singularity } from '../typechain/contracts/singularity/Singularity';
@@ -13,9 +13,9 @@ describe('e2e tests', () => {
     ---Lenders---
     - mint WETH
     - deposit WETH into YieldBox
-    - add collateral to Weth-BingBang
-    - deposit WETH into Weth-BingBang
-    - borrow USD0 from Weth-BingBang
+    - add collateral to Weth-BigBang
+    - deposit WETH into Weth-BigBang
+    - borrow USD0 from Weth-BigBang
     - lend USD0 to Weth-Usd0-Singularity
 
     ---Borrowers---
@@ -31,7 +31,7 @@ describe('e2e tests', () => {
     it('should use minterSingularity and market to add, borrow and get liquidated', async () => {
         const {
             bar,
-            wethBingBangMarket,
+            wethBigBangMarket,
             usd0,
             createWethUsd0Singularity,
             singularityHelper,
@@ -91,7 +91,7 @@ describe('e2e tests', () => {
             weth,
             wethMintVal,
             singularityHelper,
-            wethBingBangMarket,
+            wethBigBangMarket,
             usdoBorrowVal,
             yieldBox,
             usdoAssetId,
@@ -110,7 +110,7 @@ describe('e2e tests', () => {
         await setYieldBoxApprovalPlug(
             deployer,
             yieldBox,
-            wethBingBangMarket,
+            wethBigBangMarket,
         );
 
         // add WETH and borrow USD0 from WETH-USD00-Singularity
@@ -186,7 +186,7 @@ describe('e2e tests', () => {
     it('should try to use minterSingularity and market to add, borrow and get liquidated, but in a wrong order', async () => {
         const {
             bar,
-            wethBingBangMarket,
+            wethBigBangMarket,
             usd0,
             createWethUsd0Singularity,
             singularityHelper,
@@ -251,7 +251,7 @@ describe('e2e tests', () => {
         await setYieldBoxApprovalPlug(
             deployer,
             yieldBox,
-            wethBingBangMarket,
+            wethBigBangMarket,
         );
 
         await mintWethPlug(borrowers[0], weth, wethMintVal);
@@ -284,7 +284,7 @@ describe('e2e tests', () => {
             weth,
             wethMintVal,
             singularityHelper,
-            wethBingBangMarket,
+            wethBigBangMarket,
             usdoBorrowVal,
             yieldBox,
             usdoAssetId,
@@ -388,7 +388,7 @@ describe('e2e tests', () => {
     it('should borrow and repay in multipe small operations', async () => {
         const {
             bar,
-            wethBingBangMarket,
+            wethBigBangMarket,
             usd0,
             createWethUsd0Singularity,
             singularityHelper,
@@ -443,7 +443,7 @@ describe('e2e tests', () => {
             weth,
             wethMintVal,
             singularityHelper,
-            wethBingBangMarket,
+            wethBigBangMarket,
             usdoBorrowVal,
             yieldBox,
             usdoAssetId,
@@ -563,14 +563,14 @@ async function tokenApprovalPlug(
     await token.approve(yieldBox.address, val);
 }
 
-async function bingBangApprovePlug(signer: SignerWithAddress,
+async function bigBangApprovePlug(signer: SignerWithAddress,
     token: any,
-    BingBang: any,
+    BigBang: any,
     singularityHelper: SingularityHelper,
     yieldBox: any,
     val: BigNumberish) {
     await tokenApprovalPlug(signer, token, singularityHelper, yieldBox, val);
-    await BingBang.connect(signer).updateOperator(singularityHelper.address, true);
+    await BigBang.connect(signer).updateOperator(singularityHelper.address, true);
 }
 
 async function approvePlug(
@@ -815,7 +815,7 @@ async function addUsd0Module(
     weth: WETH9Mock,
     wethMintVal: BigNumberish,
     singularityHelper: SingularityHelper,
-    wethBingBangMarket: BingBang,
+    wethBigBangMarket: BigBang,
     usdoBorrowVal: BigNumberish,
     yieldBox: any,
     usdoAssetId: BigNumberish,
@@ -827,10 +827,10 @@ async function addUsd0Module(
         const lender = lenders[i];
 
         await mintWethPlug(lender, weth, wethMintVal);
-        await bingBangApprovePlug(
+        await bigBangApprovePlug(
             lender,
             weth,
-            wethBingBangMarket,
+            wethBigBangMarket,
             singularityHelper,
             yieldBox,
             wethMintVal,
@@ -839,7 +839,7 @@ async function addUsd0Module(
         const { share, amount } = await depositAddCollateralAndBorrowPlug(
             lender,
             singularityHelper,
-            wethBingBangMarket,
+            wethBigBangMarket,
             yieldBox,
             usdoAssetId,
             wethMintVal,

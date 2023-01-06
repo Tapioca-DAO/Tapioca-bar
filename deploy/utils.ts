@@ -255,7 +255,7 @@ export const deployOracleMock = async (
 };
 
 //TODO: add variable debt param
-export const registerBingBangMarket = async (
+export const registerBigBangMarket = async (
     hre: HardhatRuntimeEnvironment,
     name: string,
     exchangeRatePrecision: string,
@@ -316,19 +316,19 @@ export const registerBingBangMarket = async (
     const deploymentsJson = readJSONFromFile();
     const masterContract = _.find(
         deploymentsJson[chainId],
-        (e) => e.name === 'BingBangMediumRiskMC',
+        (e) => e.name === 'BigBangMediumRiskMC',
     );
-    console.log(`\nRegistering bingBang_${name}`);
+    console.log(`\nRegistering bigBang_${name}`);
     await (
-        await penrose.registerBingBang(masterContract.address, data, true)
+        await penrose.registerBigBang(masterContract.address, data, true)
     ).wait();
 
-    await deploy('BingBang', {
+    await deploy('BigBang', {
         from: deployer,
         log: true,
     });
     const deployedMinter = await hre.ethers.getContractAt(
-        'BingBang',
+        'BigBang',
         await yieldBox.clonesOf(
             masterContract.address,
             (await yieldBox.clonesOfCount(masterContract.address)).sub(1),
@@ -352,7 +352,7 @@ export const registerBingBangMarket = async (
 
     return new Promise(async (resolve) =>
         resolve({
-            name: `bingBang_${name}`,
+            name: `bigBang_${name}`,
             address: deployedMinter.address,
             meta: {},
         }),

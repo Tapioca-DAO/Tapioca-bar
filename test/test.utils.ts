@@ -558,19 +558,19 @@ async function deployMediumRiskMC(bar: Penrose, staging?: boolean) {
     return { mediumRiskMC };
 }
 
-async function deployMediumRiskBingBangMC(bar: Penrose, staging?: boolean) {
-    const mediumRiskBingBangMC = await (
-        await ethers.getContractFactory('BingBang')
+async function deployMediumRiskBigBangMC(bar: Penrose, staging?: boolean) {
+    const mediumRiskBigBangMC = await (
+        await ethers.getContractFactory('BigBang')
     ).deploy({ gasPrice: gasPrice });
-    await mediumRiskBingBangMC.deployed();
+    await mediumRiskBigBangMC.deployed();
     log(
-        `Deployed MediumRiskBingBangMC ${mediumRiskBingBangMC.address} with no arguments`,
+        `Deployed MediumRiskBigBangMC ${mediumRiskBigBangMC.address} with no arguments`,
         staging,
     );
 
     await (
-        await bar.registerBingBangMasterContract(
-            mediumRiskBingBangMC.address,
+        await bar.registerBigBangMasterContract(
+            mediumRiskBigBangMC.address,
             1,
             {
                 gasPrice: gasPrice,
@@ -579,9 +579,9 @@ async function deployMediumRiskBingBangMC(bar: Penrose, staging?: boolean) {
     ).wait();
     log(`MediumRiskMC was set on Penrose`, staging);
 
-    await verifyEtherscan(mediumRiskBingBangMC.address, [], staging);
+    await verifyEtherscan(mediumRiskBigBangMC.address, [], staging);
 
-    return { mediumRiskBingBangMC };
+    return { mediumRiskBigBangMC };
 }
 
 async function registerSingularity(
@@ -935,8 +935,8 @@ async function registerLiquidationQueue(
     return { liquidationQueue, LQ_META };
 }
 
-async function registerBingBangMarket(
-    mediumRiskBingBangMC: string,
+async function registerBigBangMarket(
+    mediumRiskBigBangMC: string,
     yieldBox: YieldBox,
     bar: Penrose,
     collateral: WETH9Mock | ERC20Mock,
@@ -962,21 +962,21 @@ async function registerBingBangMarket(
     );
 
     await (
-        await bar.registerBingBang(mediumRiskBingBangMC, data, true, {
+        await bar.registerBigBang(mediumRiskBigBangMC, data, true, {
             gasPrice: gasPrice,
         })
     ).wait();
-    log(`BingBang market registered on Penrose`, staging);
+    log(`BigBang market registered on Penrose`, staging);
 
-    const bingBangMarket = await ethers.getContractAt(
-        'BingBang',
+    const bigBangMarket = await ethers.getContractAt(
+        'BigBang',
         await yieldBox.clonesOf(
-            mediumRiskBingBangMC,
-            (await yieldBox.clonesOfCount(mediumRiskBingBangMC)).sub(1),
+            mediumRiskBigBangMC,
+            (await yieldBox.clonesOfCount(mediumRiskBigBangMC)).sub(1),
         ),
     );
-    await verifyEtherscan(bingBangMarket.address, [], staging);
-    return { bingBangMarket };
+    await verifyEtherscan(bigBangMarket.address, [], staging);
+    return { bigBangMarket };
 }
 
 const verifyEtherscan = async (
@@ -1130,14 +1130,14 @@ export async function register(staging?: boolean) {
     const { mediumRiskMC } = await deployMediumRiskMC(bar, staging);
     log(`Deployed MediumRiskMC ${mediumRiskMC.address}`, staging);
 
-    // ------------------- 6.1 Deploy MediumRiskBingBang master contract -------------------
-    log('Deploying MediumRiskBingBangMC', staging);
-    const { mediumRiskBingBangMC } = await deployMediumRiskBingBangMC(
+    // ------------------- 6.1 Deploy MediumRiskBigBang master contract -------------------
+    log('Deploying MediumRiskBigBangMC', staging);
+    const { mediumRiskBigBangMC } = await deployMediumRiskBigBangMC(
         bar,
         staging,
     );
     log(
-        `Deployed MediumRiskBingBangMC ${mediumRiskBingBangMC.address}`,
+        `Deployed MediumRiskBigBangMC ${mediumRiskBigBangMC.address}`,
         staging,
     );
 
@@ -1233,10 +1233,10 @@ export async function register(staging?: boolean) {
     await bar.setUsdoToken(usd0.address, { gasPrice: gasPrice });
     log(`USD0 was set on Penrose`, staging);
 
-    // ------------------- 12 Register WETH BingBang -------------------
+    // ------------------- 12 Register WETH BigBang -------------------
     log('Deploying WethMinterSingularity', staging);
-    let bingBangRegData = await registerBingBangMarket(
-        mediumRiskBingBangMC.address,
+    let bigBangRegData = await registerBigBangMarket(
+        mediumRiskBigBangMC.address,
         yieldBox,
         bar,
         weth,
@@ -1246,16 +1246,16 @@ export async function register(staging?: boolean) {
         0, 0, 0, 0, //ignored, as this is the main market
         staging,
     );
-    const wethBingBangMarket = bingBangRegData.bingBangMarket;
-    await bar.setBingBangEthMarket(wethBingBangMarket.address);
+    const wethBigBangMarket = bigBangRegData.bigBangMarket;
+    await bar.setBigBangEthMarket(wethBigBangMarket.address);
     log(
-        `WethMinterSingularity deployed ${wethBingBangMarket.address}`,
+        `WethMinterSingularity deployed ${wethBigBangMarket.address}`,
         staging,
     );
-    // ------------------- 12.1 Register BingBang -------------------
-    log('Deploying wbtcBingBangMarket', staging);
-    bingBangRegData = await registerBingBangMarket(
-        mediumRiskBingBangMC.address,
+    // ------------------- 12.1 Register BigBang -------------------
+    log('Deploying wbtcBigBangMarket', staging);
+    bigBangRegData = await registerBigBangMarket(
+        mediumRiskBigBangMC.address,
         yieldBox,
         bar,
         wbtc,
@@ -1268,25 +1268,25 @@ export async function register(staging?: boolean) {
         0,
         staging,
     );
-    const wbtcBingBangMarket = bingBangRegData.bingBangMarket;
+    const wbtcBigBangMarket = bigBangRegData.bigBangMarket;
     log(
-        `wbtcBingBangMarket deployed ${wbtcBingBangMarket.address}`,
+        `wbtcBigBangMarket deployed ${wbtcBigBangMarket.address}`,
         staging,
     );
     // ------------------- 13 Set Minter and Burner for USD0 -------------------
-    await usd0.setMinterStatus(wethBingBangMarket.address, true, {
+    await usd0.setMinterStatus(wethBigBangMarket.address, true, {
         gasPrice: gasPrice,
     });
-    await usd0.setBurnerStatus(wethBingBangMarket.address, true, {
+    await usd0.setBurnerStatus(wethBigBangMarket.address, true, {
         gasPrice: gasPrice,
     });
-    await usd0.setMinterStatus(wbtcBingBangMarket.address, true, {
+    await usd0.setMinterStatus(wbtcBigBangMarket.address, true, {
         gasPrice: gasPrice,
     });
-    await usd0.setBurnerStatus(wbtcBingBangMarket.address, true, {
+    await usd0.setBurnerStatus(wbtcBigBangMarket.address, true, {
         gasPrice: gasPrice,
     });
-    log('Minter and Burner roles set for wethBingBangMarket & wbtcBingBangMarket', staging);
+    log('Minter and Burner roles set for wethBigBangMarket & wbtcBigBangMarket', staging);
 
     // ------------------- 14 Create weth-usd0 pair -------------------
     log('Creating WethUSDO and TapUSDO pairs', staging);
@@ -1405,8 +1405,8 @@ export async function register(staging?: boolean) {
         wbtcUsdcOracle,
         yieldBox,
         bar,
-        wethBingBangMarket,
-        wbtcBingBangMarket,
+        wethBigBangMarket,
+        wbtcBigBangMarket,
         wethUsdcSingularity,
         _sglLiquidationModule,
         _sglLendingBorrowingModule,
@@ -1424,7 +1424,7 @@ export async function register(staging?: boolean) {
         feeCollector,
         usdoToWethBidder,
         mediumRiskMC,
-        mediumRiskBingBangMC,
+        mediumRiskBigBangMC,
         proxyDeployer,
         registerSingularity,
         __uniFactory,
