@@ -96,7 +96,11 @@ const config: HardhatUserConfig & { dodoc?: any; vyper: any } = {
         },
 
         //testnets
-        goerli: supportedChains['goerli'],
+        // goerli: supportedChains['goerli'],
+        goerli: {
+            url: `https://eth-goerli.g.alchemy.com/v2/${process.env.ALCHEMY_KEY}`,
+            accounts: [process.env.PRIVATE_KEY!],
+        },
         bnb_testnet: supportedChains['bnb_testnet'],
         fuji_avalanche: supportedChains['fuji_avalanche'],
         mumbai: supportedChains['mumbai'],
