@@ -4,7 +4,7 @@ import { register } from './test.utils';
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 import { BigBang, USD0, WETH9Mock, yieldbox } from '../typechain';
 import { BigNumber, BigNumberish } from 'ethers';
-import { SingularityHelper } from '../typechain/contracts/singularity/SingularityHelper';
+import { MarketsHelper } from '../typechain/contracts/singularity/MarketsHelper';
 import { Singularity } from '../typechain/contracts/singularity/Singularity';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 
@@ -34,7 +34,7 @@ describe('e2e tests', () => {
             wethBigBangMarket,
             usd0,
             createWethUsd0Singularity,
-            singularityHelper,
+            marketsHelper,
             weth,
             wethAssetId,
             yieldBox,
@@ -90,7 +90,7 @@ describe('e2e tests', () => {
         await addUsd0Module(
             weth,
             wethMintVal,
-            singularityHelper,
+            marketsHelper,
             wethBigBangMarket,
             usdoBorrowVal,
             yieldBox,
@@ -103,15 +103,11 @@ describe('e2e tests', () => {
             deployer,
             weth,
             wethUsdoSingularity,
-            singularityHelper,
+            marketsHelper,
             yieldBox,
             ethers.constants.MaxUint256,
         );
-        await setYieldBoxApprovalPlug(
-            deployer,
-            yieldBox,
-            wethBigBangMarket,
-        );
+        await setYieldBoxApprovalPlug(deployer, yieldBox, wethBigBangMarket);
 
         // add WETH and borrow USD0 from WETH-USD00-Singularity
         await borrowFromSingularityModule(
@@ -119,7 +115,7 @@ describe('e2e tests', () => {
             wethMintVal.div(10),
             usdoBorrowVal.div(10),
             weth,
-            singularityHelper,
+            marketsHelper,
             wethUsdoSingularity,
             yieldBox,
             usdoAssetId,
@@ -136,7 +132,7 @@ describe('e2e tests', () => {
             usd0,
             deployer,
             usdoBorrowVal,
-            singularityHelper,
+            marketsHelper,
             wethUsdoSingularity,
             yieldBox,
         );
@@ -151,21 +147,22 @@ describe('e2e tests', () => {
             await usd0
                 .connect(repayer)
                 .approve(
-                    singularityHelper.address,
+                    marketsHelper.address,
                     repayerUsd0Balance.add(repayerUsd0Balance.div(2)),
                 );
             await wethUsdoSingularity
                 .connect(repayer)
                 .approve(
-                    singularityHelper.address,
+                    marketsHelper.address,
                     repayerUsd0Balance.add(repayerUsd0Balance.div(2)),
                 );
-            await singularityHelper
+            await marketsHelper
                 .connect(repayer)
                 .depositAndRepay(
                     wethUsdoSingularity.address,
                     repayerUsd0Balance.add(repayerUsd0Balance.div(2)),
                     repayerUsd0Balance,
+                    true,
                 );
         }
 
@@ -179,7 +176,7 @@ describe('e2e tests', () => {
             deployer,
             timeTravel,
             multiSwapper,
-            singularityHelper,
+            marketsHelper,
         );
     });
 
@@ -189,7 +186,7 @@ describe('e2e tests', () => {
             wethBigBangMarket,
             usd0,
             createWethUsd0Singularity,
-            singularityHelper,
+            marketsHelper,
             weth,
             wethAssetId,
             yieldBox,
@@ -244,22 +241,18 @@ describe('e2e tests', () => {
             deployer,
             weth,
             wethUsdoSingularity,
-            singularityHelper,
+            marketsHelper,
             yieldBox,
             ethers.constants.MaxUint256,
         );
-        await setYieldBoxApprovalPlug(
-            deployer,
-            yieldBox,
-            wethBigBangMarket,
-        );
+        await setYieldBoxApprovalPlug(deployer, yieldBox, wethBigBangMarket);
 
         await mintWethPlug(borrowers[0], weth, wethMintVal);
         await approvePlug(
             borrowers[0],
             weth,
             wethUsdoSingularity,
-            singularityHelper,
+            marketsHelper,
             yieldBox,
             wethMintVal,
         );
@@ -267,7 +260,7 @@ describe('e2e tests', () => {
         //try to borrow without lender
         await depositAddCollateralAndBorrowPlug(
             borrowers[0],
-            singularityHelper,
+            marketsHelper,
             wethUsdoSingularity,
             yieldBox,
             usdoAssetId,
@@ -283,7 +276,7 @@ describe('e2e tests', () => {
         await addUsd0Module(
             weth,
             wethMintVal,
-            singularityHelper,
+            marketsHelper,
             wethBigBangMarket,
             usdoBorrowVal,
             yieldBox,
@@ -300,13 +293,13 @@ describe('e2e tests', () => {
             borrowers[borrowers.length - 1],
             weth,
             wethUsdoSingularity,
-            singularityHelper,
+            marketsHelper,
             yieldBox,
             wethMintVal.mul(10),
         );
         await depositAddCollateralAndBorrowPlug(
             borrowers[borrowers.length - 1],
-            singularityHelper,
+            marketsHelper,
             wethUsdoSingularity,
             yieldBox,
             usdoAssetId,
@@ -329,13 +322,13 @@ describe('e2e tests', () => {
             repayArr[0],
             usd0,
             wethUsdoSingularity,
-            singularityHelper,
+            marketsHelper,
             yieldBox,
             usdoBorrowVal,
         );
         await depositAndRepayPlug(
             repayArr[0],
-            singularityHelper,
+            marketsHelper,
             wethUsdoSingularity,
             usdoBorrowVal,
             usdoBorrowVal,
@@ -355,7 +348,7 @@ describe('e2e tests', () => {
             deployer,
             usd0,
             wethUsdoSingularity,
-            singularityHelper,
+            marketsHelper,
             yieldBox,
             extraUsd0,
         );
@@ -391,7 +384,7 @@ describe('e2e tests', () => {
             wethBigBangMarket,
             usd0,
             createWethUsd0Singularity,
-            singularityHelper,
+            marketsHelper,
             weth,
             wethAssetId,
             yieldBox,
@@ -442,7 +435,7 @@ describe('e2e tests', () => {
         await addUsd0Module(
             weth,
             wethMintVal,
-            singularityHelper,
+            marketsHelper,
             wethBigBangMarket,
             usdoBorrowVal,
             yieldBox,
@@ -462,7 +455,7 @@ describe('e2e tests', () => {
                 borrower,
                 weth,
                 wethUsdoSingularity,
-                singularityHelper,
+                marketsHelper,
                 yieldBox,
                 borrowerCollateralValue,
             );
@@ -472,7 +465,7 @@ describe('e2e tests', () => {
             );
             await depositAddCollateralAndBorrowPlug(
                 borrower,
-                singularityHelper,
+                marketsHelper,
                 wethUsdoSingularity,
                 yieldBox,
                 usdoAssetId,
@@ -498,7 +491,7 @@ describe('e2e tests', () => {
             borrower,
             usd0,
             wethUsdoSingularity,
-            singularityHelper,
+            marketsHelper,
             yieldBox,
             ethers.constants.MaxUint256,
         );
@@ -506,7 +499,7 @@ describe('e2e tests', () => {
         for (let i = 0; i < 10; i++) {
             await depositAndRepayPlug(
                 borrower,
-                singularityHelper,
+                marketsHelper,
                 wethUsdoSingularity,
                 repayPart.mul(2),
                 repayPart,
@@ -521,7 +514,7 @@ describe('e2e tests', () => {
         await mintUsd0Plug(borrower, usd0, borrowedAfterRepayment.mul(2));
         await depositAndRepayPlug(
             borrower,
-            singularityHelper,
+            marketsHelper,
             wethUsdoSingularity,
             borrowedAfterRepayment.mul(2),
             borrowedAfterRepayment,
@@ -555,37 +548,36 @@ async function mintUsd0Plug(
 async function tokenApprovalPlug(
     signer: SignerWithAddress,
     token: any,
-    singularityHelper: SingularityHelper,
+    marketsHelper: MarketsHelper,
     yieldBox: any,
     val: BigNumberish,
 ) {
-    await token.connect(signer).approve(singularityHelper.address, val);
+    await token.connect(signer).approve(marketsHelper.address, val);
     await token.approve(yieldBox.address, val);
 }
 
-async function bigBangApprovePlug(signer: SignerWithAddress,
+async function bigBangApprovePlug(
+    signer: SignerWithAddress,
     token: any,
     BigBang: any,
-    singularityHelper: SingularityHelper,
+    marketsHelper: MarketsHelper,
     yieldBox: any,
-    val: BigNumberish) {
-    await tokenApprovalPlug(signer, token, singularityHelper, yieldBox, val);
-    await BigBang.connect(signer).updateOperator(
-        singularityHelper.address,
-        true,
-    );
+    val: BigNumberish,
+) {
+    await tokenApprovalPlug(signer, token, marketsHelper, yieldBox, val);
+    await BigBang.connect(signer).updateOperator(marketsHelper.address, true);
 }
 
 async function approvePlug(
     signer: SignerWithAddress,
     token: any,
     Singularity: any,
-    singularityHelper: SingularityHelper,
+    marketsHelper: MarketsHelper,
     yieldBox: any,
     val: BigNumberish,
 ) {
-    await tokenApprovalPlug(signer, token, singularityHelper, yieldBox, val);
-    await Singularity.connect(signer).approve(singularityHelper.address, val);
+    await tokenApprovalPlug(signer, token, marketsHelper, yieldBox, val);
+    await Singularity.connect(signer).approve(marketsHelper.address, val);
 }
 
 async function transferPlug(
@@ -607,7 +599,7 @@ async function setYieldBoxApprovalPlug(
 
 async function depositAddCollateralAndBorrowPlug(
     signer: SignerWithAddress,
-    singularityHelper: SingularityHelper,
+    marketsHelper: MarketsHelper,
     Singularity: any,
     yieldBox: any,
     assetId: BigNumberish,
@@ -622,24 +614,26 @@ async function depositAddCollateralAndBorrowPlug(
 
     if (shouldRevert) {
         await expect(
-            singularityHelper
+            marketsHelper
                 .connect(signer)
                 .depositAddCollateralAndBorrow(
                     Singularity.address,
                     collateralValue,
                     borrowValue,
+                    true,
                     withdraw,
                     withdrawData,
                 ),
         ).to.be.revertedWith(revertMessage!);
         return { share, amount };
     }
-    await singularityHelper
+    await marketsHelper
         .connect(signer)
         .depositAddCollateralAndBorrow(
             Singularity.address,
             collateralValue,
             borrowValue,
+            true,
             withdraw,
             withdrawData,
         );
@@ -673,7 +667,7 @@ async function addAssetToSingularityPlug(
 
 async function depositAndRepayPlug(
     signer: SignerWithAddress,
-    singularityHelper: SingularityHelper,
+    marketsHelper: MarketsHelper,
     Singularity: Singularity,
     depositVal: BigNumberish,
     repayVal: BigNumberish,
@@ -682,9 +676,9 @@ async function depositAndRepayPlug(
 ) {
     if (shouldRevert) {
         await expect(
-            singularityHelper
+            marketsHelper
                 .connect(signer)
-                .depositAndRepay(Singularity.address, depositVal, repayVal),
+                .depositAndRepay(Singularity.address, depositVal, repayVal,true),
         ).to.be.revertedWith(revertMessage!);
         return;
     }
@@ -692,9 +686,9 @@ async function depositAndRepayPlug(
     const previousBorrowAmount = await Singularity.userBorrowPart(
         signer.address,
     );
-    await singularityHelper
+    await marketsHelper
         .connect(signer)
-        .depositAndRepay(Singularity.address, depositVal, repayVal);
+        .depositAndRepay(Singularity.address, depositVal, repayVal, true);
     const finalBorrowAmount = await Singularity.userBorrowPart(signer.address);
 
     expect(finalBorrowAmount.lt(previousBorrowAmount)).to.be.true;
@@ -817,7 +811,7 @@ async function liquidatePlug(
 async function addUsd0Module(
     weth: WETH9Mock,
     wethMintVal: BigNumberish,
-    singularityHelper: SingularityHelper,
+    marketsHelper: MarketsHelper,
     wethBigBangMarket: BigBang,
     usdoBorrowVal: BigNumberish,
     yieldBox: any,
@@ -834,14 +828,14 @@ async function addUsd0Module(
             lender,
             weth,
             wethBigBangMarket,
-            singularityHelper,
+            marketsHelper,
             yieldBox,
             wethMintVal,
         );
 
         const { share, amount } = await depositAddCollateralAndBorrowPlug(
             lender,
-            singularityHelper,
+            marketsHelper,
             wethBigBangMarket,
             yieldBox,
             usdoAssetId,
@@ -866,7 +860,7 @@ async function borrowFromSingularityModule(
     wethMintVal: BigNumber,
     usdoBorrowVal: BigNumber,
     weth: WETH9Mock,
-    singularityHelper: SingularityHelper,
+    marketsHelper: MarketsHelper,
     wethUsdoSingularity: Singularity,
     yieldBox: any,
     usdoAssetId: BigNumberish,
@@ -881,14 +875,14 @@ async function borrowFromSingularityModule(
             borrower,
             weth,
             wethUsdoSingularity,
-            singularityHelper,
+            marketsHelper,
             yieldBox,
             wethMintVal,
         );
 
         await depositAddCollateralAndBorrowPlug(
             borrower,
-            singularityHelper,
+            marketsHelper,
             wethUsdoSingularity,
             yieldBox,
             usdoAssetId,
@@ -908,7 +902,7 @@ async function repayModule(
     usd0: USD0,
     deployer: SignerWithAddress,
     usdoBorrowVal: BigNumber,
-    singularityHelper: SingularityHelper,
+    marketsHelper: MarketsHelper,
     wethUsdoSingularity: Singularity,
     yieldBox: any,
 ) {
@@ -926,14 +920,14 @@ async function repayModule(
             repayer,
             usd0,
             wethUsdoSingularity,
-            singularityHelper,
+            marketsHelper,
             yieldBox,
             repayerUsd0Balance.add(transferVal),
         );
 
         await depositAndRepayPlug(
             repayer,
-            singularityHelper,
+            marketsHelper,
             wethUsdoSingularity,
             repayerUsd0Balance.add(transferVal),
             repayerUsd0Balance,
@@ -950,7 +944,7 @@ async function liquidateModule(
     deployer: SignerWithAddress,
     timeTravel: any,
     multiSwapper: any,
-    singularityHelper: any,
+    marketsHelper: any,
 ) {
     const liquidationQueue = await ethers.getContractAt(
         'LiquidationQueue',
@@ -965,7 +959,7 @@ async function liquidateModule(
         deployer,
         usd0,
         wethUsdoSingularity,
-        singularityHelper,
+        marketsHelper,
         yieldBox,
         extraUsd0,
     );

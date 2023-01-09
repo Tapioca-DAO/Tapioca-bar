@@ -5,7 +5,7 @@ import './SGLCommon.sol';
 import './SGLLiquidation.sol';
 import './SGLLendingBorrowing.sol';
 
-import '../singularity/interfaces/ISendFrom.sol';
+import '../interfaces/ISendFrom.sol';
 
 // solhint-disable max-line-length
 

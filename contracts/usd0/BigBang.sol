@@ -6,9 +6,11 @@ import '@boringcrypto/boring-solidity/contracts/ERC20.sol';
 import '@boringcrypto/boring-solidity/contracts/libraries/BoringRebase.sol';
 import '@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol';
 
-import '../IPenrose.sol';
 import '../swappers/ISwapper.sol';
-import '../singularity/interfaces/IOracle.sol';
+import './interfaces/IBigBang.sol';
+import '../interfaces/IOracle.sol';
+import '../interfaces/IPenrose.sol';
+import '../interfaces/ISendFrom.sol';
 import '../../yieldbox/contracts/YieldBox.sol';
 
 // solhint-disable max-line-length
@@ -35,11 +37,7 @@ contract BigBang is BoringOwnable {
     // ************ //
     mapping(address => mapping(address => bool)) public operators;
 
-    struct AccrueInfo {
-        uint64 debtRate;
-        uint64 lastAccrued;
-    }
-    AccrueInfo public accrueInfo;
+    IBigBang.AccrueInfo public accrueInfo;
 
     IPenrose public penrose;
     YieldBox public yieldBox;
@@ -294,7 +292,7 @@ contract BigBang is BoringOwnable {
 
     /// @notice Accrues the interest on the borrowed tokens and handles the accumulation of fees.
     function accrue() public {
-        AccrueInfo memory _accrueInfo = accrueInfo;
+        IBigBang.AccrueInfo memory _accrueInfo = accrueInfo;
         // Number of seconds since accrue was called
         uint256 elapsedTime = block.timestamp - _accrueInfo.lastAccrued;
         if (elapsedTime == 0) {
@@ -467,6 +465,41 @@ contract BigBang is BoringOwnable {
             swapper,
             _exchangeRate,
             collateralToAssetSwapData
+        );
+    }
+
+    /// @notice Withdraw to another layer
+    function withdrawTo(
+        uint16 dstChainId,
+        bytes memory receiver,
+        uint256 amount,
+        bytes calldata adapterParams,
+        address payable refundAddress
+    ) public payable {
+        try
+            IERC165(address(asset)).supportsInterface(
+                type(ISendFrom).interfaceId
+            )
+        {} catch {
+            return;
+        }
+
+        uint256 available = yieldBox.toAmount(
+            assetId,
+            yieldBox.balanceOf(msg.sender, assetId),
+            false
+        );
+        require(available >= amount, 'BigBang: not available');
+
+        yieldBox.withdraw(assetId, msg.sender, address(this), amount, 0);
+        ISendFrom(address(asset)).sendFrom{value: msg.value}(
+            address(this),
+            dstChainId,
+            receiver,
+            amount,
+            refundAddress,
+            msg.sender,
+            adapterParams
         );
     }
 

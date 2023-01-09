@@ -36,7 +36,7 @@ export const exportSDK__task = async (
             'Singularity',
             'ProxyDeployer',
             'SGLProxy',
-            'SingularityHelper',
+            'MarketsHelper',
             'MultiSwapper',
             'LiquidationQueue',
         ],

@@ -5,7 +5,7 @@ import '@boringcrypto/boring-solidity/contracts/BoringOwnable.sol';
 
 import '../yieldbox/contracts/YieldBox.sol';
 import './singularity/interfaces/ISingularity.sol';
-import './IPenrose.sol';
+import './interfaces/IPenrose.sol';
 
 // TODO: Permissionless market deployment
 ///     + asset registration? (toggle to renounce ownership so users can call)

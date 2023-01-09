@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 import '../ILiquidationQueue.sol';
-import '../../IPenrose.sol';
+import '../../interfaces/IPenrose.sol';
 
 contract LQSingularityMock {
     IPenrose immutable penrose;

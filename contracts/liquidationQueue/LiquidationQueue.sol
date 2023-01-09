@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 import '@boringcrypto/boring-solidity/contracts/BoringOwnable.sol';
 import '@boringcrypto/boring-solidity/contracts/interfaces/IERC20.sol';
 
-import '../IPenrose.sol';
+import '../interfaces/IPenrose.sol';
 import './ILiquidationQueue.sol';
 import '../singularity/interfaces/ISingularity.sol';
 import '../../yieldbox/contracts/interfaces/IStrategy.sol';

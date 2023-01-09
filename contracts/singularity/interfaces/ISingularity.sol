@@ -2,10 +2,11 @@
 
 pragma solidity ^0.8.0;
 
-import './IOracle.sol';
-import '../../IFee.sol';
+import '../../interfaces/IOracle.sol';
+import '../../interfaces/IFee.sol';
+import '../../interfaces/IMarket.sol';
 
-interface ISingularity {
+interface ISingularity is IMarket, IFee {
     struct AccrueInfo {
         uint64 interestPerSecond;
         uint64 lastAccrued;
@@ -102,36 +103,16 @@ interface ISingularity {
         uint256 share
     ) external returns (uint256 fraction);
 
-    function addCollateral(
-        address from,
-        address to,
-        bool skim,
-        uint256 share
-    ) external;
-
+   
     function allowance(address, address) external view returns (uint256);
 
     function approve(address spender, uint256 amount) external returns (bool);
-
-    function asset() external view returns (address);
-
-    function assetId() external view returns (uint256);
 
     function balanceOf(address) external view returns (uint256);
 
     function penrose() external view returns (address);
 
-    function borrow(
-        address from,
-        address to,
-        uint256 amount
-    ) external returns (uint256 part, uint256 share);
-
     function claimOwnership() external;
-
-    function collateral() external view returns (address);
-
-    function collateralId() external view returns (uint256);
 
     /// @notice Allows batched call to Singularity.
     /// @param calls An array encoded call data.
@@ -171,10 +152,6 @@ interface ISingularity {
 
     function nonces(address) external view returns (uint256);
 
-    function oracle() external view returns (IOracle);
-
-    function oracleData() external view returns (bytes memory);
-
     function owner() external view returns (address);
 
     function pendingOwner() external view returns (address);
@@ -195,19 +172,6 @@ interface ISingularity {
         uint256 fraction
     ) external returns (uint256 share);
 
-    function removeCollateral(
-        address from,
-        address to,
-        uint256 share
-    ) external;
-
-    function repay(
-        address from,
-        address to,
-        bool skim,
-        uint256 part
-    ) external returns (uint256 amount);
-
     function setFeeTo(address newFeeTo) external;
 
     function setSwapper(ISwapper swapper, bool enable) external;
@@ -218,28 +182,17 @@ interface ISingularity {
 
     function totalAsset() external view returns (uint128 elastic, uint128 base);
 
-    function totalBorrow()
-        external
-        view
-        returns (uint128 elastic, uint128 base);
-
     function callerFee() external view returns (uint256);
 
     function protocolFee() external view returns (uint256);
 
     function borrowOpeningFee() external view returns (uint256);
 
-    function flashloanFee() external view returns (uint256);
-
-    function liquidationMultiplier() external view returns (uint256);
-
     function orderBookLiquidationMultiplier() external view returns (uint256);
 
     function closedCollateralizationRate() external view returns (uint256);
 
     function lqCollateralizationRate() external view returns (uint256);
-
-    function totalCollateralShare() external view returns (uint256);
 
     function totalSupply() external view returns (uint256);
 
@@ -259,24 +212,7 @@ interface ISingularity {
 
     function updateExchangeRate() external returns (bool updated, uint256 rate);
 
-    function userBorrowPart(address) external view returns (uint256);
-
-    function userCollateralShare(address) external view returns (uint256);
-
     function withdrawFees() external;
 
-    function depositFeesToYieldBox(ISwapper, IPenrose.SwapData calldata)
-        external;
-
-    function yieldBox() external view returns (address payable);
-
     function liquidationQueue() external view returns (address payable);
-
-    function withdrawTo(
-        uint16 dstChainId,
-        bytes memory receiver,
-        uint256 amount,
-        bytes calldata adapterParams,
-        address payable refundAddress
-    ) external payable;
 }

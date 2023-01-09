@@ -6,12 +6,12 @@ import '@boringcrypto/boring-solidity/contracts/BoringOwnable.sol';
 import '@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol';
 import '@boringcrypto/boring-solidity/contracts/libraries/BoringRebase.sol';
 
-import '../../yieldbox/contracts/YieldBox.sol';
-import '../swappers/ISwapper.sol';
-import '../singularity/interfaces/IOracle.sol';
-import '../liquidationQueue/ILiquidationQueue.sol';
-import '../IPenrose.sol';
 import './interfaces/ISingularity.sol';
+import '../swappers/ISwapper.sol';
+import '../liquidationQueue/ILiquidationQueue.sol';
+import '../interfaces/IPenrose.sol';
+import '../interfaces/IOracle.sol';
+import '../../yieldbox/contracts/YieldBox.sol';
 
 // solhint-disable max-line-length
 

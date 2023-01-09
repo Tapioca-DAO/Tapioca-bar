@@ -21,7 +21,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         wethUsdcSingularity,
         usd0,
         wethBigBangMarket,
-        singularityHelper,
+        marketsHelper,
         usdoToWethBidder,
         verifyEtherscanQueue,
     } = await register(true);
@@ -40,7 +40,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         wethUsdcSingularity,
         usd0,
         wethBigBangMarket,
-        singularityHelper,
+        marketsHelper,
         usdoToWethBidder,
     };
 

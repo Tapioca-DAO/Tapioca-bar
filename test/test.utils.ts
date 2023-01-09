@@ -1304,14 +1304,14 @@ export async function register(staging?: boolean) {
         staging,
     );
 
-    // ------------------- 15 Create SingularityHelper -------------------
-    log('Deploying SingularityHelper', staging);
-    const singularityHelper = await (
-        await ethers.getContractFactory('SingularityHelper')
+    // ------------------- 15 Create MarketsHelper -------------------
+    log('Deploying MarketsHelper', staging);
+    const marketsHelper = await (
+        await ethers.getContractFactory('MarketsHelper')
     ).deploy({ gasPrice: gasPrice });
-    await singularityHelper.deployed();
+    await marketsHelper.deployed();
     log(
-        `Deployed SingularityHelper ${singularityHelper.address} with no args`,
+        `Deployed MarketsHelper ${marketsHelper.address} with no args`,
         staging,
     );
 
@@ -1413,7 +1413,7 @@ export async function register(staging?: boolean) {
         wbtcUsdcSingularity,
         _sglWbtcUsdcLendingBorrowingModule,
         _sglWbtcUsdcLiquidationModule,
-        singularityHelper,
+        marketsHelper,
         eoa1,
         multiSwapper,
         singularityFeeTo,
