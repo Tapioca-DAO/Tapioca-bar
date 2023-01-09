@@ -1,16 +1,16 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import _ from 'lodash';
-import {  getDeployment, getBingBangContract } from './utils';
+import {  getDeployment, getBigBangContract } from './utils';
 
 //Execution example:
-//      npx hardhat getParticipantBingBangInfo --bingBang "<address>" --participant "<address>"
+//      npx hardhat getParticipantBigBangInfo --bigBang "<address>" --participant "<address>"
 export const getDetails = async (
     taskArgs: any,
     hre: HardhatRuntimeEnvironment,
 ) => {
     const userAddress = taskArgs['participant'];
-    const { bingBangContract, bingBangAddress } =
-        await getBingBangContract(taskArgs, hre);
+    const { bigBangContract, bigBangAddress } =
+        await getBigBangContract(taskArgs, hre);
 
     const mixologistHelperContract = await getDeployment(
         hre,
@@ -18,17 +18,17 @@ export const getDetails = async (
     );
     const yieldBoxContract = await getDeployment(hre, 'YieldBox');
 
-    const assetId = await bingBangContract.assetId();
-    const collateralId = await bingBangContract.collateralId();
+    const assetId = await bigBangContract.assetId();
+    const collateralId = await bigBangContract.collateralId();
 
-    const borrowAmount = await bingBangContract.userBorrowPart(userAddress);
+    const borrowAmount = await bigBangContract.userBorrowPart(userAddress);
     const borrowShare = await yieldBoxContract.toShare(
         assetId,
         borrowAmount,
         false,
     );
 
-    const collateralShare = await bingBangContract.userCollateralShare(
+    const collateralShare = await bigBangContract.userCollateralShare(
         userAddress,
     );
     const collateralAmount = await yieldBoxContract.toAmount(
@@ -36,16 +36,16 @@ export const getDetails = async (
         collateralShare,
         false,
     );
-    const exchangeRate = await bingBangContract.exchangeRate();
+    const exchangeRate = await bigBangContract.exchangeRate();
     const amountToSolvency =
-        await bingBangContract.computeAssetAmountToSolvency(
+        await bigBangContract.computeAssetAmountToSolvency(
             userAddress,
             exchangeRate,
         );
 
     const collateralUsedShares =
         await mixologistHelperContract.getCollateralSharesForBorrowPart(
-            bingBangContract,
+            bigBangContract,
             borrowAmount,
         );
     const collateralUsedAmount = await yieldBoxContract.toAmount(
@@ -66,7 +66,7 @@ export const getDetails = async (
     };
 };
 
-export const getParticipantBingBangInfo__task = async (
+export const getParticipantBigBangInfo__task = async (
     args: any,
     hre: HardhatRuntimeEnvironment,
 ) => {

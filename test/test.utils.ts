@@ -558,19 +558,19 @@ async function deployMediumRiskMC(bar: Penrose, staging?: boolean) {
     return { mediumRiskMC };
 }
 
-async function deployMediumRiskBingBangMC(bar: Penrose, staging?: boolean) {
-    const mediumRiskBingBangMC = await (
-        await ethers.getContractFactory('BingBang')
+async function deployMediumRiskBigBangMC(bar: Penrose, staging?: boolean) {
+    const mediumRiskBigBangMC = await (
+        await ethers.getContractFactory('BigBang')
     ).deploy({ gasPrice: gasPrice });
-    await mediumRiskBingBangMC.deployed();
+    await mediumRiskBigBangMC.deployed();
     log(
-        `Deployed MediumRiskBingBangMC ${mediumRiskBingBangMC.address} with no arguments`,
+        `Deployed MediumRiskBigBangMC ${mediumRiskBigBangMC.address} with no arguments`,
         staging,
     );
 
     await (
-        await bar.registerBingBangMasterContract(
-            mediumRiskBingBangMC.address,
+        await bar.registerBigBangMasterContract(
+            mediumRiskBigBangMC.address,
             1,
             {
                 gasPrice: gasPrice,
@@ -579,9 +579,9 @@ async function deployMediumRiskBingBangMC(bar: Penrose, staging?: boolean) {
     ).wait();
     log(`MediumRiskMC was set on Penrose`, staging);
 
-    await verifyEtherscan(mediumRiskBingBangMC.address, [], staging);
+    await verifyEtherscan(mediumRiskBigBangMC.address, [], staging);
 
-    return { mediumRiskBingBangMC };
+    return { mediumRiskBigBangMC };
 }
 
 async function registerSingularity(
@@ -935,43 +935,48 @@ async function registerLiquidationQueue(
     return { liquidationQueue, LQ_META };
 }
 
-async function registerBingBangMarket(
-    mediumRiskBingBangMC: string,
+async function registerBigBangMarket(
+    mediumRiskBigBangMC: string,
     yieldBox: YieldBox,
     bar: Penrose,
-    wethCollateral: WETH9Mock,
-    wethCollateralId: BigNumberish,
+    collateral: WETH9Mock | ERC20Mock,
+    collateralId: BigNumberish,
     oracle: OracleMock,
     exchangeRatePrecision?: BigNumberish,
+    debtRateAgainstEth?: BigNumberish,
+    debtRateMin?: BigNumberish,
+    debtRateMax?: BigNumberish,
+    debtStartPoint?: BigNumberish,
     staging?: boolean,
 ) {
     const data = new ethers.utils.AbiCoder().encode(
-        ['address', 'address', 'uint256', 'address', 'uint256'],
+        ['address', 'address', 'uint256', 'address', 'uint256', 'uint256', 'uint256', 'uint256', 'uint256'],
         [
             bar.address,
-            wethCollateral.address,
-            wethCollateralId,
+            collateral.address,
+            collateralId,
             oracle.address,
             exchangeRatePrecision,
+            debtRateAgainstEth, debtRateMin, debtRateMax, debtStartPoint
         ],
     );
 
     await (
-        await bar.registerBingBang(mediumRiskBingBangMC, data, true, {
+        await bar.registerBigBang(mediumRiskBigBangMC, data, true, {
             gasPrice: gasPrice,
         })
     ).wait();
-    log(`WethBingBang registered on Penrose`, staging);
+    log(`BigBang market registered on Penrose`, staging);
 
-    const wethMinterSingularity = await ethers.getContractAt(
-        'BingBang',
+    const bigBangMarket = await ethers.getContractAt(
+        'BigBang',
         await yieldBox.clonesOf(
-            mediumRiskBingBangMC,
-            (await yieldBox.clonesOfCount(mediumRiskBingBangMC)).sub(1),
+            mediumRiskBigBangMC,
+            (await yieldBox.clonesOfCount(mediumRiskBigBangMC)).sub(1),
         ),
     );
-    await verifyEtherscan(wethMinterSingularity.address, [], staging);
-    return { wethMinterSingularity };
+    await verifyEtherscan(bigBangMarket.address, [], staging);
+    return { bigBangMarket };
 }
 
 const verifyEtherscan = async (
@@ -1125,14 +1130,14 @@ export async function register(staging?: boolean) {
     const { mediumRiskMC } = await deployMediumRiskMC(bar, staging);
     log(`Deployed MediumRiskMC ${mediumRiskMC.address}`, staging);
 
-    // ------------------- 6.1 Deploy MediumRiskBingBang master contract -------------------
-    log('Deploying MediumRiskBingBangMC', staging);
-    const { mediumRiskBingBangMC } = await deployMediumRiskBingBangMC(
+    // ------------------- 6.1 Deploy MediumRiskBigBang master contract -------------------
+    log('Deploying MediumRiskBigBangMC', staging);
+    const { mediumRiskBigBangMC } = await deployMediumRiskBigBangMC(
         bar,
         staging,
     );
     log(
-        `Deployed MediumRiskBingBangMC ${mediumRiskBingBangMC.address}`,
+        `Deployed MediumRiskBigBangMC ${mediumRiskBigBangMC.address}`,
         staging,
     );
 
@@ -1228,33 +1233,60 @@ export async function register(staging?: boolean) {
     await bar.setUsdoToken(usd0.address, { gasPrice: gasPrice });
     log(`USD0 was set on Penrose`, staging);
 
-    // ------------------- 12 Register BingBang -------------------
+    // ------------------- 12 Register WETH BigBang -------------------
     log('Deploying WethMinterSingularity', staging);
-    const minterSingularityCollateralSwapPath = [weth.address, usd0.address];
-    const minterSingularityTapSwapPath = [usd0.address, tap.address];
-    const { wethMinterSingularity } = await registerBingBangMarket(
-        mediumRiskBingBangMC.address,
+    let bigBangRegData = await registerBigBangMarket(
+        mediumRiskBigBangMC.address,
         yieldBox,
         bar,
         weth,
         wethAssetId,
         usd0WethOracle,
         ethers.utils.parseEther('1'),
+        0, 0, 0, 0, //ignored, as this is the main market
         staging,
     );
+    const wethBigBangMarket = bigBangRegData.bigBangMarket;
+    await bar.setBigBangEthMarket(wethBigBangMarket.address);
     log(
-        `WethMinterSingularity deployed ${wethMinterSingularity.address}`,
+        `WethMinterSingularity deployed ${wethBigBangMarket.address}`,
         staging,
     );
-
+    // ------------------- 12.1 Register BigBang -------------------
+    log('Deploying wbtcBigBangMarket', staging);
+    bigBangRegData = await registerBigBangMarket(
+        mediumRiskBigBangMC.address,
+        yieldBox,
+        bar,
+        wbtc,
+        wbtcAssetId,
+        usd0WethOracle,
+        ethers.utils.parseEther('1'),
+        ethers.utils.parseEther("0.5"),
+        ethers.utils.parseEther("0.005"),
+        ethers.utils.parseEther("0.035"), 
+        0,
+        staging,
+    );
+    const wbtcBigBangMarket = bigBangRegData.bigBangMarket;
+    log(
+        `wbtcBigBangMarket deployed ${wbtcBigBangMarket.address}`,
+        staging,
+    );
     // ------------------- 13 Set Minter and Burner for USD0 -------------------
-    await usd0.setMinterStatus(wethMinterSingularity.address, true, {
+    await usd0.setMinterStatus(wethBigBangMarket.address, true, {
         gasPrice: gasPrice,
     });
-    await usd0.setBurnerStatus(wethMinterSingularity.address, true, {
+    await usd0.setBurnerStatus(wethBigBangMarket.address, true, {
         gasPrice: gasPrice,
     });
-    log('Minter and Burner roles set for WethMinterSingularity', staging);
+    await usd0.setMinterStatus(wbtcBigBangMarket.address, true, {
+        gasPrice: gasPrice,
+    });
+    await usd0.setBurnerStatus(wbtcBigBangMarket.address, true, {
+        gasPrice: gasPrice,
+    });
+    log('Minter and Burner roles set for wethBigBangMarket & wbtcBigBangMarket', staging);
 
     // ------------------- 14 Create weth-usd0 pair -------------------
     log('Creating WethUSDO and TapUSDO pairs', staging);
@@ -1368,14 +1400,13 @@ export async function register(staging?: boolean) {
         erc20Factory,
         tap,
         collateralWbtcSwapPath,
-        minterSingularityTapSwapPath,
-        minterSingularityCollateralSwapPath,
         wethUsdcOracle,
         usd0WethOracle,
         wbtcUsdcOracle,
         yieldBox,
         bar,
-        wethMinterSingularity,
+        wethBigBangMarket,
+        wbtcBigBangMarket,
         wethUsdcSingularity,
         _sglLiquidationModule,
         _sglLendingBorrowingModule,
@@ -1393,7 +1424,7 @@ export async function register(staging?: boolean) {
         feeCollector,
         usdoToWethBidder,
         mediumRiskMC,
-        mediumRiskBingBangMC,
+        mediumRiskBigBangMC,
         proxyDeployer,
         registerSingularity,
         __uniFactory,
