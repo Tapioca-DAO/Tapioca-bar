@@ -312,7 +312,7 @@ describe('SGLProxy', () => {
             wethAssetId,
             wethUsdcOracle,
             eoa1,
-            singularityHelper,
+            marketsHelper,
             deployCurveStableToUsdoBidder,
             __wethUsdcPrice,
         } = await loadFixture(register);
@@ -429,10 +429,10 @@ describe('SGLProxy', () => {
 
         await weth
             .connect(eoa1)
-            .approve(singularityHelper.address, ethers.constants.MaxUint256);
+            .approve(marketsHelper.address, ethers.constants.MaxUint256);
         await singularityDst
             .connect(eoa1)
-            .approve(singularityHelper.address, ethers.constants.MaxUint256);
+            .approve(marketsHelper.address, ethers.constants.MaxUint256);
 
         const randomReceiver = new ethers.Wallet(
             ethers.Wallet.createRandom().privateKey,
@@ -451,12 +451,13 @@ describe('SGLProxy', () => {
             ],
         );
 
-        await singularityHelper
+        await marketsHelper
             .connect(eoa1)
             .depositAddCollateralAndBorrow(
                 singularityDst.address,
                 wethDepositAmount,
                 usdoBorrowVal.div(2),
+                true,
                 true,
                 ethers.utils.toUtf8Bytes(''),
                 {
@@ -475,12 +476,13 @@ describe('SGLProxy', () => {
         let usdoBalance = await usd0Dst.balanceOf(eoa1.address);
         expect(usdoBalance.gt(0)).to.be.true;
 
-        await singularityHelper
+        await marketsHelper
             .connect(eoa1)
             .depositAddCollateralAndBorrow(
                 singularityDst.address,
                 wethDepositAmount,
                 usdoBorrowVal.div(2),
+                true,
                 true,
                 withdrawData,
                 {
@@ -1136,7 +1138,7 @@ describe('SGLProxy', () => {
             usdcAssetId,
             eoa1,
             multiSwapper,
-            singularityHelper,
+            marketsHelper,
             __wethUsdcPrice,
         } = await loadFixture(register);
 
@@ -1329,7 +1331,7 @@ describe('SGLProxy', () => {
             false,
         );
         const feesAmountInAsset =
-            await singularityHelper.getAmountForAssetFraction(
+            await marketsHelper.getAmountForAssetFraction(
                 singularityDst.address,
 
                 (

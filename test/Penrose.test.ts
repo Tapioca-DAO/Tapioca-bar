@@ -110,7 +110,7 @@ describe('Penrose test', () => {
         ).to.be.revertedWith('Penrose: paused');
 
         await expect(
-            bar.withdrawAllBingBangFees(
+            bar.withdrawAllBigBangFees(
                 [ethers.constants.AddressZero],
                 [ethers.constants.AddressZero],
                 [

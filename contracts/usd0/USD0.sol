@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-import '../../tapioca-sdk/src/contracts/interfaces/ILayerZeroEndpoint.sol';
-import '../../tapioca-sdk/src/contracts/token/oft/OFT.sol';
-import '../../tapioca-sdk/src/contracts/token/oft/extension/PausableOFT.sol';
+import 'tapioca-sdk/dist/contracts/interfaces/ILayerZeroEndpoint.sol';
+import 'tapioca-sdk/dist/contracts/token/oft/OFT.sol';
 import './interfaces/IERC3156FlashLender.sol';
 
 /*

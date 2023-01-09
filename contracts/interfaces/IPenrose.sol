@@ -2,8 +2,8 @@
 
 pragma solidity ^0.8.0;
 
-import './usd0/IUSD0.sol';
-import './swappers/ISwapper.sol';
+import '../usd0/IUSD0.sol';
+import '../swappers/ISwapper.sol';
 
 interface IPenrose {
     /// @notice swap extra data
@@ -23,6 +23,10 @@ interface IPenrose {
         address location;
         ContractType risk;
     }
+
+    function bigBangEthMarket() external view returns (address);
+
+    function bigBangEthDebtRate() external view returns (uint256);
 
     function swappers(ISwapper swapper) external view returns (bool);
 

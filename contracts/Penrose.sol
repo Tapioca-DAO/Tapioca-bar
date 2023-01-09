@@ -5,9 +5,7 @@ import '@boringcrypto/boring-solidity/contracts/BoringOwnable.sol';
 
 import '../yieldbox/contracts/YieldBox.sol';
 import './singularity/interfaces/ISingularity.sol';
-import './IPenrose.sol';
-
-import 'hardhat/console.sol';
+import './interfaces/IPenrose.sol';
 
 // TODO: Permissionless market deployment
 ///     + asset registration? (toggle to renounce ownership so users can call)
@@ -44,17 +42,20 @@ contract Penrose is BoringOwnable {
 
     /// @notice master contracts registered
     IPenrose.MasterContract[] public singularityMasterContracts;
-    IPenrose.MasterContract[] public bingbangMasterContracts;
+    IPenrose.MasterContract[] public bigbangMasterContracts;
 
     // Used to check if a master contract is registered
     mapping(address => bool) isSingularityMasterContractRegistered;
-    mapping(address => bool) isBingBangMasterContractRegistered;
+    mapping(address => bool) isBigBangMasterContractRegistered;
 
     /// @notice protocol fees
     address public feeTo;
 
     /// @notice whitelisted swappers
     mapping(ISwapper => bool) public swappers;
+
+    address public bigBangEthMarket;
+    uint256 public bigBangEthDebtRate;
 
     /// @notice creates a Penrose contract
     /// @param _yieldBox YieldBox contract address
@@ -84,6 +85,8 @@ contract Penrose is BoringOwnable {
                 0
             )
         );
+
+        bigBangEthDebtRate = 5e15;
     }
 
     // **************//
@@ -94,18 +97,20 @@ contract Penrose is BoringOwnable {
         address location,
         IPenrose.ContractType risk
     );
-    event RegisterBingBangMasterContract(
+    event RegisterBigBangMasterContract(
         address location,
         IPenrose.ContractType risk
     );
     event RegisterSingularity(address location, address masterContract);
-    event RegisterBingBang(address location, address masterContract);
+    event RegisterBigBang(address location, address masterContract);
     event FeeToUpdate(address newFeeTo);
     event FeeVeTapUpdate(address newFeeVeTap);
     event SwapperUpdate(address swapper, bool isRegistered);
     event UsdoTokenUpdated(address indexed usdoToken, uint256 assetId);
     event ConservatorUpdated(address indexed old, address indexed _new);
     event PausedUpdated(bool oldState, bool newState);
+    event BigBangEthMarketSet(address indexed _newAddress);
+    event BigBangEthMarketDebtRate(uint256 _rate);
 
     // ******************//
     // *** MODIFIERS *** //
@@ -118,9 +123,9 @@ contract Penrose is BoringOwnable {
         _;
     }
 
-    modifier registeredBingBangMasterContract(address mc) {
+    modifier registeredBigBangMasterContract(address mc) {
         require(
-            isBingBangMasterContractRegistered[mc] == true,
+            isBigBangMasterContractRegistered[mc] == true,
             'Penrose: MC not registered'
         );
         _;
@@ -145,10 +150,10 @@ contract Penrose is BoringOwnable {
         markets = _getMasterContractLength(singularityMasterContracts);
     }
 
-    /// @notice Get all the BingBang contract addresses
+    /// @notice Get all the BigBang contract addresses
     /// @return markets list of available markets
-    function bingBangMarkets() public view returns (address[] memory markets) {
-        markets = _getMasterContractLength(bingbangMasterContracts);
+    function bigBangMarkets() public view returns (address[] memory markets) {
+        markets = _getMasterContractLength(bigbangMasterContracts);
     }
 
     /// @notice Get the length of `singularityMasterContracts`
@@ -156,9 +161,9 @@ contract Penrose is BoringOwnable {
         return singularityMasterContracts.length;
     }
 
-    /// @notice Get the length of `bingbangMasterContracts`
-    function bingBangMasterContractLength() public view returns (uint256) {
-        return bingbangMasterContracts.length;
+    /// @notice Get the length of `bigbangMasterContracts`
+    function bigBangMasterContractLength() public view returns (uint256) {
+        return bigbangMasterContracts.length;
     }
 
     // ************************ //
@@ -190,7 +195,7 @@ contract Penrose is BoringOwnable {
     /// @dev `swappers_` can have one element that'll be used for all clones. Or one swapper per MasterContract.
     /// @dev Fees are withdrawn in TAP and sent to the FeeDistributor contract
     /// @param swappers_ One or more swappers to convert the asset to TAP.
-    function withdrawAllBingBangFees(
+    function withdrawAllBigBangFees(
         IFee[] calldata markets_,
         ISwapper[] calldata swappers_,
         IPenrose.SwapData[] calldata swapData_
@@ -209,6 +214,20 @@ contract Penrose is BoringOwnable {
     // *********************** //
     // *** OWNER FUNCTIONS *** //
     // *********************** //
+    /// @notice sets the main BigBang market debt rate
+    /// @param _rate the new rate 
+    function setBigBangEthMarketDebtRate(uint256 _rate) external onlyOwner {
+        bigBangEthDebtRate = _rate;
+        emit BigBangEthMarketDebtRate(_rate);
+    }
+
+    /// @notice sets the main BigBang market
+    /// @dev needed for the variable debt computation
+    function setBigBangEthMarket(address _market) external onlyOwner {
+        bigBangEthMarket = _market;
+        emit BigBangEthMarketSet(_market);
+    }
+
     /// @notice updates the pause state of the contract
     /// @param val the new value
     function updatePause(bool val) external {
@@ -264,25 +283,25 @@ contract Penrose is BoringOwnable {
         emit RegisterSingularityMasterContract(mcAddress, contractType_);
     }
 
-    /// @notice Register a BingBang master contract
+    /// @notice Register a BigBang master contract
     /// @param mcAddress The address of the contract
     /// @param contractType_ The risk type of the contract
-    function registerBingBangMasterContract(
+    function registerBigBangMasterContract(
         address mcAddress,
         IPenrose.ContractType contractType_
     ) external onlyOwner {
         require(
-            isBingBangMasterContractRegistered[mcAddress] == false,
+            isBigBangMasterContractRegistered[mcAddress] == false,
             'Penrose: MC registered'
         );
 
         IPenrose.MasterContract memory mc;
         mc.location = mcAddress;
         mc.risk = contractType_;
-        bingbangMasterContracts.push(mc);
-        isBingBangMasterContractRegistered[mcAddress] = true;
+        bigbangMasterContracts.push(mc);
+        isBigBangMasterContractRegistered[mcAddress] = true;
 
-        emit RegisterBingBangMasterContract(mcAddress, contractType_);
+        emit RegisterBigBangMasterContract(mcAddress, contractType_);
     }
 
     /// @notice Registers a Singularity market
@@ -304,11 +323,11 @@ contract Penrose is BoringOwnable {
         emit RegisterSingularity(_contract, mc);
     }
 
-    /// @notice Registers a BingBang market
+    /// @notice Registers a BigBang market
     /// @param mc The address of the master contract which must be already registered
-    /// @param data The init data of the BingBang contract
+    /// @param data The init data of the BigBang contract
     /// @param useCreate2 Whether to use create2 or not
-    function registerBingBang(
+    function registerBigBang(
         address mc,
         bytes calldata data,
         bool useCreate2
@@ -316,14 +335,14 @@ contract Penrose is BoringOwnable {
         external
         payable
         onlyOwner
-        registeredBingBangMasterContract(mc)
+        registeredBigBangMasterContract(mc)
         returns (address _contract)
     {
         _contract = yieldBox.deploy(mc, data, useCreate2);
-        emit RegisterBingBang(_contract, mc);
+        emit RegisterBigBang(_contract, mc);
     }
 
-    /// @notice Execute an only owner function inside of a Singularity or a BingBang market
+    /// @notice Execute an only owner function inside of a Singularity or a BigBang market
     function executeMarketFn(
         address[] calldata mc,
         bytes[] memory data,
@@ -342,7 +361,7 @@ contract Penrose is BoringOwnable {
                 isSingularityMasterContractRegistered[
                     yieldBox.masterContractOf(mc[i])
                 ] ||
-                    isBingBangMasterContractRegistered[
+                    isBigBangMasterContractRegistered[
                         yieldBox.masterContractOf(mc[i])
                     ],
                 'Penrose: MC not registered'

@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import '@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol';
 
 import './ISwapper.sol';
-import '../IPenrose.sol';
+import '../interfaces/IPenrose.sol';
 import '../../yieldbox/contracts/YieldBox.sol';
 
 import '../libraries/IUniswapV2Factory.sol';

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
-import '../../interfaces/IOracle.sol';
+import '../../../interfaces/IOracle.sol';
 
 contract OracleMockFactory {
     address public last;

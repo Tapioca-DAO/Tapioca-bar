@@ -43,25 +43,25 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     console.log(`Done`);
 
 
-    console.log('\n Deploying BingBangMasterContract');
-    await deploy('BingBangMediumRiskMC', {
-        contract: 'BingBang',
+    console.log('\n Deploying BigBangMasterContract');
+    await deploy('BigBangMediumRiskMC', {
+        contract: 'BigBang',
         from: deployer,
         log: true,
     });
-    await verify(hre, 'BingBangMediumRiskMC', []);
-    const bingBangMediumRiskMC = await deployments.get('BingBangMediumRiskMC');
+    await verify(hre, 'BigBangMediumRiskMC', []);
+    const bigBangMediumRiskMC = await deployments.get('BigBangMediumRiskMC');
     contracts.push({
-        name: 'BingBangMediumRiskMC',
-        address: bingBangMediumRiskMC.address,
+        name: 'BigBangMediumRiskMC',
+        address: bigBangMediumRiskMC.address,
         meta: {},
     });
     console.log(
-        `Done. Deployed BingBangMediumRiskMC on ${bingBangMediumRiskMC.address} with no arguments`,
+        `Done. Deployed BigBangMediumRiskMC on ${bigBangMediumRiskMC.address} with no arguments`,
     );
-    console.log('\n Setting BingBangMasterContract on Penrose');
+    console.log('\n Setting BigBangMasterContract on Penrose');
     await (
-        await penroseContract.registerBingBangMasterContract(bingBangMediumRiskMC.address, 1)
+        await penroseContract.registerBigBangMasterContract(bigBangMediumRiskMC.address, 1)
     ).wait();
     console.log(`Done`);
 

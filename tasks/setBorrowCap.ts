@@ -1,13 +1,13 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import _ from 'lodash';
 import {
-    getBingBangContract,
+    getBigBangContract,
     getDeployment,
     getSingularityContract,
 } from './utils';
 
 //Execution example:
-//      npx hardhat setBorrowCap --singularity "<address>" --bingBang "<address>" --cap "<cap>"
+//      npx hardhat setBorrowCap --singularity "<address>" --bigBang "<address>" --cap "<cap>"
 export const setCap = async (taskArgs: any, hre: HardhatRuntimeEnvironment) => {
     const penroseContract = await getDeployment(hre, 'Penrose');
 
@@ -22,13 +22,13 @@ export const setCap = async (taskArgs: any, hre: HardhatRuntimeEnvironment) => {
             'setBorrowCap',
             [taskArgs['cap']],
         );
-    } else if (hre.ethers.utils.isAddress(taskArgs.bingBang)) {
-        const { bingBangContract, bingBangAddress } = await getBingBangContract(
+    } else if (hre.ethers.utils.isAddress(taskArgs.bigBang)) {
+        const { bigBangContract, bigBangAddress } = await getBigBangContract(
             taskArgs,
             hre,
         );
-        marketAddress = bingBangAddress;
-        callData = bingBangContract.interface.encodeFunctionData(
+        marketAddress = bigBangAddress;
+        callData = bigBangContract.interface.encodeFunctionData(
             'setBorrowCap',
             [taskArgs['cap']],
         );
@@ -41,7 +41,7 @@ export const setBorrowCap__task = async (
     hre: HardhatRuntimeEnvironment,
 ) => {
     console.log(
-        `Setting borrow cap ('${args['path']}') on singularity: ${args['singularity']} and/or bingBang: ${args['bingBang']}`,
+        `Setting borrow cap ('${args['path']}') on singularity: ${args['singularity']} and/or bigBang: ${args['bigBang']}`,
     );
     await setCap(args, hre);
     console.log('Execution completed');
