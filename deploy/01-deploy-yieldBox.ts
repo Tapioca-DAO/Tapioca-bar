@@ -11,7 +11,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const chainId = await hre.getChainId();
     const contracts: TContract[] = [];
 
-    const yieldBoxAddress = constants[chainId].yieldBoxAddress;
+    const yieldBoxAddress = constants[chainId]?.yieldBoxAddress;
     if (
         hre.ethers.utils.isAddress(yieldBoxAddress!) &&
         yieldBoxAddress != hre.ethers.constants.AddressZero
@@ -40,7 +40,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     //deploy YieldBox
     console.log('\n Deploying YieldBox');
     const yieldBoxArgs = [
-        constants[chainId].wrappedNative,
+        constants[chainId]?.wrappedNative ?? hre.ethers.constants.AddressZero,
         deployedUriBuilder.address,
     ];
     await deploy('YieldBox', {
