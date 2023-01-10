@@ -14,7 +14,7 @@ export const getDetails = async (
 
     const mixologistHelperContract = await getDeployment(
         hre,
-        'SingularityHelper',
+        'MarketsHelper',
     );
     const yieldBoxContract = await getDeployment(hre, 'YieldBox');
 

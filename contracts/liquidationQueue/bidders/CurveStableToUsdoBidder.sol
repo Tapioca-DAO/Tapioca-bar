@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import '@boringcrypto/boring-solidity/contracts/BoringOwnable.sol';
 
-import '../../IPenrose.sol';
+import '../../interfaces/IPenrose.sol';
 import '../ILiquidationQueue.sol';
 import '../../libraries/ICurvePool.sol';
 import '../../swappers/CurveSwapper.sol';

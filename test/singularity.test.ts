@@ -229,7 +229,7 @@ describe('Singularity test', () => {
             approveTokensAndSetBarApproval,
             deployer,
             wethUsdcSingularity,
-            singularityHelper,
+            marketsHelper,
             wethUsdcOracle,
             __wethUsdcPrice,
         } = await loadFixture(register);
@@ -317,19 +317,36 @@ describe('Singularity test', () => {
         ).equal(await yieldBox.toShare(collateralId, usdcMintVal, false));
 
         const dataFromHelper = (
-            await singularityHelper.marketsInfo(eoa1.address, [
+            await marketsHelper.singularityMarketInfo(eoa1.address, [
                 wethUsdcSingularity.address,
             ])
         )[0];
-        expect(dataFromHelper[0].toLowerCase()).eq(usdc.address.toLowerCase());
-        expect(dataFromHelper[1].toLowerCase()).eq(weth.address.toLowerCase());
-        expect(dataFromHelper[2].toLowerCase()).eq(
+
+        // address collateral;
+        // address asset;
+        // IOracle oracle;
+        // bytes oracleData;
+        // uint256 totalCollateralShare;
+        // uint256 userCollateralShare;
+        // Rebase totalBorrow;
+        // uint256 userBorrowPart;
+        // uint256 currentExchangeRate;
+        // uint256 spotExchangeRate;
+        // uint256 oracleExchangeRate;
+
+        expect(dataFromHelper.market[0].toLowerCase()).eq(
+            usdc.address.toLowerCase(),
+        );
+        expect(dataFromHelper.market[1].toLowerCase()).eq(
+            weth.address.toLowerCase(),
+        );
+        expect(dataFromHelper.market[2].toLowerCase()).eq(
             wethUsdcOracle.address.toLowerCase(),
         );
-        expect(dataFromHelper[5].eq(usdcMintValShare)).to.be.true;
+        expect(dataFromHelper.market[5].eq(usdcMintValShare)).to.be.true;
 
         const borrowed = await wethUsdcSingularity.userBorrowPart(eoa1.address);
-        expect(dataFromHelper[9].eq(borrowed)).to.be.true;
+        expect(dataFromHelper.market[7].eq(borrowed)).to.be.true;
     });
 
     it('Should deposit to yieldBox, add asset to singularity, remove asset and withdraw', async () => {
@@ -659,7 +676,7 @@ describe('Singularity test', () => {
             initContracts,
             approveTokensAndSetBarApproval,
             usdcDepositAndAddCollateral,
-            singularityHelper,
+            marketsHelper,
             BN,
             __wethUsdcPrice,
         } = await loadFixture(register);
@@ -736,14 +753,14 @@ describe('Singularity test', () => {
             eoa1.address,
         );
         const minCollateralShareRepay =
-            await singularityHelper.getCollateralSharesForBorrowPart(
+            await marketsHelper.getCollateralSharesForBorrowPart(
                 wethUsdcSingularity.address,
                 borrowVal.mul(50).div(100000).add(borrowVal),
                 ethers.BigNumber.from((1e5).toString()),
                 ethers.BigNumber.from((1e18).toString()),
             );
         const userCollateralShareToRepay =
-            await singularityHelper.getCollateralSharesForBorrowPart(
+            await marketsHelper.getCollateralSharesForBorrowPart(
                 wethUsdcSingularity.address,
                 userBorrowPart,
                 ethers.BigNumber.from((1e5).toString()),
@@ -836,7 +853,7 @@ describe('Singularity test', () => {
             singularityFeeTo,
             __wethUsdcPrice,
             timeTravel,
-            singularityHelper,
+            marketsHelper,
         } = await loadFixture(register);
 
         const assetId = await wethUsdcSingularity.assetId();
@@ -898,13 +915,12 @@ describe('Singularity test', () => {
             .connect(eoa1)
             .repay(eoa1.address, eoa1.address, false, userBorrowPart);
 
-        const feesAmountInAsset =
-            await singularityHelper.getAmountForAssetFraction(
-                wethUsdcSingularity.address,
-                (
-                    await wethUsdcSingularity.accrueInfo()
-                ).feesEarnedFraction,
-            );
+        const feesAmountInAsset = await marketsHelper.getAmountForAssetFraction(
+            wethUsdcSingularity.address,
+            (
+                await wethUsdcSingularity.accrueInfo()
+            ).feesEarnedFraction,
+        );
 
         // Confirm fees accumulation
         expect(userBorrowPart.gt(wethBorrowVal));
@@ -1473,7 +1489,7 @@ describe('Singularity test', () => {
             usdcDepositAndAddCollateral,
             wethDepositAndAddAsset,
             wethUsdcSingularity,
-            singularityHelper,
+            marketsHelper,
             __wethUsdcPrice,
             weth,
             eoa1,
@@ -1498,7 +1514,7 @@ describe('Singularity test', () => {
             wethAmount,
         );
 
-        const amountFromShares = await singularityHelper.getAmountForBorrowPart(
+        const amountFromShares = await marketsHelper.getAmountForBorrowPart(
             wethUsdcSingularity.address,
             await wethUsdcSingularity.userBorrowPart(deployer.address),
         );
@@ -1526,7 +1542,7 @@ describe('Singularity test', () => {
             singularityFeeTo,
             __wethUsdcPrice,
             timeTravel,
-            singularityHelper,
+            marketsHelper,
         } = await loadFixture(register);
 
         const assetId = await wethUsdcSingularity.assetId();
@@ -1588,13 +1604,12 @@ describe('Singularity test', () => {
             .connect(eoa1)
             .repay(eoa1.address, eoa1.address, false, userBorrowPart);
 
-        const feesAmountInAsset =
-            await singularityHelper.getAmountForAssetFraction(
-                wethUsdcSingularity.address,
-                (
-                    await wethUsdcSingularity.accrueInfo()
-                ).feesEarnedFraction,
-            );
+        const feesAmountInAsset = await marketsHelper.getAmountForAssetFraction(
+            wethUsdcSingularity.address,
+            (
+                await wethUsdcSingularity.accrueInfo()
+            ).feesEarnedFraction,
+        );
 
         // Confirm fees accumulation
         expect(userBorrowPart.gt(wethBorrowVal));
@@ -1647,7 +1662,7 @@ describe('Singularity test', () => {
             wethUsdcSingularity,
             __wethUsdcPrice,
             eoa1,
-            singularityHelper,
+            marketsHelper,
         } = await loadFixture(register);
 
         const wethAmount = BN(1e18).mul(1);
@@ -1664,7 +1679,7 @@ describe('Singularity test', () => {
         await usdcDepositAndAddCollateral(usdcAmount.mul(2), eoa1);
 
         const collateralAmount =
-            await singularityHelper.getCollateralAmountForShare(
+            await marketsHelper.getCollateralAmountForShare(
                 wethUsdcSingularity.address,
                 await wethUsdcSingularity.userCollateralShare(deployer.address),
             );
@@ -2070,7 +2085,7 @@ describe('Singularity test', () => {
             weth,
             __wethUsdcPrice,
             eoa1,
-            singularityHelper,
+            marketsHelper,
         } = await loadFixture(register);
 
         const setConservatorData =
