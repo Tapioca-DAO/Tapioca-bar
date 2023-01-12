@@ -18,47 +18,71 @@ let supportedChains: { [key: string]: any } = SDK.API.utils
 
 export const constants: { [key: string]: any } = {
     //------------- TESTNETS --------------
-    //goerli
-    '5': {
-        ...supportedChains['goerli'],
+    //fuji
+    '43113': {
+        ...supportedChains['fuji_avalanche'],
         wrappedNative: '0x0000000000000000000000000000000000000000',
-        tapAddress: '0x306547aa4B4241D73ae1e7A5465D277d06C40cbC',
+        tapAddress: '0xa186155CB523CBEe7d8A12F332D39beC7937bdF0',
         feeTo: '0x40282d3Cf4890D9806BC1853e97a59C93D813653',
-        feeVeTo: '0x40282d3Cf4890D9806BC1853e97a59C93D813653',
         feeCollector: '0x40282d3Cf4890D9806BC1853e97a59C93D813653', //for liquidation queue
         uniV2Factory: '0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f',
         uniV2Router: '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D ',
         uniV2PairHash:
             '0x68ddfd89d43db94fbd68a4abd2861ebcbfea56c0fd36334bbb95f0661c3171a2',
         crvStablePool: '0x803147a1f65f9b838e7be39bac1a4f51e6d29a18', //random address
+        wethAddress: '0xb767287a7143759f294cfb7b1adbca1140f3de71',
         assets: [
             {
-                name: 'USDC',
-                address: '0x93FBA3AA589A1BC9120e0a8AA514fE8f839853F5', //'0x07865c6e87b9f70255377e024ace6630c1eaa37f',
+                name: 'tUSDC',
+                address: '0xA58f0D7A359CCaeC25bD9bC9B5C606C7a33f287d',
             },
             {
-                name: 'WETH',
-                address: '0xe1E3E81B5b868cAB59a27Fa8D30C5225c5D55FC4', //'0xe1E3E81B5b868cAB59a27Fa8D30C5225c5D55FC4',
+                name: 'tWETH',
+                address: '0x7212B75fEBbA5f7Bc34E00BD34437771726cc7D2',
             },
             {
-                name: 'WBTC',
-                address: '0xC04B0d3107736C32e19F1c62b2aF67BE61d63a05',
+                name: 'tWBTC',
+                address: '0x61854A1B29E2EaF06906c3fEd88Ea64404E9d795',
             },
             {
                 name: 'TAP',
-                address: '0x306547aa4B4241D73ae1e7A5465D277d06C40cbC',
+                address: '0xa186155CB523CBEe7d8A12F332D39beC7937bdF0',
+            },
+        ],
+    },
+    //goerli
+    '5': {
+        ...supportedChains['goerli'],
+        wrappedNative: '0x0000000000000000000000000000000000000000',
+        tapAddress: '0xdb7677D723ED0B12E7A3945A4Ae234d4EFa4b91e',
+        feeTo: '0x40282d3Cf4890D9806BC1853e97a59C93D813653',
+        feeCollector: '0x40282d3Cf4890D9806BC1853e97a59C93D813653', //for liquidation queue
+        uniV2Factory: '0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f',
+        uniV2Router: '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D ',
+        uniV2PairHash:
+            '0x68ddfd89d43db94fbd68a4abd2861ebcbfea56c0fd36334bbb95f0661c3171a2',
+        crvStablePool: '0x803147a1f65f9b838e7be39bac1a4f51e6d29a18', //random address
+        wethAddress: '0xb4fbf271143f4fbf7b91a5ded31805e42b2208d6',
+        assets: [
+            {
+                name: 'tUSDC',
+                address: '0x8AE919C76297a20795Fa69DE5DD713248abd6EfE',
+            },
+            {
+                name: 'tWETH',
+                address: '0xE40CE28B4353ad276Ac9cccb87787F7dfA2984d7',
+            },
+            {
+                name: 'tWBTC',
+                address: '0x2E50122Fa37d294dF52030E2F602b4c7F73cD38F',
+            },
+            {
+                name: 'TAP',
+                address: '0xdb7677D723ED0B12E7A3945A4Ae234d4EFa4b91e',
             },
         ],
         sgl_ETH: {
-            collateralAddress: '0xe1E3E81B5b868cAB59a27Fa8D30C5225c5D55FC4', //weth
-            assetAddress: '0xf64364494212954c20B0762fcB1ebB6DC3e85441',
-            oracleAddress: '0x08aa8c316b485a1a73356f662a9881d7b31bf427', //mock
-            minBidAmount: 20,
-            hasExecutionBidder: false,
-            executionBidder: '0x0000000000000000000000000000000000000000',
-        },
-        sgl_BTC: {
-            collateralAddress: '0xC04B0d3107736C32e19F1c62b2aF67BE61d63a05', //weth
+            collateralAddress: '0xE40CE28B4353ad276Ac9cccb87787F7dfA2984d7', //tWeth
             assetAddress: '0xf64364494212954c20B0762fcB1ebB6DC3e85441',
             oracleAddress: '0x08aa8c316b485a1a73356f662a9881d7b31bf427', //mock
             minBidAmount: 20,
@@ -66,7 +90,7 @@ export const constants: { [key: string]: any } = {
             executionBidder: '0x0000000000000000000000000000000000000000',
         },
         minterSGL_ETH: {
-            collateralAddress: '0xe1E3E81B5b868cAB59a27Fa8D30C5225c5D55FC4',
+            collateralAddress: '0xE40CE28B4353ad276Ac9cccb87787F7dfA2984d7',
             oracleAddress: '0x08aa8c316b485a1a73356f662a9881d7b31bf427', //mock
         },
     },
@@ -173,7 +197,7 @@ export const verify = async (
 ) => {
     const { deployments } = hre;
 
-    const deployed = await deployments.get(artifact);
+    let deployed = await deployments.get(artifact);
     console.log(`[+] Verifying ${artifact}`);
     try {
         await hre.run('verify', {
@@ -215,28 +239,42 @@ export const deployOracleMock = async (
     const { deployer } = await getNamedAccounts();
     name = name.toLowerCase();
 
-    if (hre.ethers.utils.isAddress(mockFactory)) {
+    console.log(`\nDeploying OracleMockFactory for ${name}`);
+    if (!hre.ethers.utils.isAddress(mockFactory)) {
+        const contracts: TContract[] = [];
+
         await deploy('OracleMockFactory', { from: deployer, log: true });
         await verify(hre, 'OracleMockFactory', []);
         const oracleFactory = await deployments.get('OracleMockFactory');
         mockFactory = oracleFactory.address;
+
+        contracts.push({
+            name: 'Penrose',
+            address: oracleFactory.address,
+            meta: {},
+        });
+        const chainId = await hre.getChainId();
+        await updateDeployments(contracts, chainId);
+        console.log(`Deployed`);
     }
     const oracleFactoryContract = await hre.ethers.getContractAt(
         'OracleMockFactory',
-        oracleFactory.address,
+        mockFactory,
     );
     console.log('Done');
 
     console.log(`\nDeploying OracleMock for ${name}`);
-    await oracleFactoryContract.deployOracle();
+    // await oracleFactoryContract.deployOracle();
     const oracleMock = await oracleFactoryContract.last();
+    console.log(`---- oracleFactoryContract ${oracleFactoryContract.address}`);
+    console.log(`---- ${oracleMock}`);
     await verify(hre, 'OracleMock', []);
     console.log('Done');
 
     console.log(`\nSetting mock price`);
     const oracleContract = await hre.ethers.getContractAt(
         'OracleMock',
-        oracleMock.address,
+        oracleMock,
     );
     const price =
         name == 'btc'
@@ -247,8 +285,8 @@ export const deployOracleMock = async (
 
     return new Promise(async (resolve) =>
         resolve({
-            name: 'OracleMock',
-            address: oracleMock.address,
+            name: `OracleMock-${name}`,
+            address: oracleMock,
             meta: {},
         }),
     );

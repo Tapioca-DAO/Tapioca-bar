@@ -17,6 +17,7 @@
         "deploy:testEnv": "hardhat deploy --tags testEnv --network",
         "deploy:mocks": "hardhat deploy --tags Mocks --network",
         "deploy:usd0": "hardhat deploy --tags USD0 --network",
+        "deploy:oracleMock": "hardhat deploy --tags OracleMock --network",
         "deploy:yieldBox": "hardhat deploy --tags YieldBox --network",
         "deploy:yieldBoxAssets": "hardhat deploy --tags YieldBoxAssets --network",
         "deploy:penrose": "hardhat deploy --tags Penrose --network",
@@ -76,6 +77,6 @@
         "husky": "^8.0.1",
         "load-json-file": "^7.0.1",
         "lodash": "^4.17.21",
-        "tapioca-sdk": "^1.1.13"
+        "tapioca-sdk": "^1.1.14"
     }
 }

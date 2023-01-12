@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 import 'tapioca-sdk/dist/contracts/interfaces/ILayerZeroEndpoint.sol';
-import 'tapioca-sdk/dist/contracts/token/oft/OFT.sol';
+import './BaseOFT.sol';
 import './interfaces/IERC3156FlashLender.sol';
 
 /*
@@ -20,7 +20,7 @@ __/\\\\\\\\\\\\\\\_____/\\\\\\\\\_____/\\\\\\\\\\\\\____/\\\\\\\\\\\_______/\\\\
 */
 
 /// @title USD0 OFT contract
-contract USD0 is OFT, IERC3156FlashLender {
+contract USD0 is BaseOFT, IERC3156FlashLender {
     // ************ //
     // *** VARS *** //
     // ************ //
@@ -63,7 +63,10 @@ contract USD0 is OFT, IERC3156FlashLender {
 
     /// @notice creates a new USDO0 OFT contract
     /// @param _lzEndpoint LayerZero endpoint
-    constructor(address _lzEndpoint) OFT('USD0', 'USD0', _lzEndpoint) {
+    constructor(address _lzEndpoint, IYieldBox _yieldBox)
+        OFT('USD0', 'USD0', _lzEndpoint)
+        BaseOFT(_yieldBox)
+    {
         uint256 chain = _getChainId();
         allowedMinter[chain][msg.sender] = true;
         allowedBurner[chain][msg.sender] = true;
@@ -139,15 +142,6 @@ contract USD0 is OFT, IERC3156FlashLender {
         require(allowedBurner[_getChainId()][msg.sender], 'USD0: unauthorized');
         _burn(_from, _amount);
         emit Burned(_from, _amount);
-    }
-
-    function _debitFrom(
-        address _from,
-        uint16 _dstChainId,
-        bytes memory _toAddress,
-        uint256 _amount
-    ) internal virtual override notPaused {
-        super._debitFrom(_from, _dstChainId, _toAddress, _amount);
     }
 
     // *********************** //

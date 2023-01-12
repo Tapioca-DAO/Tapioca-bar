@@ -3,6 +3,7 @@ import { DeployFunction } from 'hardhat-deploy/types';
 import { verify, updateDeployments, constants } from './utils';
 import _ from 'lodash';
 import { TContract } from 'tapioca-sdk/dist/shared';
+import { getDeployment } from '../tasks/utils';
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const { deployments, getNamedAccounts } = hre;
@@ -12,7 +13,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const contracts: TContract[] = [];
 
     console.log('\n Deploying USD0');
-    const args = [constants[chainId].address];
+    const yieldBoxContract = await getDeployment(hre, 'YieldBox');
+
+    const args = [constants[chainId].address, yieldBoxContract.address];
     await deploy('USD0', {
         from: deployer,
         log: true,
@@ -34,12 +37,16 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     await updateDeployments(contracts, chainId);
 
     console.log('\n Setting USD0');
-    const penrose = await deployments.get('Penrose');
-    const penroseContract = await hre.ethers.getContractAt(
-        'Penrose',
-        penrose.address,
-    );
-    await (await penroseContract.setUsdoToken(deployedUSD0.address)).wait();
+    try {
+        const penrose = await deployments.get('Penrose');
+        const penroseContract = await hre.ethers.getContractAt(
+            'Penrose',
+            penrose.address,
+        );
+        await (await penroseContract.setUsdoToken(deployedUSD0.address)).wait();
+    } catch {
+        console.log('setUsdoToken failed');
+    }
     console.log('Done');
 };
 

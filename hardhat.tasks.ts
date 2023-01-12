@@ -22,6 +22,7 @@ import { getSingularityTotals__task } from './tasks/getSingularityTotals';
 import { getBigBangTotals__task } from './tasks/getBigBangTotals';
 
 import { deployOracleMock__task } from './tasks/deployOracleMock';
+import { setTrustedRemote__task } from './tasks/setTrustedRemote';
 
 task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
     const accounts = await hre.ethers.getSigners();
@@ -139,3 +140,12 @@ task(
     'Register YieldBox asset',
     registerYieldBoxAsset__task,
 ).addParam('address', 'Asset address');
+
+task(
+    'setTrustedRemote',
+    'Calls setTrustedRemote on USD0 contract',
+    setTrustedRemote__task,
+)
+    .addParam('chain', 'LZ destination chain id for trusted remotes')
+    .addParam('dst', 'USD0 destination address')
+    .addParam('src', 'USD0 source address');

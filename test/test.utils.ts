@@ -37,7 +37,11 @@ export async function setBalance(addr: string, ether: number) {
         ethers.utils.hexStripZeros(ethers.utils.parseEther(String(ether))._hex),
     ]);
 }
-async function registerUsd0Contract(chainId: string, staging?: boolean) {
+async function registerUsd0Contract(
+    chainId: string,
+    yieldBox: string,
+    staging?: boolean,
+) {
     const lzEndpointContract = await (
         await ethers.getContractFactory('LZEndpointMock')
     ).deploy(chainId, { gasPrice: gasPrice });
@@ -50,13 +54,17 @@ async function registerUsd0Contract(chainId: string, staging?: boolean) {
 
     const usd0 = await (
         await ethers.getContractFactory('USD0')
-    ).deploy(lzEndpointContract.address, { gasPrice: gasPrice });
+    ).deploy(lzEndpointContract.address, yieldBox, { gasPrice: gasPrice });
     await usd0.deployed();
     log(
-        `Deployed UDS0 ${usd0.address} with args [${lzEndpointContract.address}]`,
+        `Deployed UDS0 ${usd0.address} with args [${lzEndpointContract.address},${yieldBox}]`,
         staging,
     );
-    await verifyEtherscan(usd0.address, [lzEndpointContract.address], staging);
+    await verifyEtherscan(
+        usd0.address,
+        [lzEndpointContract.address, yieldBox],
+        staging,
+    );
 
     return { usd0, lzEndpointContract };
 }
@@ -195,8 +203,6 @@ async function registerPenrose(
 
     return { bar };
 }
-
-
 
 async function setPenroseAssets(
     yieldBox: YieldBox,
@@ -950,14 +956,27 @@ async function registerBigBangMarket(
     staging?: boolean,
 ) {
     const data = new ethers.utils.AbiCoder().encode(
-        ['address', 'address', 'uint256', 'address', 'uint256', 'uint256', 'uint256', 'uint256', 'uint256'],
+        [
+            'address',
+            'address',
+            'uint256',
+            'address',
+            'uint256',
+            'uint256',
+            'uint256',
+            'uint256',
+            'uint256',
+        ],
         [
             bar.address,
             collateral.address,
             collateralId,
             oracle.address,
             exchangeRatePrecision,
-            debtRateAgainstEth, debtRateMin, debtRateMax, debtStartPoint
+            debtRateAgainstEth,
+            debtRateMin,
+            debtRateMax,
+            debtStartPoint,
         ],
     );
 
@@ -1136,10 +1155,7 @@ export async function register(staging?: boolean) {
         bar,
         staging,
     );
-    log(
-        `Deployed MediumRiskBigBangMC ${mediumRiskBigBangMC.address}`,
-        staging,
-    );
+    log(`Deployed MediumRiskBigBangMC ${mediumRiskBigBangMC.address}`, staging);
 
     // ------------------- 7 Deploy WethUSDC medium risk MC clone-------------------
     log('Deploying WethUsdcSingularity', staging);
@@ -1225,6 +1241,7 @@ export async function register(staging?: boolean) {
     const chainId = await hre.getChainId();
     const { usd0, lzEndpointContract } = await registerUsd0Contract(
         chainId,
+        yieldBox.address,
         staging,
     );
     log(`USD0 registered ${usd0.address}`, staging);
@@ -1243,15 +1260,15 @@ export async function register(staging?: boolean) {
         wethAssetId,
         usd0WethOracle,
         ethers.utils.parseEther('1'),
-        0, 0, 0, 0, //ignored, as this is the main market
+        0,
+        0,
+        0,
+        0, //ignored, as this is the main market
         staging,
     );
     const wethBigBangMarket = bigBangRegData.bigBangMarket;
     await bar.setBigBangEthMarket(wethBigBangMarket.address);
-    log(
-        `WethMinterSingularity deployed ${wethBigBangMarket.address}`,
-        staging,
-    );
+    log(`WethMinterSingularity deployed ${wethBigBangMarket.address}`, staging);
     // ------------------- 12.1 Register BigBang -------------------
     log('Deploying wbtcBigBangMarket', staging);
     bigBangRegData = await registerBigBangMarket(
@@ -1262,17 +1279,14 @@ export async function register(staging?: boolean) {
         wbtcAssetId,
         usd0WethOracle,
         ethers.utils.parseEther('1'),
-        ethers.utils.parseEther("0.5"),
-        ethers.utils.parseEther("0.005"),
-        ethers.utils.parseEther("0.035"), 
+        ethers.utils.parseEther('0.5'),
+        ethers.utils.parseEther('0.005'),
+        ethers.utils.parseEther('0.035'),
         0,
         staging,
     );
     const wbtcBigBangMarket = bigBangRegData.bigBangMarket;
-    log(
-        `wbtcBigBangMarket deployed ${wbtcBigBangMarket.address}`,
-        staging,
-    );
+    log(`wbtcBigBangMarket deployed ${wbtcBigBangMarket.address}`, staging);
     // ------------------- 13 Set Minter and Burner for USD0 -------------------
     await usd0.setMinterStatus(wethBigBangMarket.address, true, {
         gasPrice: gasPrice,
@@ -1286,7 +1300,10 @@ export async function register(staging?: boolean) {
     await usd0.setBurnerStatus(wbtcBigBangMarket.address, true, {
         gasPrice: gasPrice,
     });
-    log('Minter and Burner roles set for wethBigBangMarket & wbtcBigBangMarket', staging);
+    log(
+        'Minter and Burner roles set for wethBigBangMarket & wbtcBigBangMarket',
+        staging,
+    );
 
     // ------------------- 14 Create weth-usd0 pair -------------------
     log('Creating WethUSDO and TapUSDO pairs', staging);

@@ -1330,21 +1330,19 @@ describe('SGLProxy', () => {
             ),
             false,
         );
-        const feesAmountInAsset =
-            await marketsHelper.getAmountForAssetFraction(
-                singularityDst.address,
+        const feesAmountInAsset = await marketsHelper.getAmountForAssetFraction(
+            singularityDst.address,
 
-                (
-                    await singularityDst.accrueInfo()
-                ).feesEarnedFraction,
-            );
+            (
+                await singularityDst.accrueInfo()
+            ).feesEarnedFraction,
+        );
         // 0.31%
         const acceptableHarvestMargin = feesAmountInAsset.sub(
             feesAmountInAsset.mul(31).div(10000),
         );
         expect(tapAmountHarvested.gte(acceptableHarvestMargin)).to.be.true;
     });
-
 });
 
 //--------------------- helpers
@@ -1405,7 +1403,7 @@ async function setupUsd0Environment(
     //deploy usd0 tokens
     const usd0Src = await (
         await ethers.getContractFactory('USD0')
-    ).deploy(lzEndpointSrc.address);
+    ).deploy(lzEndpointSrc.address, yieldBox.address);
     await usd0Src.deployed();
     await yieldBox.registerAsset(
         1,
@@ -1422,7 +1420,7 @@ async function setupUsd0Environment(
 
     const usd0Dst = await (
         await ethers.getContractFactory('USD0')
-    ).deploy(lzEndpointDst.address);
+    ).deploy(lzEndpointDst.address, yieldBox.address);
     await usd0Dst.deployed();
     await yieldBox.registerAsset(
         1,
