@@ -7,6 +7,7 @@ import { BigNumber, BigNumberish } from 'ethers';
 import { MarketsHelper } from '../typechain/contracts/singularity/MarketsHelper';
 import { Singularity } from '../typechain/contracts/singularity/Singularity';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
+import { time } from '@nomicfoundation/hardhat-network-helpers';
 
 describe('e2e tests', () => {
     /*
@@ -534,6 +535,7 @@ async function mintWethPlug(
     val: BigNumberish,
 ) {
     await weth.connect(signer).freeMint(val);
+    await time.increase(86500);
 }
 
 async function mintUsd0Plug(
@@ -678,7 +680,12 @@ async function depositAndRepayPlug(
         await expect(
             marketsHelper
                 .connect(signer)
-                .depositAndRepay(Singularity.address, depositVal, repayVal,true),
+                .depositAndRepay(
+                    Singularity.address,
+                    depositVal,
+                    repayVal,
+                    true,
+                ),
         ).to.be.revertedWith(revertMessage!);
         return;
     }

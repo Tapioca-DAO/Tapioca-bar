@@ -94,7 +94,9 @@ async function registerUniswapV2(staging?: boolean) {
 }
 
 async function registerERC20Tokens(staging?: boolean) {
+    const mintLimitERC20 = ethers.BigNumber.from((1e18).toString()).mul(1e15);
     const supplyStart = ethers.BigNumber.from((1e18).toString()).mul(1e9);
+    const mintLimitWbtc = ethers.BigNumber.from((1e8).toString()).mul(1e15);
     const supplyStartWbtc = ethers.BigNumber.from((1e8).toString()).mul(1e9);
 
     // Deploy ERC20FactoryMock
@@ -108,42 +110,67 @@ async function registerERC20Tokens(staging?: boolean) {
     );
 
     //Deploy USDC
-    await erc20Factory.deployToken(supplyStart, 18, { gasPrice: gasPrice });
+    await erc20Factory.deployToken(supplyStart, 18, mintLimitERC20, {
+        gasPrice: gasPrice,
+    });
     const usdc = await ethers.getContractAt(
         'ERC20Mock',
         await erc20Factory.last(),
     );
-    log(`Deployed USDC ${usdc.address} with args [${supplyStart},18]`, staging);
+    log(
+        `Deployed USDC ${usdc.address} with args [${supplyStart},18, ${mintLimitERC20}]`,
+        staging,
+    );
 
     //Deploy WBTC
-    await erc20Factory.deployToken(supplyStartWbtc, 8, {
+    await erc20Factory.deployToken(supplyStartWbtc, 8, mintLimitWbtc, {
         gasPrice: gasPrice,
     });
     const wbtc = await ethers.getContractAt(
         'ERC20Mock',
         await erc20Factory.last(),
     );
-    log(`Deployed WBTC ${wbtc.address} with args [${supplyStart},8]`, staging);
+    log(
+        `Deployed WBTC ${wbtc.address} with args [${supplyStartWbtc},8,${mintLimitWbtc}]`,
+        staging,
+    );
 
-    //Deploy WBTC
-    await erc20Factory.deployToken(supplyStart, 18, { gasPrice: gasPrice });
+    //Deploy TAP
+    await erc20Factory.deployToken(supplyStart, 18, mintLimitERC20, {
+        gasPrice: gasPrice,
+    });
     const tap = await ethers.getContractAt(
         'ERC20Mock',
         await erc20Factory.last(),
     );
-    log(`Deployed TAP ${tap.address} with args [${supplyStart},18]`, staging);
+    log(
+        `Deployed TAP ${tap.address} with args [${supplyStart},18,${mintLimitERC20}]`,
+        staging,
+    );
 
     // Deploy WETH
     const weth = await (
         await ethers.getContractFactory('WETH9Mock')
-    ).deploy({ gasPrice: gasPrice });
+    ).deploy(mintLimitERC20, { gasPrice: gasPrice });
     await weth.deployed();
     log(`Deployed WETH ${weth.address} with no arguments`, staging);
 
-    await verifyEtherscan(usdc.address, [supplyStart, 18], staging);
-    await verifyEtherscan(tap.address, [supplyStart, 18], staging);
-    await verifyEtherscan(wbtc.address, [supplyStart, 8], staging);
-    await verifyEtherscan(weth.address, [], staging);
+    await verifyEtherscan(
+        usdc.address,
+        [supplyStart, 18, mintLimitERC20],
+        staging,
+    );
+    await verifyEtherscan(
+        tap.address,
+        [supplyStart, 18, mintLimitERC20],
+        staging,
+    );
+    await verifyEtherscan(
+        wbtc.address,
+        [supplyStart, 8, mintLimitWbtc],
+        staging,
+    );
+    await verifyEtherscan(weth.address, [mintLimitERC20], staging);
 
     return { usdc, weth, tap, wbtc, erc20Factory };
 }
@@ -290,6 +317,7 @@ async function addUniV2Liquidity(
             gasPrice: gasPrice,
         });
     }
+
     await token1.approve(__uniRouter.address, token1Amount, {
         gasPrice: gasPrice,
     });
@@ -304,9 +332,10 @@ async function addUniV2Liquidity(
         token1Amount,
         token2Amount,
         deployerAddress,
-        Math.floor(Date.now() / 1000) + 1000 * 60, // 1min margin
+        ethers.utils.parseEther('10'),
         { gasPrice: gasPrice },
     );
+    await time.increase(86500);
 }
 
 async function addUniV2UsdoWethLiquidity(
@@ -426,7 +455,7 @@ async function uniV2EnvironnementSetup(
             wethPairAmount,
             usdcPairAmount,
             deployerAddress,
-            Math.floor(Date.now() / 1000) + 1000 * 60, // 1min margin
+            ethers.utils.parseEther('10'),
             { gasPrice: gasPrice },
         )
     ).wait();
@@ -434,6 +463,7 @@ async function uniV2EnvironnementSetup(
         weth.address,
         usdc.address,
     );
+    await time.increase(86500);
 
     // Create WBTC/USDC LP
     const wbtcPairAmount = ethers.BigNumber.from(1e6).mul((1e8).toString());
@@ -461,7 +491,7 @@ async function uniV2EnvironnementSetup(
             wbtcPairAmount,
             usdcPairAmount,
             deployerAddress,
-            Math.floor(Date.now() / 1000) + 1000 * 60, // 1min margin
+            ethers.utils.parseEther('10'),
             { gasPrice: gasPrice },
         )
     ).wait();
@@ -469,6 +499,7 @@ async function uniV2EnvironnementSetup(
         wbtc.address,
         usdc.address,
     );
+    await time.increase(86500);
 
     // Create WETH/TAP LP
     await (await weth.freeMint(wethPairAmount, { gasPrice: gasPrice })).wait();
@@ -493,7 +524,7 @@ async function uniV2EnvironnementSetup(
             wethPairAmount,
             wethPairAmount,
             deployerAddress,
-            Math.floor(Date.now() / 1000) + 1000 * 60, // 1min margin
+            ethers.utils.parseEther('10'),
             { gasPrice: gasPrice },
         )
     ).wait();
@@ -502,6 +533,7 @@ async function uniV2EnvironnementSetup(
         tap.address,
     );
 
+    await time.increase(86500);
     return {
         __wethUsdcMockPair,
         __wethTapMockPair,
@@ -1615,6 +1647,7 @@ export async function register(staging?: boolean) {
 
     const initContracts = async () => {
         await (await weth.freeMint(1000)).wait();
+        await timeTravel(86500);
         const mintValShare = await yieldBox.toShare(
             await wethUsdcSingularity.assetId(),
             1000,

@@ -12,19 +12,21 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const contracts: TContract[] = [];
 
     console.log('\n Deploying WETH...');
+    const wethArgs = [hre.ethers.utils.parseEther('10').toString()];
     await deploy('WETH9Mock', {
         from: deployer,
         log: true,
+        args: wethArgs,
     });
-    await verify(hre, 'WETH9Mock', []);
+    await verify(hre, 'WETH9Mock', ['10000000000000000000']);
     const deployedWeth = await deployments.get('WETH9Mock');
     contracts.push({
         name: 'WETH9Mock',
         address: deployedWeth.address,
-        meta: {},
+        meta: { consutructorArguments: wethArgs },
     });
     console.log(
-        `Done. Deployed WETH9Mock on ${deployedWeth.address} with no arguments`,
+        `Done. Deployed WETH9Mock on ${deployedWeth.address} with args [${wethArgs}]`,
     );
 
     console.log('\n Deploying ERC20FactoryMock...');
@@ -49,7 +51,11 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
     console.log('\n Deploying USDC...');
 
-    const usdcArgs = [hre.ethers.utils.parseEther('10000000').toString(), '18'];
+    const usdcArgs = [
+        hre.ethers.utils.parseEther('10000000').toString(),
+        '18',
+        hre.ethers.utils.parseEther('1000').toString(),
+    ];
     await deploy('ERC20Mock', {
         from: deployer,
         log: true,
@@ -89,7 +95,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     await deploy('OracleMockFactory', {
         from: deployer,
         log: true,
-        nonce: 506,
     });
     await verify(hre, 'OracleMockFactory', []);
     const deployedOracleMockFactory = await deployments.get(

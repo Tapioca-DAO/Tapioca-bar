@@ -1,256 +1,57 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
+pragma experimental ABIEncoderV2;
+
+/// @title TokenType
+/// @author BoringCrypto (@Boring_Crypto)
+/// @notice The YieldBox can hold different types of tokens:
+/// Native: These are ERC1155 tokens native to YieldBox. Protocols using YieldBox should use these is possible when simple token creation is needed.
+/// ERC20: ERC20 tokens (including rebasing tokens) can be added to the YieldBox.
+/// ERC1155: ERC1155 tokens are also supported. This can also be used to add YieldBox Native tokens to strategies since they are ERC1155 tokens.
+enum TokenType {
+    Native,
+    ERC20,
+    ERC721,
+    ERC1155,
+    None
+}
 
 interface IYieldBox {
-    function amountOf(address user, uint256 assetId)
-        external
-        view
-        returns (uint256 amount);
+    function wrappedNative() external view returns (address wrappedNative);
 
-    function assetCount() external view returns (uint256);
-
-    function assetTotals(uint256 assetId)
-        external
-        view
-        returns (uint256 totalShare, uint256 totalAmount);
-
-    function assets(uint256)
+    function assets(uint256 assetId)
         external
         view
         returns (
-            uint8 tokenType,
+            TokenType tokenType,
             address contractAddress,
             address strategy,
             uint256 tokenId
         );
 
-    function balanceOf(address, uint256) external view returns (uint256);
-
-    function balanceOfBatch(address[] calldata owners, uint256[] calldata ids)
+    function nativeTokens(uint256 assetId)
         external
         view
-        returns (uint256[] calldata balances);
+        returns (
+            string memory name,
+            string memory symbol,
+            uint8 decimals
+        );
 
-    function batch(bytes[] calldata calls, bool revertOnFail) external;
+    function owner(uint256 assetId) external view returns (address owner);
 
-    function batchTransfer(
-        address from,
-        address to,
-        uint256[] calldata assetIds_,
-        uint256[] calldata shares_
-    ) external;
-
-    function burn(
-        uint256 tokenId,
-        address from,
-        uint256 amount
-    ) external;
-
-    function claimOwnership(uint256 tokenId) external;
-
-    function clonesOf(address, uint256) external view returns (address);
-
-    function clonesOfCount(address masterContract)
+    function totalSupply(uint256 assetId)
         external
         view
-        returns (uint256 cloneCount);
-
-    function createToken(
-        string calldata name,
-        string calldata symbol,
-        uint8 decimals,
-        string calldata uri
-    ) external returns (uint32 tokenId);
-
-    function decimals(uint256 assetId) external view returns (uint8);
-
-    function deploy(
-        address masterContract,
-        bytes calldata data,
-        bool useCreate2
-    ) external returns (address cloneAddress);
-
-    function deposit(
-        uint8 tokenType,
-        address contractAddress,
-        address strategy,
-        uint256 tokenId,
-        address from,
-        address to,
-        uint256 amount,
-        uint256 share,
-        uint256 minShareOut
-    ) external returns (uint256 amountOut, uint256 shareOut);
+        returns (uint256 totalSupply);
 
     function depositAsset(
         uint256 assetId,
         address from,
         address to,
         uint256 amount,
-        uint256 share,
-        uint256 minShareOut
-    ) external returns (uint256 amountOut, uint256 shareOut);
-
-    function depositETH(
-        address strategy,
-        address to,
-        uint256 minShareOut
-    ) external returns (uint256 amountOut, uint256 shareOut);
-
-    function depositETHAsset(
-        uint256 assetId,
-        address to,
-        uint256 minShareOut
-    ) external returns (uint256 amountOut, uint256 shareOut);
-
-    function depositNFT(
-        address contractAddress,
-        address strategy,
-        uint256 tokenId,
-        address from,
-        address to
-    ) external returns (uint256 amountOut, uint256 shareOut);
-
-    function depositNFTAsset(
-        uint256 assetId,
-        address from,
-        address to
-    ) external returns (uint256 amountOut, uint256 shareOut);
-
-    function ids(
-        uint8,
-        address,
-        address,
-        uint256
-    ) external view returns (uint256);
-
-    function isApprovedForAll(address, address) external view returns (bool);
-
-    function masterContractOf(address) external view returns (address);
-
-    function mint(
-        uint256 tokenId,
-        address to,
-        uint256 amount
-    ) external;
-
-    function name(uint256 assetId) external view returns (string calldata);
-
-    function nativeTokens(uint256)
-        external
-        view
-        returns (
-            string calldata name,
-            string calldata symbol,
-            uint8 decimals,
-            string calldata uri
-        );
-
-    function onERC1155BatchReceived(
-        address,
-        address,
-        uint256[] calldata,
-        uint256[] calldata,
-        bytes calldata
-    ) external pure returns (bytes4);
-
-    function onERC1155Received(
-        address,
-        address,
-        uint256,
-        uint256,
-        bytes calldata
-    ) external pure returns (bytes4);
-
-    function onERC721Received(
-        address operator,
-        address from,
-        uint256 tokenId,
-        bytes calldata data
-    ) external returns (bytes4);
-
-    function owner(uint256) external view returns (address);
-
-    function pendingOwner(uint256) external view returns (address);
-
-    function permitToken(
-        address token,
-        address from,
-        address to,
-        uint256 amount,
-        uint256 deadline,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) external;
-
-    function registerAsset(
-        uint8 tokenType,
-        address contractAddress,
-        address strategy,
-        uint256 tokenId
-    ) external returns (uint256 assetId);
-
-    function safeBatchTransferFrom(
-        address from,
-        address to,
-        uint256[] calldata ids,
-        uint256[] calldata values,
-        bytes calldata data
-    ) external;
-
-    function safeTransferFrom(
-        address from,
-        address to,
-        uint256 id,
-        uint256 value,
-        bytes calldata data
-    ) external;
-
-    function setApprovalForAll(address operator, bool approved) external;
-
-    function supportsInterface(bytes4 interfaceID) external pure returns (bool);
-
-    function symbol(uint256 assetId) external view returns (string calldata);
-
-    function toAmount(
-        uint256 assetId,
-        uint256 share,
-        bool roundUp
-    ) external view returns (uint256 amount);
-
-    function toShare(
-        uint256 assetId,
-        uint256 amount,
-        bool roundUp
-    ) external view returns (uint256 share);
-
-    function totalSupply(uint256) external view returns (uint256);
-
-    function transfer(
-        address from,
-        address to,
-        uint256 assetId,
         uint256 share
-    ) external;
-
-    function transferMultiple(
-        address from,
-        address[] calldata tos,
-        uint256 assetId,
-        uint256[] calldata shares
-    ) external;
-
-    function transferOwnership(
-        uint256 tokenId,
-        address newOwner,
-        bool direct,
-        bool renounce
-    ) external;
-
-    function uri(uint256 assetId) external view returns (string calldata);
-
-    function uriBuilder() external view returns (address);
+    ) external returns (uint256 amountOut, uint256 shareOut);
 
     function withdraw(
         uint256 assetId,
@@ -260,11 +61,36 @@ interface IYieldBox {
         uint256 share
     ) external returns (uint256 amountOut, uint256 shareOut);
 
-    function withdrawNFT(
-        uint256 assetId,
+    function transfer(
         address from,
-        address to
-    ) external returns (uint256 amountOut, uint256 shareOut);
+        address to,
+        uint256 assetId,
+        uint256 share
+    ) external;
 
-    function wrappedNative() external view returns (address);
+    function batchTransfer(
+        address from,
+        address to,
+        uint256[] calldata assetIds_,
+        uint256[] calldata shares_
+    ) external;
+
+    function transferMultiple(
+        address from,
+        address[] calldata tos,
+        uint256 assetId,
+        uint256[] calldata shares
+    ) external;
+
+    function toShare(
+        uint256 assetId,
+        uint256 amount,
+        bool roundUp
+    ) external view returns (uint256 share);
+
+    function toAmount(
+        uint256 assetId,
+        uint256 share,
+        bool roundUp
+    ) external view returns (uint256 amount);
 }

@@ -4,8 +4,8 @@ import { glob, runTypeChain } from 'typechain';
 import writeJsonFile from 'write-json-file';
 import { getDeployment } from './utils';
 
-//npx hardhat setTrustedRemote --network goerli --chain 10106 --dst 0x6C09376f75F381D34fcF22Bd870db5dccEe8687D --src 0xBc223d1c84c5F53f1056150D81B421377b76a0D5
-//npx hardhat setTrustedRemote --network fuji_avalanche --chain 10121 --dst 0xBc223d1c84c5F53f1056150D81B421377b76a0D5 --src 0x6C09376f75F381D34fcF22Bd870db5dccEe8687D
+//npx hardhat setTrustedRemote --network arbitrum_goerli --chain 10106 --dst 0x365b6FB3f37c8f963c8d9d8b815e9a8cF81Df594 --src 0xD50dBD20c67edfE03aD83490091645E7a9AF115d
+//npx hardhat setTrustedRemote --network fuji_avalanche --chain 10143 --dst 0xD50dBD20c67edfE03aD83490091645E7a9AF115d --src 0x365b6FB3f37c8f963c8d9d8b815e9a8cF81Df594
 export const setTrustedRemote__task = async (
     taskArgs: { chain: string; dst: string; src: string },
     hre: HardhatRuntimeEnvironment,

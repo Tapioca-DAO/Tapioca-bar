@@ -1784,6 +1784,7 @@ describe('Singularity test', () => {
             wethUsdcSingularity,
             approveTokensAndSetBarApproval,
             wethDepositAndAddAsset,
+            timeTravel,
         } = await loadFixture(register);
 
         await approveTokensAndSetBarApproval();
@@ -1793,6 +1794,7 @@ describe('Singularity test', () => {
         const wethMintVal = ethers.BigNumber.from((1e18).toString()).mul(10);
 
         await weth.freeMint(wethMintVal);
+        await timeTravel(86500);
         await wethDepositAndAddAsset(wethMintVal);
 
         let deployerYieldBoxShares = await wethUsdcSingularity.yieldBoxShares(
@@ -1817,6 +1819,7 @@ describe('Singularity test', () => {
         );
 
         await weth.connect(eoa1).freeMint(wethMintVal);
+        await timeTravel(86500);
         await wethDepositAndAddAsset(wethMintVal, eoa1);
 
         deployerYieldBoxShares = await wethUsdcSingularity.yieldBoxShares(
@@ -1874,6 +1877,7 @@ describe('Singularity test', () => {
         ).to.be.true;
 
         await weth.connect(eoa1).freeMint(wethMintVal);
+        await timeTravel(86500);
         await wethDepositAndAddAsset(wethMintVal, eoa1);
 
         deployerYieldBoxShares = await wethUsdcSingularity.yieldBoxShares(
@@ -1941,6 +1945,7 @@ describe('Singularity test', () => {
         ).to.be.true;
 
         await weth.freeMint(wethMintVal.mul(3));
+        await timeTravel(86500);
         await wethDepositAndAddAsset(wethMintVal.mul(3));
 
         deployerYieldBoxShares = await wethUsdcSingularity.yieldBoxShares(
@@ -2086,6 +2091,7 @@ describe('Singularity test', () => {
             __wethUsdcPrice,
             eoa1,
             marketsHelper,
+            timeTravel,
         } = await loadFixture(register);
 
         const setConservatorData =
@@ -2106,6 +2112,7 @@ describe('Singularity test', () => {
         await wethUsdcSingularity.updatePause(true);
 
         await usdc.freeMint(usdcAmount);
+        await timeTravel(86500);
         await approveTokensAndSetBarApproval();
         await expect(
             usdcDepositAndAddCollateral(usdcAmount),
@@ -2121,6 +2128,7 @@ describe('Singularity test', () => {
 
         await approveTokensAndSetBarApproval(eoa1);
         await weth.connect(eoa1).freeMint(wethAmount);
+        await timeTravel(86500);
         await expect(
             wethDepositAndAddAsset(wethAmount, eoa1),
         ).to.be.revertedWith('SGL: paused');
@@ -2129,6 +2137,7 @@ describe('Singularity test', () => {
 
         await approveTokensAndSetBarApproval(eoa1);
         await weth.connect(eoa1).freeMint(wethAmount);
+        await timeTravel(86500);
         await expect(wethDepositAndAddAsset(wethAmount, eoa1)).not.to.be
             .reverted;
     });

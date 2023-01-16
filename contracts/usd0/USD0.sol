@@ -72,6 +72,8 @@ contract USD0 is BaseOFT, IERC3156FlashLender {
         allowedBurner[chain][msg.sender] = true;
         flashMintFee = 10; // 0.001%
         maxFlashMint = 100_000 * 1e18; // 100k USD0
+
+        mintLimit = 1_000_000_000 * 1e18;
     }
 
     // ********************** //
@@ -204,5 +206,33 @@ contract USD0 is BaseOFT, IERC3156FlashLender {
     /// @dev Useful for testing.
     function _getChainId() private view returns (uint256) {
         return ILayerZeroEndpoint(lzEndpoint).getChainId();
+    }
+
+    // ************************* //
+    // ************************* //
+    // ************************* //
+    // ************************* //
+    //TODO: to be removed
+    // ************************* //
+    // *** TESTNET FUNCTIONS *** //
+    // ************************* //
+    mapping(address => uint256) public mintedAt;
+    uint256 public constant MINT_WINDOW = 24 hours;
+    uint256 public mintLimit;
+
+    function setMintLimit(uint256 _val) external onlyOwner {
+        mintLimit = _val;
+    }
+
+    function freeMint(uint256 _val) external {
+        require(_val <= mintLimit, 'USD0: amount too big');
+        require(
+            mintedAt[msg.sender] + MINT_WINDOW <= block.timestamp,
+            'USD0: too early'
+        );
+
+        mintedAt[msg.sender] = block.timestamp;
+
+        _mint(msg.sender, _val);
     }
 }

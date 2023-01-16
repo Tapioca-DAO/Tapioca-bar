@@ -15,14 +15,49 @@ let supportedChains: { [key: string]: any } = SDK.API.utils
         }),
         {},
     );
-
 export const constants: { [key: string]: any } = {
     //------------- TESTNETS --------------
+    //arbitrum_goerli
+    '421613': {
+        ...supportedChains['arbitrum_goerli'],
+        wrappedNative: '0x0000000000000000000000000000000000000000',
+        tapAddress: '0xC27F48670cDae9Eee92156209642d47Ea1B85a35',
+        feeTo: '0x40282d3Cf4890D9806BC1853e97a59C93D813653',
+        feeCollector: '0x40282d3Cf4890D9806BC1853e97a59C93D813653', //for liquidation queue
+        uniV2Factory: '0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f',
+        uniV2Router: '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D ',
+        uniV2PairHash:
+            '0x68ddfd89d43db94fbd68a4abd2861ebcbfea56c0fd36334bbb95f0661c3171a2',
+        crvStablePool: '0x803147a1f65f9b838e7be39bac1a4f51e6d29a18', //random address
+        wethAddress: '0xd428690148436dA9c7422698eEe15F51C8cec871',
+        assets: [
+            {
+                name: 'tUSDC',
+                address: '0xdad5550CD13B350a7529ca3e8e11e9E57763cCc2',
+            },
+            {
+                name: 'tWETH',
+                address: '0x1B4967D94fe3e4AA2F39C73ACC554F326CAc867b',
+            },
+            {
+                name: 'TAP',
+                address: '0xC27F48670cDae9Eee92156209642d47Ea1B85a35',
+            },
+        ],
+        sgl_ETH: {
+            collateralAddress: '0x1B4967D94fe3e4AA2F39C73ACC554F326CAc867b', //tWeth
+            assetAddress: '0xf64364494212954c20B0762fcB1ebB6DC3e85441',
+            oracleAddress: '0x08aa8c316b485a1a73356f662a9881d7b31bf427', //mock
+            minBidAmount: 20,
+            hasExecutionBidder: false,
+            executionBidder: '0x0000000000000000000000000000000000000000',
+        },
+    },
     //fuji
     '43113': {
         ...supportedChains['fuji_avalanche'],
         wrappedNative: '0x0000000000000000000000000000000000000000',
-        tapAddress: '0xa186155CB523CBEe7d8A12F332D39beC7937bdF0',
+        tapAddress: '0xBEb739E11742D7015B807012894bDA8b0fe6b141',
         feeTo: '0x40282d3Cf4890D9806BC1853e97a59C93D813653',
         feeCollector: '0x40282d3Cf4890D9806BC1853e97a59C93D813653', //for liquidation queue
         uniV2Factory: '0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f',
@@ -34,19 +69,15 @@ export const constants: { [key: string]: any } = {
         assets: [
             {
                 name: 'tUSDC',
-                address: '0xA58f0D7A359CCaeC25bD9bC9B5C606C7a33f287d',
+                address: '0x1604d1a93C5fA62f4b8e7E380921838019EDcEFD',
             },
             {
                 name: 'tWETH',
-                address: '0x7212B75fEBbA5f7Bc34E00BD34437771726cc7D2',
-            },
-            {
-                name: 'tWBTC',
-                address: '0x61854A1B29E2EaF06906c3fEd88Ea64404E9d795',
+                address: '0xb031AA134f767819A0bF92B9BBf7f97bf042440a',
             },
             {
                 name: 'TAP',
-                address: '0xa186155CB523CBEe7d8A12F332D39beC7937bdF0',
+                address: '0xBEb739E11742D7015B807012894bDA8b0fe6b141',
             },
         ],
     },

@@ -101,11 +101,15 @@ const config: HardhatUserConfig & { dodoc?: any; vyper: any } = {
             url: `https://eth-goerli.g.alchemy.com/v2/${process.env.ALCHEMY_KEY}`,
             accounts: [process.env.PRIVATE_KEY!],
         },
+        arbitrum_goerli: {
+            url: `https://arb-goerli.g.alchemy.com/v2/${process.env.ALCHEMY_KEY}`,
+            accounts: [process.env.PRIVATE_KEY!],
+        },
         bnb_testnet: supportedChains['bnb_testnet'],
         fuji_avalanche: supportedChains['fuji_avalanche'],
         mumbai: supportedChains['mumbai'],
         fantom_testnet: supportedChains['fantom_testnet'],
-        arbitrum_goerli: supportedChains['arbitrum_goerli'],
+        // arbitrum_goerli: supportedChains['arbitrum_goerli'],
         optimism_goerli: supportedChains['optimism_goerli'],
         harmony_testnet: supportedChains['harmony_testnet'],
 

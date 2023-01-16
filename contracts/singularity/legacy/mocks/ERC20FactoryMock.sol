@@ -8,8 +8,12 @@ import './ERC20Mock.sol';
 contract ERC20FactoryMock {
     ERC20Mock public last;
 
-    function deployToken(uint256 _supply, uint8 _decimals) external {
-        ERC20Mock tkn = new ERC20Mock(_supply, _decimals);
+    function deployToken(
+        uint256 _supply,
+        uint8 _decimals,
+        uint256 _mintLimit
+    ) external {
+        ERC20Mock tkn = new ERC20Mock(_supply, _decimals, _mintLimit);
         last = tkn;
     }
 }
