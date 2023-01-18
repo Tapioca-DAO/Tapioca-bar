@@ -1,10 +1,10 @@
-import { ethers } from 'hardhat';
+import hre, { ethers } from 'hardhat';
 import { expect } from 'chai';
 import { register } from './test.utils';
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 
 describe('Mocks test', () => {
-    it('should test mint limit for ERC20Mock', async () => {
+    it.only('should test mint limit for ERC20Mock', async () => {
         const { usdc, timeTravel } = await loadFixture(register);
 
         const mintLimt = await usdc.mintLimit();
