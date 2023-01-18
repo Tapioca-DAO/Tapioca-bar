@@ -4,7 +4,7 @@ import { register } from './test.utils';
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 
 describe('Mocks test', () => {
-    it.only('should test mint limit for ERC20Mock', async () => {
+    it('should test mint limit for ERC20Mock', async () => {
         const { usdc, timeTravel } = await loadFixture(register);
 
         const mintLimt = await usdc.mintLimit();
