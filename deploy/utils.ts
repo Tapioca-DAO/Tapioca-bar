@@ -15,50 +15,154 @@ let supportedChains: { [key: string]: any } = SDK.API.utils
         }),
         {},
     );
-
 export const constants: { [key: string]: any } = {
     //------------- TESTNETS --------------
-    //goerli
-    '5': {
-        ...supportedChains['goerli'],
+    //arbitrum_goerli
+    '421613': {
+        ...supportedChains['arbitrum_goerli'],
         wrappedNative: '0x0000000000000000000000000000000000000000',
-        tapAddress: '0x306547aa4B4241D73ae1e7A5465D277d06C40cbC',
+        tapAddress: '0xC27F48670cDae9Eee92156209642d47Ea1B85a35',
         feeTo: '0x40282d3Cf4890D9806BC1853e97a59C93D813653',
-        feeVeTo: '0x40282d3Cf4890D9806BC1853e97a59C93D813653',
         feeCollector: '0x40282d3Cf4890D9806BC1853e97a59C93D813653', //for liquidation queue
         uniV2Factory: '0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f',
         uniV2Router: '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D ',
         uniV2PairHash:
             '0x68ddfd89d43db94fbd68a4abd2861ebcbfea56c0fd36334bbb95f0661c3171a2',
         crvStablePool: '0x803147a1f65f9b838e7be39bac1a4f51e6d29a18', //random address
+        wethAddress: '0xd428690148436dA9c7422698eEe15F51C8cec871',
         assets: [
             {
-                name: 'USDC',
-                address: '0x93FBA3AA589A1BC9120e0a8AA514fE8f839853F5', //'0x07865c6e87b9f70255377e024ace6630c1eaa37f',
+                name: 'tAvax',
+                address: '0xef0871E0e8C3320f5Cf8c0051EC856b9c083660f',
             },
             {
-                name: 'WETH',
-                address: '0xe1E3E81B5b868cAB59a27Fa8D30C5225c5D55FC4', //'0xe1E3E81B5b868cAB59a27Fa8D30C5225c5D55FC4',
+                name: 'tWETH',
+                address: '0xd5d5d2fed1eCb5Dea28Fe81fB575c9C241448D71',
             },
             {
-                name: 'WBTC',
-                address: '0xC04B0d3107736C32e19F1c62b2aF67BE61d63a05',
+                name: 'tMATIC',
+                address: '0x48d95D182D33990910DC39868Da6FcA59182626c',
             },
             {
                 name: 'TAP',
-                address: '0x306547aa4B4241D73ae1e7A5465D277d06C40cbC',
+                address: '0xC27F48670cDae9Eee92156209642d47Ea1B85a35',
             },
         ],
-        sgl_ETH: {
-            collateralAddress: '0xe1E3E81B5b868cAB59a27Fa8D30C5225c5D55FC4', //weth
-            assetAddress: '0xf64364494212954c20B0762fcB1ebB6DC3e85441',
-            oracleAddress: '0x08aa8c316b485a1a73356f662a9881d7b31bf427', //mock
+        sgl_TWETH: {
+            collateralAddress: '0xd5d5d2fed1eCb5Dea28Fe81fB575c9C241448D71', //tWeth
+            assetAddress: '0x006dcF07511D332299f83056731Cb15f0Aeb2F2B',
+            oracleAddress: '0xB63815242ec16F1D8F83A4dEec844296A546cA8d', //mock
             minBidAmount: 20,
             hasExecutionBidder: false,
             executionBidder: '0x0000000000000000000000000000000000000000',
         },
-        sgl_BTC: {
-            collateralAddress: '0xC04B0d3107736C32e19F1c62b2aF67BE61d63a05', //weth
+
+        sgl_TAVAX: {
+            collateralAddress: '0xef0871E0e8C3320f5Cf8c0051EC856b9c083660f', //tAvax
+            assetAddress: '0x006dcF07511D332299f83056731Cb15f0Aeb2F2B',
+            oracleAddress: '0x707dC804728495e14F58c22a38dE17b5c7591323', //mock
+            minBidAmount: 20,
+            hasExecutionBidder: false,
+            executionBidder: '0x0000000000000000000000000000000000000000',
+        },
+    },
+    //fuji
+    '43113': {
+        ...supportedChains['fuji_avalanche'],
+        wrappedNative: '0x0000000000000000000000000000000000000000',
+        tapAddress: '0xBEb739E11742D7015B807012894bDA8b0fe6b141',
+        feeTo: '0x40282d3Cf4890D9806BC1853e97a59C93D813653',
+        feeCollector: '0x40282d3Cf4890D9806BC1853e97a59C93D813653', //for liquidation queue
+        uniV2Factory: '0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f',
+        uniV2Router: '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D ',
+        uniV2PairHash:
+            '0x68ddfd89d43db94fbd68a4abd2861ebcbfea56c0fd36334bbb95f0661c3171a2',
+        crvStablePool: '0x803147a1f65f9b838e7be39bac1a4f51e6d29a18', //random address
+        wethAddress: '0xc5A3f63c28F625D0496804e169C21a280B2d10B9',
+        assets: [
+            {
+                name: 'tAvax',
+                address: '0x28D691380D2d8C86f6fdD2e49123C1DA9fa33b32',
+            },
+            {
+                name: 'tWETH',
+                address: '0x4ee2C3e02D9c47951a6a56bE803030D70F3dbfb7',
+            },
+            {
+                name: 'tMATIC',
+                address: '0xe82f613C2B46D3fD51bA2A6Bc04a4dB65413b2a1',
+            },
+            {
+                name: 'TAP',
+                address: '0xBEb739E11742D7015B807012894bDA8b0fe6b141',
+            },
+        ],
+    },
+    //mumbai
+    '80001': {
+        ...supportedChains['mumbai'],
+        wrappedNative: '0x0000000000000000000000000000000000000000',
+        tapAddress: '0x78Ab2649fd6682e5c3CCFABb87ed6FcED0843cE4',
+        feeTo: '0x40282d3Cf4890D9806BC1853e97a59C93D813653',
+        feeCollector: '0x40282d3Cf4890D9806BC1853e97a59C93D813653', //for liquidation queue
+        uniV2Factory: '0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f',
+        uniV2Router: '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D ',
+        uniV2PairHash:
+            '0x68ddfd89d43db94fbd68a4abd2861ebcbfea56c0fd36334bbb95f0661c3171a2',
+        crvStablePool: '0x803147a1f65f9b838e7be39bac1a4f51e6d29a18', //random address
+        wethAddress: '0x766d7631F6aE1E37c87dc10c8d4D9272e6be6Fc8',
+        assets: [
+            {
+                name: 'tAvax',
+                address: '0x74FC744146cb0067AC34DF10c6e7bcc050439D37',
+            },
+            {
+                name: 'tWETH',
+                address: '0xAa7e77fb38C8B5df58cba3a49227dAb6ee5f18Cb',
+            },
+            {
+                name: 'tMATIC',
+                address: '0x18BC2Be450e04EBB72A150dfa9a268F60302215c',
+            },
+            {
+                name: 'TAP',
+                address: '0x78Ab2649fd6682e5c3CCFABb87ed6FcED0843cE4',
+            },
+        ],
+    },
+    //goerli
+    '5': {
+        ...supportedChains['goerli'],
+        wrappedNative: '0x0000000000000000000000000000000000000000',
+        tapAddress: '0xdb7677D723ED0B12E7A3945A4Ae234d4EFa4b91e',
+        feeTo: '0x40282d3Cf4890D9806BC1853e97a59C93D813653',
+        feeCollector: '0x40282d3Cf4890D9806BC1853e97a59C93D813653', //for liquidation queue
+        uniV2Factory: '0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f',
+        uniV2Router: '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D ',
+        uniV2PairHash:
+            '0x68ddfd89d43db94fbd68a4abd2861ebcbfea56c0fd36334bbb95f0661c3171a2',
+        crvStablePool: '0x803147a1f65f9b838e7be39bac1a4f51e6d29a18', //random address
+        wethAddress: '0xb4fbf271143f4fbf7b91a5ded31805e42b2208d6',
+        assets: [
+            {
+                name: 'tUSDC',
+                address: '0x8AE919C76297a20795Fa69DE5DD713248abd6EfE',
+            },
+            {
+                name: 'tWETH',
+                address: '0xE40CE28B4353ad276Ac9cccb87787F7dfA2984d7',
+            },
+            {
+                name: 'tWBTC',
+                address: '0x2E50122Fa37d294dF52030E2F602b4c7F73cD38F',
+            },
+            {
+                name: 'TAP',
+                address: '0xdb7677D723ED0B12E7A3945A4Ae234d4EFa4b91e',
+            },
+        ],
+        sgl_ETH: {
+            collateralAddress: '0xE40CE28B4353ad276Ac9cccb87787F7dfA2984d7', //tWeth
             assetAddress: '0xf64364494212954c20B0762fcB1ebB6DC3e85441',
             oracleAddress: '0x08aa8c316b485a1a73356f662a9881d7b31bf427', //mock
             minBidAmount: 20,
@@ -66,7 +170,7 @@ export const constants: { [key: string]: any } = {
             executionBidder: '0x0000000000000000000000000000000000000000',
         },
         minterSGL_ETH: {
-            collateralAddress: '0xe1E3E81B5b868cAB59a27Fa8D30C5225c5D55FC4',
+            collateralAddress: '0xE40CE28B4353ad276Ac9cccb87787F7dfA2984d7',
             oracleAddress: '0x08aa8c316b485a1a73356f662a9881d7b31bf427', //mock
         },
     },
@@ -173,7 +277,7 @@ export const verify = async (
 ) => {
     const { deployments } = hre;
 
-    const deployed = await deployments.get(artifact);
+    let deployed = await deployments.get(artifact);
     console.log(`[+] Verifying ${artifact}`);
     try {
         await hre.run('verify', {
@@ -215,15 +319,27 @@ export const deployOracleMock = async (
     const { deployer } = await getNamedAccounts();
     name = name.toLowerCase();
 
-    if (hre.ethers.utils.isAddress(mockFactory)) {
+    console.log(`\nDeploying OracleMockFactory for ${name}`);
+    if (!hre.ethers.utils.isAddress(mockFactory)) {
+        const contracts: TContract[] = [];
+
         await deploy('OracleMockFactory', { from: deployer, log: true });
         await verify(hre, 'OracleMockFactory', []);
         const oracleFactory = await deployments.get('OracleMockFactory');
         mockFactory = oracleFactory.address;
+
+        contracts.push({
+            name: 'Penrose',
+            address: oracleFactory.address,
+            meta: {},
+        });
+        const chainId = await hre.getChainId();
+        await updateDeployments(contracts, chainId);
+        console.log(`Deployed`);
     }
     const oracleFactoryContract = await hre.ethers.getContractAt(
         'OracleMockFactory',
-        oracleFactory.address,
+        mockFactory,
     );
     console.log('Done');
 
@@ -236,7 +352,7 @@ export const deployOracleMock = async (
     console.log(`\nSetting mock price`);
     const oracleContract = await hre.ethers.getContractAt(
         'OracleMock',
-        oracleMock.address,
+        oracleMock,
     );
     const price =
         name == 'btc'
@@ -247,8 +363,8 @@ export const deployOracleMock = async (
 
     return new Promise(async (resolve) =>
         resolve({
-            name: 'OracleMock',
-            address: oracleMock.address,
+            name: `OracleMock-${name}`,
+            address: oracleMock,
             meta: {},
         }),
     );
@@ -404,8 +520,6 @@ export const registerMarket = async (
         hre.ethers.constants.AddressZero,
         0,
     );
-    const collateralSwapPath = [marketData.collateralAddress, assetAddress];
-    const tapSwapPath = [assetAddress, constants[chainId].tapAddress];
 
     const sglLiquidation = await deployments.get('SGLLiquidation');
     const sglLendingBorrowing = await deployments.get('SGLLendingBorrowing');

@@ -9,6 +9,7 @@ import 'hardhat-contract-sizer';
 import 'hardhat-gas-reporter';
 import SDK from 'tapioca-sdk';
 import { HttpNetworkConfig } from 'hardhat/types';
+import 'hardhat-tracer';
 
 dotenv.config();
 

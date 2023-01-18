@@ -18,12 +18,19 @@ describe('LiquidationQueue test', () => {
     });
 
     it('Should make a bid', async () => {
-        const { liquidationQueue, deployer, weth, LQ_META, yieldBox } =
-            await loadFixture(register);
+        const {
+            liquidationQueue,
+            deployer,
+            weth,
+            LQ_META,
+            yieldBox,
+            timeTravel,
+        } = await loadFixture(register);
 
         const POOL = 10;
 
         await (await weth.freeMint(LQ_META.minBidAmount)).wait();
+        await timeTravel(86500);
         await (
             await weth.approve(yieldBox.address, LQ_META.minBidAmount)
         ).wait();
@@ -60,6 +67,7 @@ describe('LiquidationQueue test', () => {
 
         // Bid
         await (await weth.freeMint(LQ_META.minBidAmount)).wait();
+        await timeTravel(86500);
         await (
             await weth.approve(yieldBox.address, LQ_META.minBidAmount)
         ).wait();
@@ -105,7 +113,7 @@ describe('LiquidationQueue test', () => {
 
         expect(
             entry.bidder.toLowerCase() === deployer.address.toLowerCase() &&
-            entry.bidInfo.liquidatedAssetAmount.eq(LQ_META.minBidAmount),
+                entry.bidInfo.liquidatedAssetAmount.eq(LQ_META.minBidAmount),
         ).to.be.true;
 
         // Check order pool info update
@@ -114,14 +122,21 @@ describe('LiquidationQueue test', () => {
     });
 
     it('Should remove an inactivated bid', async () => {
-        const { liquidationQueue, deployer, weth, LQ_META, yieldBox } =
-            await loadFixture(register);
+        const {
+            liquidationQueue,
+            deployer,
+            weth,
+            LQ_META,
+            yieldBox,
+            timeTravel,
+        } = await loadFixture(register);
 
         const POOL = 10;
         const lqAssetId = await liquidationQueue.lqAssetId();
 
         // Bid
         await (await weth.freeMint(LQ_META.minBidAmount)).wait();
+        await timeTravel(86500);
         await (
             await weth.approve(yieldBox.address, LQ_META.minBidAmount)
         ).wait();
@@ -159,7 +174,6 @@ describe('LiquidationQueue test', () => {
         ).to.be.eq(LQ_META.minBidAmount);
     });
 
-
     it('Should execute bids', async () => {
         const {
             deployer,
@@ -185,6 +199,7 @@ describe('LiquidationQueue test', () => {
 
         // Bid and activate
         await (await weth.freeMint(LQ_META.minBidAmount.mul(100))).wait();
+        await timeTravel(86500);
         await (
             await weth.approve(yieldBox.address, LQ_META.minBidAmount.mul(100))
         ).wait();
@@ -207,6 +222,7 @@ describe('LiquidationQueue test', () => {
         // Mint some weth to deposit as asset with EOA1
         const wethAmount = BN(1e18).mul(100);
         await weth.connect(eoa1).freeMint(wethAmount);
+        await timeTravel(86500);
         await weth.connect(eoa1).approve(yieldBox.address, wethAmount);
 
         await yieldBox
@@ -239,6 +255,7 @@ describe('LiquidationQueue test', () => {
             .div(__wethUsdcPrice.div(BN(1e18)));
 
         await usdc.freeMint(usdcAmount);
+        await timeTravel(86500);
         await usdc.approve(yieldBox.address, usdcAmount);
         await yieldBox.depositAsset(
             marketColId,
@@ -337,6 +354,7 @@ describe('LiquidationQueue test', () => {
         const POOL = 10;
 
         await (await weth.freeMint(LQ_META.minBidAmount.mul(2))).wait();
+        await timeTravel(86500);
         await (
             await weth.approve(yieldBox.address, LQ_META.minBidAmount.mul(2))
         ).wait();
@@ -376,6 +394,7 @@ describe('LiquidationQueue test', () => {
         const POOL = 10;
 
         await (await weth.freeMint(LQ_META.minBidAmount.mul(2))).wait();
+        await timeTravel(86500);
         await (
             await weth.approve(yieldBox.address, LQ_META.minBidAmount.mul(2))
         ).wait();
@@ -444,7 +463,9 @@ describe('LiquidationQueue test', () => {
         ///
         for (const account of accounts) {
             await weth.connect(account).freeMint(LQ_META.defaultBidAmount); //for lending
+            await timeTravel(86500);
             await usdc.connect(account).freeMint(usdcMintVal); //for collateral
+            await timeTravel(86500);
         }
 
         const wethBalanceOfFirstAccount = parseFloat(
@@ -619,8 +640,6 @@ describe('LiquidationQueue test', () => {
                 )}`,
             ).to.eq(parseFloat(ethers.utils.formatEther(LQ_META.minBidAmount)));
         }
-
-
 
         //should be 0 as no bid was executed
         const firstUserBalanceDue = await liquidationQueue.balancesDue(
@@ -902,6 +921,7 @@ describe('LiquidationQueue test', () => {
             usdoToWethBidder,
             usd0,
             deployCurveStableToUsdoBidder,
+            timeTravel
         } = await loadFixture(register);
 
         //deploy and register usdoSwapper and bidExecutionSwapper
@@ -944,6 +964,7 @@ describe('LiquidationQueue test', () => {
             __wethUsdcPrice.div((1e18).toString()),
         );
         await usdc.freeMint(toBid);
+        await timeTravel(86500);
         await usdc.approve(yieldBox.address, toBid);
         await yieldBox.depositAsset(
             usdcAssetId,
@@ -1188,6 +1209,7 @@ describe('LiquidationQueue test', () => {
             __wethUsdcPrice.div((1e18).toString()),
         );
         await usdc.freeMint(toBid);
+        await timeTravel(86500);
         await usdc.approve(yieldBox.address, toBid);
         await yieldBox.depositAsset(
             usdcAssetId,
@@ -1226,6 +1248,7 @@ describe('LiquidationQueue test', () => {
 
         // Bid again
         await usdc.freeMint(toBid);
+        await timeTravel(86500);
         await usdc.approve(yieldBox.address, toBid);
         await yieldBox.depositAsset(
             usdcAssetId,
@@ -1314,6 +1337,7 @@ describe('LiquidationQueue test', () => {
             __wethUsdcPrice.div((1e18).toString()),
         );
         await usdc.freeMint(toBid);
+        await timeTravel(86500);
         await usdc.approve(yieldBox.address, toBid);
         await yieldBox.depositAsset(
             usdcAssetId,
@@ -1366,10 +1390,14 @@ describe('LiquidationQueue test', () => {
         );
 
         await weth.connect(accounts[0]).freeMint(LQ_META.defaultBidAmount); //for lending
+        await timeTravel(86500);
         await usdc.connect(accounts[0]).freeMint(usdcMintVal); //for collateral
+        await timeTravel(86500);
 
         await weth.connect(accounts[1]).freeMint(LQ_META.defaultBidAmount); //for lending
+        await timeTravel(86500);
         await usdc.connect(accounts[1]).freeMint(usdcMintVal); //for collateral
+        await timeTravel(86500);
 
         const lendValShare = await yieldBox.toShare(
             mixologistAssetId,
@@ -1564,6 +1592,7 @@ describe('LiquidationQueue test', () => {
             __wethUsdcPrice.div((1e18).toString()),
         );
         await usdc.freeMint(toBid);
+        await timeTravel(86500);
         await usdc.approve(yieldBox.address, toBid);
         await yieldBox.depositAsset(
             usdcAssetId,
@@ -1590,6 +1619,7 @@ describe('LiquidationQueue test', () => {
         ).to.emit(liquidationQueue, 'Bid');
 
         await usdc.connect(accounts[2]).freeMint(toBid);
+        await timeTravel(86500);
         await usdc.connect(accounts[2]).approve(yieldBox.address, toBid);
         await yieldBox
             .connect(accounts[2])
@@ -1623,10 +1653,11 @@ describe('LiquidationQueue test', () => {
         expect(bidPoolInfoDeployer.usdoAmount.gt(LQ_META.minBidAmount)).to.be
             .true;
         expect(bidPoolInfoDeployer.usdoAmount.lte(toBid)).to.be.true;
-        const bidPoolInfoAnotherAccount = await liquidationQueue.getBidPoolUserInfo(
-            POOL,
-            accounts[2].address,
-        );
+        const bidPoolInfoAnotherAccount =
+            await liquidationQueue.getBidPoolUserInfo(
+                POOL,
+                accounts[2].address,
+            );
 
         expect(bidPoolInfoAnotherAccount.usdoAmount.gt(LQ_META.minBidAmount)).to
             .be.true;
@@ -1656,10 +1687,14 @@ describe('LiquidationQueue test', () => {
         );
 
         await weth.connect(accounts[0]).freeMint(lentAmount); //for lending
+        await timeTravel(86500);
         await usdc.connect(accounts[0]).freeMint(usdcMintVal); //for collateral
 
+        await timeTravel(86500);
         await weth.connect(accounts[1]).freeMint(lentAmount); //for lending
+        await timeTravel(86500);
         await usdc.connect(accounts[1]).freeMint(usdcMintVal); //for collateral
+        await timeTravel(86500);
 
         const lendValShare = await yieldBox.toShare(
             mixologistAssetId,
@@ -1825,6 +1860,7 @@ describe('LiquidationQueue test', () => {
         const POOL = 10;
 
         await (await weth.freeMint(LQ_META.minBidAmount)).wait();
+        await timeTravel(86500);
         await (
             await weth.approve(yieldBox.address, LQ_META.minBidAmount)
         ).wait();
@@ -1867,7 +1903,7 @@ describe('LiquidationQueue test', () => {
 
         expect(
             entry.bidder.toLowerCase() === deployer.address.toLowerCase() &&
-            entry.bidInfo.liquidatedAssetAmount.eq(LQ_META.minBidAmount),
+                entry.bidInfo.liquidatedAssetAmount.eq(LQ_META.minBidAmount),
         ).to.be.true;
 
         // Check order pool info update
@@ -1892,6 +1928,7 @@ describe('LiquidationQueue test', () => {
         const POOL = 10;
 
         await (await weth.freeMint(LQ_META.minBidAmount.mul(3))).wait();
+        await timeTravel(86500);
         await (
             await weth.approve(yieldBox.address, LQ_META.minBidAmount.mul(3))
         ).wait();
@@ -1952,7 +1989,7 @@ describe('LiquidationQueue test', () => {
         );
         expect(
             entry.bidder.toLowerCase() === deployer.address.toLowerCase() &&
-            entry.bidInfo.liquidatedAssetAmount.eq(LQ_META.minBidAmount),
+                entry.bidInfo.liquidatedAssetAmount.eq(LQ_META.minBidAmount),
         ).to.be.true;
 
         entry = await liquidationQueue.orderBookEntries(
@@ -1961,7 +1998,7 @@ describe('LiquidationQueue test', () => {
         );
         expect(
             entry.bidder.toLowerCase() === deployer.address.toLowerCase() &&
-            entry.bidInfo.liquidatedAssetAmount.eq(LQ_META.minBidAmount),
+                entry.bidInfo.liquidatedAssetAmount.eq(LQ_META.minBidAmount),
         ).to.be.true;
 
         entry = await liquidationQueue.orderBookEntries(
@@ -1970,7 +2007,7 @@ describe('LiquidationQueue test', () => {
         );
         expect(
             entry.bidder.toLowerCase() === deployer.address.toLowerCase() &&
-            entry.bidInfo.liquidatedAssetAmount.eq(LQ_META.minBidAmount),
+                entry.bidInfo.liquidatedAssetAmount.eq(LQ_META.minBidAmount),
         ).to.be.true;
         expect(lastAdditionIdx.nextBidPush).to.eq(3);
     });
@@ -1988,6 +2025,7 @@ describe('LiquidationQueue test', () => {
         const POOL = 10;
 
         await (await weth.freeMint(LQ_META.minBidAmount)).wait();
+        await timeTravel(86500);
         await (
             await weth.approve(yieldBox.address, LQ_META.minBidAmount)
         ).wait();
@@ -2038,6 +2076,7 @@ describe('LiquidationQueue test', () => {
 
         // Bid
         await (await weth.freeMint(LQ_META.minBidAmount.mul(100))).wait();
+        await timeTravel(86500);
         await (
             await weth.approve(yieldBox.address, LQ_META.minBidAmount.mul(100))
         ).wait();
@@ -2090,6 +2129,7 @@ describe('LiquidationQueue test', () => {
             .div(__wethUsdcPrice.div(BN(1e18)));
 
         await usdc.freeMint(usdcAmount);
+        await timeTravel(86500);
         await usdc.approve(yieldBox.address, usdcAmount);
         await yieldBox.depositAsset(
             marketColId,
@@ -2190,6 +2230,7 @@ describe('LiquidationQueue test', () => {
 
         // Bid
         await (await weth.freeMint(LQ_META.minBidAmount)).wait();
+        await timeTravel(86500);
         await (
             await weth.approve(yieldBox.address, LQ_META.minBidAmount)
         ).wait();
@@ -2212,6 +2253,7 @@ describe('LiquidationQueue test', () => {
         // Mint some weth to deposit as asset with EOA1
         const wethAmount = BN(1e18).mul(100);
         await weth.connect(eoa1).freeMint(wethAmount);
+        await timeTravel(86500);
         await weth.connect(eoa1).approve(yieldBox.address, wethAmount);
         await yieldBox
             .connect(eoa1)
@@ -2243,6 +2285,7 @@ describe('LiquidationQueue test', () => {
             .div(__wethUsdcPrice.div(BN(1e18)));
 
         await usdc.freeMint(usdcAmount);
+        await timeTravel(86500);
         await usdc.approve(yieldBox.address, usdcAmount);
         await yieldBox.depositAsset(
             marketColId,
@@ -2306,7 +2349,6 @@ describe('LiquidationQueue test', () => {
         expect(bidIndexLen.eq(1)).to.be.true;
     });
 
-
     it('borrow, place bid, activate, collateral drops, liquidate => should rely on LQ liquidation', async () => {
         const {
             deployer,
@@ -2331,6 +2373,7 @@ describe('LiquidationQueue test', () => {
 
         // Bid
         await (await weth.freeMint(LQ_META.minBidAmount.mul(100))).wait();
+        await timeTravel(86500);
         await (
             await weth.approve(yieldBox.address, LQ_META.minBidAmount.mul(100))
         ).wait();
@@ -2353,6 +2396,7 @@ describe('LiquidationQueue test', () => {
         // Mint some weth to deposit as asset with EOA1
         const wethAmount = BN(1e18).mul(100);
         await weth.connect(eoa1).freeMint(wethAmount);
+        await timeTravel(86500);
         await weth.connect(eoa1).approve(yieldBox.address, wethAmount);
         await yieldBox
             .connect(eoa1)
@@ -2384,6 +2428,7 @@ describe('LiquidationQueue test', () => {
             .div(__wethUsdcPrice.div(BN(1e18)));
 
         await usdc.freeMint(usdcAmount);
+        await timeTravel(86500);
         await usdc.approve(yieldBox.address, usdcAmount);
         await yieldBox.depositAsset(
             marketColId,
@@ -2418,12 +2463,12 @@ describe('LiquidationQueue test', () => {
             deployer.address,
         );
 
-         // Check for deleted bid pool entry queue
-         let lastAdditionIdx = await liquidationQueue.orderBookInfos(POOL);
-         let entry = await liquidationQueue.orderBookEntries(
-             POOL,
-             lastAdditionIdx.nextBidPush - 1,
-         );
+        // Check for deleted bid pool entry queue
+        let lastAdditionIdx = await liquidationQueue.orderBookInfos(POOL);
+        let entry = await liquidationQueue.orderBookEntries(
+            POOL,
+            lastAdditionIdx.nextBidPush - 1,
+        );
         const initialBidAmount = entry.bidInfo.liquidatedAssetAmount;
         await expect(
             wethUsdcSingularity.liquidate(
@@ -2436,7 +2481,8 @@ describe('LiquidationQueue test', () => {
         ).to.not.be.reverted;
 
         // Check that LQ balances has been added
-        expect((await liquidationQueue.balancesDue(deployer.address)).gt(0)).to.be.true;
+        expect((await liquidationQueue.balancesDue(deployer.address)).gt(0)).to
+            .be.true;
 
         const finalBorrowPart = await wethUsdcSingularity.userBorrowPart(
             deployer.address,
@@ -2452,7 +2498,8 @@ describe('LiquidationQueue test', () => {
             POOL,
             lastAdditionIdx.nextBidPush - 1,
         );
-        expect(initialBidAmount.gt(entry.bidInfo.liquidatedAssetAmount)).to.be.true;
+        expect(initialBidAmount.gt(entry.bidInfo.liquidatedAssetAmount)).to.be
+            .true;
     });
 });
 

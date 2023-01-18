@@ -15,7 +15,11 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     console.log('\n Deploying Penrose');
     const yieldBoxContract = await getDeployment(hre, 'YieldBox');
 
-    const args = [yieldBoxContract.address, constants[chainId].tapAddress];
+    const args = [
+        yieldBoxContract.address,
+        constants[chainId].tapAddress,
+        constants[chainId].wethAddress,
+    ];
     await deploy('Penrose', {
         from: deployer,
         log: true,
@@ -36,7 +40,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
     await updateDeployments(contracts, chainId);
 
-    console.log('\n Setting feeTo & feeVeTo');
+    console.log('\n Setting feeTo');
     const penroseContract = await hre.ethers.getContractAt(
         'Penrose',
         deployedPenrose.address,

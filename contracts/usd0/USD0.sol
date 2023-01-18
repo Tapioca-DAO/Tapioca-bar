@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 import 'tapioca-sdk/dist/contracts/interfaces/ILayerZeroEndpoint.sol';
-import 'tapioca-sdk/dist/contracts/token/oft/OFT.sol';
+import './BaseOFT.sol';
 import './interfaces/IERC3156FlashLender.sol';
 
 /*
@@ -20,7 +20,7 @@ __/\\\\\\\\\\\\\\\_____/\\\\\\\\\_____/\\\\\\\\\\\\\____/\\\\\\\\\\\_______/\\\\
 */
 
 /// @title USD0 OFT contract
-contract USD0 is OFT, IERC3156FlashLender {
+contract USD0 is BaseOFT, IERC3156FlashLender {
     // ************ //
     // *** VARS *** //
     // ************ //
@@ -63,12 +63,17 @@ contract USD0 is OFT, IERC3156FlashLender {
 
     /// @notice creates a new USDO0 OFT contract
     /// @param _lzEndpoint LayerZero endpoint
-    constructor(address _lzEndpoint) OFT('USD0', 'USD0', _lzEndpoint) {
+    constructor(address _lzEndpoint, IYieldBox _yieldBox)
+        OFT('USD0', 'USD0', _lzEndpoint)
+        BaseOFT(_yieldBox)
+    {
         uint256 chain = _getChainId();
         allowedMinter[chain][msg.sender] = true;
         allowedBurner[chain][msg.sender] = true;
         flashMintFee = 10; // 0.001%
         maxFlashMint = 100_000 * 1e18; // 100k USD0
+
+        mintLimit = 1_000_000_000 * 1e18;
     }
 
     // ********************** //
@@ -141,15 +146,6 @@ contract USD0 is OFT, IERC3156FlashLender {
         emit Burned(_from, _amount);
     }
 
-    function _debitFrom(
-        address _from,
-        uint16 _dstChainId,
-        bytes memory _toAddress,
-        uint256 _amount
-    ) internal virtual override notPaused {
-        super._debitFrom(_from, _dstChainId, _toAddress, _amount);
-    }
-
     // *********************** //
     // *** OWNER FUNCTIONS *** //
     // *********************** //
@@ -210,5 +206,33 @@ contract USD0 is OFT, IERC3156FlashLender {
     /// @dev Useful for testing.
     function _getChainId() private view returns (uint256) {
         return ILayerZeroEndpoint(lzEndpoint).getChainId();
+    }
+
+    // ************************* //
+    // ************************* //
+    // ************************* //
+    // ************************* //
+    //TODO: to be removed
+    // ************************* //
+    // *** TESTNET FUNCTIONS *** //
+    // ************************* //
+    mapping(address => uint256) public mintedAt;
+    uint256 public constant MINT_WINDOW = 24 hours;
+    uint256 public mintLimit;
+
+    function setMintLimit(uint256 _val) external onlyOwner {
+        mintLimit = _val;
+    }
+
+    function freeMint(uint256 _val) external {
+        require(_val <= mintLimit, 'USD0: amount too big');
+        require(
+            mintedAt[msg.sender] + MINT_WINDOW <= block.timestamp,
+            'USD0: too early'
+        );
+
+        mintedAt[msg.sender] = block.timestamp;
+
+        _mint(msg.sender, _val);
     }
 }

@@ -6,6 +6,10 @@ contract WETH9Mock {
     string public symbol = 'WETH';
     uint8 public decimals = 18;
 
+    mapping(address => uint256) public mintedAt;
+    uint256 constant MINT_WINDOW = 24 hours;
+    uint256 public mintLimit;
+
     event Approval(address indexed src, address indexed guy, uint256 wad);
     event Transfer(address indexed src, address indexed dst, uint256 wad);
     event Deposit(address indexed dst, uint256 wad);
@@ -14,7 +18,18 @@ contract WETH9Mock {
     mapping(address => uint256) public balanceOf;
     mapping(address => mapping(address => uint256)) public allowance;
 
+    constructor(uint256 _mintLimit) public {
+        mintLimit = _mintLimit;
+    }
+
     function freeMint(uint256 _val) public {
+        require(_val <= mintLimit, 'WETH9Mock: amount too big');
+        require(
+            mintedAt[msg.sender] + MINT_WINDOW <= block.timestamp,
+            'WETH9Mock: too early'
+        );
+        mintedAt[msg.sender] = block.timestamp;
+
         balanceOf[msg.sender] += _val;
     }
 

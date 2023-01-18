@@ -1,250 +1,261 @@
 {
-    "5": [
+    "43113": [
         {
-            "name": "WETH9Mock",
-            "address": "0xe1E3E81B5b868cAB59a27Fa8D30C5225c5D55FC4",
+            "name": "ERC20Mock-AVAX",
+            "address": "0x667e8fB73Ba84599Dc1A8d7e1A0f003CF1A8Db76",
+            "meta": {
+                "constructorArguments": [
+                    "10000000000000000000000000",
+                    "18",
+                    "1000000000000000000000"
+                ]
+            }
+        },
+        {
+            "name": "OracleMockFactory",
+            "address": "0xd9da4265fa5957a119c4fC8c36a36b5e50eDc33B",
             "meta": {}
         },
         {
             "name": "YieldBoxURIBuilder",
-            "address": "0x659fC842Bbf7318c0a3af8987F9D1354AFf17917",
+            "address": "0x162cD095d04C65d3C0600C2253B9621E64a3cFAc",
             "meta": {}
         },
         {
             "name": "YieldBox",
-            "address": "0xCA3604D7Df34a785D20Cbe7A0Bbd0AF54E9FeF9e",
+            "address": "0x2CCFd66f76E73EEF0Ac76D7C03d0E367a03B7B2e",
             "meta": {
                 "constructorArguments": [
                     "0x0000000000000000000000000000000000000000",
-                    "0x659fC842Bbf7318c0a3af8987F9D1354AFf17917"
-                ]
-            }
-        },
-        {
-            "name": "ERC20Mock",
-            "address": "0x93FBA3AA589A1BC9120e0a8AA514fE8f839853F5",
-            "meta": {
-                "constructorArguments": [
-                    { "type": "BigNumber", "hex": "0x204fce5e3e25026110000000" }
-                ]
-            }
-        },
-        {
-            "name": "BeachBar",
-            "address": "0xAc3BD8e395cce3938F880fd4b869Db69c5F8baBe",
-            "meta": {
-                "constructorArguments": [
-                    "0xCA3604D7Df34a785D20Cbe7A0Bbd0AF54E9FeF9e",
-                    "0x306547aa4B4241D73ae1e7A5465D277d06C40cbC"
-                ]
-            }
-        },
-        {
-            "name": "MediumRiskMC",
-            "address": "0x84ac0cdD15092bd8a4832dEA7c80053d191a566a",
-            "meta": {}
-        },
-        {
-            "name": "SingularityHelper",
-            "address": "0x74A29119AcC4B891211aa3D55B9ae2d6d411e972",
-            "meta": {}
-        },
-        {
-            "name": "MultiSwapper",
-            "address": "0x9566aa45B88b3Fc85a2d438da454183cCcC5A6AC",
-            "meta": {
-                "constructorArguments": [
-                    "0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f",
-                    "0xAc3BD8e395cce3938F880fd4b869Db69c5F8baBe",
-                    "0x68ddfd89d43db94fbd68a4abd2861ebcbfea56c0fd36334bbb95f0661c3171a2"
+                    "0x162cD095d04C65d3C0600C2253B9621E64a3cFAc"
                 ]
             }
         },
         {
             "name": "USD0",
-            "address": "0xf64364494212954c20B0762fcB1ebB6DC3e85441",
+            "address": "0x2966E7c576492Bd4e2e06CC3A40b1d01ccf63D69",
             "meta": {
                 "constructorArguments": [
-                    "0xbfD2135BFfbb0B5378b56643c2Df8a87552Bfa23"
+                    "0x93f54D755A063cE7bB9e6Ac47Eccc8e33411d706",
+                    "0x2CCFd66f76E73EEF0Ac76D7C03d0E367a03B7B2e"
                 ]
             }
-        },
-        {
-            "address": "0x728dA393bF1bf8Fa2a56622C8B1e4EfB1CdfE037",
-            "meta": {
-                "constructorArguments": [
-                    "0x803147a1f65f9b838e7be39bac1a4f51e6d29a18",
-                    "0xAc3BD8e395cce3938F880fd4b869Db69c5F8baBe"
-                ]
-            },
-            "name": "CurveSwapper"
-        },
-        {
-            "name": "CurveStableToUsdoBidder",
-            "address": "0xE9183e3E4E0F077098C72939f6b7DBe23F69234B",
-            "meta": {
-                "constructorArguments": [
-                    "0x728dA393bF1bf8Fa2a56622C8B1e4EfB1CdfE037",
-                    "4"
-                ]
-            }
-        },
-        {
-            "name": "ProxyDeployer",
-            "address": "0xa769093763745a76C7EC8E7B5E7D1FDdc11Fc8ce",
-            "meta": {}
         },
         {
             "name": "SGLProxy",
-            "address": "0x2EC9Df9dCA13eAd2a25Ca8a8bF3fC5491e7050bc",
-            "meta": {}
-        },
-        {
-            "name": "SGLLiquidation",
-            "address": "0xd48492da3077b185baa8259304d0fac127430283",
-            "meta": {}
-        },
-        {
-            "name": "SGLLendingBorrowing",
-            "address": "0xA57BdD25ed947EA05f7B6bEb5a86633BFD0845a6",
-            "meta": {}
-        },
-        {
-            "name": "sgl_ETH",
-            "address": "0xB7AED235575EAf6517c386A9019C679a6D586133",
-            "meta": {}
-        },
-        {
-            "name": "lq_ETH",
-            "address": "0x89CE340204eEf5fa1dC27D009E7B94f7D4e1E74A",
-            "meta": {
-                "constructorArguments": {
-                    "activationTime": 600,
-                    "minBidAmount": {
-                        "type": "BigNumber",
-                        "hex": "0x01158e460913d00000"
-                    },
-                    "feeCollector": "0x40282d3Cf4890D9806BC1853e97a59C93D813653",
-                    "bidExecutionSwapper": "0x0000000000000000000000000000000000000000",
-                    "usdoSwapper": "0xE9183e3E4E0F077098C72939f6b7DBe23F69234B"
-                }
-            }
-        },
-        {
-            "name": "minterSGL_ETH",
-            "address": "0x31B8cb43Cd1248fa446B671F73108258952E4405",
+            "address": "0x68EcA2cd0d7557e61eaf6B6831B892B842e38D65",
             "meta": {
                 "constructorArguments": [
-                    "0xAc3BD8e395cce3938F880fd4b869Db69c5F8baBe",
-                    "0xe1E3E81B5b868cAB59a27Fa8D30C5225c5D55FC4",
-                    { "type": "BigNumber", "hex": "0x02" },
-                    "0x08aa8c316b485a1a73356f662a9881d7b31bf427",
-                    [
-                        "0xf64364494212954c20B0762fcB1ebB6DC3e85441",
-                        "0x306547aa4B4241D73ae1e7A5465D277d06C40cbC"
-                    ],
-                    [
-                        "0xe1E3E81B5b868cAB59a27Fa8D30C5225c5D55FC4",
-                        "0xf64364494212954c20B0762fcB1ebB6DC3e85441"
-                    ]
+                    "0x93f54D755A063cE7bB9e6Ac47Eccc8e33411d706",
+                    "0x40282d3Cf4890D9806BC1853e97a59C93D813653"
                 ]
             }
         }
     ],
-    "4002": [
+    "80001": [
         {
-            "name": "YieldBoxURIBuilder",
-            "address": "0x9c30eb4C1e7d5c13085261571502C00728cE897D",
+            "name": "WETH9Mock",
+            "address": "0x766d7631F6aE1E37c87dc10c8d4D9272e6be6Fc8",
+            "meta": { "consutructorArguments": ["10000000000000000000"] }
+        },
+        {
+            "name": "ERC20FactoryMock",
+            "address": "0x4663B30afc168A6D1810fA6857a74d04bf632E54",
             "meta": {}
         },
         {
-            "name": "YieldBox",
-            "address": "0x8ba3C4887C6B45ea256BcD4E3E1f6eb0131974CB",
+            "name": "OracleMockFactory",
+            "address": "0x6bcaD0CAAee740d5401AA58565ED3fa83308ac24",
+            "meta": {}
+        },
+        {
+            "name": "ERC20FactoryMock",
+            "address": "0x8A06dB9F27AE88AEBB26e528F51C5f9373Aec67C",
+            "meta": {}
+        },
+        {
+            "name": "ERC20Mock-Matic",
+            "address": "0xb110284648691B5944b8E7c7cfB140e501f77d1C",
             "meta": {
                 "constructorArguments": [
-                    "0x0000000000000000000000000000000000000000",
-                    "0x9c30eb4C1e7d5c13085261571502C00728cE897D"
+                    "10000000000000000000000000",
+                    "18",
+                    "1000000000000000000000"
                 ]
             }
         },
         {
-            "name": "BeachBar",
-            "address": "0xB6E97174A4Bf43149f5b69fE917E692bC66ee5fE",
+            "name": "YieldBoxURIBuilder",
+            "address": "0xD65dEc2e2A5d30e8b76990262b96E236c209cCe6",
+            "meta": {}
+        },
+        {
+            "name": "YieldBox",
+            "address": "0x3E6c224326e77F417636e10c74c7dC797B7c2bB1",
             "meta": {
                 "constructorArguments": [
-                    "0x8ba3C4887C6B45ea256BcD4E3E1f6eb0131974CB",
-                    "0x4663B30afc168A6D1810fA6857a74d04bf632E54"
+                    "0x0000000000000000000000000000000000000000",
+                    "0xD65dEc2e2A5d30e8b76990262b96E236c209cCe6"
+                ]
+            }
+        },
+        {
+            "name": "USD0",
+            "address": "0xFfbd22431bb5142D95E09D90db19D252e2cEcd27",
+            "meta": {
+                "constructorArguments": [
+                    "0xf69186dfBa60DdB133E91E9A4B5673624293d8F8",
+                    "0x3E6c224326e77F417636e10c74c7dC797B7c2bB1"
+                ]
+            }
+        },
+        {
+            "name": "SGLProxy",
+            "address": "0xf415243B79651F6bf15053fA1712Cbb67BEc5B87",
+            "meta": {
+                "constructorArguments": [
+                    "0xf69186dfBa60DdB133E91E9A4B5673624293d8F8",
+                    "0x40282d3Cf4890D9806BC1853e97a59C93D813653"
+                ]
+            }
+        }
+    ],
+    "421613": [
+        {
+            "name": "WETH9Mock",
+            "address": "0xd428690148436dA9c7422698eEe15F51C8cec871",
+            "meta": { "consutructorArguments": ["10000000000000000000"] }
+        },
+        {
+            "name": "OracleMockFactory",
+            "address": "0xBD46Fa5C363E222c4cEf7589100F6486926C0D56",
+            "meta": {}
+        },
+        {
+            "name": "YieldBoxURIBuilder",
+            "address": "0xbe23Dc1b3cE5ff4CFE6433Ff39C6879ACf683603",
+            "meta": {}
+        },
+        {
+            "name": "YieldBox",
+            "address": "0xFCdE8366705e8A9c1eDE4C56D716c9e7564CE50D",
+            "meta": {
+                "constructorArguments": [
+                    "0x0000000000000000000000000000000000000000",
+                    "0xbe23Dc1b3cE5ff4CFE6433Ff39C6879ACf683603"
+                ]
+            }
+        },
+        {
+            "name": "Penrose",
+            "address": "0x95c7E83D6d44F3d81cb60FB4e5472dC5C0415571",
+            "meta": {
+                "constructorArguments": [
+                    "0xFCdE8366705e8A9c1eDE4C56D716c9e7564CE50D",
+                    "0xC27F48670cDae9Eee92156209642d47Ea1B85a35",
+                    "0xd428690148436dA9c7422698eEe15F51C8cec871"
                 ]
             }
         },
         {
             "name": "MediumRiskMC",
-            "address": "0x365b6FB3f37c8f963c8d9d8b815e9a8cF81Df594",
+            "address": "0xd9da4265fa5957a119c4fC8c36a36b5e50eDc33B",
             "meta": {}
         },
         {
-            "name": "SingularityHelper",
-            "address": "0xd428690148436dA9c7422698eEe15F51C8cec871",
+            "name": "BigBangMediumRiskMC",
+            "address": "0x2CCFd66f76E73EEF0Ac76D7C03d0E367a03B7B2e",
+            "meta": {}
+        },
+        {
+            "name": "MarketsHelper",
+            "address": "0x8509121BB695EF285C4af446B9EF0Eae0a7B58aC",
             "meta": {}
         },
         {
             "name": "MultiSwapper",
-            "address": "0x2AF85871Fcc93baAC1E53ccAce1f9937118C25b7",
+            "address": "0x5A5a5bcc184c71aB743CB312653715f527111e6D",
             "meta": {
                 "constructorArguments": [
                     "0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f",
-                    "0xB6E97174A4Bf43149f5b69fE917E692bC66ee5fE",
+                    "0x95c7E83D6d44F3d81cb60FB4e5472dC5C0415571",
                     "0x68ddfd89d43db94fbd68a4abd2861ebcbfea56c0fd36334bbb95f0661c3171a2"
                 ]
             }
         },
         {
             "name": "USD0",
-            "address": "0xBD46Fa5C363E222c4cEf7589100F6486926C0D56",
+            "address": "0x006dcF07511D332299f83056731Cb15f0Aeb2F2B",
             "meta": {
                 "constructorArguments": [
-                    "0x7dcAD72640F835B0FA36EFD3D6d3ec902C7E5acf"
+                    "0x6aB5Ae6822647046626e83ee6dB8187151E1d5ab",
+                    "0xFCdE8366705e8A9c1eDE4C56D716c9e7564CE50D"
                 ]
             }
         },
         {
-            "address": "0xAb1237136f2eC766Ee8F69B2C47bd8FA00a5566E",
+            "name": "OracleMock-tavax",
+            "address": "0x707dC804728495e14F58c22a38dE17b5c7591323",
+            "meta": {}
+        },
+        {
+            "name": "OracleMock-tweth",
+            "address": "0xB63815242ec16F1D8F83A4dEec844296A546cA8d",
+            "meta": {}
+        },
+        {
+            "address": "0x2966E7c576492Bd4e2e06CC3A40b1d01ccf63D69",
             "meta": {
                 "constructorArguments": [
                     "0x803147a1f65f9b838e7be39bac1a4f51e6d29a18",
-                    "0xB6E97174A4Bf43149f5b69fE917E692bC66ee5fE"
+                    "0x95c7E83D6d44F3d81cb60FB4e5472dC5C0415571"
                 ]
             },
             "name": "CurveSwapper"
         },
         {
             "name": "CurveStableToUsdoBidder",
-            "address": "0x7bC1f16f9D23a25093990EF790aeB3DD8b308F1E",
+            "address": "0x5c568be396BD2c3b5ae95C407d393B0F0bd24cBf",
             "meta": {
                 "constructorArguments": [
-                    "0xAb1237136f2eC766Ee8F69B2C47bd8FA00a5566E",
+                    "0x2966E7c576492Bd4e2e06CC3A40b1d01ccf63D69",
                     "4"
                 ]
             }
         },
         {
             "name": "SGLLiquidation",
-            "address": "0x37894A138e4f9Fd02BB3576be3f36f2A79c708B6",
+            "address": "0x68EcA2cd0d7557e61eaf6B6831B892B842e38D65",
             "meta": {}
         },
         {
             "name": "SGLLendingBorrowing",
-            "address": "0x5d405f701fb11f749e2D8D5D73A70181Ef25d457",
+            "address": "0x950e9724B631d9D8C1f35aE36C7E68f5D67486dd",
             "meta": {}
         },
         {
-            "name": "sgl_ETH",
-            "address": "0x356A38dEE9245A1D7b72E32B0e51CB96d726a080",
+            "name": "ProxyDeployer",
+            "address": "0x407ebC3cD87eCc4B25d7F53b19b4b056397b0e60",
             "meta": {}
         },
         {
-            "name": "lq_ETH",
-            "address": "0xd2889C65AeEf0a48B0cD054F018632B5339Df568",
+            "name": "SGLProxy",
+            "address": "0x0e84a8287A9E7045a8945b33C43d8ed1B8835CbE",
+            "meta": {
+                "constructorArguments": [
+                    "0x6aB5Ae6822647046626e83ee6dB8187151E1d5ab",
+                    "0x40282d3Cf4890D9806BC1853e97a59C93D813653"
+                ]
+            }
+        },
+        {
+            "name": "sgl_TWETH",
+            "address": "0x7FCC7aA67fB6952b113C39Aef5Dc17faAE494DC9",
+            "meta": {}
+        },
+        {
+            "name": "lq_TWETH",
+            "address": "0x3956C9A54D1d7F946b746774595B61643b70f90B",
             "meta": {
                 "constructorArguments": {
                     "activationTime": 600,
@@ -254,28 +265,29 @@
                     },
                     "feeCollector": "0x40282d3Cf4890D9806BC1853e97a59C93D813653",
                     "bidExecutionSwapper": "0x0000000000000000000000000000000000000000",
-                    "usdoSwapper": "0x7bC1f16f9D23a25093990EF790aeB3DD8b308F1E"
+                    "usdoSwapper": "0x5c568be396BD2c3b5ae95C407d393B0F0bd24cBf"
                 }
             }
         },
         {
-            "name": "minterSGL_ETH",
-            "address": "0x4FEbAA8707853E60F749656bd3843bD2137f9673",
+            "name": "sgl_TAVAX",
+            "address": "0xBb94F388DbC487D9934C73b5Db263ef354e37528",
+            "meta": {}
+        },
+        {
+            "name": "lq_TAVAX",
+            "address": "0xE76445fBC5395530C01fEE0b2ca8d6C088Fe694F",
             "meta": {
-                "constructorArguments": [
-                    "0xB6E97174A4Bf43149f5b69fE917E692bC66ee5fE",
-                    "0xa3e6cCe9165Dd2C42dFA89e446d44520431d383d",
-                    { "type": "BigNumber", "hex": "0x02" },
-                    "0x41dC15C448aB9141254EEd98F562a407E915d3b1",
-                    [
-                        "0xBD46Fa5C363E222c4cEf7589100F6486926C0D56",
-                        "0x4663B30afc168A6D1810fA6857a74d04bf632E54"
-                    ],
-                    [
-                        "0xa3e6cCe9165Dd2C42dFA89e446d44520431d383d",
-                        "0xBD46Fa5C363E222c4cEf7589100F6486926C0D56"
-                    ]
-                ]
+                "constructorArguments": {
+                    "activationTime": 600,
+                    "minBidAmount": {
+                        "type": "BigNumber",
+                        "hex": "0x01158e460913d00000"
+                    },
+                    "feeCollector": "0x40282d3Cf4890D9806BC1853e97a59C93D813653",
+                    "bidExecutionSwapper": "0x0000000000000000000000000000000000000000",
+                    "usdoSwapper": "0x5c568be396BD2c3b5ae95C407d393B0F0bd24cBf"
+                }
             }
         }
     ]

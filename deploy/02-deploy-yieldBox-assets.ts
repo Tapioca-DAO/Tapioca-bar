@@ -9,7 +9,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const { deployments } = hre;
     const chainId = await hre.getChainId();
 
-    let yieldBoxAddress = constants[chainId].yieldBoxAddress;
+    let yieldBoxAddress = constants[chainId]?.yieldBoxAddress;
     if (
         !hre.ethers.utils.isAddress(yieldBoxAddress!) ||
         yieldBoxAddress == hre.ethers.constants.AddressZero
