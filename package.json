@@ -27,6 +27,7 @@
         "deploy:stableToUsd0Bidder": "hardhat deploy --tags StableToUSD0Bidder --network",
         "deploy:singularityModules": "hardhat deploy --tags SingularityModules --network",
         "deploy:proxyDeployer": "hardhat deploy --tags ProxyDeployer --network",
+        "deploy:sglProxy": "hardhat deploy --tags SGLProxy --network",
         "prepare": "husky install"
     },
     "devDependencies": {

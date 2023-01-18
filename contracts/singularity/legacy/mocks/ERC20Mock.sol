@@ -5,8 +5,8 @@ import '@boringcrypto/boring-solidity/contracts/ERC20.sol';
 import 'hardhat/console.sol';
 
 contract ERC20Mock is ERC20WithSupply {
-    string public name = 'Test Token';
-    string public symbol = 'TT';
+    string public name = 'Polygon';
+    string public symbol = 'MATIC';
     uint8 public decimals;
 
     mapping(address => uint256) public mintedAt;

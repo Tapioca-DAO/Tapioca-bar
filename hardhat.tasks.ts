@@ -23,6 +23,7 @@ import { getBigBangTotals__task } from './tasks/getBigBangTotals';
 
 import { deployOracleMock__task } from './tasks/deployOracleMock';
 import { setTrustedRemote__task } from './tasks/setTrustedRemote';
+import { setProxyTrustedRemote__task } from './tasks/setProxyTrustedRemote';
 
 task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
     const accounts = await hre.ethers.getSigners();
@@ -149,3 +150,12 @@ task(
     .addParam('chain', 'LZ destination chain id for trusted remotes')
     .addParam('dst', 'USD0 destination address')
     .addParam('src', 'USD0 source address');
+
+task(
+    'setProxyTrustedRemote',
+    'Calls setProxyTrustedRemote on SGLProxy contract',
+    setProxyTrustedRemote__task,
+)
+    .addParam('chain', 'LZ destination chain id for trusted remotes')
+    .addParam('dst', 'SGLProxy destination address')
+    .addParam('src', 'SGLProxy source address');
