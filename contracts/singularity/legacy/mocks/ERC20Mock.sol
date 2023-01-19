@@ -2,8 +2,6 @@
 pragma solidity ^0.8.0;
 import '@boringcrypto/boring-solidity/contracts/ERC20.sol';
 
-import 'hardhat/console.sol';
-
 contract ERC20Mock is ERC20WithSupply {
     string public name = 'Polygon';
     string public symbol = 'MATIC';

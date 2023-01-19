@@ -6,8 +6,6 @@ import '@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol';
 import '../interfaces/IERC3156FlashBorrower.sol';
 import '../interfaces/IERC3156FlashLender.sol';
 
-import 'hardhat/console.sol';
-
 contract FlashMaliciousBorrowerMock is IERC3156FlashBorrower {
     using BoringERC20 for IERC20;
     IERC3156FlashLender lender;

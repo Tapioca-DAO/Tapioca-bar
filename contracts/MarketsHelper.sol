@@ -10,8 +10,6 @@ import './usd0/interfaces/IBigBang.sol';
 import './singularity/interfaces/ISingularity.sol';
 import '../yieldbox/contracts/YieldBox.sol';
 
-import 'hardhat/console.sol';
-
 /// @title Useful helper functions for `Singularity` and `BingBang`
 contract MarketsHelper {
     using RebaseLibrary for Rebase;
@@ -238,7 +236,7 @@ contract MarketsHelper {
         market.borrow(msg.sender, borrowReceiver, _borrowAmount);
 
         if (withdraw_) {
-            _withdraw(_withdrawData, market, yieldBox, _borrowAmount);
+            _withdraw(_withdrawData, market, yieldBox, _borrowAmount, 0, false);
         }
     }
 
@@ -285,6 +283,7 @@ contract MarketsHelper {
     /// @param _depositAmount the amount to deposit
     /// @param _repayAmount the amount to be repayed
     /// @param _collateralAmount collateral amount to be removed
+    /// @param deposit_ if true deposits to YieldBox
     /// @param withdraw_ if true withdraws to sender address
     function depositRepayAndRemoveCollateral(
         IMarket market,
@@ -334,6 +333,7 @@ contract MarketsHelper {
 
         uint256 _share = yieldBox.toShare(assetId, _amount, false);
         if (deposit_) {
+            //deposit into the yieldbox
             _extractTokens(assetAddress, _amount);
             IERC20(assetAddress).approve(address(yieldBox), _amount);
             yieldBox.depositAsset(
@@ -345,11 +345,120 @@ contract MarketsHelper {
             );
         }
 
-        //deposit into the yieldbox
-
         //add asset
         _setApprovalForYieldBox(singularity, yieldBox);
         singularity.addAsset(address(this), msg.sender, false, _share);
+    }
+
+    /// @notice deposits asset to YieldBox, mints USD0 and lends it to Singularity
+    /// @param singularity the Singularity address
+    /// @param bingBang the BingBang address
+    /// @param _collateralAmount the amount added to BingBang as collateral
+    /// @param _borrowAmount the borrowed amount from BingBang
+    /// @param deposit_ if true deposits to YieldBox
+    function mintAndLend(
+        ISingularity singularity,
+        IMarket bingBang,
+        uint256 _collateralAmount,
+        uint256 _borrowAmount,
+        bool deposit_
+    ) external {
+        uint256 collateralId = bingBang.collateralId();
+        YieldBox yieldBox = YieldBox(singularity.yieldBox());
+
+        (, address collateralAddress, , ) = yieldBox.assets(collateralId);
+        uint256 _share = yieldBox.toShare(
+            collateralId,
+            _collateralAmount,
+            false
+        );
+
+        if (deposit_) {
+            //deposit to YieldBox
+            _extractTokens(collateralAddress, _collateralAmount);
+            IERC20(collateralAddress).approve(
+                address(yieldBox),
+                _collateralAmount
+            );
+            yieldBox.depositAsset(
+                collateralId,
+                address(this),
+                address(this),
+                0,
+                _share
+            );
+        }
+
+        if (_collateralAmount > 0) {
+            //add collateral to BingBang
+            _setApprovalForYieldBox(bingBang, yieldBox);
+            bingBang.addCollateral(address(this), msg.sender, false, _share);
+        }
+
+        //borrow from BingBang
+        bingBang.borrow(msg.sender, msg.sender, _borrowAmount);
+
+        //lend to Singularity
+        uint256 assetId = singularity.assetId();
+        uint256 borrowShare = yieldBox.toShare(assetId, _borrowAmount, false);
+        _setApprovalForYieldBox(singularity, yieldBox);
+        singularity.addAsset(msg.sender, msg.sender, false, borrowShare);
+    }
+
+    function removeAssetAndRepay(
+        ISingularity singularity,
+        IMarket bingBang,
+        uint256 _removeShare, //slightly greater than _repayAmount to cover the interest
+        uint256 _repayAmount,
+        uint256 _collateralShare,
+        bool withdraw_,
+        bytes calldata withdrawData_
+    ) external {
+        YieldBox yieldBox = YieldBox(singularity.yieldBox());
+
+        //remove asset
+        uint256 bbAssetId = bingBang.assetId();
+        uint256 _removeAmount = yieldBox.toAmount(
+            bbAssetId,
+            _removeShare,
+            false
+        );
+        singularity.removeAsset(msg.sender, address(this), _removeShare);
+
+        //repay
+        uint256 repayed = bingBang.repay(
+            address(this),
+            msg.sender,
+            false,
+            _repayAmount
+        );
+        if (repayed < _removeAmount) {
+            yieldBox.transfer(
+                address(this),
+                msg.sender,
+                bbAssetId,
+                yieldBox.toShare(bbAssetId, _removeAmount - repayed, false)
+            );
+        }
+
+        //remove collateral
+        bingBang.removeCollateral(
+            msg.sender,
+            withdraw_ ? address(this) : msg.sender,
+            _collateralShare
+        );
+
+        //withdraw
+        if (withdraw_) {
+            _withdraw(
+                withdrawData_,
+                singularity,
+                yieldBox,
+                0,
+                _collateralShare,
+                true
+            );
+        }
     }
 
     // ************************** //
@@ -386,7 +495,9 @@ contract MarketsHelper {
         bytes calldata _withdrawData,
         IMarket market,
         YieldBox yieldBox,
-        uint256 _amount
+        uint256 _amount,
+        uint256 _share,
+        bool _withdrawCollateral
     ) private {
         bool _otherChain;
         uint16 _destChain;
@@ -400,11 +511,11 @@ contract MarketsHelper {
         }
         if (!_otherChain) {
             yieldBox.withdraw(
-                market.assetId(),
+                _withdrawCollateral ? market.collateralId() : market.assetId(),
                 address(this),
                 msg.sender,
                 _amount,
-                0
+                _share
             );
             return;
         }
