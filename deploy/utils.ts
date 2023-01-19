@@ -65,6 +65,14 @@ export const constants: { [key: string]: any } = {
             hasExecutionBidder: false,
             executionBidder: '0x0000000000000000000000000000000000000000',
         },
+        sgl_TMATIC: {
+            collateralAddress: '0x48d95D182D33990910DC39868Da6FcA59182626c', //tMatic
+            assetAddress: '0x006dcF07511D332299f83056731Cb15f0Aeb2F2B',
+            oracleAddress: '0x56E626a05193B1576dCc4CFE4d89FfEC6dD115C8', //mock
+            minBidAmount: 20,
+            hasExecutionBidder: false,
+            executionBidder: '0x0000000000000000000000000000000000000000',
+        },
     },
     //fuji
     '43113': {
