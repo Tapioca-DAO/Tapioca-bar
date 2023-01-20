@@ -66,4 +66,8 @@ interface IMarket {
         address to,
         uint256 amount
     ) external returns (uint256 part, uint256 share);
+
+    function execute(bytes[] calldata calls, bool revertOnFail)
+        external
+        returns (bool[] memory successes, string[] memory results);
 }

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.9;
 
-import './SGLProxy.sol';
+import './MarketsProxy.sol';
 
 /*
 
@@ -17,7 +17,7 @@ __/\\\\\\\\\\\\\\\_____/\\\\\\\\\_____/\\\\\\\\\\\\\____/\\\\\\\\\\\_______/\\\\
 
 */
 
-/// @title SGLProxy factory
+/// @title MarketsProxy factory
 contract ProxyDeployer {
     // ************ //
     // *** VARS *** //
@@ -49,8 +49,8 @@ contract ProxyDeployer {
     // *********************** //
     // *** OWNER FUNCTIONS *** //
     // *********************** //
-    /// @notice creates a new SGLProxy contract using CREATE2 opcode
-    /// @param _lzEndpoint the LayerZero endpoint SGLProxy will be associated with
+    /// @notice creates a new MarketsProxy contract using CREATE2 opcode
+    /// @param _lzEndpoint the LayerZero endpoint MarketsProxy will be associated with
     /// @param _salt CREATE2 salt used to compute the new address
     function deployWithCreate2(address _lzEndpoint, bytes32 _salt)
         public
@@ -59,7 +59,9 @@ contract ProxyDeployer {
     {
         require(msg.sender == owner, 'ProxyDeployer: unauthorized');
         // https://docs.soliditylang.org/en/latest/control-structures.html#salted-contract-creations-create2
-        cloneAddress = address(new SGLProxy{salt: _salt}(_lzEndpoint, owner));
+        cloneAddress = address(
+            new MarketsProxy{salt: _salt}(_lzEndpoint, owner)
+        );
         proxies.push(cloneAddress);
         emit LogDeploy(_lzEndpoint, cloneAddress);
     }

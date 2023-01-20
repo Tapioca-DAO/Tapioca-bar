@@ -267,6 +267,25 @@ contract BigBang is BoringOwnable {
     // ************************ //
     // *** PUBLIC FUNCTIONS *** //
     // ************************ //
+    /// @notice Allows batched call to BingBang.
+    /// @param calls An array encoded call data.
+    /// @param revertOnFail If True then reverts after a failed call and stops doing further calls.
+    function execute(bytes[] calldata calls, bool revertOnFail)
+        external
+        returns (bool[] memory successes, string[] memory results)
+    {
+        successes = new bool[](calls.length);
+        results = new string[](calls.length);
+        for (uint256 i = 0; i < calls.length; i++) {
+            (bool success, bytes memory result) = address(this).delegatecall(
+                calls[i]
+            );
+            require(success || !revertOnFail, _getRevertMsg(result));
+            successes[i] = success;
+            results[i] = _getRevertMsg(result);
+        }
+    }
+
     /// @notice allows 'operator' to act on behalf of the sender
     /// @param status true/false
     function updateOperator(address operator, bool status) external {
@@ -571,6 +590,20 @@ contract BigBang is BoringOwnable {
     // ************************* //
     // *** PRIVATE FUNCTIONS *** //
     // ************************* //
+    function _getRevertMsg(bytes memory _returnData)
+        private
+        pure
+        returns (string memory)
+    {
+        // If the _res length is less than 68, then the transaction failed silently (without a revert message)
+        if (_returnData.length < 68) return 'BingBang: no return data';
+        // solhint-disable-next-line no-inline-assembly
+        assembly {
+            // Slice the sighash.
+            _returnData := add(_returnData, 0x04)
+        }
+        return abi.decode(_returnData, (string)); // All that remains is the revert string
+    }
 
     /// @notice construct Uniswap path
     function _collateralToAssetSwapPath()
