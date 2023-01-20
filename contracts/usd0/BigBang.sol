@@ -366,6 +366,7 @@ contract BigBang is BoringOwnable {
     }
 
     /// @notice Repays a loan.
+    /// @dev The bool param is not used but we added it to respect the ISingularity interface for MarketsHelper compatibility
     /// @param from Address to repay from.
     /// @param to Address of the user this payment should go.
     /// @param part The amount to repay. See `userBorrowPart`.
@@ -373,6 +374,7 @@ contract BigBang is BoringOwnable {
     function repay(
         address from,
         address to,
+        bool,
         uint256 part
     ) public notPaused allowed(from) returns (uint256 amount) {
         updateExchangeRate();
@@ -805,7 +807,6 @@ contract BigBang is BoringOwnable {
 
         uint256 toWithdraw = (amount - part); //acrrued
         uint256 toBurn = amount - toWithdraw;
-
         yieldBox.withdraw(assetId, from, address(this), amount, 0);
         //burn USD0
         if (toBurn > 0) {

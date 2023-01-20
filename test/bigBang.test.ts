@@ -164,6 +164,7 @@ describe('BigBang test', () => {
             wethBigBangMarket.repay(
                 deployer.address,
                 deployer.address,
+                false,
                 userBorrowPart,
             ),
         ).to.be.reverted;
@@ -181,6 +182,7 @@ describe('BigBang test', () => {
         await wethBigBangMarket.repay(
             deployer.address,
             deployer.address,
+            false,
             userBorrowPart,
         );
         userBorrowPart = await wethBigBangMarket.userBorrowPart(
@@ -443,7 +445,7 @@ describe('BigBang test', () => {
 
         await wethBigBangMarket
             .connect(eoa1)
-            .repay(eoa1.address, eoa1.address, repaymentAmount);
+            .repay(eoa1.address, eoa1.address, false, repaymentAmount);
         userBorrowedAmount = await wethBigBangMarket.userBorrowPart(
             eoa1.address,
         );
@@ -601,7 +603,7 @@ describe('BigBang test', () => {
 
         await wethBigBangMarket
             .connect(eoa1)
-            .repay(eoa1.address, eoa1.address, userBorrowedAmount);
+            .repay(eoa1.address, eoa1.address, false, userBorrowedAmount);
         userBorrowedAmount = await wethBigBangMarket.userBorrowPart(
             eoa1.address,
         );
@@ -758,7 +760,7 @@ describe('BigBang test', () => {
 
             await wethBigBangMarket
                 .connect(eoa)
-                .repay(eoa.address, eoa.address, userBorrowedAmount);
+                .repay(eoa.address, eoa.address, false, userBorrowedAmount);
         }
 
         for (var i = 0; i < eoas.length; i++) {
@@ -927,7 +929,12 @@ describe('BigBang test', () => {
 
             await wethBigBangMarket
                 .connect(eoa)
-                .repay(eoa.address, eoa.address, userBorrowedAmount.div(2));
+                .repay(
+                    eoa.address,
+                    eoa.address,
+                    false,
+                    userBorrowedAmount.div(2),
+                );
         }
 
         //----------------
@@ -980,7 +987,7 @@ describe('BigBang test', () => {
 
             await wethBigBangMarket
                 .connect(eoa)
-                .repay(eoa.address, eoa.address, userBorrowedAmount);
+                .repay(eoa.address, eoa.address, false, userBorrowedAmount);
         }
 
         const balance = await usd0.balanceOf(wethBigBangMarket.address);
@@ -1096,7 +1103,8 @@ describe('BigBang test', () => {
             );
         await wethBigBangMarket
             .connect(eoa1)
-            .repay(eoa1.address, eoa1.address, userBorrowPart);
+            .repay(eoa1.address, eoa1.address, false, userBorrowPart);
+            
         userBorrowPart = await wethBigBangMarket.userBorrowPart(eoa1.address);
         expect(userBorrowPart.eq(0)).to.be.true;
 
@@ -1346,6 +1354,7 @@ describe('BigBang test', () => {
             wethBigBangMarket.repay(
                 deployer.address,
                 deployer.address,
+                false,
                 userBorrowPart,
             ),
         ).to.be.revertedWith('BigBang: paused');
@@ -1356,6 +1365,7 @@ describe('BigBang test', () => {
             wethBigBangMarket.repay(
                 deployer.address,
                 deployer.address,
+                false,
                 userBorrowPart,
             ),
         ).not.to.be.reverted;
@@ -1714,4 +1724,5 @@ describe('BigBang test', () => {
         );
         expect(userBorrowPart.gt(0)).to.be.true;
     });
+
 });

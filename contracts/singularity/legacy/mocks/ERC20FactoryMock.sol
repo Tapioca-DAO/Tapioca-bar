@@ -2,7 +2,6 @@
 pragma solidity ^0.8.0;
 import '@boringcrypto/boring-solidity/contracts/ERC20.sol';
 
-import 'hardhat/console.sol';
 import './ERC20Mock.sol';
 
 contract ERC20FactoryMock {
