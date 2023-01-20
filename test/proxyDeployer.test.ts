@@ -20,7 +20,7 @@ describe('Proxy Deployer', () => {
 
         const proxy = await proxyDeployer.proxies(0);
 
-        const proxyContract = await ethers.getContractAt('SGLProxy', proxy);
+        const proxyContract = await ethers.getContractAt('MarketsProxy', proxy);
         const proxyOwner = await proxyContract.owner();
         expect(proxyOwner.toLowerCase()).to.eq(deployer.address.toLowerCase());
         const lzEndpoint = await proxyContract.lzEndpoint();

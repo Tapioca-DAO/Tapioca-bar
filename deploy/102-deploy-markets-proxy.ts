@@ -11,25 +11,25 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const chainId = await hre.getChainId();
     const contracts: TContract[] = [];
 
-    console.log(`\nDeploying SGLProxy`);
+    console.log(`\nDeploying MarketsProxy`);
     const args = [constants[chainId].address, deployer];
-    await deploy('SGLProxy', {
+    await deploy('MarketsProxy', {
         from: deployer,
         log: true,
         args,
     });
-    const sglProxy = await deployments.get('SGLProxy');
+    const proxy = await deployments.get('MarketsProxy');
     contracts.push({
-        name: 'SGLProxy-Test',
-        address: sglProxy.address,
+        name: 'MarketsProxy-Test',
+        address: proxy.address,
         meta: { constructorArguments: args },
     });
-    await verify(hre, 'SGLProxy', [constants[chainId].address, deployer]);
+    await verify(hre, 'MarketsProxy', [constants[chainId].address, deployer]);
     console.log(
-        `Done. Deployed SGLProxy on ${sglProxy.address} with args [${constants[chainId].address},${deployer}]`,
+        `Done. Deployed MarketsProxy on ${proxy.address} with args [${constants[chainId].address},${deployer}]`,
     );
     await updateDeployments(contracts, chainId);
 };
 
 export default func;
-func.tags = ['SGLProxy'];
+func.tags = ['MarketsProxy'];
