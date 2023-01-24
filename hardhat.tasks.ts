@@ -24,6 +24,10 @@ import { getBigBangTotals__task } from './tasks/getBigBangTotals';
 import { deployOracleMock__task } from './tasks/deployOracleMock';
 import { setTrustedRemote__task } from './tasks/setTrustedRemote';
 import { setProxyTrustedRemote__task } from './tasks/setProxyTrustedRemote';
+import { setProxyAdapterParams__task } from './tasks/setProxyAdapterParams';
+
+import { sameChainBorrow__task } from './tasks/test-sameChainBorrow';
+import { otherChainBorrow__task } from './tasks/test-otherChainBorrow';
 
 task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
     const accounts = await hre.ethers.getSigners();
@@ -159,3 +163,40 @@ task(
     .addParam('chain', 'LZ destination chain id for trusted remotes')
     .addParam('dst', 'SGLProxy destination address')
     .addParam('src', 'SGLProxy source address');
+
+task(
+    'setProxyAdapterParams',
+    'Sets setUseCustomAdapterParams on SGLProxy contract',
+    setProxyAdapterParams__task,
+).addOptionalParam(
+    'lzDestinationId',
+    'Destination LZ chain id to set min gas for',
+);
+
+task(
+    'sameChainBorrow',
+    'Deposits, adds collateral and borrows from the same chain',
+    sameChainBorrow__task,
+)
+    .addParam('market', 'Singularity address')
+    .addParam('marketHelper', 'MarketsHelper address')
+    .addParam('collateralAmount', 'Collateral amount to add')
+    .addParam('borrowAmount', 'Borrow amount to get');
+
+task(
+    'otherChainBorrow',
+    'Deposits, adds collateral and borrows from the another chain',
+    otherChainBorrow__task,
+)
+    .addParam('destLzChainId', 'LZ destination chain id')
+    .addParam('extraGas', 'Extra gas for LZ send tx')
+    .addParam('assetId', 'Destination YieldBox asset id')
+    .addParam('zroAddress', 'ZRO address')
+    .addParam('depositGas', 'ETH sent for tx for YB deposit')
+    .addParam('singularityGas', 'ETH sent for tx for Singularity operations')
+    .addParam('depositAmount', 'ETH sent for tx')
+    .addParam('oft', 'Tapioca OFT address')
+    .addParam('proxy', 'Proxy contract address')
+    .addParam('collateralShare', 'Collateral shares to add')
+    .addParam('borrowAmount', 'Asset amount to borrow')
+    .addParam('singularityDestination', 'Singularity destination');

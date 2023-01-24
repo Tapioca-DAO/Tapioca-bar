@@ -122,6 +122,51 @@ describe('MarketsHelper test', () => {
             );
     });
 
+    it('should deposit, add collateral, borrow and withdraw through SGL helper without withdraw', async () => {
+        const {
+            weth,
+            wethUsdcSingularity,
+            usdc,
+            eoa1,
+            initContracts,
+            marketsHelper,
+            __wethUsdcPrice,
+            approveTokensAndSetBarApproval,
+            wethDepositAndAddAsset,
+        } = await loadFixture(register);
+
+        await initContracts(); // To prevent `Singularity: below minimum`
+
+        const borrowAmount = ethers.BigNumber.from((1e17).toString());
+        const wethMintVal = ethers.BigNumber.from((1e18).toString()).mul(10);
+        const usdcMintVal = wethMintVal
+            .mul(10)
+            .mul(__wethUsdcPrice.div((1e18).toString()));
+
+        // We get asset
+        await weth.freeMint(wethMintVal);
+        await usdc.connect(eoa1).freeMint(usdcMintVal);
+
+        // We lend WETH as deployer
+        await approveTokensAndSetBarApproval();
+        await wethDepositAndAddAsset(wethMintVal);
+
+        await usdc.connect(eoa1).approve(marketsHelper.address, usdcMintVal);
+        await wethUsdcSingularity
+            .connect(eoa1)
+            .approve(marketsHelper.address, usdcMintVal);
+        await marketsHelper
+            .connect(eoa1)
+            .depositAddCollateralAndBorrow(
+                wethUsdcSingularity.address,
+                usdcMintVal,
+                borrowAmount,
+                true,
+                false,
+                ethers.utils.toUtf8Bytes(''),
+            );
+    });
+
     it('should add collateral, borrow and withdraw through SGL helper', async () => {
         const {
             weth,

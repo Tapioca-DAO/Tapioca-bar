@@ -346,12 +346,13 @@ contract Singularity is SGLCommon {
 
     /// @notice Withdraw to another layer
     function withdrawTo(
+        address from,
         uint16 dstChainId,
         bytes memory receiver,
         uint256 amount,
         bytes calldata adapterParams,
         address payable refundAddress
-    ) public payable {
+    ) public payable allowed(from) {
         try
             IERC165(address(asset)).supportsInterface(
                 type(ISendFrom).interfaceId
@@ -360,21 +361,25 @@ contract Singularity is SGLCommon {
             return;
         }
 
-        uint256 available = yieldBox.toAmount(
-            assetId,
-            yieldBox.balanceOf(msg.sender, assetId),
-            false
+        require(
+            yieldBox.toAmount(
+                assetId,
+                yieldBox.balanceOf(from, assetId),
+                false
+            ) >= amount,
+            'SGL: not available'
         );
-        require(available >= amount, 'SGL: not available');
 
-        yieldBox.withdraw(assetId, msg.sender, address(this), amount, 0);
-        ISendFrom(address(asset)).sendFrom{value: msg.value}(
+        yieldBox.withdraw(assetId, from, address(this), amount, 0);
+        ISendFrom(address(asset)).sendFrom{
+            value: msg.value > 0 ? msg.value : address(this).balance
+        }(
             address(this),
             dstChainId,
             receiver,
             amount,
-            refundAddress,
-            msg.sender,
+            msg.value > 0 ? refundAddress : payable(this),
+            from,
             adapterParams
         );
     }
@@ -542,4 +547,6 @@ contract Singularity is SGLCommon {
             revert(_getRevertMsg(returnData));
         }
     }
+
+    receive() external payable {}
 }

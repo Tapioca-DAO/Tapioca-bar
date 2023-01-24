@@ -17,7 +17,13 @@ export const setLiquidationQueueExecutionSwapper = async (
         [taskArgs['swapper']],
     );
 
-    await penroseContract.executeMarketFn([singularityAddress], [callData],true);
+    await (
+        await penroseContract.executeMarketFn(
+            [singularityAddress],
+            [callData],
+            true,
+        )
+    ).wait();
 };
 
 export const setLiquidationQueueExecutionSwapper__task = async (

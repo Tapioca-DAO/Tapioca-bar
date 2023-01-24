@@ -29,6 +29,12 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         `Done. Deployed SGLProxy on ${sglProxy.address} with args [${constants[chainId].address},${deployer}]`,
     );
     await updateDeployments(contracts, chainId);
+
+    const sglProxyContract = await hre.ethers.getContractAt(
+        'SGLProxy',
+        sglProxy.address,
+    );
+    await (await sglProxyContract.setEnforceSameAddress(false)).wait();
 };
 
 export default func;

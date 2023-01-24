@@ -279,6 +279,7 @@ describe('SGLProxy', () => {
         await singularityDst
             .connect(eoa1)
             .withdrawTo(
+                eoa1.address,
                 await lzEndpointSrc.getChainId(),
                 ethers.utils.solidityPack(
                     ['address'],
@@ -297,6 +298,226 @@ describe('SGLProxy', () => {
         );
         expect(balanceOfReceiver.gt(0)).to.be.true;
         expect(balanceOfReceiver.eq(borrowPart.div(2))).to.be.true;
+    });
+
+    it('should test with OFT singularity', async () => {
+        const {
+            createWethUsd0Singularity,
+            proxyDeployer,
+            deployer,
+            mediumRiskMC,
+            yieldBox,
+            bar,
+            weth,
+            usdc,
+            wethAssetId,
+            wethUsdcOracle,
+            eoa1,
+            deployCurveStableToUsdoBidder,
+            __wethUsdcPrice,
+        } = await loadFixture(register);
+
+        const newPrice = __wethUsdcPrice.div(1000000);
+        await wethUsdcOracle.set(newPrice);
+
+        const loadSetup = async function loadSetupFn() {
+            const {
+                proxySrc,
+                proxyDst,
+                singularitySrc,
+                singularityDst,
+                lzEndpointSrc,
+                lzEndpointDst,
+                usd0Src,
+                usd0Dst,
+                usd0DstId,
+                usd0SrcId,
+            } = await setupUsd0Environment(
+                proxyDeployer,
+                mediumRiskMC,
+                yieldBox,
+                bar,
+                usdc,
+                weth,
+                wethAssetId,
+                createWethUsd0Singularity,
+                deployCurveStableToUsdoBidder,
+            );
+            return {
+                proxySrc,
+                proxyDst,
+                singularitySrc,
+                singularityDst,
+                lzEndpointSrc,
+                lzEndpointDst,
+                usd0Src,
+                usd0Dst,
+                usd0DstId,
+                usd0SrcId,
+            };
+        };
+        const {
+            proxySrc,
+            proxyDst,
+            singularitySrc,
+            singularityDst,
+            lzEndpointSrc,
+            lzEndpointDst,
+            usd0Src,
+            usd0Dst,
+            usd0DstId,
+            usd0SrcId,
+        } = await loadFixture(loadSetup);
+
+        //get tokens
+        const wethAmount = ethers.BigNumber.from((1e18).toString()).mul(100);
+        const usdoAmount = ethers.BigNumber.from((1e18).toString()).mul(20000);
+        await usd0Dst.mint(deployer.address, usdoAmount);
+        await weth.connect(eoa1).freeMint(wethAmount);
+
+        //add USD0 for borrowing
+        const usdoLendValue = usdoAmount.div(2);
+        await usd0Dst.approve(yieldBox.address, usdoLendValue);
+
+        let usdoLendValueShare = await yieldBox.toShare(
+            await singularityDst.assetId(),
+            usdoLendValue,
+            false,
+        );
+
+        await yieldBox.depositAsset(
+            await singularityDst.assetId(),
+            deployer.address,
+            deployer.address,
+            0,
+            usdoLendValueShare,
+        );
+
+        // Approve singularityDst actions
+        await yieldBox.setApprovalForAll(singularityDst.address, true);
+        await singularityDst.approve(
+            proxyDst.address,
+            ethers.constants.MaxUint256,
+        );
+
+        const balanceBefore = await singularityDst.balanceOf(deployer.address);
+        let addAssetFn = singularityDst.interface.encodeFunctionData(
+            'addAsset',
+            [deployer.address, deployer.address, false, usdoLendValueShare],
+        );
+
+        await proxySrc.executeOnChain(
+            await lzEndpointDst.getChainId(),
+            ethers.utils.solidityPack(['address'], [singularityDst.address]),
+            [addAssetFn],
+            ethers.utils.toUtf8Bytes(''),
+            { value: ethers.utils.parseEther('1') },
+        );
+
+        const balanceAfter = await singularityDst.balanceOf(deployer.address);
+        expect(balanceAfter.gt(balanceBefore)).to.be.true;
+
+        // --- Borrowing ---
+        const wethDepositAmount = ethers.BigNumber.from((1e18).toString()).mul(
+            1,
+        );
+
+        await weth
+            .connect(eoa1)
+            .approve(yieldBox.address, ethers.constants.MaxUint256);
+        await yieldBox
+            .connect(eoa1)
+            .setApprovalForAll(singularityDst.address, true);
+        await singularityDst
+            .connect(eoa1)
+            .approve(proxyDst.address, ethers.constants.MaxUint256);
+
+        await yieldBox
+            .connect(eoa1)
+            .depositAsset(
+                wethAssetId,
+                eoa1.address,
+                eoa1.address,
+                wethDepositAmount,
+                0,
+            );
+
+        const _wethValShare = await yieldBox.toShare(
+            wethAssetId,
+            wethDepositAmount,
+            false,
+        );
+        const usdoBorrowVal = wethDepositAmount
+            .mul(74)
+            .div(100)
+            .mul(__wethUsdcPrice.div((1e18).toString()));
+
+        await proxySrc.setMinDstGas(await lzEndpointDst.getChainId(), 1, 1);
+        await proxySrc.setUseCustomAdapterParams(true);
+        const randomReceiver = new ethers.Wallet(
+            ethers.Wallet.createRandom().privateKey,
+            ethers.provider,
+        );
+        const addCollateralFn = singularityDst.interface.encodeFunctionData(
+            'addCollateral',
+            [eoa1.address, eoa1.address, false, _wethValShare],
+        );
+        const borrowFn = singularityDst.interface.encodeFunctionData('borrow', [
+            eoa1.address,
+            eoa1.address,
+            usdoBorrowVal,
+        ]);
+        const airdropAdapterParams = ethers.utils.solidityPack(
+            ['uint16', 'uint', 'uint', 'address'],
+            [2, 2250000, ethers.utils.parseEther('3'), singularityDst.address],
+        );
+        const withdrawFn = singularityDst.interface.encodeFunctionData(
+            'withdrawTo',
+            [
+                eoa1.address,
+                await lzEndpointSrc.getChainId(),
+                ethers.utils.solidityPack(
+                    ['address'],
+                    [randomReceiver.address],
+                ),
+                usdoBorrowVal,
+                ethers.utils.toUtf8Bytes(''),
+                eoa1.address,
+            ],
+        );
+
+        let sglEthBalance = await ethers.provider.getBalance(
+            singularityDst.address,
+        );
+        await proxySrc
+            .connect(eoa1)
+            .executeOnChain(
+                await lzEndpointDst.getChainId(),
+                ethers.utils.solidityPack(
+                    ['address'],
+                    [singularityDst.address],
+                ),
+                [addCollateralFn, borrowFn, withdrawFn],
+                airdropAdapterParams,
+                { value: ethers.utils.parseEther('10') },
+            );
+        sglEthBalance = await ethers.provider.getBalance(
+            singularityDst.address,
+        );
+
+        const userCollateralShare = await singularityDst.userCollateralShare(
+            eoa1.address,
+        );
+        expect(userCollateralShare.gt(0)).to.be.true;
+
+        let borrowPart = await singularityDst.userBorrowPart(eoa1.address);
+        expect(borrowPart.gt(0)).to.be.true;
+
+        const balanceOfReceiver = await usd0Src.balanceOf(
+            randomReceiver.address,
+        );
+        expect(balanceOfReceiver.gt(0)).to.be.true;
+        expect(balanceOfReceiver.eq(usdoBorrowVal)).to.be.true;
     });
 
     it('should test with OFT singularity through helper', async () => {
@@ -451,6 +672,9 @@ describe('SGLProxy', () => {
             ],
         );
 
+        await singularityDst
+            .connect(eoa1)
+            .approve(marketsHelper.address, ethers.constants.MaxUint256);
         await marketsHelper
             .connect(eoa1)
             .depositAddCollateralAndBorrow(
