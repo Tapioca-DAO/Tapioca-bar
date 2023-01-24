@@ -161,12 +161,12 @@ task(
     setProxyTrustedRemote__task,
 )
     .addParam('chain', 'LZ destination chain id for trusted remotes')
-    .addParam('dst', 'SGLProxy destination address')
-    .addParam('src', 'SGLProxy source address');
+    .addParam('dst', 'MarketsProxy destination address')
+    .addParam('src', 'MarketsProxy source address');
 
 task(
     'setProxyAdapterParams',
-    'Sets setUseCustomAdapterParams on SGLProxy contract',
+    'Sets setUseCustomAdapterParams on MarketsProxy contract',
     setProxyAdapterParams__task,
 ).addOptionalParam(
     'lzDestinationId',

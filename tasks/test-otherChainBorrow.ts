@@ -33,7 +33,7 @@ export const otherChainBorrow__task = async (
         'Singularity',
         taskArgs.singularityDestination,
     );
-    const proxySrc = await hre.ethers.getContractAt('SGLProxy', taskArgs.proxy);
+    const proxySrc = await hre.ethers.getContractAt('MarketsProxy', taskArgs.proxy);
 
     //Send to YB
     const confirmations = 25;

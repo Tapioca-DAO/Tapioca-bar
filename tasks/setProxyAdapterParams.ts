@@ -9,7 +9,7 @@ export const setProxyAdapterParams__task = async (
     taskArgs: { lzDestinationId?: string },
     hre: HardhatRuntimeEnvironment,
 ) => {
-    const proxyContract = await getDeployment(hre, 'SGLProxy');
+    const proxyContract = await getDeployment(hre, 'MarketsProxy');
     const alreadySet = await proxyContract.useCustomAdapterParams();
 
     if (!alreadySet) {
