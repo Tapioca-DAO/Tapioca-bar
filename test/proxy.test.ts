@@ -3,7 +3,7 @@ import { ethers } from 'hardhat';
 import { register } from './test.utils';
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 
-describe('SGLProxy', () => {
+describe('MarketsProxy', () => {
     let loadSetup: () => Promise<{
         proxySrc: any;
         proxyDst: any;
@@ -1597,11 +1597,11 @@ async function setupUsd0Environment(
     await proxyDeployer.deployWithCreate2(lzEndpointDst.address, saltDst);
 
     const proxySrc = await ethers.getContractAt(
-        'SGLProxy',
+        'MarketsProxy',
         await proxyDeployer.proxies(0),
     );
     const proxyDst = await ethers.getContractAt(
-        'SGLProxy',
+        'MarketsProxy',
         await proxyDeployer.proxies(1),
     );
 
@@ -1726,24 +1726,22 @@ async function setupUsd0Environment(
     );
     const singularityDst = dstSingularityDeployments.wethUsdoSingularity;
 
-    await proxySrc.updateSingularityStatus(singularitySrc.address, true);
-    await proxyDst.updateSingularityStatus(singularityDst.address, true);
-    await proxySrc.setEnforceSameAddress(false);
-    await proxyDst.setEnforceSameAddress(false);
+    await proxySrc.updateMarketStatus(singularitySrc.address, true);
+    await proxyDst.updateMarketStatus(singularityDst.address, true);
 
-    const proxySrcSingularitySrcStatus = await proxySrc.singularities(
+    const proxySrcSingularitySrcStatus = await proxySrc.markets(
         singularitySrc.address,
     );
-    const proxySrcSingularityDstStatus = await proxySrc.singularities(
+    const proxySrcSingularityDstStatus = await proxySrc.markets(
         singularityDst.address,
     );
     expect(proxySrcSingularitySrcStatus).to.be.true;
     expect(proxySrcSingularityDstStatus).to.be.false;
 
-    const proxyDstSingularitySrcStatus = await proxyDst.singularities(
+    const proxyDstSingularitySrcStatus = await proxyDst.markets(
         singularitySrc.address,
     );
-    const proxyDstSingularityDstStatus = await proxyDst.singularities(
+    const proxyDstSingularityDstStatus = await proxyDst.markets(
         singularityDst.address,
     );
     expect(proxyDstSingularitySrcStatus).to.be.false;
@@ -1789,11 +1787,11 @@ async function setupEnvironment(
     await proxyDeployer.deployWithCreate2(lzEndpointDst.address, saltDst);
 
     const proxySrc = await ethers.getContractAt(
-        'SGLProxy',
+        'MarketsProxy',
         await proxyDeployer.proxies(0),
     );
     const proxyDst = await ethers.getContractAt(
-        'SGLProxy',
+        'MarketsProxy',
         await proxyDeployer.proxies(1),
     );
 
@@ -1845,24 +1843,22 @@ async function setupEnvironment(
     );
     const singularityDst = dstSingularityDeployments.singularityMarket;
 
-    await proxySrc.updateSingularityStatus(singularitySrc.address, true);
-    await proxyDst.updateSingularityStatus(singularityDst.address, true);
-    await proxySrc.setEnforceSameAddress(false);
-    await proxyDst.setEnforceSameAddress(false);
+    await proxySrc.updateMarketStatus(singularitySrc.address, true);
+    await proxyDst.updateMarketStatus(singularityDst.address, true);
 
-    const proxySrcSingularitySrcStatus = await proxySrc.singularities(
+    const proxySrcSingularitySrcStatus = await proxySrc.markets(
         singularitySrc.address,
     );
-    const proxySrcSingularityDstStatus = await proxySrc.singularities(
+    const proxySrcSingularityDstStatus = await proxySrc.markets(
         singularityDst.address,
     );
     expect(proxySrcSingularitySrcStatus).to.be.true;
     expect(proxySrcSingularityDstStatus).to.be.false;
 
-    const proxyDstSingularitySrcStatus = await proxyDst.singularities(
+    const proxyDstSingularitySrcStatus = await proxyDst.markets(
         singularitySrc.address,
     );
-    const proxyDstSingularityDstStatus = await proxyDst.singularities(
+    const proxyDstSingularityDstStatus = await proxyDst.markets(
         singularityDst.address,
     );
     expect(proxyDstSingularitySrcStatus).to.be.false;

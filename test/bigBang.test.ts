@@ -1104,6 +1104,7 @@ describe('BigBang test', () => {
         await wethBigBangMarket
             .connect(eoa1)
             .repay(eoa1.address, eoa1.address, false, userBorrowPart);
+            
         userBorrowPart = await wethBigBangMarket.userBorrowPart(eoa1.address);
         expect(userBorrowPart.eq(0)).to.be.true;
 
@@ -1664,4 +1665,64 @@ describe('BigBang test', () => {
                 ),
         ).to.not.be.revertedWithCustomError;
     });
+
+    it('should batch calls', async () => {
+        const {
+            wethBigBangMarket,
+            weth,
+            wethAssetId,
+            yieldBox,
+            deployer,
+            bar,
+            usd0,
+            __wethUsdcPrice,
+            timeTravel,
+        } = await loadFixture(register);
+
+        await weth.approve(yieldBox.address, ethers.constants.MaxUint256);
+        await yieldBox.setApprovalForAll(wethBigBangMarket.address, true);
+
+        const wethMintVal = ethers.BigNumber.from((1e18).toString()).mul(10);
+        await weth.freeMint(wethMintVal);
+        const valShare = await yieldBox.toShare(
+            wethAssetId,
+            wethMintVal,
+            false,
+        );
+        const usdoBorrowVal = wethMintVal
+            .mul(74)
+            .div(100)
+            .mul(__wethUsdcPrice.div((1e18).toString()));
+
+        await yieldBox.depositAsset(
+            wethAssetId,
+            deployer.address,
+            deployer.address,
+            0,
+            valShare,
+        );
+
+        const addCollateralEncoded =
+            wethBigBangMarket.interface.encodeFunctionData('addCollateral', [
+                deployer.address,
+                deployer.address,
+                false,
+                valShare,
+            ]);
+        const borrowEncoded = wethBigBangMarket.interface.encodeFunctionData(
+            'borrow',
+            [deployer.address, deployer.address, usdoBorrowVal],
+        );
+
+        await wethBigBangMarket.execute(
+            [addCollateralEncoded, borrowEncoded],
+            true,
+        );
+
+        let userBorrowPart = await wethBigBangMarket.userBorrowPart(
+            deployer.address,
+        );
+        expect(userBorrowPart.gt(0)).to.be.true;
+    });
+
 });

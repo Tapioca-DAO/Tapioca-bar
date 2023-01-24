@@ -3,7 +3,8 @@ pragma solidity ^0.8.9;
 
 import '@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol';
 import 'tapioca-sdk/dist/contracts/lzApp/NonblockingLzApp.sol';
-import './interfaces/ISingularity.sol';
+
+import './interfaces/IMarket.sol';
 
 /*
 
@@ -19,15 +20,14 @@ __/\\\\\\\\\\\\\\\_____/\\\\\\\\\_____/\\\\\\\\\\\\\____/\\\\\\\\\\\_______/\\\\
 
 */
 /// @title Omnichain proxy for Singularity
-contract SGLProxy is NonblockingLzApp {
+contract MarketsProxy is NonblockingLzApp {
     // ************ //
     // *** VARS *** //
     // ************ //
     bool public useCustomAdapterParams;
-    bool public enforceSameAddress;
 
     // Address of the whitelisted Singularity contracts
-    mapping(address => bool) public singularities;
+    mapping(address => bool) public markets;
 
     // ***************** //
     // *** CONSTANTS *** //
@@ -50,8 +50,7 @@ contract SGLProxy is NonblockingLzApp {
         bytes _sglPayload
     );
     event SetUseCustomAdapterParams(bool _useCustomAdapterParams);
-    event LogSingularityStatus(address indexed singularity, bool status);
-    event LogEnforce(bool _old, bool _new);
+    event LogMarketStatus(address indexed singularity, bool status);
 
     /// @notice creates a new SGLProxy contract
     /// @param _lzEndpoint LayerZero endpoint address
@@ -60,32 +59,30 @@ contract SGLProxy is NonblockingLzApp {
         NonblockingLzApp(_lzEndpoint)
     {
         _transferOwnership(_owner);
-        enforceSameAddress = true;
     }
 
     // ************************ //
     // *** PUBLIC FUNCTIONS *** //
     // ************************ //
-
     /// @notice execute Singularity methods on another chain
     /// @param _dstChainId te LayerZero destination chain id
-    /// @param _mixologistDstAddress destination Singularity address
-    /// @param _sglCalls Singularity calls
+    /// @param _marketDstAddress destination Market address
+    /// @param _marketCalls Market calls
     /// @param _adapterParams custom adapters
     function executeOnChain(
         uint16 _dstChainId,
-        bytes memory _mixologistDstAddress,
-        bytes[] memory _sglCalls,
+        bytes memory _marketDstAddress,
+        bytes[] memory _marketCalls,
         bytes memory _adapterParams
     ) external payable {
         uint256 chainId = lzEndpoint.getChainId();
-        require(chainId != _dstChainId, 'SGLProxy: Chain not valid');
+        require(chainId != _dstChainId, 'MarketsProxy: chain not valid');
 
         _send(
             msg.sender,
             _dstChainId,
-            _mixologistDstAddress,
-            _sglCalls,
+            _marketDstAddress,
+            _marketCalls,
             payable(msg.sender),
             address(0),
             _adapterParams
@@ -95,16 +92,16 @@ contract SGLProxy is NonblockingLzApp {
     // *********************** //
     // *** OWNER FUNCTIONS *** //
     // *********************** //
-    /// @notice set whitelist status for Singularity
+    /// @notice set whitelist status for market
     /// @dev callable by owner
-    /// @param _mixologist the Singularity address
+    /// @param _market the market address
     /// @param _status whitelisted/not
-    function updateSingularityStatus(address _mixologist, bool _status)
+    function updateMarketStatus(address _market, bool _status)
         external
         onlyOwner
     {
-        singularities[_mixologist] = _status;
-        emit LogSingularityStatus(_mixologist, _status);
+        markets[_market] = _status;
+        emit LogMarketStatus(_market, _status);
     }
 
     /// @notice set custom adapter usage status
@@ -117,14 +114,6 @@ contract SGLProxy is NonblockingLzApp {
         emit SetUseCustomAdapterParams(_useCustomAdapterParams);
     }
 
-    //TODO: TBD; remove as we already have trustedRemotes
-    /// @notice enforces CREATE2 proxies
-    /// @param _val true/false
-    function setEnforceSameAddress(bool _val) external onlyOwner {
-        emit LogEnforce(enforceSameAddress, _val);
-        enforceSameAddress = _val;
-    }
-
     // ************************* //
     // *** PRIVATE FUNCTIONS *** //
     // ************************* //
@@ -133,32 +122,29 @@ contract SGLProxy is NonblockingLzApp {
         uint16 _srcChainId,
         bytes memory, /*_srcAddress*/
         uint64, /*_nonce*/
-        bytes memory _sglPayload
+        bytes memory _payload
     ) internal override {
         // decode and load the toAddress
         (
             bytes memory fromAddressBytes,
             bytes memory toAddressBytes,
-            bytes[] memory sglCalls
-        ) = abi.decode(_sglPayload, (bytes, bytes, bytes[]));
+            bytes[] memory marketCalls
+        ) = abi.decode(_payload, (bytes, bytes, bytes[]));
 
         address fromAddress;
         assembly {
             fromAddress := mload(add(fromAddressBytes, 20))
-        }
-        if (enforceSameAddress) {
-            require(fromAddress == address(this), 'SGLProxy: not proxy'); //should have the same address
         }
 
         address toAddress;
         assembly {
             toAddress := mload(add(toAddressBytes, 20))
         }
-        require(singularities[toAddress], 'SGLProxy: Invalid Singularity');
+        require(markets[toAddress], 'MarketsProxy: market not valid');
 
-        ISingularity(toAddress).execute(sglCalls, true);
+        IMarket(toAddress).execute(marketCalls, true);
 
-        emit ReceiveFromChain(_srcChainId, toAddress, _sglPayload);
+        emit ReceiveFromChain(_srcChainId, toAddress, _payload);
     }
 
     /// @notice override of the '_send' method
@@ -166,15 +152,15 @@ contract SGLProxy is NonblockingLzApp {
         address _from,
         uint16 _dstChainId,
         bytes memory _toAddress,
-        bytes[] memory _sglCalls,
+        bytes[] memory _marketCalls,
         address payable _refundAddress,
         address _zroPaymentAddress,
         bytes memory _adapterParams
     ) internal {
-        bytes memory sglPayload = abi.encode(
+        bytes memory payload = abi.encode(
             abi.encodePacked(address(this)),
             _toAddress,
-            _sglCalls
+            _marketCalls
         );
         if (useCustomAdapterParams) {
             _checkGasLimit(
@@ -191,13 +177,13 @@ contract SGLProxy is NonblockingLzApp {
         }
         _lzSend(
             _dstChainId,
-            sglPayload,
+            payload,
             _refundAddress,
             _zroPaymentAddress,
             _adapterParams,
             msg.value
         );
 
-        emit SendToChain(_dstChainId, _from, sglPayload);
+        emit SendToChain(_dstChainId, _from, payload);
     }
 }

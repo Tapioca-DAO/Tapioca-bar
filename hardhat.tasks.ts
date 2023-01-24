@@ -157,7 +157,7 @@ task(
 
 task(
     'setProxyTrustedRemote',
-    'Calls setProxyTrustedRemote on SGLProxy contract',
+    'Calls setProxyTrustedRemote on MarketsProxy contract',
     setProxyTrustedRemote__task,
 )
     .addParam('chain', 'LZ destination chain id for trusted remotes')

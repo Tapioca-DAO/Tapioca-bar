@@ -16,8 +16,8 @@ export const setProxyTrustedRemote__task = async (
     taskArgs: { chain: string; dst: string; src: string },
     hre: HardhatRuntimeEnvironment,
 ) => {
-    console.log('\nRetrieving SGLProxy');
-    const proxyContract = await getDeployment(hre, 'SGLProxy');
+    console.log('\nRetrieving MarketsProxy');
+    const proxyContract = await getDeployment(hre, 'MarketsProxy');
 
     const path = hre.ethers.utils.solidityPack(
         ['address', 'address'],
