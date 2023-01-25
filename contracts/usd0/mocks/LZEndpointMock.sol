@@ -1,10 +1,10 @@
-// SPDX-License-Identifier: BUSL-1.1
+// SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.4;
 pragma abicoder v2;
 
-import 'tapioca-sdk/dist/contracts/interfaces/ILayerZeroEndpoint.sol';
 import 'tapioca-sdk/dist/contracts/interfaces/ILayerZeroReceiver.sol';
+import 'tapioca-sdk/dist/contracts/interfaces/ILayerZeroEndpoint.sol';
 import 'tapioca-sdk/dist/contracts/libraries/LzLib.sol';
 
 /*
@@ -136,7 +136,10 @@ contract LZEndpointMock is ILayerZeroEndpoint {
         address _zroPaymentAddress,
         bytes memory _adapterParams
     ) external payable override sendNonReentrant {
-        // require(_path.length == 40, 'LayerZeroMock: incorrect remote address size'); // only support evm chains
+        require(
+            _path.length == 40,
+            'LayerZeroMock: incorrect remote address size'
+        ); // only support evm chains
 
         address dstAddr;
         assembly {
@@ -182,6 +185,7 @@ contract LZEndpointMock is ILayerZeroEndpoint {
             uint256 dstNativeAmt,
             address payable dstNativeAddr
         ) = LzLib.decodeAdapterParams(adapterParams);
+
         if (dstNativeAmt > 0) {
             (bool success, ) = dstNativeAddr.call{value: dstNativeAmt}('');
             if (!success) {
@@ -199,6 +203,21 @@ contract LZEndpointMock is ILayerZeroEndpoint {
             extraGas,
             payload
         );
+    }
+
+    function _getRevertMsg(bytes memory _returnData)
+        private
+        pure
+        returns (string memory)
+    {
+        // If the _res length is less than 68, then the transaction failed silently (without a revert message)
+        if (_returnData.length < 68) return 'SGL: no return data';
+        // solhint-disable-next-line no-inline-assembly
+        assembly {
+            // Slice the sighash.
+            _returnData := add(_returnData, 0x04)
+        }
+        return abi.decode(_returnData, (string)); // All that remains is the revert string
     }
 
     function receivePayload(

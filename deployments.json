@@ -223,16 +223,6 @@
             "meta": {}
         },
         {
-            "name": "SGLProxy",
-            "address": "0x0e84a8287A9E7045a8945b33C43d8ed1B8835CbE",
-            "meta": {
-                "constructorArguments": [
-                    "0x6aB5Ae6822647046626e83ee6dB8187151E1d5ab",
-                    "0x40282d3Cf4890D9806BC1853e97a59C93D813653"
-                ]
-            }
-        },
-        {
             "name": "Penrose",
             "address": "0x968d2E029688b23712E482D814e7EC58e0b9Edae",
             "meta": {
@@ -314,6 +304,16 @@
                     "bidExecutionSwapper": "0x0000000000000000000000000000000000000000",
                     "usdoSwapper": "0x5c568be396BD2c3b5ae95C407d393B0F0bd24cBf"
                 }
+            }
+        },
+        {
+            "name": "SGLProxy",
+            "address": "0x4806ab44E687AC1Fdb01339A718656b0838D9027",
+            "meta": {
+                "constructorArguments": [
+                    "0x6aB5Ae6822647046626e83ee6dB8187151E1d5ab",
+                    "0x40282d3Cf4890D9806BC1853e97a59C93D813653"
+                ]
             }
         }
     ]

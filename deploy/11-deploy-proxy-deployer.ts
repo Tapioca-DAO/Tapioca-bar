@@ -27,14 +27,14 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         `Done. Deployed ProxyDeployer on ${proxyDeployer.address} with no arguments`,
     );
 
-    const salt = hre.ethers.utils.formatBytes32String('SGLPROXY');
-    console.log(`\nDeploying SGLProxy for current chain with salt ${salt}`);
+    const salt = hre.ethers.utils.formatBytes32String('MarketsProxy');
+    console.log(`\nDeploying MarketsProxy for current chain with salt ${salt}`);
     const proxyDeployerContract = await hre.ethers.getContractAt(
         'ProxyDeployer',
         proxyDeployer.address,
     );
 
-    console.log(`\nDeploying SGLProxy`);
+    console.log(`\nDeploying MarketsProxy`);
     await proxyDeployerContract.deployWithCreate2(
         constants[chainId].address,
         salt,
@@ -44,7 +44,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const proxy = await proxyDeployerContract.proxies(count.sub(1));
 
     contracts.push({
-        name: 'SGLProxy',
+        name: 'MarketsProxy',
         address: proxy,
         meta: {},
     });

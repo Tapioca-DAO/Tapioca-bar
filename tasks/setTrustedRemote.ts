@@ -25,7 +25,7 @@ export const setTrustedRemote__task = async (
         [taskArgs.dst, taskArgs.src],
     );
     console.log(`Setting trusted remote with path ${path}`);
-    await usd0Contract.setTrustedRemote(taskArgs.chain, path);
+    await (await usd0Contract.setTrustedRemote(taskArgs.chain, path)).wait();
 
     console.log('Done');
 };

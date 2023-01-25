@@ -18,18 +18,17 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         log: true,
         args,
     });
-    const proxy = await deployments.get('MarketsProxy');
+    const marketsProxy = await deployments.get('MarketsProxy');
     contracts.push({
         name: 'MarketsProxy-Test',
-        address: proxy.address,
+        address: marketsProxy.address,
         meta: { constructorArguments: args },
     });
     await verify(hre, 'MarketsProxy', [constants[chainId].address, deployer]);
     console.log(
-        `Done. Deployed MarketsProxy on ${proxy.address} with args [${constants[chainId].address},${deployer}]`,
+        `Done. Deployed MarketsProxy on ${marketsProxy.address} with args [${constants[chainId].address},${deployer}]`,
     );
     await updateDeployments(contracts, chainId);
-
 };
 
 export default func;

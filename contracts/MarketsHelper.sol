@@ -10,6 +10,8 @@ import './usd0/interfaces/IBigBang.sol';
 import './singularity/interfaces/ISingularity.sol';
 import '../yieldbox/contracts/YieldBox.sol';
 
+import 'hardhat/console.sol';
+
 /// @title Useful helper functions for `Singularity` and `BingBang`
 contract MarketsHelper {
     using RebaseLibrary for Rebase;
@@ -236,7 +238,15 @@ contract MarketsHelper {
         market.borrow(msg.sender, borrowReceiver, _borrowAmount);
 
         if (withdraw_) {
-            _withdraw(_withdrawData, market, yieldBox, _borrowAmount, 0, false);
+            _withdraw(
+                borrowReceiver,
+                _withdrawData,
+                market,
+                yieldBox,
+                _borrowAmount,
+                0,
+                false
+            );
         }
     }
 
@@ -451,6 +461,7 @@ contract MarketsHelper {
         //withdraw
         if (withdraw_) {
             _withdraw(
+                address(this),
                 withdrawData_,
                 singularity,
                 yieldBox,
@@ -492,6 +503,7 @@ contract MarketsHelper {
     }
 
     function _withdraw(
+        address _from,
         bytes calldata _withdrawData,
         IMarket market,
         YieldBox yieldBox,
@@ -521,6 +533,7 @@ contract MarketsHelper {
         }
 
         market.withdrawTo{value: msg.value}(
+            _from,
             _destChain,
             _receiver,
             _amount,

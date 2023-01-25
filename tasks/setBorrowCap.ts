@@ -33,7 +33,9 @@ export const setCap = async (taskArgs: any, hre: HardhatRuntimeEnvironment) => {
             [taskArgs['cap']],
         );
     }
-    await penroseContract.executeMarketFn([marketAddress], [callData], true);
+    await (
+        await penroseContract.executeMarketFn([marketAddress], [callData], true)
+    ).wait();
 };
 
 export const setBorrowCap__task = async (

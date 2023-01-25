@@ -17,11 +17,13 @@ export const setLiquidationQueue = async (
         [taskArgs['liquidationQueue'], taskArgs['meta']],
     );
 
-    await penroseContract.executeMarketFn(
-        [singularityAddress],
-        [callData],
-        true,
-    );
+    await (
+        await penroseContract.executeMarketFn(
+            [singularityAddress],
+            [callData],
+            true,
+        )
+    ).wait();
 };
 
 export const setLiquidationQueue__task = async (
