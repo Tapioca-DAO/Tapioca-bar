@@ -4,6 +4,7 @@ pragma solidity ^0.8.0;
 import './SGLCommon.sol';
 import './SGLLiquidation.sol';
 import './SGLLendingBorrowing.sol';
+import './SGLLeverage.sol';
 
 import '../interfaces/ISendFrom.sol';
 
@@ -33,18 +34,22 @@ contract Singularity is SGLCommon {
     enum Module {
         Base,
         LendingBorrowing,
+        Leverage,
         Liquidation
     }
     /// @notice returns the liquidation module
     SGLLiquidation public liquidationModule;
     /// @notice returns the lending module
     SGLLendingBorrowing public lendingBorrowingModule;
+    /// @notice returns the leverage module
+    SGLLeverage public leverageModule;
 
     /// @notice The init function that acts as a constructor
     function init(bytes calldata data) external onlyOnce {
         (
             address _liquidationModule,
             address _lendingBorrowingModule,
+            address _leverageModule,
             IPenrose tapiocaBar_,
             IERC20 _asset,
             uint256 _assetId,
@@ -55,6 +60,7 @@ contract Singularity is SGLCommon {
         ) = abi.decode(
                 data,
                 (
+                    address,
                     address,
                     address,
                     IPenrose,
@@ -69,6 +75,7 @@ contract Singularity is SGLCommon {
 
         liquidationModule = SGLLiquidation(_liquidationModule);
         lendingBorrowingModule = SGLLendingBorrowing(_lendingBorrowingModule);
+        leverageModule = SGLLeverage(_leverageModule);
         penrose = tapiocaBar_;
         yieldBox = YieldBox(tapiocaBar_.yieldBox());
         owner = address(penrose);
@@ -250,6 +257,65 @@ contract Singularity is SGLCommon {
             )
         );
         amount = abi.decode(result, (uint256));
+    }
+
+    /// @notice Lever down: Sell collateral to repay debt; excess goes to YB
+    /// @param from The user who sells
+    /// @param share Collateral YieldBox-shares to sell
+    /// @param minAmountOut Mininal proceeds required for the sale
+    /// @param swapper Swapper to execute the sale
+    /// @param dexData Additional data to pass to the swapper
+    /// @param amountOut Actual asset amount received in the sale
+    function sellCollateral(
+        address from,
+        uint256 share,
+        uint256 minAmountOut,
+        ISwapper swapper,
+        bytes calldata dexData
+    ) external returns (uint256 amountOut) {
+        bytes memory result = _executeModule(
+            Module.Leverage,
+            abi.encodeWithSelector(
+                SGLLeverage.sellCollateral.selector,
+                from,
+                share,
+                minAmountOut,
+                swapper,
+                dexData
+            )
+        );
+        amountOut = abi.decode(result, (uint256));
+    }
+
+    /// @notice Lever up: Borrow more and buy collateral with it.
+    /// @param from The user who buys
+    /// @param borrowAmount Amount of extra asset borrowed
+    /// @param supplyAmount Amount of asset supplied (down payment)
+    /// @param minAmountOut Mininal collateral amount to receive
+    /// @param swapper Swapper to execute the purchase
+    /// @param dexData Additional data to pass to the swapper
+    /// @param amountOut Actual collateral amount purchased
+    function buyCollateral(
+        address from,
+        uint256 borrowAmount,
+        uint256 supplyAmount,
+        uint256 minAmountOut,
+        ISwapper swapper,
+        bytes calldata dexData
+    ) external returns (uint256 amountOut) {
+        bytes memory result = _executeModule(
+            Module.Leverage,
+            abi.encodeWithSelector(
+                SGLLeverage.buyCollateral.selector,
+                from,
+                borrowAmount,
+                supplyAmount,
+                minAmountOut,
+                swapper,
+                dexData
+            )
+        );
+        amountOut = abi.decode(result, (uint256));
     }
 
     /// @notice Entry point for liquidations.
@@ -501,6 +567,8 @@ contract Singularity is SGLCommon {
         address module;
         if (_module == Module.LendingBorrowing) {
             module = address(lendingBorrowingModule);
+        } else if (_module == Module.Leverage) {
+            module = address(leverageModule);
         } else if (_module == Module.Liquidation) {
             module = address(liquidationModule);
         }

@@ -66,11 +66,7 @@ contract SGLLendingBorrowing is SGLCommon {
         bool skim,
         uint256 share
     ) public notPaused allowed(from) {
-        userCollateralShare[to] += share;
-        uint256 oldTotalCollateralShare = totalCollateralShare;
-        totalCollateralShare = oldTotalCollateralShare + share;
-        _addTokens(from, collateralId, share, oldTotalCollateralShare, skim);
-        emit LogAddCollateral(skim ? address(yieldBox) : from, to, share);
+        _addCollateral(from, to, skim, share);
     }
 
     /// @notice Removes `share` amount of collateral and transfers it to `to`.
@@ -91,6 +87,20 @@ contract SGLLendingBorrowing is SGLCommon {
     // ************************** //
     // *** PRIVATE FUNCTIONS *** //
     // ************************* //
+    /// @dev Concrete implementation of `addCollateral`.
+    function _addCollateral(
+        address from,
+        address to,
+        bool skim,
+        uint256 share
+    ) internal {
+        userCollateralShare[to] += share;
+        uint256 oldTotalCollateralShare = totalCollateralShare;
+        totalCollateralShare = oldTotalCollateralShare + share;
+        _addTokens(from, collateralId, share, oldTotalCollateralShare, skim);
+        emit LogAddCollateral(skim ? address(yieldBox) : from, to, share);
+    }
+
     /// @dev Concrete implementation of `removeCollateral`.
     function _removeCollateral(
         address from,
