@@ -19,11 +19,10 @@ contract SGLLiquidation is SGLCommon {
     /// @param user The user to check solvency.
     /// @param _exchangeRate The exchange rate asset/collateral.
     /// @return The amount of collateral to be solvent.
-    function computeAssetAmountToSolvency(address user, uint256 _exchangeRate)
-        public
-        view
-        returns (uint256)
-    {
+    function computeAssetAmountToSolvency(
+        address user,
+        uint256 _exchangeRate
+    ) public view returns (uint256) {
         // accrue must have already been called!
         uint256 borrowPart = userBorrowPart[user];
         if (borrowPart == 0) return 0;
@@ -182,7 +181,6 @@ contract SGLLiquidation is SGLCommon {
             yieldBox.toAmount(collateralId, allCollateralShare, true),
             swapData
         );
-
 
         uint256 returnedShare = yieldBox.balanceOf(address(this), assetId) -
             uint256(totalAsset.elastic);

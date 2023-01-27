@@ -200,11 +200,10 @@ contract SGLCommon is SGLStorage {
 
     /// @notice Concrete implementation of `isSolvent`. Includes a parameter to allow caching `exchangeRate`.
     /// @param _exchangeRate The exchange rate. Used to cache the `exchangeRate` between calls.
-    function _isSolvent(address user, uint256 _exchangeRate)
-        internal
-        view
-        returns (bool)
-    {
+    function _isSolvent(
+        address user,
+        uint256 _exchangeRate
+    ) internal view returns (bool) {
         // accrue must have already been called!
         uint256 borrowPart = userBorrowPart[user];
         if (borrowPart == 0) return true;
@@ -311,11 +310,9 @@ contract SGLCommon is SGLStorage {
     }
 
     /// @dev Return the equivalent of collateral borrow part in asset amount.
-    function _getAmountForBorrowPart(uint256 borrowPart)
-        internal
-        view
-        returns (uint256)
-    {
+    function _getAmountForBorrowPart(
+        uint256 borrowPart
+    ) internal view returns (uint256) {
         return totalBorrow.toElastic(borrowPart, false);
     }
 }
