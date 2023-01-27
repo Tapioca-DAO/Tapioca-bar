@@ -4,7 +4,6 @@ pragma solidity ^0.8.0;
 import './SGLCommon.sol';
 import './SGLLiquidation.sol';
 import './SGLLendingBorrowing.sol';
-import './SGLLeverage.sol';
 
 import '../interfaces/ISendFrom.sol';
 
@@ -34,22 +33,18 @@ contract Singularity is SGLCommon {
     enum Module {
         Base,
         LendingBorrowing,
-        Leverage,
         Liquidation
     }
     /// @notice returns the liquidation module
     SGLLiquidation public liquidationModule;
     /// @notice returns the lending module
     SGLLendingBorrowing public lendingBorrowingModule;
-    /// @notice returns the leverage module
-    SGLLeverage public leverageModule;
 
     /// @notice The init function that acts as a constructor
     function init(bytes calldata data) external onlyOnce {
         (
             address _liquidationModule,
             address _lendingBorrowingModule,
-            address _leverageModule,
             IPenrose tapiocaBar_,
             IERC20 _asset,
             uint256 _assetId,
@@ -60,7 +55,6 @@ contract Singularity is SGLCommon {
         ) = abi.decode(
                 data,
                 (
-                    address,
                     address,
                     address,
                     IPenrose,
@@ -75,7 +69,6 @@ contract Singularity is SGLCommon {
 
         liquidationModule = SGLLiquidation(_liquidationModule);
         lendingBorrowingModule = SGLLendingBorrowing(_lendingBorrowingModule);
-        leverageModule = SGLLeverage(_leverageModule);
         penrose = tapiocaBar_;
         yieldBox = YieldBox(tapiocaBar_.yieldBox());
         owner = address(penrose);
@@ -274,9 +267,9 @@ contract Singularity is SGLCommon {
         bytes calldata dexData
     ) external returns (uint256 amountOut) {
         bytes memory result = _executeModule(
-            Module.Leverage,
+            Module.LendingBorrowing,
             abi.encodeWithSelector(
-                SGLLeverage.sellCollateral.selector,
+                SGLLendingBorrowing.sellCollateral.selector,
                 from,
                 share,
                 minAmountOut,
@@ -304,9 +297,9 @@ contract Singularity is SGLCommon {
         bytes calldata dexData
     ) external returns (uint256 amountOut) {
         bytes memory result = _executeModule(
-            Module.Leverage,
+            Module.LendingBorrowing,
             abi.encodeWithSelector(
-                SGLLeverage.buyCollateral.selector,
+                SGLLendingBorrowing.buyCollateral.selector,
                 from,
                 borrowAmount,
                 supplyAmount,
@@ -567,8 +560,6 @@ contract Singularity is SGLCommon {
         address module;
         if (_module == Module.LendingBorrowing) {
             module = address(lendingBorrowingModule);
-        } else if (_module == Module.Leverage) {
-            module = address(leverageModule);
         } else if (_module == Module.Liquidation) {
             module = address(liquidationModule);
         }
