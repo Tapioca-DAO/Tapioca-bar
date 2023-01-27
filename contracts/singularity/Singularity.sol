@@ -103,6 +103,10 @@ contract Singularity is SGLCommon {
         EXCHANGE_RATE_PRECISION = _exchangeRatePrecision > 0
             ? _exchangeRatePrecision
             : 1e18;
+
+        minLiquidatorReward = 1e3;
+        maxLiquidatorReward = 1e4;
+        liquidationBonusAmount = 1e4;
     }
 
     // ********************** //
@@ -121,27 +125,7 @@ contract Singularity is SGLCommon {
             _yieldBoxShares[_user][_assetId];
     }
 
-    /// @notice Return the amount of collateral for a `user` to be solvent. Returns 0 if user already solvent.
-    /// @dev We use a `CLOSED_COLLATERIZATION_RATE` that is a safety buffer when making the user solvent again,
-    ///      To prevent from being liquidated. This function is valid only if user is not solvent by `_isSolvent()`.
-    /// @param user The user to check solvency.
-    /// @param _exchangeRate The exchange rate asset/collateral.
-    /// @return amountToSolvency The amount of collateral to be solvent.
-    function computeAssetAmountToSolvency(address user, uint256 _exchangeRate)
-        public
-        view
-        returns (uint256 amountToSolvency)
-    {
-        bytes memory result = _executeViewModule(
-            Module.Liquidation,
-            abi.encodeWithSelector(
-                SGLLiquidation.computeAssetAmountToSolvency.selector,
-                user,
-                _exchangeRate
-            )
-        );
-        amountToSolvency = abi.decode(result, (uint256));
-    }
+    
 
     // ************************ //
     // *** PUBLIC FUNCTIONS *** //
@@ -382,6 +366,29 @@ contract Singularity is SGLCommon {
     // *********************** //
     // *** OWNER FUNCTIONS *** //
     // *********************** //
+    /// @notice Set the bonus amount a liquidator can make use of, on top of the amount needed to make the user solvent
+    /// @param _val the new value
+    function setLiquidationBonusAmount(uint256 _val) external onlyOwner {
+        require(_val < FEE_PRECISION, 'SGL: not valid');
+        liquidationBonusAmount = _val;
+    }
+
+    /// @notice Set the liquidator min reward
+    /// @param _val the new value
+    function setMinLiquidatorReward(uint256 _val) external onlyOwner {
+        require(_val < FEE_PRECISION, 'SGL: not valid');
+        require(_val < maxLiquidatorReward, 'SGL: not valid');
+        minLiquidatorReward = _val;
+    }
+
+    /// @notice Set the liquidator max reward
+    /// @param _val the new value
+    function setMaxLiquidatorReward(uint256 _val) external onlyOwner {
+        require(_val < FEE_PRECISION, 'SGL: not valid');
+        require(_val > minLiquidatorReward, 'SGL: not valid');
+        maxLiquidatorReward = _val;
+    }
+
     /// @notice Set the Conservator address
     /// @dev Conservator can pause the contract
     /// @param _conservator The new address
@@ -404,7 +411,7 @@ contract Singularity is SGLCommon {
     /// @dev can only be called by the owner
     /// @param _val the new value
     function setLqCollateralizationRate(uint256 _val) external onlyOwner {
-        require(_val <= COLLATERIZATION_RATE_PRECISION, 'SGL: not valid');
+        require(_val <= COLLATERALIZATION_RATE_PRECISION, 'SGL: not valid');
         lqCollateralizationRate = _val;
     }
 
@@ -412,7 +419,7 @@ contract Singularity is SGLCommon {
     /// @dev can only be called by the owner
     /// @param _val the new value
     function setClosedCollateralizationRate(uint256 _val) external onlyOwner {
-        require(_val <= COLLATERIZATION_RATE_PRECISION, 'SGL: not valid');
+        require(_val <= COLLATERALIZATION_RATE_PRECISION, 'SGL: not valid');
         closedCollateralizationRate = _val;
     }
 

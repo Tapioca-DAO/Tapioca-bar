@@ -921,7 +921,7 @@ describe('LiquidationQueue test', () => {
             usdoToWethBidder,
             usd0,
             deployCurveStableToUsdoBidder,
-            timeTravel
+            timeTravel,
         } = await loadFixture(register);
 
         //deploy and register usdoSwapper and bidExecutionSwapper
@@ -2165,12 +2165,16 @@ describe('LiquidationQueue test', () => {
                 data,
                 data,
             ),
-        ).to.be.revertedWith('SGL: solvent');
+        ).to.be.revertedWith('SGL: no users found');
 
         // Make some price movement and liquidate
         const priceDrop = __wethUsdcPrice.mul(5).div(100);
         await wethUsdcOracle.set(__wethUsdcPrice.add(priceDrop));
         await wethUsdcSingularity.updateExchangeRate();
+
+        const initialBorrowPart = await wethUsdcSingularity.userBorrowPart(
+            deployer.address,
+        );
 
         await expect(
             wethUsdcSingularity.liquidate(
@@ -2190,7 +2194,7 @@ describe('LiquidationQueue test', () => {
                 data,
                 data,
             ),
-        ).to.be.revertedWith('SGL: solvent');
+        ).to.be.revertedWith('SGL: no users found');
 
         // Check that LQ balances has been added
         expect(await liquidationQueue.balancesDue(deployer.address)).to.eq(0);
@@ -2198,12 +2202,12 @@ describe('LiquidationQueue test', () => {
         const finalBorrowPart = await wethUsdcSingularity.userBorrowPart(
             deployer.address,
         );
-        expect(finalBorrowPart.eq(0)).to.be.true;
+        expect(finalBorrowPart.lt(initialBorrowPart)).to.be.true;
 
         const finalCollateral = await wethUsdcSingularity.userCollateralShare(
             deployer.address,
         );
-        expect(finalCollateral.lt(initialCollateral.div(5))).to.be.true;
+        expect(finalCollateral.lt(initialCollateral)).to.be.true;
     });
 
     it('borrow, place small bid, activate, collateral drops, liquidate => should rely on close liquidation', async () => {
@@ -2335,12 +2339,12 @@ describe('LiquidationQueue test', () => {
         const finalBorrowPart = await wethUsdcSingularity.userBorrowPart(
             deployer.address,
         );
-        expect(finalBorrowPart.eq(0)).to.be.true;
+        expect(finalBorrowPart.lt(initialBorrowPart)).to.be.true;
 
         const finalCollateral = await wethUsdcSingularity.userCollateralShare(
             deployer.address,
         );
-        expect(finalCollateral.lt(initialCollateral.div(5))).to.be.true;
+        expect(finalCollateral.lt(initialCollateral)).to.be.true;
 
         const bidIndexLen = await liquidationQueue.userBidIndexLength(
             deployer.address,
