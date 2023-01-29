@@ -3,49 +3,12 @@ pragma solidity ^0.8.0;
 
 import './SGLCommon.sol';
 
+
 // solhint-disable max-line-length
 
 contract SGLLiquidation is SGLCommon {
     using RebaseLibrary for Rebase;
     using BoringERC20 for IERC20;
-
-    // ********************** //
-    // *** VIEW FUNCTIONS *** //
-    // ********************** //
-
-    /// @notice Return the amount of collateral for a `user` to be solvent. Returns 0 if user already solvent.
-    /// @dev We use a `CLOSED_COLLATERIZATION_RATE` that is a safety buffer when making the user solvent again,
-    ///      To prevent from being liquidated. This function is valid only if user is not solvent by `_isSolvent()`.
-    /// @param user The user to check solvency.
-    /// @param _exchangeRate The exchange rate asset/collateral.
-    /// @return The amount of collateral to be solvent.
-    function computeAssetAmountToSolvency(address user, uint256 _exchangeRate)
-        public
-        view
-        returns (uint256)
-    {
-        // accrue must have already been called!
-        uint256 borrowPart = userBorrowPart[user];
-        if (borrowPart == 0) return 0;
-        uint256 collateralShare = userCollateralShare[user];
-
-        Rebase memory _totalBorrow = totalBorrow;
-
-        uint256 collateralAmountInAsset = yieldBox.toAmount(
-            collateralId,
-            (collateralShare *
-                (EXCHANGE_RATE_PRECISION / COLLATERIZATION_RATE_PRECISION) *
-                lqCollateralizationRate),
-            false
-        ) / _exchangeRate;
-        // Obviously it's not `borrowPart` anymore but `borrowAmount`
-        borrowPart = (borrowPart * _totalBorrow.elastic) / _totalBorrow.base;
-
-        return
-            borrowPart >= collateralAmountInAsset
-                ? borrowPart - collateralAmountInAsset
-                : 0;
-    }
 
     // ************************ //
     // *** PUBLIC FUNCTIONS *** //
@@ -103,6 +66,34 @@ contract SGLLiquidation is SGLCommon {
     // ************************* //
     // *** PRIVATE FUNCTIONS *** //
     // ************************* //
+    function _computeAssetAmountToSolvency(address user, uint256 _exchangeRate)
+        private
+        view
+        returns (uint256)
+    {
+        // accrue must have already been called!
+        uint256 borrowPart = userBorrowPart[user];
+        if (borrowPart == 0) return 0;
+        uint256 collateralShare = userCollateralShare[user];
+
+        Rebase memory _totalBorrow = totalBorrow;
+
+        uint256 collateralAmountInAsset = yieldBox.toAmount(
+            collateralId,
+            (collateralShare *
+                (EXCHANGE_RATE_PRECISION / COLLATERALIZATION_RATE_PRECISION) *
+                lqCollateralizationRate),
+            false
+        ) / _exchangeRate;
+        // Obviously it's not `borrowPart` anymore but `borrowAmount`
+        borrowPart = (borrowPart * _totalBorrow.elastic) / _totalBorrow.base;
+
+        return
+            borrowPart >= collateralAmountInAsset
+                ? borrowPart - collateralAmountInAsset
+                : 0;
+    }
+
     function _orderBookLiquidation(
         address[] calldata users,
         uint256 _exchangeRate,
@@ -116,10 +107,11 @@ contract SGLLiquidation is SGLCommon {
         for (uint256 i = 0; i < users.length; i++) {
             address user = users[i];
             if (!_isSolvent(user, _exchangeRate)) {
-                uint256 borrowAmount = computeAssetAmountToSolvency(
+                uint256 borrowAmount = _computeAssetAmountToSolvency(
                     user,
                     _exchangeRate
                 );
+
                 if (borrowAmount == 0) {
                     continue;
                 }
@@ -183,7 +175,6 @@ contract SGLLiquidation is SGLCommon {
             swapData
         );
 
-
         uint256 returnedShare = yieldBox.balanceOf(address(this), assetId) -
             uint256(totalAsset.elastic);
         uint256 extraShare = returnedShare - allBorrowShare;
@@ -200,6 +191,122 @@ contract SGLLiquidation is SGLCommon {
         );
     }
 
+    function _updateBorrowAndCollateralShare(
+        address user,
+        uint256 maxBorrowPart,
+        uint256 _exchangeRate
+    )
+        private
+        returns (
+            uint256 borrowAmount,
+            uint256 borrowPart,
+            uint256 collateralShare
+        )
+    {
+        uint256 availableBorrowPart = computeClosingFactor(user, _exchangeRate);
+        borrowPart = maxBorrowPart > availableBorrowPart
+            ? availableBorrowPart
+            : maxBorrowPart;
+
+        userBorrowPart[user] = userBorrowPart[user] - borrowPart;
+
+        borrowAmount = totalBorrow.toElastic(borrowPart, false);
+        collateralShare = yieldBox.toShare(
+            collateralId,
+            (borrowAmount * liquidationMultiplier * _exchangeRate) /
+                (LIQUIDATION_MULTIPLIER_PRECISION * EXCHANGE_RATE_PRECISION),
+            false
+        );
+        userCollateralShare[user] -= collateralShare;
+        require(borrowAmount != 0, 'SGL: solvent');
+
+        totalBorrow.elastic -= uint128(borrowAmount);
+        totalBorrow.base -= uint128(borrowPart);
+    }
+
+    function _extractLiquidationFees(
+        uint256 borrowShare,
+        uint256 callerReward,
+        address swapper
+    ) private {
+        uint256 returnedShare = yieldBox.balanceOf(address(this), assetId) -
+            uint256(totalAsset.elastic);
+        uint256 extraShare = returnedShare - borrowShare;
+        uint256 feeShare = (extraShare * protocolFee) / FEE_PRECISION; // x% of profit goes to fee.
+        uint256 callerShare = (extraShare * callerReward) / FEE_PRECISION; //  y%  of profit goes to caller.
+
+        yieldBox.transfer(address(this), penrose.feeTo(), assetId, feeShare);
+        yieldBox.transfer(address(this), msg.sender, assetId, callerShare);
+
+        totalAsset.elastic += uint128(returnedShare - feeShare - callerShare);
+
+        emit LogAddAsset(
+            swapper,
+            address(this),
+            extraShare - feeShare - callerShare,
+            0
+        );
+    }
+
+    function _liquidateUser(
+        address user,
+        uint256 maxBorrowPart,
+        ISwapper swapper,
+        uint256 _exchangeRate,
+        bytes calldata swapData
+    ) private {
+        if (_isSolvent(user, _exchangeRate)) return;
+
+        (
+            uint256 startTVLInAsset,
+            uint256 maxTVLInAsset
+        ) = _computeMaxAndMinLTVInAsset(
+                userCollateralShare[user],
+                _exchangeRate
+            );
+        uint256 callerReward = _getCallerReward(
+            userBorrowPart[user],
+            startTVLInAsset,
+            maxTVLInAsset
+        );
+
+        (
+            uint256 borrowAmount,
+            uint256 borrowPart,
+            uint256 collateralShare
+        ) = _updateBorrowAndCollateralShare(user, maxBorrowPart, _exchangeRate);
+        emit LogRemoveCollateral(user, address(swapper), collateralShare);
+        emit LogRepay(address(swapper), user, borrowAmount, borrowPart);
+
+        uint256 borrowShare = yieldBox.toShare(assetId, borrowAmount, true);
+
+        // Closed liquidation using a pre-approved swapper
+        require(penrose.swappers(swapper), 'SGL: Invalid swapper');
+
+        // Swaps the users collateral for the borrowed asset
+        yieldBox.transfer(
+            address(this),
+            address(swapper),
+            collateralId,
+            collateralShare
+        );
+
+        uint256 minAssetMount = 0;
+        if (swapData.length > 0) {
+            minAssetMount = abi.decode(swapData, (uint256));
+        }
+        swapper.swap(
+            collateralId,
+            assetId,
+            collateralShare,
+            address(this),
+            minAssetMount,
+            abi.encode(_collateralToAssetSwapPath())
+        );
+
+        _extractLiquidationFees(borrowShare, callerReward, address(swapper));
+    }
+
     /// @notice Handles the liquidation of users' balances, once the users' amount of collateral is too low.
     /// @dev Closed liquidations Only, 90% of extra shares goes to caller and 10% to protocol
     /// @param users An array of user addresses.
@@ -213,97 +320,23 @@ contract SGLLiquidation is SGLCommon {
         uint256 _exchangeRate,
         bytes calldata swapData
     ) private {
-        uint256 allCollateralShare;
-        uint256 allBorrowAmount;
-        uint256 allBorrowPart;
-        Rebase memory _totalBorrow = totalBorrow;
+        uint256 liquidatedCount = 0;
         for (uint256 i = 0; i < users.length; i++) {
             address user = users[i];
             if (!_isSolvent(user, _exchangeRate)) {
-                uint256 borrowPart;
-                {
-                    uint256 availableBorrowPart = userBorrowPart[user];
-                    borrowPart = maxBorrowParts[i] > availableBorrowPart
-                        ? availableBorrowPart
-                        : maxBorrowParts[i];
-                    userBorrowPart[user] = availableBorrowPart - borrowPart;
-                }
-                uint256 borrowAmount = _totalBorrow.toElastic(
-                    borrowPart,
-                    false
-                );
-                uint256 collateralShare = yieldBox.toShare(
-                    collateralId,
-                    (borrowAmount * liquidationMultiplier * _exchangeRate) /
-                        (LIQUIDATION_MULTIPLIER_PRECISION *
-                            EXCHANGE_RATE_PRECISION),
-                    false
-                );
-                userCollateralShare[user] -= collateralShare;
-                emit LogRemoveCollateral(
+                liquidatedCount++;
+                _liquidateUser(
                     user,
-                    address(swapper),
-                    collateralShare
+                    maxBorrowParts[i],
+                    swapper,
+                    _exchangeRate,
+                    swapData
                 );
-                emit LogRepay(address(swapper), user, borrowAmount, borrowPart);
-
-                // Keep totals
-                allCollateralShare += collateralShare;
-                allBorrowAmount += borrowAmount;
-                allBorrowPart += borrowPart;
             }
         }
-        require(allBorrowAmount != 0, 'SGL: solvent');
-        _totalBorrow.elastic -= uint128(allBorrowAmount);
-        _totalBorrow.base -= uint128(allBorrowPart);
-        totalBorrow = _totalBorrow;
-        totalCollateralShare -= allCollateralShare;
 
-        uint256 allBorrowShare = yieldBox.toShare(
-            assetId,
-            allBorrowAmount,
-            true
-        );
-
-        // Closed liquidation using a pre-approved swapper
-        require(penrose.swappers(swapper), 'SGL: Invalid swapper');
-
-        // Swaps the users collateral for the borrowed asset
-        yieldBox.transfer(
-            address(this),
-            address(swapper),
-            collateralId,
-            allCollateralShare
-        );
-
-        uint256 minAssetMount = 0;
-        if (swapData.length > 0) {
-            minAssetMount = abi.decode(swapData, (uint256));
-        }
-        swapper.swap(
-            collateralId,
-            assetId,
-            allCollateralShare,
-            address(this),
-            minAssetMount,
-            abi.encode(_collateralToAssetSwapPath())
-        );
-
-        uint256 returnedShare = yieldBox.balanceOf(address(this), assetId) -
-            uint256(totalAsset.elastic);
-        uint256 extraShare = returnedShare - allBorrowShare;
-        uint256 feeShare = (extraShare * protocolFee) / FEE_PRECISION; // x% of profit goes to fee.
-        uint256 callerShare = (extraShare * callerFee) / FEE_PRECISION; //  y%  of profit goes to caller.
-
-        yieldBox.transfer(address(this), penrose.feeTo(), assetId, feeShare);
-        yieldBox.transfer(address(this), msg.sender, assetId, callerShare);
-
-        totalAsset.elastic += uint128(returnedShare - feeShare - callerShare);
-        emit LogAddAsset(
-            address(swapper),
-            address(this),
-            extraShare - feeShare - callerShare,
-            0
-        );
+        require(liquidatedCount > 0, 'SGL: no users found');
     }
+
+    
 }
