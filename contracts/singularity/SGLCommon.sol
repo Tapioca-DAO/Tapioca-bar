@@ -49,14 +49,13 @@ contract SGLCommon is SGLStorage {
     /// @param user The user to check solvency.
     /// @param _exchangeRate The exchange rate asset/collateral.
     /// @return amountToSolvency The amount of collateral to be solvent.
-    function computeTVLInfo(address user, uint256 _exchangeRate)
+    function computeTVLInfo(
+        address user,
+        uint256 _exchangeRate
+    )
         public
         view
-        returns (
-            uint256 amountToSolvency,
-            uint256 minTVL,
-            uint256 maxTVL
-        )
+        returns (uint256 amountToSolvency, uint256 minTVL, uint256 maxTVL)
     {
         uint256 borrowPart = userBorrowPart[user];
         if (borrowPart == 0) return (0, 0, 0);
@@ -84,11 +83,10 @@ contract SGLCommon is SGLStorage {
     }
 
     /// @notice Return the maximum liquidatable amount for user
-    function computeClosingFactor(address user, uint256 _exchangeRate)
-        public
-        view
-        returns (uint256)
-    {
+    function computeClosingFactor(
+        address user,
+        uint256 _exchangeRate
+    ) public view returns (uint256) {
         if (_isSolvent(user, _exchangeRate)) return 0;
 
         (uint256 amountToSolvency, , uint256 maxTVL) = computeTVLInfo(
@@ -103,11 +101,10 @@ contract SGLCommon is SGLStorage {
             ((liquidationBonusAmount * borrowed) / FEE_PRECISION);
     }
 
-    function computeLiquidatorReward(address user, uint256 _exchangeRate)
-        public
-        view
-        returns (uint256)
-    {
+    function computeLiquidatorReward(
+        address user,
+        uint256 _exchangeRate
+    ) public view returns (uint256) {
         (uint256 minTVL, uint256 maxTVL) = _computeMaxAndMinLTVInAsset(
             userCollateralShare[user],
             _exchangeRate
@@ -276,11 +273,10 @@ contract SGLCommon is SGLStorage {
 
     /// @notice Concrete implementation of `isSolvent`. Includes a parameter to allow caching `exchangeRate`.
     /// @param _exchangeRate The exchange rate. Used to cache the `exchangeRate` between calls.
-    function _isSolvent(address user, uint256 _exchangeRate)
-        internal
-        view
-        returns (bool)
-    {
+    function _isSolvent(
+        address user,
+        uint256 _exchangeRate
+    ) internal view returns (bool) {
         // accrue must have already been called!
         uint256 borrowPart = userBorrowPart[user];
         if (borrowPart == 0) return true;
@@ -388,11 +384,9 @@ contract SGLCommon is SGLStorage {
     }
 
     /// @dev Return the equivalent of collateral borrow part in asset amount.
-    function _getAmountForBorrowPart(uint256 borrowPart)
-        internal
-        view
-        returns (uint256)
-    {
+    function _getAmountForBorrowPart(
+        uint256 borrowPart
+    ) internal view returns (uint256) {
         return totalBorrow.toElastic(borrowPart, false);
     }
 
