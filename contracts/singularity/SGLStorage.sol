@@ -72,16 +72,20 @@ contract SGLStorage is BoringOwnable, ERC20 {
     bytes public oracleData;
 
     // Fees
-    uint256 public callerFee; //1%
-    uint256 public protocolFee; //10%
-    uint256 public borrowOpeningFee; //0.05%
+    uint256 public callerFee = 1000; //1%
+    uint256 public protocolFee = 10000; //10%
+    uint256 public borrowOpeningFee = 50; //0.05%
 
     //Liquidation
-    uint256 public liquidationMultiplier; //12%
-    uint256 public orderBookLiquidationMultiplier; //27%
+    uint256 public liquidationMultiplier = 112000; //12%
+    uint256 public orderBookLiquidationMultiplier = 127000; //27%
 
-    uint256 public closedCollateralizationRate; // 75%
-    uint256 public lqCollateralizationRate; // 25%
+    uint256 public closedCollateralizationRate = 75000; // 75%
+    uint256 public lqCollateralizationRate = 25000; // 25%
+
+    uint256 public minLiquidatorReward = 1e3; //1%
+    uint256 public maxLiquidatorReward = 1e4; //10%
+    uint256 public liquidationBonusAmount = 1e4; //10%
 
     //errors
     error NotApproved(address _from, address _operator);
@@ -145,7 +149,7 @@ contract SGLStorage is BoringOwnable, ERC20 {
     // ***************** //
     // *** CONSTANTS *** //
     // ***************** //
-    uint256 internal constant COLLATERIZATION_RATE_PRECISION = 1e5; // Must be less than EXCHANGE_RATE_PRECISION (due to optimization in math)
+    uint256 internal constant COLLATERALIZATION_RATE_PRECISION = 1e5; // Must be less than EXCHANGE_RATE_PRECISION (due to optimization in math)
 
     uint256 internal constant MINIMUM_TARGET_UTILIZATION = 7e17; // 70%
     uint256 internal constant MAXIMUM_TARGET_UTILIZATION = 8e17; // 80%
@@ -160,7 +164,7 @@ contract SGLStorage is BoringOwnable, ERC20 {
     uint64 internal constant MAXIMUM_INTEREST_PER_SECOND = 317097920000; // approx 1000% APR
     uint256 internal constant INTEREST_ELASTICITY = 28800e36; // Half or double in 28800 seconds (8 hours) if linear
 
-    uint256 internal EXCHANGE_RATE_PRECISION; //mutable but can only be set in the init method
+    uint256 internal EXCHANGE_RATE_PRECISION = 1e18; //mutable but can only be set in the init method
     uint256 internal constant LIQUIDATION_MULTIPLIER_PRECISION = 1e5;
 
     // Fees

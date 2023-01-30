@@ -265,7 +265,26 @@ describe('BigBang test', () => {
             false,
         );
 
+        await wethBigBangMarket.updateExchangeRate();
+        const exchangeRate = await wethBigBangMarket.exchangeRate();
+
+        const tvlInfo = await wethBigBangMarket.computeTVLInfo(
+            eoa1.address,
+            exchangeRate,
+        );
+
+        const closingFactor = await wethBigBangMarket.computeClosingFactor(
+            eoa1.address,
+            exchangeRate,
+        );
+
+        const liquidationBonus =
+            await wethBigBangMarket.liquidationBonusAmount();
         const borrowPart = await wethBigBangMarket.userBorrowPart(eoa1.address);
+        const bonus = borrowPart.mul(liquidationBonus).div(1e5);
+
+        expect(closingFactor.gt(0)).to.be.true;
+        expect(closingFactor.sub(bonus).eq(tvlInfo[0])).to.be.true;
         await expect(
             wethBigBangMarket.liquidate(
                 [eoa1.address],
@@ -309,7 +328,7 @@ describe('BigBang test', () => {
         const userBorrowPartAfter = await wethBigBangMarket.userBorrowPart(
             eoa1.address,
         );
-        expect(userBorrowPartAfter.eq(0)).to.be.true;
+        expect(userBorrowPartAfter.lt(borrowPart)).to.be.true;
     });
 
     it('should update borrowing fee and withdraw fees with partial repayment', async () => {
@@ -1104,7 +1123,7 @@ describe('BigBang test', () => {
         await wethBigBangMarket
             .connect(eoa1)
             .repay(eoa1.address, eoa1.address, false, userBorrowPart);
-            
+
         userBorrowPart = await wethBigBangMarket.userBorrowPart(eoa1.address);
         expect(userBorrowPart.eq(0)).to.be.true;
 
@@ -1725,4 +1744,154 @@ describe('BigBang test', () => {
         expect(userBorrowPart.gt(0)).to.be.true;
     });
 
+    it('should test liquidator rewards & closing factor', async () => {
+        const {
+            bar,
+            wethBigBangMarket,
+            weth,
+            wethAssetId,
+            yieldBox,
+            eoa1,
+            usd0WethOracle,
+            __usd0WethPrice,
+            __wethUsdcPrice,
+        } = await loadFixture(register);
+
+        const borrowFeeUpdateFn =
+            wethBigBangMarket.interface.encodeFunctionData(
+                'updateBorrowingFee',
+                [5e2],
+            );
+        await bar.executeMarketFn(
+            [wethBigBangMarket.address],
+            [borrowFeeUpdateFn],
+            true,
+        );
+
+        await weth.approve(yieldBox.address, ethers.constants.MaxUint256);
+        await yieldBox.setApprovalForAll(wethBigBangMarket.address, true);
+
+        await weth
+            .connect(eoa1)
+            .approve(yieldBox.address, ethers.constants.MaxUint256);
+        await yieldBox
+            .connect(eoa1)
+            .setApprovalForAll(wethBigBangMarket.address, true);
+
+        const wethMintVal = ethers.BigNumber.from((1e18).toString()).mul(10);
+        await weth.connect(eoa1).freeMint(wethMintVal);
+        const valShare = await yieldBox.toShare(
+            wethAssetId,
+            wethMintVal,
+            false,
+        );
+        await yieldBox
+            .connect(eoa1)
+            .depositAsset(wethAssetId, eoa1.address, eoa1.address, 0, valShare);
+        await wethBigBangMarket
+            .connect(eoa1)
+            .addCollateral(eoa1.address, eoa1.address, false, valShare);
+
+        //borrow
+        let usdoBorrowVal = wethMintVal
+            .mul(30)
+            .div(100)
+            .mul(__wethUsdcPrice.div((1e18).toString()));
+
+        //30%
+        await wethBigBangMarket
+            .connect(eoa1)
+            .borrow(eoa1.address, eoa1.address, usdoBorrowVal);
+
+        await wethBigBangMarket.updateExchangeRate();
+        let exchangeRate = await wethBigBangMarket.exchangeRate();
+        let reward = await wethBigBangMarket.computeLiquidatorReward(
+            eoa1.address,
+            exchangeRate,
+        );
+        expect(reward.eq(0)).to.be.true;
+
+        //60%
+        await wethBigBangMarket
+            .connect(eoa1)
+            .borrow(eoa1.address, eoa1.address, usdoBorrowVal);
+        reward = await wethBigBangMarket.computeLiquidatorReward(
+            eoa1.address,
+            exchangeRate,
+        );
+        expect(reward.eq(0)).to.be.true;
+
+        //25% price drop
+        let priceDrop = __usd0WethPrice.mul(25).div(100);
+        await usd0WethOracle.set(__usd0WethPrice.add(priceDrop));
+        await wethBigBangMarket.updateExchangeRate();
+        exchangeRate = await wethBigBangMarket.exchangeRate();
+
+        let prevClosingFactor;
+        let closingFactor = await wethBigBangMarket.computeClosingFactor(
+            eoa1.address,
+            exchangeRate,
+        );
+        expect(closingFactor.gt(0)).to.be.true;
+        prevClosingFactor = closingFactor;
+
+        let prevReward;
+        reward = await wethBigBangMarket.computeLiquidatorReward(
+            eoa1.address,
+            exchangeRate,
+        );
+        prevReward = reward;
+        expect(reward.gt(0)).to.be.true;
+
+        priceDrop = __usd0WethPrice.mul(35).div(100);
+        await usd0WethOracle.set(__usd0WethPrice.add(priceDrop));
+        await wethBigBangMarket.updateExchangeRate();
+        exchangeRate = await wethBigBangMarket.exchangeRate();
+        reward = await wethBigBangMarket.computeLiquidatorReward(
+            eoa1.address,
+            exchangeRate,
+        );
+        expect(reward.lt(prevReward)).to.be.true;
+        prevReward = reward;
+        closingFactor = await wethBigBangMarket.computeClosingFactor(
+            eoa1.address,
+            exchangeRate,
+        );
+        expect(closingFactor.gt(prevClosingFactor)).to.be.true;
+        prevClosingFactor = closingFactor;
+
+        priceDrop = __usd0WethPrice.mul(50).div(100);
+        await usd0WethOracle.set(__usd0WethPrice.add(priceDrop));
+        await wethBigBangMarket.updateExchangeRate();
+        exchangeRate = await wethBigBangMarket.exchangeRate();
+        reward = await wethBigBangMarket.computeLiquidatorReward(
+            eoa1.address,
+            exchangeRate,
+        );
+        expect(reward.lt(prevReward)).to.be.true;
+        prevReward = reward;
+        closingFactor = await wethBigBangMarket.computeClosingFactor(
+            eoa1.address,
+            exchangeRate,
+        );
+        expect(closingFactor.gt(prevClosingFactor)).to.be.true;
+        prevClosingFactor = closingFactor;
+
+        priceDrop = __usd0WethPrice.mul(60).div(100);
+        await usd0WethOracle.set(__usd0WethPrice.add(priceDrop));
+        await wethBigBangMarket.updateExchangeRate();
+        exchangeRate = await wethBigBangMarket.exchangeRate();
+        reward = await wethBigBangMarket.computeLiquidatorReward(
+            eoa1.address,
+            exchangeRate,
+        );
+        expect(reward.lt(prevReward)).to.be.true;
+        prevReward = reward;
+        closingFactor = await wethBigBangMarket.computeClosingFactor(
+            eoa1.address,
+            exchangeRate,
+        );
+        expect(closingFactor.gt(prevClosingFactor)).to.be.true;
+        prevClosingFactor = closingFactor;
+    });
 });

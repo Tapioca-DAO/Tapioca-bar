@@ -322,18 +322,6 @@ describe('Singularity test', () => {
             ])
         )[0];
 
-        // address collateral;
-        // address asset;
-        // IOracle oracle;
-        // bytes oracleData;
-        // uint256 totalCollateralShare;
-        // uint256 userCollateralShare;
-        // Rebase totalBorrow;
-        // uint256 userBorrowPart;
-        // uint256 currentExchangeRate;
-        // uint256 spotExchangeRate;
-        // uint256 oracleExchangeRate;
-
         expect(dataFromHelper.market[0].toLowerCase()).eq(
             usdc.address.toLowerCase(),
         );
@@ -568,7 +556,15 @@ describe('Singularity test', () => {
         // Can be liquidated price drop (USDC/WETH)
         const priceDrop = __wethUsdcPrice.mul(2).div(100);
         await wethUsdcOracle.set(__wethUsdcPrice.add(priceDrop));
+        await wethUsdcSingularity.updateExchangeRate();
 
+        const exchangeRate = await wethUsdcSingularity.exchangeRate();
+        const maxLiquidatable = await wethUsdcSingularity.computeClosingFactor(
+            eoa1.address,
+            exchangeRate,
+        );
+        const userBorrowedAmountBefore =
+            await wethUsdcSingularity.userBorrowPart(eoa1.address);
         await expect(
             wethUsdcSingularity.liquidate(
                 [eoa1.address],
@@ -578,6 +574,13 @@ describe('Singularity test', () => {
                 data,
             ),
         ).to.not.be.reverted;
+        const userBorrowedAmountAfter =
+            await wethUsdcSingularity.userBorrowPart(eoa1.address);
+
+        expect(userBorrowedAmountAfter).to.be.approximately(
+            userBorrowedAmountBefore.sub(maxLiquidatable),
+            userBorrowedAmountAfter.mul(99).div(100),
+        );
     });
 
     it('Should lend WBTC, deposit Usdc collateral and borrow WBTC and be liquidated for price drop', async () => {
@@ -1008,11 +1011,11 @@ describe('Singularity test', () => {
     it('should compute amount to solvency for nothing borrowed', async () => {
         const { wethUsdcSingularity } = await loadFixture(register);
         const amountForNothingBorrowed =
-            await wethUsdcSingularity.computeAssetAmountToSolvency(
+            await wethUsdcSingularity.computeTVLInfo(
                 ethers.constants.AddressZero,
                 0,
             );
-        expect(amountForNothingBorrowed.eq(0)).to.be.true;
+        expect(amountForNothingBorrowed[0].eq(0)).to.be.true;
     });
 
     it('should not update exchange rate', async () => {
@@ -1196,12 +1199,6 @@ describe('Singularity test', () => {
             wethUsdcSingularity
                 .connect(deployer)
                 .borrow(deployer.address, deployer.address, 1),
-        ).to.be.revertedWith('SGL: module not set');
-
-        await expect(
-            wethUsdcSingularity
-                .connect(deployer)
-                .computeAssetAmountToSolvency(deployer.address, 1),
         ).to.be.revertedWith('SGL: module not set');
     });
 
@@ -2141,5 +2138,159 @@ describe('Singularity test', () => {
         await timeTravel(86500);
         await expect(wethDepositAndAddAsset(wethAmount, eoa1)).not.to.be
             .reverted;
+    });
+
+    it('should test liquidator rewards & closing factor', async () => {
+        const {
+            eoa1,
+            usdc,
+            weth,
+            yieldBox,
+            deployer,
+            wethUsdcSingularity,
+            approveTokensAndSetBarApproval,
+            wethDepositAndAddAsset,
+            __wethUsdcPrice,
+            timeTravel,
+            usdcDepositAndAddCollateral,
+            marketsHelper,
+            BN,
+            wethUsdcOracle,
+        } = await loadFixture(register);
+
+        const wethAmount = BN(1e18).mul(1);
+        const usdcAmount = wethAmount
+            .mul(__wethUsdcPrice.mul(3))
+            .div((1e18).toString());
+
+        await usdc.freeMint(usdcAmount);
+        await approveTokensAndSetBarApproval();
+        await usdcDepositAndAddCollateral(usdcAmount);
+
+        await approveTokensAndSetBarApproval(eoa1);
+        await weth.connect(eoa1).freeMint(wethAmount);
+        await wethDepositAndAddAsset(wethAmount, eoa1);
+
+        //30%
+        await wethUsdcSingularity.borrow(
+            deployer.address,
+            deployer.address,
+            wethAmount,
+        );
+
+        await wethUsdcSingularity.updateExchangeRate();
+        let exchangeRate = await wethUsdcSingularity.exchangeRate();
+        let reward = await wethUsdcSingularity.computeLiquidatorReward(
+            deployer.address,
+            exchangeRate,
+        );
+
+        expect(reward.eq(0)).to.be.true;
+
+        await timeTravel(86500);
+        //60%
+        await weth.connect(eoa1).freeMint(wethAmount);
+        await wethDepositAndAddAsset(wethAmount, eoa1);
+        await wethUsdcSingularity.borrow(
+            deployer.address,
+            deployer.address,
+            wethAmount,
+        );
+        reward = await wethUsdcSingularity.computeLiquidatorReward(
+            deployer.address,
+            exchangeRate,
+        );
+        expect(reward.eq(0)).to.be.true;
+
+        await timeTravel(86500);
+
+        //20% price drop
+        let priceDrop = __wethUsdcPrice.mul(20).div(100);
+        await wethUsdcOracle.set(__wethUsdcPrice.add(priceDrop));
+        await wethUsdcSingularity.updateExchangeRate();
+        exchangeRate = await wethUsdcSingularity.exchangeRate();
+
+        let prevReward;
+        reward = await wethUsdcSingularity.computeLiquidatorReward(
+            deployer.address,
+            exchangeRate,
+        );
+        prevReward = reward;
+        expect(reward.gt(0)).to.be.true;
+        let prevClosingFactor;
+        let closingFactor = await wethUsdcSingularity.computeClosingFactor(
+            deployer.address,
+            exchangeRate,
+        );
+        expect(closingFactor.gt(0)).to.be.true;
+        prevClosingFactor = closingFactor;
+
+        priceDrop = __wethUsdcPrice.mul(25).div(100);
+        await wethUsdcOracle.set(__wethUsdcPrice.add(priceDrop));
+        await wethUsdcSingularity.updateExchangeRate();
+        exchangeRate = await wethUsdcSingularity.exchangeRate();
+        reward = await wethUsdcSingularity.computeLiquidatorReward(
+            deployer.address,
+            exchangeRate,
+        );
+        expect(reward.lt(prevReward)).to.be.true;
+        prevReward = reward;
+        closingFactor = await wethUsdcSingularity.computeClosingFactor(
+            deployer.address,
+            exchangeRate,
+        );
+        expect(closingFactor.gt(prevClosingFactor)).to.be.true;
+        prevClosingFactor = closingFactor;
+
+        priceDrop = __wethUsdcPrice.mul(35).div(100);
+        await wethUsdcOracle.set(__wethUsdcPrice.add(priceDrop));
+        await wethUsdcSingularity.updateExchangeRate();
+        exchangeRate = await wethUsdcSingularity.exchangeRate();
+        reward = await wethUsdcSingularity.computeLiquidatorReward(
+            deployer.address,
+            exchangeRate,
+        );
+        expect(reward.lt(prevReward)).to.be.true;
+        prevReward = reward;
+        closingFactor = await wethUsdcSingularity.computeClosingFactor(
+            deployer.address,
+            exchangeRate,
+        );
+        expect(closingFactor.gt(prevClosingFactor)).to.be.true;
+        prevClosingFactor = closingFactor;
+
+        priceDrop = __wethUsdcPrice.mul(50).div(100);
+        await wethUsdcOracle.set(__wethUsdcPrice.add(priceDrop));
+        await wethUsdcSingularity.updateExchangeRate();
+        exchangeRate = await wethUsdcSingularity.exchangeRate();
+        reward = await wethUsdcSingularity.computeLiquidatorReward(
+            deployer.address,
+            exchangeRate,
+        );
+        expect(reward.lt(prevReward)).to.be.true;
+        prevReward = reward;
+        closingFactor = await wethUsdcSingularity.computeClosingFactor(
+            deployer.address,
+            exchangeRate,
+        );
+        expect(closingFactor.gt(prevClosingFactor)).to.be.true;
+        prevClosingFactor = closingFactor;
+
+        priceDrop = __wethUsdcPrice.mul(60).div(100);
+        await wethUsdcOracle.set(__wethUsdcPrice.add(priceDrop));
+        await wethUsdcSingularity.updateExchangeRate();
+        exchangeRate = await wethUsdcSingularity.exchangeRate();
+        reward = await wethUsdcSingularity.computeLiquidatorReward(
+            deployer.address,
+            exchangeRate,
+        );
+        expect(reward.eq(prevReward)).to.be.true;
+        prevReward = reward;
+        closingFactor = await wethUsdcSingularity.computeClosingFactor(
+            deployer.address,
+            exchangeRate,
+        );
+        expect(closingFactor.eq(prevClosingFactor)).to.be.true;
+        prevClosingFactor = closingFactor;
     });
 });

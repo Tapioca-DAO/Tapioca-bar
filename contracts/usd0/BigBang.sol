@@ -84,6 +84,10 @@ contract BigBang is BoringOwnable {
     uint256 public debtStartPoint;
     uint256 private constant DEBT_PRECISION = 1e18;
 
+    uint256 public minLiquidatorReward = 1e3; //1%
+    uint256 public maxLiquidatorReward = 1e4; //10%
+    uint256 public liquidationBonusAmount = 1e4; //10%
+
     //errors
     error NotApproved(address _from, address _operator);
 
@@ -138,7 +142,7 @@ contract BigBang is BoringOwnable {
 
     uint256 private constant FEE_PRECISION = 1e5;
     uint256 private EXCHANGE_RATE_PRECISION; //not costant, but can only be set in the 'init' method
-    uint256 private constant COLLATERIZATION_RATE_PRECISION = 1e5; // Must be less than EXCHANGE_RATE_PRECISION (due to optimization in math)
+    uint256 private constant COLLATERALIZATION_RATE_PRECISION = 1e5; // Must be less than EXCHANGE_RATE_PRECISION (due to optimization in math)
     uint256 private constant LIQUIDATION_MULTIPLIER_PRECISION = 1e5;
 
     // ***************** //
@@ -232,11 +236,87 @@ contract BigBang is BoringOwnable {
             minDebtRate = _debtRateMin;
             debtStartPoint = _debtStartPoint;
         }
+
+        minLiquidatorReward = 1e3;
+        maxLiquidatorReward = 1e4;
+        liquidationBonusAmount = 1e4;
     }
 
     // ********************** //
     // *** VIEW FUNCTIONS *** //
     // ********************** //
+    /// @notice Return the amount of collateral for a `user` to be solvent, min TVL and max TVL. Returns 0 if user already solvent.
+    /// @dev We use a `CLOSED_COLLATERIZATION_RATE` that is a safety buffer when making the user solvent again,
+    ///      To prevent from being liquidated. This function is valid only if user is not solvent by `_isSolvent()`.
+    /// @param user The user to check solvency.
+    /// @param _exchangeRate The exchange rate asset/collateral.
+    /// @return amountToSolvency The amount of collateral to be solvent.
+    function computeTVLInfo(address user, uint256 _exchangeRate)
+        public
+        view
+        returns (
+            uint256 amountToSolvency,
+            uint256 minTVL,
+            uint256 maxTVL
+        )
+    {
+        uint256 borrowPart = userBorrowPart[user];
+        if (borrowPart == 0) return (0, 0, 0);
+        uint256 collateralShare = userCollateralShare[user];
+
+        Rebase memory _totalBorrow = totalBorrow;
+
+        uint256 collateralAmountInAsset = yieldBox.toAmount(
+            collateralId,
+            (collateralShare *
+                (EXCHANGE_RATE_PRECISION / COLLATERALIZATION_RATE_PRECISION) *
+                collateralizationRate),
+            false
+        ) / _exchangeRate;
+        borrowPart = (borrowPart * _totalBorrow.elastic) / _totalBorrow.base;
+
+        amountToSolvency = borrowPart >= collateralAmountInAsset
+            ? borrowPart - collateralAmountInAsset
+            : 0;
+
+        (minTVL, maxTVL) = _computeMaxAndMinLTVInAsset(
+            collateralShare,
+            _exchangeRate
+        );
+    }
+
+    /// @notice Return the maximum liquidatable amount for user
+    function computeClosingFactor(address user, uint256 _exchangeRate)
+        public
+        view
+        returns (uint256)
+    {
+        if (_isSolvent(user, _exchangeRate)) return 0;
+
+        (uint256 amountToSolvency, , uint256 maxTVL) = computeTVLInfo(
+            user,
+            _exchangeRate
+        );
+        uint256 borrowed = userBorrowPart[user];
+        if (borrowed >= maxTVL) return borrowed;
+
+        return
+            amountToSolvency +
+            ((liquidationBonusAmount * borrowed) / FEE_PRECISION);
+    }
+
+    function computeLiquidatorReward(address user, uint256 _exchangeRate)
+        public
+        view
+        returns (uint256)
+    {
+        (uint256 minTVL, uint256 maxTVL) = _computeMaxAndMinLTVInAsset(
+            userCollateralShare[user],
+            _exchangeRate
+        );
+        return _getCallerReward(userBorrowPart[user], minTVL, maxTVL);
+    }
+
     /// @notice returns total market debt
     function getTotalDebt() external view returns (uint256) {
         return totalBorrow.elastic;
@@ -527,6 +607,29 @@ contract BigBang is BoringOwnable {
     // *********************** //
     // *** OWNER FUNCTIONS *** //
     // *********************** //
+    /// @notice Set the bonus amount a liquidator can make use of, on top of the amount needed to make the user solvent
+    /// @param _val the new value
+    function setLiquidationBonusAmount(uint256 _val) external onlyOwner {
+        require(_val < FEE_PRECISION, 'BigBang: not valid');
+        liquidationBonusAmount = _val;
+    }
+
+    /// @notice Set the liquidator min reward
+    /// @param _val the new value
+    function setMinLiquidatorReward(uint256 _val) external onlyOwner {
+        require(_val < FEE_PRECISION, 'BigBang: not valid');
+        require(_val < maxLiquidatorReward, 'BigBang: not valid');
+        minLiquidatorReward = _val;
+    }
+
+    /// @notice Set the liquidator max reward
+    /// @param _val the new value
+    function setMaxLiquidatorReward(uint256 _val) external onlyOwner {
+        require(_val < FEE_PRECISION, 'BigBang: not valid');
+        require(_val > minLiquidatorReward, 'BigBang: not valid');
+        maxLiquidatorReward = _val;
+    }
+
     /// @notice Set the Conservator address
     /// @dev Conservator can pause the contract
     /// @param _conservator The new address
@@ -565,7 +668,7 @@ contract BigBang is BoringOwnable {
     /// @dev can only be called by the owner
     /// @param _val the new value
     function setCollateralizationRate(uint256 _val) external onlyOwner {
-        require(_val <= COLLATERIZATION_RATE_PRECISION, 'BigBang: not valid');
+        require(_val <= COLLATERALIZATION_RATE_PRECISION, 'BigBang: not valid');
         collateralizationRate = _val;
     }
 
@@ -644,13 +747,90 @@ contract BigBang is BoringOwnable {
             yieldBox.toAmount(
                 collateralId,
                 collateralShare *
-                    (EXCHANGE_RATE_PRECISION / COLLATERIZATION_RATE_PRECISION) *
+                    (EXCHANGE_RATE_PRECISION /
+                        COLLATERALIZATION_RATE_PRECISION) *
                     collateralizationRate,
                 false
             ) >=
             // Moved exchangeRate here instead of dividing the other side to preserve more precision
             (borrowPart * _totalBorrow.elastic * _exchangeRate) /
                 _totalBorrow.base;
+    }
+
+    function _liquidateUser(
+        address user,
+        uint256 maxBorrowPart,
+        ISwapper swapper,
+        uint256 _exchangeRate,
+        bytes calldata swapData
+    ) private {
+        if (_isSolvent(user, _exchangeRate)) return;
+
+        (
+            uint256 startTVLInAsset,
+            uint256 maxTVLInAsset
+        ) = _computeMaxAndMinLTVInAsset(
+                userCollateralShare[user],
+                _exchangeRate
+            );
+        uint256 callerReward = _getCallerReward(
+            userBorrowPart[user],
+            startTVLInAsset,
+            maxTVLInAsset
+        );
+
+        (
+            uint256 borrowAmount,
+            uint256 borrowPart,
+            uint256 collateralShare
+        ) = _updateBorrowAndCollateralShare(user, maxBorrowPart, _exchangeRate);
+        emit LogRemoveCollateral(user, address(swapper), collateralShare);
+        emit LogRepay(address(swapper), user, borrowAmount, borrowPart);
+
+        uint256 borrowShare = yieldBox.toShare(assetId, borrowAmount, true);
+
+        // Closed liquidation using a pre-approved swapper
+        require(penrose.swappers(swapper), 'BigBang: Invalid swapper');
+
+        // Swaps the users collateral for the borrowed asset
+        yieldBox.transfer(
+            address(this),
+            address(swapper),
+            collateralId,
+            collateralShare
+        );
+
+        uint256 minAssetMount = 0;
+        if (swapData.length > 0) {
+            minAssetMount = abi.decode(swapData, (uint256));
+        }
+
+        uint256 balanceBefore = yieldBox.balanceOf(address(this), assetId);
+        swapper.swap(
+            collateralId,
+            assetId,
+            collateralShare,
+            address(this),
+            minAssetMount,
+            abi.encode(_collateralToAssetSwapPath())
+        );
+        uint256 balanceAfter = yieldBox.balanceOf(address(this), assetId);
+
+        uint256 returnedShare = balanceAfter - balanceBefore;
+        _extractLiquidationFees(returnedShare, borrowShare, callerReward);
+    }
+
+    function _extractLiquidationFees(
+        uint256 returnedShare,
+        uint256 borrowShare,
+        uint256 callerReward
+    ) private {
+        uint256 extraShare = returnedShare - borrowShare;
+        uint256 feeShare = (extraShare * protocolFee) / FEE_PRECISION; // x% of profit goes to fee.
+        uint256 callerShare = (extraShare * callerReward) / FEE_PRECISION; //  y%  of profit goes to caller.
+
+        yieldBox.transfer(address(this), penrose.feeTo(), assetId, feeShare);
+        yieldBox.transfer(address(this), msg.sender, assetId, callerShare);
     }
 
     /// @notice Handles the liquidation of users' balances, once the users' amount of collateral is too low.
@@ -666,96 +846,22 @@ contract BigBang is BoringOwnable {
         uint256 _exchangeRate,
         bytes calldata swapData
     ) private {
-        uint256 allCollateralShare;
-        uint256 allBorrowAmount;
-        uint256 allBorrowPart;
-        Rebase memory _totalBorrow = totalBorrow;
+        uint256 liquidatedCount = 0;
         for (uint256 i = 0; i < users.length; i++) {
             address user = users[i];
             if (!_isSolvent(user, _exchangeRate)) {
-                uint256 borrowPart;
-                {
-                    uint256 availableBorrowPart = userBorrowPart[user];
-                    borrowPart = maxBorrowParts[i] > availableBorrowPart
-                        ? availableBorrowPart
-                        : maxBorrowParts[i];
-                    userBorrowPart[user] = availableBorrowPart - borrowPart;
-                }
-                uint256 borrowAmount = _totalBorrow.toElastic(
-                    borrowPart,
-                    false
-                );
-                uint256 collateralShare = yieldBox.toShare(
-                    collateralId,
-                    (borrowAmount * LIQUIDATION_MULTIPLIER * _exchangeRate) /
-                        (LIQUIDATION_MULTIPLIER_PRECISION *
-                            EXCHANGE_RATE_PRECISION),
-                    false
-                );
-                userCollateralShare[user] -= collateralShare;
-                emit LogRemoveCollateral(
+                liquidatedCount++;
+                _liquidateUser(
                     user,
-                    address(swapper),
-                    collateralShare
+                    maxBorrowParts[i],
+                    swapper,
+                    _exchangeRate,
+                    swapData
                 );
-                emit LogRepay(address(swapper), user, borrowAmount, borrowPart);
-
-                // Keep totals
-                allCollateralShare += collateralShare;
-                allBorrowAmount += borrowAmount;
-                allBorrowPart += borrowPart;
             }
         }
-        require(allBorrowAmount != 0, 'BigBang: solvent');
-        _totalBorrow.elastic -= uint128(allBorrowAmount);
-        _totalBorrow.base -= uint128(allBorrowPart);
-        totalBorrow = _totalBorrow;
-        totalCollateralShare -= allCollateralShare;
 
-        uint256 allBorrowShare = yieldBox.toShare(
-            assetId,
-            allBorrowAmount,
-            true
-        );
-
-        // Closed liquidation using a pre-approved swapper
-        require(penrose.swappers(swapper), 'BigBang: Invalid swapper');
-
-        // Swaps the users collateral for the borrowed asset
-        yieldBox.transfer(
-            address(this),
-            address(swapper),
-            collateralId,
-            allCollateralShare
-        );
-
-        uint256 minAssetMount = 0;
-        if (swapData.length > 0) {
-            minAssetMount = abi.decode(swapData, (uint256));
-        }
-        uint256 balanceBefore = yieldBox.balanceOf(address(this), assetId);
-        swapper.swap(
-            collateralId,
-            assetId,
-            allCollateralShare,
-            address(this),
-            minAssetMount,
-            abi.encode(_collateralToAssetSwapPath())
-        );
-        uint256 balanceAfter = yieldBox.balanceOf(address(this), assetId);
-
-        uint256 returnedShare = balanceAfter - balanceBefore;
-        uint256 extraShare = returnedShare - allBorrowShare;
-        uint256 feeShare = (extraShare * protocolFee) / FEE_PRECISION; // 10% of profit goes to fee.
-        uint256 callerShare = (extraShare * callerFee) / FEE_PRECISION; //  90%  of profit goes to caller.
-
-        require(
-            feeShare + callerShare == extraShare,
-            'BigBang: fee values not valid'
-        );
-
-        yieldBox.transfer(address(this), penrose.feeTo(), assetId, feeShare);
-        yieldBox.transfer(address(this), msg.sender, assetId, callerShare);
+        require(liquidatedCount > 0, 'SGL: no users found');
     }
 
     /// @dev Helper function to move tokens.
@@ -843,5 +949,75 @@ contract BigBang is BoringOwnable {
         share = yieldBox.toShare(assetId, amount, false);
 
         emit LogBorrow(from, to, amount, feeAmount, part);
+    }
+
+    /// @notice Returns the min and max LTV for user in asset price
+    function _computeMaxAndMinLTVInAsset(
+        uint256 collateralShare,
+        uint256 _exchangeRate
+    ) internal view returns (uint256 min, uint256 max) {
+        uint256 collateralAmount = yieldBox.toAmount(
+            collateralId,
+            collateralShare,
+            false
+        );
+
+        max = (collateralAmount * EXCHANGE_RATE_PRECISION) / _exchangeRate;
+        min = (max * collateralizationRate) / COLLATERALIZATION_RATE_PRECISION;
+    }
+
+    function _getCallerReward(
+        uint256 borrowed,
+        uint256 startTVLInAsset,
+        uint256 maxTVLInAsset
+    ) internal view returns (uint256) {
+        if (borrowed == 0) return 0;
+        if (startTVLInAsset == 0) return 0;
+
+        if (borrowed < startTVLInAsset) return 0;
+        if (borrowed >= maxTVLInAsset) return minLiquidatorReward;
+
+        uint256 rewardPercentage = ((borrowed - startTVLInAsset) *
+            FEE_PRECISION) / (maxTVLInAsset - startTVLInAsset);
+
+        int256 diff = int256(minLiquidatorReward) - int256(maxLiquidatorReward);
+        int256 reward = (diff * int256(rewardPercentage)) /
+            int256(FEE_PRECISION) +
+            int256(maxLiquidatorReward);
+
+        return uint256(reward);
+    }
+
+    function _updateBorrowAndCollateralShare(
+        address user,
+        uint256 maxBorrowPart,
+        uint256 _exchangeRate
+    )
+        private
+        returns (
+            uint256 borrowAmount,
+            uint256 borrowPart,
+            uint256 collateralShare
+        )
+    {
+        uint256 availableBorrowPart = computeClosingFactor(user, _exchangeRate);
+        borrowPart = maxBorrowPart > availableBorrowPart
+            ? availableBorrowPart
+            : maxBorrowPart;
+
+        userBorrowPart[user] = userBorrowPart[user] - borrowPart;
+
+        borrowAmount = totalBorrow.toElastic(borrowPart, false);
+        collateralShare = yieldBox.toShare(
+            collateralId,
+            (borrowAmount * LIQUIDATION_MULTIPLIER * _exchangeRate) /
+                (LIQUIDATION_MULTIPLIER_PRECISION * EXCHANGE_RATE_PRECISION),
+            false
+        );
+        userCollateralShare[user] -= collateralShare;
+        require(borrowAmount != 0, 'SGL: solvent');
+
+        totalBorrow.elastic -= uint128(borrowAmount);
+        totalBorrow.base -= uint128(borrowPart);
     }
 }

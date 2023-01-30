@@ -2,6 +2,7 @@
 pragma solidity ^0.8.0;
 
 import './SGLStorage.sol';
+import 'hardhat/console.sol';
 
 contract SGLCommon is SGLStorage {
     using RebaseLibrary for Rebase;
@@ -37,6 +38,78 @@ contract SGLCommon is SGLStorage {
         require(!initialized, 'SGL: initialized');
         _;
         initialized = true;
+    }
+
+    // ********************** //
+    // *** VIEW FUNCTIONS *** //
+    // ********************** //
+    /// @notice Return the amount of collateral for a `user` to be solvent, min TVL and max TVL. Returns 0 if user already solvent.
+    /// @dev We use a `CLOSED_COLLATERIZATION_RATE` that is a safety buffer when making the user solvent again,
+    ///      To prevent from being liquidated. This function is valid only if user is not solvent by `_isSolvent()`.
+    /// @param user The user to check solvency.
+    /// @param _exchangeRate The exchange rate asset/collateral.
+    /// @return amountToSolvency The amount of collateral to be solvent.
+    function computeTVLInfo(
+        address user,
+        uint256 _exchangeRate
+    )
+        public
+        view
+        returns (uint256 amountToSolvency, uint256 minTVL, uint256 maxTVL)
+    {
+        uint256 borrowPart = userBorrowPart[user];
+        if (borrowPart == 0) return (0, 0, 0);
+        uint256 collateralShare = userCollateralShare[user];
+
+        Rebase memory _totalBorrow = totalBorrow;
+
+        uint256 collateralAmountInAsset = yieldBox.toAmount(
+            collateralId,
+            (collateralShare *
+                (EXCHANGE_RATE_PRECISION / COLLATERALIZATION_RATE_PRECISION) *
+                lqCollateralizationRate),
+            false
+        ) / _exchangeRate;
+        borrowPart = (borrowPart * _totalBorrow.elastic) / _totalBorrow.base;
+
+        amountToSolvency = borrowPart >= collateralAmountInAsset
+            ? borrowPart - collateralAmountInAsset
+            : 0;
+
+        (minTVL, maxTVL) = _computeMaxAndMinLTVInAsset(
+            collateralShare,
+            _exchangeRate
+        );
+    }
+
+    /// @notice Return the maximum liquidatable amount for user
+    function computeClosingFactor(
+        address user,
+        uint256 _exchangeRate
+    ) public view returns (uint256) {
+        if (_isSolvent(user, _exchangeRate)) return 0;
+
+        (uint256 amountToSolvency, , uint256 maxTVL) = computeTVLInfo(
+            user,
+            _exchangeRate
+        );
+        uint256 borrowed = userBorrowPart[user];
+        if (borrowed >= maxTVL) return borrowed;
+
+        return
+            amountToSolvency +
+            ((liquidationBonusAmount * borrowed) / FEE_PRECISION);
+    }
+
+    function computeLiquidatorReward(
+        address user,
+        uint256 _exchangeRate
+    ) public view returns (uint256) {
+        (uint256 minTVL, uint256 maxTVL) = _computeMaxAndMinLTVInAsset(
+            userCollateralShare[user],
+            _exchangeRate
+        );
+        return _getCallerReward(userBorrowPart[user], minTVL, maxTVL);
     }
 
     // ************************ //
@@ -216,7 +289,8 @@ contract SGLCommon is SGLStorage {
             yieldBox.toAmount(
                 collateralId,
                 collateralShare *
-                    (EXCHANGE_RATE_PRECISION / COLLATERIZATION_RATE_PRECISION) *
+                    (EXCHANGE_RATE_PRECISION /
+                        COLLATERALIZATION_RATE_PRECISION) *
                     closedCollateralizationRate,
                 false
             ) >=
@@ -314,5 +388,44 @@ contract SGLCommon is SGLStorage {
         uint256 borrowPart
     ) internal view returns (uint256) {
         return totalBorrow.toElastic(borrowPart, false);
+    }
+
+    /// @notice Returns the min and max LTV for user in asset price
+    function _computeMaxAndMinLTVInAsset(
+        uint256 collateralShare,
+        uint256 _exchangeRate
+    ) internal view returns (uint256 min, uint256 max) {
+        uint256 collateralAmount = yieldBox.toAmount(
+            collateralId,
+            collateralShare,
+            false
+        );
+
+        max = (collateralAmount * EXCHANGE_RATE_PRECISION) / _exchangeRate;
+        min =
+            (max * closedCollateralizationRate) /
+            COLLATERALIZATION_RATE_PRECISION;
+    }
+
+    function _getCallerReward(
+        uint256 borrowed,
+        uint256 startTVLInAsset,
+        uint256 maxTVLInAsset
+    ) internal view returns (uint256) {
+        if (borrowed == 0) return 0;
+        if (startTVLInAsset == 0) return 0;
+
+        if (borrowed < startTVLInAsset) return 0;
+        if (borrowed >= maxTVLInAsset) return minLiquidatorReward;
+
+        uint256 rewardPercentage = ((borrowed - startTVLInAsset) *
+            FEE_PRECISION) / (maxTVLInAsset - startTVLInAsset);
+
+        int256 diff = int256(minLiquidatorReward) - int256(maxLiquidatorReward);
+        int256 reward = (diff * int256(rewardPercentage)) /
+            int256(FEE_PRECISION) +
+            int256(maxLiquidatorReward);
+
+        return uint256(reward);
     }
 }

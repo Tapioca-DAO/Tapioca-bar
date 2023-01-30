@@ -1312,7 +1312,6 @@ describe('MarketsProxy', () => {
                 { value: ethers.utils.parseEther('10') },
             );
         let borrowPart = await singularityDst.userBorrowPart(eoa1.address);
-        const remaining = borrowPart.sub(wethBorrowVal);
         expect(borrowPart.gt(wethBorrowVal)).to.be.true;
 
         const priceDrop = __wethUsdcPrice.mul(2).div(100);
@@ -1336,7 +1335,6 @@ describe('MarketsProxy', () => {
             eoa1.address,
         );
         expect(borrowPartFinal.lt(borrowPart)).to.be.true;
-        expect(borrowPartFinal.eq(remaining)).to.be.true;
 
         await expect(
             yieldBox
