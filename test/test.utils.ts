@@ -24,7 +24,7 @@ async function resetVM() {
     await ethers.provider.send('hardhat_reset', []);
 }
 
-function BN(n: BigNumberish) {
+export function BN(n: BigNumberish) {
     return ethers.BigNumber.from(n.toString());
 }
 
