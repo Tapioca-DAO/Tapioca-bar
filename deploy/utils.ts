@@ -378,6 +378,36 @@ export const deployOracleMock = async (
     );
 };
 
+export const registerVesting = async (
+    hre: HardhatRuntimeEnvironment,
+    token: string,
+    cliff: string,
+    duration: string,
+): Promise<TContract> => {
+    const { deployments, getNamedAccounts } = hre;
+    const { deploy } = deployments;
+    const { deployer } = await getNamedAccounts();
+
+    console.log('\n Deploying Vesting');
+    const args = [token, cliff, duration];
+    await deploy('Vesting', {
+        from: deployer,
+        log: true,
+        args,
+    });
+    await verify(hre, 'Vesting', args);
+    const vestingContract = await deployments.get('Vesting');
+    console.log('Done');
+
+    return new Promise(async (resolve) =>
+        resolve({
+            name: 'Vesting',
+            address: vestingContract.address,
+            meta: { constructorArguments: args },
+        }),
+    );
+};
+
 export const registerBigBangMarket = async (
     hre: HardhatRuntimeEnvironment,
     name: string,

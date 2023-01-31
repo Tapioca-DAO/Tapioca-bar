@@ -1,5 +1,7 @@
 import { time } from '@nomicfoundation/hardhat-network-helpers';
-import { BigNumber, BigNumberish } from 'ethers';
+import { duration } from '@nomicfoundation/hardhat-network-helpers/dist/src/helpers/time';
+import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
+import { BigNumber, BigNumberish, Signer } from 'ethers';
 import hre, { ethers, getChainId } from 'hardhat';
 import { any } from 'hardhat/internal/core/params/argumentTypes';
 import {
@@ -973,6 +975,28 @@ async function registerLiquidationQueue(
     return { liquidationQueue, LQ_META };
 }
 
+async function registerVesting(
+    token: string,
+    cliff: BigNumberish,
+    duration: BigNumberish,
+    staging?: boolean,
+) {
+    const vesting = await (
+        await ethers.getContractFactory('Vesting')
+    ).deploy(token, cliff, duration, {
+        gasPrice: gasPrice,
+    });
+    await vesting.deployed();
+    log(
+        `Deployed Vesting ${vesting.address} with args [${token}, ${cliff}, ${duration}]`,
+        staging,
+    );
+
+    await verifyEtherscan(vesting.address, [token, cliff, duration], staging);
+
+    return { vesting };
+}
+
 async function registerBigBangMarket(
     mediumRiskBigBangMC: string,
     yieldBox: YieldBox,
@@ -1038,6 +1062,19 @@ const verifyEtherscan = async (
     if (staging) {
         verifyEtherscanQueue.push({ address, args });
     }
+};
+
+export const randomSigners = async (amount: number): Wallet[] => {
+    const signers: Wallet[] = [];
+    for (let i = 0; i < amount; i++) {
+        const signer = new ethers.Wallet(
+            ethers.Wallet.createRandom().privateKey,
+            ethers.provider,
+        );
+        signers.push(signer);
+        await setBalance(signer.address, 100000);
+    }
+    return signers;
 };
 
 const gasPrice = 22000000000; //55gwei
@@ -1689,6 +1726,7 @@ export async function register(staging?: boolean) {
         registerUsd0Contract,
         addUniV2UsdoWethLiquidity,
         createWethUsd0Singularity,
+        registerVesting,
     };
 
     return { ...initialSetup, ...utilFuncs, verifyEtherscanQueue };
