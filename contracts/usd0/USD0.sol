@@ -64,7 +64,7 @@ contract USD0 is BaseOFT, IERC3156FlashLender {
     /// @notice creates a new USDO0 OFT contract
     /// @param _lzEndpoint LayerZero endpoint
     constructor(address _lzEndpoint, IYieldBox _yieldBox)
-        OFT('USD0', 'USD0', _lzEndpoint)
+        OFTV2('USD0', 'USD0', 8, _lzEndpoint)
         BaseOFT(_yieldBox)
     {
         uint256 chain = _getChainId();

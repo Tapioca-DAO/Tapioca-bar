@@ -6,6 +6,12 @@ pragma solidity >=0.5.0;
  * @dev Interface of the IOFT core standard
  */
 interface ISendFrom {
+    struct LzCallParams {
+        address payable refundAddress;
+        address zroPaymentAddress;
+        bytes adapterParams;
+    }
+
     /**
      * @dev send `_amount` amount of token to (`_dstChainId`, `_toAddress`) from `_from`
      * `_from` the owner of token
@@ -19,10 +25,8 @@ interface ISendFrom {
     function sendFrom(
         address _from,
         uint16 _dstChainId,
-        bytes calldata _toAddress,
+        bytes32 _toAddress,
         uint256 _amount,
-        address payable _refundAddress,
-        address _zroPaymentAddress,
-        bytes calldata _adapterParams
+        LzCallParams calldata _callParams
     ) external payable;
 }

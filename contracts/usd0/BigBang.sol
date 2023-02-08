@@ -572,7 +572,7 @@ contract BigBang is BoringOwnable {
     /// @notice Withdraw to another layer
     function withdrawTo(
         uint16 dstChainId,
-        bytes memory receiver,
+        bytes32 receiver,
         uint256 amount,
         bytes calldata adapterParams,
         address payable refundAddress
@@ -593,14 +593,19 @@ contract BigBang is BoringOwnable {
         require(available >= amount, 'BigBang: not available');
 
         yieldBox.withdraw(assetId, msg.sender, address(this), amount, 0);
+
+        ISendFrom.LzCallParams memory callParams = ISendFrom.LzCallParams({
+            refundAddress: refundAddress,
+            zroPaymentAddress: address(0),
+            adapterParams: adapterParams
+        });
+
         ISendFrom(address(asset)).sendFrom{value: msg.value}(
             address(this),
             dstChainId,
             receiver,
             amount,
-            refundAddress,
-            msg.sender,
-            adapterParams
+            callParams
         );
     }
 
