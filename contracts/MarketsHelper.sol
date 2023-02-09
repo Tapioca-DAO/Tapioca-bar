@@ -10,8 +10,6 @@ import './usd0/interfaces/IBigBang.sol';
 import './singularity/interfaces/ISingularity.sol';
 import '../yieldbox/contracts/YieldBox.sol';
 
-import 'hardhat/console.sol';
-
 /// @title Useful helper functions for `Singularity` and `BingBang`
 contract MarketsHelper {
     using RebaseLibrary for Rebase;

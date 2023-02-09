@@ -240,39 +240,45 @@ async function setPenroseAssets(
 ) {
     const wethAssetId = await bar.wethAssetId();
 
+    const usdcStrategy = await createTokenEmptyStrategy(
+        yieldBox.address,
+        usdcAddress,
+    );
     await (
-        await yieldBox.registerAsset(
-            1,
-            usdcAddress,
-            ethers.constants.AddressZero,
-            0,
-            { gasPrice: gasPrice },
-        )
+        await yieldBox.registerAsset(1, usdcAddress, usdcStrategy.address, 0, {
+            gasPrice: gasPrice,
+        })
     ).wait();
     const usdcAssetId = await yieldBox.ids(
         1,
         usdcAddress,
-        ethers.constants.AddressZero,
+        usdcStrategy.address,
         0,
     );
 
+    const wbtcStrategy = await createTokenEmptyStrategy(
+        yieldBox.address,
+        wbtcAddress,
+    );
     await (
-        await yieldBox.registerAsset(
-            1,
-            wbtcAddress,
-            ethers.constants.AddressZero,
-            0,
-            { gasPrice: gasPrice },
-        )
+        await yieldBox.registerAsset(1, wbtcAddress, wbtcStrategy.address, 0, {
+            gasPrice: gasPrice,
+        })
     ).wait();
     const wbtcAssetId = await yieldBox.ids(
         1,
         wbtcAddress,
-        ethers.constants.AddressZero,
+        wbtcStrategy.address,
         0,
     );
 
-    return { wethAssetId, usdcAssetId, wbtcAssetId };
+    return {
+        wethAssetId,
+        usdcAssetId,
+        wbtcAssetId,
+        usdcStrategy,
+        wbtcStrategy,
+    };
 }
 
 async function deployProxyDeployer() {
@@ -685,9 +691,9 @@ async function registerSingularity(
 
     const singularityMarket = await ethers.getContractAt(
         'Singularity',
-        await yieldBox.clonesOf(
+        await bar.clonesOf(
             mediumRiskMC,
-            (await yieldBox.clonesOfCount(mediumRiskMC)).sub(1),
+            (await bar.clonesOfCount(mediumRiskMC)).sub(1),
         ),
     );
 
@@ -848,14 +854,14 @@ async function createWethUsd0Singularity(
         gasPrice: gasPrice,
     });
 
-    const clonesCount = await yieldBox.clonesOfCount(mediumRiskMC.address);
+    const clonesCount = await bar.clonesOfCount(mediumRiskMC.address);
     log(`Clones count of MediumRiskMC ${clonesCount}`, staging);
 
     const wethUsdoSingularity = await ethers.getContractAt(
         'Singularity',
-        await yieldBox.clonesOf(
+        await bar.clonesOf(
             mediumRiskMC.address,
-            (await yieldBox.clonesOfCount(mediumRiskMC.address)).sub(1),
+            (await bar.clonesOfCount(mediumRiskMC.address)).sub(1),
         ),
     );
     log(
@@ -936,7 +942,7 @@ async function registerLiquidationQueue(
     ).deploy({ gasPrice: gasPrice });
     await liquidationQueue.deployed();
     log(
-        `Deployed WethUsdcLiquidationQueue ${liquidationQueue.address} with no arguments`,
+        `Deployed LiquidationQueue ${liquidationQueue.address} with no arguments`,
         staging,
     );
 
@@ -1021,9 +1027,9 @@ async function registerBigBangMarket(
 
     const bigBangMarket = await ethers.getContractAt(
         'BigBang',
-        await yieldBox.clonesOf(
+        await bar.clonesOf(
             mediumRiskBigBangMC,
-            (await yieldBox.clonesOfCount(mediumRiskBigBangMC)).sub(1),
+            (await bar.clonesOfCount(mediumRiskBigBangMC)).sub(1),
         ),
     );
     await verifyEtherscan(bigBangMarket.address, [], staging);
@@ -1039,6 +1045,19 @@ const verifyEtherscan = async (
         verifyEtherscanQueue.push({ address, args });
     }
 };
+
+export async function createTokenEmptyStrategy(
+    yieldBox: string,
+    token: string,
+) {
+    const noStrategy = await (
+        await ethers.getContractFactory('ERC20WithoutStrategy')
+    ).deploy(yieldBox, token, {
+        gasPrice: gasPrice,
+    });
+    await noStrategy.deployed();
+    return noStrategy;
+}
 
 const gasPrice = 22000000000; //55gwei
 const log = (message: string, staging?: boolean) =>
@@ -1133,7 +1152,13 @@ export async function register(staging?: boolean) {
 
     // -------------------  3 Add asset types to Penrose -------------------
     log('Setting Penrose assets', staging);
-    const { usdcAssetId, wethAssetId, wbtcAssetId } = await setPenroseAssets(
+    const {
+        usdcAssetId,
+        wethAssetId,
+        wbtcAssetId,
+        usdcStrategy,
+        wbtcStrategy,
+    } = await setPenroseAssets(
         yieldBox,
         bar,
         weth.address,
@@ -1446,6 +1471,8 @@ export async function register(staging?: boolean) {
         wethAssetId,
         wbtc,
         wbtcAssetId,
+        usdcStrategy,
+        wbtcStrategy,
         erc20Factory,
         tap,
         collateralWbtcSwapPath,
@@ -1689,6 +1716,7 @@ export async function register(staging?: boolean) {
         registerUsd0Contract,
         addUniV2UsdoWethLiquidity,
         createWethUsd0Singularity,
+        createTokenEmptyStrategy,
     };
 
     return { ...initialSetup, ...utilFuncs, verifyEtherscanQueue };

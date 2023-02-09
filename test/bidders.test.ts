@@ -102,10 +102,11 @@ describe('Bidders test', () => {
             ),
         ).to.be.revertedWith('token not valid');
 
+        const usdoStratregy = await bar.emptyStrategies(usd0.address);
         const usdoAssetId = await yieldBox.ids(
             1,
             usd0.address,
-            ethers.constants.AddressZero,
+            usdoStratregy,
             0,
         );
 
@@ -132,6 +133,7 @@ describe('Bidders test', () => {
         const {
             wethUsdcSingularity,
             usdc,
+            usdcAssetId,
             usd0,
             bar,
             yieldBox,
@@ -143,18 +145,11 @@ describe('Bidders test', () => {
             usdc,
             usd0,
         );
-
+        const usdoStratregy = await bar.emptyStrategies(usd0.address);
         const usdoAssetId = await yieldBox.ids(
             1,
             usd0.address,
-            ethers.constants.AddressZero,
-            0,
-        );
-
-        const usdcAssetId = await yieldBox.ids(
-            1,
-            usdc.address,
-            ethers.constants.AddressZero,
+            usdoStratregy,
             0,
         );
 

@@ -2,16 +2,20 @@
 pragma solidity ^0.8.0;
 
 import '@boringcrypto/boring-solidity/contracts/BoringOwnable.sol';
+import '@boringcrypto/boring-solidity/contracts/BoringFactory.sol';
 
 import '../yieldbox/contracts/YieldBox.sol';
+import '../yieldbox/contracts/interfaces/IYieldBox.sol';
+import '../yieldbox/contracts/strategies/ERC20WithoutStrategy.sol';
 import './singularity/interfaces/ISingularity.sol';
 import './interfaces/IPenrose.sol';
+
 
 // TODO: Permissionless market deployment
 ///     + asset registration? (toggle to renounce ownership so users can call)
 /// @title Global market registry
 /// @notice Singularity management
-contract Penrose is BoringOwnable {
+contract Penrose is BoringOwnable, BoringFactory {
     // ************ //
     // *** VARS *** //
     // ************ //
@@ -57,6 +61,8 @@ contract Penrose is BoringOwnable {
     address public bigBangEthMarket;
     uint256 public bigBangEthDebtRate;
 
+    mapping(address => IStrategy) public emptyStrategies;
+
     /// @notice creates a Penrose contract
     /// @param _yieldBox YieldBox contract address
     /// @param tapToken_ TapOFT contract address
@@ -67,21 +73,37 @@ contract Penrose is BoringOwnable {
     ) {
         yieldBox = _yieldBox;
         tapToken = tapToken_;
+        emptyStrategies[address(tapToken_)] = IStrategy(
+            address(
+                new ERC20WithoutStrategy(
+                    IYieldBox(address(_yieldBox)),
+                    tapToken_
+                )
+            )
+        );
         tapAssetId = uint96(
             _yieldBox.registerAsset(
                 TokenType.ERC20,
                 address(tapToken_),
-                IStrategy(address(0)),
+                emptyStrategies[address(tapToken_)],
                 0
             )
         );
 
         wethToken = wethToken_;
+        emptyStrategies[address(wethToken_)] = IStrategy(
+            address(
+                new ERC20WithoutStrategy(
+                    IYieldBox(address(_yieldBox)),
+                    wethToken_
+                )
+            )
+        );
         wethAssetId = uint96(
             _yieldBox.registerAsset(
                 TokenType.ERC20,
                 address(wethToken_),
-                IStrategy(address(0)),
+                emptyStrategies[address(wethToken_)],
                 0
             )
         );
@@ -215,7 +237,7 @@ contract Penrose is BoringOwnable {
     // *** OWNER FUNCTIONS *** //
     // *********************** //
     /// @notice sets the main BigBang market debt rate
-    /// @param _rate the new rate 
+    /// @param _rate the new rate
     function setBigBangEthMarketDebtRate(uint256 _rate) external onlyOwner {
         bigBangEthDebtRate = _rate;
         emit BigBangEthMarketDebtRate(_rate);
@@ -251,11 +273,20 @@ contract Penrose is BoringOwnable {
     /// @param _usdoToken the USD0 token address
     function setUsdoToken(address _usdoToken) external onlyOwner {
         usdoToken = IUSD0(_usdoToken);
+
+        emptyStrategies[_usdoToken] = IStrategy(
+            address(
+                new ERC20WithoutStrategy(
+                    IYieldBox(address(yieldBox)),
+                    IERC20(_usdoToken)
+                )
+            )
+        );
         usdoAssetId = uint96(
             yieldBox.registerAsset(
                 TokenType.ERC20,
                 _usdoToken,
-                IStrategy(address(0)),
+                emptyStrategies[_usdoToken],
                 0
             )
         );
@@ -319,7 +350,7 @@ contract Penrose is BoringOwnable {
         registeredSingularityMasterContract(mc)
         returns (address _contract)
     {
-        _contract = yieldBox.deploy(mc, data, useCreate2);
+        _contract = deploy(mc, data, useCreate2);
         emit RegisterSingularity(_contract, mc);
     }
 
@@ -338,7 +369,7 @@ contract Penrose is BoringOwnable {
         registeredBigBangMasterContract(mc)
         returns (address _contract)
     {
-        _contract = yieldBox.deploy(mc, data, useCreate2);
+        _contract = deploy(mc, data, useCreate2);
         emit RegisterBigBang(_contract, mc);
     }
 
@@ -359,11 +390,8 @@ contract Penrose is BoringOwnable {
         for (uint256 i = 0; i < len; ) {
             require(
                 isSingularityMasterContractRegistered[
-                    yieldBox.masterContractOf(mc[i])
-                ] ||
-                    isBigBangMasterContractRegistered[
-                        yieldBox.masterContractOf(mc[i])
-                    ],
+                    masterContractOf[mc[i]]
+                ] || isBigBangMasterContractRegistered[masterContractOf[mc[i]]],
                 'Penrose: MC not registered'
             );
             (success[i], result[i]) = mc[i].call(data[i]);
@@ -432,7 +460,7 @@ contract Penrose is BoringOwnable {
         unchecked {
             // We first compute the length of the markets array
             for (uint256 i = 0; i < _masterContractLength; ) {
-                marketsLength += yieldBox.clonesOfCount(array[i].location);
+                marketsLength += clonesOfCount(array[i].location);
 
                 ++i;
             }
@@ -447,11 +475,11 @@ contract Penrose is BoringOwnable {
             // We populate the array
             for (uint256 i = 0; i < _masterContractLength; ) {
                 address mcLocation = array[i].location;
-                clonesOfLength = yieldBox.clonesOfCount(mcLocation);
+                clonesOfLength = clonesOfCount(mcLocation);
 
                 // Loop through clones of the current MC.
                 for (uint256 j = 0; j < clonesOfLength; ) {
-                    markets[marketIndex] = yieldBox.clonesOf(mcLocation, j);
+                    markets[marketIndex] = clonesOf[mcLocation][j];
                     ++marketIndex;
                     ++j;
                 }

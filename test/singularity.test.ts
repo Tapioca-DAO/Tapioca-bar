@@ -1185,9 +1185,9 @@ describe('Singularity test', () => {
         ).wait();
         const wethUsdcSingularity = await ethers.getContractAt(
             'Singularity',
-            await yieldBox.clonesOf(
+            await bar.clonesOf(
                 mediumRiskMC.address,
-                (await yieldBox.clonesOfCount(mediumRiskMC.address)).sub(1),
+                (await bar.clonesOfCount(mediumRiskMC.address)).sub(1),
             ),
         );
 
@@ -1223,10 +1223,11 @@ describe('Singularity test', () => {
         } = await loadFixture(register);
         //deploy and register USD0
 
+        const usdoStratregy = await bar.emptyStrategies(usd0.address);
         const usdoAssetId = await yieldBox.ids(
             1,
             usd0.address,
-            ethers.constants.AddressZero,
+            usdoStratregy,
             0,
         );
 
@@ -1272,9 +1273,9 @@ describe('Singularity test', () => {
         await bar.registerSingularity(mediumRiskMC.address, data, true);
         const wethUsdoSingularity = await ethers.getContractAt(
             'Singularity',
-            await yieldBox.clonesOf(
+            await bar.clonesOf(
                 mediumRiskMC.address,
-                (await yieldBox.clonesOfCount(mediumRiskMC.address)).sub(1),
+                (await bar.clonesOfCount(mediumRiskMC.address)).sub(1),
             ),
         );
 
