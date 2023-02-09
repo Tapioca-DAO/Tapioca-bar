@@ -1766,7 +1766,10 @@ describe('Singularity test', () => {
             wethUsdcSingularity.withdrawTo(
                 deployer.address,
                 1,
-                deployer.address,
+                ethers.utils.defaultAbiCoder.encode(
+                    ['address'],
+                    [deployer.address],
+                ),
                 100,
                 ethers.utils.toUtf8Bytes(''),
                 deployer.address,

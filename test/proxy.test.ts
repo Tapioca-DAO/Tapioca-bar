@@ -281,7 +281,7 @@ describe('MarketsProxy', () => {
             .withdrawTo(
                 eoa1.address,
                 await lzEndpointSrc.getChainId(),
-                ethers.utils.solidityPack(
+                ethers.utils.defaultAbiCoder.encode(
                     ['address'],
                     [randomReceiver.address],
                 ),
@@ -476,7 +476,7 @@ describe('MarketsProxy', () => {
             [
                 eoa1.address,
                 await lzEndpointSrc.getChainId(),
-                ethers.utils.solidityPack(
+                ethers.utils.defaultAbiCoder.encode(
                     ['address'],
                     [randomReceiver.address],
                 ),
@@ -660,11 +660,11 @@ describe('MarketsProxy', () => {
             ethers.provider,
         );
         const withdrawData = new ethers.utils.AbiCoder().encode(
-            ['bool', 'uint256', 'bytes', 'bytes'],
+            ['bool', 'uint256', 'bytes32', 'bytes'],
             [
                 true,
                 await lzEndpointSrc.getChainId(),
-                ethers.utils.solidityPack(
+                ethers.utils.defaultAbiCoder.encode(
                     ['address'],
                     [randomReceiver.address],
                 ),

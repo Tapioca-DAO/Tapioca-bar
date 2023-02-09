@@ -33,7 +33,10 @@ export const otherChainBorrow__task = async (
         'Singularity',
         taskArgs.singularityDestination,
     );
-    const proxySrc = await hre.ethers.getContractAt('MarketsProxy', taskArgs.proxy);
+    const proxySrc = await hre.ethers.getContractAt(
+        'MarketsProxy',
+        taskArgs.proxy,
+    );
 
     //Send to YB
     const confirmations = 25;
@@ -75,7 +78,7 @@ export const otherChainBorrow__task = async (
             .connect(signer)
             .executeOnChain(
                 taskArgs.destLzChainId,
-                hre.ethers.utils.solidityPack(
+                hre.ethers.utils.defaultAbiCoder.encode(
                     ['address'],
                     [singularityDestination.address],
                 ),
@@ -85,4 +88,7 @@ export const otherChainBorrow__task = async (
             )
     ).wait(confirmations);
     console.log(`Done`);
+
+    console.log(`\nWithdrawing...`);
+    //TODO: add withdrawal
 };

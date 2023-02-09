@@ -56,7 +56,7 @@ interface IMarket {
     function withdrawTo(
         address from,
         uint16 dstChainId,
-        bytes memory receiver,
+        bytes32 receiver,
         uint256 amount,
         bytes calldata adapterParams,
         address payable refundAddress
