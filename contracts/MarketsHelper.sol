@@ -513,12 +513,12 @@ contract MarketsHelper {
     ) private {
         bool _otherChain;
         uint16 _destChain;
-        bytes memory _receiver;
+        bytes32 _receiver;
         bytes memory _adapterParams;
         if (_withdrawData.length > 0) {
             (_otherChain, _destChain, _receiver, _adapterParams) = abi.decode(
                 _withdrawData,
-                (bool, uint16, bytes, bytes)
+                (bool, uint16, bytes32, bytes)
             );
         }
         if (!_otherChain) {

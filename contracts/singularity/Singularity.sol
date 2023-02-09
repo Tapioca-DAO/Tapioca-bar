@@ -125,8 +125,6 @@ contract Singularity is SGLCommon {
             _yieldBoxShares[_user][_assetId];
     }
 
-    
-
     // ************************ //
     // *** PUBLIC FUNCTIONS *** //
     // ************************ //
@@ -332,7 +330,7 @@ contract Singularity is SGLCommon {
     function withdrawTo(
         address from,
         uint16 dstChainId,
-        bytes memory receiver,
+        bytes32 receiver,
         uint256 amount,
         bytes calldata adapterParams,
         address payable refundAddress
@@ -355,17 +353,14 @@ contract Singularity is SGLCommon {
         );
 
         yieldBox.withdraw(assetId, from, address(this), amount, 0);
+        ISendFrom.LzCallParams memory callParams = ISendFrom.LzCallParams({
+            refundAddress: msg.value > 0 ? refundAddress : payable(this),
+            zroPaymentAddress: address(0),
+            adapterParams: adapterParams
+        });
         ISendFrom(address(asset)).sendFrom{
             value: msg.value > 0 ? msg.value : address(this).balance
-        }(
-            address(this),
-            dstChainId,
-            receiver,
-            amount,
-            msg.value > 0 ? refundAddress : payable(this),
-            from,
-            adapterParams
-        );
+        }(address(this), dstChainId, receiver, amount, callParams);
     }
 
     // *********************** //
