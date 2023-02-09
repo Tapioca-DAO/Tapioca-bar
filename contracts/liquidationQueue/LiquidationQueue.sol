@@ -7,6 +7,7 @@ import '../interfaces/IPenrose.sol';
 import './ILiquidationQueue.sol';
 import '../singularity/interfaces/ISingularity.sol';
 import '../../yieldbox/contracts/interfaces/IStrategy.sol';
+import '../../yieldbox/contracts/strategies/ERC20WithoutStrategy.sol';
 
 import '../../yieldbox/contracts/YieldBox.sol';
 
@@ -157,7 +158,7 @@ contract LiquidationQueue is ILiquidationQueue {
         penrose = IPenrose(singularity.penrose());
         yieldBox = YieldBox(singularity.yieldBox());
 
-        lqAssetId = _registerAsset();
+        lqAssetId = marketAssetId;
 
         IERC20(singularity.asset()).approve(
             address(yieldBox),
@@ -828,18 +829,6 @@ contract LiquidationQueue is ILiquidationQueue {
                 ++i;
             }
         }
-    }
-
-    /// @notice Create an asset inside of Penrose that will hold the funds.
-    function _registerAsset() internal returns (uint256) {
-        (, address contractAddress, , ) = yieldBox.assets(marketAssetId);
-        return
-            yieldBox.registerAsset(
-                TokenType.ERC20,
-                contractAddress,
-                IStrategy(address(0)),
-                0
-            );
     }
 
     /// @notice Called with `init`, setup the initial pool info values.

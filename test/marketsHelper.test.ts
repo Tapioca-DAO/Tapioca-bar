@@ -393,10 +393,11 @@ describe('MarketsHelper test', () => {
 
         await initContracts();
 
+        const usdoStratregy = await bar.emptyStrategies(usd0.address);
         const usdoAssetId = await yieldBox.ids(
             1,
             usd0.address,
-            ethers.constants.AddressZero,
+            usdoStratregy,
             0,
         );
 
@@ -487,10 +488,11 @@ describe('MarketsHelper test', () => {
 
         await initContracts();
 
+        const usdoStratregy = await bar.emptyStrategies(usd0.address);
         const usdoAssetId = await yieldBox.ids(
             1,
             usd0.address,
-            ethers.constants.AddressZero,
+            usdoStratregy,
             0,
         );
 
@@ -602,13 +604,13 @@ describe('MarketsHelper test', () => {
 
         await initContracts();
 
+        const usdoStratregy = await bar.emptyStrategies(usd0.address);
         const usdoAssetId = await yieldBox.ids(
             1,
             usd0.address,
-            ethers.constants.AddressZero,
+            usdoStratregy,
             0,
         );
-
         const { stableToUsdoBidder } = await deployCurveStableToUsdoBidder(
             bar,
             usdc,

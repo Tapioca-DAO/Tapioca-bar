@@ -48,10 +48,11 @@ describe('e2e tests', () => {
             timeTravel,
         } = await loadFixture(register);
 
+        const usdoStratregy = await bar.emptyStrategies(usd0.address);
         const usdoAssetId = await yieldBox.ids(
             1,
             usd0.address,
-            ethers.constants.AddressZero,
+            usdoStratregy,
             0,
         );
 
@@ -200,13 +201,13 @@ describe('e2e tests', () => {
             timeTravel,
         } = await loadFixture(register);
 
+        const usdoStratregy = await bar.emptyStrategies(usd0.address);
         const usdoAssetId = await yieldBox.ids(
             1,
             usd0.address,
-            ethers.constants.AddressZero,
+            usdoStratregy,
             0,
         );
-
         const wethMintVal = ethers.BigNumber.from((1e18).toString()).mul(10);
         const wethMintShare = await yieldBox.toShare(
             wethAssetId,
@@ -398,10 +399,11 @@ describe('e2e tests', () => {
             timeTravel,
         } = await loadFixture(register);
 
+        const usdoStratregy = await bar.emptyStrategies(usd0.address);
         const usdoAssetId = await yieldBox.ids(
             1,
             usd0.address,
-            ethers.constants.AddressZero,
+            usdoStratregy,
             0,
         );
 

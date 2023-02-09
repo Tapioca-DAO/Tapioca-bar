@@ -435,6 +435,8 @@ describe('LiquidationQueue test', () => {
             liquidationQueue,
             wethUsdcSingularity,
             LQ_META,
+            bar,
+            usd0,
             weth,
             usdc,
             __wethUsdcPrice,
@@ -446,6 +448,14 @@ describe('LiquidationQueue test', () => {
         const mixologistAssetId = await wethUsdcSingularity.assetId();
         const mixologistCollateralId = await wethUsdcSingularity.collateralId();
         const lqAssetId = await liquidationQueue.lqAssetId();
+        const usdoStratregy = await bar.emptyStrategies(usd0.address);
+        const usdoAssetId = await yieldBox.ids(
+            1,
+            usd0.address,
+            usdoStratregy,
+            0,
+        );
+
         expect(lqAssetId, '✖️ Wrong asset id').to.eq(mixologistAssetId);
         expect(lqAssetId, '✖️ Wrong collateral id').to.not.eq(
             mixologistCollateralId,
@@ -1100,10 +1110,11 @@ describe('LiquidationQueue test', () => {
         /// --- Acts ----
         const POOL = 10;
 
+        const usdoStratregy = await bar.emptyStrategies(usd0.address);
         const usdoAssetId = await yieldBox.ids(
             1,
             usd0.address,
-            ethers.constants.AddressZero,
+            usdoStratregy,
             0,
         );
 

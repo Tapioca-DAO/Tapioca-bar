@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import { ethers } from 'hardhat';
-import { register } from './test.utils';
+import { register, createTokenEmptyStrategy } from './test.utils';
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 
 describe('MarketsProxy', () => {
@@ -1627,16 +1627,21 @@ async function setupUsd0Environment(
         await ethers.getContractFactory('USD0')
     ).deploy(lzEndpointSrc.address, yieldBox.address);
     await usd0Src.deployed();
+
+    const usd0SrcStrategy = await createTokenEmptyStrategy(
+        yieldBox.address,
+        usd0Src.address,
+    );
     await yieldBox.registerAsset(
         1,
         usd0Src.address,
-        ethers.constants.AddressZero,
+        usd0SrcStrategy.address,
         0,
     );
     const usd0SrcId = await yieldBox.ids(
         1,
         usd0Src.address,
-        ethers.constants.AddressZero,
+        usd0SrcStrategy.address,
         0,
     );
 
@@ -1644,16 +1649,20 @@ async function setupUsd0Environment(
         await ethers.getContractFactory('USD0')
     ).deploy(lzEndpointDst.address, yieldBox.address);
     await usd0Dst.deployed();
+    const usd0DstStrategy = await createTokenEmptyStrategy(
+        yieldBox.address,
+        usd0Dst.address,
+    );
     await yieldBox.registerAsset(
         1,
         usd0Dst.address,
-        ethers.constants.AddressZero,
+        usd0DstStrategy.address,
         0,
     );
     const usd0DstId = await yieldBox.ids(
         1,
         usd0Dst.address,
-        ethers.constants.AddressZero,
+        usd0DstStrategy.address,
         0,
     );
 
