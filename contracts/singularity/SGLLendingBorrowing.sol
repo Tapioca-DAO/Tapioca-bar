@@ -119,6 +119,12 @@ contract SGLLendingBorrowing is SGLCommon {
             minAmountOut,
             dexData
         );
+
+        // As long as the ratio is correct, we trust `amountOut` resp. 
+        // `shareOut`, because all money received by the swapper gets used up
+        // one way or another, or the transaction will revert.
+        require(amountOut >= minAmountOut, "SGL: not enough");
+
         uint256 partOwed = userBorrowPart[from];
         uint256 amountOwed = totalBorrow.toElastic(partOwed, true);
         uint256 shareOwed = yieldBox.toShare(assetId, amountOwed, true);
@@ -184,6 +190,8 @@ contract SGLLendingBorrowing is SGLCommon {
             minAmountOut,
             dexData
         );
+        require(amountOut >= minAmountOut, "SGL: not enough");
+
         _addCollateral(from, from, true, collateralShare);
     }
 
