@@ -16,7 +16,9 @@ contract MarketsHelper {
 
     struct MarketInfo {
         address collateral;
+        uint256 collateralId;
         address asset;
+        uint256 assetId;
         IOracle oracle;
         bytes oracleData;
         uint256 totalCollateralShare;
@@ -26,6 +28,7 @@ contract MarketsHelper {
         uint256 currentExchangeRate;
         uint256 spotExchangeRate;
         uint256 oracleExchangeRate;
+        uint256 totalBorrowCap;
     }
     struct SingularityInfo {
         MarketInfo market;
@@ -497,6 +500,9 @@ contract MarketsHelper {
         info.currentExchangeRate = market.exchangeRate();
         (, info.oracleExchangeRate) = market.oracle().peek(market.oracleData());
         info.spotExchangeRate = market.oracle().peekSpot(market.oracleData());
+        info.totalBorrowCap = market.totalBorrowCap();
+        info.assetId = market.assetId();
+        info.collateralId = market.collateralId();
         return info;
     }
 

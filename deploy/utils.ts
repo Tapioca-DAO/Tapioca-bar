@@ -21,7 +21,7 @@ export const constants: { [key: string]: any } = {
     '421613': {
         ...supportedChains['arbitrum_goerli'],
         wrappedNative: '0x0000000000000000000000000000000000000000',
-        tapAddress: '0xC27F48670cDae9Eee92156209642d47Ea1B85a35',
+        tapAddress: '0x31dA039c8Cf6eDC95fAFECb7B3E70a308128b7E0',
         feeTo: '0x40282d3Cf4890D9806BC1853e97a59C93D813653',
         feeCollector: '0x40282d3Cf4890D9806BC1853e97a59C93D813653', //for liquidation queue
         uniV2Factory: '0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f',
@@ -33,52 +33,59 @@ export const constants: { [key: string]: any } = {
         assets: [
             {
                 name: 'tAvax',
-                address: '0xef0871E0e8C3320f5Cf8c0051EC856b9c083660f',
+                address: '0xd37E276907e76bF25eBaDA04fB2dCe67c8BE5188',
+                strategy: '0xbD5c3Af44fc4C6C3dbAa500DbE77aC4049194058',
             },
             {
                 name: 'tWETH',
-                address: '0xd5d5d2fed1eCb5Dea28Fe81fB575c9C241448D71',
+                address: '0xc0106C090153F651c5E6e12249412b9e51f8d49d',
+                strategy: '0xDA535a926560de4F6130e878Ea0BD81F076e3b74',
             },
             {
                 name: 'tMATIC',
-                address: '0x48d95D182D33990910DC39868Da6FcA59182626c',
+                address: '0xd429a8F683Aa8D43Aa3CBdDCa93956CBc44c4242',
+                strategy: '0xcCD1F3Fb54fcB421Ed321e916560877890363f4a',
             },
             {
                 name: 'TAP',
-                address: '0xC27F48670cDae9Eee92156209642d47Ea1B85a35',
+                address: '0x31dA039c8Cf6eDC95fAFECb7B3E70a308128b7E0',
+                strategy: '0xEc473BCA9d74866e055C1761994cdb5139f778c2',
             },
         ],
         sgl_TWETH: {
-            collateralAddress: '0xd5d5d2fed1eCb5Dea28Fe81fB575c9C241448D71', //tWeth
-            assetAddress: '0x006dcF07511D332299f83056731Cb15f0Aeb2F2B',
+            collateralAddress: '0xc0106C090153F651c5E6e12249412b9e51f8d49d', //tWeth
+            assetAddress: '0x56574ad5a9c531874126cff2ffa9f3806a28a99a',
             oracleAddress: '0xB63815242ec16F1D8F83A4dEec844296A546cA8d', //mock
             minBidAmount: 20,
             hasExecutionBidder: false,
             executionBidder: '0x0000000000000000000000000000000000000000',
+            strategyAddress: '0xDA535a926560de4F6130e878Ea0BD81F076e3b74',
         },
 
         sgl_TAVAX: {
-            collateralAddress: '0xef0871E0e8C3320f5Cf8c0051EC856b9c083660f', //tAvax
-            assetAddress: '0x006dcF07511D332299f83056731Cb15f0Aeb2F2B',
+            collateralAddress: '0xd37E276907e76bF25eBaDA04fB2dCe67c8BE5188', //tAvax
+            assetAddress: '0x56574ad5a9c531874126cff2ffa9f3806a28a99a',
             oracleAddress: '0x707dC804728495e14F58c22a38dE17b5c7591323', //mock
             minBidAmount: 20,
             hasExecutionBidder: false,
             executionBidder: '0x0000000000000000000000000000000000000000',
+            strategyAddress: '0xbD5c3Af44fc4C6C3dbAa500DbE77aC4049194058',
         },
         sgl_TMATIC: {
-            collateralAddress: '0x48d95D182D33990910DC39868Da6FcA59182626c', //tMatic
-            assetAddress: '0x006dcF07511D332299f83056731Cb15f0Aeb2F2B',
+            collateralAddress: '0xd429a8F683Aa8D43Aa3CBdDCa93956CBc44c4242', //tMatic
+            assetAddress: '0x56574ad5a9c531874126cff2ffa9f3806a28a99a',
             oracleAddress: '0x56E626a05193B1576dCc4CFE4d89FfEC6dD115C8', //mock
             minBidAmount: 20,
             hasExecutionBidder: false,
             executionBidder: '0x0000000000000000000000000000000000000000',
+            strategyAddress: '0xcCD1F3Fb54fcB421Ed321e916560877890363f4a',
         },
     },
     //fuji
     '43113': {
         ...supportedChains['fuji_avalanche'],
         wrappedNative: '0x0000000000000000000000000000000000000000',
-        tapAddress: '0xBEb739E11742D7015B807012894bDA8b0fe6b141',
+        tapAddress: '0xc6B03Ba05Fb5E693D8b3533aa676FB4AFDd7DDc7',
         feeTo: '0x40282d3Cf4890D9806BC1853e97a59C93D813653',
         feeCollector: '0x40282d3Cf4890D9806BC1853e97a59C93D813653', //for liquidation queue
         uniV2Factory: '0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f',
@@ -86,23 +93,27 @@ export const constants: { [key: string]: any } = {
         uniV2PairHash:
             '0x68ddfd89d43db94fbd68a4abd2861ebcbfea56c0fd36334bbb95f0661c3171a2',
         crvStablePool: '0x803147a1f65f9b838e7be39bac1a4f51e6d29a18', //random address
-        wethAddress: '0xc5A3f63c28F625D0496804e169C21a280B2d10B9',
+        wethAddress: '0x71E4364611BDCc8865c61f2e8F979644Ba0ec7f7',
         assets: [
             {
                 name: 'tAvax',
-                address: '0x28D691380D2d8C86f6fdD2e49123C1DA9fa33b32',
+                address: '0x05C0a8C53BED62edf009b8B870fAC065B4cc3533',
+                strategy: '0x3020Fd33BAB76De7057F637ac3A314dd5118FeaA',
             },
             {
                 name: 'tWETH',
-                address: '0x4ee2C3e02D9c47951a6a56bE803030D70F3dbfb7',
+                address: '0x71dDd5ec9815740529D62726Adc50EB84a3A4e1a',
+                strategy: '0xa33e61894D266bf602d71F33fe741616c1F83A9d',
             },
             {
                 name: 'tMATIC',
-                address: '0xe82f613C2B46D3fD51bA2A6Bc04a4dB65413b2a1',
+                address: '0x628570D3768e7424dd7Ca4671846D1b67c82E141',
+                strategy: '0xdCf35763e643Adb8Db5D502F7b8246737faDac7f',
             },
             {
                 name: 'TAP',
-                address: '0xBEb739E11742D7015B807012894bDA8b0fe6b141',
+                address: '0xc6B03Ba05Fb5E693D8b3533aa676FB4AFDd7DDc7',
+                strategy: '0xC4007F1A61A76A241d01f141112d805eBF07E640',
             },
         ],
     },
@@ -110,7 +121,7 @@ export const constants: { [key: string]: any } = {
     '80001': {
         ...supportedChains['mumbai'],
         wrappedNative: '0x0000000000000000000000000000000000000000',
-        tapAddress: '0x78Ab2649fd6682e5c3CCFABb87ed6FcED0843cE4',
+        tapAddress: '0xd621150f4BE5b6E537f61dB2A59499F648F1B6e2',
         feeTo: '0x40282d3Cf4890D9806BC1853e97a59C93D813653',
         feeCollector: '0x40282d3Cf4890D9806BC1853e97a59C93D813653', //for liquidation queue
         uniV2Factory: '0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f',
@@ -118,23 +129,27 @@ export const constants: { [key: string]: any } = {
         uniV2PairHash:
             '0x68ddfd89d43db94fbd68a4abd2861ebcbfea56c0fd36334bbb95f0661c3171a2',
         crvStablePool: '0x803147a1f65f9b838e7be39bac1a4f51e6d29a18', //random address
-        wethAddress: '0x766d7631F6aE1E37c87dc10c8d4D9272e6be6Fc8',
+        wethAddress: '0x5d405f701fb11f749e2D8D5D73A70181Ef25d457',
         assets: [
             {
                 name: 'tAvax',
-                address: '0x74FC744146cb0067AC34DF10c6e7bcc050439D37',
+                address: '0x556029CB9c74B07bC34abED41eaA424159463E50',
+                strategy: '0xC6Dd56Af72c0E74e4f0dD35DC6c68A95A4b0c0A5',
             },
             {
                 name: 'tWETH',
-                address: '0xAa7e77fb38C8B5df58cba3a49227dAb6ee5f18Cb',
+                address: '0x4172056FDC344b8Fd38bfDe590a7eDdF32cD1d55',
+                strategy: '0x463f52c8D711ecE2b423d41cfEb00b88195C7216',
             },
             {
                 name: 'tMATIC',
-                address: '0x18BC2Be450e04EBB72A150dfa9a268F60302215c',
+                address: '0xa1BD6C0B6b35209B3710cA6Ab306736e06C1fe9c',
+                strategy: '0x85f6A39aaCfEA335B83F9695Ff2F30C09214DD32',
             },
             {
                 name: 'TAP',
-                address: '0x78Ab2649fd6682e5c3CCFABb87ed6FcED0843cE4',
+                address: '0xd621150f4BE5b6E537f61dB2A59499F648F1B6e2',
+                strategy: '0xc5A3f63c28F625D0496804e169C21a280B2d10B9',
             },
         ],
     },
@@ -317,6 +332,43 @@ export const updateDeployments = async (
     });
 };
 
+export const deployEmptyStrategy = async (
+    hre: HardhatRuntimeEnvironment,
+    yieldbox: string,
+    token: string,
+): Promise<TContract> => {
+    const { deployments, getNamedAccounts } = hre;
+    const { deploy } = deployments;
+    const { deployer } = await getNamedAccounts();
+
+    console.log('starting');
+    const tokenContract = await hre.ethers.getContractAt(
+        'IERC20Metadata',
+        token,
+    );
+    const name = await tokenContract.name();
+    const symbol = await tokenContract.symbol();
+
+    console.log(`\nDeploying ERC20WithoutStrategy for ${name}`);
+
+    const args = [yieldbox, token];
+    await deploy('ERC20WithoutStrategy', {
+        from: process.env.PUBLIC_KEY!,
+        log: true,
+        args,
+    });
+    await verify(hre, 'ERC20WithoutStrategy', args);
+    const deployedNoStrategy = await deployments.get('ERC20WithoutStrategy');
+
+    return new Promise(async (resolve) =>
+        resolve({
+            name: `ERC20WithoutStrategy-${symbol}`,
+            address: deployedNoStrategy.address,
+            meta: { constructorArguments: args },
+        }),
+    );
+};
+
 export const deployOracleMock = async (
     hre: HardhatRuntimeEnvironment,
     name: string,
@@ -452,9 +504,9 @@ export const registerBigBangMarket = async (
     });
     const deployedMinter = await hre.ethers.getContractAt(
         'BigBang',
-        await yieldBox.clonesOf(
+        await penrose.clonesOf(
             masterContract.address,
-            (await yieldBox.clonesOfCount(masterContract.address)).sub(1),
+            (await penrose.clonesOfCount(masterContract.address)).sub(1),
         ),
     );
     console.log('Done');
@@ -515,16 +567,26 @@ export const registerMarket = async (
         'YieldBox',
         yieldBoxAddress,
     );
+
+    let collateralStrategyAddress = marketData.strategyAddress;
+    if (collateralStrategyAddress == hre.ethers.constants.AddressZero) {
+        throw 'Collateral strategy is not valid';
+    }
+    let assetStrategyAddress = await penrose.emptyStrategies(assetAddress);
+    if (assetStrategyAddress == hre.ethers.constants.AddressZero) {
+        throw 'Asset strategy is not valid';
+    }
+
     const assetId = await yieldBox.ids(
         1,
         assetAddress,
-        hre.ethers.constants.AddressZero,
+        assetStrategyAddress,
         0,
     );
     const collateralId = await yieldBox.ids(
         1,
         marketData.collateralAddress,
-        hre.ethers.constants.AddressZero,
+        collateralStrategyAddress,
         0,
     );
 
@@ -569,9 +631,9 @@ export const registerMarket = async (
 
     const market = await hre.ethers.getContractAt(
         'Singularity',
-        await yieldBox.clonesOf(
+        await penrose.clonesOf(
             masterContract.address,
-            (await yieldBox.clonesOfCount(masterContract.address)).sub(1),
+            (await penrose.clonesOfCount(masterContract.address)).sub(1),
         ),
     );
     console.log('Done');
