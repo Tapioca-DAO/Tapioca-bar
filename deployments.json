@@ -1,8 +1,20 @@
 {
     "43113": [
         {
+            "name": "WETH9Mock",
+            "address": "0x71E4364611BDCc8865c61f2e8F979644Ba0ec7f7",
+            "meta": {
+                "consutructorArguments": ["10000000000000000000"]
+            }
+        },
+        {
+            "name": "ERC20FactoryMock",
+            "address": "0x80F91F0d1bF4cBaf26886De4d4a4E4C99968660d",
+            "meta": {}
+        },
+        {
             "name": "ERC20Mock-AVAX",
-            "address": "0x667e8fB73Ba84599Dc1A8d7e1A0f003CF1A8Db76",
+            "address": "0xDfb0eE3A7de3AFc394aEB63AC5761e615e8FA692",
             "meta": {
                 "constructorArguments": [
                     "10000000000000000000000000",
@@ -13,37 +25,77 @@
         },
         {
             "name": "OracleMockFactory",
-            "address": "0xd9da4265fa5957a119c4fC8c36a36b5e50eDc33B",
+            "address": "0x4da7E36B2A1E51409526Cc1E63C67cAA93f4fD13",
             "meta": {}
         },
         {
             "name": "YieldBoxURIBuilder",
-            "address": "0x162cD095d04C65d3C0600C2253B9621E64a3cFAc",
+            "address": "0x63aC63063dE8255E92f9a9f8E81254104Ec20785",
             "meta": {}
         },
         {
             "name": "YieldBox",
-            "address": "0x2CCFd66f76E73EEF0Ac76D7C03d0E367a03B7B2e",
+            "address": "0x538c2189ea266069031622e70441bc73A613e9Ed",
             "meta": {
                 "constructorArguments": [
                     "0x0000000000000000000000000000000000000000",
-                    "0x162cD095d04C65d3C0600C2253B9621E64a3cFAc"
+                    "0x63aC63063dE8255E92f9a9f8E81254104Ec20785"
+                ]
+            }
+        },
+        {
+            "name": "ERC20WithoutStrategy-TOFT-WETH",
+            "address": "0xa33e61894D266bf602d71F33fe741616c1F83A9d",
+            "meta": {
+                "constructorArguments": [
+                    "0x538c2189ea266069031622e70441bc73A613e9Ed",
+                    "0x71dDd5ec9815740529D62726Adc50EB84a3A4e1a"
+                ]
+            }
+        },
+        {
+            "name": "ERC20WithoutStrategy-TOFT-AVAX",
+            "address": "0x3020Fd33BAB76De7057F637ac3A314dd5118FeaA",
+            "meta": {
+                "constructorArguments": [
+                    "0x538c2189ea266069031622e70441bc73A613e9Ed",
+                    "0x05C0a8C53BED62edf009b8B870fAC065B4cc3533"
+                ]
+            }
+        },
+        {
+            "name": "ERC20WithoutStrategy-TOFT-MATIC",
+            "address": "0xdCf35763e643Adb8Db5D502F7b8246737faDac7f",
+            "meta": {
+                "constructorArguments": [
+                    "0x538c2189ea266069031622e70441bc73A613e9Ed",
+                    "0x628570D3768e7424dd7Ca4671846D1b67c82E141"
+                ]
+            }
+        },
+        {
+            "name": "ERC20WithoutStrategy-TAP",
+            "address": "0xC4007F1A61A76A241d01f141112d805eBF07E640",
+            "meta": {
+                "constructorArguments": [
+                    "0x538c2189ea266069031622e70441bc73A613e9Ed",
+                    "0xc6B03Ba05Fb5E693D8b3533aa676FB4AFDd7DDc7"
                 ]
             }
         },
         {
             "name": "USD0",
-            "address": "0x2966E7c576492Bd4e2e06CC3A40b1d01ccf63D69",
+            "address": "0xF11A3fDe3c7551AD382d9F22eE91807577e93222",
             "meta": {
                 "constructorArguments": [
                     "0x93f54D755A063cE7bB9e6Ac47Eccc8e33411d706",
-                    "0x2CCFd66f76E73EEF0Ac76D7C03d0E367a03B7B2e"
+                    "0x538c2189ea266069031622e70441bc73A613e9Ed"
                 ]
             }
         },
         {
-            "name": "SGLProxy",
-            "address": "0x68EcA2cd0d7557e61eaf6B6831B892B842e38D65",
+            "name": "MarketsProxy",
+            "address": "0x6A0fd324D64a5353E3543b9C2115Fc1F1246ecF7",
             "meta": {
                 "constructorArguments": [
                     "0x93f54D755A063cE7bB9e6Ac47Eccc8e33411d706",
@@ -55,27 +107,19 @@
     "80001": [
         {
             "name": "WETH9Mock",
-            "address": "0x766d7631F6aE1E37c87dc10c8d4D9272e6be6Fc8",
-            "meta": { "consutructorArguments": ["10000000000000000000"] }
+            "address": "0x5d405f701fb11f749e2D8D5D73A70181Ef25d457",
+            "meta": {
+                "consutructorArguments": ["10000000000000000000"]
+            }
         },
         {
             "name": "ERC20FactoryMock",
-            "address": "0x4663B30afc168A6D1810fA6857a74d04bf632E54",
+            "address": "0x0a26728D5Ad0CCc625d1EFbf1036f75085dE8819",
             "meta": {}
         },
         {
-            "name": "OracleMockFactory",
-            "address": "0x6bcaD0CAAee740d5401AA58565ED3fa83308ac24",
-            "meta": {}
-        },
-        {
-            "name": "ERC20FactoryMock",
-            "address": "0x8A06dB9F27AE88AEBB26e528F51C5f9373Aec67C",
-            "meta": {}
-        },
-        {
-            "name": "ERC20Mock-Matic",
-            "address": "0xb110284648691B5944b8E7c7cfB140e501f77d1C",
+            "name": "ERC20Mock-MATIC",
+            "address": "0xd682F81b03764D872c271BeD4020610eb48f41e3",
             "meta": {
                 "constructorArguments": [
                     "10000000000000000000000000",
@@ -85,33 +129,78 @@
             }
         },
         {
+            "name": "OracleMockFactory",
+            "address": "0x1dEf3Aaa785C83e16305998863460a6CEeaE05B9",
+            "meta": {}
+        },
+        {
             "name": "YieldBoxURIBuilder",
-            "address": "0xD65dEc2e2A5d30e8b76990262b96E236c209cCe6",
+            "address": "0xd2889C65AeEf0a48B0cD054F018632B5339Df568",
             "meta": {}
         },
         {
             "name": "YieldBox",
-            "address": "0x3E6c224326e77F417636e10c74c7dC797B7c2bB1",
+            "address": "0xF0a07d15F4F6FCB919EE410B10D8ab282eD1107F",
             "meta": {
                 "constructorArguments": [
                     "0x0000000000000000000000000000000000000000",
-                    "0xD65dEc2e2A5d30e8b76990262b96E236c209cCe6"
+                    "0xd2889C65AeEf0a48B0cD054F018632B5339Df568"
+                ]
+            }
+        },
+        {
+            "name": "ERC20WithoutStrategy-TOFT-WETH",
+            "address": "0x463f52c8D711ecE2b423d41cfEb00b88195C7216",
+            "meta": {
+                "constructorArguments": [
+                    "0xF0a07d15F4F6FCB919EE410B10D8ab282eD1107F",
+                    "0x4172056FDC344b8Fd38bfDe590a7eDdF32cD1d55"
+                ]
+            }
+        },
+        {
+            "name": "ERC20WithoutStrategy-TOFT-AVAX",
+            "address": "0xC6Dd56Af72c0E74e4f0dD35DC6c68A95A4b0c0A5",
+            "meta": {
+                "constructorArguments": [
+                    "0xF0a07d15F4F6FCB919EE410B10D8ab282eD1107F",
+                    "0x556029CB9c74B07bC34abED41eaA424159463E50"
+                ]
+            }
+        },
+        {
+            "name": "ERC20WithoutStrategy-TOFT-MATIC",
+            "address": "0x85f6A39aaCfEA335B83F9695Ff2F30C09214DD32",
+            "meta": {
+                "constructorArguments": [
+                    "0xF0a07d15F4F6FCB919EE410B10D8ab282eD1107F",
+                    "0xa1BD6C0B6b35209B3710cA6Ab306736e06C1fe9c"
+                ]
+            }
+        },
+        {
+            "name": "ERC20WithoutStrategy-TAP",
+            "address": "0xc5A3f63c28F625D0496804e169C21a280B2d10B9",
+            "meta": {
+                "constructorArguments": [
+                    "0xF0a07d15F4F6FCB919EE410B10D8ab282eD1107F",
+                    "0xd621150f4BE5b6E537f61dB2A59499F648F1B6e2"
                 ]
             }
         },
         {
             "name": "USD0",
-            "address": "0xFfbd22431bb5142D95E09D90db19D252e2cEcd27",
+            "address": "0x2CCFd66f76E73EEF0Ac76D7C03d0E367a03B7B2e",
             "meta": {
                 "constructorArguments": [
                     "0xf69186dfBa60DdB133E91E9A4B5673624293d8F8",
-                    "0x3E6c224326e77F417636e10c74c7dC797B7c2bB1"
+                    "0xF0a07d15F4F6FCB919EE410B10D8ab282eD1107F"
                 ]
             }
         },
         {
-            "name": "SGLProxy",
-            "address": "0xf415243B79651F6bf15053fA1712Cbb67BEc5B87",
+            "name": "MarketsProxy",
+            "address": "0x5A5a5bcc184c71aB743CB312653715f527111e6D",
             "meta": {
                 "constructorArguments": [
                     "0xf69186dfBa60DdB133E91E9A4B5673624293d8F8",
@@ -123,197 +212,240 @@
     "421613": [
         {
             "name": "WETH9Mock",
-            "address": "0xd428690148436dA9c7422698eEe15F51C8cec871",
-            "meta": { "consutructorArguments": ["10000000000000000000"] }
+            "address": "0x7B30C951cFF9B5648A08FeC08A588e3b143a095B",
+            "meta": {
+                "consutructorArguments": ["10000000000000000000"]
+            }
+        },
+        {
+            "name": "ERC20FactoryMock",
+            "address": "0x50a6D2DcAA66128161d743D4925CB43bccD53631",
+            "meta": {}
+        },
+        {
+            "name": "ERC20Mock-USDC",
+            "address": "0x1d290b8F780dE9647a363f763a8D107f6F19491B",
+            "meta": {
+                "constructorArguments": [
+                    "10000000000000000000000000",
+                    "18",
+                    "1000000000000000000000"
+                ]
+            }
         },
         {
             "name": "OracleMockFactory",
-            "address": "0xBD46Fa5C363E222c4cEf7589100F6486926C0D56",
+            "address": "0x8a1BC8e139eAefd78296773Fadd340909c610A76",
             "meta": {}
         },
         {
             "name": "YieldBoxURIBuilder",
-            "address": "0xbe23Dc1b3cE5ff4CFE6433Ff39C6879ACf683603",
+            "address": "0x8E4030e49A60313d3E51125a3AFe2a642D5375EB",
             "meta": {}
         },
         {
             "name": "YieldBox",
-            "address": "0xFCdE8366705e8A9c1eDE4C56D716c9e7564CE50D",
+            "address": "0x93cF32C5fF98c0758b32dF9F6DB9e4f4faaCe736",
             "meta": {
                 "constructorArguments": [
                     "0x0000000000000000000000000000000000000000",
-                    "0xbe23Dc1b3cE5ff4CFE6433Ff39C6879ACf683603"
+                    "0x8E4030e49A60313d3E51125a3AFe2a642D5375EB"
                 ]
             }
         },
         {
-            "name": "MarketsHelper",
-            "address": "0x8509121BB695EF285C4af446B9EF0Eae0a7B58aC",
-            "meta": {}
-        },
-        {
-            "name": "MultiSwapper",
-            "address": "0x5A5a5bcc184c71aB743CB312653715f527111e6D",
+            "name": "ERC20WithoutStrategy-TOFT-WETH",
+            "address": "0xDA535a926560de4F6130e878Ea0BD81F076e3b74",
             "meta": {
                 "constructorArguments": [
-                    "0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f",
-                    "0x95c7E83D6d44F3d81cb60FB4e5472dC5C0415571",
-                    "0x68ddfd89d43db94fbd68a4abd2861ebcbfea56c0fd36334bbb95f0661c3171a2"
+                    "0x93cF32C5fF98c0758b32dF9F6DB9e4f4faaCe736",
+                    "0xc0106C090153F651c5E6e12249412b9e51f8d49d"
                 ]
             }
         },
         {
-            "name": "USD0",
-            "address": "0x006dcF07511D332299f83056731Cb15f0Aeb2F2B",
+            "name": "ERC20WithoutStrategy-TOFT-AVAX",
+            "address": "0xbD5c3Af44fc4C6C3dbAa500DbE77aC4049194058",
             "meta": {
                 "constructorArguments": [
-                    "0x6aB5Ae6822647046626e83ee6dB8187151E1d5ab",
-                    "0xFCdE8366705e8A9c1eDE4C56D716c9e7564CE50D"
+                    "0x93cF32C5fF98c0758b32dF9F6DB9e4f4faaCe736",
+                    "0xd37E276907e76bF25eBaDA04fB2dCe67c8BE5188"
                 ]
             }
         },
         {
-            "name": "OracleMock-tavax",
-            "address": "0x707dC804728495e14F58c22a38dE17b5c7591323",
-            "meta": {}
-        },
-        {
-            "name": "OracleMock-tweth",
-            "address": "0xB63815242ec16F1D8F83A4dEec844296A546cA8d",
-            "meta": {}
-        },
-        {
-            "name": "OracleMock-tmatic",
-            "address": "0x56E626a05193B1576dCc4CFE4d89FfEC6dD115C8",
-            "meta": {}
-        },
-        {
-            "address": "0x2966E7c576492Bd4e2e06CC3A40b1d01ccf63D69",
+            "name": "ERC20WithoutStrategy-TOFT-MATIC",
+            "address": "0xcCD1F3Fb54fcB421Ed321e916560877890363f4a",
             "meta": {
                 "constructorArguments": [
-                    "0x803147a1f65f9b838e7be39bac1a4f51e6d29a18",
-                    "0x95c7E83D6d44F3d81cb60FB4e5472dC5C0415571"
-                ]
-            },
-            "name": "CurveSwapper"
-        },
-        {
-            "name": "CurveStableToUsdoBidder",
-            "address": "0x5c568be396BD2c3b5ae95C407d393B0F0bd24cBf",
-            "meta": {
-                "constructorArguments": [
-                    "0x2966E7c576492Bd4e2e06CC3A40b1d01ccf63D69",
-                    "4"
+                    "0x93cF32C5fF98c0758b32dF9F6DB9e4f4faaCe736",
+                    "0xd429a8F683Aa8D43Aa3CBdDCa93956CBc44c4242"
                 ]
             }
         },
         {
-            "name": "SGLLiquidation",
-            "address": "0x68EcA2cd0d7557e61eaf6B6831B892B842e38D65",
-            "meta": {}
-        },
-        {
-            "name": "SGLLendingBorrowing",
-            "address": "0x950e9724B631d9D8C1f35aE36C7E68f5D67486dd",
-            "meta": {}
-        },
-        {
-            "name": "ProxyDeployer",
-            "address": "0x407ebC3cD87eCc4B25d7F53b19b4b056397b0e60",
-            "meta": {}
+            "name": "ERC20WithoutStrategy-TAP",
+            "address": "0xEc473BCA9d74866e055C1761994cdb5139f778c2",
+            "meta": {
+                "constructorArguments": [
+                    "0x93cF32C5fF98c0758b32dF9F6DB9e4f4faaCe736",
+                    "0x31dA039c8Cf6eDC95fAFECb7B3E70a308128b7E0"
+                ]
+            }
         },
         {
             "name": "Penrose",
-            "address": "0x968d2E029688b23712E482D814e7EC58e0b9Edae",
+            "address": "0x8d0AbE838d85F14E93C51bd04b26A6dCCcc88584",
             "meta": {
                 "constructorArguments": [
-                    "0xFCdE8366705e8A9c1eDE4C56D716c9e7564CE50D",
-                    "0xC27F48670cDae9Eee92156209642d47Ea1B85a35",
+                    "0x93cF32C5fF98c0758b32dF9F6DB9e4f4faaCe736",
+                    "0x31dA039c8Cf6eDC95fAFECb7B3E70a308128b7E0",
                     "0xd428690148436dA9c7422698eEe15F51C8cec871"
                 ]
             }
         },
         {
             "name": "MediumRiskMC",
-            "address": "0xa4d290b9DA1b5E3CA26Cf38903a6429Ee37f28fA",
+            "address": "0xDEbBC681d8dEff3c13b8D451c531C69F2872F9c6",
             "meta": {}
         },
         {
             "name": "BigBangMediumRiskMC",
-            "address": "0x8c7cc75F566a8e0E62775d46D15CB96Bd932C7d4",
+            "address": "0x1A316567bEBB66CB7ACe819c4B1e31b20519D54B",
             "meta": {}
         },
         {
-            "name": "sgl_TWETH",
-            "address": "0x0649Cc6e4A15362cB0318B78C4a76a84027DEaB4",
+            "name": "MarketsHelper",
+            "address": "0x678488290Fa0240160cB159c3Dda2748d5413a5D",
             "meta": {}
         },
         {
-            "name": "lq_TWETH",
-            "address": "0x5F9e33B271ee832E78b49Cc8696D9d596D528243",
+            "name": "MultiSwapper",
+            "address": "0x127652Bd7Cca30FD0d425c9891721aBD32F092f8",
             "meta": {
-                "constructorArguments": {
-                    "activationTime": 600,
-                    "minBidAmount": {
-                        "type": "BigNumber",
-                        "hex": "0x01158e460913d00000"
-                    },
-                    "feeCollector": "0x40282d3Cf4890D9806BC1853e97a59C93D813653",
-                    "bidExecutionSwapper": "0x0000000000000000000000000000000000000000",
-                    "usdoSwapper": "0x5c568be396BD2c3b5ae95C407d393B0F0bd24cBf"
-                }
+                "constructorArguments": [
+                    "0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f",
+                    "0x8d0AbE838d85F14E93C51bd04b26A6dCCcc88584",
+                    "0x68ddfd89d43db94fbd68a4abd2861ebcbfea56c0fd36334bbb95f0661c3171a2"
+                ]
             }
         },
         {
-            "name": "sgl_TAVAX",
-            "address": "0x3Ee0490ee2cDa3718c2C622f834255B6da393d31",
-            "meta": {}
-        },
-        {
-            "name": "lq_TAVAX",
-            "address": "0x4E31801490102da3b69196cA140C76E233371cA9",
+            "name": "USD0",
+            "address": "0x56574aD5A9c531874126CfF2fFa9F3806A28a99a",
             "meta": {
-                "constructorArguments": {
-                    "activationTime": 600,
-                    "minBidAmount": {
-                        "type": "BigNumber",
-                        "hex": "0x01158e460913d00000"
-                    },
-                    "feeCollector": "0x40282d3Cf4890D9806BC1853e97a59C93D813653",
-                    "bidExecutionSwapper": "0x0000000000000000000000000000000000000000",
-                    "usdoSwapper": "0x5c568be396BD2c3b5ae95C407d393B0F0bd24cBf"
-                }
+                "constructorArguments": [
+                    "0x6aB5Ae6822647046626e83ee6dB8187151E1d5ab",
+                    "0x93cF32C5fF98c0758b32dF9F6DB9e4f4faaCe736"
+                ]
             }
         },
         {
-            "name": "sgl_TMATIC",
-            "address": "0x59B5ee546EF9E98cde0e1Dda212bB5970D5f4495",
-            "meta": {}
+            "address": "0x5DD466Ffa26F2F038FD958648Df0C52015cAce31",
+            "meta": {
+                "constructorArguments": [
+                    "0x803147a1f65f9b838e7be39bac1a4f51e6d29a18",
+                    "0x8d0AbE838d85F14E93C51bd04b26A6dCCcc88584"
+                ]
+            },
+            "name": "CurveSwapper"
         },
         {
-            "name": "lq_TMATIC",
-            "address": "0x1eC715f4ba3D003BA265200FBab7d2d68d858766",
+            "name": "CurveStableToUsdoBidder",
+            "address": "0x8aE4a048682C9873cE54daD4a984fbB3cDb66C56",
             "meta": {
-                "constructorArguments": {
-                    "activationTime": 600,
-                    "minBidAmount": {
-                        "type": "BigNumber",
-                        "hex": "0x01158e460913d00000"
-                    },
-                    "feeCollector": "0x40282d3Cf4890D9806BC1853e97a59C93D813653",
-                    "bidExecutionSwapper": "0x0000000000000000000000000000000000000000",
-                    "usdoSwapper": "0x5c568be396BD2c3b5ae95C407d393B0F0bd24cBf"
-                }
+                "constructorArguments": [
+                    "0x5DD466Ffa26F2F038FD958648Df0C52015cAce31",
+                    "4"
+                ]
             }
         },
         {
-            "name": "SGLProxy",
-            "address": "0x4806ab44E687AC1Fdb01339A718656b0838D9027",
+            "name": "SGLLiquidation",
+            "address": "0xc3FA6a21D5583512fF58232aF244665d0C035665",
+            "meta": {}
+        },
+        {
+            "name": "SGLLendingBorrowing",
+            "address": "0xfb7BDaD93B0BF7E3F52BFDc09a3196dc43C9ddff",
+            "meta": {}
+        },
+        {
+            "name": "ProxyDeployer",
+            "address": "0x1901B53163A77055d662d61Caac685214676263d",
+            "meta": {}
+        },
+        {
+            "name": "MarketsProxy",
+            "address": "0x8F6cD94077395cc971BDD913596dA5e97Ecb658c",
             "meta": {
                 "constructorArguments": [
                     "0x6aB5Ae6822647046626e83ee6dB8187151E1d5ab",
                     "0x40282d3Cf4890D9806BC1853e97a59C93D813653"
                 ]
+            }
+        },
+        {
+            "name": "sgl_TWETH",
+            "address": "0xA67cA6C9874245c3c86F498836fA82D022A3F65d",
+            "meta": {}
+        },
+        {
+            "name": "lq_TWETH",
+            "address": "0x51304455245F0fe6f41242B6b62217042B1fbce3",
+            "meta": {
+                "constructorArguments": {
+                    "activationTime": 600,
+                    "minBidAmount": {
+                        "type": "BigNumber",
+                        "hex": "0x01158e460913d00000"
+                    },
+                    "feeCollector": "0x40282d3Cf4890D9806BC1853e97a59C93D813653",
+                    "bidExecutionSwapper": "0x0000000000000000000000000000000000000000",
+                    "usdoSwapper": "0x8aE4a048682C9873cE54daD4a984fbB3cDb66C56"
+                }
+            }
+        },
+        {
+            "name": "sgl_TAVAX",
+            "address": "0xEFF08F071D2E588193C672E42fe8e030CB92487C",
+            "meta": {}
+        },
+        {
+            "name": "lq_TAVAX",
+            "address": "0x4296c4B9FD62DE22bdEb5252A119D68f9dFaaF0E",
+            "meta": {
+                "constructorArguments": {
+                    "activationTime": 600,
+                    "minBidAmount": {
+                        "type": "BigNumber",
+                        "hex": "0x01158e460913d00000"
+                    },
+                    "feeCollector": "0x40282d3Cf4890D9806BC1853e97a59C93D813653",
+                    "bidExecutionSwapper": "0x0000000000000000000000000000000000000000",
+                    "usdoSwapper": "0x8aE4a048682C9873cE54daD4a984fbB3cDb66C56"
+                }
+            }
+        },
+        {
+            "name": "sgl_TMATIC",
+            "address": "0x8E1B629b8833Cd25bBaC537be0E38C528591Ef7d",
+            "meta": {}
+        },
+        {
+            "name": "lq_TMATIC",
+            "address": "0x6F7191716F101c78cb16568974d0300beA9D37a7",
+            "meta": {
+                "constructorArguments": {
+                    "activationTime": 600,
+                    "minBidAmount": {
+                        "type": "BigNumber",
+                        "hex": "0x01158e460913d00000"
+                    },
+                    "feeCollector": "0x40282d3Cf4890D9806BC1853e97a59C93D813653",
+                    "bidExecutionSwapper": "0x0000000000000000000000000000000000000000",
+                    "usdoSwapper": "0x8aE4a048682C9873cE54daD4a984fbB3cDb66C56"
+                }
             }
         }
     ]

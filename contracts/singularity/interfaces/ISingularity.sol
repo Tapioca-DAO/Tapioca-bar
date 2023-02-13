@@ -103,7 +103,6 @@ interface ISingularity is IMarket, IFee {
         uint256 share
     ) external returns (uint256 fraction);
 
-   
     function allowance(address, address) external view returns (uint256);
 
     function approve(address spender, uint256 amount) external returns (bool);
@@ -215,4 +214,6 @@ interface ISingularity is IMarket, IFee {
     function withdrawFees() external;
 
     function liquidationQueue() external view returns (address payable);
+
+    function totalBorrowCap() external view returns (uint256);
 }

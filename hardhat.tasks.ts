@@ -22,6 +22,7 @@ import { getSingularityTotals__task } from './tasks/getSingularityTotals';
 import { getBigBangTotals__task } from './tasks/getBigBangTotals';
 
 import { deployOracleMock__task } from './tasks/deployOracleMock';
+import { deployYbStrategy__task } from './tasks/deployEmptyYieldBoxStrategy';
 import { setTrustedRemote__task } from './tasks/setTrustedRemote';
 import { setProxyTrustedRemote__task } from './tasks/setProxyTrustedRemote';
 import { setProxyAdapterParams__task } from './tasks/setProxyAdapterParams';
@@ -70,6 +71,14 @@ task('deployOracleMock', 'Deploy Oracle mock', deployOracleMock__task).addParam(
     'name',
     'Market name',
 );
+
+task(
+    'deployYbStrategy',
+    'Deploy ERC20WithoutStrategy for YieldBox',
+    deployYbStrategy__task,
+)
+    .addParam('yieldbox', 'YieldBox address')
+    .addParam('token', 'ERC20 token address');
 
 task(
     'getLocalDeployments',

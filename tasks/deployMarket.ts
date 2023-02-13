@@ -6,6 +6,8 @@ import {
 } from '../deploy/utils';
 
 //npx hardhat deployMarket --network arbitrum_goerli --name TMATIC --exchange-rate-precision 0
+//npx hardhat deployMarket --network arbitrum_goerli --name TAVAX --exchange-rate-precision 0
+//npx hardhat deployMarket --network arbitrum_goerli --name TMATIC --exchange-rate-precision 0
 export const deployMarket__task = async (
     taskArgs: any,
     hre: HardhatRuntimeEnvironment,

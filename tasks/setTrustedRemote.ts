@@ -4,14 +4,14 @@ import { glob, runTypeChain } from 'typechain';
 import writeJsonFile from 'write-json-file';
 import { getDeployment } from './utils';
 
-//npx hardhat setTrustedRemote --network arbitrum_goerli --chain 10106 --dst 0x2966E7c576492Bd4e2e06CC3A40b1d01ccf63D69 --src 0x006dcF07511D332299f83056731Cb15f0Aeb2F2B
-//npx hardhat setTrustedRemote --network fuji_avalanche --chain 10143 --dst 0x006dcF07511D332299f83056731Cb15f0Aeb2F2B --src 0x2966E7c576492Bd4e2e06CC3A40b1d01ccf63D69
+//npx hardhat setTrustedRemote --network arbitrum_goerli --chain 10106 --dst 0x6A0fd324D64a5353E3543b9C2115Fc1F1246ecF7 --src 0x8F6cD94077395cc971BDD913596dA5e97Ecb658c
+//npx hardhat setTrustedRemote --network fuji_avalanche --chain 10143 --dst 0x8F6cD94077395cc971BDD913596dA5e97Ecb658c --src 0x6A0fd324D64a5353E3543b9C2115Fc1F1246ecF7
 
-//npx hardhat setTrustedRemote --network arbitrum_goerli --chain 10109 --dst 0xFfbd22431bb5142D95E09D90db19D252e2cEcd27 --src 0x006dcF07511D332299f83056731Cb15f0Aeb2F2B
-//npx hardhat setTrustedRemote --network fuji_avalanche --chain 10109 --dst 0xFfbd22431bb5142D95E09D90db19D252e2cEcd27 --src 0x2966E7c576492Bd4e2e06CC3A40b1d01ccf63D69
+//npx hardhat setTrustedRemote --network arbitrum_goerli --chain 10109 --dst 0x5A5a5bcc184c71aB743CB312653715f527111e6D --src 0x8F6cD94077395cc971BDD913596dA5e97Ecb658c
+//npx hardhat setTrustedRemote --network fuji_avalanche --chain 10109 --dst 0x5A5a5bcc184c71aB743CB312653715f527111e6D --src 0x6A0fd324D64a5353E3543b9C2115Fc1F1246ecF7
 
-//npx hardhat setTrustedRemote --network mumbai --chain 10143 --dst 0x006dcF07511D332299f83056731Cb15f0Aeb2F2B --src 0xFfbd22431bb5142D95E09D90db19D252e2cEcd27
-//npx hardhat setTrustedRemote --network mumbai --chain 10106 --dst 0x2966E7c576492Bd4e2e06CC3A40b1d01ccf63D69 --src 0xFfbd22431bb5142D95E09D90db19D252e2cEcd27
+//npx hardhat setTrustedRemote --network mumbai --chain 10143 --dst 0x8F6cD94077395cc971BDD913596dA5e97Ecb658c --src 0x5A5a5bcc184c71aB743CB312653715f527111e6D
+//npx hardhat setTrustedRemote --network mumbai --chain 10106 --dst 0x6A0fd324D64a5353E3543b9C2115Fc1F1246ecF7 --src 0x5A5a5bcc184c71aB743CB312653715f527111e6D
 
 export const setTrustedRemote__task = async (
     taskArgs: { chain: string; dst: string; src: string },

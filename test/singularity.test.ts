@@ -321,20 +321,19 @@ describe('Singularity test', () => {
                 wethUsdcSingularity.address,
             ])
         )[0];
-
         expect(dataFromHelper.market[0].toLowerCase()).eq(
             usdc.address.toLowerCase(),
         );
-        expect(dataFromHelper.market[1].toLowerCase()).eq(
+        expect(dataFromHelper.market[2].toLowerCase()).eq(
             weth.address.toLowerCase(),
         );
-        expect(dataFromHelper.market[2].toLowerCase()).eq(
+        expect(dataFromHelper.market[4].toLowerCase()).eq(
             wethUsdcOracle.address.toLowerCase(),
         );
-        expect(dataFromHelper.market[5].eq(usdcMintValShare)).to.be.true;
+        expect(dataFromHelper.market[7].eq(usdcMintValShare)).to.be.true;
 
         const borrowed = await wethUsdcSingularity.userBorrowPart(eoa1.address);
-        expect(dataFromHelper.market[7].eq(borrowed)).to.be.true;
+        expect(dataFromHelper.market[9].eq(borrowed)).to.be.true;
     });
 
     it('Should deposit to yieldBox, add asset to singularity, remove asset and withdraw', async () => {

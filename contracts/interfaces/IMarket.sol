@@ -12,6 +12,8 @@ interface IMarket {
 
     function collateralId() external view returns (uint256);
 
+    function totalBorrowCap() external view returns (uint256);
+
     function totalCollateralShare() external view returns (uint256);
 
     function userBorrowPart(address) external view returns (uint256);
