@@ -176,7 +176,7 @@ describe('MarketsProxy', () => {
 
         await proxySrc.executeOnChain(
             await lzEndpointDst.getChainId(),
-            ethers.utils.solidityPack(['address'], [singularityDst.address]),
+            singularityDst.address,
             [addAssetFn],
             ethers.utils.toUtf8Bytes(''),
             { value: ethers.utils.parseEther('1') },
@@ -224,10 +224,7 @@ describe('MarketsProxy', () => {
             .connect(eoa1)
             .executeOnChain(
                 await lzEndpointDst.getChainId(),
-                ethers.utils.solidityPack(
-                    ['address'],
-                    [singularityDst.address],
-                ),
+                singularityDst.address,
                 [addCollateralFn],
                 ethers.utils.toUtf8Bytes(''),
                 { value: ethers.utils.parseEther('1') },
@@ -260,10 +257,7 @@ describe('MarketsProxy', () => {
             .connect(eoa1)
             .executeOnChain(
                 await lzEndpointDst.getChainId(),
-                ethers.utils.solidityPack(
-                    ['address'],
-                    [singularityDst.address],
-                ),
+                singularityDst.address,
                 [borrowFn],
                 adapterParam,
                 { value: ethers.utils.parseEther('10') },
@@ -408,7 +402,7 @@ describe('MarketsProxy', () => {
 
         await proxySrc.executeOnChain(
             await lzEndpointDst.getChainId(),
-            ethers.utils.solidityPack(['address'], [singularityDst.address]),
+            singularityDst.address,
             [addAssetFn],
             ethers.utils.toUtf8Bytes(''),
             { value: ethers.utils.parseEther('1') },
@@ -493,10 +487,7 @@ describe('MarketsProxy', () => {
             .connect(eoa1)
             .executeOnChain(
                 await lzEndpointDst.getChainId(),
-                ethers.utils.solidityPack(
-                    ['address'],
-                    [singularityDst.address],
-                ),
+                singularityDst.address,
                 [addCollateralFn, borrowFn, withdrawFn],
                 airdropAdapterParams,
                 { value: ethers.utils.parseEther('10') },
@@ -629,7 +620,7 @@ describe('MarketsProxy', () => {
 
         await proxySrc.executeOnChain(
             await lzEndpointDst.getChainId(),
-            ethers.utils.solidityPack(['address'], [singularityDst.address]),
+            singularityDst.address,
             [addAssetFn],
             ethers.utils.toUtf8Bytes(''),
             { value: ethers.utils.parseEther('1') },
@@ -755,17 +746,14 @@ describe('MarketsProxy', () => {
         await expect(
             proxySrc.executeOnChain(
                 await lzEndpointDst.getChainId(),
-                ethers.utils.solidityPack(
-                    ['address'],
-                    [singularityDst.address],
-                ),
+                singularityDst.address,
                 [],
                 ethers.utils.toUtf8Bytes(''),
             ),
         ).to.be.revertedWith('LayerZeroMock: not enough native for fees');
         await proxySrc.executeOnChain(
             await lzEndpointDst.getChainId(),
-            ethers.utils.solidityPack(['address'], [singularityDst.address]),
+            singularityDst.address,
             [addAssetFn],
             ethers.utils.toUtf8Bytes(''),
             { value: ethers.utils.parseEther('1') },
@@ -826,7 +814,7 @@ describe('MarketsProxy', () => {
         ).to.be.revertedWith('LayerZeroMock: not enough native for fees');
         await proxySrc.executeOnChain(
             await lzEndpointDst.getChainId(),
-            ethers.utils.solidityPack(['address'], [singularityDst.address]),
+            singularityDst.address,
             [addAssetFn],
             ethers.utils.toUtf8Bytes(''),
             { value: ethers.utils.parseEther('1') },
@@ -854,7 +842,7 @@ describe('MarketsProxy', () => {
 
         await proxySrc.executeOnChain(
             await lzEndpointDst.getChainId(),
-            ethers.utils.solidityPack(['address'], [singularityDst.address]),
+            singularityDst.address,
             [removeAssetFn],
             adapterParam,
             { value: ethers.utils.parseEther('10') },
@@ -912,7 +900,7 @@ describe('MarketsProxy', () => {
         );
         await proxySrc.executeOnChain(
             await lzEndpointDst.getChainId(),
-            ethers.utils.solidityPack(['address'], [singularityDst.address]),
+            singularityDst.address,
             [addAssetFn],
             ethers.utils.toUtf8Bytes(''),
             { value: ethers.utils.parseEther('1') },
@@ -961,10 +949,7 @@ describe('MarketsProxy', () => {
             .connect(eoa1)
             .executeOnChain(
                 await lzEndpointDst.getChainId(),
-                ethers.utils.solidityPack(
-                    ['address'],
-                    [singularityDst.address],
-                ),
+                singularityDst.address,
                 [addCollateralFn],
                 ethers.utils.toUtf8Bytes(''),
                 { value: ethers.utils.parseEther('2') },
@@ -997,10 +982,7 @@ describe('MarketsProxy', () => {
             .connect(eoa1)
             .executeOnChain(
                 await lzEndpointDst.getChainId(),
-                ethers.utils.solidityPack(
-                    ['address'],
-                    [singularityDst.address],
-                ),
+                singularityDst.address,
                 [borrowFn],
                 adapterParam,
                 { value: ethers.utils.parseEther('10') },
@@ -1031,10 +1013,7 @@ describe('MarketsProxy', () => {
             .connect(eoa1)
             .executeOnChain(
                 await lzEndpointDst.getChainId(),
-                ethers.utils.solidityPack(
-                    ['address'],
-                    [singularityDst.address],
-                ),
+                singularityDst.address,
                 [repayFn],
                 adapterParam,
                 { value: ethers.utils.parseEther('10') },
@@ -1091,7 +1070,7 @@ describe('MarketsProxy', () => {
         );
         await proxySrc.executeOnChain(
             await lzEndpointDst.getChainId(),
-            ethers.utils.solidityPack(['address'], [singularityDst.address]),
+            singularityDst.address,
             [addAssetFn],
             ethers.utils.toUtf8Bytes(''),
             { value: ethers.utils.parseEther('1') },
@@ -1153,10 +1132,7 @@ describe('MarketsProxy', () => {
             .connect(eoa1)
             .executeOnChain(
                 await lzEndpointDst.getChainId(),
-                ethers.utils.solidityPack(
-                    ['address'],
-                    [singularityDst.address],
-                ),
+                singularityDst.address,
                 [addCollateralFn, borrowFn],
                 adapterParam,
                 { value: ethers.utils.parseEther('10') },
@@ -1225,7 +1201,7 @@ describe('MarketsProxy', () => {
         );
         await proxySrc.executeOnChain(
             await lzEndpointDst.getChainId(),
-            ethers.utils.solidityPack(['address'], [singularityDst.address]),
+            singularityDst.address,
             [addAssetFn],
             adapterParam,
             { value: ethers.utils.parseEther('10') },
@@ -1274,10 +1250,7 @@ describe('MarketsProxy', () => {
             .connect(eoa1)
             .executeOnChain(
                 await lzEndpointDst.getChainId(),
-                ethers.utils.solidityPack(
-                    ['address'],
-                    [singularityDst.address],
-                ),
+                singularityDst.address,
                 [addCollateralFn],
                 adapterParam,
                 { value: ethers.utils.parseEther('10') },
@@ -1325,7 +1298,7 @@ describe('MarketsProxy', () => {
 
         await proxySrc.executeOnChain(
             await lzEndpointDst.getChainId(),
-            ethers.utils.solidityPack(['address'], [singularityDst.address]),
+            singularityDst.address,
             [liquidateFn],
             adapterParam,
             { value: ethers.utils.parseEther('10') },
@@ -1408,7 +1381,7 @@ describe('MarketsProxy', () => {
         );
         await proxySrc.executeOnChain(
             await lzEndpointDst.getChainId(),
-            ethers.utils.solidityPack(['address'], [singularityDst.address]),
+            singularityDst.address,
             [addAssetFn],
             adapterParam,
             { value: ethers.utils.parseEther('10') },
@@ -1457,10 +1430,7 @@ describe('MarketsProxy', () => {
             .connect(eoa1)
             .executeOnChain(
                 await lzEndpointDst.getChainId(),
-                ethers.utils.solidityPack(
-                    ['address'],
-                    [singularityDst.address],
-                ),
+                singularityDst.address,
                 [addCollateralFn],
                 adapterParam,
                 { value: ethers.utils.parseEther('10') },
@@ -1520,10 +1490,7 @@ describe('MarketsProxy', () => {
             .connect(eoa1)
             .executeOnChain(
                 await lzEndpointDst.getChainId(),
-                ethers.utils.solidityPack(
-                    ['address'],
-                    [singularityDst.address],
-                ),
+                singularityDst.address,
                 [repayFn],
                 adapterParam,
                 { value: ethers.utils.parseEther('10') },

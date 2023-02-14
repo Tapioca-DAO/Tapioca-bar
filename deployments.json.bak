@@ -97,7 +97,7 @@
         },
         {
             "name": "MarketsProxy",
-            "address": "0x6A0fd324D64a5353E3543b9C2115Fc1F1246ecF7",
+            "address": "0xC83D48DA75720fDa857dCd21DdD44254FdD962a3",
             "meta": {
                 "constructorArguments": [
                     "0x93f54D755A063cE7bB9e6Ac47Eccc8e33411d706",
@@ -205,6 +205,16 @@
         {
             "name": "MarketsProxy",
             "address": "0x5A5a5bcc184c71aB743CB312653715f527111e6D",
+            "meta": {
+                "constructorArguments": [
+                    "0xf69186dfBa60DdB133E91E9A4B5673624293d8F8",
+                    "0x40282d3Cf4890D9806BC1853e97a59C93D813653"
+                ]
+            }
+        },
+        {
+            "name": "MarketsProxy-Test",
+            "address": "0xf0484Ead813d68dAff6A885381957BF8cb3d633c",
             "meta": {
                 "constructorArguments": [
                     "0xf69186dfBa60DdB133E91E9A4B5673624293d8F8",
@@ -382,16 +392,6 @@
             "meta": {}
         },
         {
-            "name": "MarketsProxy",
-            "address": "0x8F6cD94077395cc971BDD913596dA5e97Ecb658c",
-            "meta": {
-                "constructorArguments": [
-                    "0x6aB5Ae6822647046626e83ee6dB8187151E1d5ab",
-                    "0x40282d3Cf4890D9806BC1853e97a59C93D813653"
-                ]
-            }
-        },
-        {
             "name": "sgl_TWETH",
             "address": "0xA67cA6C9874245c3c86F498836fA82D022A3F65d",
             "meta": {}
@@ -437,6 +437,32 @@
             "name": "sgl_TMATIC",
             "address": "0x8E1B629b8833Cd25bBaC537be0E38C528591Ef7d",
             "meta": {}
+        },
+        {
+            "name": "lq_TMATIC",
+            "address": "0x6F7191716F101c78cb16568974d0300beA9D37a7",
+            "meta": {
+                "constructorArguments": {
+                    "activationTime": 600,
+                    "minBidAmount": {
+                        "type": "BigNumber",
+                        "hex": "0x01158e460913d00000"
+                    },
+                    "feeCollector": "0x40282d3Cf4890D9806BC1853e97a59C93D813653",
+                    "bidExecutionSwapper": "0x0000000000000000000000000000000000000000",
+                    "usdoSwapper": "0x8aE4a048682C9873cE54daD4a984fbB3cDb66C56"
+                }
+            }
+        },
+        {
+            "name": "MarketsProxy",
+            "address": "0xD441B51FeBEB9633831947547fbdfb5b662617FF",
+            "meta": {
+                "constructorArguments": [
+                    "0x6aB5Ae6822647046626e83ee6dB8187151E1d5ab",
+                    "0x40282d3Cf4890D9806BC1853e97a59C93D813653"
+                ]
+            }
         }
     ]
 }

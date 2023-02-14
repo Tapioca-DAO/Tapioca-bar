@@ -197,15 +197,18 @@ task(
     'Deposits, adds collateral and borrows from the another chain',
     otherChainBorrow__task,
 )
+    .addParam('srcLzChainId', 'LZ source chain id')
     .addParam('destLzChainId', 'LZ destination chain id')
     .addParam('extraGas', 'Extra gas for LZ send tx')
     .addParam('assetId', 'Destination YieldBox asset id')
     .addParam('zroAddress', 'ZRO address')
     .addParam('depositGas', 'ETH sent for tx for YB deposit')
     .addParam('singularityGas', 'ETH sent for tx for Singularity operations')
+    .addParam('airdropGas', 'ETH airdropped for withdraw operation')
     .addParam('depositAmount', 'ETH sent for tx')
     .addParam('oft', 'Tapioca OFT address')
     .addParam('proxy', 'Proxy contract address')
     .addParam('collateralShare', 'Collateral shares to add')
     .addParam('borrowAmount', 'Asset amount to borrow')
+    .addParam('withdraw', 'True/false')
     .addParam('singularityDestination', 'Singularity destination');
