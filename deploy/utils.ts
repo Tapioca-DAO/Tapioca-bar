@@ -20,6 +20,8 @@ export const constants: { [key: string]: any } = {
     //arbitrum_goerli
     '421613': {
         ...supportedChains['arbitrum_goerli'],
+        isMainChain: true,
+        connectedLzIds: [10109, 10106],
         wrappedNative: '0x0000000000000000000000000000000000000000',
         tapAddress: '0x31dA039c8Cf6eDC95fAFECb7B3E70a308128b7E0',
         feeTo: '0x40282d3Cf4890D9806BC1853e97a59C93D813653',
@@ -84,6 +86,8 @@ export const constants: { [key: string]: any } = {
     //fuji
     '43113': {
         ...supportedChains['fuji_avalanche'],
+        isMainChain: false,
+        connectedLzIds: [10109, 10143],
         wrappedNative: '0x0000000000000000000000000000000000000000',
         tapAddress: '0xc6B03Ba05Fb5E693D8b3533aa676FB4AFDd7DDc7',
         feeTo: '0x40282d3Cf4890D9806BC1853e97a59C93D813653',
@@ -120,6 +124,8 @@ export const constants: { [key: string]: any } = {
     //mumbai
     '80001': {
         ...supportedChains['mumbai'],
+        connectedLzIds: [10106, 10143],
+        isMainChain: false,
         wrappedNative: '0x0000000000000000000000000000000000000000',
         tapAddress: '0xd621150f4BE5b6E537f61dB2A59499F648F1B6e2',
         feeTo: '0x40282d3Cf4890D9806BC1853e97a59C93D813653',
@@ -156,6 +162,7 @@ export const constants: { [key: string]: any } = {
     //goerli
     '5': {
         ...supportedChains['goerli'],
+        isMainChain: false,
         wrappedNative: '0x0000000000000000000000000000000000000000',
         tapAddress: '0xdb7677D723ED0B12E7A3945A4Ae234d4EFa4b91e',
         feeTo: '0x40282d3Cf4890D9806BC1853e97a59C93D813653',
@@ -200,6 +207,7 @@ export const constants: { [key: string]: any } = {
     //fantom_testnet
     '4002': {
         ...supportedChains['fantom_testnet'],
+        isMainChain: false,
         wrappedNative: '0x0000000000000000000000000000000000000000',
         tapAddress: '0x4663B30afc168A6D1810fA6857a74d04bf632E54',
         feeTo: '0x40282d3Cf4890D9806BC1853e97a59C93D813653',
@@ -254,6 +262,7 @@ export const constants: { [key: string]: any } = {
     //optimism
     '10': {
         ...supportedChains['optimism'],
+        isMainChain: false,
         feeTo: '0x0000000000000000000000000000000000000000', //for Penrose
         feeVeTo: '0x0000000000000000000000000000000000000000', //for Penrose
         lqFeeCollector: '0x0000000000000000000000000000000000000000', //for LiquidationQueue

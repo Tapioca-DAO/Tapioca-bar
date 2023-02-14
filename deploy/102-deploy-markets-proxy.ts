@@ -30,6 +30,23 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     );
     await updateDeployments(contracts, chainId);
 
+    const contract = await hre.ethers.getContractAt(
+        'MarketsProxy',
+        proxy.address,
+    );
+    if (!constants[chainId].isMainChain) {
+        console.log('Setting custom adapter params');
+        await contract.setUseCustomAdapterParams(true);
+
+        console.log('Setting min dst gas');
+        for (var i = 0; i < constants[chainId].connectedLzIds.length; i++) {
+            await contract.setMinDstGas(
+                constants[chainId].connectedLzIds[i],
+                1,
+                1,
+            );
+        }
+    }
 };
 
 export default func;

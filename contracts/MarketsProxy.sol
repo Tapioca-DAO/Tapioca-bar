@@ -71,7 +71,7 @@ contract MarketsProxy is NonblockingLzApp {
     /// @param _adapterParams custom adapters
     function executeOnChain(
         uint16 _dstChainId,
-        bytes memory _marketDstAddress,
+        address _marketDstAddress,
         bytes[] memory _marketCalls,
         bytes memory _adapterParams
     ) external payable {
@@ -125,21 +125,11 @@ contract MarketsProxy is NonblockingLzApp {
         bytes memory _payload
     ) internal override {
         // decode and load the toAddress
-        (
-            bytes memory fromAddressBytes,
-            bytes memory toAddressBytes,
-            bytes[] memory marketCalls
-        ) = abi.decode(_payload, (bytes, bytes, bytes[]));
+        (, address toAddress, bytes[] memory marketCalls) = abi.decode(
+            _payload,
+            (bytes32, address, bytes[])
+        );
 
-        address fromAddress;
-        assembly {
-            fromAddress := mload(add(fromAddressBytes, 20))
-        }
-
-        address toAddress;
-        assembly {
-            toAddress := mload(add(toAddressBytes, 20))
-        }
         require(markets[toAddress], 'MarketsProxy: market not valid');
 
         IMarket(toAddress).execute(marketCalls, true);
@@ -151,7 +141,7 @@ contract MarketsProxy is NonblockingLzApp {
     function _send(
         address _from,
         uint16 _dstChainId,
-        bytes memory _toAddress,
+        address _toAddress,
         bytes[] memory _marketCalls,
         address payable _refundAddress,
         address _zroPaymentAddress,

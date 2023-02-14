@@ -4,14 +4,14 @@ import { glob, runTypeChain } from 'typechain';
 import writeJsonFile from 'write-json-file';
 import { getDeployment } from './utils';
 
-//npx hardhat setProxyTrustedRemote --network arbitrum_goerli --chain 10106 --dst 0x68EcA2cd0d7557e61eaf6B6831B892B842e38D65 --src 0x4806ab44E687AC1Fdb01339A718656b0838D9027
-//npx hardhat setProxyTrustedRemote --network arbitrum_goerli --chain 10109 --dst 0xf415243B79651F6bf15053fA1712Cbb67BEc5B87 --src 0x4806ab44E687AC1Fdb01339A718656b0838D9027
+//npx hardhat setProxyTrustedRemote --network arbitrum_goerli --chain 10106 --dst 0xC83D48DA75720fDa857dCd21DdD44254FdD962a3 --src 0xD441B51FeBEB9633831947547fbdfb5b662617FF
+//npx hardhat setProxyTrustedRemote --network arbitrum_goerli --chain 10109 --dst 0xf0484Ead813d68dAff6A885381957BF8cb3d633c --src 0xD441B51FeBEB9633831947547fbdfb5b662617FF
 
-//npx hardhat setProxyTrustedRemote --network fuji_avalanche --chain 10143 --dst 0x4806ab44E687AC1Fdb01339A718656b0838D9027 --src 0x68EcA2cd0d7557e61eaf6B6831B892B842e38D65
-//npx hardhat setProxyTrustedRemote --network fuji_avalanche --chain 10109 --dst 0xf415243B79651F6bf15053fA1712Cbb67BEc5B87 --src 0x68EcA2cd0d7557e61eaf6B6831B892B842e38D65
+//npx hardhat setProxyTrustedRemote --network fuji_avalanche --chain 10143 --dst 0xD441B51FeBEB9633831947547fbdfb5b662617FF --src 0xC83D48DA75720fDa857dCd21DdD44254FdD962a3
+//npx hardhat setProxyTrustedRemote --network fuji_avalanche --chain 10109 --dst 0xf0484Ead813d68dAff6A885381957BF8cb3d633c --src 0xC83D48DA75720fDa857dCd21DdD44254FdD962a3
 
-//npx hardhat setProxyTrustedRemote --network mumbai --chain 10143 --dst 0x4806ab44E687AC1Fdb01339A718656b0838D9027 --src 0xf415243B79651F6bf15053fA1712Cbb67BEc5B87
-//npx hardhat setProxyTrustedRemote --network mumbai --chain 10106 --dst 0x68EcA2cd0d7557e61eaf6B6831B892B842e38D65 --src 0xf415243B79651F6bf15053fA1712Cbb67BEc5B87
+//npx hardhat setProxyTrustedRemote --network mumbai --chain 10143 --dst 0xD441B51FeBEB9633831947547fbdfb5b662617FF --src 0xf0484Ead813d68dAff6A885381957BF8cb3d633c
+//npx hardhat setProxyTrustedRemote --network mumbai --chain 10106 --dst 0xC83D48DA75720fDa857dCd21DdD44254FdD962a3 --src 0xf0484Ead813d68dAff6A885381957BF8cb3d633c
 export const setProxyTrustedRemote__task = async (
     taskArgs: { chain: string; dst: string; src: string },
     hre: HardhatRuntimeEnvironment,
