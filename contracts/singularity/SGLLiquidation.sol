@@ -3,7 +3,6 @@ pragma solidity ^0.8.0;
 
 import './SGLCommon.sol';
 
-
 // solhint-disable max-line-length
 
 contract SGLLiquidation is SGLCommon {
@@ -66,11 +65,10 @@ contract SGLLiquidation is SGLCommon {
     // ************************* //
     // *** PRIVATE FUNCTIONS *** //
     // ************************* //
-    function _computeAssetAmountToSolvency(address user, uint256 _exchangeRate)
-        private
-        view
-        returns (uint256)
-    {
+    function _computeAssetAmountToSolvency(
+        address user,
+        uint256 _exchangeRate
+    ) private view returns (uint256) {
         // accrue must have already been called!
         uint256 borrowPart = userBorrowPart[user];
         if (borrowPart == 0) return 0;
@@ -337,6 +335,4 @@ contract SGLLiquidation is SGLCommon {
 
         require(liquidatedCount > 0, 'SGL: no users found');
     }
-
-    
 }
