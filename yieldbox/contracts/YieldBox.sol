@@ -307,10 +307,6 @@ contract YieldBox is BoringBatchable, NativeTokenFactory, ERC721TokenReceiver, E
         return uriBuilder.decimals(assets[assetId], nativeTokens[assetId].decimals);
     }
 
-    // Included to support unwrapping wrapped native tokens such as WETH
-    // TODO: Probably not needed anymore
-    receive() external payable {}
-
     // Helper functions
 
     function assetTotals(uint256 assetId) external view returns (uint256 totalShare, uint256 totalAmount) {

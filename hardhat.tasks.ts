@@ -29,6 +29,9 @@ import { setProxyAdapterParams__task } from './tasks/setProxyAdapterParams';
 
 import { sameChainBorrow__task } from './tasks/test-sameChainBorrow';
 import { otherChainBorrow__task } from './tasks/test-otherChainBorrow';
+import { hasStoredPayload__task } from './tasks/test-hasStoredPayload';
+import { retryPayload__task } from './tasks/test-retryPayload';
+import { configurePacketTypes__task } from './tasks/configurePacketTypes';
 
 task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
     const accounts = await hre.ethers.getSigners();
@@ -212,3 +215,28 @@ task(
     .addParam('borrowAmount', 'Asset amount to borrow')
     .addParam('withdraw', 'True/false')
     .addParam('singularityDestination', 'Singularity destination');
+
+task(
+    'hasStoredPayload',
+    'Check if endpoint has a stored payload',
+    hasStoredPayload__task,
+)
+    .addParam('srcChainId', 'LZ source chain id')
+    .addParam('srcAddress', 'Source address')
+    .addParam('dstAddress', 'Destination address')
+    .addParam('lzEndpoint', 'LZ endpoint address');
+
+task('retryPayload', 'Retry a failed payload', retryPayload__task)
+    .addParam('srcChainId', 'LZ source chain id')
+    .addParam('srcAddress', 'Source address represented as bytes')
+    .addParam('dstAddress', 'Destination address')
+    .addParam('blockHash', 'Blockhash where to take the event from bytes')
+    .addParam('lzEndpoint', 'LZ endpoint address');
+
+task(
+    'configurePacketTypes',
+    'Cofigures min destination gas and the usage of custom adapters',
+    configurePacketTypes__task,
+)
+    .addParam('dstLzChainId', 'LZ destination chain id for trusted remotes')
+    .addParam('src', 'tOFT address');
