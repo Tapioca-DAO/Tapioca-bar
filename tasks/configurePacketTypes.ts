@@ -15,7 +15,7 @@ export const configurePacketTypes__task = async (
     taskArgs: { src: string; dstLzChainId: string },
     hre: HardhatRuntimeEnvironment,
 ) => {
-    const packetTypes = [1, 2, 770, 771, 772, 773];
+    const packetTypes = [0, 1, 2, 770, 771, 772, 773];
 
     const usd0Contract = await hre.ethers.getContractAt('USD0', taskArgs.src);
 
