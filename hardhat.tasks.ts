@@ -32,6 +32,7 @@ import { otherChainBorrow__task } from './tasks/test-otherChainBorrow';
 import { hasStoredPayload__task } from './tasks/test-hasStoredPayload';
 import { retryPayload__task } from './tasks/test-retryPayload';
 import { configurePacketTypes__task } from './tasks/configurePacketTypes';
+import { whitelistSingularity__task } from './tasks/whitelistSingularity';
 
 task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
     const accounts = await hre.ethers.getSigners();
@@ -240,3 +241,11 @@ task(
 )
     .addParam('dstLzChainId', 'LZ destination chain id for trusted remotes')
     .addParam('src', 'tOFT address');
+
+task(
+    'whitelistSingularity',
+    'Whitelist singularity status on SGLProxy',
+    whitelistSingularity__task,
+)
+    .addParam('singularity', 'SGL address')
+    .addParam('sglProxy', 'SGLProxy addressF');
