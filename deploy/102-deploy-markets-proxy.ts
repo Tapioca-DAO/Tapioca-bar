@@ -43,7 +43,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
             await contract.setMinDstGas(
                 constants[chainId].connectedLzIds[i],
                 1,
-                1,
+                200000,
             );
         }
     }

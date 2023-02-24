@@ -3,8 +3,8 @@ pragma solidity ^0.8.0;
 import '@boringcrypto/boring-solidity/contracts/ERC20.sol';
 
 contract ERC20Mock is ERC20WithSupply {
-    string public name = 'Polygon';
-    string public symbol = 'MATIC';
+    string public name = 'Fantom';
+    string public symbol = 'FTM';
     uint8 public decimals;
 
     mapping(address => uint256) public mintedAt;

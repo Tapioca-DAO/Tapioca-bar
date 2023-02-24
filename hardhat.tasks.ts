@@ -240,6 +240,7 @@ task(
     configurePacketTypes__task,
 )
     .addParam('dstLzChainId', 'LZ destination chain id for trusted remotes')
+    .addParam('contract', 'Contract name: USD0, MarketsProxy')
     .addParam('src', 'tOFT address');
 
 task(
