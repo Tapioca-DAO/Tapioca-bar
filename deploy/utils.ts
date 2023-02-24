@@ -17,11 +17,54 @@ let supportedChains: { [key: string]: any } = SDK.API.utils
     );
 export const constants: { [key: string]: any } = {
     //------------- TESTNETS --------------
+    //fantom_testnet
+    '4002': {
+        ...supportedChains['fantom_testnet'],
+        isMainChain: false,
+        connectedLzIds: [10109, 10143, 10106],
+        wrappedNative: '0x0000000000000000000000000000000000000000',
+        tapAddress: '0xFCdE8366705e8A9c1eDE4C56D716c9e7564CE50D',
+        feeTo: '0x40282d3Cf4890D9806BC1853e97a59C93D813653',
+        feeCollector: '0x40282d3Cf4890D9806BC1853e97a59C93D813653', //for liquidation queue
+        uniV2Factory: '0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f',
+        uniV2Router: '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D ',
+        uniV2PairHash:
+            '0x68ddfd89d43db94fbd68a4abd2861ebcbfea56c0fd36334bbb95f0661c3171a2',
+        crvStablePool: '0x803147a1f65f9b838e7be39bac1a4f51e6d29a18', //random address
+        wethAddress: '0x95c7E83D6d44F3d81cb60FB4e5472dC5C0415571',
+        assets: [
+            {
+                name: 'tAvax',
+                address: '0x177b341C0E1b36f9D4fAC0F90B1ebF3a20480834',
+                strategy: '0xF191A3c62854C5F328C7550575f559DA9898f663',
+            },
+            {
+                name: 'tWETH',
+                address: '0x5Ba1CF78AAEA752BEC33c2036B1E315C881d8E49',
+                strategy: '0x6a735Ae4B3beCa4BbE4b4fD1BD11D31dB9CE66bf',
+            },
+            {
+                name: 'tMATIC',
+                address: '0x5916f519dfb4b80a3aad07e0530b93605c35c636',
+                strategy: '0xeB8611F1bBA1D29C3E880C3535d89B15fC1e1414',
+            },
+            {
+                name: 'TAP',
+                address: '0xFCdE8366705e8A9c1eDE4C56D716c9e7564CE50D',
+                strategy: '0xeadA6AA17da83a206510F6818cBaF2B1bb1cD952',
+            },
+            {
+                name: 'tFTM',
+                address: '0x9C574C71eCabc7aEf19593A595fb9f8Aa6a78bB0',
+                strategy: '0xcfa9Fbc204a5724fC9f5DCD3B190e2760B9955F1',
+            },
+        ],
+    },
     //arbitrum_goerli
     '421613': {
         ...supportedChains['arbitrum_goerli'],
         isMainChain: true,
-        connectedLzIds: [10109, 10106],
+        connectedLzIds: [10109, 10106, 10112],
         wrappedNative: '0x0000000000000000000000000000000000000000',
         tapAddress: '0x31dA039c8Cf6eDC95fAFECb7B3E70a308128b7E0',
         feeTo: '0x40282d3Cf4890D9806BC1853e97a59C93D813653',
@@ -53,6 +96,11 @@ export const constants: { [key: string]: any } = {
                 address: '0x31dA039c8Cf6eDC95fAFECb7B3E70a308128b7E0',
                 strategy: '0xEc473BCA9d74866e055C1761994cdb5139f778c2',
             },
+            {
+                name: 'tFTM',
+                address: '0x4ba186b07cf3C5C4e2aB967d0Daa996dc83Ce30E',
+                strategy: '0x9A50a3D30fA5dD1D5cd08d06e2B70Da5382B29f6',
+            },
         ],
         sgl_TWETH: {
             collateralAddress: '0xc0106C090153F651c5E6e12249412b9e51f8d49d', //tWeth
@@ -82,12 +130,21 @@ export const constants: { [key: string]: any } = {
             executionBidder: '0x0000000000000000000000000000000000000000',
             strategyAddress: '0xcCD1F3Fb54fcB421Ed321e916560877890363f4a',
         },
+        sgl_TFTM: {
+            collateralAddress: '0x4ba186b07cf3C5C4e2aB967d0Daa996dc83Ce30E', //tFTM
+            assetAddress: '0x56574ad5a9c531874126cff2ffa9f3806a28a99a',
+            oracleAddress: '0xf8dbb74e1c371edf37fa652514d1e4aa3c517156', //mock
+            minBidAmount: 20,
+            hasExecutionBidder: false,
+            executionBidder: '0x0000000000000000000000000000000000000000',
+            strategyAddress: '0x9A50a3D30fA5dD1D5cd08d06e2B70Da5382B29f6',
+        },
     },
     //fuji
     '43113': {
         ...supportedChains['fuji_avalanche'],
         isMainChain: false,
-        connectedLzIds: [10109, 10143],
+        connectedLzIds: [10109, 10143, 10112],
         wrappedNative: '0x0000000000000000000000000000000000000000',
         tapAddress: '0xc6B03Ba05Fb5E693D8b3533aa676FB4AFDd7DDc7',
         feeTo: '0x40282d3Cf4890D9806BC1853e97a59C93D813653',
@@ -119,12 +176,17 @@ export const constants: { [key: string]: any } = {
                 address: '0xc6B03Ba05Fb5E693D8b3533aa676FB4AFDd7DDc7',
                 strategy: '0xC4007F1A61A76A241d01f141112d805eBF07E640',
             },
+            {
+                name: 'tFTM',
+                address: '0x33e1eFe92dBca2d45fe131ab3a1613A169696924',
+                strategy: '0x4bdE7F9f62421082866996355654c11F883fDbb1',
+            },
         ],
     },
     //mumbai
     '80001': {
         ...supportedChains['mumbai'],
-        connectedLzIds: [10106, 10143],
+        connectedLzIds: [10106, 10143, 10112],
         isMainChain: false,
         wrappedNative: '0x0000000000000000000000000000000000000000',
         tapAddress: '0xd621150f4BE5b6E537f61dB2A59499F648F1B6e2',
@@ -156,6 +218,11 @@ export const constants: { [key: string]: any } = {
                 name: 'TAP',
                 address: '0xd621150f4BE5b6E537f61dB2A59499F648F1B6e2',
                 strategy: '0xc5A3f63c28F625D0496804e169C21a280B2d10B9',
+            },
+            {
+                name: 'tFTM',
+                address: '0x8688820A09b5796840c4570747E7E0064B87d3DF',
+                strategy: '0x0bfB41C464ee1626D41fb5D096baf6d7b0c0F76F',
             },
         ],
     },
@@ -202,59 +269,6 @@ export const constants: { [key: string]: any } = {
         minterSGL_ETH: {
             collateralAddress: '0xE40CE28B4353ad276Ac9cccb87787F7dfA2984d7',
             oracleAddress: '0x08aa8c316b485a1a73356f662a9881d7b31bf427', //mock
-        },
-    },
-    //fantom_testnet
-    '4002': {
-        ...supportedChains['fantom_testnet'],
-        isMainChain: false,
-        wrappedNative: '0x0000000000000000000000000000000000000000',
-        tapAddress: '0x4663B30afc168A6D1810fA6857a74d04bf632E54',
-        feeTo: '0x40282d3Cf4890D9806BC1853e97a59C93D813653',
-        feeVeTo: '0x40282d3Cf4890D9806BC1853e97a59C93D813653',
-        feeCollector: '0x40282d3Cf4890D9806BC1853e97a59C93D813653', //for liquidation queue
-        uniV2Factory: '0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f',
-        uniV2Router: '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D ',
-        uniV2PairHash:
-            '0x68ddfd89d43db94fbd68a4abd2861ebcbfea56c0fd36334bbb95f0661c3171a2',
-        crvStablePool: '0x803147a1f65f9b838e7be39bac1a4f51e6d29a18', //random address
-        assets: [
-            {
-                name: 'USDC',
-                address: '0xb72e878a9c806f975c8e0e916afa6a328a764359', //'0xdEE65CaD824eD001a03215941FEb7c85D3E0aA94',
-            },
-            {
-                name: 'WETH',
-                address: '0xa3e6cCe9165Dd2C42dFA89e446d44520431d383d', //'0x84C7dD519Ea924bf1Cf6613f9127F26D7aB801D0',
-            },
-            {
-                name: 'WBTC',
-                address: '0x1e1fdb53451C5262A5ba449271789C7F551a9142',
-            },
-            {
-                name: 'TAP',
-                address: '0x4663B30afc168A6D1810fA6857a74d04bf632E54',
-            },
-        ],
-        sgl_ETH: {
-            collateralAddress: '0xa3e6cCe9165Dd2C42dFA89e446d44520431d383d', //weth
-            assetAddress: '0xBD46Fa5C363E222c4cEf7589100F6486926C0D56',
-            oracleAddress: '0x41dC15C448aB9141254EEd98F562a407E915d3b1', //mock
-            minBidAmount: 20,
-            hasExecutionBidder: false,
-            executionBidder: '0x0000000000000000000000000000000000000000',
-        },
-        sgl_BTC: {
-            collateralAddress: '0x1e1fdb53451C5262A5ba449271789C7F551a9142', //weth
-            assetAddress: '0xBD46Fa5C363E222c4cEf7589100F6486926C0D56',
-            oracleAddress: '0x08aa8c316b485a1a73356f662a9881d7b31bf427', //mock
-            minBidAmount: 20,
-            hasExecutionBidder: false,
-            executionBidder: '0x0000000000000000000000000000000000000000',
-        },
-        minterSGL_ETH: {
-            collateralAddress: '0xa3e6cCe9165Dd2C42dFA89e446d44520431d383d',
-            oracleAddress: '0x41dC15C448aB9141254EEd98F562a407E915d3b1', //mock
         },
     },
 
