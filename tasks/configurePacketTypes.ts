@@ -4,21 +4,21 @@ import { glob, runTypeChain } from 'typechain';
 import writeJsonFile from 'write-json-file';
 
 //*****USD0
-// npx hardhat configurePacketTypes --network arbitrum_goerli --src 0x006dcF07511D332299f83056731Cb15f0Aeb2F2B --dst-lz-chain-id 10106 --contract USD0
-// npx hardhat configurePacketTypes --network arbitrum_goerli --src 0x006dcF07511D332299f83056731Cb15f0Aeb2F2B --dst-lz-chain-id 10109 --contract USD0
-// npx hardhat configurePacketTypes --network arbitrum_goerli --src 0x006dcF07511D332299f83056731Cb15f0Aeb2F2B --dst-lz-chain-id 10112 --contract USD0
+// npx hardhat configurePacketTypes --network arbitrum_goerli --src 0xAF933E0E75E0576511e17b173cc6e3D0a09DB764 --dst-lz-chain-id 10106 --contract USD0
+// npx hardhat configurePacketTypes --network arbitrum_goerli --src 0xAF933E0E75E0576511e17b173cc6e3D0a09DB764 --dst-lz-chain-id 10109 --contract USD0
+// npx hardhat configurePacketTypes --network arbitrum_goerli --src 0xAF933E0E75E0576511e17b173cc6e3D0a09DB764 --dst-lz-chain-id 10112 --contract USD0
 
-// npx hardhat configurePacketTypes --network fuji_avalanche --src 0x2966E7c576492Bd4e2e06CC3A40b1d01ccf63D69 --dst-lz-chain-id 10143 --contract USD0
-// npx hardhat configurePacketTypes --network fuji_avalanche --src 0x2966E7c576492Bd4e2e06CC3A40b1d01ccf63D69 --dst-lz-chain-id 10109 --contract USD0
-// npx hardhat configurePacketTypes --network fuji_avalanche --src 0x2966E7c576492Bd4e2e06CC3A40b1d01ccf63D69 --dst-lz-chain-id 10112 --contract USD0
+// npx hardhat configurePacketTypes --network fuji_avalanche --src 0x2Bd2DD6aD7AA00fF6C2A4db7aB67735451242A98 --dst-lz-chain-id 10143 --contract USD0
+// npx hardhat configurePacketTypes --network fuji_avalanche --src 0x2Bd2DD6aD7AA00fF6C2A4db7aB67735451242A98 --dst-lz-chain-id 10109 --contract USD0
+// npx hardhat configurePacketTypes --network fuji_avalanche --src 0x2Bd2DD6aD7AA00fF6C2A4db7aB67735451242A98 --dst-lz-chain-id 10112 --contract USD0
 
-// npx hardhat configurePacketTypes --network mumbai --src 0xFfbd22431bb5142D95E09D90db19D252e2cEcd27 --dst-lz-chain-id 10143 --contract USD0
-// npx hardhat configurePacketTypes --network mumbai --src 0xFfbd22431bb5142D95E09D90db19D252e2cEcd27 --dst-lz-chain-id 10106 --contract USD0
-// npx hardhat configurePacketTypes --network mumbai --src 0xFfbd22431bb5142D95E09D90db19D252e2cEcd27 --dst-lz-chain-id 10112 --contract USD0
+// npx hardhat configurePacketTypes --network mumbai --src 0x4C12521DA4d702b2c514725572aB9A2c57F98b0F --dst-lz-chain-id 10143 --contract USD0
+// npx hardhat configurePacketTypes --network mumbai --src 0x4C12521DA4d702b2c514725572aB9A2c57F98b0F --dst-lz-chain-id 10106 --contract USD0
+// npx hardhat configurePacketTypes --network mumbai --src 0x4C12521DA4d702b2c514725572aB9A2c57F98b0F --dst-lz-chain-id 10112 --contract USD0
 
-// npx hardhat configurePacketTypes --network fantom_testnet --src 0x4da7E36B2A1E51409526Cc1E63C67cAA93f4fD13 --dst-lz-chain-id 10143 --contract USD0
-// npx hardhat configurePacketTypes --network fantom_testnet --src 0x4da7E36B2A1E51409526Cc1E63C67cAA93f4fD13 --dst-lz-chain-id 10109 --contract USD0
-// npx hardhat configurePacketTypes --network fantom_testnet --src 0x4da7E36B2A1E51409526Cc1E63C67cAA93f4fD13 --dst-lz-chain-id 10106 --contract USD0
+// npx hardhat configurePacketTypes --network fantom_testnet --src 0xd4F17F7E852e44fE7bfC3096D68ce2b7daA3E83B --dst-lz-chain-id 10143 --contract USD0
+// npx hardhat configurePacketTypes --network fantom_testnet --src 0xd4F17F7E852e44fE7bfC3096D68ce2b7daA3E83B --dst-lz-chain-id 10109 --contract USD0
+// npx hardhat configurePacketTypes --network fantom_testnet --src 0xd4F17F7E852e44fE7bfC3096D68ce2b7daA3E83B --dst-lz-chain-id 10106 --contract USD0
 
 //*****MarketsProxy
 // npx hardhat configurePacketTypes --network arbitrum_goerli --src 0xD441B51FeBEB9633831947547fbdfb5b662617FF --dst-lz-chain-id 10106 --contract MarketsProxy

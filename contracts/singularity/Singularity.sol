@@ -6,6 +6,7 @@ import './SGLLiquidation.sol';
 import './SGLLendingBorrowing.sol';
 
 import '../interfaces/ISendFrom.sol';
+import 'tapioca-sdk/dist/contracts/libraries/LzLib.sol';
 
 // solhint-disable max-line-length
 
@@ -327,6 +328,7 @@ contract Singularity is SGLCommon {
     }
 
     /// @notice Withdraw to another layer
+    /// @dev if `dstChainId` is 0, withdraw happens on the same chain
     function withdrawTo(
         address from,
         uint16 dstChainId,
@@ -335,6 +337,16 @@ contract Singularity is SGLCommon {
         bytes calldata adapterParams,
         address payable refundAddress
     ) public payable allowed(from) {
+        if (dstChainId == 0) {
+            yieldBox.withdraw(
+                assetId,
+                from,
+                LzLib.bytes32ToAddress(receiver),
+                amount,
+                0
+            );
+            return;
+        }
         try
             IERC165(address(asset)).supportsInterface(
                 type(ISendFrom).interfaceId

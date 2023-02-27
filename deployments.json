@@ -86,16 +86,6 @@
             }
         },
         {
-            "name": "USD0",
-            "address": "0x4da7E36B2A1E51409526Cc1E63C67cAA93f4fD13",
-            "meta": {
-                "constructorArguments": [
-                    "0x7dcAD72640F835B0FA36EFD3D6d3ec902C7E5acf",
-                    "0xA24eaCCd49f0dFB8Eb8629CB7E8Ee956173A4293"
-                ]
-            }
-        },
-        {
             "name": "OracleMock",
             "address": "0xAC6222C685eB76600668942cF59358602456Da99",
             "meta": {}
@@ -117,6 +107,16 @@
                 "constructorArguments": [
                     "0xA24eaCCd49f0dFB8Eb8629CB7E8Ee956173A4293",
                     "0x9C574C71eCabc7aEf19593A595fb9f8Aa6a78bB0"
+                ]
+            }
+        },
+        {
+            "name": "USD0",
+            "address": "0xd4F17F7E852e44fE7bfC3096D68ce2b7daA3E83B",
+            "meta": {
+                "constructorArguments": [
+                    "0x7dcAD72640F835B0FA36EFD3D6d3ec902C7E5acf",
+                    "0xA24eaCCd49f0dFB8Eb8629CB7E8Ee956173A4293"
                 ]
             }
         }
@@ -208,16 +208,6 @@
             }
         },
         {
-            "name": "USD0",
-            "address": "0xF11A3fDe3c7551AD382d9F22eE91807577e93222",
-            "meta": {
-                "constructorArguments": [
-                    "0x93f54D755A063cE7bB9e6Ac47Eccc8e33411d706",
-                    "0x538c2189ea266069031622e70441bc73A613e9Ed"
-                ]
-            }
-        },
-        {
             "name": "MarketsProxy",
             "address": "0xC83D48DA75720fDa857dCd21DdD44254FdD962a3",
             "meta": {
@@ -234,6 +224,16 @@
                 "constructorArguments": [
                     "0x538c2189ea266069031622e70441bc73A613e9Ed",
                     "0x33e1eFe92dBca2d45fe131ab3a1613A169696924"
+                ]
+            }
+        },
+        {
+            "name": "USD0",
+            "address": "0x2Bd2DD6aD7AA00fF6C2A4db7aB67735451242A98",
+            "meta": {
+                "constructorArguments": [
+                    "0x93f54D755A063cE7bB9e6Ac47Eccc8e33411d706",
+                    "0x538c2189ea266069031622e70441bc73A613e9Ed"
                 ]
             }
         }
@@ -325,16 +325,6 @@
             }
         },
         {
-            "name": "USD0",
-            "address": "0x2CCFd66f76E73EEF0Ac76D7C03d0E367a03B7B2e",
-            "meta": {
-                "constructorArguments": [
-                    "0xf69186dfBa60DdB133E91E9A4B5673624293d8F8",
-                    "0xF0a07d15F4F6FCB919EE410B10D8ab282eD1107F"
-                ]
-            }
-        },
-        {
             "name": "MarketsProxy",
             "address": "0xf0484Ead813d68dAff6A885381957BF8cb3d633c",
             "meta": {
@@ -351,6 +341,16 @@
                 "constructorArguments": [
                     "0xF0a07d15F4F6FCB919EE410B10D8ab282eD1107F",
                     "0x8688820A09b5796840c4570747E7E0064B87d3DF"
+                ]
+            }
+        },
+        {
+            "name": "USD0",
+            "address": "0x4C12521DA4d702b2c514725572aB9A2c57F98b0F",
+            "meta": {
+                "constructorArguments": [
+                    "0xf69186dfBa60DdB133E91E9A4B5673624293d8F8",
+                    "0xF0a07d15F4F6FCB919EE410B10D8ab282eD1107F"
                 ]
             }
         }
@@ -453,16 +453,6 @@
             }
         },
         {
-            "name": "MediumRiskMC",
-            "address": "0xDEbBC681d8dEff3c13b8D451c531C69F2872F9c6",
-            "meta": {}
-        },
-        {
-            "name": "BigBangMediumRiskMC",
-            "address": "0x1A316567bEBB66CB7ACe819c4B1e31b20519D54B",
-            "meta": {}
-        },
-        {
             "name": "MarketsHelper",
             "address": "0x678488290Fa0240160cB159c3Dda2748d5413a5D",
             "meta": {}
@@ -475,16 +465,6 @@
                     "0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f",
                     "0x8d0AbE838d85F14E93C51bd04b26A6dCCcc88584",
                     "0x68ddfd89d43db94fbd68a4abd2861ebcbfea56c0fd36334bbb95f0661c3171a2"
-                ]
-            }
-        },
-        {
-            "name": "USD0",
-            "address": "0x56574aD5A9c531874126CfF2fFa9F3806A28a99a",
-            "meta": {
-                "constructorArguments": [
-                    "0x6aB5Ae6822647046626e83ee6dB8187151E1d5ab",
-                    "0x93cF32C5fF98c0758b32dF9F6DB9e4f4faaCe736"
                 ]
             }
         },
@@ -524,69 +504,6 @@
             "meta": {}
         },
         {
-            "name": "sgl_TWETH",
-            "address": "0xA67cA6C9874245c3c86F498836fA82D022A3F65d",
-            "meta": {}
-        },
-        {
-            "name": "lq_TWETH",
-            "address": "0x51304455245F0fe6f41242B6b62217042B1fbce3",
-            "meta": {
-                "constructorArguments": {
-                    "activationTime": 600,
-                    "minBidAmount": {
-                        "type": "BigNumber",
-                        "hex": "0x01158e460913d00000"
-                    },
-                    "feeCollector": "0x40282d3Cf4890D9806BC1853e97a59C93D813653",
-                    "bidExecutionSwapper": "0x0000000000000000000000000000000000000000",
-                    "usdoSwapper": "0x8aE4a048682C9873cE54daD4a984fbB3cDb66C56"
-                }
-            }
-        },
-        {
-            "name": "sgl_TAVAX",
-            "address": "0xEFF08F071D2E588193C672E42fe8e030CB92487C",
-            "meta": {}
-        },
-        {
-            "name": "lq_TAVAX",
-            "address": "0x4296c4B9FD62DE22bdEb5252A119D68f9dFaaF0E",
-            "meta": {
-                "constructorArguments": {
-                    "activationTime": 600,
-                    "minBidAmount": {
-                        "type": "BigNumber",
-                        "hex": "0x01158e460913d00000"
-                    },
-                    "feeCollector": "0x40282d3Cf4890D9806BC1853e97a59C93D813653",
-                    "bidExecutionSwapper": "0x0000000000000000000000000000000000000000",
-                    "usdoSwapper": "0x8aE4a048682C9873cE54daD4a984fbB3cDb66C56"
-                }
-            }
-        },
-        {
-            "name": "sgl_TMATIC",
-            "address": "0x8E1B629b8833Cd25bBaC537be0E38C528591Ef7d",
-            "meta": {}
-        },
-        {
-            "name": "lq_TMATIC",
-            "address": "0x6F7191716F101c78cb16568974d0300beA9D37a7",
-            "meta": {
-                "constructorArguments": {
-                    "activationTime": 600,
-                    "minBidAmount": {
-                        "type": "BigNumber",
-                        "hex": "0x01158e460913d00000"
-                    },
-                    "feeCollector": "0x40282d3Cf4890D9806BC1853e97a59C93D813653",
-                    "bidExecutionSwapper": "0x0000000000000000000000000000000000000000",
-                    "usdoSwapper": "0x8aE4a048682C9873cE54daD4a984fbB3cDb66C56"
-                }
-            }
-        },
-        {
             "name": "MarketsProxy",
             "address": "0xD441B51FeBEB9633831947547fbdfb5b662617FF",
             "meta": {
@@ -607,13 +524,96 @@
             }
         },
         {
+            "name": "USD0",
+            "address": "0xAF933E0E75E0576511e17b173cc6e3D0a09DB764",
+            "meta": {
+                "constructorArguments": [
+                    "0x6aB5Ae6822647046626e83ee6dB8187151E1d5ab",
+                    "0x93cF32C5fF98c0758b32dF9F6DB9e4f4faaCe736"
+                ]
+            }
+        },
+        {
+            "name": "MediumRiskMC",
+            "address": "0x0A817fC40C3457Ce64Db4907500eF6cC701EF19B",
+            "meta": {}
+        },
+        {
+            "name": "BigBangMediumRiskMC",
+            "address": "0x3D87108E56062CdeEe30a9039C079ECd4B288b77",
+            "meta": {}
+        },
+        {
+            "name": "sgl_TMATIC",
+            "address": "0xB788ECe040812D15c8063975dAFCb3f607198253",
+            "meta": {}
+        },
+        {
+            "name": "lq_TMATIC",
+            "address": "0x0C24013AD716d72080cCF813dF7dF26ce105666C",
+            "meta": {
+                "constructorArguments": {
+                    "activationTime": 600,
+                    "minBidAmount": {
+                        "type": "BigNumber",
+                        "hex": "0x01158e460913d00000"
+                    },
+                    "feeCollector": "0x40282d3Cf4890D9806BC1853e97a59C93D813653",
+                    "bidExecutionSwapper": "0x0000000000000000000000000000000000000000",
+                    "usdoSwapper": "0x8aE4a048682C9873cE54daD4a984fbB3cDb66C56"
+                }
+            }
+        },
+        {
+            "name": "sgl_TAVAX",
+            "address": "0xB76b47600f9C2D729A43Fe4b3498debE44aAed48",
+            "meta": {}
+        },
+        {
+            "name": "lq_TAVAX",
+            "address": "0x86a1680e6CEeCce54dB96B52330A56CD62213F9B",
+            "meta": {
+                "constructorArguments": {
+                    "activationTime": 600,
+                    "minBidAmount": {
+                        "type": "BigNumber",
+                        "hex": "0x01158e460913d00000"
+                    },
+                    "feeCollector": "0x40282d3Cf4890D9806BC1853e97a59C93D813653",
+                    "bidExecutionSwapper": "0x0000000000000000000000000000000000000000",
+                    "usdoSwapper": "0x8aE4a048682C9873cE54daD4a984fbB3cDb66C56"
+                }
+            }
+        },
+        {
             "name": "sgl_TFTM",
-            "address": "0x8eb93C862af9d0dD2De5e95213db322703c23fc8",
+            "address": "0xa128f20C91C0374f8F5CD0921E4585BfF26f3107",
             "meta": {}
         },
         {
             "name": "lq_TFTM",
-            "address": "0xF2A1c1e3D04944Df7590135c691E2E7De14af36e",
+            "address": "0xbE735aFD435710F25808d577D2CdaC0C3E1854c5",
+            "meta": {
+                "constructorArguments": {
+                    "activationTime": 600,
+                    "minBidAmount": {
+                        "type": "BigNumber",
+                        "hex": "0x01158e460913d00000"
+                    },
+                    "feeCollector": "0x40282d3Cf4890D9806BC1853e97a59C93D813653",
+                    "bidExecutionSwapper": "0x0000000000000000000000000000000000000000",
+                    "usdoSwapper": "0x8aE4a048682C9873cE54daD4a984fbB3cDb66C56"
+                }
+            }
+        },
+        {
+            "name": "sgl_TWETH",
+            "address": "0xc5741d32977BB3c9A0e4Fe8F9A566BA41A018674",
+            "meta": {}
+        },
+        {
+            "name": "lq_TWETH",
+            "address": "0x99246ee5020935512627Bb7bE107dE8bA6f5eF1F",
             "meta": {
                 "constructorArguments": {
                     "activationTime": 600,
