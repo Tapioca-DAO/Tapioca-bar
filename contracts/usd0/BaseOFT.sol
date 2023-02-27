@@ -74,7 +74,7 @@ abstract contract BaseOFT is OFTV2 {
         
         bytes memory lzPayload = abi.encode(
             strategyDeposit ? PT_YB_SEND_STRAT : PT_YB_DEPOSIT,
-            abi.encodePacked(msg.sender),
+            LzLib.addressToBytes32(msg.sender),
             toAddress,
             amount,
             assetId
@@ -105,7 +105,7 @@ abstract contract BaseOFT is OFTV2 {
 
         bytes memory lzPayload = abi.encode(
             strategyWithdrawal ? PT_YB_RETRIEVE_STRAT : PT_YB_WITHDRAW,
-            abi.encodePacked(msg.sender),
+            LzLib.addressToBytes32(msg.sender),
             toAddress,
             amount,
             0,

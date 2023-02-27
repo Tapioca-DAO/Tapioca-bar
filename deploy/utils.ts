@@ -104,7 +104,7 @@ export const constants: { [key: string]: any } = {
         ],
         sgl_TWETH: {
             collateralAddress: '0xc0106C090153F651c5E6e12249412b9e51f8d49d', //tWeth
-            assetAddress: '0x56574ad5a9c531874126cff2ffa9f3806a28a99a',
+            assetAddress: '0xAF933E0E75E0576511e17b173cc6e3D0a09DB764',
             oracleAddress: '0xB63815242ec16F1D8F83A4dEec844296A546cA8d', //mock
             minBidAmount: 20,
             hasExecutionBidder: false,
@@ -114,7 +114,7 @@ export const constants: { [key: string]: any } = {
 
         sgl_TAVAX: {
             collateralAddress: '0xd37E276907e76bF25eBaDA04fB2dCe67c8BE5188', //tAvax
-            assetAddress: '0x56574ad5a9c531874126cff2ffa9f3806a28a99a',
+            assetAddress: '0xAF933E0E75E0576511e17b173cc6e3D0a09DB764',
             oracleAddress: '0x707dC804728495e14F58c22a38dE17b5c7591323', //mock
             minBidAmount: 20,
             hasExecutionBidder: false,
@@ -123,7 +123,7 @@ export const constants: { [key: string]: any } = {
         },
         sgl_TMATIC: {
             collateralAddress: '0xd429a8F683Aa8D43Aa3CBdDCa93956CBc44c4242', //tMatic
-            assetAddress: '0x56574ad5a9c531874126cff2ffa9f3806a28a99a',
+            assetAddress: '0xAF933E0E75E0576511e17b173cc6e3D0a09DB764',
             oracleAddress: '0x56E626a05193B1576dCc4CFE4d89FfEC6dD115C8', //mock
             minBidAmount: 20,
             hasExecutionBidder: false,
@@ -132,7 +132,7 @@ export const constants: { [key: string]: any } = {
         },
         sgl_TFTM: {
             collateralAddress: '0x4ba186b07cf3C5C4e2aB967d0Daa996dc83Ce30E', //tFTM
-            assetAddress: '0x56574ad5a9c531874126cff2ffa9f3806a28a99a',
+            assetAddress: '0xAF933E0E75E0576511e17b173cc6e3D0a09DB764',
             oracleAddress: '0xf8dbb74e1c371edf37fa652514d1e4aa3c517156', //mock
             minBidAmount: 20,
             hasExecutionBidder: false,

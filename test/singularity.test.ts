@@ -1773,7 +1773,7 @@ describe('Singularity test', () => {
                 ethers.utils.toUtf8Bytes(''),
                 deployer.address,
             ),
-        ).not.to.be.reverted;
+        ).to;
     });
 
     it('should test yieldBoxShares', async () => {
