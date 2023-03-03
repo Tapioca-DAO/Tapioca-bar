@@ -13,7 +13,7 @@ import 'hardhat-tracer';
 
 dotenv.config();
 
-let supportedChains: { [key: string]: HttpNetworkConfig } = SDK.API.utils
+const supportedChains: { [key: string]: HttpNetworkConfig } = SDK.API.utils
     .getSupportedChains()
     .reduce(
         (sdkChains, chain) => ({
@@ -58,7 +58,7 @@ const config: HardhatUserConfig & { dodoc?: any; vyper: any } = {
                 settings: {
                     optimizer: {
                         enabled: true,
-                        runs: 200,
+                        runs: 100,
                     },
                 },
             },

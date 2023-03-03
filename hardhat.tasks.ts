@@ -33,6 +33,7 @@ import { hasStoredPayload__task } from './tasks/test-hasStoredPayload';
 import { retryPayload__task } from './tasks/test-retryPayload';
 import { configurePacketTypes__task } from './tasks/configurePacketTypes';
 import { whitelistSingularity__task } from './tasks/whitelistSingularity';
+import { airdropGas__task } from './tasks/airdropGas';
 
 task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
     const accounts = await hre.ethers.getSigners();
@@ -250,3 +251,8 @@ task(
 )
     .addParam('singularity', 'SGL address')
     .addParam('sglProxy', 'SGLProxy addressF');
+
+task('airdropGas', 'Airdrop gas to msg.sender', airdropGas__task)
+    .addParam('amount', 'Amount of gas to airdrop')
+    .addParam('dstChain', 'Destination chain id')
+    .addParam('dstAddress', 'Destination address');
