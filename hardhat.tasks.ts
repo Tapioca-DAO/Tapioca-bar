@@ -33,6 +33,7 @@ import { hasStoredPayload__task } from './tasks/test-hasStoredPayload';
 import { retryPayload__task } from './tasks/test-retryPayload';
 import { configurePacketTypes__task } from './tasks/configurePacketTypes';
 import { whitelistSingularity__task } from './tasks/whitelistSingularity';
+import { transfer__task } from './tasks/test-transfer';
 
 task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
     const accounts = await hre.ethers.getSigners();
@@ -250,3 +251,12 @@ task(
 )
     .addParam('singularity', 'SGL address')
     .addParam('sglProxy', 'SGLProxy addressF');
+
+
+task('transfer', 'Moves tOFT between layers', transfer__task)
+    .addParam('oftAddress', 'tOFT address')
+    .addParam('fromAddress', 'wallet from')
+    .addParam('toAddress', 'wallet to')
+    .addParam('dstChainId', 'destination LZ chain id')
+    .addParam('amount', 'amount to transfer')
+    .addParam('native', 'Tx fees');

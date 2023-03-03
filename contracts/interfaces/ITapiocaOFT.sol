@@ -20,4 +20,18 @@ interface ITapiocaOFT {
         bytes memory airdropAdapterParam,
         bool strategyWithdrawal
     ) external payable;
+
+    struct LzCallParams {
+        address payable refundAddress;
+        address zroPaymentAddress;
+        bytes adapterParams;
+    }
+
+    function sendFrom(
+        address _from,
+        uint16 _dstChainId,
+        bytes32 _toAddress,
+        uint256 _amount,
+        LzCallParams calldata _callParams
+    ) external payable;
 }

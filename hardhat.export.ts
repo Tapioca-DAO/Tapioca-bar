@@ -24,7 +24,7 @@ let supportedChains: { [key: string]: HttpNetworkConfig } = SDK.API.utils
                         ? [process.env.PRIVATE_KEY]
                         : [],
                 live: true,
-                url: chain.rpc.replace('<api_key>', process.env.ALCHEMY_KEY),
+                url: `https://rpc.ankr.com/fantom_testnet`, //chain.rpc.replace('<api_key>', process.env.ALCHEMY_KEY),
                 gasMultiplier: chain.tags.includes('testnet') ? 2 : 1,
                 chainId: Number(chain.chainId),
             },
