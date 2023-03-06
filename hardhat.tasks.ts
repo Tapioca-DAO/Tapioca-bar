@@ -34,6 +34,8 @@ import { retryPayload__task } from './tasks/test-retryPayload';
 import { configurePacketTypes__task } from './tasks/configurePacketTypes';
 import { whitelistSingularity__task } from './tasks/whitelistSingularity';
 import { airdropGas__task } from './tasks/airdropGas';
+import { batchSetTrustedRemote__task } from './tasks/batchSetTrustedRemote';
+import { batchConfigureAdapterParams__task } from './tasks/batchConfigureAdapterParams';
 
 task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
     const accounts = await hre.ethers.getSigners();
@@ -256,3 +258,15 @@ task('airdropGas', 'Airdrop gas to msg.sender', airdropGas__task)
     .addParam('amount', 'Amount of gas to airdrop')
     .addParam('dstChain', 'Destination chain id')
     .addParam('dstAddress', 'Destination address');
+
+task(
+    'batchSetTrustedRemote',
+    'Set trusted remote between all available tOFT contracts for the current chain',
+    batchSetTrustedRemote__task,
+).addParam('contract', 'Contract name to filter by');
+
+task(
+    'batchConfigureAdapterParams',
+    'Sets OFT to use adapter params and the minimum destination gas between all available tOFT contracts for the current chain',
+    batchConfigureAdapterParams__task,
+).addParam('contract', 'Contract name to filter by');
