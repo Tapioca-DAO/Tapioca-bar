@@ -11,6 +11,7 @@ import {
     USD0,
     WETH9Mock,
     YieldBox,
+    TapiocaOftMock,
 } from '../typechain';
 import { MultiSwapper } from '../typechain/MultiSwapper';
 import { UniswapV2Factory } from '../typechain/UniswapV2Factory';
@@ -155,6 +156,14 @@ async function registerERC20Tokens(staging?: boolean) {
     await weth.deployed();
     log(`Deployed WETH ${weth.address} with no arguments`, staging);
 
+    //  Deploy TapiocaOftMock
+    const chainid = await (await ethers.provider.getNetwork()).chainId;
+    const tOft = await (
+        await ethers.getContractFactory('TapiocaOftMock')
+    ).deploy(chainid, usdc.address, { gasPrice: gasPrice });
+    await tOft.deployed();
+    log(`Deployed TapiocaOftMock ${tOft.address} with args {}`, staging);
+
     await verifyEtherscan(
         usdc.address,
         [supplyStart, 18, mintLimitERC20],
@@ -172,7 +181,7 @@ async function registerERC20Tokens(staging?: boolean) {
     );
     await verifyEtherscan(weth.address, [mintLimitERC20], staging);
 
-    return { usdc, weth, tap, wbtc, erc20Factory };
+    return { usdc, weth, tap, wbtc, erc20Factory, tOft };
 }
 
 async function registerYieldBox(wethAddress: string, staging?: boolean) {
@@ -237,6 +246,7 @@ async function setPenroseAssets(
     wethAddress: string,
     usdcAddress: string,
     wbtcAddress: string,
+    tOftAddress: string
 ) {
     const wethAssetId = await bar.wethAssetId();
 
@@ -272,12 +282,30 @@ async function setPenroseAssets(
         0,
     );
 
+    const tOftStrategy = await createTokenEmptyStrategy(
+        yieldBox.address,
+        tOftAddress
+    );
+    await (
+        await yieldBox.registerAsset(1, tOftAddress, tOftStrategy.address, 0, {
+            gasPrice: gasPrice,
+        })
+    ).wait();
+    const tOftAssetId = await yieldBox.ids(
+        1,
+        tOftAddress,
+        tOftStrategy.address,
+        0,
+    );
+
     return {
         wethAssetId,
         usdcAssetId,
         wbtcAssetId,
+        tOftAssetId,
         usdcStrategy,
         wbtcStrategy,
+        tOftStrategy
     };
 }
 
@@ -634,7 +662,7 @@ async function registerSingularity(
     bar: Penrose,
     weth: WETH9Mock | ERC20Mock,
     wethAssetId: BigNumberish,
-    usdc: ERC20Mock,
+    usdc: ERC20Mock | TapiocaOftMock,
     usdcAssetId: BigNumberish,
     wethUsdcOracle: OracleMock,
     exchangeRatePrecision?: BigNumberish,
@@ -1124,9 +1152,8 @@ export async function register(staging?: boolean) {
 
     // ------------------- 1  Deploy tokens -------------------
     log('Deploying Tokens', staging);
-    const { usdc, weth, tap, wbtc, erc20Factory } = await registerERC20Tokens(
-        staging,
-    );
+    const { usdc, weth, tap, wbtc, erc20Factory, tOft } =
+        await registerERC20Tokens(staging);
     log(
         `Deployed Tokens ${tap.address}, ${usdc.address}, ${weth.address}, ${wbtc.address} & Factory ${erc20Factory.address}`,
         staging,
@@ -1156,14 +1183,17 @@ export async function register(staging?: boolean) {
         usdcAssetId,
         wethAssetId,
         wbtcAssetId,
+        tOftAssetId,
         usdcStrategy,
         wbtcStrategy,
+        tOftStrategy
     } = await setPenroseAssets(
         yieldBox,
         bar,
         weth.address,
         usdc.address,
         wbtc.address,
+        tOft.address
     );
     log(
         `Penrose assets were set USDC: ${usdcAssetId}, WETH: ${wethAssetId}, WBTC: ${wbtcAssetId}`,
@@ -1234,6 +1264,22 @@ export async function register(staging?: boolean) {
     const _sglLiquidationModule = wethUsdcSingularityData._sglLiquidationModule;
     log(`Deployed WethUsdcSingularity ${wethUsdcSingularity.address}`, staging);
 
+    log('Deploying WethTapiocaOftUsdcSingularity', staging);
+    const wethTapiocaOftUsdcSingularityData = await registerSingularity(
+        mediumRiskMC.address,
+        yieldBox,
+        bar,
+        weth,
+        wethAssetId,
+        tOft,
+        tOftAssetId,
+        wethUsdcOracle,
+        ethers.utils.parseEther('1'),
+        staging,
+    );
+    const wethTapiocaOftUsdcSingularity =
+        wethTapiocaOftUsdcSingularityData.singularityMarket;
+
     log('Deploying WbtcUsdcSingularity', staging);
     const collateralWbtcSwapPath = [usdc.address, wbtc.address];
     const wbtcUsdcSingularityData = await registerSingularity(
@@ -1255,6 +1301,8 @@ export async function register(staging?: boolean) {
         wbtcUsdcSingularityData._sglLiquidationModule;
 
     log(`Deployed WbtcUsdcSingularity ${wbtcUsdcSingularity.address}`, staging);
+
+
 
     // ------------------- 8 Set feeTo -------------------
     log('Setting feeTo and feeVeTap', staging);
@@ -1471,8 +1519,11 @@ export async function register(staging?: boolean) {
         wethAssetId,
         wbtc,
         wbtcAssetId,
+        tOft,
+        tOftAssetId,
         usdcStrategy,
         wbtcStrategy,
+        tOftStrategy,
         erc20Factory,
         tap,
         collateralWbtcSwapPath,
@@ -1489,6 +1540,7 @@ export async function register(staging?: boolean) {
         wbtcUsdcSingularity,
         _sglWbtcUsdcLendingBorrowingModule,
         _sglWbtcUsdcLiquidationModule,
+        wethTapiocaOftUsdcSingularity,
         marketsHelper,
         eoa1,
         multiSwapper,

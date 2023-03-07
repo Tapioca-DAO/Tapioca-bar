@@ -2,7 +2,9 @@
 
 pragma solidity ^0.8.0;
 
-interface ITapiocaOFT {
+import '@boringcrypto/boring-solidity/contracts/interfaces/IERC20.sol';
+
+interface ITapiocaOFT is IERC20 {
     function sendToYB(
         uint256 amount,
         uint256 assetId,
@@ -20,4 +22,14 @@ interface ITapiocaOFT {
         bytes memory airdropAdapterParam,
         bool strategyWithdrawal
     ) external payable;
+
+    function wrap(address _toAddress, uint256 _amount) external;
+
+    function wrapNative(address _toAddress) external payable;
+
+    function hostChainID() external view returns (uint256);
+
+    function isNative() external view returns (bool);
+
+    function erc20() external view returns (IERC20);
 }

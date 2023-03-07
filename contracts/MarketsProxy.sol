@@ -5,6 +5,7 @@ import '@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol';
 import 'tapioca-sdk/dist/contracts/lzApp/NonblockingLzApp.sol';
 
 import './interfaces/IMarket.sol';
+import './interfaces/ITapiocaOFT.sol';
 
 /*
 

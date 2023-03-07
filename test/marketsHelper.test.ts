@@ -4,6 +4,184 @@ import { register } from './test.utils';
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 
 describe('MarketsHelper test', () => {
+    it('should not auto-wrap when not on the same chain', async () => {
+        const {
+            weth,
+            usdc,
+            yieldBox,
+            tOft,
+            tOftAssetId,
+            wethTapiocaOftUsdcSingularity,
+            deployer,
+            initContracts,
+            marketsHelper,
+            __wethUsdcPrice,
+            eoa1,
+        } = await loadFixture(register);
+
+        await initContracts();
+
+        const oftRegisteredErc20 = await tOft.erc20();
+        expect(oftRegisteredErc20.toLowerCase()).to.eq(usdc.address.toLowerCase());
+
+        const assetId = await wethTapiocaOftUsdcSingularity.assetId();
+        const collateralId = await wethTapiocaOftUsdcSingularity.collateralId();
+
+        const borrowAmount = ethers.BigNumber.from((1e17).toString());
+        const wethMintVal = ethers.BigNumber.from((1e18).toString()).mul(10);
+        const usdcMintVal = wethMintVal
+            .mul(10)
+            .mul(__wethUsdcPrice.div((1e18).toString()));
+
+        // We get asset
+        await weth.freeMint(wethMintVal.mul(2));
+        await usdc.connect(eoa1).freeMint(usdcMintVal);
+
+        // We lend WETH as deployer
+        await (
+            await weth.approve(yieldBox.address, ethers.constants.MaxUint256)
+        ).wait();
+        await (
+            await yieldBox.setApprovalForAll(
+                wethTapiocaOftUsdcSingularity.address,
+                true,
+            )
+        ).wait();
+
+        const id = await wethTapiocaOftUsdcSingularity.assetId();
+        const _valShare = await yieldBox.toShare(id, wethMintVal, false);
+        await (
+            await yieldBox.depositAsset(
+                id,
+                deployer.address,
+                deployer.address,
+                0,
+                _valShare,
+            )
+        ).wait();
+        await (
+            await wethTapiocaOftUsdcSingularity.addAsset(
+                deployer.address,
+                deployer.address,
+                false,
+                _valShare,
+            )
+        ).wait();
+
+        await tOft.setHostChain(1);
+        await usdc.connect(eoa1).approve(marketsHelper.address, usdcMintVal);
+        await wethTapiocaOftUsdcSingularity
+            .connect(eoa1)
+            .approve(marketsHelper.address, ethers.constants.MaxUint256);
+        await expect(marketsHelper
+            .connect(eoa1)
+            .depositAddCollateralAndBorrow(
+                wethTapiocaOftUsdcSingularity.address,
+                usdcMintVal,
+                borrowAmount,
+                {
+                    deposit: true,
+                    withdraw: false,
+                    withdrawData: ethers.utils.toUtf8Bytes(''),
+                    wrap: true,
+                },
+            )).to.be.revertedWith('MarketsHelper: cannot wrap on this chain');
+    });
+    it('Should test auto-wrap', async () => {
+        const {
+            weth,
+            usdc,
+            yieldBox,
+            tOft,
+            tOftAssetId,
+            wethTapiocaOftUsdcSingularity,
+            deployer,
+            initContracts,
+            marketsHelper,
+            __wethUsdcPrice,
+            eoa1,
+        } = await loadFixture(register);
+
+        await initContracts();
+
+        const oftRegisteredErc20 = await tOft.erc20();
+        expect(oftRegisteredErc20.toLowerCase()).to.eq(usdc.address.toLowerCase());
+
+        const assetId = await wethTapiocaOftUsdcSingularity.assetId();
+        const collateralId = await wethTapiocaOftUsdcSingularity.collateralId();
+
+        const borrowAmount = ethers.BigNumber.from((1e17).toString());
+        const wethMintVal = ethers.BigNumber.from((1e18).toString()).mul(10);
+        const usdcMintVal = wethMintVal
+            .mul(10)
+            .mul(__wethUsdcPrice.div((1e18).toString()));
+
+        // We get asset
+        await weth.freeMint(wethMintVal.mul(2));
+        await usdc.connect(eoa1).freeMint(usdcMintVal);
+
+        // We lend WETH as deployer
+        await (
+            await weth.approve(yieldBox.address, ethers.constants.MaxUint256)
+        ).wait();
+        await (
+            await yieldBox.setApprovalForAll(
+                wethTapiocaOftUsdcSingularity.address,
+                true,
+            )
+        ).wait();
+
+        const id = await wethTapiocaOftUsdcSingularity.assetId();
+        const _valShare = await yieldBox.toShare(id, wethMintVal, false);
+        await (
+            await yieldBox.depositAsset(
+                id,
+                deployer.address,
+                deployer.address,
+                0,
+                _valShare,
+            )
+        ).wait();
+        await (
+            await wethTapiocaOftUsdcSingularity.addAsset(
+                deployer.address,
+                deployer.address,
+                false,
+                _valShare,
+            )
+        ).wait();
+
+        await usdc.connect(eoa1).approve(marketsHelper.address, usdcMintVal);
+        await wethTapiocaOftUsdcSingularity
+            .connect(eoa1)
+            .approve(marketsHelper.address, ethers.constants.MaxUint256);
+
+        const oftSupplyBefore = await tOft.totalSupply();
+        expect(oftSupplyBefore.eq(0)).to.be.true;
+        await marketsHelper
+            .connect(eoa1)
+            .depositAddCollateralAndBorrow(
+                wethTapiocaOftUsdcSingularity.address,
+                usdcMintVal,
+                borrowAmount,
+                {
+                    deposit: true,
+                    withdraw: false,
+                    withdrawData: ethers.utils.toUtf8Bytes(''),
+                    wrap: true,
+                },
+            );
+        const oftSupplyAfter = await tOft.totalSupply();
+        expect(oftSupplyAfter.eq(usdcMintVal)).to.be.true;
+
+        const collateral =
+            await wethTapiocaOftUsdcSingularity.userCollateralShare(
+                eoa1.address,
+            );
+        const collateralShare = await yieldBox.toShare(tOftAssetId, usdcMintVal, false);
+        expect(collateral.eq(collateralShare)).to.be.true;
+    });
+
     it('Should deposit to yieldBox & add asset to singularity through SGL helper', async () => {
         const {
             weth,
@@ -47,7 +225,7 @@ describe('MarketsHelper test', () => {
         const assetId = await wethUsdcSingularity.assetId();
         const collateralId = await wethUsdcSingularity.collateralId();
 
-        const borrowAmount = ethers.BigNumber.from((1e17).toString());
+        const borrowAmount = ethers.BigNumber.from((1e16).toString());
         const wethMintVal = ethers.BigNumber.from((1e18).toString()).mul(10);
         const usdcMintVal = wethMintVal
             .mul(10)
@@ -71,9 +249,12 @@ describe('MarketsHelper test', () => {
                 wethUsdcSingularity.address,
                 usdcMintVal,
                 borrowAmount,
-                true,
-                false,
-                ethers.utils.toUtf8Bytes(''),
+                {
+                    deposit: true,
+                    withdraw: false,
+                    withdrawData: ethers.utils.toUtf8Bytes(''),
+                    wrap: false,
+                }
             );
     });
 
@@ -116,9 +297,12 @@ describe('MarketsHelper test', () => {
                 wethUsdcSingularity.address,
                 usdcMintVal,
                 borrowAmount,
-                true,
-                true,
-                ethers.utils.toUtf8Bytes(''),
+                {
+                    deposit: true,
+                    withdraw: true,
+                    withdrawData: ethers.utils.toUtf8Bytes(''),
+                    wrap: false,
+                }
             );
     });
 
@@ -161,9 +345,12 @@ describe('MarketsHelper test', () => {
                 wethUsdcSingularity.address,
                 usdcMintVal,
                 borrowAmount,
-                true,
-                false,
-                ethers.utils.toUtf8Bytes(''),
+                {
+                    deposit: true,
+                    withdraw: false,
+                    withdrawData: ethers.utils.toUtf8Bytes(''),
+                    wrap: false,
+                }
             );
     });
 
@@ -220,9 +407,12 @@ describe('MarketsHelper test', () => {
                 wethUsdcSingularity.address,
                 usdcMintVal,
                 borrowAmount,
-                false,
-                true,
-                ethers.utils.toUtf8Bytes(''),
+                {
+                    withdraw: true,
+                    deposit: false,
+                    withdrawData: ethers.utils.toUtf8Bytes(''),
+                    wrap: false
+                }
             );
     });
 
@@ -265,9 +455,12 @@ describe('MarketsHelper test', () => {
                 wethUsdcSingularity.address,
                 usdcMintVal,
                 borrowAmount,
-                true,
-                true,
-                ethers.utils.toUtf8Bytes(''),
+                {
+                    deposit: true,
+                    withdraw: true,
+                    withdrawData: ethers.utils.toUtf8Bytes(''),
+                    wrap: false,
+                }
             );
 
         const userBorrowPart = await wethUsdcSingularity.userBorrowPart(
@@ -333,9 +526,12 @@ describe('MarketsHelper test', () => {
                 wethUsdcSingularity.address,
                 usdcMintVal,
                 borrowAmount,
-                true,
-                true,
-                ethers.utils.toUtf8Bytes(''),
+                {
+                    deposit: true,
+                    withdraw: true,
+                    withdrawData: ethers.utils.toUtf8Bytes(''),
+                    wrap: false,
+                }
             );
 
         const userBorrowPart = await wethUsdcSingularity.userBorrowPart(
