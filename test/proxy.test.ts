@@ -706,6 +706,9 @@ describe('MarketsProxy', () => {
                     withdrawData: withdrawData,
                     wrap: false,
                 },
+                {
+                    value:ethers.utils.parseEther("10")
+                }
             );
 
         let usdoSrcBalabce = await usd0Src.balanceOf(randomReceiver.address);
