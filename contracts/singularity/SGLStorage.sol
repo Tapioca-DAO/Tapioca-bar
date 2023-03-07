@@ -1,17 +1,17 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-import '@boringcrypto/boring-solidity/contracts/ERC20.sol';
-import '@boringcrypto/boring-solidity/contracts/BoringOwnable.sol';
-import '@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol';
-import '@boringcrypto/boring-solidity/contracts/libraries/BoringRebase.sol';
+import "@boringcrypto/boring-solidity/contracts/ERC20.sol";
+import "@boringcrypto/boring-solidity/contracts/BoringOwnable.sol";
+import "@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol";
+import "@boringcrypto/boring-solidity/contracts/libraries/BoringRebase.sol";
 
-import './interfaces/ISingularity.sol';
-import '../swappers/ISwapper.sol';
-import '../liquidationQueue/ILiquidationQueue.sol';
-import '../interfaces/IPenrose.sol';
-import '../interfaces/IOracle.sol';
-import '../../yieldbox/contracts/YieldBox.sol';
+import "./interfaces/ISingularity.sol";
+import "../swappers/ISwapper.sol";
+import "../liquidationQueue/ILiquidationQueue.sol";
+import "../interfaces/IPenrose.sol";
+import "../interfaces/IOracle.sol";
+import "../../yieldbox/contracts/YieldBox.sol";
 
 // solhint-disable max-line-length
 
@@ -177,11 +177,11 @@ contract SGLStorage is BoringOwnable, ERC20 {
         return
             string(
                 abi.encodePacked(
-                    'tm',
+                    "tm",
                     collateral.safeSymbol(),
-                    '/',
+                    "/",
                     asset.safeSymbol(),
-                    '-',
+                    "-",
                     oracle.symbol(oracleData)
                 )
             );
@@ -191,11 +191,11 @@ contract SGLStorage is BoringOwnable, ERC20 {
         return
             string(
                 abi.encodePacked(
-                    'Tapioca Singularity ',
+                    "Tapioca Singularity ",
                     collateral.safeName(),
-                    '/',
+                    "/",
                     asset.safeName(),
-                    '-',
+                    "-",
                     oracle.name(oracleData)
                 )
             );

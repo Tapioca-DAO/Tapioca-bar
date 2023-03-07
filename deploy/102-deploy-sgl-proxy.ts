@@ -11,7 +11,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const chainId = await hre.getChainId();
     const contracts: TContract[] = [];
 
-    console.log(`\nDeploying MarketsProxy`);
+    console.log('\nDeploying MarketsProxy');
     const args = [constants[chainId].address, deployer];
     await deploy('MarketsProxy', {
         from: deployer,

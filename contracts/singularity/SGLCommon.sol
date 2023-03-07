@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-import './SGLStorage.sol';
+import "./SGLStorage.sol";
 
 contract SGLCommon is SGLStorage {
     using RebaseLibrary for Rebase;
@@ -22,19 +22,19 @@ contract SGLCommon is SGLStorage {
     }
 
     modifier notPaused() {
-        require(!paused, 'SGL: paused');
+        require(!paused, "SGL: paused");
         _;
     }
 
     /// @dev Checks if the user is solvent in the closed liquidation case at the end of the function body.
     modifier solvent(address from) {
         _;
-        require(_isSolvent(from, exchangeRate), 'SGL: insolvent');
+        require(_isSolvent(from, exchangeRate), "SGL: insolvent");
     }
 
     bool private initialized;
     modifier onlyOnce() {
-        require(!initialized, 'SGL: initialized');
+        require(!initialized, "SGL: initialized");
         _;
         initialized = true;
     }
@@ -318,7 +318,7 @@ contract SGLCommon is SGLStorage {
         if (skim) {
             require(
                 share <= yieldBox.balanceOf(address(this), _assetId) - total,
-                'SGL: too much'
+                "SGL: too much"
             );
         } else {
             yieldBox.transfer(from, address(this), _assetId, share); // added a 'from' instead of 'msg.sender' -0xGAB
@@ -369,7 +369,7 @@ contract SGLCommon is SGLStorage {
         emit Transfer(from, address(0), fraction);
         _totalAsset.elastic -= uint128(share);
         _totalAsset.base -= uint128(fraction);
-        require(_totalAsset.base >= 1000, 'SGL: min limit');
+        require(_totalAsset.base >= 1000, "SGL: min limit");
         totalAsset = _totalAsset;
         emit LogRemoveAsset(from, to, share, fraction);
         yieldBox.transfer(address(this), to, assetId, share);

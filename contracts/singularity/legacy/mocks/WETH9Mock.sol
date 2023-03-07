@@ -2,8 +2,8 @@
 pragma solidity 0.6.12;
 
 contract WETH9Mock {
-    string public name = 'Wrapped Ether';
-    string public symbol = 'WETH';
+    string public name = "Wrapped Ether";
+    string public symbol = "WETH";
     uint8 public decimals = 18;
 
     mapping(address => uint256) public mintedAt;
@@ -23,10 +23,10 @@ contract WETH9Mock {
     }
 
     function freeMint(uint256 _val) public {
-        require(_val <= mintLimit, 'WETH9Mock: amount too big');
+        require(_val <= mintLimit, "WETH9Mock: amount too big");
         require(
             mintedAt[msg.sender] + MINT_WINDOW <= block.timestamp,
-            'WETH9Mock: too early'
+            "WETH9Mock: too early"
         );
         mintedAt[msg.sender] = block.timestamp;
 
@@ -39,7 +39,7 @@ contract WETH9Mock {
     }
 
     function withdraw(uint256 wad) public {
-        require(balanceOf[msg.sender] >= wad, 'WETH9: Error');
+        require(balanceOf[msg.sender] >= wad, "WETH9: Error");
         balanceOf[msg.sender] -= wad;
         msg.sender.transfer(wad);
         emit Withdrawal(msg.sender, wad);
@@ -64,10 +64,10 @@ contract WETH9Mock {
         address dst,
         uint256 wad
     ) public returns (bool) {
-        require(balanceOf[src] >= wad, 'WETH9: Error');
+        require(balanceOf[src] >= wad, "WETH9: Error");
 
         if (src != msg.sender && allowance[src][msg.sender] != uint256(-1)) {
-            require(allowance[src][msg.sender] >= wad, 'WETH9: Error');
+            require(allowance[src][msg.sender] >= wad, "WETH9: Error");
             allowance[src][msg.sender] -= wad;
         }
 

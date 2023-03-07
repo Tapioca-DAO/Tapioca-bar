@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-import '@boringcrypto/boring-solidity/contracts/BoringOwnable.sol';
+import "@boringcrypto/boring-solidity/contracts/BoringOwnable.sol";
 
-import '../../interfaces/IPenrose.sol';
-import '../ILiquidationQueue.sol';
-import '../../swappers/ISwapper.sol';
-import '../../singularity/interfaces/ISingularity.sol';
-import '../../../yieldbox/contracts/interfaces/IYieldBox.sol';
+import "../../interfaces/IPenrose.sol";
+import "../ILiquidationQueue.sol";
+import "../../swappers/ISwapper.sol";
+import "../../singularity/interfaces/ISingularity.sol";
+import "../../../yieldbox/contracts/interfaces/IYieldBox.sol";
 
 /*
 
@@ -55,7 +55,7 @@ contract UniUsdoToWethBidder is BoringOwnable {
     // ********************** //
     /// @notice returns the unique name
     function name() external pure returns (string memory) {
-        return 'USD0 -> WETH (Uniswap V2)';
+        return "USD0 -> WETH (Uniswap V2)";
     }
 
     /// @notice returns token tokenIn amount based on tokenOut amount
@@ -69,7 +69,7 @@ contract UniUsdoToWethBidder is BoringOwnable {
     ) external view returns (uint256) {
         require(
             tokenInId == IPenrose(singularity.penrose()).usdoAssetId(),
-            'token not valid'
+            "token not valid"
         );
         IYieldBox yieldBox = IYieldBox(singularity.yieldBox());
 
@@ -95,10 +95,10 @@ contract UniUsdoToWethBidder is BoringOwnable {
     ) external view returns (uint256) {
         require(
             IPenrose(singularity.penrose()).usdoToken() != address(0),
-            'USD0 not set'
+            "USD0 not set"
         );
         uint256 usdoAssetId = IPenrose(singularity.penrose()).usdoAssetId();
-        require(tokenInId == usdoAssetId, 'token not valid');
+        require(tokenInId == usdoAssetId, "token not valid");
 
         return
             _uniswapOutputAmount(
@@ -125,7 +125,7 @@ contract UniUsdoToWethBidder is BoringOwnable {
     ) external returns (uint256) {
         require(
             IPenrose(singularity.penrose()).usdoToken() != address(0),
-            'USD0 not set'
+            "USD0 not set"
         );
         IYieldBox yieldBox = IYieldBox(singularity.yieldBox());
         ILiquidationQueue liquidationQueue = ILiquidationQueue(
@@ -133,8 +133,8 @@ contract UniUsdoToWethBidder is BoringOwnable {
         );
 
         uint256 usdoAssetId = IPenrose(singularity.penrose()).usdoAssetId();
-        require(tokenInId == usdoAssetId, 'token not valid');
-        require(msg.sender == address(liquidationQueue), 'only LQ');
+        require(tokenInId == usdoAssetId, "token not valid");
+        require(msg.sender == address(liquidationQueue), "only LQ");
 
         uint256 assetMin = 0;
         if (data.length > 0) {
@@ -216,6 +216,11 @@ contract UniUsdoToWethBidder is BoringOwnable {
         swapPath[0] = tokenInAddress;
         swapPath[1] = tokenOutAddress;
         uint256 tokenInShare = yieldBox.toShare(tokenInId, amountIn, false);
-        return univ2Swapper.getOutputAmount(tokenInId, tokenInShare, abi.encode(swapPath));
+        return
+            univ2Swapper.getOutputAmount(
+                tokenInId,
+                tokenInShare,
+                abi.encode(swapPath)
+            );
     }
 }

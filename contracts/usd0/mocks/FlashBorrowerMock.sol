@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-import '@boringcrypto/boring-solidity/contracts/ERC20.sol';
-import '@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol';
-import '../interfaces/IERC3156FlashBorrower.sol';
-import '../interfaces/IERC3156FlashLender.sol';
+import "@boringcrypto/boring-solidity/contracts/ERC20.sol";
+import "@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol";
+import "../interfaces/IERC3156FlashBorrower.sol";
+import "../interfaces/IERC3156FlashLender.sol";
 
 contract FlashMaliciousBorrowerMock is IERC3156FlashBorrower {
     using BoringERC20 for IERC20;
@@ -22,15 +22,15 @@ contract FlashMaliciousBorrowerMock is IERC3156FlashBorrower {
         uint256,
         bytes calldata
     ) external view override returns (bytes32) {
-        require(msg.sender == address(lender), 'FlashBorrower: untrusted');
-        require(initiator == address(this), 'FlashBorrower: not the initiator');
+        require(msg.sender == address(lender), "FlashBorrower: untrusted");
+        require(initiator == address(this), "FlashBorrower: not the initiator");
         //do stuff here
-        return keccak256('ERC3156FlashBorrower.onFlashLoan');
+        return keccak256("ERC3156FlashBorrower.onFlashLoan");
     }
 
     function flashBorrow(address token, uint256 amount) public {
         //missing approve for repayment
-        lender.flashLoan(this, token, amount, '');
+        lender.flashLoan(this, token, amount, "");
     }
 }
 
@@ -50,15 +50,15 @@ contract FlashBorrowerMock is IERC3156FlashBorrower {
         uint256,
         bytes calldata
     ) external view override returns (bytes32) {
-        require(msg.sender == address(lender), 'FlashBorrower: untrusted');
-        require(initiator == address(this), 'FlashBorrower: not the initiator');
+        require(msg.sender == address(lender), "FlashBorrower: untrusted");
+        require(initiator == address(this), "FlashBorrower: not the initiator");
         //do stuff here
-        return keccak256('ERC3156FlashBorrower.onFlashLoan');
+        return keccak256("ERC3156FlashBorrower.onFlashLoan");
     }
 
     function flashBorrow(address token, uint256 amount) public {
         approveRepayment(token, amount);
-        lender.flashLoan(this, token, amount, '');
+        lender.flashLoan(this, token, amount, "");
     }
 
     function approveRepayment(address token, uint256 amount) public {

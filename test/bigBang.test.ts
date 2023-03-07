@@ -420,7 +420,7 @@ describe('BigBang test', () => {
         const wethMinterBalance = await wethBigBangMarket.totalFees();
         expect(wethMinterBalance.eq(0)).to.be.true;
 
-        let yieldBoxBalanceOfFeeToInAsset = await yieldBox.toAmount(
+        const yieldBoxBalanceOfFeeToInAsset = await yieldBox.toAmount(
             await wethBigBangMarket.assetId(),
             await yieldBox.balanceOf(
                 deployer.address,
@@ -585,7 +585,7 @@ describe('BigBang test', () => {
         const collateralAddress = await wethBigBangMarket.collateral();
         const collateralId = await wethBigBangMarket.collateralId();
 
-        let yieldBoxBalanceOfFeeToInAsset = await yieldBox.toAmount(
+        const yieldBoxBalanceOfFeeToInAsset = await yieldBox.toAmount(
             await wethBigBangMarket.assetId(),
             await yieldBox.balanceOf(
                 deployer.address,
@@ -687,12 +687,12 @@ describe('BigBang test', () => {
         );
 
         const wethMintVal = ethers.BigNumber.from((1e18).toString()).mul(10);
-        let usdoBorrowVal = wethMintVal
+        const usdoBorrowVal = wethMintVal
             .mul(74)
             .div(100)
             .mul(__wethUsdcPrice.div((1e18).toString()));
 
-        for (var i = 0; i < eoas.length; i++) {
+        for (let i = 0; i < eoas.length; i++) {
             const eoa = eoas[i];
             await weth
                 .connect(eoa)
@@ -723,7 +723,7 @@ describe('BigBang test', () => {
         }
 
         timeTravel(86400 * 5);
-        for (var i = 0; i < eoas.length; i++) {
+        for (let i = 0; i < eoas.length; i++) {
             const eoa = eoas[i];
 
             await wethBigBangMarket
@@ -733,7 +733,7 @@ describe('BigBang test', () => {
             timeTravel(10 * 86400);
         }
 
-        for (var i = 0; i < eoas.length; i++) {
+        for (let i = 0; i < eoas.length; i++) {
             const eoa = eoas[i];
             const userBorrowPart = await wethBigBangMarket.userBorrowPart(
                 eoa.address,
@@ -743,7 +743,7 @@ describe('BigBang test', () => {
 
         //----------------
 
-        for (var i = 0; i < eoas.length; i++) {
+        for (let i = 0; i < eoas.length; i++) {
             const eoa = eoas[i];
             const usd0Balance = await yieldBox.toAmount(
                 await bar.usdoAssetId(),
@@ -758,7 +758,7 @@ describe('BigBang test', () => {
         timeTravel(10 * 86400);
 
         const usd0Extra = ethers.BigNumber.from((1e18).toString()).mul(600);
-        for (var i = 0; i < eoas.length; i++) {
+        for (let i = 0; i < eoas.length; i++) {
             const eoa = eoas[i];
 
             await usd0.connect(deployer).mint(eoa.address, usd0Extra);
@@ -782,7 +782,7 @@ describe('BigBang test', () => {
                 .repay(eoa.address, eoa.address, false, userBorrowedAmount);
         }
 
-        for (var i = 0; i < eoas.length; i++) {
+        for (let i = 0; i < eoas.length; i++) {
             const eoa = eoas[i];
             const usd0Balance = await yieldBox.toAmount(
                 await bar.usdoAssetId(),
@@ -857,12 +857,12 @@ describe('BigBang test', () => {
         );
 
         const wethMintVal = ethers.BigNumber.from((1e18).toString()).mul(10);
-        let usdoBorrowVal = wethMintVal
+        const usdoBorrowVal = wethMintVal
             .mul(74)
             .div(100)
             .mul(__wethUsdcPrice.div((1e18).toString()));
 
-        for (var i = 0; i < eoas.length; i++) {
+        for (let i = 0; i < eoas.length; i++) {
             const eoa = eoas[i];
             await weth
                 .connect(eoa)
@@ -893,7 +893,7 @@ describe('BigBang test', () => {
         }
 
         timeTravel(86400 * 5);
-        for (var i = 0; i < eoas.length; i++) {
+        for (let i = 0; i < eoas.length; i++) {
             const eoa = eoas[i];
 
             await wethBigBangMarket
@@ -903,7 +903,7 @@ describe('BigBang test', () => {
             timeTravel(10 * 86400);
         }
 
-        for (var i = 0; i < eoas.length; i++) {
+        for (let i = 0; i < eoas.length; i++) {
             const eoa = eoas[i];
             const userBorrowPart = await wethBigBangMarket.userBorrowPart(
                 eoa.address,
@@ -912,7 +912,7 @@ describe('BigBang test', () => {
         }
 
         //----------------
-        for (var i = 0; i < eoas.length; i++) {
+        for (let i = 0; i < eoas.length; i++) {
             const eoa = eoas[i];
             const usd0Balance = await yieldBox.toAmount(
                 await bar.usdoAssetId(),
@@ -927,7 +927,7 @@ describe('BigBang test', () => {
         timeTravel(10 * 86400);
 
         const usd0Extra = ethers.BigNumber.from((1e18).toString()).mul(600);
-        for (var i = 0; i < eoas.length; i++) {
+        for (let i = 0; i < eoas.length; i++) {
             const eoa = eoas[i];
 
             await usd0.connect(deployer).mint(eoa.address, usd0Extra);
@@ -984,7 +984,7 @@ describe('BigBang test', () => {
         );
         expect(yieldBoxBalanceOfFeeVe.gt(0)).to.be.true;
 
-        for (var i = 0; i < eoas.length; i++) {
+        for (let i = 0; i < eoas.length; i++) {
             timeTravel(10 * 86400);
             const eoa = eoas[i];
 
@@ -1078,7 +1078,7 @@ describe('BigBang test', () => {
             .addCollateral(eoa1.address, eoa1.address, false, valShare);
 
         //borrow
-        let usdoBorrowVal = wethMintVal
+        const usdoBorrowVal = wethMintVal
             .div(10)
             .mul(74)
             .div(100)
@@ -1184,10 +1184,10 @@ describe('BigBang test', () => {
             ),
         ).to.be.reverted;
 
-        let updateBorrowCapFn = wethBigBangMarket.interface.encodeFunctionData(
-            'setBorrowCap',
-            [100],
-        );
+        const updateBorrowCapFn =
+            wethBigBangMarket.interface.encodeFunctionData('setBorrowCap', [
+                100,
+            ]);
         await bar.executeMarketFn(
             [wethBigBangMarket.address],
             [updateBorrowCapFn],
@@ -1588,12 +1588,12 @@ describe('BigBang test', () => {
             .addCollateral(eoa1.address, eoa1.address, false, valShare);
 
         //borrow
-        let usdoBorrowVal = ethers.utils.parseEther('10000');
+        const usdoBorrowVal = ethers.utils.parseEther('10000');
         await wethBigBangMarket
             .connect(eoa1)
             .borrow(eoa1.address, eoa1.address, usdoBorrowVal);
 
-        let userBorrowPart = await wethBigBangMarket.userBorrowPart(
+        const userBorrowPart = await wethBigBangMarket.userBorrowPart(
             eoa1.address,
         );
         expect(userBorrowPart.eq(usdoBorrowVal)).to.be.true;
@@ -1738,7 +1738,7 @@ describe('BigBang test', () => {
             true,
         );
 
-        let userBorrowPart = await wethBigBangMarket.userBorrowPart(
+        const userBorrowPart = await wethBigBangMarket.userBorrowPart(
             deployer.address,
         );
         expect(userBorrowPart.gt(0)).to.be.true;
@@ -1793,7 +1793,7 @@ describe('BigBang test', () => {
             .addCollateral(eoa1.address, eoa1.address, false, valShare);
 
         //borrow
-        let usdoBorrowVal = wethMintVal
+        const usdoBorrowVal = wethMintVal
             .mul(30)
             .div(100)
             .mul(__wethUsdcPrice.div((1e18).toString()));

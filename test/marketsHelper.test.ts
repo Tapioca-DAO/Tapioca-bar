@@ -22,7 +22,9 @@ describe('MarketsHelper test', () => {
         await initContracts();
 
         const oftRegisteredErc20 = await tOft.erc20();
-        expect(oftRegisteredErc20.toLowerCase()).to.eq(usdc.address.toLowerCase());
+        expect(oftRegisteredErc20.toLowerCase()).to.eq(
+            usdc.address.toLowerCase(),
+        );
 
         const assetId = await wethTapiocaOftUsdcSingularity.assetId();
         const collateralId = await wethTapiocaOftUsdcSingularity.collateralId();
@@ -73,19 +75,21 @@ describe('MarketsHelper test', () => {
         await wethTapiocaOftUsdcSingularity
             .connect(eoa1)
             .approve(marketsHelper.address, ethers.constants.MaxUint256);
-        await expect(marketsHelper
-            .connect(eoa1)
-            .depositAddCollateralAndBorrow(
-                wethTapiocaOftUsdcSingularity.address,
-                usdcMintVal,
-                borrowAmount,
-                {
-                    deposit: true,
-                    withdraw: false,
-                    withdrawData: ethers.utils.toUtf8Bytes(''),
-                    wrap: true,
-                },
-            )).to.be.revertedWith('MarketsHelper: cannot wrap on this chain');
+        await expect(
+            marketsHelper
+                .connect(eoa1)
+                .depositAddCollateralAndBorrow(
+                    wethTapiocaOftUsdcSingularity.address,
+                    usdcMintVal,
+                    borrowAmount,
+                    {
+                        deposit: true,
+                        withdraw: false,
+                        withdrawData: ethers.utils.toUtf8Bytes(''),
+                        wrap: true,
+                    },
+                ),
+        ).to.be.revertedWith('MarketsHelper: cannot wrap on this chain');
     });
     it('Should test auto-wrap', async () => {
         const {
@@ -105,7 +109,9 @@ describe('MarketsHelper test', () => {
         await initContracts();
 
         const oftRegisteredErc20 = await tOft.erc20();
-        expect(oftRegisteredErc20.toLowerCase()).to.eq(usdc.address.toLowerCase());
+        expect(oftRegisteredErc20.toLowerCase()).to.eq(
+            usdc.address.toLowerCase(),
+        );
 
         const assetId = await wethTapiocaOftUsdcSingularity.assetId();
         const collateralId = await wethTapiocaOftUsdcSingularity.collateralId();
@@ -178,7 +184,11 @@ describe('MarketsHelper test', () => {
             await wethTapiocaOftUsdcSingularity.userCollateralShare(
                 eoa1.address,
             );
-        const collateralShare = await yieldBox.toShare(tOftAssetId, usdcMintVal, false);
+        const collateralShare = await yieldBox.toShare(
+            tOftAssetId,
+            usdcMintVal,
+            false,
+        );
         expect(collateral.eq(collateralShare)).to.be.true;
     });
 
@@ -254,7 +264,7 @@ describe('MarketsHelper test', () => {
                     withdraw: false,
                     withdrawData: ethers.utils.toUtf8Bytes(''),
                     wrap: false,
-                }
+                },
             );
     });
 
@@ -302,7 +312,7 @@ describe('MarketsHelper test', () => {
                     withdraw: true,
                     withdrawData: ethers.utils.toUtf8Bytes(''),
                     wrap: false,
-                }
+                },
             );
     });
 
@@ -350,7 +360,7 @@ describe('MarketsHelper test', () => {
                     withdraw: false,
                     withdrawData: ethers.utils.toUtf8Bytes(''),
                     wrap: false,
-                }
+                },
             );
     });
 
@@ -411,8 +421,8 @@ describe('MarketsHelper test', () => {
                     withdraw: true,
                     deposit: false,
                     withdrawData: ethers.utils.toUtf8Bytes(''),
-                    wrap: false
-                }
+                    wrap: false,
+                },
             );
     });
 
@@ -460,7 +470,7 @@ describe('MarketsHelper test', () => {
                     withdraw: true,
                     withdrawData: ethers.utils.toUtf8Bytes(''),
                     wrap: false,
-                }
+                },
             );
 
         const userBorrowPart = await wethUsdcSingularity.userBorrowPart(
@@ -531,7 +541,7 @@ describe('MarketsHelper test', () => {
                     withdraw: true,
                     withdrawData: ethers.utils.toUtf8Bytes(''),
                     wrap: false,
-                }
+                },
             );
 
         const userBorrowPart = await wethUsdcSingularity.userBorrowPart(

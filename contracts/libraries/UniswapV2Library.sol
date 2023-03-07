@@ -2,8 +2,8 @@
 
 pragma solidity >=0.5.0;
 
-import './IUniswapV2Pair.sol';
-import './SafeMath.sol';
+import "./IUniswapV2Pair.sol";
+import "./SafeMath.sol";
 
 // solhint-disable max-line-length
 
@@ -11,16 +11,15 @@ library UniswapV2Library {
     using SafeMath for uint256;
 
     // returns sorted token addresses, used to handle return values from pairs sorted in this order
-    function sortTokens(address tokenA, address tokenB)
-        internal
-        pure
-        returns (address token0, address token1)
-    {
-        require(tokenA != tokenB, 'UniswapV2Library: IDENTICAL_ADDRESSES');
+    function sortTokens(
+        address tokenA,
+        address tokenB
+    ) internal pure returns (address token0, address token1) {
+        require(tokenA != tokenB, "UniswapV2Library: IDENTICAL_ADDRESSES");
         (token0, token1) = tokenA < tokenB
             ? (tokenA, tokenB)
             : (tokenB, tokenA);
-        require(token0 != address(0), 'UniswapV2Library: ZERO_ADDRESS');
+        require(token0 != address(0), "UniswapV2Library: ZERO_ADDRESS");
     }
 
     // calculates the CREATE2 address for a pair without making any external calls
@@ -36,7 +35,7 @@ library UniswapV2Library {
                 uint256(
                     keccak256(
                         abi.encodePacked(
-                            hex'ff',
+                            hex"ff",
                             factory,
                             keccak256(abi.encodePacked(token0, token1)),
                             pairCodeHash // init code hash
@@ -69,10 +68,10 @@ library UniswapV2Library {
         uint256 reserveA,
         uint256 reserveB
     ) internal pure returns (uint256 amountB) {
-        require(amountA > 0, 'UniswapV2Library: INSUFFICIENT_AMOUNT');
+        require(amountA > 0, "UniswapV2Library: INSUFFICIENT_AMOUNT");
         require(
             reserveA > 0 && reserveB > 0,
-            'UniswapV2Library: INSUFFICIENT_LIQUIDITY'
+            "UniswapV2Library: INSUFFICIENT_LIQUIDITY"
         );
         amountB = amountA.mul(reserveB) / reserveA;
     }
@@ -83,10 +82,10 @@ library UniswapV2Library {
         uint256 reserveIn,
         uint256 reserveOut
     ) internal pure returns (uint256 amountOut) {
-        require(amountIn > 0, 'UniswapV2Library: INSUFFICIENT_INPUT_AMOUNT');
+        require(amountIn > 0, "UniswapV2Library: INSUFFICIENT_INPUT_AMOUNT");
         require(
             reserveIn > 0 && reserveOut > 0,
-            'UniswapV2Library: INSUFFICIENT_LIQUIDITY'
+            "UniswapV2Library: INSUFFICIENT_LIQUIDITY"
         );
         uint256 amountInWithFee = amountIn.mul(997);
         uint256 numerator = amountInWithFee.mul(reserveOut);
@@ -100,10 +99,10 @@ library UniswapV2Library {
         uint256 reserveIn,
         uint256 reserveOut
     ) internal pure returns (uint256 amountIn) {
-        require(amountOut > 0, 'UniswapV2Library: INSUFFICIENT_OUTPUT_AMOUNT');
+        require(amountOut > 0, "UniswapV2Library: INSUFFICIENT_OUTPUT_AMOUNT");
         require(
             reserveIn > 0 && reserveOut > 0,
-            'UniswapV2Library: INSUFFICIENT_LIQUIDITY'
+            "UniswapV2Library: INSUFFICIENT_LIQUIDITY"
         );
         uint256 numerator = reserveIn.mul(amountOut).mul(1000);
         uint256 denominator = reserveOut.sub(amountOut).mul(997);
@@ -117,7 +116,7 @@ library UniswapV2Library {
         address[] memory path,
         bytes32 pairCodeHash
     ) internal view returns (uint256[] memory amounts) {
-        require(path.length >= 2, 'UniswapV2Library: INVALID_PATH');
+        require(path.length >= 2, "UniswapV2Library: INVALID_PATH");
         amounts = new uint256[](path.length);
         amounts[0] = amountIn;
         for (uint256 i; i < path.length - 1; i++) {
@@ -138,7 +137,7 @@ library UniswapV2Library {
         address[] memory path,
         bytes32 pairCodeHash
     ) internal view returns (uint256[] memory amounts) {
-        require(path.length >= 2, 'UniswapV2Library: INVALID_PATH');
+        require(path.length >= 2, "UniswapV2Library: INVALID_PATH");
         amounts = new uint256[](path.length);
         amounts[amounts.length - 1] = amountOut;
         for (uint256 i = path.length - 1; i > 0; i--) {

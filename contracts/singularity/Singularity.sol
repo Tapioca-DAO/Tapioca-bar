@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-import './SGLCommon.sol';
-import './SGLLiquidation.sol';
-import './SGLLendingBorrowing.sol';
+import "./SGLCommon.sol";
+import "./SGLLiquidation.sol";
+import "./SGLLendingBorrowing.sol";
 
-import '../interfaces/ISendFrom.sol';
-import 'tapioca-sdk/dist/contracts/libraries/LzLib.sol';
+import "../interfaces/ISendFrom.sol";
+import "tapioca-sdk/dist/contracts/libraries/LzLib.sol";
 
 // solhint-disable max-line-length
 
@@ -78,7 +78,7 @@ contract Singularity is SGLCommon {
             address(_collateral) != address(0) &&
                 address(_asset) != address(0) &&
                 address(_oracle) != address(0),
-            'SGL: bad pair'
+            "SGL: bad pair"
         );
         asset = _asset;
         collateral = _collateral;
@@ -345,7 +345,7 @@ contract Singularity is SGLCommon {
         if (accrueInfo.feesEarnedFraction > 0) {
             withdrawFeesEarned();
         }
-        require(penrose.swappers(swapper), 'SGL: Invalid swapper');
+        require(penrose.swappers(swapper), "SGL: Invalid swapper");
         address _feeTo = penrose.feeTo();
 
         uint256 feeShares = _removeAsset(
@@ -415,7 +415,7 @@ contract Singularity is SGLCommon {
                 yieldBox.balanceOf(from, assetId),
                 false
             ) >= amount,
-            'SGL: not available'
+            "SGL: not available"
         );
 
         yieldBox.withdraw(assetId, from, address(this), amount, 0);
@@ -435,23 +435,23 @@ contract Singularity is SGLCommon {
     /// @notice Set the bonus amount a liquidator can make use of, on top of the amount needed to make the user solvent
     /// @param _val the new value
     function setLiquidationBonusAmount(uint256 _val) external onlyOwner {
-        require(_val < FEE_PRECISION, 'SGL: not valid');
+        require(_val < FEE_PRECISION, "SGL: not valid");
         liquidationBonusAmount = _val;
     }
 
     /// @notice Set the liquidator min reward
     /// @param _val the new value
     function setMinLiquidatorReward(uint256 _val) external onlyOwner {
-        require(_val < FEE_PRECISION, 'SGL: not valid');
-        require(_val < maxLiquidatorReward, 'SGL: not valid');
+        require(_val < FEE_PRECISION, "SGL: not valid");
+        require(_val < maxLiquidatorReward, "SGL: not valid");
         minLiquidatorReward = _val;
     }
 
     /// @notice Set the liquidator max reward
     /// @param _val the new value
     function setMaxLiquidatorReward(uint256 _val) external onlyOwner {
-        require(_val < FEE_PRECISION, 'SGL: not valid');
-        require(_val > minLiquidatorReward, 'SGL: not valid');
+        require(_val < FEE_PRECISION, "SGL: not valid");
+        require(_val > minLiquidatorReward, "SGL: not valid");
         maxLiquidatorReward = _val;
     }
 
@@ -459,7 +459,7 @@ contract Singularity is SGLCommon {
     /// @dev Conservator can pause the contract
     /// @param _conservator The new address
     function setConservator(address _conservator) external onlyOwner {
-        require(_conservator != address(0), 'SGL: address not valid');
+        require(_conservator != address(0), "SGL: address not valid");
         emit ConservatorUpdated(conservator, _conservator);
         conservator = _conservator;
     }
@@ -467,8 +467,8 @@ contract Singularity is SGLCommon {
     /// @notice updates the pause state of the contract
     /// @param val the new value
     function updatePause(bool val) external {
-        require(msg.sender == conservator, 'SGL: unauthorized');
-        require(val != paused, 'SGL: same state');
+        require(msg.sender == conservator, "SGL: unauthorized");
+        require(val != paused, "SGL: same state");
         emit PausedUpdated(paused, val);
         paused = val;
     }
@@ -477,7 +477,7 @@ contract Singularity is SGLCommon {
     /// @dev can only be called by the owner
     /// @param _val the new value
     function setLqCollateralizationRate(uint256 _val) external onlyOwner {
-        require(_val <= COLLATERALIZATION_RATE_PRECISION, 'SGL: not valid');
+        require(_val <= COLLATERALIZATION_RATE_PRECISION, "SGL: not valid");
         lqCollateralizationRate = _val;
     }
 
@@ -485,7 +485,7 @@ contract Singularity is SGLCommon {
     /// @dev can only be called by the owner
     /// @param _val the new value
     function setClosedCollateralizationRate(uint256 _val) external onlyOwner {
-        require(_val <= COLLATERALIZATION_RATE_PRECISION, 'SGL: not valid');
+        require(_val <= COLLATERALIZATION_RATE_PRECISION, "SGL: not valid");
         closedCollateralizationRate = _val;
     }
 
@@ -509,7 +509,7 @@ contract Singularity is SGLCommon {
     /// @dev can only be called by the owner
     /// @param _val the new value
     function setBorrowOpeningFee(uint256 _val) external onlyOwner {
-        require(_val <= FEE_PRECISION, 'SGL: not valid');
+        require(_val <= FEE_PRECISION, "SGL: not valid");
         borrowOpeningFee = _val;
     }
 
@@ -517,7 +517,7 @@ contract Singularity is SGLCommon {
     /// @dev can only be called by the owner
     /// @param _val the new value
     function setCallerFee(uint256 _val) external onlyOwner {
-        require(_val <= FEE_PRECISION, 'SGL: not valid');
+        require(_val <= FEE_PRECISION, "SGL: not valid");
         callerFee = _val;
     }
 
@@ -525,7 +525,7 @@ contract Singularity is SGLCommon {
     /// @dev can only be called by the owner
     /// @param _val the new value
     function setProtocolFee(uint256 _val) external onlyOwner {
-        require(_val <= FEE_PRECISION, 'SGL: not valid');
+        require(_val <= FEE_PRECISION, "SGL: not valid");
         protocolFee = _val;
     }
 
@@ -534,7 +534,7 @@ contract Singularity is SGLCommon {
     function setLiquidationQueue(
         ILiquidationQueue _liquidationQueue
     ) public onlyOwner {
-        require(_liquidationQueue.onlyOnce(), 'SGL: LQ not initalized');
+        require(_liquidationQueue.onlyOnce(), "SGL: LQ not initalized");
         liquidationQueue = _liquidationQueue;
     }
 
@@ -562,7 +562,7 @@ contract Singularity is SGLCommon {
         bytes memory _returnData
     ) private pure returns (string memory) {
         // If the _res length is less than 68, then the transaction failed silently (without a revert message)
-        if (_returnData.length < 68) return 'SGL: no return data';
+        if (_returnData.length < 68) return "SGL: no return data";
         // solhint-disable-next-line no-inline-assembly
         assembly {
             // Slice the sighash.
@@ -579,7 +579,7 @@ contract Singularity is SGLCommon {
             module = address(liquidationModule);
         }
         if (module == address(0)) {
-            revert('SGL: module not set');
+            revert("SGL: module not set");
         }
 
         return module;

@@ -12,10 +12,7 @@ export const getDetails = async (
     const { singularityContract, singularityAddress } =
         await getSingularityContract(taskArgs, hre);
 
-    const mixologistHelperContract = await getDeployment(
-        hre,
-        'MarketsHelper',
-    );
+    const mixologistHelperContract = await getDeployment(hre, 'MarketsHelper');
     const yieldBoxContract = await getDeployment(hre, 'YieldBox');
 
     const assetId = await singularityContract.assetId();

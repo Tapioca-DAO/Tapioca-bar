@@ -33,7 +33,7 @@ describe('Proxy Deployer', () => {
         const { lzEndpointContract, proxyDeployer, deployer, eoa1 } =
             await loadFixture(register);
 
-        let saltStr = `Proxy${
+        const saltStr = `Proxy${
             (await ethers.provider.getNetwork()).chainId
         }${await lzEndpointContract.getChainId()}`;
         let salt = ethers.utils.formatBytes32String(saltStr);

@@ -25,7 +25,6 @@ export const getDeployment = async (
     return contract;
 };
 
-
 export const getSingularityContract = async (
     taskArgs: any,
     hre: HardhatRuntimeEnvironment,

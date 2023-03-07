@@ -1,17 +1,17 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-import '@boringcrypto/boring-solidity/contracts/BoringOwnable.sol';
-import '@boringcrypto/boring-solidity/contracts/ERC20.sol';
-import '@boringcrypto/boring-solidity/contracts/libraries/BoringRebase.sol';
-import '@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol';
+import "@boringcrypto/boring-solidity/contracts/BoringOwnable.sol";
+import "@boringcrypto/boring-solidity/contracts/ERC20.sol";
+import "@boringcrypto/boring-solidity/contracts/libraries/BoringRebase.sol";
+import "@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol";
 
-import '../swappers/ISwapper.sol';
-import './interfaces/IBigBang.sol';
-import '../interfaces/IOracle.sol';
-import '../interfaces/IPenrose.sol';
-import '../interfaces/ISendFrom.sol';
-import '../../yieldbox/contracts/YieldBox.sol';
+import "../swappers/ISwapper.sol";
+import "./interfaces/IBigBang.sol";
+import "../interfaces/IOracle.sol";
+import "../interfaces/IPenrose.sol";
+import "../interfaces/ISendFrom.sol";
+import "../../yieldbox/contracts/YieldBox.sol";
 
 // solhint-disable max-line-length
 /*
@@ -160,17 +160,17 @@ contract BigBang is BoringOwnable {
     /// @dev Checks if the user is solvent in the closed liquidation case at the end of the function body.
     modifier solvent(address from) {
         _;
-        require(_isSolvent(from, exchangeRate), 'BigBang: insolvent');
+        require(_isSolvent(from, exchangeRate), "BigBang: insolvent");
     }
 
     modifier notPaused() {
-        require(!paused, 'BigBang: paused');
+        require(!paused, "BigBang: paused");
         _;
     }
 
     bool private initialized;
     modifier onlyOnce() {
-        require(!initialized, 'BigBang: initialized');
+        require(!initialized, "BigBang: initialized");
         _;
         initialized = true;
     }
@@ -212,7 +212,7 @@ contract BigBang is BoringOwnable {
             address(_collateral) != address(0) &&
                 address(_asset) != address(0) &&
                 address(_oracle) != address(0),
-            'BigBang: bad pair'
+            "BigBang: bad pair"
         );
 
         asset = IUSD0(_asset);
@@ -251,14 +251,13 @@ contract BigBang is BoringOwnable {
     /// @param user The user to check solvency.
     /// @param _exchangeRate The exchange rate asset/collateral.
     /// @return amountToSolvency The amount of collateral to be solvent.
-    function computeTVLInfo(address user, uint256 _exchangeRate)
+    function computeTVLInfo(
+        address user,
+        uint256 _exchangeRate
+    )
         public
         view
-        returns (
-            uint256 amountToSolvency,
-            uint256 minTVL,
-            uint256 maxTVL
-        )
+        returns (uint256 amountToSolvency, uint256 minTVL, uint256 maxTVL)
     {
         uint256 borrowPart = userBorrowPart[user];
         if (borrowPart == 0) return (0, 0, 0);
@@ -286,11 +285,10 @@ contract BigBang is BoringOwnable {
     }
 
     /// @notice Return the maximum liquidatable amount for user
-    function computeClosingFactor(address user, uint256 _exchangeRate)
-        public
-        view
-        returns (uint256)
-    {
+    function computeClosingFactor(
+        address user,
+        uint256 _exchangeRate
+    ) public view returns (uint256) {
         if (_isSolvent(user, _exchangeRate)) return 0;
 
         (uint256 amountToSolvency, , uint256 maxTVL) = computeTVLInfo(
@@ -305,11 +303,10 @@ contract BigBang is BoringOwnable {
             ((liquidationBonusAmount * borrowed) / FEE_PRECISION);
     }
 
-    function computeLiquidatorReward(address user, uint256 _exchangeRate)
-        public
-        view
-        returns (uint256)
-    {
+    function computeLiquidatorReward(
+        address user,
+        uint256 _exchangeRate
+    ) public view returns (uint256) {
         (uint256 minTVL, uint256 maxTVL) = _computeMaxAndMinLTVInAsset(
             userCollateralShare[user],
             _exchangeRate
@@ -350,10 +347,10 @@ contract BigBang is BoringOwnable {
     /// @notice Allows batched call to BingBang.
     /// @param calls An array encoded call data.
     /// @param revertOnFail If True then reverts after a failed call and stops doing further calls.
-    function execute(bytes[] calldata calls, bool revertOnFail)
-        external
-        returns (bool[] memory successes, string[] memory results)
-    {
+    function execute(
+        bytes[] calldata calls,
+        bool revertOnFail
+    ) external returns (bool[] memory successes, string[] memory results) {
         successes = new bool[](calls.length);
         results = new string[](calls.length);
         for (uint256 i = 0; i < calls.length; i++) {
@@ -378,7 +375,7 @@ contract BigBang is BoringOwnable {
     /// @return updated True if `exchangeRate` was updated.
     /// @return rate The new exchange rate.
     function updateExchangeRate() public returns (bool updated, uint256 rate) {
-        (updated, rate) = oracle.get('');
+        (updated, rate) = oracle.get("");
 
         if (updated) {
             exchangeRate = rate;
@@ -505,7 +502,7 @@ contract BigBang is BoringOwnable {
         ISwapper swapper,
         IPenrose.SwapData calldata swapData
     ) public notPaused {
-        require(penrose.swappers(swapper), 'BigBang: Invalid swapper');
+        require(penrose.swappers(swapper), "BigBang: Invalid swapper");
 
         uint256 balance = asset.balanceOf(address(this));
         totalFees += balance;
@@ -590,7 +587,7 @@ contract BigBang is BoringOwnable {
             yieldBox.balanceOf(msg.sender, assetId),
             false
         );
-        require(available >= amount, 'BigBang: not available');
+        require(available >= amount, "BigBang: not available");
 
         yieldBox.withdraw(assetId, msg.sender, address(this), amount, 0);
 
@@ -615,23 +612,23 @@ contract BigBang is BoringOwnable {
     /// @notice Set the bonus amount a liquidator can make use of, on top of the amount needed to make the user solvent
     /// @param _val the new value
     function setLiquidationBonusAmount(uint256 _val) external onlyOwner {
-        require(_val < FEE_PRECISION, 'BigBang: not valid');
+        require(_val < FEE_PRECISION, "BigBang: not valid");
         liquidationBonusAmount = _val;
     }
 
     /// @notice Set the liquidator min reward
     /// @param _val the new value
     function setMinLiquidatorReward(uint256 _val) external onlyOwner {
-        require(_val < FEE_PRECISION, 'BigBang: not valid');
-        require(_val < maxLiquidatorReward, 'BigBang: not valid');
+        require(_val < FEE_PRECISION, "BigBang: not valid");
+        require(_val < maxLiquidatorReward, "BigBang: not valid");
         minLiquidatorReward = _val;
     }
 
     /// @notice Set the liquidator max reward
     /// @param _val the new value
     function setMaxLiquidatorReward(uint256 _val) external onlyOwner {
-        require(_val < FEE_PRECISION, 'BigBang: not valid');
-        require(_val > minLiquidatorReward, 'BigBang: not valid');
+        require(_val < FEE_PRECISION, "BigBang: not valid");
+        require(_val > minLiquidatorReward, "BigBang: not valid");
         maxLiquidatorReward = _val;
     }
 
@@ -639,7 +636,7 @@ contract BigBang is BoringOwnable {
     /// @dev Conservator can pause the contract
     /// @param _conservator The new address
     function setConservator(address _conservator) external onlyOwner {
-        require(_conservator != address(0), 'BigBang: address not valid');
+        require(_conservator != address(0), "BigBang: address not valid");
         emit ConservatorUpdated(conservator, _conservator);
         conservator = _conservator;
     }
@@ -647,8 +644,8 @@ contract BigBang is BoringOwnable {
     /// @notice updates the pause state of the contract
     /// @param val the new value
     function updatePause(bool val) external {
-        require(msg.sender == conservator, 'BigBang: unauthorized');
-        require(val != paused, 'BigBang: same state');
+        require(msg.sender == conservator, "BigBang: unauthorized");
+        require(val != paused, "BigBang: same state");
         emit PausedUpdated(paused, val);
         paused = val;
     }
@@ -657,7 +654,7 @@ contract BigBang is BoringOwnable {
     /// @dev can only be called by the owner
     /// @param _val the new value
     function setProtocolFee(uint256 _val) external onlyOwner {
-        require(_val <= FEE_PRECISION, 'BigBang: not valid');
+        require(_val <= FEE_PRECISION, "BigBang: not valid");
         protocolFee = _val;
     }
 
@@ -665,7 +662,7 @@ contract BigBang is BoringOwnable {
     /// @dev can only be called by the owner
     /// @param _val the new value
     function setCallerFee(uint256 _val) external onlyOwner {
-        require(_val <= FEE_PRECISION, 'BigBang: not valid');
+        require(_val <= FEE_PRECISION, "BigBang: not valid");
         callerFee = _val;
     }
 
@@ -673,7 +670,7 @@ contract BigBang is BoringOwnable {
     /// @dev can only be called by the owner
     /// @param _val the new value
     function setCollateralizationRate(uint256 _val) external onlyOwner {
-        require(_val <= COLLATERALIZATION_RATE_PRECISION, 'BigBang: not valid');
+        require(_val <= COLLATERALIZATION_RATE_PRECISION, "BigBang: not valid");
         collateralizationRate = _val;
     }
 
@@ -690,7 +687,7 @@ contract BigBang is BoringOwnable {
     /// @notice Updates the borrowing fee
     /// @param _borrowingFee the new value
     function updateBorrowingFee(uint256 _borrowingFee) external onlyOwner {
-        require(_borrowingFee <= MAX_BORROWING_FEE, 'BigBang: value not valid');
+        require(_borrowingFee <= MAX_BORROWING_FEE, "BigBang: value not valid");
         emit LogBorrowingFee(borrowingFee, _borrowingFee);
         borrowingFee = _borrowingFee;
     }
@@ -698,13 +695,11 @@ contract BigBang is BoringOwnable {
     // ************************* //
     // *** PRIVATE FUNCTIONS *** //
     // ************************* //
-    function _getRevertMsg(bytes memory _returnData)
-        private
-        pure
-        returns (string memory)
-    {
+    function _getRevertMsg(
+        bytes memory _returnData
+    ) private pure returns (string memory) {
         // If the _res length is less than 68, then the transaction failed silently (without a revert message)
-        if (_returnData.length < 68) return 'BingBang: no return data';
+        if (_returnData.length < 68) return "BingBang: no return data";
         // solhint-disable-next-line no-inline-assembly
         assembly {
             // Slice the sighash.
@@ -736,11 +731,10 @@ contract BigBang is BoringOwnable {
 
     /// @notice Concrete implementation of `isSolvent`. Includes a parameter to allow caching `exchangeRate`.
     /// @param _exchangeRate The exchange rate. Used to cache the `exchangeRate` between calls.
-    function _isSolvent(address user, uint256 _exchangeRate)
-        internal
-        view
-        returns (bool)
-    {
+    function _isSolvent(
+        address user,
+        uint256 _exchangeRate
+    ) internal view returns (bool) {
         // accrue must have already been called!
         uint256 borrowPart = userBorrowPart[user];
         if (borrowPart == 0) return true;
@@ -795,7 +789,7 @@ contract BigBang is BoringOwnable {
         uint256 borrowShare = yieldBox.toShare(assetId, borrowAmount, true);
 
         // Closed liquidation using a pre-approved swapper
-        require(penrose.swappers(swapper), 'BigBang: Invalid swapper');
+        require(penrose.swappers(swapper), "BigBang: Invalid swapper");
 
         // Swaps the users collateral for the borrowed asset
         yieldBox.transfer(
@@ -866,7 +860,7 @@ contract BigBang is BoringOwnable {
             }
         }
 
-        require(liquidatedCount > 0, 'SGL: no users found');
+        require(liquidatedCount > 0, "SGL: no users found");
     }
 
     /// @dev Helper function to move tokens.
@@ -887,7 +881,7 @@ contract BigBang is BoringOwnable {
         if (skim) {
             require(
                 share <= yieldBox.balanceOf(address(this), _tokenId) - total,
-                'BigBang: too much'
+                "BigBang: too much"
             );
         } else {
             yieldBox.transfer(from, address(this), _tokenId, share);
@@ -939,7 +933,7 @@ contract BigBang is BoringOwnable {
         (totalBorrow, part) = totalBorrow.add(amount + feeAmount, true);
         require(
             totalBorrowCap == 0 || totalBorrow.elastic <= totalBorrowCap,
-            'BigBang: borrow cap reached'
+            "BigBang: borrow cap reached"
         );
 
         userBorrowPart[from] += part;
@@ -1020,7 +1014,7 @@ contract BigBang is BoringOwnable {
             false
         );
         userCollateralShare[user] -= collateralShare;
-        require(borrowAmount != 0, 'SGL: solvent');
+        require(borrowAmount != 0, "SGL: solvent");
 
         totalBorrow.elastic -= uint128(borrowAmount);
         totalBorrow.base -= uint128(borrowPart);

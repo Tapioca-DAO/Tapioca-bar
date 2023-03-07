@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-import './IOracle.sol';
+import "./IOracle.sol";
 
 interface IMarket {
     function asset() external view returns (address);
@@ -42,11 +42,7 @@ interface IMarket {
         uint256 share
     ) external;
 
-    function removeCollateral(
-        address from,
-        address to,
-        uint256 share
-    ) external;
+    function removeCollateral(address from, address to, uint256 share) external;
 
     function repay(
         address from,
@@ -70,7 +66,8 @@ interface IMarket {
         uint256 amount
     ) external returns (uint256 part, uint256 share);
 
-    function execute(bytes[] calldata calls, bool revertOnFail)
-        external
-        returns (bool[] memory successes, string[] memory results);
+    function execute(
+        bytes[] calldata calls,
+        bool revertOnFail
+    ) external returns (bool[] memory successes, string[] memory results);
 }

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
-import '../../../interfaces/IOracle.sol';
+import "../../../interfaces/IOracle.sol";
 
 contract OracleMockFactory {
     address public last;
@@ -29,7 +29,7 @@ contract OracleMock is IOracle {
     }
 
     function getDataParameter() public pure returns (bytes memory) {
-        return abi.encode('0x0');
+        return abi.encode("0x0");
     }
 
     // Get the latest exchange rate
@@ -47,15 +47,12 @@ contract OracleMock is IOracle {
     }
 
     function name(bytes calldata) public pure override returns (string memory) {
-        return 'Test';
+        return "Test";
     }
 
-    function symbol(bytes calldata)
-        public
-        pure
-        override
-        returns (string memory)
-    {
-        return 'TEST';
+    function symbol(
+        bytes calldata
+    ) public pure override returns (string memory) {
+        return "TEST";
     }
 }

@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-import '@boringcrypto/boring-solidity/contracts/BoringOwnable.sol';
+import "@boringcrypto/boring-solidity/contracts/BoringOwnable.sol";
 
-import '../../interfaces/IPenrose.sol';
-import '../ILiquidationQueue.sol';
-import '../../libraries/ICurvePool.sol';
-import '../../swappers/CurveSwapper.sol';
-import '../../singularity/interfaces/ISingularity.sol';
-import '../../../yieldbox/contracts/interfaces/IYieldBox.sol';
+import "../../interfaces/IPenrose.sol";
+import "../ILiquidationQueue.sol";
+import "../../libraries/ICurvePool.sol";
+import "../../swappers/CurveSwapper.sol";
+import "../../singularity/interfaces/ISingularity.sol";
+import "../../../yieldbox/contracts/interfaces/IYieldBox.sol";
 
 /*
 
@@ -54,7 +54,7 @@ contract CurveStableToUsdoBidder is BoringOwnable {
     // ********************** //
     /// @notice returns the unique name
     function name() external pure returns (string memory) {
-        return 'stable -> USD0 (3Crv+USD0)';
+        return "stable -> USD0 (3Crv+USD0)";
     }
 
     /// @notice returns the amount of collateral
@@ -67,7 +67,7 @@ contract CurveStableToUsdoBidder is BoringOwnable {
     ) external view returns (uint256) {
         require(
             IPenrose(singularity.penrose()).usdoToken() != address(0),
-            'USD0 not set'
+            "USD0 not set"
         );
 
         uint256 usdoAssetId = IPenrose(singularity.penrose()).usdoAssetId();
@@ -95,7 +95,7 @@ contract CurveStableToUsdoBidder is BoringOwnable {
     ) external view returns (uint256) {
         require(
             IPenrose(singularity.penrose()).usdoToken() != address(0),
-            'USD0 not set'
+            "USD0 not set"
         );
 
         uint256 usdoAssetId = IPenrose(singularity.penrose()).usdoAssetId();
@@ -128,7 +128,7 @@ contract CurveStableToUsdoBidder is BoringOwnable {
     ) external returns (uint256) {
         require(
             IPenrose(singularity.penrose()).usdoToken() != address(0),
-            'USD0 not set'
+            "USD0 not set"
         );
         IYieldBox yieldBox = IYieldBox(singularity.yieldBox());
         ILiquidationQueue liquidationQueue = ILiquidationQueue(
@@ -136,7 +136,7 @@ contract CurveStableToUsdoBidder is BoringOwnable {
         );
 
         uint256 usdoAssetId = IPenrose(singularity.penrose()).usdoAssetId();
-        require(msg.sender == address(liquidationQueue), 'only LQ');
+        require(msg.sender == address(liquidationQueue), "only LQ");
         if (tokenInId == usdoAssetId) {
             yieldBox.transfer(
                 address(this),
@@ -194,7 +194,7 @@ contract CurveStableToUsdoBidder is BoringOwnable {
                 index = int256(i);
             }
         }
-        require(index > -1, 'asset not found');
+        require(index > -1, "asset not found");
         return uint256(index);
     }
 

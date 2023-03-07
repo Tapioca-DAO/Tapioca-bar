@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.0;
 
-import '@boringcrypto/boring-solidity/contracts/interfaces/IERC20.sol';
+import "@boringcrypto/boring-solidity/contracts/interfaces/IERC20.sol";
 
 interface ITapiocaOFT is IERC20 {
     function sendToYB(

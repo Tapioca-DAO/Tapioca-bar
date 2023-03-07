@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-import '@boringcrypto/boring-solidity/contracts/ERC20.sol';
-import '@boringcrypto/boring-solidity/contracts/libraries/BoringRebase.sol';
+import "@boringcrypto/boring-solidity/contracts/ERC20.sol";
+import "@boringcrypto/boring-solidity/contracts/libraries/BoringRebase.sol";
 
-import './interfaces/IMarket.sol';
-import './interfaces/IOracle.sol';
-import './interfaces/ITapiocaOFT.sol';
-import './usd0/interfaces/IBigBang.sol';
-import './singularity/interfaces/ISingularity.sol';
-import '../yieldbox/contracts/YieldBox.sol';
+import "./interfaces/IMarket.sol";
+import "./interfaces/IOracle.sol";
+import "./interfaces/ITapiocaOFT.sol";
+import "./usd0/interfaces/IBigBang.sol";
+import "./singularity/interfaces/ISingularity.sol";
+import "../yieldbox/contracts/YieldBox.sol";
 
 /// @title Useful helper functions for `Singularity` and `BingBang`
 contract MarketsHelper {
@@ -48,11 +48,10 @@ contract MarketsHelper {
         bool wrap;
     }
 
-    function singularityMarketInfo(address who, ISingularity[] memory markets)
-        external
-        view
-        returns (SingularityInfo[] memory)
-    {
+    function singularityMarketInfo(
+        address who,
+        ISingularity[] memory markets
+    ) external view returns (SingularityInfo[] memory) {
         uint256 len = markets.length;
         SingularityInfo[] memory result = new SingularityInfo[](len);
 
@@ -85,11 +84,10 @@ contract MarketsHelper {
         return result;
     }
 
-    function bigBangMarketInfo(address who, IBigBang[] memory markets)
-        external
-        view
-        returns (BigBangInfo[] memory)
-    {
+    function bigBangMarketInfo(
+        address who,
+        IBigBang[] memory markets
+    ) external view returns (BigBangInfo[] memory) {
         uint256 len = markets.length;
         BigBangInfo[] memory result = new BigBangInfo[](len);
 
@@ -110,11 +108,10 @@ contract MarketsHelper {
     /// @param market the Singularity or BigBang address
     /// @param share The shares.
     /// @return amount The amount.
-    function getCollateralAmountForShare(IMarket market, uint256 share)
-        public
-        view
-        returns (uint256 amount)
-    {
+    function getCollateralAmountForShare(
+        IMarket market,
+        uint256 share
+    ) public view returns (uint256 amount) {
         IYieldBox yieldBox = IYieldBox(market.yieldBox());
         return yieldBox.toAmount(market.collateralId(), share, false);
     }
@@ -152,11 +149,10 @@ contract MarketsHelper {
     /// @param market the Singularity or BigBang address
     /// @param borrowPart The amount of borrow part to convert.
     /// @return amount The equivalent of borrow part in asset amount.
-    function getAmountForBorrowPart(IMarket market, uint256 borrowPart)
-        public
-        view
-        returns (uint256 amount)
-    {
+    function getAmountForBorrowPart(
+        IMarket market,
+        uint256 borrowPart
+    ) public view returns (uint256 amount) {
         Rebase memory _totalBorrowed;
         (uint128 totalBorrowElastic, uint128 totalBorrowBase) = market
             .totalBorrow();
@@ -489,11 +485,10 @@ contract MarketsHelper {
     // ************************** //
     // *** PRIVATE FUNCTIONS *** //
     // ************************* //
-    function _commonInfo(address who, IMarket market)
-        private
-        view
-        returns (MarketInfo memory)
-    {
+    function _commonInfo(
+        address who,
+        IMarket market
+    ) private view returns (MarketInfo memory) {
         Rebase memory _totalBorrowed;
         MarketInfo memory info;
 
@@ -519,13 +514,13 @@ contract MarketsHelper {
         return info;
     }
 
-    function _wrapTokens(ITapiocaOFT _oft, uint256 amount)
-        private
-        returns (uint256 amountOut)
-    {
+    function _wrapTokens(
+        ITapiocaOFT _oft,
+        uint256 amount
+    ) private returns (uint256 amountOut) {
         require(
             block.chainid == _oft.hostChainID(),
-            'MarketsHelper: cannot wrap on this chain'
+            "MarketsHelper: cannot wrap on this chain"
         );
         uint256 _balanceBefore = _oft.balanceOf(address(this));
 
@@ -539,7 +534,7 @@ contract MarketsHelper {
 
         uint256 _balanceAfter = _oft.balanceOf(address(this));
 
-        require(_balanceAfter > _balanceBefore, 'MarketsHelper: wrap failed');
+        require(_balanceAfter > _balanceBefore, "MarketsHelper: wrap failed");
         amountOut = _balanceAfter - _balanceBefore;
     }
 
@@ -583,9 +578,10 @@ contract MarketsHelper {
         );
     }
 
-    function _setApprovalForYieldBox(IMarket market, YieldBox yieldBox)
-        private
-    {
+    function _setApprovalForYieldBox(
+        IMarket market,
+        YieldBox yieldBox
+    ) private {
         bool isApproved = yieldBox.isApprovedForAll(
             address(this),
             address(market)
@@ -599,7 +595,7 @@ contract MarketsHelper {
     function _extractTokens(address _token, uint256 _amount) private {
         require(
             ERC20(_token).transferFrom(msg.sender, address(this), _amount),
-            'transfer failed'
+            "transfer failed"
         );
     }
 }

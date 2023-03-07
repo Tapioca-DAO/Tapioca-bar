@@ -1,15 +1,14 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-import '@boringcrypto/boring-solidity/contracts/BoringOwnable.sol';
-import '@boringcrypto/boring-solidity/contracts/BoringFactory.sol';
+import "@boringcrypto/boring-solidity/contracts/BoringOwnable.sol";
+import "@boringcrypto/boring-solidity/contracts/BoringFactory.sol";
 
-import '../yieldbox/contracts/YieldBox.sol';
-import '../yieldbox/contracts/interfaces/IYieldBox.sol';
-import '../yieldbox/contracts/strategies/ERC20WithoutStrategy.sol';
-import './singularity/interfaces/ISingularity.sol';
-import './interfaces/IPenrose.sol';
-
+import "../yieldbox/contracts/YieldBox.sol";
+import "../yieldbox/contracts/interfaces/IYieldBox.sol";
+import "../yieldbox/contracts/strategies/ERC20WithoutStrategy.sol";
+import "./singularity/interfaces/ISingularity.sol";
+import "./interfaces/IPenrose.sol";
 
 // TODO: Permissionless market deployment
 ///     + asset registration? (toggle to renounce ownership so users can call)
@@ -66,11 +65,7 @@ contract Penrose is BoringOwnable, BoringFactory {
     /// @notice creates a Penrose contract
     /// @param _yieldBox YieldBox contract address
     /// @param tapToken_ TapOFT contract address
-    constructor(
-        YieldBox _yieldBox,
-        IERC20 tapToken_,
-        IERC20 wethToken_
-    ) {
+    constructor(YieldBox _yieldBox, IERC20 tapToken_, IERC20 wethToken_) {
         yieldBox = _yieldBox;
         tapToken = tapToken_;
         emptyStrategies[address(tapToken_)] = IStrategy(
@@ -140,7 +135,7 @@ contract Penrose is BoringOwnable, BoringFactory {
     modifier registeredSingularityMasterContract(address mc) {
         require(
             isSingularityMasterContractRegistered[mc] == true,
-            'Penrose: MC not registered'
+            "Penrose: MC not registered"
         );
         _;
     }
@@ -148,13 +143,13 @@ contract Penrose is BoringOwnable, BoringFactory {
     modifier registeredBigBangMasterContract(address mc) {
         require(
             isBigBangMasterContractRegistered[mc] == true,
-            'Penrose: MC not registered'
+            "Penrose: MC not registered"
         );
         _;
     }
 
     modifier notPaused() {
-        require(!paused, 'Penrose: paused');
+        require(!paused, "Penrose: paused");
         _;
     }
 
@@ -204,10 +199,10 @@ contract Penrose is BoringOwnable, BoringFactory {
         require(
             markets_.length == swappers_.length &&
                 swappers_.length == swapData_.length,
-            'Penrose: length mismatch'
+            "Penrose: length mismatch"
         );
-        require(address(swappers_[0]) != address(0), 'Penrose: zero address');
-        require(address(markets_[0]) != address(0), 'Penrose: zero address');
+        require(address(swappers_[0]) != address(0), "Penrose: zero address");
+        require(address(markets_[0]) != address(0), "Penrose: zero address");
 
         _withdrawAllProtocolFees(swappers_, swapData_, markets_);
         emit ProtocolWithdrawal(markets_, block.timestamp);
@@ -225,9 +220,9 @@ contract Penrose is BoringOwnable, BoringFactory {
         require(
             markets_.length == swappers_.length &&
                 swappers_.length == swapData_.length,
-            'Penrose: length mismatch'
+            "Penrose: length mismatch"
         );
-        require(address(swappers_[0]) != address(0), 'Penrose: zero address');
+        require(address(swappers_[0]) != address(0), "Penrose: zero address");
 
         _withdrawAllProtocolFees(swappers_, swapData_, markets_);
         emit ProtocolWithdrawal(markets_, block.timestamp);
@@ -253,8 +248,8 @@ contract Penrose is BoringOwnable, BoringFactory {
     /// @notice updates the pause state of the contract
     /// @param val the new value
     function updatePause(bool val) external {
-        require(msg.sender == conservator, 'Penrose: unauthorized');
-        require(val != paused, 'Penrose: same state');
+        require(msg.sender == conservator, "Penrose: unauthorized");
+        require(val != paused, "Penrose: same state");
         emit PausedUpdated(paused, val);
         paused = val;
     }
@@ -263,7 +258,7 @@ contract Penrose is BoringOwnable, BoringFactory {
     /// @dev Conservator can pause the contract
     /// @param _conservator The new address
     function setConservator(address _conservator) external onlyOwner {
-        require(_conservator != address(0), 'Penrose: address not valid');
+        require(_conservator != address(0), "Penrose: address not valid");
         emit ConservatorUpdated(conservator, _conservator);
         conservator = _conservator;
     }
@@ -302,7 +297,7 @@ contract Penrose is BoringOwnable, BoringFactory {
     ) external onlyOwner {
         require(
             isSingularityMasterContractRegistered[mcAddress] == false,
-            'Penrose: MC registered'
+            "Penrose: MC registered"
         );
 
         IPenrose.MasterContract memory mc;
@@ -323,7 +318,7 @@ contract Penrose is BoringOwnable, BoringFactory {
     ) external onlyOwner {
         require(
             isBigBangMasterContractRegistered[mcAddress] == false,
-            'Penrose: MC registered'
+            "Penrose: MC registered"
         );
 
         IPenrose.MasterContract memory mc;
@@ -392,7 +387,7 @@ contract Penrose is BoringOwnable, BoringFactory {
                 isSingularityMasterContractRegistered[
                     masterContractOf[mc[i]]
                 ] || isBigBangMasterContractRegistered[masterContractOf[mc[i]]],
-                'Penrose: MC not registered'
+                "Penrose: MC not registered"
             );
             (success[i], result[i]) = mc[i].call(data[i]);
             if (forceSuccess) {
@@ -420,13 +415,11 @@ contract Penrose is BoringOwnable, BoringFactory {
     // ************************* //
     // *** PRIVATE FUNCTIONS *** //
     // ************************* //
-    function _getRevertMsg(bytes memory _returnData)
-        private
-        pure
-        returns (string memory)
-    {
+    function _getRevertMsg(
+        bytes memory _returnData
+    ) private pure returns (string memory) {
         // If the _res length is less than 68, then the transaction failed silently (without a revert message)
-        if (_returnData.length < 68) return 'SGL: no return data';
+        if (_returnData.length < 68) return "SGL: no return data";
         // solhint-disable-next-line no-inline-assembly
         assembly {
             // Slice the sighash.
@@ -449,11 +442,9 @@ contract Penrose is BoringOwnable, BoringFactory {
         }
     }
 
-    function _getMasterContractLength(IPenrose.MasterContract[] memory array)
-        public
-        view
-        returns (address[] memory markets)
-    {
+    function _getMasterContractLength(
+        IPenrose.MasterContract[] memory array
+    ) public view returns (address[] memory markets) {
         uint256 _masterContractLength = array.length;
         uint256 marketsLength = 0;
 

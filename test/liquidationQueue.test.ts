@@ -2479,7 +2479,7 @@ describe('LiquidationQueue test', () => {
         );
 
         // Check for deleted bid pool entry queue
-        let lastAdditionIdx = await liquidationQueue.orderBookInfos(POOL);
+        const lastAdditionIdx = await liquidationQueue.orderBookInfos(POOL);
         let entry = await liquidationQueue.orderBookEntries(
             POOL,
             lastAdditionIdx.nextBidPush - 1,

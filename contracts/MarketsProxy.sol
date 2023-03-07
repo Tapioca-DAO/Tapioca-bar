@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.9;
 
-import '@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol';
-import 'tapioca-sdk/dist/contracts/lzApp/NonblockingLzApp.sol';
+import "@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol";
+import "tapioca-sdk/dist/contracts/lzApp/NonblockingLzApp.sol";
 
-import './interfaces/IMarket.sol';
-import './interfaces/ITapiocaOFT.sol';
+import "./interfaces/IMarket.sol";
+import "./interfaces/ITapiocaOFT.sol";
 
 /*
 
@@ -56,9 +56,10 @@ contract MarketsProxy is NonblockingLzApp {
     /// @notice creates a new SGLProxy contract
     /// @param _lzEndpoint LayerZero endpoint address
     /// @param _owner contract's owner address
-    constructor(address _lzEndpoint, address _owner)
-        NonblockingLzApp(_lzEndpoint)
-    {
+    constructor(
+        address _lzEndpoint,
+        address _owner
+    ) NonblockingLzApp(_lzEndpoint) {
         _transferOwnership(_owner);
     }
 
@@ -77,7 +78,7 @@ contract MarketsProxy is NonblockingLzApp {
         bytes memory _adapterParams
     ) external payable {
         uint256 chainId = lzEndpoint.getChainId();
-        require(chainId != _dstChainId, 'MarketsProxy: chain not valid');
+        require(chainId != _dstChainId, "MarketsProxy: chain not valid");
 
         _send(
             msg.sender,
@@ -97,20 +98,19 @@ contract MarketsProxy is NonblockingLzApp {
     /// @dev callable by owner
     /// @param _market the market address
     /// @param _status whitelisted/not
-    function updateMarketStatus(address _market, bool _status)
-        external
-        onlyOwner
-    {
+    function updateMarketStatus(
+        address _market,
+        bool _status
+    ) external onlyOwner {
         markets[_market] = _status;
         emit LogMarketStatus(_market, _status);
     }
 
     /// @notice set custom adapter usage status
     /// @param _useCustomAdapterParams true/false
-    function setUseCustomAdapterParams(bool _useCustomAdapterParams)
-        external
-        onlyOwner
-    {
+    function setUseCustomAdapterParams(
+        bool _useCustomAdapterParams
+    ) external onlyOwner {
         useCustomAdapterParams = _useCustomAdapterParams;
         emit SetUseCustomAdapterParams(_useCustomAdapterParams);
     }
@@ -121,8 +121,8 @@ contract MarketsProxy is NonblockingLzApp {
     /// @notice override of the '_nonblockingLzReceive' method
     function _nonblockingLzReceive(
         uint16 _srcChainId,
-        bytes memory, /*_srcAddress*/
-        uint64, /*_nonce*/
+        bytes memory /*_srcAddress*/,
+        uint64 /*_nonce*/,
         bytes memory _payload
     ) internal override {
         // decode and load the toAddress
@@ -131,7 +131,7 @@ contract MarketsProxy is NonblockingLzApp {
             (bytes32, address, bytes[])
         );
 
-        require(markets[toAddress], 'MarketsProxy: market not valid');
+        require(markets[toAddress], "MarketsProxy: market not valid");
 
         IMarket(toAddress).execute(marketCalls, true);
 
@@ -163,7 +163,7 @@ contract MarketsProxy is NonblockingLzApp {
         } else {
             require(
                 _adapterParams.length == 0,
-                'LzApp: _adapterParams must be empty.'
+                "LzApp: _adapterParams must be empty."
             );
         }
         _lzSend(

@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import '@boringcrypto/boring-solidity/contracts/ERC20.sol';
-import '@boringcrypto/boring-solidity/contracts/BoringOwnable.sol';
-import '@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol';
-import '@boringcrypto/boring-solidity/contracts/libraries/BoringRebase.sol';
+import "@boringcrypto/boring-solidity/contracts/ERC20.sol";
+import "@boringcrypto/boring-solidity/contracts/BoringOwnable.sol";
+import "@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol";
+import "@boringcrypto/boring-solidity/contracts/libraries/BoringRebase.sol";
 
 contract TapiocaOftMock is ERC20WithSupply {
     using BoringERC20 for IERC20;
 
-    string public name = 'Fantom';
-    string public symbol = 'FTM';
+    string public name = "Fantom";
+    string public symbol = "FTM";
     uint8 public decimals;
 
     bool public isNative;
@@ -23,8 +23,9 @@ contract TapiocaOftMock is ERC20WithSupply {
         hostId = _chainId;
         erc20 = IERC20(_erc20);
     }
-    function setHostChain(uint256 _newchain) external{
-        hostId=_newchain;
+
+    function setHostChain(uint256 _newchain) external {
+        hostId = _newchain;
     }
 
     function wrap(address _toAddress, uint256 _amount) external {

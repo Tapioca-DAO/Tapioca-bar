@@ -42,7 +42,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
             1,
         )
     ).wait();
-    console.log(`Done`);
+    console.log('Done');
 
     console.log('\n Deploying BigBangMasterContract');
     await deploy('BigBangMediumRiskMC', {
@@ -67,7 +67,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
             1,
         )
     ).wait();
-    console.log(`Done`);
+    console.log('Done');
 
     await updateDeployments(contracts, chainId);
 };

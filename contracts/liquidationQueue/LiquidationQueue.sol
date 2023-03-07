@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
-import '@boringcrypto/boring-solidity/contracts/BoringOwnable.sol';
-import '@boringcrypto/boring-solidity/contracts/interfaces/IERC20.sol';
+import "@boringcrypto/boring-solidity/contracts/BoringOwnable.sol";
+import "@boringcrypto/boring-solidity/contracts/interfaces/IERC20.sol";
 
-import '../interfaces/IPenrose.sol';
-import './ILiquidationQueue.sol';
-import '../singularity/interfaces/ISingularity.sol';
-import '../../yieldbox/contracts/interfaces/IStrategy.sol';
-import '../../yieldbox/contracts/strategies/ERC20WithoutStrategy.sol';
+import "../interfaces/IPenrose.sol";
+import "./ILiquidationQueue.sol";
+import "../singularity/interfaces/ISingularity.sol";
+import "../../yieldbox/contracts/interfaces/IStrategy.sol";
+import "../../yieldbox/contracts/strategies/ERC20WithoutStrategy.sol";
 
-import '../../yieldbox/contracts/YieldBox.sol';
+import "../../yieldbox/contracts/YieldBox.sol";
 
 /// @title LiquidationQueue
 /// @author @0xRektora, TapiocaDAO
@@ -138,7 +138,7 @@ contract LiquidationQueue is ILiquidationQueue {
     // ***************** //
 
     modifier Active() {
-        require(onlyOnce, 'LQ: Not initialized');
+        require(onlyOnce, "LQ: Not initialized");
         _;
     }
 
@@ -148,7 +148,7 @@ contract LiquidationQueue is ILiquidationQueue {
         LiquidationQueueMeta calldata _liquidationQueueMeta,
         address _mixologist
     ) external override {
-        require(!onlyOnce, 'LQ: Initialized');
+        require(!onlyOnce, "LQ: Initialized");
 
         liquidationQueueMeta = _liquidationQueueMeta;
 
@@ -193,11 +193,9 @@ contract LiquidationQueue is ILiquidationQueue {
     }
 
     /// @notice returns an array of 'OrderBookPoolEntry' for a pool
-    function getOrderBookPoolEntries(uint256 pool)
-        external
-        view
-        returns (OrderBookPoolEntry[] memory x)
-    {
+    function getOrderBookPoolEntries(
+        uint256 pool
+    ) external view returns (OrderBookPoolEntry[] memory x) {
         OrderBookPoolInfo memory poolInfo = orderBookInfos[pool];
         uint256 orderBookSize = poolInfo.nextBidPush - poolInfo.nextBidPull;
 
@@ -227,11 +225,7 @@ contract LiquidationQueue is ILiquidationQueue {
         public
         view
         override
-        returns (
-            uint256 i,
-            bool available,
-            uint256 totalAmount
-        )
+        returns (uint256 i, bool available, uint256 totalAmount)
     {
         for (; i <= MAX_BID_POOLS; ) {
             if (getOrderBookSize(i) != 0) {
@@ -246,20 +240,18 @@ contract LiquidationQueue is ILiquidationQueue {
     /// @notice returns user data for an existing bid pool
     /// @param pool the pool identifier
     /// @param user the user identifier
-    function getBidPoolUserInfo(uint256 pool, address user)
-        external
-        view
-        returns (Bidder memory)
-    {
+    function getBidPoolUserInfo(
+        uint256 pool,
+        address user
+    ) external view returns (Bidder memory) {
         return bidPools[pool].users[user];
     }
 
     /// @notice returns number of pool bids for user
-    function userBidIndexLength(address user, uint256 pool)
-        external
-        view
-        returns (uint256 len)
-    {
+    function userBidIndexLength(
+        address user,
+        uint256 pool
+    ) external view returns (uint256 len) {
         uint256[] memory bidIndexes = userBidIndexes[user][pool];
 
         uint256 bidIndexesLen = bidIndexes.length;
@@ -295,10 +287,10 @@ contract LiquidationQueue is ILiquidationQueue {
         uint256 amountIn,
         bytes calldata data
     ) external Active {
-        require(pool <= MAX_BID_POOLS, 'LQ: premium too high');
+        require(pool <= MAX_BID_POOLS, "LQ: premium too high");
         require(
             address(liquidationQueueMeta.usdoSwapper) != address(0),
-            'LQ: USD0 swapper not set'
+            "LQ: USD0 swapper not set"
         );
 
         uint256 usdoAssetId = penrose.usdoAssetId();
@@ -329,7 +321,7 @@ contract LiquidationQueue is ILiquidationQueue {
 
         require(
             usdoValueInLqAsset >= liquidationQueueMeta.minBidAmount,
-            'LQ: bid too low'
+            "LQ: bid too low"
         );
     }
 
@@ -339,13 +331,9 @@ contract LiquidationQueue is ILiquidationQueue {
     /// @param user The bidder.
     /// @param pool To which pool the bid should go.
     /// @param amount The amount in asset to bid.
-    function bid(
-        address user,
-        uint256 pool,
-        uint256 amount
-    ) external Active {
-        require(pool <= MAX_BID_POOLS, 'LQ: premium too high');
-        require(amount >= liquidationQueueMeta.minBidAmount, 'LQ: bid too low');
+    function bid(address user, uint256 pool, uint256 amount) external Active {
+        require(pool <= MAX_BID_POOLS, "LQ: premium too high");
+        require(amount >= liquidationQueueMeta.minBidAmount, "LQ: bid too low");
 
         // Transfer assets to the LQ contract.
         uint256 assetId = lqAssetId;
@@ -366,11 +354,11 @@ contract LiquidationQueue is ILiquidationQueue {
     function activateBid(address user, uint256 pool) external {
         Bidder memory bidder = bidPools[pool].users[user];
 
-        require(bidder.timestamp > 0, 'LQ: bid not available'); //fail early
+        require(bidder.timestamp > 0, "LQ: bid not available"); //fail early
         require(
             block.timestamp >=
                 bidder.timestamp + liquidationQueueMeta.activationTime,
-            'LQ: too soon'
+            "LQ: too soon"
         );
 
         OrderBookPoolInfo memory poolInfo = orderBookInfos[pool]; // Info about the pool array indexes.
@@ -401,7 +389,7 @@ contract LiquidationQueue is ILiquidationQueue {
                 address(singularity),
                 penrose.usdoAssetId(),
                 orderBookEntry.bidInfo.usdoAmount,
-                ''
+                ""
             )
             : bidAmount;
         bidPools[pool].totalAmount += assetValue;
@@ -421,15 +409,15 @@ contract LiquidationQueue is ILiquidationQueue {
     /// @param user The user to send the funds to.
     /// @param pool The pool to remove the bid from.
     /// @return amountRemoved The amount of the bid.
-    function removeBid(address user, uint256 pool)
-        external
-        returns (uint256 amountRemoved)
-    {
+    function removeBid(
+        address user,
+        uint256 pool
+    ) external returns (uint256 amountRemoved) {
         bool isUsdo = bidPools[pool].users[msg.sender].isUsdo;
         amountRemoved = isUsdo
             ? bidPools[pool].users[msg.sender].usdoAmount
             : bidPools[pool].users[msg.sender].liquidatedAssetAmount;
-        require(amountRemoved > 0, 'LQ: bid not available');
+        require(amountRemoved > 0, "LQ: bid not available");
         delete bidPools[pool].users[msg.sender];
 
         uint256 lqAssetValue = amountRemoved;
@@ -440,12 +428,12 @@ contract LiquidationQueue is ILiquidationQueue {
                     address(singularity),
                     penrose.usdoAssetId(),
                     amountRemoved,
-                    ''
+                    ""
                 );
         }
         require(
             lqAssetValue >= liquidationQueueMeta.minBidAmount,
-            'LQ: bid does not exist'
+            "LQ: bid does not exist"
         ); //save gas
 
         // Transfer assets
@@ -472,7 +460,7 @@ contract LiquidationQueue is ILiquidationQueue {
     /// @dev `msg.sender` is used as the redeemer.
     /// @param to The address to redeem to.
     function redeem(address to) external {
-        require(balancesDue[msg.sender] > 0, 'LQ: No balance due');
+        require(balancesDue[msg.sender] > 0, "LQ: No balance due");
 
         uint256 balance = balancesDue[msg.sender];
         uint256 fee = (balance * WITHDRAWAL_FEE) / WITHDRAWAL_FEE_PRECISION;
@@ -508,7 +496,7 @@ contract LiquidationQueue is ILiquidationQueue {
         override
         returns (uint256 totalAmountExecuted, uint256 totalCollateralLiquidated)
     {
-        require(msg.sender == address(singularity), 'LQ: Only Singularity');
+        require(msg.sender == address(singularity), "LQ: Only Singularity");
         BidExecutionData memory data;
 
         (data.curPoolId, data.isBidAvail, ) = getNextAvailBidPool();
@@ -654,7 +642,7 @@ contract LiquidationQueue is ILiquidationQueue {
     /// @notice updates the bid swapper address
     /// @param _swapper thew new ICollateralSwaper contract address
     function setBidExecutionSwapper(address _swapper) external override {
-        require(msg.sender == address(singularity), 'unauthorized');
+        require(msg.sender == address(singularity), "unauthorized");
         emit BidSwapperUpdated(
             liquidationQueueMeta.bidExecutionSwapper,
             _swapper
@@ -665,7 +653,7 @@ contract LiquidationQueue is ILiquidationQueue {
     /// @notice updates the bid swapper address
     /// @param _swapper thew new ICollateralSwaper contract address
     function setUsdoSwapper(address _swapper) external override {
-        require(msg.sender == address(singularity), 'unauthorized');
+        require(msg.sender == address(singularity), "unauthorized");
         emit UsdoSwapperUpdated(liquidationQueueMeta.usdoSwapper, _swapper);
         liquidationQueueMeta.usdoSwapper = IBidder(_swapper);
     }
@@ -686,7 +674,7 @@ contract LiquidationQueue is ILiquidationQueue {
                 address(singularity),
                 penrose.usdoAssetId(),
                 entry.usdoAmount,
-                ''
+                ""
             )
             : bidAmount;
         return
@@ -768,7 +756,7 @@ contract LiquidationQueue is ILiquidationQueue {
                     address(singularity),
                     usdoAssetId,
                     finalDiscountedCollateralAmount,
-                    ''
+                    ""
                 );
 
             yieldBox.transfer(
@@ -787,7 +775,7 @@ contract LiquidationQueue is ILiquidationQueue {
                 );
             require(
                 returnedCollateral >= finalDiscountedCollateralAmount,
-                'need-more-collateral'
+                "need-more-collateral"
             );
         }
     }
@@ -856,22 +844,20 @@ contract LiquidationQueue is ILiquidationQueue {
     /// @notice Convert a bid amount to a collateral amount.
     /// @param amount The amount of bid to convert.
     /// @param exchangeRate The exchange rate to use.
-    function _bidToCollateral(uint256 amount, uint256 exchangeRate)
-        internal
-        pure
-        returns (uint256)
-    {
+    function _bidToCollateral(
+        uint256 amount,
+        uint256 exchangeRate
+    ) internal pure returns (uint256) {
         return (amount * exchangeRate) / EXCHANGE_RATE_PRECISION;
     }
 
     /// @notice Convert a collateral amount to a bid amount.
     /// @param collateralAmount The amount of collateral to convert.
     /// @param exchangeRate The exchange rate to use.
-    function _collateralToBid(uint256 collateralAmount, uint256 exchangeRate)
-        internal
-        pure
-        returns (uint256)
-    {
+    function _collateralToBid(
+        uint256 collateralAmount,
+        uint256 exchangeRate
+    ) internal pure returns (uint256) {
         return (collateralAmount * EXCHANGE_RATE_PRECISION) / exchangeRate;
     }
 }

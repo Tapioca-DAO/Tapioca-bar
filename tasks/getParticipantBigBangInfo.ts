@@ -1,6 +1,6 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import _ from 'lodash';
-import {  getDeployment, getBigBangContract } from './utils';
+import { getDeployment, getBigBangContract } from './utils';
 
 //Execution example:
 //      npx hardhat getParticipantBigBangInfo --bigBang "<address>" --participant "<address>"
@@ -9,13 +9,12 @@ export const getDetails = async (
     hre: HardhatRuntimeEnvironment,
 ) => {
     const userAddress = taskArgs['participant'];
-    const { bigBangContract, bigBangAddress } =
-        await getBigBangContract(taskArgs, hre);
-
-    const mixologistHelperContract = await getDeployment(
+    const { bigBangContract, bigBangAddress } = await getBigBangContract(
+        taskArgs,
         hre,
-        'MarketHelper',
     );
+
+    const mixologistHelperContract = await getDeployment(hre, 'MarketHelper');
     const yieldBoxContract = await getDeployment(hre, 'YieldBox');
 
     const assetId = await bigBangContract.assetId();
@@ -37,11 +36,10 @@ export const getDetails = async (
         false,
     );
     const exchangeRate = await bigBangContract.exchangeRate();
-    const amountToSolvency =
-        await bigBangContract.computeAssetAmountToSolvency(
-            userAddress,
-            exchangeRate,
-        );
+    const amountToSolvency = await bigBangContract.computeAssetAmountToSolvency(
+        userAddress,
+        exchangeRate,
+    );
 
     const collateralUsedShares =
         await mixologistHelperContract.getCollateralSharesForBorrowPart(
