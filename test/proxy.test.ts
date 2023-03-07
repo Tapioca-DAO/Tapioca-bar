@@ -697,11 +697,11 @@ describe('MarketsProxy', () => {
                 singularityDst.address,
                 wethDepositAmount,
                 usdoBorrowVal.div(2),
-                true,
-                true,
-                withdrawData,
                 {
-                    value: ethers.utils.parseEther('10'),
+                    deposit: true,
+                    withdraw: true,
+                    withdrawData: withdrawData,
+                    wrap: false,
                 },
             );
 
