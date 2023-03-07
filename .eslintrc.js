@@ -15,10 +15,12 @@ module.exports = {
         'prettier/prettier': [
             'error',
             {
+                trailingComma: 'all',
+                singleQuote: true,
+                printWidth: 80,
                 endOfLine: 'auto',
-            },
-            {
-                usePrettierrc: true,
+                useTabs: false,
+                tabWidth: 4,
             },
         ],
         'comma-dangle': [2, 'always-multiline'],
@@ -29,5 +31,6 @@ module.exports = {
         'key-spacing': ['error', { afterColon: true }],
         'no-multi-spaces': ['error'],
         'no-multiple-empty-lines': ['error', { max: 2 }],
+        'prefer-const': 'off',
     },
 };
