@@ -678,6 +678,9 @@ describe('MarketsProxy', () => {
                     withdrawData: ethers.utils.toUtf8Bytes(""),
                     wrap: false,
                 },
+                {
+                    value: ethers.utils.parseEther("10")
+                }
             );
 
         const userCollateralShare = await singularityDst.userCollateralShare(
