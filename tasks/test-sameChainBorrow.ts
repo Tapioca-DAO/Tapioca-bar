@@ -34,7 +34,7 @@ export const sameChainBorrow__task = async (
     );
 
     //Approvals
-    console.log(`\nApproving contracts...`);
+    console.log('\nApproving contracts...');
     await (
         await yieldBoxContract.setApprovalForAll(singularityAddress, true)
     ).wait();
@@ -52,7 +52,7 @@ export const sameChainBorrow__task = async (
     ).wait();
 
     //Execute
-    console.log(`\nExecuting...`);
+    console.log('\nExecuting...');
     await (
         await marketHelperContract.depositAddCollateralAndBorrow(
             singularityAddress,

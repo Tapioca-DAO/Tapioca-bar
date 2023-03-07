@@ -928,9 +928,9 @@ describe('Singularity test', () => {
         expect(userBorrowPart.gt(wethBorrowVal));
         // Withdraw fees from Penrose
         const markets = await bar.singularityMarkets();
-        let swappers = [];
-        let swapData = [];
-        for (var i = 0; i < markets.length; i++) {
+        const swappers = [];
+        const swapData = [];
+        for (let i = 0; i < markets.length; i++) {
             swappers.push(multiSwapper.address);
             swapData.push({ minAssetAmount: 1 });
         }
@@ -1629,9 +1629,9 @@ describe('Singularity test', () => {
         );
 
         // Withdraw fees from Penrose
-        let markets = [wethUsdcSingularity.address];
-        let swappers = [multiSwapper.address];
-        let swapData = [{ minAssetAmount: feeMinAmount }];
+        const markets = [wethUsdcSingularity.address];
+        const swappers = [multiSwapper.address];
+        const swapData = [{ minAssetAmount: feeMinAmount }];
 
         await expect(
             bar.withdrawAllSingularityFees(markets, swappers, swapData),
@@ -1730,7 +1730,7 @@ describe('Singularity test', () => {
             ),
         ).to.be.true;
 
-        for (var i = 0; i < eoas.length; i++) {
+        for (let i = 0; i < eoas.length; i++) {
             const eoa = eoas[i];
             await usdc.connect(eoa).freeMint(usdcMintVal);
             await approveTokensAndSetBarApproval(eoa);
@@ -1744,7 +1744,7 @@ describe('Singularity test', () => {
         timeTravel(86400 * 5);
         const firstBorrow = ethers.BigNumber.from((1e17).toString());
 
-        for (var i = 0; i < eoas.length; i++) {
+        for (let i = 0; i < eoas.length; i++) {
             const eoa = eoas[i];
             await wethUsdcSingularity
                 .connect(eoa)

@@ -45,7 +45,7 @@ export const configurePacketTypes__task = async (
 
     const ctr = await hre.ethers.getContractAt(taskArgs.contract, taskArgs.src);
 
-    for (var i = 0; i < packetTypes.length; i++) {
+    for (let i = 0; i < packetTypes.length; i++) {
         await (
             await ctr.setMinDstGas(
                 taskArgs.dstLzChainId,

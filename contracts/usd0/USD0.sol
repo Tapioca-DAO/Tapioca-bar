@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-import 'tapioca-sdk/dist/contracts/interfaces/ILayerZeroEndpoint.sol';
-import './BaseOFT.sol';
-import './interfaces/IERC3156FlashLender.sol';
+import "tapioca-sdk/dist/contracts/interfaces/ILayerZeroEndpoint.sol";
+import "./BaseOFT.sol";
+import "./interfaces/IERC3156FlashLender.sol";
 
 /*
 
@@ -42,7 +42,7 @@ contract USD0 is BaseOFT, IERC3156FlashLender {
 
     uint256 constant FLASH_MINT_FEE_PRECISION = 1e6;
     bytes32 constant FLASH_MINT_CALLBACK_SUCCESS =
-        keccak256('ERC3156FlashBorrower.onFlashLoan');
+        keccak256("ERC3156FlashBorrower.onFlashLoan");
 
     // ************** //
     // *** EVENTS *** //
@@ -57,16 +57,16 @@ contract USD0 is BaseOFT, IERC3156FlashLender {
     event MaxFlashMintUpdated(uint256 _old, uint256 _new);
 
     modifier notPaused() {
-        require(!paused, 'USD0: paused');
+        require(!paused, "USD0: paused");
         _;
     }
 
     /// @notice creates a new USDO0 OFT contract
     /// @param _lzEndpoint LayerZero endpoint
-    constructor(address _lzEndpoint, IYieldBox _yieldBox)
-        OFTV2('USD0', 'USD0', 8, _lzEndpoint)
-        BaseOFT(_yieldBox)
-    {
+    constructor(
+        address _lzEndpoint,
+        IYieldBox _yieldBox
+    ) OFTV2("USD0", "USD0", 8, _lzEndpoint) BaseOFT(_yieldBox) {
         uint256 chain = _getChainId();
         allowedMinter[chain][msg.sender] = true;
         allowedBurner[chain][msg.sender] = true;
@@ -90,13 +90,11 @@ contract USD0 is BaseOFT, IERC3156FlashLender {
     }
 
     /// @notice returns the flash mint fee
-    function flashFee(address token, uint256 amount)
-        public
-        view
-        override
-        returns (uint256)
-    {
-        require(token == address(this), 'USD0: token not valid');
+    function flashFee(
+        address token,
+        uint256 amount
+    ) public view override returns (uint256) {
+        require(token == address(this), "USD0: token not valid");
         return (amount * flashMintFee) / FLASH_MINT_FEE_PRECISION;
     }
 
@@ -109,20 +107,20 @@ contract USD0 is BaseOFT, IERC3156FlashLender {
         uint256 amount,
         bytes calldata data
     ) external override notPaused returns (bool) {
-        require(token == address(this), 'USD0: token not valid');
-        require(maxFlashLoan(token) >= amount, 'USD0: amount too big');
-        require(amount > 0, 'USD0: amount not valid');
+        require(token == address(this), "USD0: token not valid");
+        require(maxFlashLoan(token) >= amount, "USD0: amount too big");
+        require(amount > 0, "USD0: amount not valid");
         uint256 fee = flashFee(token, amount);
         _mint(address(receiver), amount);
 
         require(
             receiver.onFlashLoan(msg.sender, token, amount, fee, data) ==
                 FLASH_MINT_CALLBACK_SUCCESS,
-            'USD0: failed'
+            "USD0: failed"
         );
 
         uint256 _allowance = allowance(address(receiver), address(this));
-        require(_allowance >= (amount + fee), 'USD0: repay not approved');
+        require(_allowance >= (amount + fee), "USD0: repay not approved");
         _approve(address(receiver), address(this), _allowance - (amount + fee));
         _burn(address(receiver), amount + fee);
         return true;
@@ -132,7 +130,7 @@ contract USD0 is BaseOFT, IERC3156FlashLender {
     /// @param _to receiver address
     /// @param _amount the amount to mint
     function mint(address _to, uint256 _amount) external notPaused {
-        require(allowedMinter[_getChainId()][msg.sender], 'USD0: unauthorized');
+        require(allowedMinter[_getChainId()][msg.sender], "USD0: unauthorized");
         _mint(_to, _amount);
         emit Minted(_to, _amount);
     }
@@ -141,7 +139,7 @@ contract USD0 is BaseOFT, IERC3156FlashLender {
     /// @param _from address to burn from
     /// @param _amount the amount to burn
     function burn(address _from, uint256 _amount) external notPaused {
-        require(allowedBurner[_getChainId()][msg.sender], 'USD0: unauthorized');
+        require(allowedBurner[_getChainId()][msg.sender], "USD0: unauthorized");
         _burn(_from, _amount);
         emit Burned(_from, _amount);
     }
@@ -160,7 +158,7 @@ contract USD0 is BaseOFT, IERC3156FlashLender {
     /// @notice set the flashloan fee
     /// @param _val the new fee
     function setFlashMintFee(uint256 _val) external onlyOwner {
-        require(_val < FLASH_MINT_FEE_PRECISION, 'USD0: fee too big');
+        require(_val < FLASH_MINT_FEE_PRECISION, "USD0: fee too big");
         emit FlashMintFeeUpdated(flashMintFee, _val);
         flashMintFee = _val;
     }
@@ -169,7 +167,7 @@ contract USD0 is BaseOFT, IERC3156FlashLender {
     /// @dev Conservator can pause the contract
     /// @param _conservator The new address
     function setConservator(address _conservator) external onlyOwner {
-        require(_conservator != address(0), 'USD0: address not valid');
+        require(_conservator != address(0), "USD0: address not valid");
         emit ConservatorUpdated(conservator, _conservator);
         conservator = _conservator;
     }
@@ -177,8 +175,8 @@ contract USD0 is BaseOFT, IERC3156FlashLender {
     /// @notice updates the pause state of the contract
     /// @param val the new value
     function updatePause(bool val) external {
-        require(msg.sender == conservator, 'USD0: unauthorized');
-        require(val != paused, 'USD0: same state');
+        require(msg.sender == conservator, "USD0: unauthorized");
+        require(val != paused, "USD0: same state");
         emit PausedUpdated(paused, val);
         paused = val;
     }
@@ -225,10 +223,10 @@ contract USD0 is BaseOFT, IERC3156FlashLender {
     }
 
     function freeMint(uint256 _val) external {
-        require(_val <= mintLimit, 'USD0: amount too big');
+        require(_val <= mintLimit, "USD0: amount too big");
         require(
             mintedAt[msg.sender] + MINT_WINDOW <= block.timestamp,
-            'USD0: too early'
+            "USD0: too early"
         );
 
         mintedAt[msg.sender] = block.timestamp;

@@ -11,7 +11,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const chainId = await hre.getChainId();
     const contracts: TContract[] = [];
 
-    console.log(`\nDeploying MarketsProxy`);
+    console.log('\nDeploying MarketsProxy');
     const args = [constants[chainId].address, deployer];
     await deploy('MarketsProxy', {
         from: deployer,
@@ -39,7 +39,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         await contract.setUseCustomAdapterParams(true);
 
         console.log('Setting min dst gas');
-        for (var i = 0; i < constants[chainId].connectedLzIds.length; i++) {
+        for (let i = 0; i < constants[chainId].connectedLzIds.length; i++) {
             await contract.setMinDstGas(
                 constants[chainId].connectedLzIds[i],
                 1,

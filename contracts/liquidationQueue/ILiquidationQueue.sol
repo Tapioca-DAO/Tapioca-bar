@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-import './bidders/IBidder.sol';
+import "./bidders/IBidder.sol";
 
 interface ILiquidationQueue {
     enum MODE {

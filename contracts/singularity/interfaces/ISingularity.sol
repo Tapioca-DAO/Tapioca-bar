@@ -2,9 +2,9 @@
 
 pragma solidity ^0.8.0;
 
-import '../../interfaces/IOracle.sol';
-import '../../interfaces/IFee.sol';
-import '../../interfaces/IMarket.sol';
+import "../../interfaces/IOracle.sol";
+import "../../interfaces/IFee.sol";
+import "../../interfaces/IMarket.sol";
 
 interface ISingularity is IMarket, IFee {
     struct AccrueInfo {
@@ -116,9 +116,10 @@ interface ISingularity is IMarket, IFee {
     /// @notice Allows batched call to Singularity.
     /// @param calls An array encoded call data.
     /// @param revertOnFail If True then reverts after a failed call and stops doing further calls.
-    function execute(bytes[] calldata calls, bool revertOnFail)
-        external
-        returns (bool[] memory successes, string[] memory results);
+    function execute(
+        bytes[] calldata calls,
+        bool revertOnFail
+    ) external returns (bool[] memory successes, string[] memory results);
 
     function decimals() external view returns (uint8);
 

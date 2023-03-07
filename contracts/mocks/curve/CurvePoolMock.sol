@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
-import '@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol';
-import '../../singularity/legacy/mocks/ERC20Mock.sol';
-import '../../usd0/IUSD0.sol';
+import "@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol";
+import "../../singularity/legacy/mocks/ERC20Mock.sol";
+import "../../usd0/IUSD0.sol";
 
 contract CurvePoolMock {
     using BoringERC20 for IERC20;
@@ -30,12 +30,7 @@ contract CurvePoolMock {
         return dx / divider;
     }
 
-    function exchange(
-        int128,
-        int128 j,
-        uint256 dx,
-        uint256
-    ) external {
+    function exchange(int128, int128 j, uint256 dx, uint256) external {
         if (divider == 0) return;
         address tokenOut = coins[uint256(uint128(j))];
         uint256 freeMintAmount = dx / divider;

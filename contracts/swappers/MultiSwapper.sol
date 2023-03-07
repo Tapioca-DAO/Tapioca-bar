@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import '@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol';
+import "@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol";
 
-import './ISwapper.sol';
-import '../interfaces/IPenrose.sol';
-import '../../yieldbox/contracts/YieldBox.sol';
+import "./ISwapper.sol";
+import "../interfaces/IPenrose.sol";
+import "../../yieldbox/contracts/YieldBox.sol";
 
-import '../libraries/IUniswapV2Factory.sol';
-import '../libraries/UniswapV2Library.sol';
-import '../libraries/IUniswapV2Pair.sol';
+import "../libraries/IUniswapV2Factory.sol";
+import "../libraries/UniswapV2Library.sol";
+import "../libraries/IUniswapV2Pair.sol";
 
 /// Modified from https://github.com/sushiswap/kashi-lending/blob/master/contracts/swappers/SushiSwapMultiSwapper.sol
 contract MultiSwapper is ISwapper {
@@ -26,11 +26,7 @@ contract MultiSwapper is ISwapper {
     /// @param _factory UniswapV2Factory address
     /// @param _tapiocaBar Penrose address
     /// @param _pairCodeHash UniswapV2 pair code hash
-    constructor(
-        address _factory,
-        IPenrose _tapiocaBar,
-        bytes32 _pairCodeHash
-    ) {
+    constructor(address _factory, IPenrose _tapiocaBar, bytes32 _pairCodeHash) {
         factory = _factory;
         yieldBox = YieldBox(_tapiocaBar.yieldBox());
         pairCodeHash = _pairCodeHash;
@@ -148,7 +144,7 @@ contract MultiSwapper is ISwapper {
             pairCodeHash
         );
         amountOut = amounts[amounts.length - 1];
-        require(amountOut >= amountOutMin, 'insufficient-amount-out');
+        require(amountOut >= amountOutMin, "insufficient-amount-out");
         // Required for the next step
         IERC20(path[0]).safeTransfer(
             UniswapV2Library.pairFor(factory, path[0], path[1], pairCodeHash),

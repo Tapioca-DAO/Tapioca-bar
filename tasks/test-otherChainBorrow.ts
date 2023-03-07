@@ -56,7 +56,7 @@ export const otherChainBorrow__task = async (
             },
         )
     ).wait(confirmations);
-    console.log(`Done. YB funds added`);
+    console.log('Done. YB funds added');
 
     //Add collateral, borrow and withdraw through the proxy contract
     const signer = (await hre.ethers.getSigners())[0];
@@ -83,7 +83,7 @@ export const otherChainBorrow__task = async (
         ],
     );
 
-    console.log(`\nAdding collateral, borrow & withdraw...`);
+    console.log('\nAdding collateral, borrow & withdraw...');
     let adapterParam = hre.ethers.utils.solidityPack(
         ['uint16', 'uint256'],
         [1, 2250000],
@@ -93,7 +93,7 @@ export const otherChainBorrow__task = async (
         await proxySrc.lzEndpoint(),
     );
 
-    let actions = [addCollateralFn, borrowFn];
+    const actions = [addCollateralFn, borrowFn];
     if (taskArgs.withdraw == 1) {
         console.log('WITHDRAW TOO');
         adapterParam = hre.ethers.utils.solidityPack(
@@ -124,8 +124,10 @@ export const otherChainBorrow__task = async (
                 singularityDestination.address,
                 actions,
                 adapterParam,
-                { value: taskArgs.singularityGas },
+                {
+                    value: taskArgs.singularityGas,
+                },
             )
     ).wait(confirmations);
-    console.log(`Done`);
+    console.log('Done');
 };

@@ -4,7 +4,7 @@ import _ from 'lodash';
 import SDK from 'tapioca-sdk';
 import { TContract } from 'tapioca-sdk/dist/shared';
 
-let supportedChains: { [key: string]: any } = SDK.API.utils
+const supportedChains: { [key: string]: any } = SDK.API.utils
     .getSupportedChains()
     .reduce(
         (sdkChains, chain) => ({
@@ -323,7 +323,7 @@ export const verify = async (
 ) => {
     const { deployments } = hre;
 
-    let deployed = await deployments.get(artifact);
+    const deployed = await deployments.get(artifact);
     console.log(`[+] Verifying ${artifact}`);
     try {
         await hre.run('verify', {
@@ -418,7 +418,7 @@ export const deployOracleMock = async (
         });
         const chainId = await hre.getChainId();
         await updateDeployments(contracts, chainId);
-        console.log(`Deployed`);
+        console.log('Deployed');
     }
     const oracleFactoryContract = await hre.ethers.getContractAt(
         'OracleMockFactory',
@@ -432,7 +432,7 @@ export const deployOracleMock = async (
     await verify(hre, 'OracleMock', []);
     console.log('Done');
 
-    console.log(`\nSetting mock price`);
+    console.log('\nSetting mock price');
     const oracleContract = await hre.ethers.getContractAt(
         'OracleMock',
         oracleMock,
@@ -535,7 +535,7 @@ export const registerBigBangMarket = async (
     console.log('Done');
     //No need to verify as the same contract type was previously verified
 
-    console.log(`\nSetting minter and burner role for USD0`);
+    console.log('\nSetting minter and burner role for USD0');
     const usd0Contract = await hre.ethers.getContractAt(
         'USD0',
         usd0Deployed.address,
@@ -546,7 +546,7 @@ export const registerBigBangMarket = async (
     await (
         await usd0Contract.setBurnerStatus(deployedMinter.address, true)
     ).wait();
-    console.log(`Done`);
+    console.log('Done');
 
     return new Promise(async (resolve) =>
         resolve({
@@ -569,7 +569,7 @@ export const registerMarket = async (
     name = name.toUpperCase();
 
     const marketData = constants[chainId][`sgl_${name}`];
-    let assetAddress = marketData.assetAddress;
+    const assetAddress = marketData.assetAddress;
 
     let yieldBoxAddress = constants[chainId].yieldBoxAddress;
     if (
@@ -591,11 +591,11 @@ export const registerMarket = async (
         yieldBoxAddress,
     );
 
-    let collateralStrategyAddress = marketData.strategyAddress;
+    const collateralStrategyAddress = marketData.strategyAddress;
     if (collateralStrategyAddress == hre.ethers.constants.AddressZero) {
         throw 'Collateral strategy is not valid';
     }
-    let assetStrategyAddress = await penrose.emptyStrategies(assetAddress);
+    const assetStrategyAddress = await penrose.emptyStrategies(assetAddress);
     if (assetStrategyAddress == hre.ethers.constants.AddressZero) {
         throw 'Asset strategy is not valid';
     }
@@ -724,7 +724,7 @@ export const registerLiquidationQueue = async (
         deployedLQ.address,
     );
     await (await lqContract.init(LQ_META, singularityContract.address)).wait();
-    console.log(`Done`);
+    console.log('Done');
 
     console.log(`\nSetting ${name} LiquidationQueue on Singularity`);
     const penroseContract = await hre.ethers.getContractAt(

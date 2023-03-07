@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-import './SGLCommon.sol';
+import "./SGLCommon.sol";
 
 contract SGLLendingBorrowing is SGLCommon {
     using RebaseLibrary for Rebase;
@@ -104,7 +104,7 @@ contract SGLLendingBorrowing is SGLCommon {
         allowed(from)
         returns (uint256 amountOut)
     {
-        require(penrose.swappers(swapper), 'SGL: Invalid swapper');
+        require(penrose.swappers(swapper), "SGL: Invalid swapper");
 
         updateExchangeRate();
         accrue();
@@ -120,7 +120,7 @@ contract SGLLendingBorrowing is SGLCommon {
             dexData
         );
 
-        // As long as the ratio is correct, we trust `amountOut` resp. 
+        // As long as the ratio is correct, we trust `amountOut` resp.
         // `shareOut`, because all money received by the swapper gets used up
         // one way or another, or the transaction will revert.
         require(amountOut >= minAmountOut, "SGL: not enough");
@@ -167,7 +167,7 @@ contract SGLLendingBorrowing is SGLCommon {
         allowed(from)
         returns (uint256 amountOut)
     {
-        require(penrose.swappers(swapper), 'SGL: Invalid swapper');
+        require(penrose.swappers(swapper), "SGL: Invalid swapper");
 
         // Let this fail first to save gas:
         uint256 supplyShare = yieldBox.toShare(assetId, supplyAmount, true);
@@ -240,14 +240,14 @@ contract SGLLendingBorrowing is SGLCommon {
         (totalBorrow, part) = totalBorrow.add(amount + feeAmount, true);
         require(
             totalBorrowCap == 0 || totalBorrow.base <= totalBorrowCap,
-            'SGL: borrow cap reached'
+            "SGL: borrow cap reached"
         );
         userBorrowPart[from] += part;
         emit LogBorrow(from, to, amount, feeAmount, part);
 
         share = yieldBox.toShare(assetId, amount, false);
         Rebase memory _totalAsset = totalAsset;
-        require(_totalAsset.base >= 1000, 'SGL: min limit');
+        require(_totalAsset.base >= 1000, "SGL: min limit");
         _totalAsset.elastic -= uint128(share);
         totalAsset = _totalAsset;
 

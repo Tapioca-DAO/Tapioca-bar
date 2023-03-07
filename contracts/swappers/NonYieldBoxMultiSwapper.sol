@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import '@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol';
+import "@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol";
 
-import '../libraries/IUniswapV2Factory.sol';
-import '../libraries/UniswapV2Library.sol';
-import '../libraries/IUniswapV2Pair.sol';
+import "../libraries/IUniswapV2Factory.sol";
+import "../libraries/UniswapV2Library.sol";
+import "../libraries/IUniswapV2Pair.sol";
 
 /// Modified from https://github.com/sushiswap/kashi-lending/blob/master/contracts/swappers/SushiSwapMultiSwapper.sol
 
@@ -29,11 +29,10 @@ contract NonYieldBoxMultiSwapper {
     // ********************** //
     // *** VIEW FUNCTIONS *** //
     // ********************** //
-    function getOutputAmount(address[] calldata path, uint256 amountIn)
-        external
-        view
-        returns (uint256 amountOut)
-    {
+    function getOutputAmount(
+        address[] calldata path,
+        uint256 amountIn
+    ) external view returns (uint256 amountOut) {
         uint256[] memory amounts = UniswapV2Library.getAmountsOut(
             factory,
             amountIn,
@@ -43,11 +42,10 @@ contract NonYieldBoxMultiSwapper {
         amountOut = amounts[amounts.length - 1];
     }
 
-    function getInputAmount(address[] calldata path, uint256 amountOut)
-        external
-        view
-        returns (uint256 amountIn)
-    {
+    function getInputAmount(
+        address[] calldata path,
+        uint256 amountOut
+    ) external view returns (uint256 amountIn) {
         uint256[] memory amounts = UniswapV2Library.getAmountsIn(
             factory,
             amountOut,
@@ -98,7 +96,7 @@ contract NonYieldBoxMultiSwapper {
             pairCodeHash
         );
         amountOut = amounts[amounts.length - 1];
-        require(amountOut >= amountOutMin, 'insufficient-amount-out');
+        require(amountOut >= amountOutMin, "insufficient-amount-out");
         // Required for the next step
         IERC20(path[0]).safeTransfer(
             UniswapV2Library.pairFor(factory, path[0], path[1], pairCodeHash),

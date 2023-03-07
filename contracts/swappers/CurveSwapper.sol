@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
-import '@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol';
+import "@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol";
 
-import './ISwapper.sol';
-import '../interfaces/IPenrose.sol';
-import '../../yieldbox/contracts/YieldBox.sol';
+import "./ISwapper.sol";
+import "../interfaces/IPenrose.sol";
+import "../../yieldbox/contracts/YieldBox.sol";
 
-import '../libraries/ICurvePool.sol';
+import "../libraries/ICurvePool.sol";
 
 /*
 
@@ -67,7 +67,7 @@ contract CurveSwapper is ISwapper {
         uint256,
         bytes calldata
     ) external pure returns (uint256) {
-        revert('Not implemented');
+        revert("Not implemented");
     }
 
     // ************************ //
@@ -132,12 +132,12 @@ contract CurveSwapper is ISwapper {
         address tokenOut = curvePool.coins(uint256(uint128(j)));
 
         uint256 outputAmount = curvePool.get_dy(i, j, amountIn);
-        require(outputAmount >= amountOutMin, 'insufficient-amount-out');
+        require(outputAmount >= amountOutMin, "insufficient-amount-out");
 
         uint256 balanceBefore = IERC20(tokenOut).balanceOf(address(this));
         curvePool.exchange(i, j, amountIn, amountOutMin);
         uint256 balanceAfter = IERC20(tokenOut).balanceOf(address(this));
-        require(balanceAfter > balanceBefore, 'swap failed');
+        require(balanceAfter > balanceBefore, "swap failed");
 
         return balanceAfter - balanceBefore;
     }

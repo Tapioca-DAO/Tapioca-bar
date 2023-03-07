@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
-import 'tapioca-sdk/dist/contracts/libraries/LzLib.sol';
-import 'tapioca-sdk/dist/contracts/token/oft/v2/OFTV2.sol';
-import './interfaces/IYieldBox.sol';
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "tapioca-sdk/dist/contracts/libraries/LzLib.sol";
+import "tapioca-sdk/dist/contracts/token/oft/v2/OFTV2.sol";
+import "./interfaces/IYieldBox.sol";
 
 //
 //                 .(%%%%%%%%%%%%*       *
@@ -71,7 +71,7 @@ abstract contract BaseOFT is OFTV2 {
     ) external payable {
         bytes32 toAddress = LzLib.addressToBytes32(msg.sender);
         _debitFrom(msg.sender, lzEndpoint.getChainId(), toAddress, amount);
-        
+
         bytes memory lzPayload = abi.encode(
             strategyDeposit ? PT_YB_SEND_STRAT : PT_YB_DEPOSIT,
             LzLib.addressToBytes32(msg.sender),
@@ -192,7 +192,7 @@ abstract contract BaseOFT is OFTV2 {
             lzSendBackPayload,
             payable(this),
             _zroPaymentAddress,
-            '',
+            "",
             address(this).balance
         );
         emit SendToChain(
@@ -255,7 +255,7 @@ abstract contract BaseOFT is OFTV2 {
             } else if (packetType == PT_SEND_AND_CALL) {
                 _sendAndCallAck(_srcChainId, _srcAddress, _nonce, _payload);
             } else {
-                revert('OFTCoreV2: unknown packet type');
+                revert("OFTCoreV2: unknown packet type");
             }
         }
     }

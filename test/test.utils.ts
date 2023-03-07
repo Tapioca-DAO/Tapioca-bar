@@ -569,7 +569,7 @@ async function registerMultiSwapper(
     await (
         await bar.setSwapper(multiSwapper.address, true, { gasPrice: gasPrice })
     ).wait();
-    log(`Swapper was set on Penrose`, staging);
+    log('Swapper was set on Penrose', staging);
 
     await verifyEtherscan(
         multiSwapper.address,
@@ -595,7 +595,7 @@ async function deployMediumRiskMC(bar: Penrose, staging?: boolean) {
             gasPrice: gasPrice,
         })
     ).wait();
-    log(`MediumRiskMC was set on Penrose`, staging);
+    log('MediumRiskMC was set on Penrose', staging);
 
     await verifyEtherscan(mediumRiskMC.address, [], staging);
 
@@ -621,7 +621,7 @@ async function deployMediumRiskBigBangMC(bar: Penrose, staging?: boolean) {
             },
         )
     ).wait();
-    log(`MediumRiskMC was set on Penrose`, staging);
+    log('MediumRiskMC was set on Penrose', staging);
 
     await verifyEtherscan(mediumRiskBigBangMC.address, [], staging);
 
@@ -687,7 +687,7 @@ async function registerSingularity(
             gasPrice: gasPrice,
         })
     ).wait();
-    log(`WethUsdcSingularity registered on Penrose`, staging);
+    log('WethUsdcSingularity registered on Penrose', staging);
 
     const singularityMarket = await ethers.getContractAt(
         'Singularity',
@@ -824,7 +824,7 @@ async function createWethUsd0Singularity(
 
     const newPrice = __wethUsdcPrice.div(1000000);
     await wethUsd0Oracle.set(newPrice, { gasPrice: gasPrice });
-    log(`Price was set for WethUsd0 mock oracle`, staging);
+    log('Price was set for WethUsd0 mock oracle', staging);
 
     const data = new ethers.utils.AbiCoder().encode(
         [
@@ -877,7 +877,7 @@ async function createWethUsd0Singularity(
         gasPrice: gasPrice,
     });
     log(
-        `Updated Usd0 Minter and Burner status for WethUsd0Singularity`,
+        'Updated Usd0 Minter and Burner status for WethUsd0Singularity',
         staging,
     );
 
@@ -909,7 +909,7 @@ async function createWethUsd0Singularity(
     await liquidationQueue.init(LQ_META, wethUsdoSingularity.address, {
         gasPrice: gasPrice,
     });
-    log(`LiquidationQueue initialized`);
+    log('LiquidationQueue initialized');
 
     const payload = wethUsdoSingularity.interface.encodeFunctionData(
         'setLiquidationQueue',
@@ -926,7 +926,7 @@ async function createWethUsd0Singularity(
             },
         )
     ).wait();
-    log(`WethUsd0LiquidationQueue was set for WethUsd0Singularity`, staging);
+    log('WethUsd0LiquidationQueue was set for WethUsd0Singularity', staging);
 
     return { wethUsdoSingularity };
 }
@@ -956,7 +956,7 @@ async function registerLiquidationQueue(
         usdoSwapper: ethers.constants.AddressZero,
     };
     await liquidationQueue.init(LQ_META, singularity.address);
-    log(`LiquidationQueue initialized`, staging);
+    log('LiquidationQueue initialized', staging);
 
     const payload = singularity.interface.encodeFunctionData(
         'setLiquidationQueue',
@@ -968,7 +968,7 @@ async function registerLiquidationQueue(
             gasPrice: gasPrice,
         })
     ).wait();
-    log(`WethUsdcLiquidationQueue was set for WethUsdcSingularity`, staging);
+    log('WethUsdcLiquidationQueue was set for WethUsdcSingularity', staging);
 
     await verifyEtherscan(
         liquidationQueue.address,
@@ -1023,7 +1023,7 @@ async function registerBigBangMarket(
             gasPrice: gasPrice,
         })
     ).wait();
-    log(`BigBang market registered on Penrose`, staging);
+    log('BigBang market registered on Penrose', staging);
 
     const bigBangMarket = await ethers.getContractAt(
         'BigBang',
@@ -1088,7 +1088,7 @@ export async function register(staging?: boolean) {
         await wethUsdcOracle.set(__wethUsdcPrice, { gasPrice: gasPrice })
     ).wait();
     await verifyEtherscan(wethUsdcOracle.address, [], staging);
-    log(`Price was set for WethUSDC mock oracle `, staging);
+    log('Price was set for WethUSDC mock oracle ', staging);
 
     // ------------------- Deploy WbtcUSDC mock oracle -------------------
     const wbtcUsdcOracle = await (
@@ -1103,7 +1103,7 @@ export async function register(staging?: boolean) {
         await wbtcUsdcOracle.set(__wbtcUsdcPrice, { gasPrice: gasPrice })
     ).wait();
     await verifyEtherscan(wbtcUsdcOracle.address, [], staging);
-    log(`Price was set for WbtcUDSC mock oracle `, staging);
+    log('Price was set for WbtcUDSC mock oracle ', staging);
 
     // -------------------  Deploy WethUSD0 mock oracle -------------------
     log('Deploying USD0WETH mock oracle', staging);
@@ -1120,7 +1120,7 @@ export async function register(staging?: boolean) {
         await usd0WethOracle.set(__usd0WethPrice, { gasPrice: gasPrice })
     ).wait();
     await verifyEtherscan(usd0WethOracle.address, [], staging);
-    log(`Price was set for USD0WETH mock oracle`, staging);
+    log('Price was set for USD0WETH mock oracle', staging);
 
     // ------------------- 1  Deploy tokens -------------------
     log('Deploying Tokens', staging);
@@ -1305,7 +1305,7 @@ export async function register(staging?: boolean) {
 
     // ------------------- 11 Set USD0 on Penrose -------------------
     await bar.setUsdoToken(usd0.address, { gasPrice: gasPrice });
-    log(`USD0 was set on Penrose`, staging);
+    log('USD0 was set on Penrose', staging);
 
     // ------------------- 12 Register WETH BigBang -------------------
     log('Deploying WethMinterSingularity', staging);

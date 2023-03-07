@@ -5,6 +5,10 @@ export const deployBigBang__task = async (
     taskArgs: any,
     hre: HardhatRuntimeEnvironment,
 ) => {
-    const marketObj = await registerBigBangMarket(hre, taskArgs.name, taskArgs.exchangeRatePrecision);
+    const marketObj = await registerBigBangMarket(
+        hre,
+        taskArgs.name,
+        taskArgs.exchangeRatePrecision,
+    );
     await updateDeployments([marketObj], await hre.getChainId());
 };

@@ -9,10 +9,7 @@ export const getBigBangMarkets = async (hre: HardhatRuntimeEnvironment) => {
     const markets = [];
 
     for (const address of addresses) {
-        const bigBang = await hre.ethers.getContractAt(
-            'BigBang',
-            address,
-        );
+        const bigBang = await hre.ethers.getContractAt('BigBang', address);
         markets.push({
             [await bigBang.name()]: address,
         });

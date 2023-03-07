@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-import './SGLCommon.sol';
+import "./SGLCommon.sol";
 
 // solhint-disable max-line-length
 
@@ -146,7 +146,7 @@ contract SGLLiquidation is SGLCommon {
                 allBorrowPart += borrowPart;
             }
         }
-        require(allBorrowAmount != 0, 'SGL: solvent');
+        require(allBorrowAmount != 0, "SGL: solvent");
 
         _totalBorrow.elastic -= uint128(allBorrowAmount);
         _totalBorrow.base -= uint128(allBorrowPart);
@@ -216,7 +216,7 @@ contract SGLLiquidation is SGLCommon {
             false
         );
         userCollateralShare[user] -= collateralShare;
-        require(borrowAmount != 0, 'SGL: solvent');
+        require(borrowAmount != 0, "SGL: solvent");
 
         totalBorrow.elastic -= uint128(borrowAmount);
         totalBorrow.base -= uint128(borrowPart);
@@ -279,7 +279,7 @@ contract SGLLiquidation is SGLCommon {
         uint256 borrowShare = yieldBox.toShare(assetId, borrowAmount, true);
 
         // Closed liquidation using a pre-approved swapper
-        require(penrose.swappers(swapper), 'SGL: Invalid swapper');
+        require(penrose.swappers(swapper), "SGL: Invalid swapper");
 
         // Swaps the users collateral for the borrowed asset
         yieldBox.transfer(
@@ -333,6 +333,6 @@ contract SGLLiquidation is SGLCommon {
             }
         }
 
-        require(liquidatedCount > 0, 'SGL: no users found');
+        require(liquidatedCount > 0, "SGL: no users found");
     }
 }

@@ -656,7 +656,7 @@ async function addAssetToSingularityPlug(
     Singularity: any,
     shareValue: BigNumberish,
 ) {
-    let addAssetFn = Singularity.interface.encodeFunctionData('addAsset', [
+    const addAssetFn = Singularity.interface.encodeFunctionData('addAsset', [
         signer.address,
         signer.address,
         false,
@@ -743,7 +743,7 @@ async function bidOnLQPlug(
 async function activateBidPlug(
     signer: SignerWithAddress,
     liquidationQueue: any,
-    timeTravel: (amount: number) => {},
+    timeTravel: (amount: number) => any,
 ) {
     await timeTravel(10_000);
     await expect(

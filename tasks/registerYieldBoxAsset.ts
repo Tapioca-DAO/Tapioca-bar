@@ -25,7 +25,7 @@ export const registerYieldBoxAsset__task = async (
     args: any,
     hre: HardhatRuntimeEnvironment,
 ) => {
-    console.log(`Register YieldBox asset`);
+    console.log('Register YieldBox asset');
     await registerYieldBoxAsset(args, hre);
     console.log('Execution completed');
 };

@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import '../ILiquidationQueue.sol';
-import '../../interfaces/IPenrose.sol';
+import "../ILiquidationQueue.sol";
+import "../../interfaces/IPenrose.sol";
 
 contract LQSingularityMock {
     IPenrose immutable penrose;

@@ -30,14 +30,14 @@ export const retryPayload__task = async (
     console.log(`   *   Has stored payload: ${hasPayload}`);
     if (!hasPayload) return;
 
-    let blockEvents = await endpoint.queryFilter(
+    const blockEvents = await endpoint.queryFilter(
         endpoint.filters.PayloadStored(),
         taskArgs.blockHash,
     );
     if (blockEvents.length == 0) return;
 
     let actualEvent;
-    for (var i = 0; i < blockEvents.length; i++) {
+    for (let i = 0; i < blockEvents.length; i++) {
         const isRightEvent =
             blockEvents[i].args[0] == taskArgs.srcChainId &&
             blockEvents[i].args[1] == addrPack;
