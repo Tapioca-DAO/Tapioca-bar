@@ -59,7 +59,7 @@ const config: HardhatUserConfig & { dodoc?: any; vyper: any } = {
                     viaIR: true,
                     optimizer: {
                         enabled: true,
-                        runs: 10000,
+                        runs: 1000,
                     },
                 },
             },
