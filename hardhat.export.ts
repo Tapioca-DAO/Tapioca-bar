@@ -54,20 +54,12 @@ const config: HardhatUserConfig & { dodoc?: any; vyper: any } = {
                 },
             },
             {
-                version: '0.8.9',
+                version: '0.8.18',
                 settings: {
+                    viaIR: true,
                     optimizer: {
                         enabled: true,
-                        runs: 100,
-                    },
-                },
-            },
-            {
-                version: '0.8.15',
-                settings: {
-                    optimizer: {
-                        enabled: true,
-                        runs: 200,
+                        runs: 10000,
                     },
                 },
             },
