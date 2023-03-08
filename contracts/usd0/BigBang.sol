@@ -11,7 +11,7 @@ import "./interfaces/IBigBang.sol";
 import "../interfaces/IOracle.sol";
 import "../interfaces/IPenrose.sol";
 import "../interfaces/ISendFrom.sol";
-import "../../yieldbox/contracts/YieldBox.sol";
+import "tapioca-sdk/dist/contracts/YieldBox/contracts/YieldBox.sol";
 
 // solhint-disable max-line-length
 /*

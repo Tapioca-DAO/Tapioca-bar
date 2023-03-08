@@ -5,7 +5,7 @@ import "@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol";
 
 import "./ISwapper.sol";
 import "../interfaces/IPenrose.sol";
-import "../../yieldbox/contracts/YieldBox.sol";
+import "tapioca-sdk/dist/contracts/YieldBox/contracts/YieldBox.sol";
 
 import "../libraries/IUniswapV2Factory.sol";
 import "../libraries/UniswapV2Library.sol";

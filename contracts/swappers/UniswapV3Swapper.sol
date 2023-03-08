@@ -8,7 +8,7 @@ import "@uniswap/v3-periphery/contracts/libraries/TransferHelper.sol";
 import "@uniswap/v3-periphery/contracts/interfaces/IQuoterV2.sol";
 
 import "./ISwapper.sol";
-import "../../yieldbox/contracts/interfaces/IYieldBox.sol";
+import "tapioca-sdk/dist/contracts/YieldBox/contracts/interfaces/IYieldBox.sol";
 import "./libraries/OracleLibrary.sol";
 
 /*

@@ -7,7 +7,7 @@ import "../../interfaces/IPenrose.sol";
 import "../ILiquidationQueue.sol";
 import "../../swappers/ISwapper.sol";
 import "../../singularity/interfaces/ISingularity.sol";
-import "../../../yieldbox/contracts/interfaces/IYieldBox.sol";
+import "tapioca-sdk/dist/contracts/YieldBox/contracts/interfaces/IYieldBox.sol";
 
 /*
 

@@ -8,7 +8,7 @@ import "./interfaces/IMarket.sol";
 import "./interfaces/IOracle.sol";
 import "./usd0/interfaces/IBigBang.sol";
 import "./singularity/interfaces/ISingularity.sol";
-import "../yieldbox/contracts/YieldBox.sol";
+import "tapioca-sdk/dist/contracts/YieldBox/contracts/YieldBox.sol";
 
 /// @title Useful helper functions for `Singularity` and `BingBang`
 contract MarketsHelper {

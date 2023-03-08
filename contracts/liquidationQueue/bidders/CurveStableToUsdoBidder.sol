@@ -8,7 +8,7 @@ import "../ILiquidationQueue.sol";
 import "../../libraries/ICurvePool.sol";
 import "../../swappers/CurveSwapper.sol";
 import "../../singularity/interfaces/ISingularity.sol";
-import "../../../yieldbox/contracts/interfaces/IYieldBox.sol";
+import "tapioca-sdk/dist/contracts/YieldBox/contracts/interfaces/IYieldBox.sol";
 
 /*
 

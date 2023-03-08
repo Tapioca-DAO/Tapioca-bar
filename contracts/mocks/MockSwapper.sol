@@ -5,7 +5,7 @@ import "@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol";
 
 import "../swappers/ISwapper.sol";
 import "../interfaces/IPenrose.sol";
-import "../../yieldbox/contracts/YieldBox.sol";
+import "tapioca-sdk/dist/contracts/YieldBox/contracts/YieldBox.sol";
 
 /// @notice Always gives out the minimum requested amount, if it has it.
 /// @notice Do not use the other functions.

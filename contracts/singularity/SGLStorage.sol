@@ -11,7 +11,7 @@ import "../swappers/ISwapper.sol";
 import "../liquidationQueue/ILiquidationQueue.sol";
 import "../interfaces/IPenrose.sol";
 import "../interfaces/IOracle.sol";
-import "../../yieldbox/contracts/YieldBox.sol";
+import "tapioca-sdk/dist/contracts/YieldBox/contracts/YieldBox.sol";
 
 // solhint-disable max-line-length
 
