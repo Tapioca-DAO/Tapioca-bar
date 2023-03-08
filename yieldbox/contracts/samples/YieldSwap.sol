@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3
 // Uniswap V2 for YieldBox (https://github.com/Uniswap/v2-core)
-pragma solidity 0.8.9;
+pragma solidity 0.8.18;
 import "../YieldBox.sol";
 
 struct Pair {

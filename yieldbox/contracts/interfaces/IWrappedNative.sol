@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.9;
+pragma solidity 0.8.18;
 import "@boringcrypto/boring-solidity/contracts/interfaces/IERC20.sol";
 
 interface IWrappedNative is IERC20 {

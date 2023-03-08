@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 
-pragma solidity 0.8.9;
+pragma solidity 0.8.18;
 
 import "@boringcrypto/boring-solidity/contracts/interfaces/IMasterContract.sol";
 import "../YieldBox.sol";

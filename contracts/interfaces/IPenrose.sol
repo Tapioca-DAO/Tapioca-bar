@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.18;
 
 import "../usd0/IUSD0.sol";
 import "../swappers/ISwapper.sol";

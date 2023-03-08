@@ -21,7 +21,7 @@
 // BEWARE: Still under active development
 // Security review not done yet
 
-pragma solidity ^0.8.9;
+pragma solidity ^0.8.18;
 pragma experimental ABIEncoderV2;
 import "./interfaces/IWrappedNative.sol";
 import "./interfaces/IStrategy.sol";

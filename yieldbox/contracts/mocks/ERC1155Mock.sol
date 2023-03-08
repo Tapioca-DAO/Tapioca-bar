@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.9;
+pragma solidity 0.8.18;
 import "../ERC1155.sol";
 
 contract ERC1155Mock is ERC1155 {

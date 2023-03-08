@@ -2,7 +2,7 @@
 
 // File @boringcrypto/boring-solidity/contracts/interfaces/IERC20.sol@v2.0.1
 // License-Identifier: MIT
-pragma solidity 0.8.9;
+pragma solidity 0.8.18;
 
 interface IERC20 {
     function totalSupply() external view returns (uint256);
@@ -30,7 +30,7 @@ interface IERC20 {
 
 // File contracts/interfaces/IWrappedNative.sol
 // License-Identifier: MIT
-pragma solidity 0.8.9;
+pragma solidity 0.8.18;
 
 interface IWrappedNative is IERC20 {
     function deposit() external payable;
@@ -40,7 +40,7 @@ interface IWrappedNative is IERC20 {
 
 // File contracts/enums/YieldBoxTokenType.sol
 // License-Identifier: MIT
-pragma solidity 0.8.9;
+pragma solidity 0.8.18;
 
 /// @title TokenType
 /// @author BoringCrypto (@Boring_Crypto)
@@ -57,7 +57,7 @@ enum TokenType {
 
 // File contracts/interfaces/IYieldBox.sol
 // License-Identifier: MIT
-pragma solidity 0.8.9;
+pragma solidity 0.8.18;
 pragma experimental ABIEncoderV2;
 
 interface IYieldBox {
@@ -89,7 +89,7 @@ interface IYieldBox {
 
 // File contracts/interfaces/IStrategy.sol
 // License-Identifier: MIT
-pragma solidity 0.8.9;
+pragma solidity 0.8.18;
 
 interface IStrategy {
     /// Each strategy only works with a single asset. This should help make implementations simpler and more readable.
@@ -168,7 +168,7 @@ IStrategy constant NO_STRATEGY = IStrategy(address(0));
 
 // File @boringcrypto/boring-solidity/contracts/interfaces/IERC165.sol@v2.0.1
 // License-Identifier: MIT
-pragma solidity 0.8.9;
+pragma solidity 0.8.18;
 
 interface IERC165 {
     function supportsInterface(bytes4 interfaceID) external view returns (bool);
@@ -176,7 +176,7 @@ interface IERC165 {
 
 // File @boringcrypto/boring-solidity/contracts/interfaces/IERC1155.sol@v2.0.1
 // License-Identifier: MIT
-pragma solidity 0.8.9;
+pragma solidity 0.8.18;
 
 interface IERC1155 is IERC165 {
     event TransferSingle(address indexed _operator, address indexed _from, address indexed _to, uint256 _id, uint256 _value);
@@ -211,7 +211,7 @@ interface IERC1155 is IERC165 {
 
 // File @boringcrypto/boring-solidity/contracts/libraries/Base64.sol@v2.0.1
 // License-Identifier: MIT
-pragma solidity 0.8.9;
+pragma solidity 0.8.18;
 
 // solhint-disable no-inline-assembly
 // solhint-disable no-empty-blocks
@@ -286,7 +286,7 @@ library Base64 {
 // Based on code and smartness by Ross Campbell and Keno
 // Uses immutable to store the domain separator to reduce gas usage
 // If the chain id changes due to a fork, the forked chain will calculate on the fly.
-pragma solidity 0.8.9;
+pragma solidity 0.8.18;
 
 // solhint-disable no-inline-assembly
 
@@ -332,7 +332,7 @@ contract Domain {
 // File @boringcrypto/boring-solidity/contracts/interfaces/IERC1155TokenReceiver.sol@v2.0.1
 // License-Identifier: MIT
 
-pragma solidity 0.8.9;
+pragma solidity 0.8.18;
 
 interface IERC1155TokenReceiver {
     function onERC1155Received(
@@ -354,7 +354,7 @@ interface IERC1155TokenReceiver {
 
 // File contracts/ERC1155TokenReceiver.sol
 // License-Identifier: MIT
-pragma solidity 0.8.9;
+pragma solidity 0.8.18;
 
 contract ERC1155TokenReceiver is IERC1155TokenReceiver {
     // ERC1155 receivers that simple accept the transfer
@@ -381,7 +381,7 @@ contract ERC1155TokenReceiver is IERC1155TokenReceiver {
 
 // File @boringcrypto/boring-solidity/contracts/libraries/BoringAddress.sol@v2.0.1
 // License-Identifier: MIT
-pragma solidity 0.8.9;
+pragma solidity 0.8.18;
 
 // solhint-disable no-inline-assembly
 
@@ -403,7 +403,7 @@ library BoringAddress {
 
 // File contracts/ERC1155.sol
 // License-Identifier: MIT
-pragma solidity 0.8.9;
+pragma solidity 0.8.18;
 
 // Written by OreNoMochi (https://github.com/OreNoMochii), BoringCrypto
 
@@ -551,7 +551,7 @@ contract ERC1155 is IERC1155 {
 
 // File @boringcrypto/boring-solidity/contracts/BoringBatchable.sol@v2.0.1
 // License-Identifier: MIT
-pragma solidity 0.8.9;
+pragma solidity 0.8.18;
 
 // solhint-disable avoid-low-level-calls
 // solhint-disable no-inline-assembly
@@ -681,7 +681,7 @@ library Strings {
 
 // File contracts/AssetRegister.sol
 // License-Identifier: MIT
-pragma solidity 0.8.9;
+pragma solidity 0.8.18;
 
 // An asset is a token + a strategy
 struct Asset {
@@ -762,7 +762,7 @@ contract AssetRegister is ERC1155 {
 
 // File @boringcrypto/boring-solidity/contracts/interfaces/IMasterContract.sol@v2.0.1
 // License-Identifier: MIT
-pragma solidity 0.8.9;
+pragma solidity 0.8.18;
 
 interface IMasterContract {
     /// @notice Init function that gets called from `BoringFactory.deploy`.
@@ -774,7 +774,7 @@ interface IMasterContract {
 
 // File @boringcrypto/boring-solidity/contracts/BoringFactory.sol@v2.0.1
 // License-Identifier: MIT
-pragma solidity 0.8.9;
+pragma solidity 0.8.18;
 
 // solhint-disable no-inline-assembly
 
@@ -843,7 +843,7 @@ contract BoringFactory {
 
 // File contracts/NativeTokenFactory.sol
 // License-Identifier: MIT
-pragma solidity 0.8.9;
+pragma solidity 0.8.18;
 
 struct NativeToken {
     string name;
@@ -980,7 +980,7 @@ contract NativeTokenFactory is AssetRegister, BoringFactory {
 
 // File @boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol@v2.0.1
 // License-Identifier: MIT
-pragma solidity 0.8.9;
+pragma solidity 0.8.18;
 
 // solhint-disable avoid-low-level-calls
 
@@ -1078,7 +1078,7 @@ library BoringERC20 {
 // File contracts/YieldBoxRebase.sol
 // License-Identifier: MIT
 
-pragma solidity 0.8.9;
+pragma solidity 0.8.18;
 
 library YieldBoxRebase {
     /// @notice Calculates the base value in relationship to `elastic` and `total`.
@@ -1130,7 +1130,7 @@ library YieldBoxRebase {
 
 // File contracts/YieldBoxURIBuilder.sol
 // License-Identifier: MIT
-pragma solidity 0.8.9;
+pragma solidity 0.8.18;
 
 // solhint-disable quotes
 
@@ -1158,7 +1158,7 @@ pragma solidity 0.8.9;
 // BEWARE: Still under active development
 // Security review not done yet
 
-pragma solidity 0.8.9;
+pragma solidity 0.8.18;
 
 // solhint-disable no-empty-blocks
 
