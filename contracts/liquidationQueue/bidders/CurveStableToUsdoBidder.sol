@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.18;
 
 import "@boringcrypto/boring-solidity/contracts/BoringOwnable.sol";
 
@@ -8,7 +8,7 @@ import "../ILiquidationQueue.sol";
 import "../../libraries/ICurvePool.sol";
 import "../../swappers/CurveSwapper.sol";
 import "../../singularity/interfaces/ISingularity.sol";
-import "../../../yieldbox/contracts/interfaces/IYieldBox.sol";
+import "tapioca-sdk/dist/contracts/YieldBox/contracts/interfaces/IYieldBox.sol";
 
 /*
 

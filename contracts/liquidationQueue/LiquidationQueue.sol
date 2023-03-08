@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.18;
 import "@boringcrypto/boring-solidity/contracts/BoringOwnable.sol";
 import "@boringcrypto/boring-solidity/contracts/interfaces/IERC20.sol";
 
 import "../interfaces/IPenrose.sol";
 import "./ILiquidationQueue.sol";
 import "../singularity/interfaces/ISingularity.sol";
-import "../../yieldbox/contracts/interfaces/IStrategy.sol";
-import "../../yieldbox/contracts/strategies/ERC20WithoutStrategy.sol";
+import "tapioca-sdk/dist/contracts/YieldBox/contracts/interfaces/IStrategy.sol";
+import "tapioca-sdk/dist/contracts/YieldBox/contracts/strategies/ERC20WithoutStrategy.sol";
 
-import "../../yieldbox/contracts/YieldBox.sol";
+import "tapioca-sdk/dist/contracts/YieldBox/contracts/YieldBox.sol";
 
 /// @title LiquidationQueue
 /// @author @0xRektora, TapiocaDAO

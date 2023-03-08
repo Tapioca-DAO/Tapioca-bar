@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.18;
 import "@boringcrypto/boring-solidity/contracts/ERC20.sol";
 
 import "./ERC20Mock.sol";

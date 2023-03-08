@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.18;
 
 import "@boringcrypto/boring-solidity/contracts/ERC20.sol";
 import "@boringcrypto/boring-solidity/contracts/BoringOwnable.sol";
@@ -11,7 +11,7 @@ import "../swappers/ISwapper.sol";
 import "../liquidationQueue/ILiquidationQueue.sol";
 import "../interfaces/IPenrose.sol";
 import "../interfaces/IOracle.sol";
-import "../../yieldbox/contracts/YieldBox.sol";
+import "tapioca-sdk/dist/contracts/YieldBox/contracts/YieldBox.sol";
 
 // solhint-disable max-line-length
 

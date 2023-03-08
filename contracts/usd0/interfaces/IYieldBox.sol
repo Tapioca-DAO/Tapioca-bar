@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.18;
 pragma experimental ABIEncoderV2;
 
 // solhint-disable max-line-length

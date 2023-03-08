@@ -2,7 +2,7 @@
     "name": "tapioca-bar",
     "license": "MIT",
     "scripts": {
-        "compile": "NODE_ENV=compile hardhat compile --quiet && npm run solhint",
+        "compile": "NODE_ENV=compile hardhat compile --quiet && npm run lint:sol",
         "lint:ts": "eslint ./deploy ./tasks ./test ./*.ts --fix",
         "lint:sol": "prettier --write 'contracts/**/*.sol' && solhint 'contracts/**/*.sol' --fix",
         "lint": "npm run lint:ts && npm run lint:sol",
@@ -41,7 +41,7 @@
         "@nomicfoundation/hardhat-toolbox": "^1.0.2",
         "@nomiclabs/hardhat-ethers": "^2.1.1",
         "@nomiclabs/hardhat-etherscan": "^3.1.0",
-        "@openzeppelin/contracts": "^4.5.0",
+        "@openzeppelin/contracts": "^4.8.2",
         "@typechain/ethers-v5": "^10.1.0",
         "@typechain/hardhat": "^6.1.2",
         "@types/chai": "^4.2.22",
@@ -56,7 +56,7 @@
         "eslint-config-prettier": "^8.3.0",
         "eslint-plugin-prettier": "^4.0.0",
         "ethers": "^5.7.0",
-        "hardhat": "^2.11.0",
+        "hardhat": "^2.13.0",
         "hardhat-contract-sizer": "^2.5.1",
         "hardhat-deploy": "^0.9.6",
         "hardhat-gas-reporter": "^1.0.8",
@@ -81,6 +81,6 @@
         "husky": "^8.0.1",
         "load-json-file": "^7.0.1",
         "lodash": "^4.17.21",
-        "tapioca-sdk": "^1.1.31"
+        "tapioca-sdk": "^1.1.33"
     }
 }
