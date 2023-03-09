@@ -1894,4 +1894,232 @@ describe('BigBang test', () => {
         expect(closingFactor.gt(prevClosingFactor)).to.be.true;
         prevClosingFactor = closingFactor;
     });
+
+    it('should lever up', async () => {
+        const {
+            wethBigBangMarket,
+            weth,
+            wethAssetId,
+            yieldBox,
+            deployer,
+            bar,
+            eoa1,
+            __wethUsdcPrice,
+        } = await loadFixture(register);
+
+        await weth.approve(yieldBox.address, ethers.constants.MaxUint256);
+        await yieldBox.setApprovalForAll(wethBigBangMarket.address, true);
+
+        await weth
+            .connect(eoa1)
+            .approve(yieldBox.address, ethers.constants.MaxUint256);
+        await yieldBox
+            .connect(eoa1)
+            .setApprovalForAll(wethBigBangMarket.address, true);
+
+        const wethMintVal = ethers.BigNumber.from((1e18).toString()).mul(10);
+        await weth.freeMint(wethMintVal);
+        await weth.connect(eoa1).freeMint(wethMintVal);
+        const valShare = await yieldBox.toShare(
+            wethAssetId,
+            wethMintVal,
+            false,
+        );
+        await yieldBox.depositAsset(
+            wethAssetId,
+            deployer.address,
+            deployer.address,
+            0,
+            valShare,
+        );
+
+        await wethBigBangMarket.addCollateral(
+            deployer.address,
+            deployer.address,
+            false,
+            valShare,
+        );
+
+        //borrow
+        const usdoBorrowVal = wethMintVal
+            .mul(74)
+            .div(100)
+            .mul(__wethUsdcPrice.div((1e18).toString()));
+
+
+        await wethBigBangMarket.borrow(
+            deployer.address,
+            deployer.address,
+            usdoBorrowVal,
+        );
+
+        // Buy more collateral
+        const leverageAmount = ethers.BigNumber.from((1e18).toString());
+        const leverageBorrowAmount = ethers.BigNumber.from(
+            (1e18).toString(),
+        ).mul(500);
+
+        const mockSwapper = await (
+            await ethers.getContractFactory('MockSwapper')
+        ).deploy(yieldBox.address);
+        await mockSwapper.deployed();
+        await bar.setSwapper(mockSwapper.address, true);
+
+        await yieldBox
+            .connect(eoa1)
+            .depositAsset(
+                await wethBigBangMarket.collateralId(),
+                eoa1.address,
+                mockSwapper.address,
+                leverageAmount,
+                0,
+            );
+
+        const collateralBefore = await yieldBox.toAmount(
+            await wethBigBangMarket.collateralId(),
+            await wethBigBangMarket.userCollateralShare(deployer.address),
+            false,
+        );
+        const ybCollateralBalanceBefore = await yieldBox.balanceOf(
+            eoa1.address,
+            await wethBigBangMarket.collateralId(),
+        );
+        await wethBigBangMarket.buyCollateral(
+            deployer.address,
+            leverageBorrowAmount, // 500 USD0
+            0, // No additional payment
+            leverageAmount, // 1 weth minimum to be added
+            mockSwapper.address,
+            [],
+        );
+        const collateralAfter = await yieldBox.toAmount(
+            await wethBigBangMarket.collateralId(),
+            await wethBigBangMarket.userCollateralShare(deployer.address),
+            false,
+        );
+        expect(collateralBefore.add(leverageAmount).eq(collateralAfter)).to.be
+            .true;
+
+        const ybCollateralBalanceAfter = await yieldBox.balanceOf(
+            eoa1.address,
+            await wethBigBangMarket.collateralId(),
+        );
+
+        expect(ybCollateralBalanceAfter.eq(ybCollateralBalanceBefore)).to.be.true;
+    });
+
+    it('should lever down', async () => {
+        const {
+            wethBigBangMarket,
+            weth,
+            wethAssetId,
+            yieldBox,
+            deployer,
+            bar,
+            eoa1,
+            __wethUsdcPrice,
+        } = await loadFixture(register);
+
+        await weth.approve(yieldBox.address, ethers.constants.MaxUint256);
+        await yieldBox.setApprovalForAll(wethBigBangMarket.address, true);
+
+        await weth
+            .connect(eoa1)
+            .approve(yieldBox.address, ethers.constants.MaxUint256);
+        await yieldBox
+            .connect(eoa1)
+            .setApprovalForAll(wethBigBangMarket.address, true);
+
+        const wethMintVal = ethers.BigNumber.from((1e18).toString()).mul(10);
+        await weth.freeMint(wethMintVal);
+        await weth.connect(eoa1).freeMint(wethMintVal);
+        const valShare = await yieldBox.toShare(
+            wethAssetId,
+            wethMintVal,
+            false,
+        );
+        await yieldBox.depositAsset(
+            wethAssetId,
+            deployer.address,
+            deployer.address,
+            0,
+            valShare,
+        );
+        await yieldBox
+            .connect(eoa1)
+            .depositAsset(wethAssetId, eoa1.address, eoa1.address, 0, valShare);
+
+        await wethBigBangMarket.addCollateral(
+            deployer.address,
+            deployer.address,
+            false,
+            valShare,
+        );
+        await wethBigBangMarket
+            .connect(eoa1)
+            .addCollateral(eoa1.address, eoa1.address, false, valShare);
+
+        //borrow
+        const usdoBorrowVal = wethMintVal
+            .mul(74)
+            .div(100)
+            .mul(__wethUsdcPrice.div((1e18).toString()));
+
+
+        await wethBigBangMarket.borrow(
+            deployer.address,
+            deployer.address,
+            usdoBorrowVal,
+        );
+        await wethBigBangMarket.connect(eoa1)
+            .borrow(eoa1.address, eoa1.address, usdoBorrowVal);
+
+        const mockSwapper = await (
+            await ethers.getContractFactory('MockSwapper')
+        ).deploy(yieldBox.address);
+        await mockSwapper.deployed();
+        await bar.setSwapper(mockSwapper.address, true);
+
+        const borrowShare = await yieldBox.toShare(
+            await wethBigBangMarket.assetId(),
+            usdoBorrowVal,
+            false,
+        );
+        await yieldBox.transfer(
+            deployer.address,
+            mockSwapper.address,
+            await wethBigBangMarket.assetId(),
+            borrowShare,
+        );
+        await yieldBox.connect(eoa1).transfer(
+            eoa1.address,
+            mockSwapper.address,
+            await wethBigBangMarket.assetId(),
+            borrowShare,
+        );
+
+        // uint256 partOwed = userBorrowPart[from];
+        // uint256 amountOwed = totalBorrow.toElastic(partOwed, true);
+        // uint256 shareOwed = yieldBox.toShare(assetId, amountOwed, true);
+
+        const userBorrowPartBefore = await wethBigBangMarket.userBorrowPart(
+            deployer.address,
+        );
+        expect(userBorrowPartBefore.gte(usdoBorrowVal)).to.be.true;
+        const collateralShareBefore = await wethBigBangMarket.userCollateralShare(deployer.address);
+        await wethBigBangMarket.sellCollateral(
+            deployer.address,
+            collateralShareBefore.div(2),
+            usdoBorrowVal.mul(3).div(2),
+            mockSwapper.address,
+            [],
+        );
+        const collateralShareAfter = await wethBigBangMarket.userCollateralShare(deployer.address);
+        expect(collateralShareAfter.eq(collateralShareBefore.div(2))).to.be.true;
+
+        const userBorrowPartAfter = await wethBigBangMarket.userBorrowPart(
+            deployer.address,
+        );
+        expect(userBorrowPartAfter.eq(0)).to.be.true;
+    });
 });

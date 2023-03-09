@@ -12,7 +12,6 @@ import "../interfaces/IOracle.sol";
 import "../interfaces/IPenrose.sol";
 import "../interfaces/ISendFrom.sol";
 import "tapioca-sdk/dist/contracts/YieldBox/contracts/YieldBox.sol";
-
 // solhint-disable max-line-length
 /*
 
@@ -251,13 +250,14 @@ contract BigBang is BoringOwnable {
     /// @param user The user to check solvency.
     /// @param _exchangeRate The exchange rate asset/collateral.
     /// @return amountToSolvency The amount of collateral to be solvent.
-    function computeTVLInfo(
-        address user,
-        uint256 _exchangeRate
-    )
+    function computeTVLInfo(address user, uint256 _exchangeRate)
         public
         view
-        returns (uint256 amountToSolvency, uint256 minTVL, uint256 maxTVL)
+        returns (
+            uint256 amountToSolvency,
+            uint256 minTVL,
+            uint256 maxTVL
+        )
     {
         uint256 borrowPart = userBorrowPart[user];
         if (borrowPart == 0) return (0, 0, 0);
@@ -285,10 +285,11 @@ contract BigBang is BoringOwnable {
     }
 
     /// @notice Return the maximum liquidatable amount for user
-    function computeClosingFactor(
-        address user,
-        uint256 _exchangeRate
-    ) public view returns (uint256) {
+    function computeClosingFactor(address user, uint256 _exchangeRate)
+        public
+        view
+        returns (uint256)
+    {
         if (_isSolvent(user, _exchangeRate)) return 0;
 
         (uint256 amountToSolvency, , uint256 maxTVL) = computeTVLInfo(
@@ -303,10 +304,11 @@ contract BigBang is BoringOwnable {
             ((liquidationBonusAmount * borrowed) / FEE_PRECISION);
     }
 
-    function computeLiquidatorReward(
-        address user,
-        uint256 _exchangeRate
-    ) public view returns (uint256) {
+    function computeLiquidatorReward(address user, uint256 _exchangeRate)
+        public
+        view
+        returns (uint256)
+    {
         (uint256 minTVL, uint256 maxTVL) = _computeMaxAndMinLTVInAsset(
             userCollateralShare[user],
             _exchangeRate
@@ -347,10 +349,10 @@ contract BigBang is BoringOwnable {
     /// @notice Allows batched call to BingBang.
     /// @param calls An array encoded call data.
     /// @param revertOnFail If True then reverts after a failed call and stops doing further calls.
-    function execute(
-        bytes[] calldata calls,
-        bool revertOnFail
-    ) external returns (bool[] memory successes, string[] memory results) {
+    function execute(bytes[] calldata calls, bool revertOnFail)
+        external
+        returns (bool[] memory successes, string[] memory results)
+    {
         successes = new bool[](calls.length);
         results = new string[](calls.length);
         for (uint256 i = 0; i < calls.length; i++) {
@@ -473,11 +475,7 @@ contract BigBang is BoringOwnable {
         bool skim,
         uint256 share
     ) public notPaused allowed(from) {
-        userCollateralShare[to] += share;
-        uint256 oldTotalCollateralShare = totalCollateralShare;
-        totalCollateralShare = oldTotalCollateralShare + share;
-        _addTokens(from, collateralId, share, oldTotalCollateralShare, skim);
-        emit LogAddCollateral(skim ? address(yieldBox) : from, to, share);
+        _addCollateral(from, to, skim, share);
     }
 
     /// @notice Removes `share` amount of collateral and transfers it to `to`.
@@ -680,10 +678,6 @@ contract BigBang is BoringOwnable {
         totalBorrowCap = _cap;
     }
 
-    /// @notice Updates the variable debt ratio
-    /// @dev has to be called before accrue
-    function updateDebt() private {}
-
     /// @notice Updates the borrowing fee
     /// @param _borrowingFee the new value
     function updateBorrowingFee(uint256 _borrowingFee) external onlyOwner {
@@ -692,12 +686,134 @@ contract BigBang is BoringOwnable {
         borrowingFee = _borrowingFee;
     }
 
+    /// @notice Lever down: Sell collateral to repay debt; excess goes to YB
+    /// @param from The user who sells
+    /// @param share Collateral YieldBox-shares to sell
+    /// @param minAmountOut Mininal proceeds required for the sale
+    /// @param swapper Swapper to execute the sale
+    /// @param dexData Additional data to pass to the swapper
+    /// @param amountOut Actual asset amount received in the sale
+    function sellCollateral(
+        address from,
+        uint256 share,
+        uint256 minAmountOut,
+        ISwapper swapper,
+        bytes calldata dexData
+    )
+        external
+        notPaused
+        solvent(from)
+        allowed(from)
+        returns (uint256 amountOut)
+    {
+        require(penrose.swappers(swapper), "SGL: Invalid swapper");
+
+        updateExchangeRate();
+        accrue();
+
+        _removeCollateral(from, address(swapper), share);
+        uint256 shareOut;
+        (amountOut, shareOut) = swapper.swap(
+            collateralId,
+            assetId,
+            share,
+            from,
+            minAmountOut,
+            dexData
+        );
+
+        // As long as the ratio is correct, we trust `amountOut` resp.
+        // `shareOut`, because all money received by the swapper gets used up
+        // one way or another, or the transaction will revert.
+        require(amountOut >= minAmountOut, "SGL: not enough");
+
+        uint256 partOwed = userBorrowPart[from];
+        uint256 amountOwed = totalBorrow.toElastic(partOwed, true);
+        uint256 shareOwed = yieldBox.toShare(assetId, amountOwed, true);
+        if (shareOwed <= shareOut) {
+            // Skim the repayment; the swapper left it in the YB
+            _repay(from, from, partOwed);
+        } else {
+            // Repay as much as we can.
+            // TODO: Is this guaranteed to succeed? Fair amount of conversions..
+            uint256 partOut = totalBorrow.toBase(amountOut, false);
+            _repay(from, from, partOut);
+        }
+    }
+
+    /// @notice Lever up: Borrow more and buy collateral with it.
+    /// @param from The user who buys
+    /// @param borrowAmount Amount of extra asset borrowed
+    /// @param supplyAmount Amount of asset supplied (down payment)
+    /// @param minAmountOut Mininal collateral amount to receive
+    /// @param swapper Swapper to execute the purchase
+    /// @param dexData Additional data to pass to the swapper
+    /// @param amountOut Actual collateral amount purchased
+    function buyCollateral(
+        address from,
+        uint256 borrowAmount,
+        uint256 supplyAmount,
+        uint256 minAmountOut,
+        ISwapper swapper,
+        bytes calldata dexData
+    )
+        external
+        notPaused
+        solvent(from)
+        allowed(from)
+        returns (uint256 amountOut)
+    {
+        require(penrose.swappers(swapper), "SGL: Invalid swapper");
+
+        // Let this fail first to save gas:
+        uint256 supplyShare = yieldBox.toShare(assetId, supplyAmount, true);
+        if (supplyShare > 0) {
+            yieldBox.transfer(from, address(swapper), assetId, supplyShare);
+        }
+
+        updateExchangeRate();
+        accrue();
+
+        uint256 borrowShare;
+        (, borrowShare) = _borrow(from, address(swapper), borrowAmount);
+
+
+        uint256 collateralShare;
+        (amountOut, collateralShare) = swapper.swap(
+            assetId,
+            collateralId,
+            supplyShare + borrowShare,
+            address(this),
+            minAmountOut,
+            dexData
+        );
+        require(amountOut >= minAmountOut, "SGL: not enough");
+
+        _addCollateral(from, from, true, collateralShare);
+    }
+
     // ************************* //
     // *** PRIVATE FUNCTIONS *** //
     // ************************* //
-    function _getRevertMsg(
-        bytes memory _returnData
-    ) private pure returns (string memory) {
+    /// @dev Concrete implementation of `addCollateral`.
+    function _addCollateral(
+        address from,
+        address to,
+        bool skim,
+        uint256 share
+    ) internal {
+        userCollateralShare[to] += share;
+        uint256 oldTotalCollateralShare = totalCollateralShare;
+        totalCollateralShare = oldTotalCollateralShare + share;
+        _addTokens(from, collateralId, share, oldTotalCollateralShare, skim);
+        emit LogAddCollateral(skim ? address(yieldBox) : from, to, share);
+    }
+
+    function _getRevertMsg(bytes memory _returnData)
+        private
+        pure
+        returns (string memory)
+    {
         // If the _res length is less than 68, then the transaction failed silently (without a revert message)
         if (_returnData.length < 68) return "BingBang: no return data";
         // solhint-disable-next-line no-inline-assembly
@@ -731,10 +847,11 @@ contract BigBang is BoringOwnable {
 
     /// @notice Concrete implementation of `isSolvent`. Includes a parameter to allow caching `exchangeRate`.
     /// @param _exchangeRate The exchange rate. Used to cache the `exchangeRate` between calls.
-    function _isSolvent(
-        address user,
-        uint256 _exchangeRate
-    ) internal view returns (bool) {
+    function _isSolvent(address user, uint256 _exchangeRate)
+        internal
+        view
+        returns (bool)
+    {
         // accrue must have already been called!
         uint256 borrowPart = userBorrowPart[user];
         if (borrowPart == 0) return true;
