@@ -81,6 +81,6 @@
         "husky": "^8.0.1",
         "load-json-file": "^7.0.1",
         "lodash": "^4.17.21",
-        "tapioca-sdk": "^1.2.1"
+        "tapioca-sdk": "^1.2.3"
     }
 }
