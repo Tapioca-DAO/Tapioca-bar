@@ -4,7 +4,7 @@ import {
     getBigBangContract,
     getDeployment,
     getSingularityContract,
-} from './utils';
+} from '../utils';
 
 //Execution example:
 //      npx hardhat setBorrowCap --singularity "<address>" --bigBang "<address>" --cap "<cap>"
