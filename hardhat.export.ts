@@ -13,6 +13,15 @@ import 'hardhat-tracer';
 
 dotenv.config();
 
+declare global {
+    // eslint-disable-next-line @typescript-eslint/no-namespace
+    namespace NodeJS {
+        interface ProcessEnv {
+            ALCHEMY_API_KEY: string;
+        }
+    }
+}
+
 type TNetwork = ReturnType<
     typeof SDK.API.utils.getSupportedChains
 >[number]['name'];
@@ -26,14 +35,16 @@ const supportedChains = SDK.API.utils.getSupportedChains().reduce(
                     : [],
             live: true,
             url: chain.rpc.replace('<api_key>', process.env.ALCHEMY_API_KEY),
-            gasMultiplier: chain.tags.includes('testnet') ? 2 : 1,
+            gasMultiplier: chain.tags[0] === 'testnet' ? 2 : 1,
             chainId: Number(chain.chainId),
             tags: [...chain.tags],
         },
     }),
     {} as { [key in TNetwork]: HttpNetworkConfig },
 );
+
 const config: HardhatUserConfig & { dodoc?: any; vyper: any } = {
+    SDK: { project: 'tapioca-bar' },
     solidity: {
         compilers: [
             {
