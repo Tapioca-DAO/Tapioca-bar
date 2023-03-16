@@ -65,9 +65,18 @@ contract Penrose is BoringOwnable, BoringFactory {
     /// @notice creates a Penrose contract
     /// @param _yieldBox YieldBox contract address
     /// @param tapToken_ TapOFT contract address
-    constructor(YieldBox _yieldBox, IERC20 tapToken_, IERC20 wethToken_) {
+    /// @param wethToken_ WETH contract address
+    /// @param _owner owner address
+    constructor(
+        YieldBox _yieldBox,
+        IERC20 tapToken_,
+        IERC20 wethToken_,
+        address _owner
+    ) {
         yieldBox = _yieldBox;
         tapToken = tapToken_;
+        owner = _owner;
+
         emptyStrategies[address(tapToken_)] = IStrategy(
             address(
                 new ERC20WithoutStrategy(
