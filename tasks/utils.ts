@@ -4,7 +4,7 @@ import _ from 'lodash';
 import { typechain } from 'tapioca-sdk';
 import { TDeploymentVMContract } from 'tapioca-sdk/dist/ethers/hardhat/DeployerVM';
 import { TContract } from 'tapioca-sdk/dist/shared';
-import { getDeployments } from './getDeployments';
+import { getDeployments } from './views/getDeployments';
 
 export const loadVM = async (hre: HardhatRuntimeEnvironment, tag: string) => {
     const signer = (await hre.ethers.getSigners())[0];

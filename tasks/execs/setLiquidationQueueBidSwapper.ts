@@ -1,6 +1,6 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import _ from 'lodash';
-import { getDeployment, getSingularityContract } from './utils';
+import { getDeployment, getSingularityContract } from '../utils';
 
 //Execution example:
 //      npx hardhat setLiquidationQueueBidSwapper --singularity "<address>" --swapper "<cap>"

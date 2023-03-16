@@ -77,6 +77,7 @@ export const deployStack__task = async ({}, hre: HardhatRuntimeEnvironment) => {
         hre,
         constants[chainInfo.chainId].crvStablePool,
     );
+    VM.add(curveSwapper).add(curveStableToUsd0);
 
     // Add and execute
     await VM.execute(3);

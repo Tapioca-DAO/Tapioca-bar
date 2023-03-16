@@ -1,6 +1,6 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import _ from 'lodash';
-import { getSingularityContract, getDeployment } from './utils';
+import { getDeployment, getSingularityContract } from '../utils';
 
 //Execution example:
 //      npx hardhat getParticipantSingularityInfo --singularity "<address>" --participant "<address>"
