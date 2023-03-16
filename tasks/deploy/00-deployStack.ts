@@ -1,4 +1,5 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
+import inquirer from 'inquirer';
 import { typechain } from 'tapioca-sdk';
 import { Multicall3 } from 'tapioca-sdk/dist/typechain/utils/MultiCall';
 import { constants } from '../../deploy/utils';
@@ -84,13 +85,20 @@ export const deployStack__task = async ({}, hre: HardhatRuntimeEnvironment) => {
     // Add and execute
     await VM.execute(3);
     VM.save();
-    await VM.verify();
+    const { wantToVerify } = await inquirer.prompt({
+        type: 'confirm',
+        name: 'wantToVerify',
+        message: 'Do you want to verify the contracts?',
+    });
+    if (wantToVerify) {
+        await VM.verify();
+    }
 
     // After deployment setup
     const vmList = VM.list();
-    const multiCall = await hre.ethers.getContractAt(
-        'Multicall3',
+    const multiCall = typechain.Multicall.Multicall3__factory.connect(
         hre.SDK.config.MULTICALL_ADDRESS,
+        signer,
     );
     const calls: Multicall3.Call3Struct[] = [
         ...(await buildPenroseSetup(hre, vmList, signer.address)),
@@ -99,21 +107,23 @@ export const deployStack__task = async ({}, hre: HardhatRuntimeEnvironment) => {
 
     // Execute
     console.log('[+] After deployment setup calls number: ', calls.length);
-    try {
-        const tx = await (await multiCall.aggregate3(calls)).wait(1);
-        console.log(
-            '[+] After deployment setup multicall Tx: ',
-            tx.transactionHash,
-        );
-    } catch (e) {
-        // If one fail, try them one by one
-        for (const call of calls) {
-            await (
-                await signer.sendTransaction({
-                    data: call.callData,
-                    to: call.target,
-                })
-            ).wait();
+    if (calls.length > 0) {
+        try {
+            const tx = await (await multiCall.aggregate3(calls)).wait(1);
+            console.log(
+                '[+] After deployment setup multicall Tx: ',
+                tx.transactionHash,
+            );
+        } catch (e) {
+            // If one fail, try them one by one
+            for (const call of calls) {
+                await (
+                    await signer.sendTransaction({
+                        data: call.callData,
+                        to: call.target,
+                    })
+                ).wait();
+            }
         }
     }
 

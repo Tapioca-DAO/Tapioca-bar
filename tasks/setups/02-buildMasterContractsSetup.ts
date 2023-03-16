@@ -15,11 +15,13 @@ export const buildMasterContractsSetup = async (
         hre,
         deps,
         'MediumRiskMC',
+        'Singularity',
     );
     const bigBangMediumRiskMC = await getAfterDepContract<Penrose>(
         hre,
         deps,
         'BigBangMediumRiskMC',
+        'BigBang',
     );
 
     /**
@@ -32,7 +34,7 @@ export const buildMasterContractsSetup = async (
 
     console.log('[+] +Setting: Register BigBangMediumRiskMC in Singularity');
     await (
-        await penrose.registerSingularityMasterContract(
+        await penrose.registerBigBangMasterContract(
             bigBangMediumRiskMC.address,
             1,
         )

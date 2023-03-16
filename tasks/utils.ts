@@ -25,6 +25,7 @@ export const getAfterDepContract = async <T extends Contract>(
     hre: HardhatRuntimeEnvironment,
     deps: TDeploymentVMContract[],
     contractName: string,
+    artifactName?: string,
 ) => {
     /**
      * Load addresses
@@ -38,7 +39,10 @@ export const getAfterDepContract = async <T extends Contract>(
     /**
      * Load contracts
      */
-    return (await hre.ethers.getContractAt(contractName, contractAddr)) as T;
+    return (await hre.ethers.getContractAt(
+        artifactName ?? contractName,
+        contractAddr,
+    )) as T;
 };
 
 export const getDeployment = async (
