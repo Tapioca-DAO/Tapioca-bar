@@ -1,7 +1,45 @@
+import { Contract } from 'ethers';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import _ from 'lodash';
+import { typechain } from 'tapioca-sdk';
+import { TDeploymentVMContract } from 'tapioca-sdk/dist/ethers/hardhat/DeployerVM';
 import { TContract } from 'tapioca-sdk/dist/shared';
 import { getDeployments } from './getDeployments';
+
+export const loadVM = async (hre: HardhatRuntimeEnvironment, tag: string) => {
+    const signer = (await hre.ethers.getSigners())[0];
+    const VM = new hre.SDK.DeployerVM(hre, {
+        // Change this if you get bytecode size error / gas required exceeds allowance (550000000)/ anything related to bytecode size
+        // Could be different by network/RPC provider
+        bytecodeSizeLimit: 100_000,
+        multicall: typechain.Multicall.Multicall3__factory.connect(
+            hre.SDK.config.MULTICALL_ADDRESS,
+            signer,
+        ),
+        tag,
+    });
+    return VM;
+};
+
+export const getAfterDepContract = async <T extends Contract>(
+    hre: HardhatRuntimeEnvironment,
+    deps: TDeploymentVMContract[],
+    contractName: string,
+) => {
+    /**
+     * Load addresses
+     */
+    const contractAddr = deps.find((e) => e.name === 'Penrose')?.address;
+
+    if (!contractAddr) {
+        throw new Error(`[-] +Call queue: ${contractName} not found`);
+    }
+
+    /**
+     * Load contracts
+     */
+    return (await hre.ethers.getContractAt(contractName, contractAddr)) as T;
+};
 
 export const getDeployment = async (
     hre: HardhatRuntimeEnvironment,
