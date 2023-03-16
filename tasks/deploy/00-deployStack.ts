@@ -14,6 +14,8 @@ import { buildPenroseSetup } from '../setups/01-buildPenroseSetup';
 import { buildMasterContractsSetup } from '../setups/02-buildMasterContractsSetup';
 import { loadVM } from '../utils';
 
+// TODO -  Split into different files
+
 // hh deployStack --type build --network goerli
 export const deployStack__task = async ({}, hre: HardhatRuntimeEnvironment) => {
     const tag = await hre.SDK.hardhatUtils.askForTag(hre, 'local');
