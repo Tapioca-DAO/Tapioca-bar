@@ -34,10 +34,9 @@ export const deployStack__task = async ({}, hre: HardhatRuntimeEnvironment) => {
         .loadGlobalDeployment(tag, 'tap-token', chainInfo.chainId)
         .find((e) => e.name === 'TapOFT');
 
-    // TODO - Use real WETH
     const weth = hre.SDK.db
-        .loadGlobalDeployment(tag, 'tapiocaz', chainInfo.chainId)
-        .find((e) => e.name.startsWith('ERCMock'));
+        .loadGlobalDeployment(tag, 'tap-token', chainInfo.chainId)
+        .find((e) => e.name.startsWith('WETHMock'));
 
     if (!tapToken || !weth) {
         throw new Error('[-] Token not found');
@@ -49,7 +48,7 @@ export const deployStack__task = async ({}, hre: HardhatRuntimeEnvironment) => {
 
     // 01 - Penrose
     VM.add(
-        await buildPenrose(hre, tapToken.address, signer.address, weth.address),
+        await buildPenrose(hre, tapToken.address, weth.address, signer.address),
     );
 
     // 02 - Master contracts
