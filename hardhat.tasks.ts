@@ -29,6 +29,7 @@ import {
     getLocalDeployments__task,
     getSDKDeployments__task,
 } from './tasks/views/getDeployments';
+import { deployStack__task } from './tasks/deploy/00-deployStack';
 
 task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
     const accounts = await hre.ethers.getSigners();
@@ -38,6 +39,9 @@ task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
     }
 });
 
+/**
+ * Getters
+ */
 task(
     'singularityMarkets',
     'Display the list of deployed Singularity markets for the current chain ID.',
@@ -48,31 +52,6 @@ task(
     'Display the list of deployed BigBang markets for the current chain ID.',
     getBigBangMarkets__task,
 );
-
-task(
-    'deployMarket',
-    'Deploy a Singularity market, a Liquidation Queue and initialize it.',
-    deployMarket__task,
-)
-    .addParam('name', 'Market name')
-    .addParam('exchangeRatePrecision', 'Collateral decimals');
-
-task('deployBigBang', 'Deploy a BigBang market', deployBigBang__task)
-    .addParam('name', 'Market name')
-    .addParam('exchangeRatePrecision', 'Collateral decimals');
-
-task('deployOracleMock', 'Deploy Oracle mock', deployOracleMock__task).addParam(
-    'name',
-    'Market name',
-);
-
-task(
-    'deployYbStrats',
-    'Deploy a bunch of ERC20WithoutStrategy for YieldBox',
-    deployYbStrats__task,
-)
-    .addParam('yieldbox', 'YieldBox address')
-    .addParam('token', 'ERC20 token address');
 
 task(
     'getLocalDeployments',
@@ -112,6 +91,45 @@ task(
     'Returns BigBang totals info',
     getBigBangTotals__task,
 ).addParam('bigBang', 'BigBang address');
+
+/**
+ * Execs
+ */
+
+/**
+ * Deploy
+ */
+
+task(
+    'deployStack',
+    'Deploy the stack, use it for the host chain. Includes the following contract:\nYieldBox, USD0, Penrose, MasterContracts, MarketHelper, MultiSwapper, SingularityModules, CurveSwapper, StableToUSD0Bidder',
+    deployStack__task,
+);
+
+task(
+    'deployMarket',
+    'Deploy a Singularity market, a Liquidation Queue and initialize it.',
+    deployMarket__task,
+)
+    .addParam('name', 'Market name')
+    .addParam('exchangeRatePrecision', 'Collateral decimals');
+
+task('deployBigBang', 'Deploy a BigBang market', deployBigBang__task)
+    .addParam('name', 'Market name')
+    .addParam('exchangeRatePrecision', 'Collateral decimals');
+
+task('deployOracleMock', 'Deploy Oracle mock', deployOracleMock__task).addParam(
+    'name',
+    'Market name',
+);
+
+task(
+    'deployYbStrats',
+    'Deploy a bunch of ERC20WithoutStrategy for YieldBox',
+    deployYbStrats__task,
+)
+    .addParam('yieldbox', 'YieldBox address')
+    .addParam('token', 'ERC20 token address');
 
 task('setBorrowCap', 'Set borrow cap for Singularity', setBorrowCap__task)
     .addParam('singularity', 'Singularity address', ' ')
