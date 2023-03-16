@@ -34,9 +34,10 @@ export const deployStack__task = async ({}, hre: HardhatRuntimeEnvironment) => {
         .loadGlobalDeployment(tag, 'tap-token', chainInfo.chainId)
         .find((e) => e.name === 'TapOFT');
 
+    // TODO - Use real WETH
     const weth = hre.SDK.db
         .loadGlobalDeployment(tag, 'tapiocaz', chainInfo.chainId)
-        .find((e) => e.name.startsWith('WETH'));
+        .find((e) => e.name.startsWith('ERCMock'));
 
     if (!tapToken || !weth) {
         throw new Error('[-] Token not found');
@@ -63,7 +64,7 @@ export const deployStack__task = async ({}, hre: HardhatRuntimeEnvironment) => {
         await buildMultiSwapper(
             hre,
             constants[chainInfo.chainId].uniV2Factory,
-            constants[chainInfo.chainId].uniV2Hash,
+            constants[chainInfo.chainId].uniV2PairHash,
         ),
     );
 
