@@ -11,13 +11,13 @@ export const buildMasterContractsSetup = async (
     const calls: Multicall3.Call3Struct[] = [];
 
     const penrose = await getAfterDepContract<Penrose>(hre, deps, 'Penrose');
-    const mediumRiskMC = await getAfterDepContract<Penrose>(
+    const mediumRiskMC = await getAfterDepContract(
         hre,
         deps,
         'MediumRiskMC',
         'Singularity',
     );
-    const bigBangMediumRiskMC = await getAfterDepContract<Penrose>(
+    const bigBangMediumRiskMC = await getAfterDepContract(
         hre,
         deps,
         'BigBangMediumRiskMC',
@@ -30,7 +30,7 @@ export const buildMasterContractsSetup = async (
     console.log('[+] +Setting: Register MediumRiskMC in Singularity');
     await (
         await penrose.registerSingularityMasterContract(mediumRiskMC.address, 1)
-    ).wait();
+    ).wait(3);
 
     console.log('[+] +Setting: Register BigBangMediumRiskMC in Singularity');
     await (
@@ -38,7 +38,7 @@ export const buildMasterContractsSetup = async (
             bigBangMediumRiskMC.address,
             1,
         )
-    ).wait();
+    ).wait(3);
 
     return calls;
 };

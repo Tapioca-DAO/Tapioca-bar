@@ -23,6 +23,7 @@ export const deploySGLMarket__task = async (
         mediumRiskMC,
         token,
     } = await loadContracts(hre, tag);
+
     const { tokenStrategy, usd0Strategy, oracleAddress } = await loadStrats(
         hre,
         tag,
@@ -33,7 +34,7 @@ export const deploySGLMarket__task = async (
     const [asset, collateral] = [
         {
             assetAddress: usd0.address,
-            assetStrategyAddress: usd0Strategy.deployment.address,
+            assetStrategyAddress: usd0Strategy.address,
         },
         {
             collateralAddress: token.address,
@@ -68,8 +69,8 @@ export const deploySGLMarket__task = async (
             assetId,
             collateral.collateralAddress,
             collateralId,
-            oracleAddress,
-            1e18,
+            oracleAddress.address,
+            hre.ethers.BigNumber.from((1e18).toString()),
         ],
     );
 
@@ -134,16 +135,19 @@ async function loadStrats(
 ) {
     const VM = await loadVM(hre, tag);
 
-    const usd0Strategy = await hre.SDK.hardhatUtils.getLocalContract(
-        hre,
+    const usd0Strategy = hre.SDK.db.getLocalDeployment(
+        await hre.getChainId(),
         'ERC20WithoutStrategy-USD0',
         tag,
     );
+    if (!usd0Strategy) {
+        throw new Error('[-] USD0 strategy not found');
+    }
 
     VM.add({
         contract: await hre.ethers.getContractFactory('ERC20WithoutStrategy'),
         deploymentName: 'ERC20WithoutStrategy-' + token.name,
-        args: [yieldBoxAddr, usd0Strategy.contract.address],
+        args: [yieldBoxAddr, usd0Strategy.address],
         meta: {
             stratFor: token.name,
         },
@@ -205,11 +209,12 @@ async function loadContracts(hre: HardhatRuntimeEnvironment, tag: string) {
             tag,
         );
 
-    const mediumRiskMC = await hre.SDK.db.getLocalDeployment(
+    const mediumRiskMC = hre.SDK.db.getLocalDeployment(
         await hre.getChainId(),
         'MediumRiskMC',
         tag,
     );
+
     if (!mediumRiskMC) throw new Error('[-] MediumRiskMC not found');
 
     const tokens = hre.SDK.db.loadGlobalDeployment(

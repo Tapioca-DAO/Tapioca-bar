@@ -30,7 +30,7 @@ export const getAfterDepContract = async <T extends Contract>(
     /**
      * Load addresses
      */
-    const contractAddr = deps.find((e) => e.name === 'Penrose')?.address;
+    const contractAddr = deps.find((e) => e.name === contractName)?.address;
 
     if (!contractAddr) {
         throw new Error(`[-] +Call queue: ${contractName} not found`);
