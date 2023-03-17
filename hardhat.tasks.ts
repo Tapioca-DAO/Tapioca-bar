@@ -30,6 +30,7 @@ import {
     getSDKDeployments__task,
 } from './tasks/views/getDeployments';
 import { deployStack__task } from './tasks/deploy/00-deployStack';
+import { deploySGLMarket__task } from './tasks/deploy/deploySGLMarket';
 
 task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
     const accounts = await hre.ethers.getSigners();
@@ -99,6 +100,8 @@ task(
 /**
  * Deploy
  */
+
+task('deploySGLMarket', 'Deploy a Singularity market', deploySGLMarket__task);
 
 task(
     'deployStack',
