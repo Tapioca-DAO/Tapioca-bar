@@ -1,10 +1,10 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import _ from 'lodash';
-import { getDeployment, getSingularityContract } from './utils';
+import { getDeployment, getSingularityContract } from '../utils';
 
 //Execution example:
 //      npx hardhat setLiquidationQueueBidSwapper --singularity "<address>" --swapper "<cap>"
-export const setLiquidationQueueBidSwapper = async (
+export const setLiquidationQueueExecutionSwapper = async (
     taskArgs: any,
     hre: HardhatRuntimeEnvironment,
 ) => {
@@ -13,7 +13,7 @@ export const setLiquidationQueueBidSwapper = async (
         await getSingularityContract(taskArgs, hre);
 
     const callData = singularityContract.interface.encodeFunctionData(
-        'updateLQUsdoSwapper',
+        'updateLQExecutionSwapper',
         [taskArgs['swapper']],
     );
 
@@ -26,13 +26,13 @@ export const setLiquidationQueueBidSwapper = async (
     ).wait();
 };
 
-export const setLiquidationQueueBidSwapper__task = async (
+export const setLiquidationQueueExecutionSwapper__task = async (
     args: any,
     hre: HardhatRuntimeEnvironment,
 ) => {
     console.log(
         `Setting LiquidationQueue big swapper on singularity: ${args['singularity']}`,
     );
-    await setLiquidationQueueBidSwapper(args, hre);
+    await setLiquidationQueueExecutionSwapper(args, hre);
     console.log('Execution completed');
 };

@@ -2,7 +2,7 @@ import fs from 'fs';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { glob, runTypeChain } from 'typechain';
 import writeJsonFile from 'write-json-file';
-import { getDeployment } from './utils';
+import { getDeployment } from '../utils';
 
 //npx hardhat setProxyAdapterParams --network fuji_avalanche
 export const setProxyAdapterParams__task = async (

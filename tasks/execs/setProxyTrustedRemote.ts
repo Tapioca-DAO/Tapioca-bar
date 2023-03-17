@@ -2,7 +2,7 @@ import fs from 'fs';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { glob, runTypeChain } from 'typechain';
 import writeJsonFile from 'write-json-file';
-import { getDeployment } from './utils';
+import { getDeployment } from '../utils';
 
 //npx hardhat setProxyTrustedRemote --network arbitrum_goerli --chain 10106 --dst 0xC83D48DA75720fDa857dCd21DdD44254FdD962a3 --src 0xD441B51FeBEB9633831947547fbdfb5b662617FF
 //npx hardhat setProxyTrustedRemote --network arbitrum_goerli --chain 10109 --dst 0xf0484Ead813d68dAff6A885381957BF8cb3d633c --src 0xD441B51FeBEB9633831947547fbdfb5b662617FF

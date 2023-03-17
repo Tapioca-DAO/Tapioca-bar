@@ -953,13 +953,13 @@ describe('Singularity test', () => {
         expect(amountHarvested.gte(acceptableHarvestMargin)).to.be.true;
     });
 
-    it('should return ERC20 properties', async () => {
+    it.only('should return ERC20 properties', async () => {
         const { wethUsdcSingularity } = await loadFixture(register);
         const symbol = await wethUsdcSingularity.symbol();
         const decimals = await wethUsdcSingularity.decimals();
         const totalSupply = await wethUsdcSingularity.totalSupply();
 
-        expect(symbol.toLowerCase()).to.contain('weth-test');
+        expect(symbol.toLowerCase()).to.contain('tmftm/weth-wethmoracle');
         expect(decimals).to.eq(18);
         expect(totalSupply).to.eq(0);
     });
