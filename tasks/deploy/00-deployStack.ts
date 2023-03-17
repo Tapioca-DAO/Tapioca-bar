@@ -11,6 +11,7 @@ import { buildMultiSwapper } from '../deployBuilds/04-buildMultiSwapper';
 import { buildUSD0 } from '../deployBuilds/06-buildUSDO';
 import { buildStableToUSD0Bidder } from '../deployBuilds/07-buildStableToUSD0Bidder';
 import { buildSingularityModules } from '../deployBuilds/08-buildSingularityModules';
+import { buildEmptyStrat } from '../deployBuilds/901-buildEmptyStrat';
 import { buildPenroseSetup } from '../setups/01-buildPenroseSetup';
 import { buildMasterContractsSetup } from '../setups/02-buildMasterContractsSetup';
 import { loadVM } from '../utils';
@@ -75,7 +76,10 @@ export const deployStack__task = async ({}, hre: HardhatRuntimeEnvironment) => {
     // 06 USD0
     VM.add(await buildUSD0(hre, chainInfo.address));
 
-    // 07 - CurveSwapper-buildStableToUSD0Bidder
+    // 07 YB USD0 strat
+    VM.add(await buildEmptyStrat(hre, 'USD0'));
+
+    // 08 - CurveSwapper-buildStableToUSD0Bidder
     const [curveSwapper, curveStableToUsd0] = await buildStableToUSD0Bidder(
         hre,
         constants[chainInfo.chainId].crvStablePool,
