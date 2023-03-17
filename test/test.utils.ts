@@ -1,20 +1,19 @@
 import { time } from '@nomicfoundation/hardhat-network-helpers';
 import { BigNumber, BigNumberish } from 'ethers';
-import hre, { ethers, getChainId } from 'hardhat';
-import { any } from 'hardhat/internal/core/params/argumentTypes';
+import hre, { ethers } from 'hardhat';
 import {
-    Penrose,
     CurveStableToUsdoBidder,
     ERC20Mock,
-    Singularity,
+    MultiSwapper,
     OracleMock,
+    Penrose,
+    Singularity,
+    UniswapV2Factory,
+    UniswapV2Router02,
     USD0,
     WETH9Mock,
     YieldBox,
 } from '../typechain';
-import { MultiSwapper } from '../typechain/MultiSwapper';
-import { UniswapV2Factory } from '../typechain/UniswapV2Factory';
-import { UniswapV2Router02 } from '../typechain/UniswapV2Router02';
 
 ethers.utils.Logger.setLogLevel(ethers.utils.Logger.levels.ERROR);
 
@@ -216,7 +215,17 @@ async function registerPenrose(
 ) {
     const bar = await (
         await ethers.getContractFactory('Penrose')
-    ).deploy(yieldBox, tapAddress, wethAddress, { gasPrice: gasPrice });
+    ).deploy(
+        yieldBox,
+        tapAddress,
+        wethAddress,
+        (
+            await hre.ethers.getSigners()
+        )[0].address,
+        {
+            gasPrice,
+        },
+    );
     await bar.deployed();
     log(
         `Deployed Penrose ${bar.address} with args [${yieldBox}, ${tapAddress}, ${wethAddress}]`,
@@ -815,7 +824,7 @@ async function createWethUsd0Singularity(
     // Deploy WethUSD0 mock oracle
     const wethUsd0Oracle = await (
         await ethers.getContractFactory('OracleMock')
-    ).deploy({ gasPrice: gasPrice });
+    ).deploy('WETHUSD0Mock', 'WSM', (1e18).toString(), { gasPrice: gasPrice });
     await wethUsd0Oracle.deployed();
     log(
         `Deployed WethUsd0 mock oracle at ${wethUsd0Oracle.address} with no arguments`,
@@ -1078,7 +1087,9 @@ export async function register(staging?: boolean) {
     log('Deploying WethUSDC mock oracle', staging);
     const wethUsdcOracle = await (
         await ethers.getContractFactory('OracleMock')
-    ).deploy({ gasPrice: gasPrice });
+    ).deploy('WETHMOracle', 'WETHMOracle', (1e18).toString(), {
+        gasPrice: gasPrice,
+    });
     await wethUsdcOracle.deployed();
     log(
         `Deployed WethUSDC mock oracle ${wethUsdcOracle.address} with no arguments `,
@@ -1093,7 +1104,9 @@ export async function register(staging?: boolean) {
     // ------------------- Deploy WbtcUSDC mock oracle -------------------
     const wbtcUsdcOracle = await (
         await ethers.getContractFactory('OracleMock')
-    ).deploy({ gasPrice: gasPrice });
+    ).deploy('OracleMock', 'OracleMock', (1e18).toString(), {
+        gasPrice: gasPrice,
+    });
     await wbtcUsdcOracle.deployed();
     log(
         `Deployed WbtcUDSC mock oracle ${wbtcUsdcOracle.address} with no arguments `,
@@ -1109,7 +1122,9 @@ export async function register(staging?: boolean) {
     log('Deploying USD0WETH mock oracle', staging);
     const usd0WethOracle = await (
         await ethers.getContractFactory('OracleMock')
-    ).deploy({ gasPrice: gasPrice });
+    ).deploy('USD0Oracle', 'USD0Oracle', (1e18).toString(), {
+        gasPrice: gasPrice,
+    });
     await usd0WethOracle.deployed();
     log(
         `Deployed USD0WETH mock oracle ${usd0WethOracle.address} with no arguments`,

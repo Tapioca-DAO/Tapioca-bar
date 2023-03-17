@@ -88,7 +88,7 @@ const config: HardhatUserConfig & { dodoc?: any; vyper: any } = {
         ...supportedChains,
         hardhat: {
             forking: {
-                url: `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_KEY}`,
+                url: `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`,
             },
             hardfork: 'merge',
             allowUnlimitedContractSize: true,
