@@ -4,11 +4,10 @@ import {
     register,
     createTokenEmptyStrategy,
     registerBigBangMarket,
-    setBalance
+    setBalance,
 } from './test.utils';
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 import _ from 'lodash';
-
 
 describe('BigBang test', () => {
     it('should test initial values', async () => {
@@ -2168,7 +2167,9 @@ describe('BigBang test', () => {
         const chainIdSrc = 1;
         const chainIdDst = (await ethers.provider.getNetwork()).chainId;
         const registerProxies = async (chainIdSrc: any, chainIdDst: any) => {
-            const LZEndpointMock = await ethers.getContractFactory('LZEndpointMock');
+            const LZEndpointMock = await ethers.getContractFactory(
+                'LZEndpointMock',
+            );
 
             const lzEndpointSrc = await LZEndpointMock.deploy(chainIdSrc);
             const lzEndpointDst = await LZEndpointMock.deploy(chainIdDst);
@@ -2364,8 +2365,6 @@ describe('BigBang test', () => {
 
             await usdoSrc.setUseCustomAdapterParams(true);
             await usdoDst.setUseCustomAdapterParams(true);
-
-
 
             return { usdoSrc, usdoDst, usdoAssetId };
         };

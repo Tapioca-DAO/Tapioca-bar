@@ -116,11 +116,10 @@ contract Singularity is SGLCommon {
     /// @notice returns Total yieldBox shares for user
     /// @param _user The user to check shares for
     /// @param _assetId The asset id to check shares for
-    function yieldBoxShares(address _user, uint256 _assetId)
-        external
-        view
-        returns (uint256)
-    {
+    function yieldBoxShares(
+        address _user,
+        uint256 _assetId
+    ) external view returns (uint256) {
         return
             yieldBox.balanceOf(_user, _assetId) +
             _yieldBoxShares[_user][_assetId];
@@ -132,10 +131,10 @@ contract Singularity is SGLCommon {
     /// @notice Allows batched call to Singularity.
     /// @param calls An array encoded call data.
     /// @param revertOnFail If True then reverts after a failed call and stops doing further calls.
-    function execute(bytes[] calldata calls, bool revertOnFail)
-        external
-        returns (bool[] memory successes, string[] memory results)
-    {
+    function execute(
+        bytes[] calldata calls,
+        bool revertOnFail
+    ) external returns (bool[] memory successes, string[] memory results) {
         successes = new bool[](calls.length);
         results = new string[](calls.length);
         for (uint256 i = 0; i < calls.length; i++) {
@@ -179,11 +178,7 @@ contract Singularity is SGLCommon {
     /// @param from Account to debit collateral from.
     /// @param to The receiver of the shares.
     /// @param share Amount of shares to remove.
-    function removeCollateral(
-        address from,
-        address to,
-        uint256 share
-    ) public {
+    function removeCollateral(address from, address to, uint256 share) public {
         _executeModule(
             Module.LendingBorrowing,
             abi.encodeWithSelector(
@@ -507,10 +502,9 @@ contract Singularity is SGLCommon {
     /// @notice sets the order book multiplier
     /// @dev can only be called by the owner
     /// @param _val the new value
-    function setOrderBookLiquidationMultiplier(uint256 _val)
-        external
-        onlyOwner
-    {
+    function setOrderBookLiquidationMultiplier(
+        uint256 _val
+    ) external onlyOwner {
         orderBookLiquidationMultiplier = _val;
     }
 
@@ -540,10 +534,9 @@ contract Singularity is SGLCommon {
 
     /// @notice Set a new LiquidationQueue.
     /// @param _liquidationQueue The address of the new LiquidationQueue contract.
-    function setLiquidationQueue(ILiquidationQueue _liquidationQueue)
-        public
-        onlyOwner
-    {
+    function setLiquidationQueue(
+        ILiquidationQueue _liquidationQueue
+    ) public onlyOwner {
         require(_liquidationQueue.onlyOnce(), "SGL: LQ not initalized");
         liquidationQueue = _liquidationQueue;
     }
@@ -568,11 +561,9 @@ contract Singularity is SGLCommon {
     // *** PRIVATE FUNCTIONS *** //
     // ************************* //
 
-    function _getRevertMsg(bytes memory _returnData)
-        private
-        pure
-        returns (string memory)
-    {
+    function _getRevertMsg(
+        bytes memory _returnData
+    ) private pure returns (string memory) {
         // If the _res length is less than 68, then the transaction failed silently (without a revert message)
         if (_returnData.length < 68) return "SGL: no return data";
         // solhint-disable-next-line no-inline-assembly
@@ -597,10 +588,10 @@ contract Singularity is SGLCommon {
         return module;
     }
 
-    function _executeModule(Module _module, bytes memory _data)
-        private
-        returns (bytes memory returnData)
-    {
+    function _executeModule(
+        Module _module,
+        bytes memory _data
+    ) private returns (bytes memory returnData) {
         bool success = true;
         address module = _extractModule(_module);
 
@@ -610,11 +601,10 @@ contract Singularity is SGLCommon {
         }
     }
 
-    function _executeViewModule(Module _module, bytes memory _data)
-        private
-        view
-        returns (bytes memory returnData)
-    {
+    function _executeViewModule(
+        Module _module,
+        bytes memory _data
+    ) private view returns (bytes memory returnData) {
         bool success = true;
         address module = _extractModule(_module);
 
