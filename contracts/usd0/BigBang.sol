@@ -12,6 +12,7 @@ import "../interfaces/IOracle.sol";
 import "../interfaces/IPenrose.sol";
 import "../interfaces/ISendFrom.sol";
 import "tapioca-sdk/dist/contracts/YieldBox/contracts/YieldBox.sol";
+
 // solhint-disable max-line-length
 /*
 
@@ -250,14 +251,13 @@ contract BigBang is BoringOwnable {
     /// @param user The user to check solvency.
     /// @param _exchangeRate The exchange rate asset/collateral.
     /// @return amountToSolvency The amount of collateral to be solvent.
-    function computeTVLInfo(address user, uint256 _exchangeRate)
+    function computeTVLInfo(
+        address user,
+        uint256 _exchangeRate
+    )
         public
         view
-        returns (
-            uint256 amountToSolvency,
-            uint256 minTVL,
-            uint256 maxTVL
-        )
+        returns (uint256 amountToSolvency, uint256 minTVL, uint256 maxTVL)
     {
         uint256 borrowPart = userBorrowPart[user];
         if (borrowPart == 0) return (0, 0, 0);
@@ -285,11 +285,10 @@ contract BigBang is BoringOwnable {
     }
 
     /// @notice Return the maximum liquidatable amount for user
-    function computeClosingFactor(address user, uint256 _exchangeRate)
-        public
-        view
-        returns (uint256)
-    {
+    function computeClosingFactor(
+        address user,
+        uint256 _exchangeRate
+    ) public view returns (uint256) {
         if (_isSolvent(user, _exchangeRate)) return 0;
 
         (uint256 amountToSolvency, , uint256 maxTVL) = computeTVLInfo(
@@ -304,11 +303,10 @@ contract BigBang is BoringOwnable {
             ((liquidationBonusAmount * borrowed) / FEE_PRECISION);
     }
 
-    function computeLiquidatorReward(address user, uint256 _exchangeRate)
-        public
-        view
-        returns (uint256)
-    {
+    function computeLiquidatorReward(
+        address user,
+        uint256 _exchangeRate
+    ) public view returns (uint256) {
         (uint256 minTVL, uint256 maxTVL) = _computeMaxAndMinLTVInAsset(
             userCollateralShare[user],
             _exchangeRate
@@ -349,10 +347,10 @@ contract BigBang is BoringOwnable {
     /// @notice Allows batched call to BingBang.
     /// @param calls An array encoded call data.
     /// @param revertOnFail If True then reverts after a failed call and stops doing further calls.
-    function execute(bytes[] calldata calls, bool revertOnFail)
-        external
-        returns (bool[] memory successes, string[] memory results)
-    {
+    function execute(
+        bytes[] calldata calls,
+        bool revertOnFail
+    ) external returns (bool[] memory successes, string[] memory results) {
         successes = new bool[](calls.length);
         results = new string[](calls.length);
         for (uint256 i = 0; i < calls.length; i++) {
@@ -468,14 +466,16 @@ contract BigBang is BoringOwnable {
     /// @param to The receiver of the tokens.
     /// @param skim True if the amount should be skimmed from the deposit balance of msg.sender.
     /// False if tokens from msg.sender in `yieldBox` should be transferred.
-    /// @param share The amount of shares to add for `to`.
+    /// @param amount The amount to add for `to`.
+    /// @param share The amount represented in shares to add for `to`.
     function addCollateral(
         address from,
         address to,
         bool skim,
+        uint256 amount,
         uint256 share
     ) public notPaused allowed(from) {
-        _addCollateral(from, to, skim, share);
+        _addCollateral(from, to, skim, amount, share);
     }
 
     /// @notice Removes `share` amount of collateral and transfers it to `to`.
@@ -741,6 +741,52 @@ contract BigBang is BoringOwnable {
         }
     }
 
+    struct MultihopLeverageData {
+        uint16 lzDstChainId;
+        address zroPaymentAddress;
+        bytes airdropAdapterParam;
+        address dstSwapper;
+        address proxy;
+    }
+
+    /// @notice Lever up: Borrow more, swap, send to another layer and get more collateral
+    /// @dev Used for illiquid assets (like tAVAX)
+    ///     - borrow -> LZ transfer -> swap USD0 into native-> wrap -> LZ transfer tNative
+    ///     - 1x for now
+    /// @param collateralAmount Collateral amount to be added
+    /// @param borrowAmount Amount to borrow and used to leverage up the position
+    function multiHopBuyCollateral(
+        address from,
+        uint256 collateralAmount,
+        uint256 borrowAmount,
+        IUSD0.LeverageSwapData calldata swapData,
+        IUSD0.LeverageLZData calldata lzData,
+        IUSD0.LeverageExternalContractsData calldata externalData
+    ) external payable notPaused solvent(from) allowed(from) {
+        //add collateral
+        uint256 collateralShare = yieldBox.toShare(
+            collateralId,
+            collateralAmount,
+            false
+        );
+        _addCollateral(from, from, false, 0, collateralShare);
+
+        //borrow
+        (, uint256 borrowShare) = _borrow(from, from, borrowAmount);
+
+        //withdraw
+        yieldBox.withdraw(assetId, from, address(this), 0, borrowShare);
+
+        //leverage
+        asset.sendForLeverage{value: msg.value}(
+            borrowAmount,
+            from,
+            lzData,
+            swapData,
+            externalData
+        );
+    }
+
     /// @notice Lever up: Borrow more and buy collateral with it.
     /// @param from The user who buys
     /// @param borrowAmount Amount of extra asset borrowed
@@ -777,7 +823,6 @@ contract BigBang is BoringOwnable {
         uint256 borrowShare;
         (, borrowShare) = _borrow(from, address(swapper), borrowAmount);
 
-
         uint256 collateralShare;
         (amountOut, collateralShare) = swapper.swap(
             assetId,
@@ -789,7 +834,7 @@ contract BigBang is BoringOwnable {
         );
         require(amountOut >= minAmountOut, "SGL: not enough");
 
-        _addCollateral(from, from, true, collateralShare);
+        _addCollateral(from, from, true, 0, collateralShare);
     }
 
     // ************************* //
@@ -800,8 +845,12 @@ contract BigBang is BoringOwnable {
         address from,
         address to,
         bool skim,
+        uint256 amount,
         uint256 share
     ) internal {
+        if (share == 0) {
+            share = yieldBox.toShare(collateralId, amount, false);
+        }
         userCollateralShare[to] += share;
         uint256 oldTotalCollateralShare = totalCollateralShare;
         totalCollateralShare = oldTotalCollateralShare + share;
@@ -809,11 +858,9 @@ contract BigBang is BoringOwnable {
         emit LogAddCollateral(skim ? address(yieldBox) : from, to, share);
     }
 
-    function _getRevertMsg(bytes memory _returnData)
-        private
-        pure
-        returns (string memory)
-    {
+    function _getRevertMsg(
+        bytes memory _returnData
+    ) private pure returns (string memory) {
         // If the _res length is less than 68, then the transaction failed silently (without a revert message)
         if (_returnData.length < 68) return "BingBang: no return data";
         // solhint-disable-next-line no-inline-assembly
@@ -847,11 +894,10 @@ contract BigBang is BoringOwnable {
 
     /// @notice Concrete implementation of `isSolvent`. Includes a parameter to allow caching `exchangeRate`.
     /// @param _exchangeRate The exchange rate. Used to cache the `exchangeRate` between calls.
-    function _isSolvent(address user, uint256 _exchangeRate)
-        internal
-        view
-        returns (bool)
-    {
+    function _isSolvent(
+        address user,
+        uint256 _exchangeRate
+    ) internal view returns (bool) {
         // accrue must have already been called!
         uint256 borrowPart = userBorrowPart[user];
         if (borrowPart == 0) return true;
@@ -1038,7 +1084,6 @@ contract BigBang is BoringOwnable {
         emit LogRepay(from, to, amount, part);
     }
 
-    //TODO: accrue fees when re-borrowing
     /// @dev Concrete implementation of `borrow`.
     function _borrow(
         address from,

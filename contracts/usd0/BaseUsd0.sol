@@ -5,6 +5,10 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "tapioca-sdk/dist/contracts/libraries/LzLib.sol";
 import "tapioca-sdk/dist/contracts/token/oft/v2/OFTV2.sol";
 import "./interfaces/IYieldBox.sol";
+import "./interfaces/IBigBang.sol";
+import "../interfaces/ITapiocaOFT.sol";
+import "../interfaces/IMarketsProxy.sol";
+import "../swappers/INonYieldBoxSwapper.sol";
 
 //
 //                 .(%%%%%%%%%%%%*       *
@@ -28,7 +32,7 @@ import "./interfaces/IYieldBox.sol";
 //         ####*  (((((((((((((((((((
 //                     ,**//*,.
 
-abstract contract BaseOFT is OFTV2 {
+abstract contract BaseUsd0 is OFTV2 {
     using SafeERC20 for IERC20;
     using BytesLib for bytes;
 
@@ -39,6 +43,7 @@ abstract contract BaseOFT is OFTV2 {
     uint16 public constant PT_YB_RETRIEVE_STRAT = 771;
     uint16 public constant PT_YB_DEPOSIT = 772;
     uint16 public constant PT_YB_WITHDRAW = 773;
+    uint16 public constant PT_LEVERAGE_MARKET = 774;
 
     /// ==========================
     /// ========== Errors ========
@@ -121,6 +126,61 @@ abstract contract BaseOFT is OFTV2 {
             msg.value
         );
         emit SendToChain(lzDstChainId, msg.sender, toAddress, amount);
+    }
+
+    struct LeverageLZData {
+        uint16 lzDstChainId;
+        address zroPaymentAddress;
+        bytes airdropAdapterParam;
+        address refundAddress;
+    }
+
+    struct LeverageSwapData {
+        address tokenOut;
+        uint256 amountOutMin;
+        bytes data;
+    }
+    struct LeverageExternalContractsData {
+        address swapper;
+        address proxy;
+        address tOft;
+        address srcMarket;
+        uint16 srcLzChainId;
+        uint256 sendToYBExtraGasLimit;
+        uint256 executeOnChainGasLimit;
+        uint256 dstAssetId;
+    }
+
+    function sendForLeverage(
+        uint256 amount,
+        address leverageFor,
+        LeverageLZData calldata lzData,
+        LeverageSwapData calldata swapData,
+        LeverageExternalContractsData calldata externalData
+    ) external payable {
+        bytes32 proxyBytes = LzLib.addressToBytes32(externalData.proxy);
+        _debitFrom(msg.sender, lzEndpoint.getChainId(), proxyBytes, amount);
+
+        bytes memory lzPayload = abi.encode(
+            PT_LEVERAGE_MARKET,
+            LzLib.addressToBytes32(msg.sender),
+            proxyBytes,
+            amount,
+            swapData,
+            externalData,
+            lzData.zroPaymentAddress,
+            leverageFor
+        );
+
+        _lzSend(
+            lzData.lzDstChainId,
+            lzPayload,
+            payable(lzData.refundAddress),
+            lzData.zroPaymentAddress,
+            lzData.airdropAdapterParam, //needed for send back operation
+            msg.value
+        );
+        emit SendToChain(lzData.lzDstChainId, msg.sender, proxyBytes, amount);
     }
 
     // ================================
@@ -232,6 +292,92 @@ abstract contract BaseOFT is OFTV2 {
         emit YieldBoxRetrieval(_amount);
     }
 
+    function _leverage(
+        uint16 _srcChainId,
+        bytes memory _payload
+    ) internal virtual {
+        (
+            ,
+            ,
+            ,
+            uint256 amount,
+            LeverageSwapData memory swapData,
+            LeverageExternalContractsData memory externalData,
+            address zroPaymentAddress,
+            address leverageFor
+        ) = abi.decode(
+                _payload,
+                (
+                    uint16,
+                    bytes32,
+                    bytes32,
+                    uint256,
+                    LeverageSwapData,
+                    LeverageExternalContractsData,
+                    address,
+                    address
+                )
+            );
+
+        _creditTo(_srcChainId, address(this), amount);
+
+        //swap
+        approve(externalData.swapper, amount);
+        uint256 amountOut = INonYieldBoxSwapper(externalData.swapper).swap(
+            address(this),
+            swapData.tokenOut,
+            amount,
+            swapData.amountOutMin,
+            swapData.data
+        );
+
+        //wrap
+        uint256 oftBalanceBefore = ITapiocaOFT(externalData.tOft).balanceOf(
+            address(this)
+        );
+        ITapiocaOFT(externalData.tOft).wrapNative{value: amountOut}(
+            address(this)
+        );
+        uint256 oftBalanceAfter = ITapiocaOFT(externalData.tOft).balanceOf(
+            address(this)
+        );
+        require(oftBalanceAfter > oftBalanceBefore, "USD0: wrap failed");
+
+        //send to YB
+        ITapiocaOFT(externalData.tOft).sendToYB{value: address(this).balance}(
+            oftBalanceAfter - oftBalanceBefore,
+            leverageFor,
+            externalData.dstAssetId,
+            _srcChainId,
+            externalData.sendToYBExtraGasLimit,
+            zroPaymentAddress,
+            false
+        );
+
+        //add collateral through proxy
+        bytes[] memory calls = new bytes[](1);
+        calls[0] = abi.encodeWithSelector(
+            IBigBang.addCollateral.selector,
+            leverageFor,
+            leverageFor,
+            false,
+            oftBalanceAfter - oftBalanceBefore,
+            0
+        );
+        //gas: we use the entire available amount; the rest is returned to this contract
+        bytes memory executeOnChainParams = LzLib.buildDefaultAdapterParams(
+            externalData.executeOnChainGasLimit
+        );
+        IMarketsProxy(externalData.proxy).executeOnChain{
+            value: address(this).balance
+        }(
+            externalData.srcLzChainId,
+            externalData.srcMarket,
+            calls,
+            executeOnChainParams
+        );
+    }
+
     function _nonblockingLzReceive(
         uint16 _srcChainId,
         bytes memory _srcAddress,
@@ -248,6 +394,8 @@ abstract contract BaseOFT is OFTV2 {
             _ybDeposit(_srcChainId, _payload, IERC20(address(this)), false);
         } else if (packetType == PT_YB_WITHDRAW) {
             _ybWithdraw(_srcChainId, _payload, false);
+        } else if (packetType == PT_LEVERAGE_MARKET) {
+            _leverage(_srcChainId, _payload);
         } else {
             packetType = _payload.toUint8(0); //LZ uses encodePacked for payload
             if (packetType == PT_SEND) {

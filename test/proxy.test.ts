@@ -218,7 +218,7 @@ describe('MarketsProxy', () => {
 
         const addCollateralFn = singularityDst.interface.encodeFunctionData(
             'addCollateral',
-            [eoa1.address, eoa1.address, false, _wethValShare],
+            [eoa1.address, eoa1.address, false, 0, _wethValShare],
         );
         await proxySrc
             .connect(eoa1)
@@ -458,7 +458,7 @@ describe('MarketsProxy', () => {
         );
         const addCollateralFn = singularityDst.interface.encodeFunctionData(
             'addCollateral',
-            [eoa1.address, eoa1.address, false, _wethValShare],
+            [eoa1.address, eoa1.address, false, 0, _wethValShare],
         );
         const borrowFn = singularityDst.interface.encodeFunctionData('borrow', [
             eoa1.address,
@@ -949,7 +949,7 @@ describe('MarketsProxy', () => {
             );
         const addCollateralFn = singularityDst.interface.encodeFunctionData(
             'addCollateral',
-            [eoa1.address, eoa1.address, false, usdcMintValShare],
+            [eoa1.address, eoa1.address, false, 0, usdcMintValShare],
         );
         await proxySrc
             .connect(eoa1)
@@ -1125,7 +1125,7 @@ describe('MarketsProxy', () => {
 
         const addCollateralFn = singularityDst.interface.encodeFunctionData(
             'addCollateral',
-            [eoa1.address, eoa1.address, false, usdcMintValShare],
+            [eoa1.address, eoa1.address, false, 0, usdcMintValShare],
         );
         const borrowFn = singularityDst.interface.encodeFunctionData('borrow', [
             eoa1.address,
@@ -1260,7 +1260,7 @@ describe('MarketsProxy', () => {
             );
         const addCollateralFn = singularityDst.interface.encodeFunctionData(
             'addCollateral',
-            [eoa1.address, eoa1.address, false, usdcMintValShare],
+            [eoa1.address, eoa1.address, false, 0, usdcMintValShare],
         );
         await proxySrc
             .connect(eoa1)
@@ -1446,7 +1446,7 @@ describe('MarketsProxy', () => {
             );
         const addCollateralFn = singularityDst.interface.encodeFunctionData(
             'addCollateral',
-            [eoa1.address, eoa1.address, false, usdcMintValShare],
+            [eoa1.address, eoa1.address, false, 0, usdcMintValShare],
         );
         await proxySrc
             .connect(eoa1)

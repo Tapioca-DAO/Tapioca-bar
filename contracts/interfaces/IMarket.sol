@@ -39,6 +39,7 @@ interface IMarket {
         address from,
         address to,
         bool skim,
+        uint256 amount,
         uint256 share
     ) external;
 

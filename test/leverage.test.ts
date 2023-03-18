@@ -109,6 +109,7 @@ describe('Singularity Leverage', () => {
                 alice.address,
                 alice.address,
                 false,
+                0,
                 E(2000).mul(1e8),
             );
         await wethUsdcSingularity

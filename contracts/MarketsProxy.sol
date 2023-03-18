@@ -173,7 +173,6 @@ contract MarketsProxy is NonblockingLzApp {
             _adapterParams,
             msg.value
         );
-
         emit SendToChain(_dstChainId, _from, payload);
     }
 }

@@ -5,6 +5,7 @@ pragma solidity ^0.8.18;
 interface ITapiocaOFT {
     function sendToYB(
         uint256 amount,
+        address depositFor,
         uint256 assetId,
         uint16 lzDstChainId,
         uint256 extraGasLimit,
@@ -20,4 +21,10 @@ interface ITapiocaOFT {
         bytes memory airdropAdapterParam,
         bool strategyWithdrawal
     ) external payable;
+
+    function wrap(address _toAddress, uint256 _amount) external;
+
+    function wrapNative(address _toAddress) external payable;
+
+    function balanceOf(address _user) external view returns (uint256);
 }

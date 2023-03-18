@@ -217,4 +217,12 @@ interface ISingularity is IMarket, IFee {
     function liquidationQueue() external view returns (address payable);
 
     function totalBorrowCap() external view returns (uint256);
+
+    function addCollateral(
+        address from,
+        address to,
+        bool skim,
+        uint256 amount,
+        uint256 share
+    ) external;
 }

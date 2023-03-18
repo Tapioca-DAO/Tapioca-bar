@@ -130,6 +130,7 @@ describe('Singularity test', () => {
                 eoa1.address,
                 eoa1.address,
                 false,
+                0,
                 usdcMintValShare,
             ]);
         const borrowFn = wethUsdcSingularity.interface.encodeFunctionData(
@@ -196,6 +197,7 @@ describe('Singularity test', () => {
                 eoa1.address,
                 eoa1.address,
                 false,
+                0,
                 usdcMintValShare,
             ]);
         const borrowFn = wethUsdcSingularity.interface.encodeFunctionData(
@@ -299,6 +301,7 @@ describe('Singularity test', () => {
                 eoa1.address,
                 eoa1.address,
                 false,
+                0,
                 usdcMintValShare,
             ]);
         const borrowFn = wethUsdcSingularity.interface.encodeFunctionData(
@@ -1395,7 +1398,7 @@ describe('Singularity test', () => {
             .balanceOf(eoa1.address, wethAssetId);
         await wethUsdoSingularity
             .connect(eoa1)
-            .addCollateral(eoa1.address, eoa1.address, false, _wethValShare);
+            .addCollateral(eoa1.address, eoa1.address, false, 0,  _wethValShare);
         expect(
             await wethUsdoSingularity.userCollateralShare(eoa1.address),
         ).equal(await yieldBox.toShare(wethAssetId, wethDepositAmount, false));

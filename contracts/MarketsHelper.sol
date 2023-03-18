@@ -227,6 +227,7 @@ contract MarketsHelper {
             deposit_ ? address(this) : msg.sender,
             msg.sender,
             false,
+            0,
             _share
         );
 
@@ -399,7 +400,7 @@ contract MarketsHelper {
         if (_collateralAmount > 0) {
             //add collateral to BingBang
             _setApprovalForYieldBox(bingBang, yieldBox);
-            bingBang.addCollateral(address(this), msg.sender, false, _share);
+            bingBang.addCollateral(address(this), msg.sender, false, 0, _share);
         }
 
         //borrow from BingBang

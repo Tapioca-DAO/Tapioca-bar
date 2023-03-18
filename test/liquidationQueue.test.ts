@@ -269,6 +269,7 @@ describe('LiquidationQueue test', () => {
             deployer.address,
             deployer.address,
             false,
+            0,
             await yieldBox.toShare(marketColId, usdcAmount, false),
         );
         await wethUsdcSingularity.borrow(
@@ -768,6 +769,7 @@ describe('LiquidationQueue test', () => {
                         account.address,
                         account.address,
                         false,
+                        0,
                         collateralShare,
                     );
 
@@ -1496,6 +1498,7 @@ describe('LiquidationQueue test', () => {
                 accounts[1].address,
                 accounts[1].address,
                 false,
+                0,
                 collateralShare,
             );
         await wethUsdcSingularity
@@ -1791,6 +1794,7 @@ describe('LiquidationQueue test', () => {
                 accounts[1].address,
                 accounts[1].address,
                 false,
+                0,
                 collateralShare,
             );
         await wethUsdcSingularity
@@ -2154,6 +2158,7 @@ describe('LiquidationQueue test', () => {
             deployer.address,
             deployer.address,
             false,
+            0,
             await yieldBox.toShare(marketColId, usdcAmount, false),
         );
         const initialCollateral = await wethUsdcSingularity.userCollateralShare(
@@ -2314,6 +2319,7 @@ describe('LiquidationQueue test', () => {
             deployer.address,
             deployer.address,
             false,
+            0,
             await yieldBox.toShare(marketColId, usdcAmount, false),
         );
         const initialCollateral = await wethUsdcSingularity.userCollateralShare(
@@ -2457,6 +2463,7 @@ describe('LiquidationQueue test', () => {
             deployer.address,
             deployer.address,
             false,
+            0,
             await yieldBox.toShare(marketColId, usdcAmount, false),
         );
         const initialCollateral = await wethUsdcSingularity.userCollateralShare(

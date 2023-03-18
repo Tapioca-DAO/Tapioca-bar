@@ -59,14 +59,16 @@ contract SGLLendingBorrowing is SGLCommon {
     /// @param to The receiver of the tokens.
     /// @param skim True if the amount should be skimmed from the deposit balance of msg.sender.
     /// False if tokens from msg.sender in `yieldBox` should be transferred.
-    /// @param share The amount of shares to add for `to`.
+    /// @param amount The amount to add for `to`.
+    /// @param share The amount represented in shares to add for `to`.
     function addCollateral(
         address from,
         address to,
         bool skim,
+        uint256 amount,
         uint256 share
     ) public notPaused allowed(from) {
-        _addCollateral(from, to, skim, share);
+        _addCollateral(from, to, skim, amount, share);
     }
 
     /// @notice Removes `share` amount of collateral and transfers it to `to`.
@@ -192,7 +194,7 @@ contract SGLLendingBorrowing is SGLCommon {
         );
         require(amountOut >= minAmountOut, "SGL: not enough");
 
-        _addCollateral(from, from, true, collateralShare);
+        _addCollateral(from, from, true, 0, collateralShare);
     }
 
     // ************************** //
@@ -203,8 +205,12 @@ contract SGLLendingBorrowing is SGLCommon {
         address from,
         address to,
         bool skim,
+        uint256 amount,
         uint256 share
     ) internal {
+        if (share == 0) {
+            share = yieldBox.toShare(collateralId, amount, false);
+        }
         userCollateralShare[to] += share;
         uint256 oldTotalCollateralShare = totalCollateralShare;
         totalCollateralShare = oldTotalCollateralShare + share;

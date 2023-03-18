@@ -1,8 +1,14 @@
 import hre, { ethers, network } from 'hardhat';
 import { expect } from 'chai';
-import { register } from './test.utils';
+import {
+    register,
+    createTokenEmptyStrategy,
+    registerBigBangMarket,
+    setBalance
+} from './test.utils';
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 import _ from 'lodash';
+
 
 describe('BigBang test', () => {
     it('should test initial values', async () => {
@@ -61,6 +67,7 @@ describe('BigBang test', () => {
                     deployer.address,
                     deployer.address,
                     false,
+                    0,
                     valShare,
                 ),
         ).to.be.reverted;
@@ -68,6 +75,7 @@ describe('BigBang test', () => {
             deployer.address,
             deployer.address,
             false,
+            0,
             valShare,
         );
 
@@ -123,6 +131,7 @@ describe('BigBang test', () => {
             deployer.address,
             deployer.address,
             false,
+            0,
             valShare,
         );
 
@@ -227,7 +236,7 @@ describe('BigBang test', () => {
             .depositAsset(wethAssetId, eoa1.address, eoa1.address, 0, valShare);
         await wethBigBangMarket
             .connect(eoa1)
-            .addCollateral(eoa1.address, eoa1.address, false, valShare);
+            .addCollateral(eoa1.address, eoa1.address, false, 0, valShare);
 
         //borrow
         const usdoBorrowVal = wethMintVal
@@ -380,7 +389,7 @@ describe('BigBang test', () => {
             .depositAsset(wethAssetId, eoa1.address, eoa1.address, 0, valShare);
         await wethBigBangMarket
             .connect(eoa1)
-            .addCollateral(eoa1.address, eoa1.address, false, valShare);
+            .addCollateral(eoa1.address, eoa1.address, false, 0, valShare);
 
         //borrow
         let usdoBorrowVal = wethMintVal
@@ -542,7 +551,7 @@ describe('BigBang test', () => {
             .depositAsset(wethAssetId, eoa1.address, eoa1.address, 0, valShare);
         await wethBigBangMarket
             .connect(eoa1)
-            .addCollateral(eoa1.address, eoa1.address, false, valShare);
+            .addCollateral(eoa1.address, eoa1.address, false, 0, valShare);
 
         //borrow
         let usdoBorrowVal = wethMintVal
@@ -719,7 +728,7 @@ describe('BigBang test', () => {
                 );
             await wethBigBangMarket
                 .connect(eoa)
-                .addCollateral(eoa.address, eoa.address, false, valShare);
+                .addCollateral(eoa.address, eoa.address, false, 0, valShare);
         }
 
         timeTravel(86400 * 5);
@@ -889,7 +898,7 @@ describe('BigBang test', () => {
                 );
             await wethBigBangMarket
                 .connect(eoa)
-                .addCollateral(eoa.address, eoa.address, false, valShare);
+                .addCollateral(eoa.address, eoa.address, false, 0, valShare);
         }
 
         timeTravel(86400 * 5);
@@ -1075,7 +1084,7 @@ describe('BigBang test', () => {
             .depositAsset(wethAssetId, eoa1.address, eoa1.address, 0, valShare);
         await wethBigBangMarket
             .connect(eoa1)
-            .addCollateral(eoa1.address, eoa1.address, false, valShare);
+            .addCollateral(eoa1.address, eoa1.address, false, 0, valShare);
 
         //borrow
         const usdoBorrowVal = wethMintVal
@@ -1237,6 +1246,7 @@ describe('BigBang test', () => {
             deployer.address,
             deployer.address,
             false,
+            0,
             valShare,
         );
 
@@ -1314,6 +1324,7 @@ describe('BigBang test', () => {
                 deployer.address,
                 deployer.address,
                 false,
+                0,
                 valShare,
             ),
         ).to.be.revertedWith('BigBang: paused');
@@ -1324,6 +1335,7 @@ describe('BigBang test', () => {
             deployer.address,
             deployer.address,
             false,
+            0,
             valShare,
         );
 
@@ -1456,6 +1468,7 @@ describe('BigBang test', () => {
             deployer.address,
             deployer.address,
             false,
+            0,
             valShare,
         );
 
@@ -1504,6 +1517,7 @@ describe('BigBang test', () => {
             deployer.address,
             deployer.address,
             false,
+            0,
             wbtcValShare,
         );
 
@@ -1585,7 +1599,7 @@ describe('BigBang test', () => {
             .depositAsset(wethAssetId, eoa1.address, eoa1.address, 0, valShare);
         await wethBigBangMarket
             .connect(eoa1)
-            .addCollateral(eoa1.address, eoa1.address, false, valShare);
+            .addCollateral(eoa1.address, eoa1.address, false, 0, valShare);
 
         //borrow
         const usdoBorrowVal = ethers.utils.parseEther('10000');
@@ -1667,6 +1681,7 @@ describe('BigBang test', () => {
                     deployer.address,
                     deployer.address,
                     false,
+                    0,
                     valShare,
                 ),
         ).to.be.revertedWithCustomError(wethBigBangMarket, 'NotApproved');
@@ -1680,6 +1695,7 @@ describe('BigBang test', () => {
                     deployer.address,
                     deployer.address,
                     false,
+                    0,
                     valShare,
                 ),
         ).to.not.be.revertedWithCustomError;
@@ -1726,6 +1742,7 @@ describe('BigBang test', () => {
                 deployer.address,
                 deployer.address,
                 false,
+                0,
                 valShare,
             ]);
         const borrowEncoded = wethBigBangMarket.interface.encodeFunctionData(
@@ -1790,7 +1807,7 @@ describe('BigBang test', () => {
             .depositAsset(wethAssetId, eoa1.address, eoa1.address, 0, valShare);
         await wethBigBangMarket
             .connect(eoa1)
-            .addCollateral(eoa1.address, eoa1.address, false, valShare);
+            .addCollateral(eoa1.address, eoa1.address, false, 0, valShare);
 
         //borrow
         const usdoBorrowVal = wethMintVal
@@ -1937,6 +1954,7 @@ describe('BigBang test', () => {
             deployer.address,
             deployer.address,
             false,
+            0,
             valShare,
         );
 
@@ -1945,7 +1963,6 @@ describe('BigBang test', () => {
             .mul(74)
             .div(100)
             .mul(__wethUsdcPrice.div((1e18).toString()));
-
 
         await wethBigBangMarket.borrow(
             deployer.address,
@@ -2005,7 +2022,8 @@ describe('BigBang test', () => {
             await wethBigBangMarket.collateralId(),
         );
 
-        expect(ybCollateralBalanceAfter.eq(ybCollateralBalanceBefore)).to.be.true;
+        expect(ybCollateralBalanceAfter.eq(ybCollateralBalanceBefore)).to.be
+            .true;
     });
 
     it('should lever down', async () => {
@@ -2053,11 +2071,12 @@ describe('BigBang test', () => {
             deployer.address,
             deployer.address,
             false,
+            0,
             valShare,
         );
         await wethBigBangMarket
             .connect(eoa1)
-            .addCollateral(eoa1.address, eoa1.address, false, valShare);
+            .addCollateral(eoa1.address, eoa1.address, false, 0, valShare);
 
         //borrow
         const usdoBorrowVal = wethMintVal
@@ -2065,13 +2084,13 @@ describe('BigBang test', () => {
             .div(100)
             .mul(__wethUsdcPrice.div((1e18).toString()));
 
-
         await wethBigBangMarket.borrow(
             deployer.address,
             deployer.address,
             usdoBorrowVal,
         );
-        await wethBigBangMarket.connect(eoa1)
+        await wethBigBangMarket
+            .connect(eoa1)
             .borrow(eoa1.address, eoa1.address, usdoBorrowVal);
 
         const mockSwapper = await (
@@ -2091,12 +2110,14 @@ describe('BigBang test', () => {
             await wethBigBangMarket.assetId(),
             borrowShare,
         );
-        await yieldBox.connect(eoa1).transfer(
-            eoa1.address,
-            mockSwapper.address,
-            await wethBigBangMarket.assetId(),
-            borrowShare,
-        );
+        await yieldBox
+            .connect(eoa1)
+            .transfer(
+                eoa1.address,
+                mockSwapper.address,
+                await wethBigBangMarket.assetId(),
+                borrowShare,
+            );
 
         // uint256 partOwed = userBorrowPart[from];
         // uint256 amountOwed = totalBorrow.toElastic(partOwed, true);
@@ -2106,7 +2127,8 @@ describe('BigBang test', () => {
             deployer.address,
         );
         expect(userBorrowPartBefore.gte(usdoBorrowVal)).to.be.true;
-        const collateralShareBefore = await wethBigBangMarket.userCollateralShare(deployer.address);
+        const collateralShareBefore =
+            await wethBigBangMarket.userCollateralShare(deployer.address);
         await wethBigBangMarket.sellCollateral(
             deployer.address,
             collateralShareBefore.div(2),
@@ -2114,12 +2136,443 @@ describe('BigBang test', () => {
             mockSwapper.address,
             [],
         );
-        const collateralShareAfter = await wethBigBangMarket.userCollateralShare(deployer.address);
-        expect(collateralShareAfter.eq(collateralShareBefore.div(2))).to.be.true;
+        const collateralShareAfter =
+            await wethBigBangMarket.userCollateralShare(deployer.address);
+        expect(collateralShareAfter.eq(collateralShareBefore.div(2))).to.be
+            .true;
 
         const userBorrowPartAfter = await wethBigBangMarket.userBorrowPart(
             deployer.address,
         );
         expect(userBorrowPartAfter.eq(0)).to.be.true;
+    });
+
+    it('should perform a multihop leverage', async () => {
+        // test requires:
+        //  - 2 proxies (src & dst)
+        //  - big bang on src
+        //  - swapper mock
+        //  - lender
+
+        const {
+            proxyDeployer,
+            yieldBox,
+            bar,
+            mediumRiskBigBangMC,
+            usd0WethOracle,
+            deployer,
+            __wethUsdcPrice,
+            BN,
+        } = await loadFixture(register);
+
+        const chainIdSrc = 1;
+        const chainIdDst = (await ethers.provider.getNetwork()).chainId;
+        const registerProxies = async (chainIdSrc: any, chainIdDst: any) => {
+            const LZEndpointMock = await ethers.getContractFactory('LZEndpointMock');
+
+            const lzEndpointSrc = await LZEndpointMock.deploy(chainIdSrc);
+            const lzEndpointDst = await LZEndpointMock.deploy(chainIdDst);
+
+            const saltSrc = ethers.utils.formatBytes32String('ProxySrc');
+            const saltDst = ethers.utils.formatBytes32String('ProxyDst');
+
+            await proxyDeployer.deployWithCreate2(
+                lzEndpointSrc.address,
+                saltSrc,
+            );
+            await proxyDeployer.deployWithCreate2(
+                lzEndpointDst.address,
+                saltDst,
+            );
+
+            const proxySrc = await ethers.getContractAt(
+                'MarketsProxy',
+                await proxyDeployer.proxies(0),
+            );
+            const proxyDst = await ethers.getContractAt(
+                'MarketsProxy',
+                await proxyDeployer.proxies(1),
+            );
+
+            lzEndpointSrc.setDestLzEndpoint(
+                proxyDst.address,
+                lzEndpointDst.address,
+            );
+            lzEndpointDst.setDestLzEndpoint(
+                proxySrc.address,
+                lzEndpointSrc.address,
+            );
+
+            await proxySrc.setTrustedRemote(
+                chainIdDst,
+                ethers.utils.solidityPack(
+                    ['address', 'address'],
+                    [proxyDst.address, proxySrc.address],
+                ),
+            );
+
+            await proxyDst.setTrustedRemote(
+                chainIdSrc,
+                ethers.utils.solidityPack(
+                    ['address', 'address'],
+                    [proxySrc.address, proxyDst.address],
+                ),
+            );
+
+            await proxySrc.setMinDstGas(chainIdDst, 0, 200000);
+            await proxySrc.setMinDstGas(chainIdDst, 1, 200000);
+            await proxyDst.setMinDstGas(chainIdSrc, 0, 200000);
+            await proxyDst.setMinDstGas(chainIdSrc, 1, 200000);
+
+            await proxySrc.setUseCustomAdapterParams(true);
+            await proxyDst.setUseCustomAdapterParams(true);
+
+            return { proxySrc, proxyDst, lzEndpointSrc, lzEndpointDst };
+        };
+
+        const registerMockSwapper = async () => {
+            const mockSwapper = await (
+                await ethers.getContractFactory('NonYieldBoxSwapperMock')
+            ).deploy();
+            await mockSwapper.deployed();
+
+            await setBalance(mockSwapper.address, 50);
+            return { mockSwapper };
+        };
+
+        const registerTEth = async (lzEndpointSrc: any, lzEndpointDst: any) => {
+            const tEthSrc = await (
+                await ethers.getContractFactory('TapiocaOftMock')
+            ).deploy(
+                ethers.constants.AddressZero,
+                lzEndpointSrc.address,
+                yieldBox.address,
+            );
+            await tEthSrc.deployed();
+
+            const tEthStrategy = await createTokenEmptyStrategy(
+                yieldBox.address,
+                tEthSrc.address,
+            );
+            await (
+                await yieldBox.registerAsset(
+                    1,
+                    tEthSrc.address,
+                    tEthStrategy.address,
+                    0,
+                )
+            ).wait();
+            const tEthAssetId = await yieldBox.ids(
+                1,
+                tEthSrc.address,
+                tEthStrategy.address,
+                0,
+            );
+
+            const tEthDst = await (
+                await ethers.getContractFactory('TapiocaOftMock')
+            ).deploy(
+                ethers.constants.AddressZero,
+                lzEndpointDst.address,
+                yieldBox.address,
+            );
+            await tEthDst.deployed();
+
+            await lzEndpointSrc.setDestLzEndpoint(
+                tEthDst.address,
+                lzEndpointDst.address,
+            );
+            await lzEndpointDst.setDestLzEndpoint(
+                tEthSrc.address,
+                lzEndpointSrc.address,
+            );
+
+            await tEthSrc.setTrustedRemote(
+                chainIdDst,
+                ethers.utils.solidityPack(
+                    ['address', 'address'],
+                    [tEthDst.address, tEthSrc.address],
+                ),
+            );
+
+            await tEthDst.setTrustedRemote(
+                chainIdSrc,
+                ethers.utils.solidityPack(
+                    ['address', 'address'],
+                    [tEthSrc.address, tEthDst.address],
+                ),
+            );
+
+            await tEthSrc.setMinDstGas(chainIdDst, 0, 200000);
+            await tEthSrc.setMinDstGas(chainIdDst, 1, 200000);
+            await tEthSrc.setMinDstGas(chainIdDst, 772, 200000);
+            await tEthDst.setMinDstGas(chainIdSrc, 0, 200000);
+            await tEthDst.setMinDstGas(chainIdSrc, 1, 200000);
+            await tEthDst.setMinDstGas(chainIdSrc, 772, 200000);
+
+            await tEthSrc.setUseCustomAdapterParams(true);
+            await tEthDst.setUseCustomAdapterParams(true);
+
+            return { tEthAssetId, tEthSrc, tEthDst };
+        };
+
+        const registerUsdo = async (lzEndpointSrc: any, lzEndpointDst: any) => {
+            const usdoSrc = await (
+                await ethers.getContractFactory('USD0')
+            ).deploy(lzEndpointSrc.address, yieldBox.address);
+            await usdoSrc.deployed();
+
+            await bar.setUsdoToken(usdoSrc.address);
+            const usdoAssetId = await bar.usdoAssetId();
+
+            const usdoDst = await (
+                await ethers.getContractFactory('USD0')
+            ).deploy(lzEndpointDst.address, yieldBox.address);
+            await usdoDst.deployed();
+
+            await lzEndpointSrc.setDestLzEndpoint(
+                usdoDst.address,
+                lzEndpointDst.address,
+            );
+            await lzEndpointDst.setDestLzEndpoint(
+                usdoSrc.address,
+                lzEndpointSrc.address,
+            );
+
+            await usdoSrc.setTrustedRemote(
+                chainIdDst,
+                ethers.utils.solidityPack(
+                    ['address', 'address'],
+                    [usdoDst.address, usdoSrc.address],
+                ),
+            );
+
+            await usdoDst.setTrustedRemote(
+                chainIdSrc,
+                ethers.utils.solidityPack(
+                    ['address', 'address'],
+                    [usdoSrc.address, usdoDst.address],
+                ),
+            );
+
+            await usdoSrc.setMinDstGas(chainIdDst, 0, 200000);
+            await usdoSrc.setMinDstGas(chainIdDst, 1, 200000);
+            await usdoSrc.setMinDstGas(chainIdDst, 774, 200000);
+            await usdoDst.setMinDstGas(chainIdSrc, 0, 200000);
+            await usdoDst.setMinDstGas(chainIdSrc, 1, 200000);
+            await usdoDst.setMinDstGas(chainIdSrc, 774, 200000);
+
+            await usdoSrc.setUseCustomAdapterParams(true);
+            await usdoDst.setUseCustomAdapterParams(true);
+
+
+
+            return { usdoSrc, usdoDst, usdoAssetId };
+        };
+
+        //
+        const { mockSwapper } = await registerMockSwapper();
+
+        //
+        const { proxySrc, proxyDst, lzEndpointSrc, lzEndpointDst } =
+            await registerProxies(chainIdSrc, chainIdDst);
+
+        //
+        const { usdoSrc, usdoDst, usdoAssetId } = await registerUsdo(
+            lzEndpointSrc,
+            lzEndpointDst,
+        );
+
+        //
+        const { tEthAssetId, tEthSrc, tEthDst } = await registerTEth(
+            lzEndpointSrc,
+            lzEndpointDst,
+        );
+
+        //tUsdc (collateral) BigBang market
+        const { bigBangMarket } = await registerBigBangMarket(
+            mediumRiskBigBangMC.address,
+            yieldBox,
+            bar,
+            tEthSrc,
+            tEthAssetId,
+            usd0WethOracle, //oracle
+            ethers.utils.parseEther('1'),
+            ethers.utils.parseEther('0.5'),
+            ethers.utils.parseEther('0.005'),
+            ethers.utils.parseEther('0.035'),
+            0,
+        );
+        await usdoSrc.setMinterStatus(bigBangMarket.address, true);
+
+        const registeredCollateral = await bigBangMarket.collateral();
+        expect(registeredCollateral.toLowerCase()).eq(
+            tEthSrc.address.toLowerCase(),
+        );
+
+        const usd0SupplyAmount = BN(100000).mul((1e18).toString());
+        await usdoSrc.mint(deployer.address, usd0SupplyAmount);
+
+        const toWrapAmount = BN(10).mul((1e18).toString());
+        await tEthDst.wrapNative(deployer.address, { value: toWrapAmount });
+
+        let availableTeth = await tEthDst.balanceOf(deployer.address);
+        expect(availableTeth.eq(toWrapAmount)).to.be.true;
+
+        //send tEth to source and test YB deposits
+        let adapterParam = hre.ethers.utils.solidityPack(
+            ['uint16', 'uint256'],
+            [1, 2250000],
+        );
+        {
+            await expect(
+                tEthDst.sendFrom(
+                    deployer.address,
+                    chainIdSrc,
+                    ethers.utils.defaultAbiCoder.encode(
+                        ['address'],
+                        [deployer.address],
+                    ),
+                    availableTeth,
+                    {
+                        refundAddress: deployer.address,
+                        zroPaymentAddress: ethers.constants.AddressZero,
+                        adapterParams: adapterParam,
+                    },
+                    {
+                        value: ethers.utils.parseEther('1'),
+                    },
+                ),
+            ).to.not.be.reverted;
+
+            await tEthSrc.approve(
+                yieldBox.address,
+                ethers.constants.MaxUint256,
+            );
+            await usdoSrc.approve(
+                yieldBox.address,
+                ethers.constants.MaxUint256,
+            );
+            await yieldBox.depositAsset(
+                tEthAssetId,
+                deployer.address,
+                deployer.address,
+                availableTeth,
+                0,
+            );
+            await yieldBox.depositAsset(
+                usdoAssetId,
+                deployer.address,
+                deployer.address,
+                usd0SupplyAmount,
+                0,
+            );
+            await yieldBox.setApprovalForAll(bigBangMarket.address, true);
+            await yieldBox.setApprovalForAll(proxySrc.address, true);
+
+            const yb_tEthSrc_balance_share = await yieldBox.balanceOf(
+                deployer.address,
+                tEthAssetId,
+            );
+            const yb_tEthSrc_balance_amount = await yieldBox.toAmount(
+                tEthAssetId,
+                yb_tEthSrc_balance_share,
+                false,
+            );
+            expect(yb_tEthSrc_balance_amount.eq(availableTeth)).to.be.true;
+
+            const yb_usd0_balance_share = await yieldBox.balanceOf(
+                deployer.address,
+                usdoAssetId,
+            );
+            expect(yb_usd0_balance_share.gt(0)).to.be.true;
+        }
+
+        //test leverage
+        await proxySrc.updateMarketStatus(bigBangMarket.address, true);
+        const usdoBorrowVal = toWrapAmount
+            .mul(74)
+            .div(100)
+            .mul(__wethUsdcPrice.div((1e18).toString()));
+        const airdropAdapterParams = ethers.utils.solidityPack(
+            ['uint16', 'uint', 'uint', 'address'],
+            [2, 2250000, ethers.utils.parseEther('10'), usdoDst.address],
+        );
+        {
+            await tEthDst.wrapNative(deployer.address, { value: toWrapAmount });
+            await expect(
+                tEthDst.sendFrom(
+                    deployer.address,
+                    chainIdSrc,
+                    ethers.utils.defaultAbiCoder.encode(
+                        ['address'],
+                        [deployer.address],
+                    ),
+                    availableTeth,
+                    {
+                        refundAddress: deployer.address,
+                        zroPaymentAddress: ethers.constants.AddressZero,
+                        adapterParams: adapterParam,
+                    },
+                    {
+                        value: ethers.utils.parseEther('1'),
+                    },
+                ),
+            ).to.not.be.reverted;
+            await yieldBox.depositAsset(
+                tEthAssetId,
+                deployer.address,
+                deployer.address,
+                availableTeth,
+                0,
+            );
+
+            const collateralShareBefore =
+                await bigBangMarket.userCollateralShare(deployer.address);
+            expect(collateralShareBefore.eq(0)).to.be.true;
+
+            await bigBangMarket.updateOperator(proxySrc.address, true);
+            await bigBangMarket.multiHopBuyCollateral(
+                deployer.address,
+                toWrapAmount,
+                usdoBorrowVal,
+                {
+                    //swap data
+                    tokenOut: ethers.constants.AddressZero,
+                    amountOutMin: ethers.utils.parseEther('7'),
+                    data: ethers.utils.toUtf8Bytes(''),
+                },
+                {
+                    //lz data
+                    lzDstChainId: chainIdDst,
+                    zroPaymentAddress: ethers.constants.AddressZero,
+                    airdropAdapterParam: airdropAdapterParams,
+                    refundAddress: deployer.address,
+                },
+                {
+                    //external data
+                    swapper: mockSwapper.address,
+                    proxy: proxyDst.address,
+                    tOft: tEthDst.address,
+                    srcMarket: bigBangMarket.address,
+                    srcLzChainId: chainIdSrc,
+                    sendToYBExtraGasLimit: 800000,
+                    executeOnChainGasLimit: 800000,
+                    dstAssetId: tEthAssetId,
+                },
+                {
+                    value: ethers.utils.parseEther('50'),
+                },
+            );
+
+            const collateralShareAfter =
+                await bigBangMarket.userCollateralShare(deployer.address);
+            const collateralAmountAfter = await yieldBox.toAmount(
+                tEthAssetId,
+                collateralShareAfter,
+                false,
+            );
+            expect(collateralAmountAfter.gt(toWrapAmount)).to.be.true;
+        }
     });
 });

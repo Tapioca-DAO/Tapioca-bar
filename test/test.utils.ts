@@ -11,6 +11,7 @@ import {
     USD0,
     WETH9Mock,
     YieldBox,
+    TapiocaOftMock,
 } from '../typechain';
 import { MultiSwapper } from '../typechain/MultiSwapper';
 import { UniswapV2Factory } from '../typechain/UniswapV2Factory';
@@ -979,11 +980,11 @@ async function registerLiquidationQueue(
     return { liquidationQueue, LQ_META };
 }
 
-async function registerBigBangMarket(
+export async function registerBigBangMarket(
     mediumRiskBigBangMC: string,
     yieldBox: YieldBox,
     bar: Penrose,
-    collateral: WETH9Mock | ERC20Mock,
+    collateral: WETH9Mock | ERC20Mock | TapiocaOftMock,
     collateralId: BigNumberish,
     oracle: OracleMock,
     exchangeRatePrecision?: BigNumberish,
@@ -1632,6 +1633,7 @@ export async function register(staging?: boolean) {
                 _account.address,
                 _account.address,
                 false,
+                0,
                 _wethUsdcValShare,
             )
         ).wait();
@@ -1667,6 +1669,7 @@ export async function register(staging?: boolean) {
                 _account.address,
                 _account.address,
                 false,
+                0,
                 _wbtcUsdcValShare,
             )
         ).wait();
