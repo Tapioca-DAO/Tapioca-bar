@@ -71,9 +71,12 @@ describe('MarketsHelper test', () => {
                 wethUsdcSingularity.address,
                 usdcMintVal,
                 borrowAmount,
-                true,
-                false,
-                ethers.utils.toUtf8Bytes(''),
+                {
+                    deposit: true,
+                    withdraw: false,
+                    withdrawData: ethers.utils.toUtf8Bytes(''),
+                    wrap: false,
+                },
             );
     });
 
@@ -116,9 +119,12 @@ describe('MarketsHelper test', () => {
                 wethUsdcSingularity.address,
                 usdcMintVal,
                 borrowAmount,
-                true,
-                true,
-                ethers.utils.toUtf8Bytes(''),
+                {
+                    deposit: true,
+                    withdraw: true,
+                    withdrawData: ethers.utils.toUtf8Bytes(''),
+                    wrap: false,
+                },
             );
     });
 
@@ -161,9 +167,12 @@ describe('MarketsHelper test', () => {
                 wethUsdcSingularity.address,
                 usdcMintVal,
                 borrowAmount,
-                true,
-                false,
-                ethers.utils.toUtf8Bytes(''),
+                {
+                    deposit: true,
+                    withdraw: false,
+                    withdrawData: ethers.utils.toUtf8Bytes(''),
+                    wrap: false,
+                },
             );
     });
 
@@ -220,9 +229,12 @@ describe('MarketsHelper test', () => {
                 wethUsdcSingularity.address,
                 usdcMintVal,
                 borrowAmount,
-                false,
-                true,
-                ethers.utils.toUtf8Bytes(''),
+                {
+                    deposit: false,
+                    withdraw: true,
+                    withdrawData: ethers.utils.toUtf8Bytes(''),
+                    wrap: false,
+                },
             );
     });
 
@@ -265,9 +277,12 @@ describe('MarketsHelper test', () => {
                 wethUsdcSingularity.address,
                 usdcMintVal,
                 borrowAmount,
-                true,
-                true,
-                ethers.utils.toUtf8Bytes(''),
+                {
+                    deposit: true,
+                    withdraw: true,
+                    withdrawData: ethers.utils.toUtf8Bytes(''),
+                    wrap: false,
+                },
             );
 
         const userBorrowPart = await wethUsdcSingularity.userBorrowPart(
@@ -333,9 +348,12 @@ describe('MarketsHelper test', () => {
                 wethUsdcSingularity.address,
                 usdcMintVal,
                 borrowAmount,
-                true,
-                true,
-                ethers.utils.toUtf8Bytes(''),
+                {
+                    deposit: true,
+                    withdraw: true,
+                    withdrawData: ethers.utils.toUtf8Bytes(''),
+                    wrap: false,
+                },
             );
 
         const userBorrowPart = await wethUsdcSingularity.userBorrowPart(

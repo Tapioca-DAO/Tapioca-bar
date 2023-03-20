@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
-import "@boringcrypto/boring-solidity/contracts/interfaces/IERC20.sol";
 
-interface IUSD0 is IStrictERC20 {
+interface IUSD0 {
     struct LeverageLZData {
         uint16 lzDstChainId;
         address zroPaymentAddress;
@@ -25,6 +24,10 @@ interface IUSD0 is IStrictERC20 {
         uint256 executeOnChainGasLimit;
         uint256 dstAssetId;
     }
+
+    function balanceOf(address account) external view returns (uint256);
+
+    function approve(address spender, uint256 amount) external returns (bool);
 
     function mint(address _to, uint256 _amount) external;
 

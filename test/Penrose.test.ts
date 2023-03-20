@@ -9,7 +9,7 @@ describe('Penrose test', () => {
 
         const markets = await bar.singularityMarkets();
 
-        expect(markets.length).equal(2); //weth-usdc & wbtc-usdc
+        expect(markets.length).equal(3); //weth-usdc & wbtc-usdc
     });
 
     it('should return length of master contracts', async () => {

@@ -2,7 +2,7 @@
 pragma solidity ^0.8.18;
 import "@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol";
 import "../../singularity/legacy/mocks/ERC20Mock.sol";
-import "../../usd0/IUSD0.sol";
+import "../../usd0/interfaces/IUSD0.sol";
 
 contract CurvePoolMock {
     using BoringERC20 for IERC20;

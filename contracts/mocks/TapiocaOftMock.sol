@@ -12,16 +12,25 @@ contract TapiocaOftMock is OFTV2 {
 
     uint16 public constant PT_YB_DEPOSIT = 772;
 
-    address public erc20;
+    IERC20 public erc20;
     IYieldBox public immutable yieldBox;
 
+    bool public isNative;
+    uint256 public hostId;
+
     constructor(
+        uint256 _chainId,
         address _erc20,
         address _lzEndpoint,
         IYieldBox _yieldBox
     ) OFTV2("Tapioca OFT", "tOFT", 8, _lzEndpoint) {
-        erc20 = _erc20;
+        hostId = _chainId;
+        erc20 = IERC20(_erc20);
         yieldBox = _yieldBox;
+    }
+
+    function setHostChain(uint256 _newchain) external {
+        hostId = _newchain;
     }
 
     function freeMint(uint256 _val) public {
@@ -29,7 +38,7 @@ contract TapiocaOftMock is OFTV2 {
     }
 
     function wrap(address _toAddress, uint256 _amount) external {
-        IERC20(erc20).safeTransferFrom(msg.sender, address(this), _amount);
+        erc20.safeTransferFrom(msg.sender, address(this), _amount);
         _mint(_toAddress, _amount);
     }
 

@@ -2245,6 +2245,9 @@ describe('BigBang test', () => {
             const tEthSrc = await (
                 await ethers.getContractFactory('TapiocaOftMock')
             ).deploy(
+                await (
+                    await ethers.provider.getNetwork()
+                ).chainId,
                 ethers.constants.AddressZero,
                 lzEndpointSrc.address,
                 yieldBox.address,
@@ -2273,6 +2276,9 @@ describe('BigBang test', () => {
             const tEthDst = await (
                 await ethers.getContractFactory('TapiocaOftMock')
             ).deploy(
+                await (
+                    await ethers.provider.getNetwork()
+                ).chainId,
                 ethers.constants.AddressZero,
                 lzEndpointDst.address,
                 yieldBox.address,

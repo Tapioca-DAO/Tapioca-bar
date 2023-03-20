@@ -623,9 +623,12 @@ async function depositAddCollateralAndBorrowPlug(
                     Singularity.address,
                     collateralValue,
                     borrowValue,
-                    true,
-                    withdraw,
-                    withdrawData,
+                    {
+                        deposit: true,
+                        withdraw: withdraw,
+                        withdrawData: withdrawData,
+                        wrap: false,
+                    }
                 ),
         ).to.be.revertedWith(revertMessage!);
         return { share, amount };
@@ -636,9 +639,12 @@ async function depositAddCollateralAndBorrowPlug(
             Singularity.address,
             collateralValue,
             borrowValue,
-            true,
-            withdraw,
-            withdrawData,
+            {
+                deposit: true,
+                withdraw: withdraw,
+                withdrawData: withdrawData,
+                wrap: false,
+            },
         );
     share = await yieldBox.balanceOf(signer.address, assetId);
     amount = await yieldBox.toAmount(assetId, share, false);

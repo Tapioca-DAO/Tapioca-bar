@@ -6,6 +6,7 @@ import "@boringcrypto/boring-solidity/contracts/libraries/BoringRebase.sol";
 
 import "./interfaces/IMarket.sol";
 import "./interfaces/IOracle.sol";
+import "./interfaces/ITapiocaOFT.sol";
 import "./usd0/interfaces/IBigBang.sol";
 import "./singularity/interfaces/ISingularity.sol";
 import "tapioca-sdk/dist/contracts/YieldBox/contracts/YieldBox.sol";
@@ -13,6 +14,13 @@ import "tapioca-sdk/dist/contracts/YieldBox/contracts/YieldBox.sol";
 /// @title Useful helper functions for `Singularity` and `BingBang`
 contract MarketsHelper {
     using RebaseLibrary for Rebase;
+
+    struct MarketOptions {
+        bool deposit;
+        bool withdraw;
+        bytes withdrawData;
+        bool wrap;
+    }
 
     struct MarketInfo {
         address collateral;
@@ -179,20 +187,15 @@ contract MarketsHelper {
     // *** PUBLIC FUNCTIONS *** //
     // ************************ //
 
-    /// @notice deposts collateral to YieldBox, adds collateral to Singularity, borrows and can withdraw to personal address
     /// @param market the Singularity or BigBang address
     /// @param _collateralAmount the collateral amount to add
     /// @param _borrowAmount the amount to borrow
-    /// @param deposit_ if true, deposits to YieldBox from `msg.sender`
-    /// @param withdraw_ if true, withdraws from YieldBox to `msg.sender`
-    /// @param _withdrawData custom withdraw data; ignore if you need to withdraw on the same chain
+    /// @param options various action specific optioons
     function depositAddCollateralAndBorrow(
         IMarket market,
         uint256 _collateralAmount,
         uint256 _borrowAmount,
-        bool deposit_,
-        bool withdraw_,
-        bytes calldata _withdrawData
+        MarketOptions calldata options
     ) external payable {
         YieldBox yieldBox = YieldBox(market.yieldBox());
 
@@ -206,8 +209,20 @@ contract MarketsHelper {
             _collateralAmount,
             false
         );
-        if (deposit_) {
-            _extractTokens(collateralAddress, _collateralAmount);
+
+        //wrap if requested
+        if (options.wrap) {
+            _collateralAmount = _wrapTokens(
+                ITapiocaOFT(collateralAddress),
+                _collateralAmount
+            ); //might returns a bit less due to the existance of management fees
+        }
+        //deposit into the yieldbox
+        if (options.deposit) {
+            if (!options.wrap) {
+                _extractTokens(collateralAddress, _collateralAmount);
+            }
+            _share = yieldBox.toShare(collateralId, _collateralAmount, false);
             IERC20(collateralAddress).approve(
                 address(yieldBox),
                 _collateralAmount
@@ -224,7 +239,7 @@ contract MarketsHelper {
         //add collateral
         _setApprovalForYieldBox(market, yieldBox);
         market.addCollateral(
-            deposit_ ? address(this) : msg.sender,
+            options.deposit ? address(this) : msg.sender,
             msg.sender,
             false,
             0,
@@ -232,13 +247,13 @@ contract MarketsHelper {
         );
 
         //borrow
-        address borrowReceiver = withdraw_ ? address(this) : msg.sender;
+        address borrowReceiver = options.withdraw ? address(this) : msg.sender;
         market.borrow(msg.sender, borrowReceiver, _borrowAmount);
 
-        if (withdraw_) {
+        if (options.withdraw) {
             _withdraw(
                 borrowReceiver,
-                _withdrawData,
+                options.withdrawData,
                 market,
                 yieldBox,
                 _borrowAmount,
@@ -500,6 +515,30 @@ contract MarketsHelper {
         info.assetId = market.assetId();
         info.collateralId = market.collateralId();
         return info;
+    }
+
+    function _wrapTokens(
+        ITapiocaOFT _oft,
+        uint256 amount
+    ) private returns (uint256 amountOut) {
+        require(
+            block.chainid == _oft.hostChainID(),
+            "MarketsHelper: cannot wrap on this chain"
+        );
+        uint256 _balanceBefore = _oft.balanceOf(address(this));
+
+        bool _isNative = _oft.isNative();
+        if (_isNative) {
+            _oft.wrapNative{value: amount}(address(this));
+        } else {
+            _extractTokens(address(_oft.erc20()), amount);
+            _oft.wrap(address(this), amount);
+        }
+
+        uint256 _balanceAfter = _oft.balanceOf(address(this));
+
+        require(_balanceAfter > _balanceBefore, "MarketsHelper: wrap failed");
+        amountOut = _balanceAfter - _balanceBefore;
     }
 
     function _withdraw(

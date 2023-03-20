@@ -27,4 +27,10 @@ interface ITapiocaOFT {
     function wrapNative(address _toAddress) external payable;
 
     function balanceOf(address _user) external view returns (uint256);
+
+    function isNative() external view returns (bool);
+
+    function hostChainID() external view returns (uint256);
+
+    function erc20() external view returns (address);
 }

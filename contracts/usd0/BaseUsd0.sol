@@ -4,6 +4,7 @@ pragma solidity ^0.8.18;
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "tapioca-sdk/dist/contracts/libraries/LzLib.sol";
 import "tapioca-sdk/dist/contracts/token/oft/v2/OFTV2.sol";
+import "./interfaces/IUSD0.sol";
 import "./interfaces/IYieldBox.sol";
 import "./interfaces/IBigBang.sol";
 import "../interfaces/ITapiocaOFT.sol";
@@ -128,35 +129,12 @@ abstract contract BaseUsd0 is OFTV2 {
         emit SendToChain(lzDstChainId, msg.sender, toAddress, amount);
     }
 
-    struct LeverageLZData {
-        uint16 lzDstChainId;
-        address zroPaymentAddress;
-        bytes airdropAdapterParam;
-        address refundAddress;
-    }
-
-    struct LeverageSwapData {
-        address tokenOut;
-        uint256 amountOutMin;
-        bytes data;
-    }
-    struct LeverageExternalContractsData {
-        address swapper;
-        address proxy;
-        address tOft;
-        address srcMarket;
-        uint16 srcLzChainId;
-        uint256 sendToYBExtraGasLimit;
-        uint256 executeOnChainGasLimit;
-        uint256 dstAssetId;
-    }
-
     function sendForLeverage(
         uint256 amount,
         address leverageFor,
-        LeverageLZData calldata lzData,
-        LeverageSwapData calldata swapData,
-        LeverageExternalContractsData calldata externalData
+        IUSD0.LeverageLZData calldata lzData,
+        IUSD0.LeverageSwapData calldata swapData,
+        IUSD0.LeverageExternalContractsData calldata externalData
     ) external payable {
         bytes32 proxyBytes = LzLib.addressToBytes32(externalData.proxy);
         _debitFrom(msg.sender, lzEndpoint.getChainId(), proxyBytes, amount);
@@ -301,8 +279,8 @@ abstract contract BaseUsd0 is OFTV2 {
             ,
             ,
             uint256 amount,
-            LeverageSwapData memory swapData,
-            LeverageExternalContractsData memory externalData,
+            IUSD0.LeverageSwapData memory swapData,
+            IUSD0.LeverageExternalContractsData memory externalData,
             address zroPaymentAddress,
             address leverageFor
         ) = abi.decode(
@@ -312,8 +290,8 @@ abstract contract BaseUsd0 is OFTV2 {
                     bytes32,
                     bytes32,
                     uint256,
-                    LeverageSwapData,
-                    LeverageExternalContractsData,
+                    IUSD0.LeverageSwapData,
+                    IUSD0.LeverageExternalContractsData,
                     address,
                     address
                 )
