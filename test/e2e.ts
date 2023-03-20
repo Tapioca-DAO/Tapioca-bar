@@ -628,7 +628,7 @@ async function depositAddCollateralAndBorrowPlug(
                         withdraw: withdraw,
                         withdrawData: withdrawData,
                         wrap: false,
-                    }
+                    },
                 ),
         ).to.be.revertedWith(revertMessage!);
         return { share, amount };

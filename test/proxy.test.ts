@@ -670,22 +670,20 @@ describe('MarketsProxy', () => {
         await singularityDst
             .connect(eoa1)
             .approve(marketsHelper.address, ethers.constants.MaxUint256);
-        await marketsHelper
-            .connect(eoa1)
-            .depositAddCollateralAndBorrow(
-                singularityDst.address,
-                wethDepositAmount,
-                usdoBorrowVal.div(2),
-                {
-                    deposit: true,
-                    withdraw: true,
-                    withdrawData: ethers.utils.toUtf8Bytes(''),
-                    wrap: false,
-                },
-                {
-                    value: ethers.utils.parseEther('10'),
-                },
-            );
+        await marketsHelper.connect(eoa1).depositAddCollateralAndBorrow(
+            singularityDst.address,
+            wethDepositAmount,
+            usdoBorrowVal.div(2),
+            {
+                deposit: true,
+                withdraw: true,
+                withdrawData: ethers.utils.toUtf8Bytes(''),
+                wrap: false,
+            },
+            {
+                value: ethers.utils.parseEther('10'),
+            },
+        );
 
         const userCollateralShare = await singularityDst.userCollateralShare(
             eoa1.address,
@@ -698,22 +696,20 @@ describe('MarketsProxy', () => {
         const usdoBalance = await usd0Dst.balanceOf(eoa1.address);
         expect(usdoBalance.gt(0)).to.be.true;
 
-        await marketsHelper
-            .connect(eoa1)
-            .depositAddCollateralAndBorrow(
-                singularityDst.address,
-                wethDepositAmount,
-                usdoBorrowVal.div(2),
-                {
-                    deposit: true,
-                    withdraw: true,
-                    withdrawData: withdrawData,
-                    wrap: false,
-                },
-                {
-                    value: ethers.utils.parseEther('10'),
-                },
-            );
+        await marketsHelper.connect(eoa1).depositAddCollateralAndBorrow(
+            singularityDst.address,
+            wethDepositAmount,
+            usdoBorrowVal.div(2),
+            {
+                deposit: true,
+                withdraw: true,
+                withdrawData: withdrawData,
+                wrap: false,
+            },
+            {
+                value: ethers.utils.parseEther('10'),
+            },
+        );
 
         const usdoSrcBalabce = await usd0Src.balanceOf(randomReceiver.address);
         expect(usdoSrcBalabce.gt(0)).to.be.true;

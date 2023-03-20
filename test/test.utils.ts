@@ -155,7 +155,6 @@ async function registerERC20Tokens(staging?: boolean) {
     await weth.deployed();
     log(`Deployed WETH ${weth.address} with no arguments`, staging);
 
-
     //  Deploy TapiocaOftMock
     const chainid = await (await ethers.provider.getNetwork()).chainId;
     const tOft = await (
@@ -1214,7 +1213,7 @@ export async function register(staging?: boolean) {
         weth.address,
         usdc.address,
         wbtc.address,
-        tOft.address
+        tOft.address,
     );
     log(
         `Penrose assets were set USDC: ${usdcAssetId}, WETH: ${wethAssetId}, WBTC: ${wbtcAssetId}`,

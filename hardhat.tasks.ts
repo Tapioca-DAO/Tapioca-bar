@@ -25,6 +25,7 @@ import { getSingularityMarkets__task } from './tasks/views/getSingularityMarkets
 import { getSingularityTotals__task } from './tasks/views/getSingularityTotals';
 import { whitelistSingularity__task } from './tasks/whitelistSingularity';
 import { deployMarket__task } from './tasks/deploy/___deployMarket';
+import { transfer__task } from './tasks/test-transfer';
 import {
     getLocalDeployments__task,
     getSDKDeployments__task,
@@ -248,3 +249,11 @@ task('airdropGas', 'Airdrop gas to msg.sender', airdropGas__task)
     .addParam('amount', 'Amount of gas to airdrop')
     .addParam('dstChain', 'Destination chain id')
     .addParam('dstAddress', 'Destination address');
+
+task('transfer', 'Moves tOFT between layers', transfer__task)
+    .addParam('oftAddress', 'tOFT address')
+    .addParam('fromAddress', 'wallet from')
+    .addParam('toAddress', 'wallet to')
+    .addParam('dstChainId', 'destination LZ chain id')
+    .addParam('amount', 'amount to transfer')
+    .addParam('native', 'Tx fees');
