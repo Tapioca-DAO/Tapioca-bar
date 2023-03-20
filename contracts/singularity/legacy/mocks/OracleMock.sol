@@ -2,21 +2,17 @@
 pragma solidity ^0.8.18;
 import "../../../interfaces/IOracle.sol";
 
-contract OracleMockFactory {
-    address public last;
-
-    function deployOracle() external {
-        OracleMock oracle = new OracleMock();
-        last = address(oracle);
-    }
-}
-
 contract OracleMock is IOracle {
     uint256 public rate;
     bool public success;
+    string public __name;
+    string public __symbol;
 
-    constructor() {
+    constructor(string memory _name, string memory _symbol, uint256 _rate) {
         success = true;
+        rate = _rate;
+        __name = _name;
+        __symbol = _symbol;
     }
 
     function set(uint256 rate_) public {
@@ -46,13 +42,13 @@ contract OracleMock is IOracle {
         return rate;
     }
 
-    function name(bytes calldata) public pure override returns (string memory) {
-        return "Test";
+    function name(bytes calldata) public view override returns (string memory) {
+        return __name;
     }
 
     function symbol(
         bytes calldata
-    ) public pure override returns (string memory) {
-        return "TEST";
+    ) public view override returns (string memory) {
+        return __symbol;
     }
 }

@@ -962,7 +962,7 @@ describe('Singularity test', () => {
         const decimals = await wethUsdcSingularity.decimals();
         const totalSupply = await wethUsdcSingularity.totalSupply();
 
-        expect(symbol.toLowerCase()).to.contain('weth-test');
+        expect(symbol.toLowerCase()).to.contain('tmftm/weth-wethmoracle');
         expect(decimals).to.eq(18);
         expect(totalSupply).to.eq(0);
     });

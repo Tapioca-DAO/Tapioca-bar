@@ -1,41 +1,36 @@
 import '@nomiclabs/hardhat-ethers';
 import { task } from 'hardhat/config';
-import { deployMarket__task } from './tasks/deployMarket';
-import { deployBigBang__task } from './tasks/deployBigBang';
-import { exportSDK__task } from './tasks/exportSDK';
-import { getSingularityMarkets__task } from './tasks/getSingularityMarkets';
-import { getBigBangMarkets__task } from './tasks/getBigBangMarkets';
+import { deployBigBang__task } from './tasks/deploy/deployBigBang';
+
+import { setBorrowCap__task } from './tasks/execs/setBorrowCap';
+
+import { airdropGas__task } from './tasks/airdropGas';
+import { deployYbStrats__task } from './tasks/deploy/01-deployEmptyYieldBoxStrategy';
+import { deployOracleMock__task } from './tasks/deploy/04-deployOracleMock';
+import { setLiquidationQueue__task } from './tasks/execs/setLiquidationQueue';
+import { setLiquidationQueueBidSwapper__task } from './tasks/execs/setLiquidationQueueBidSwapper';
+import { setLiquidationQueueExecutionSwapper__task } from './tasks/execs/setLiquidationQueueExecutionSwapper';
+import { setProxyAdapterParams__task } from './tasks/execs/setProxyAdapterParams';
+import { setProxyTrustedRemote__task } from './tasks/execs/setProxyTrustedRemote';
+import { registerYbAssets__task } from './tasks/registerYbAssets';
+import { hasStoredPayload__task } from './tasks/test-hasStoredPayload';
+import { otherChainBorrow__task } from './tasks/test-otherChainBorrow';
+import { retryPayload__task } from './tasks/test-retryPayload';
+import { sameChainBorrow__task } from './tasks/test-sameChainBorrow';
+import { getBigBangMarkets__task } from './tasks/views/getBigBangMarkets';
+import { getBigBangTotals__task } from './tasks/views/getBigBangTotals';
+import { getParticipantBigBangInfo__task } from './tasks/views/getParticipantBigBangInfo';
+import { getParticipantSingularityInfo__task } from './tasks/views/getParticipantSingularityInfo';
+import { getSingularityMarkets__task } from './tasks/views/getSingularityMarkets';
+import { getSingularityTotals__task } from './tasks/views/getSingularityTotals';
+import { whitelistSingularity__task } from './tasks/whitelistSingularity';
+import { deployMarket__task } from './tasks/deploy/___deployMarket';
 import {
     getLocalDeployments__task,
     getSDKDeployments__task,
-} from './tasks/getDeployments';
-import { setBorrowCap__task } from './tasks/setBorrowCap';
-import { registerYieldBoxAsset__task } from './tasks/registerYieldBoxAsset';
-import { setLiquidationQueueBidSwapper__task } from './tasks/setLiquidationQueueBidSwapper';
-import { setLiquidationQueueExecutionSwapper__task } from './tasks/setLiquidationQueueExecutionSwapper';
-import { setLiquidationQueue__task } from './tasks/setLiquidationQueue';
-
-import { getParticipantSingularityInfo__task } from './tasks/getParticipantSingularityInfo';
-import { getParticipantBigBangInfo__task } from './tasks/getParticipantBigBangInfo';
-
-import { getSingularityTotals__task } from './tasks/getSingularityTotals';
-import { getBigBangTotals__task } from './tasks/getBigBangTotals';
-
-import { deployOracleMock__task } from './tasks/deployOracleMock';
-import { deployYbStrategy__task } from './tasks/deployEmptyYieldBoxStrategy';
-import { setTrustedRemote__task } from './tasks/setTrustedRemote';
-import { setProxyTrustedRemote__task } from './tasks/setProxyTrustedRemote';
-import { setProxyAdapterParams__task } from './tasks/setProxyAdapterParams';
-
-import { sameChainBorrow__task } from './tasks/test-sameChainBorrow';
-import { otherChainBorrow__task } from './tasks/test-otherChainBorrow';
-import { hasStoredPayload__task } from './tasks/test-hasStoredPayload';
-import { retryPayload__task } from './tasks/test-retryPayload';
-import { configurePacketTypes__task } from './tasks/configurePacketTypes';
-import { whitelistSingularity__task } from './tasks/whitelistSingularity';
-import { airdropGas__task } from './tasks/airdropGas';
-import { batchSetTrustedRemote__task } from './tasks/batchSetTrustedRemote';
-import { batchConfigureAdapterParams__task } from './tasks/batchConfigureAdapterParams';
+} from './tasks/views/getDeployments';
+import { deployStack__task } from './tasks/deploy/00-deployStack';
+import { deploySGLMarket__task } from './tasks/deploy/deploySGLMarket';
 
 task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
     const accounts = await hre.ethers.getSigners();
@@ -45,12 +40,9 @@ task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
     }
 });
 
-task(
-    'exportSDK',
-    'Generate and export the typings and/or addresses for the SDK. May deploy contracts.',
-    exportSDK__task,
-).addFlag('mainnet', 'Using the current chain ID deployments.');
-
+/**
+ * Getters
+ */
 task(
     'singularityMarkets',
     'Display the list of deployed Singularity markets for the current chain ID.',
@@ -61,31 +53,6 @@ task(
     'Display the list of deployed BigBang markets for the current chain ID.',
     getBigBangMarkets__task,
 );
-
-task(
-    'deployMarket',
-    'Deploy a Singularity market, a Liquidation Queue and initialize it.',
-    deployMarket__task,
-)
-    .addParam('name', 'Market name')
-    .addParam('exchangeRatePrecision', 'Collateral decimals');
-
-task('deployBigBang', 'Deploy a BigBang market', deployBigBang__task)
-    .addParam('name', 'Market name')
-    .addParam('exchangeRatePrecision', 'Collateral decimals');
-
-task('deployOracleMock', 'Deploy Oracle mock', deployOracleMock__task).addParam(
-    'name',
-    'Market name',
-);
-
-task(
-    'deployYbStrategy',
-    'Deploy ERC20WithoutStrategy for YieldBox',
-    deployYbStrategy__task,
-)
-    .addParam('yieldbox', 'YieldBox address')
-    .addParam('token', 'ERC20 token address');
 
 task(
     'getLocalDeployments',
@@ -126,6 +93,47 @@ task(
     getBigBangTotals__task,
 ).addParam('bigBang', 'BigBang address');
 
+/**
+ * Execs
+ */
+
+/**
+ * Deploy
+ */
+
+task('deploySGLMarket', 'Deploy a Singularity market', deploySGLMarket__task);
+
+task(
+    'deployStack',
+    'Deploy the stack, use it for the host chain. Includes the following contract:\nYieldBox, USD0, Penrose, MasterContracts, MarketHelper, MultiSwapper, SingularityModules, CurveSwapper, StableToUSD0Bidder',
+    deployStack__task,
+);
+
+task(
+    'deployMarket',
+    'Deploy a Singularity market, a Liquidation Queue and initialize it.',
+    deployMarket__task,
+)
+    .addParam('name', 'Market name')
+    .addParam('exchangeRatePrecision', 'Collateral decimals');
+
+task('deployBigBang', 'Deploy a BigBang market', deployBigBang__task)
+    .addParam('name', 'Market name')
+    .addParam('exchangeRatePrecision', 'Collateral decimals');
+
+task('deployOracleMock', 'Deploy Oracle mock', deployOracleMock__task).addParam(
+    'name',
+    'Market name',
+);
+
+task(
+    'deployYbStrats',
+    'Deploy a bunch of ERC20WithoutStrategy for YieldBox',
+    deployYbStrats__task,
+)
+    .addParam('yieldbox', 'YieldBox address')
+    .addParam('token', 'ERC20 token address');
+
 task('setBorrowCap', 'Set borrow cap for Singularity', setBorrowCap__task)
     .addParam('singularity', 'Singularity address', ' ')
     .addParam('bigBang', 'BigBang address', ' ')
@@ -157,19 +165,10 @@ task(
     .addParam('meta', 'LiquidationQueue meta object');
 
 task(
-    'registerYieldBoxAsset',
-    'Register YieldBox asset',
-    registerYieldBoxAsset__task,
-).addParam('address', 'Asset address');
-
-task(
-    'setTrustedRemote',
-    'Calls setTrustedRemote on USD0 contract',
-    setTrustedRemote__task,
-)
-    .addParam('chain', 'LZ destination chain id for trusted remotes')
-    .addParam('dst', 'USD0 destination address')
-    .addParam('src', 'USD0 source address');
+    'registerYbAssets',
+    'Register a bunch of YieldBox assets',
+    registerYbAssets__task,
+);
 
 task(
     'setProxyTrustedRemote',
@@ -238,15 +237,6 @@ task('retryPayload', 'Retry a failed payload', retryPayload__task)
     .addParam('lzEndpoint', 'LZ endpoint address');
 
 task(
-    'configurePacketTypes',
-    'Cofigures min destination gas and the usage of custom adapters',
-    configurePacketTypes__task,
-)
-    .addParam('dstLzChainId', 'LZ destination chain id for trusted remotes')
-    .addParam('contract', 'Contract name: USD0, MarketsProxy')
-    .addParam('src', 'tOFT address');
-
-task(
     'whitelistSingularity',
     'Whitelist singularity status on SGLProxy',
     whitelistSingularity__task,
@@ -258,15 +248,3 @@ task('airdropGas', 'Airdrop gas to msg.sender', airdropGas__task)
     .addParam('amount', 'Amount of gas to airdrop')
     .addParam('dstChain', 'Destination chain id')
     .addParam('dstAddress', 'Destination address');
-
-task(
-    'batchSetTrustedRemote',
-    'Set trusted remote between all available tOFT contracts for the current chain',
-    batchSetTrustedRemote__task,
-).addParam('contract', 'Contract name to filter by');
-
-task(
-    'batchConfigureAdapterParams',
-    'Sets OFT to use adapter params and the minimum destination gas between all available tOFT contracts for the current chain',
-    batchConfigureAdapterParams__task,
-).addParam('contract', 'Contract name to filter by');

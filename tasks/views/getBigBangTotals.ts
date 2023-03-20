@@ -1,6 +1,6 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import _ from 'lodash';
-import { getBigBangContract, getDeployment } from './utils';
+import { getBigBangContract } from '../utils';
 
 //Execution example:
 //      npx hardhat getBigBangTotals --market "<address>"

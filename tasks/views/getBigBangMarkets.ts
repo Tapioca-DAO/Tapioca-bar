@@ -1,6 +1,6 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import _ from 'lodash';
-import { getDeployment } from './utils';
+import { getDeployment } from '../utils';
 
 export const getBigBangMarkets = async (hre: HardhatRuntimeEnvironment) => {
     const penroseContract = await getDeployment(hre, 'Penrose');
