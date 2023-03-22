@@ -271,6 +271,18 @@ export const constants: { [key: string]: any } = {
             oracleAddress: '0x08aa8c316b485a1a73356f662a9881d7b31bf427', //mock
         },
     },
+    //bsc_testnet
+    '97': {
+        ...supportedChains['bsc_testnet'],
+        isMainChain: false,
+        feeTo: '0x40282d3Cf4890D9806BC1853e97a59C93D813653',
+        feeCollector: '0x40282d3Cf4890D9806BC1853e97a59C93D813653', //for liquidation queue
+        uniV2Factory: '0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f',
+        uniV2Router: '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D ',
+        uniV2PairHash:
+            '0x68ddfd89d43db94fbd68a4abd2861ebcbfea56c0fd36334bbb95f0661c3171a2',
+        crvStablePool: '0x803147a1f65f9b838e7be39bac1a4f51e6d29a18', //random address
+    },
 
     //------------- MAINNETS --------------
     //optimism

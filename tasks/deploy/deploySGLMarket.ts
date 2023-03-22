@@ -4,7 +4,7 @@ import { DeployerVM } from 'tapioca-sdk/dist/ethers/hardhat/DeployerVM';
 import { TContract } from 'tapioca-sdk/dist/shared';
 import { Penrose, YieldBox } from '../../typechain';
 import { buildOracleMock } from '../deployBuilds/05-buildOracleMock';
-import { buildEmptyStrat } from '../deployBuilds/901-buildEmptyStrat';
+import { buildEmptyStrat } from '../deployBuilds/10-buildEmptyStrat';
 import { loadVM } from '../utils';
 
 export const deploySGLMarket__task = async (

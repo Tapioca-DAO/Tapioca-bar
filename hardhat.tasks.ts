@@ -5,14 +5,14 @@ import { deployBigBang__task } from './tasks/deploy/deployBigBang';
 import { setBorrowCap__task } from './tasks/execs/setBorrowCap';
 
 import { airdropGas__task } from './tasks/airdropGas';
-import { deployYbStrats__task } from './tasks/deploy/01-deployEmptyYieldBoxStrategy';
+import { deployEmptyStrats__task } from './tasks/deploy/01-deployEmptyStrats';
 import { deployOracleMock__task } from './tasks/deploy/04-deployOracleMock';
 import { setLiquidationQueue__task } from './tasks/execs/setLiquidationQueue';
 import { setLiquidationQueueBidSwapper__task } from './tasks/execs/setLiquidationQueueBidSwapper';
 import { setLiquidationQueueExecutionSwapper__task } from './tasks/execs/setLiquidationQueueExecutionSwapper';
 import { setProxyAdapterParams__task } from './tasks/execs/setProxyAdapterParams';
 import { setProxyTrustedRemote__task } from './tasks/execs/setProxyTrustedRemote';
-import { registerYbAssets__task } from './tasks/registerYbAssets';
+import { registerYbAssets__task } from './tasks/deploy/registerYbAssets';
 import { hasStoredPayload__task } from './tasks/test-hasStoredPayload';
 import { otherChainBorrow__task } from './tasks/test-otherChainBorrow';
 import { retryPayload__task } from './tasks/test-retryPayload';
@@ -127,12 +127,14 @@ task('deployOracleMock', 'Deploy Oracle mock', deployOracleMock__task).addParam(
 );
 
 task(
-    'deployYbStrats',
+    'deployEmptyStrats',
     'Deploy a bunch of ERC20WithoutStrategy for YieldBox',
-    deployYbStrats__task,
-)
-    .addParam('yieldbox', 'YieldBox address')
-    .addParam('token', 'ERC20 token address');
+    deployEmptyStrats__task,
+).addParam(
+    'type',
+    'Deploy empty strats for contracts of type:  TOFT = 0, MarketsProxy = 1, USDO = 2, TAP = 3,',
+    '0',
+);
 
 task('setBorrowCap', 'Set borrow cap for Singularity', setBorrowCap__task)
     .addParam('singularity', 'Singularity address', ' ')

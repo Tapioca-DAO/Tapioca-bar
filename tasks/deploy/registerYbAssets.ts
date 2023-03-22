@@ -1,8 +1,5 @@
-import fs from 'fs';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
-import SDK from 'tapioca-sdk';
-import { buildYieldBoxAssets } from './setups/900-buildYieldBoxAssets';
-import { getDeployment } from './utils';
+import { buildYieldBoxAssets } from '../setups/900-buildYieldBoxAssets';
 
 // hh registerYbAssets --network ...
 export const registerYbAssets__task = async (
