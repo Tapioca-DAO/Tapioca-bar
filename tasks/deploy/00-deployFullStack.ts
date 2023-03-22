@@ -12,15 +12,15 @@ import { buildUSD0 } from '../deployBuilds/06-buildUSDO';
 import { buildStableToUSD0Bidder } from '../deployBuilds/07-buildStableToUSD0Bidder';
 import { buildSingularityModules } from '../deployBuilds/08-buildSingularityModules';
 import { buildMarketProxy } from '../deployBuilds/09-buildMarketProxy';
-import { buildEmptyStrat } from '../deployBuilds/10-buildEmptyStrat';
 import { buildPenroseSetup } from '../setups/01-buildPenroseSetup';
 import { buildMasterContractsSetup } from '../setups/02-buildMasterContractsSetup';
 import { loadVM } from '../utils';
 
-// TODO -  Split into different files
-
-// hh deployStack --type build --network goerli
-export const deployStack__task = async ({}, hre: HardhatRuntimeEnvironment) => {
+// hh deployFullStack --network goerli
+export const deployFullStack__task = async (
+    {},
+    hre: HardhatRuntimeEnvironment,
+) => {
     const tag = await hre.SDK.hardhatUtils.askForTag(hre, 'local');
     const signer = (await hre.ethers.getSigners())[0];
     const VM = await loadVM(hre, tag);

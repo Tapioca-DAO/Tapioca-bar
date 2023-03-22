@@ -5,7 +5,7 @@ import { deployBigBang__task } from './tasks/deploy/deployBigBang';
 import { setBorrowCap__task } from './tasks/execs/setBorrowCap';
 
 import { airdropGas__task } from './tasks/airdropGas';
-import { deployEmptyStrats__task } from './tasks/deploy/01-deployEmptyStrats';
+import { deployEmptyStrats__task } from './tasks/deploy/02-deployEmptyStrats';
 import { deployOracleMock__task } from './tasks/deploy/04-deployOracleMock';
 import { setLiquidationQueue__task } from './tasks/execs/setLiquidationQueue';
 import { setLiquidationQueueBidSwapper__task } from './tasks/execs/setLiquidationQueueBidSwapper';
@@ -29,7 +29,8 @@ import {
     getLocalDeployments__task,
     getSDKDeployments__task,
 } from './tasks/views/getDeployments';
-import { deployStack__task } from './tasks/deploy/00-deployStack';
+import { deployFullStack__task } from './tasks/deploy/00-deployFullStack';
+import { deployLinkedChainStack__task } from './tasks/deploy/01-deployLinkedChainStack';
 import { deploySGLMarket__task } from './tasks/deploy/deploySGLMarket';
 
 task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
@@ -104,9 +105,15 @@ task(
 task('deploySGLMarket', 'Deploy a Singularity market', deploySGLMarket__task);
 
 task(
-    'deployStack',
+    'deployFullStack',
     'Deploy the stack, use it for the host chain. Includes the following contract:\nYieldBox, USD0, Penrose, MasterContracts, MarketHelper, MultiSwapper, SingularityModules, CurveSwapper, StableToUSD0Bidder',
-    deployStack__task,
+    deployFullStack__task,
+);
+
+task(
+    'deployLinkedChainStack',
+    'Deploy the stack, use it for the host chain. Includes the following contract:\nYieldBox, USD0, Penromse, MasterContracts, MarketHelper, MultiSwapper, SingularityModules, CurveSwapper, StableToUSD0Bidder',
+    deployLinkedChainStack__task,
 );
 
 task(
