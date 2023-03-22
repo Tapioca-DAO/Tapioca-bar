@@ -151,6 +151,32 @@
         ],
         "421613": [
             {
+                "name": "ERC20WithoutStrategy-TapOFT",
+                "address": "0xA8200d64fe401b7BBFCFee2be50ca02487390382",
+                "meta": {
+                    "stratFor": "TapOFT",
+                    "args": [
+                        "0x931CD2EB3c95E294CA3Ba133Fbe543F1e5613d37",
+                        "0x0000000000000000000000000000000000000000"
+                    ],
+                    "salt": "0xdd39b0dc7b86791da3fc0986decc4ce443356409eac697957b9abfd088c2b597",
+                    "create2": true
+                }
+            },
+            {
+                "name": "ERC20WithoutStrategy-TapOFTOracleMock",
+                "address": "0x63bd44De187C14BA54DebdEBb06b04429698d3cD",
+                "meta": {
+                    "stratFor": "TapOFTOracleMock",
+                    "args": [
+                        "0x931CD2EB3c95E294CA3Ba133Fbe543F1e5613d37",
+                        "0x0000000000000000000000000000000000000000"
+                    ],
+                    "salt": "0xcc16b9b5d2cba7faa0ddb2231e3620b4fe1a8d04f1987ac6b3a40d9be0a675d6",
+                    "create2": true
+                }
+            },
+            {
                 "name": "YieldBoxURIBuilder",
                 "address": "0xe8987695e6bb480326200b8c46f1148826a1f7c6",
                 "meta": {
