@@ -84,6 +84,14 @@ export const deployStack__task = async ({}, hre: HardhatRuntimeEnvironment) => {
     );
     VM.add(curveSwapper).add(curveStableToUsd0);
 
+    // 08 - MarketsProxy
+    const marketProxy = await buildMarketProxy(
+        hre,
+        chainInfo.address,
+        signer.address,
+    );
+    VM.add(marketProxy);
+
     // Add and execute
     await VM.execute(3);
     VM.save();
