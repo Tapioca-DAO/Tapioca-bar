@@ -4,6 +4,7 @@ coverage
 coverage.json
 typechain
 tapioca-sdk
+gitsub_tapioca-sdk
 yarn.lock
 __MACOSX
 #Hardhat files
