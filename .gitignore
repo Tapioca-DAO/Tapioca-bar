@@ -4,8 +4,10 @@ coverage
 coverage.json
 typechain
 tapioca-sdk
+gitsub_tapioca-sdk
 yarn.lock
 __MACOSX
 #Hardhat files
 cache
 artifacts
+package-lock.json~2361dfbd8b43e40957e1aa59801e688e538412ec

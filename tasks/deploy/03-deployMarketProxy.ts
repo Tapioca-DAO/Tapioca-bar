@@ -1,5 +1,5 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
-import { buildMarketProxy } from '../deployBuilds/10-buildMarketProxy';
+import { buildMarketProxy } from '../deployBuilds/09-buildMarketProxy';
 import { loadVM } from '../utils';
 
 // hh deployMarketProxy --network arbitrum_goerli

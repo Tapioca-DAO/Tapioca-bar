@@ -44,7 +44,7 @@ const supportedChains = SDK.API.utils.getSupportedChains().reduce(
 );
 
 const config: HardhatUserConfig & { dodoc?: any; vyper: any } = {
-    SDK: { project: 'tapioca-bar' },
+    SDK: { project: SDK.API.config.TAPIOCA_PROJECTS_NAME.TapiocaBar },
     solidity: {
         compilers: [
             {
@@ -106,6 +106,8 @@ const config: HardhatUserConfig & { dodoc?: any; vyper: any } = {
             goerli: process.env.BLOCKSCAN_KEY ?? '',
             arbitrumGoerli: process.env.ARBITRUM_GOERLI_KEY ?? '',
             avalancheFujiTestnet: process.env.AVALANCHE_FUJI_KEY ?? '',
+            bscTestnet: process.env.BSC_KEY ?? '',
+            polygonMumbai: process.env.POLYGON_MUMBAI ?? '',
         },
         customChains: [],
     },

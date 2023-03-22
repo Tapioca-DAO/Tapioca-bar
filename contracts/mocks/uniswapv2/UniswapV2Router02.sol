@@ -548,8 +548,8 @@ contract UniswapV2Router02 is IUniswapV2Router02 {
                     ? (reserve0, reserve1)
                     : (reserve1, reserve0);
                 amountInput = IERC20Uniswap(input).balanceOf(address(pair)).sub(
-                        reserveInput
-                    );
+                    reserveInput
+                );
                 amountOutput = UniswapV2Library.getAmountOut(
                     amountInput,
                     reserveInput,

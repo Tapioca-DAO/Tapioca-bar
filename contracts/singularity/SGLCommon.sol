@@ -2,7 +2,6 @@
 pragma solidity ^0.8.18;
 
 import "./SGLStorage.sol";
-import "hardhat/console.sol";
 
 contract SGLCommon is SGLStorage {
     using RebaseLibrary for Rebase;

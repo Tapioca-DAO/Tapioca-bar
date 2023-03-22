@@ -953,7 +953,7 @@ describe('Singularity test', () => {
         expect(amountHarvested.gte(acceptableHarvestMargin)).to.be.true;
     });
 
-    it.only('should return ERC20 properties', async () => {
+    it('should return ERC20 properties', async () => {
         const { wethUsdcSingularity } = await loadFixture(register);
         const symbol = await wethUsdcSingularity.symbol();
         const decimals = await wethUsdcSingularity.decimals();
@@ -1073,7 +1073,9 @@ describe('Singularity test', () => {
         await expect(
             wethUsdcSingularity.depositFeesToYieldBox(
                 ethers.constants.AddressZero,
-                { minAssetAmount: 1 },
+                {
+                    minAssetAmount: 1,
+                },
             ),
         ).to.be.revertedWith('SGL: Invalid swapper');
     });
