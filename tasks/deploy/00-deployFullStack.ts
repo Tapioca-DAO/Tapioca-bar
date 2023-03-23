@@ -106,7 +106,7 @@ export const deployFullStack__task = async (
     VM.add(marketProxy);
 
     // Add and execute
-    await VM.execute(3, false);
+    await VM.execute(3, true);
     VM.save();
     const { wantToVerify } = await inquirer.prompt({
         type: 'confirm',
@@ -120,7 +120,7 @@ export const deployFullStack__task = async (
     // After deployment setup
     const vmList = VM.list();
     const multiCall = typechain.Multicall.Multicall3__factory.connect(
-        hre.SDK.config.MULTICALL_ADDRESS,
+        hre.SDK.config.MULTICALL_ADDRESSES[chainInfo?.chainId],
         signer,
     );
     const calls: Multicall3.Call3Struct[] = [

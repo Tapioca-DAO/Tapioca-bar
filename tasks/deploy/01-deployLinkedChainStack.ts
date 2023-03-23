@@ -24,7 +24,7 @@ export const deployLinkedChainStack__task = async (
 ) => {
     const tag = await hre.SDK.hardhatUtils.askForTag(hre, 'local');
     const signer = (await hre.ethers.getSigners())[0];
-    const VM = await loadVM(hre, tag);
+    const VM = await loadVM(hre, tag, true);
 
     const chainInfo = hre.SDK.utils.getChainBy(
         'chainId',
@@ -66,7 +66,7 @@ export const deployLinkedChainStack__task = async (
     VM.add(marketProxy);
 
     // Add and execute
-    await VM.execute(3);
+    await VM.execute(3, false);
     VM.save();
     const { wantToVerify } = await inquirer.prompt({
         type: 'confirm',

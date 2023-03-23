@@ -1,12 +1,12 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { IDeployerVMAdd } from 'tapioca-sdk/dist/ethers/hardhat/DeployerVM';
-import { USD0__factory } from '../../typechain';
+import { USDO__factory } from '../../typechain';
 
 export const buildUSD0 = async (
     hre: HardhatRuntimeEnvironment,
     lzEndPoint: string,
     owner: string,
-): Promise<IDeployerVMAdd<USD0__factory>> => {
+): Promise<IDeployerVMAdd<USDO__factory>> => {
     return {
         contract: await hre.ethers.getContractFactory('USDO'),
         deploymentName: 'USDO',
