@@ -295,7 +295,7 @@ export const constants: { [key: string]: any } = {
         yieldBoxAddress: '0x0000000000000000000000000000000000000000', //can be omitted/address(0) if we need to deploy it
         tapAddress: '0x0000000000000000000000000000000000000000', //TapOFT address
         wrappedNative: '0x0000000000000000000000000000000000000000', //for YieldBox
-        usdoAddress: '0x0000000000000000000000000000000000000000', //USD0 address
+        usdoAddress: '0x0000000000000000000000000000000000000000', //USDO address
         uniV2Factory: '0x0000000000000000000000000000000000000000', //TODO: fill it with the right value
         uniV2Router: '0x0000000000000000000000000000000000000000', //TODO: fill it with the right value
         curveStablePool: '0x0000000000000000000000000000000000000000', //TODO: fill it with the right value
@@ -313,15 +313,15 @@ export const constants: { [key: string]: any } = {
         //markets
         sgl_ETH: {
             collateralAddress: '0x0000000000000000000000000000000000000000', //tETH address
-            oracleAddress: '0x0000000000000000000000000000000000000000', //tETH-USD0 oracle
-            minBidAmount: 20, //min USD0 bid amount
+            oracleAddress: '0x0000000000000000000000000000000000000000', //tETH-USDO oracle
+            minBidAmount: 20, //min USDO bid amount
             hasExecutionBidder: false, //if false, bidExecutionSwapper is not set
             executionBidder: '0x0000000000000000000000000000000000000000', //bidExecutionSwapper address
         },
         sgl_AVAX: {
             collateralAddress: '0x0000000000000000000000000000000000000000', //tAVAX address
-            oracleAddress: '0x0000000000000000000000000000000000000000', //tAVAX-USD0 oracle
-            minBidAmount: 20, //min USD0 bid amount
+            oracleAddress: '0x0000000000000000000000000000000000000000', //tAVAX-USDO oracle
+            minBidAmount: 20, //min USDO bid amount
             hasExecutionBidder: false, //if false, bidExecutionSwapper is not set
             executionBidder: '0x0000000000000000000000000000000000000000', //bidExecutionSwapper address
         },
@@ -498,7 +498,7 @@ export const registerBigBangMarket = async (
         yieldBoxAddress,
     );
 
-    const usd0Deployed = await deployments.get('USD0');
+    const usd0Deployed = await deployments.get('USDO');
 
     const collateralId = await yieldBox.ids(
         1,
@@ -547,9 +547,9 @@ export const registerBigBangMarket = async (
     console.log('Done');
     //No need to verify as the same contract type was previously verified
 
-    console.log('\nSetting minter and burner role for USD0');
+    console.log('\nSetting minter and burner role for USDO');
     const usd0Contract = await hre.ethers.getContractAt(
-        'USD0',
+        'USDO',
         usd0Deployed.address,
     );
     await (

@@ -18,7 +18,7 @@ interface IBidder {
         bytes calldata data
     ) external view returns (uint256);
 
-    /// @notice swap USD0 to collateral
+    /// @notice swap USDO to collateral
     /// @param singularity Market to swap for
     /// @param tokenInId Token in asset id
     /// @param amountIn Token in amount

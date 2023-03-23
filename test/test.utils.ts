@@ -10,7 +10,7 @@ import {
     Singularity,
     UniswapV2Factory,
     UniswapV2Router02,
-    USD0,
+    USDO,
     WETH9Mock,
     YieldBox,
 } from '../typechain';
@@ -39,6 +39,7 @@ export async function setBalance(addr: string, ether: number) {
 async function registerUsd0Contract(
     chainId: string,
     yieldBox: string,
+    owner: string,
     staging?: boolean,
 ) {
     const lzEndpointContract = await (
@@ -52,8 +53,8 @@ async function registerUsd0Contract(
     await verifyEtherscan(lzEndpointContract.address, [chainId], staging);
 
     const usd0 = await (
-        await ethers.getContractFactory('USD0')
-    ).deploy(lzEndpointContract.address, yieldBox, { gasPrice: gasPrice });
+        await ethers.getContractFactory('USDO')
+    ).deploy(lzEndpointContract.address, yieldBox, owner, { gasPrice: gasPrice });
     await usd0.deployed();
     log(
         `Deployed UDS0 ${usd0.address} with args [${lzEndpointContract.address},${yieldBox}]`,
@@ -381,9 +382,9 @@ async function createUniV2Usd0Pairs(
     uniRouter: UniswapV2Router02,
     weth: WETH9Mock,
     tap: ERC20Mock,
-    usdo: USD0,
+    usdo: USDO,
 ) {
-    // Create WETH<>USD0 pair
+    // Create WETH<>USDO pair
     const wethPairAmount = ethers.BigNumber.from(1e6).mul((1e18).toString());
     const usdoPairAmount = wethPairAmount.mul(
         __wethUsdcPrice.div((1e18).toString()),
@@ -404,7 +405,7 @@ async function createUniV2Usd0Pairs(
         usdo.address,
     );
 
-    // Create TAP<>USD0 pair
+    // Create TAP<>USDO pair
     const tapPairAmount = ethers.BigNumber.from(1e6).mul((1e18).toString());
     const usdoTapPairAmount = ethers.BigNumber.from(1e6).mul((1e18).toString());
 
@@ -740,7 +741,7 @@ async function registerUniUsdoToWethBidder(
 async function deployCurveStableToUsdoBidder(
     bar: Penrose,
     usdc: ERC20Mock,
-    usdo: USD0,
+    usdo: USDO,
     staging?: boolean,
 ) {
     const curvePoolMock = await (
@@ -790,7 +791,7 @@ async function deployCurveStableToUsdoBidder(
 }
 
 async function createWethUsd0Singularity(
-    usd0: USD0,
+    usd0: USDO,
     weth: WETH9Mock,
     bar: Penrose,
     usdoAssetId: any,
@@ -1308,19 +1309,20 @@ export async function register(staging?: boolean) {
         staging,
     );
 
-    // ------------------- 10 Deploy USD0 -------------------
-    log('Registering USD0', staging);
+    // ------------------- 10 Deploy USDO -------------------
+    log('Registering USDO', staging);
     const chainId = await hre.getChainId();
     const { usd0, lzEndpointContract } = await registerUsd0Contract(
         chainId,
         yieldBox.address,
+        deployer.address,
         staging,
     );
-    log(`USD0 registered ${usd0.address}`, staging);
+    log(`USDO registered ${usd0.address}`, staging);
 
-    // ------------------- 11 Set USD0 on Penrose -------------------
+    // ------------------- 11 Set USDO on Penrose -------------------
     await bar.setUsdoToken(usd0.address, { gasPrice: gasPrice });
-    log('USD0 was set on Penrose', staging);
+    log('USDO was set on Penrose', staging);
 
     // ------------------- 12 Register WETH BigBang -------------------
     log('Deploying WethMinterSingularity', staging);
@@ -1359,7 +1361,7 @@ export async function register(staging?: boolean) {
     );
     const wbtcBigBangMarket = bigBangRegData.bigBangMarket;
     log(`wbtcBigBangMarket deployed ${wbtcBigBangMarket.address}`, staging);
-    // ------------------- 13 Set Minter and Burner for USD0 -------------------
+    // ------------------- 13 Set Minter and Burner for USDO -------------------
     await usd0.setMinterStatus(wethBigBangMarket.address, true, {
         gasPrice: gasPrice,
     });

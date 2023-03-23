@@ -1056,7 +1056,7 @@ describe('LiquidationQueue test', () => {
         expect(bidPoolInfo.usdoAmount.lte(toBid)).to.be.true;
     });
 
-    it('should bid with USD0 through external swapper', async () => {
+    it('should bid with USDO through external swapper', async () => {
         const {
             deployer,
             bar,
@@ -1181,7 +1181,7 @@ describe('LiquidationQueue test', () => {
             __uniRouter,
         } = await loadFixture(register);
 
-        //deploy and register USD0
+        //deploy and register USDO
 
         //deploy and register usdoSwapper and bidExecutionSwapper
         const { stableToUsdoBidder } = await deployCurveStableToUsdoBidder(

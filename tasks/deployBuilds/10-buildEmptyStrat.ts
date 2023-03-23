@@ -14,7 +14,7 @@ export const buildEmptyStrat = async (
         contract: await hre.ethers.getContractFactory('ERC20WithoutStrategy'),
         args: [
             yieldBoxAddress,
-            // USD0, to be replaced by VM
+            // USDO, to be replaced by VM
             hre.ethers.constants.AddressZero,
         ],
         meta: {

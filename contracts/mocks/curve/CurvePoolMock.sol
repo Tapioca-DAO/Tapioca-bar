@@ -2,7 +2,7 @@
 pragma solidity ^0.8.18;
 import "@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol";
 import "../../singularity/legacy/mocks/ERC20Mock.sol";
-import "../../usd0/IUSD0.sol";
+import "../../usd0/IUSDO.sol";
 
 contract CurvePoolMock {
     using BoringERC20 for IERC20;
@@ -34,7 +34,7 @@ contract CurvePoolMock {
         if (divider == 0) return;
         address tokenOut = coins[uint256(uint128(j))];
         uint256 freeMintAmount = dx / divider;
-        IUSD0(tokenOut).mint(address(this), freeMintAmount);
+        IUSDO(tokenOut).mint(address(this), freeMintAmount);
         IERC20(tokenOut).safeTransfer(msg.sender, freeMintAmount);
     }
 }

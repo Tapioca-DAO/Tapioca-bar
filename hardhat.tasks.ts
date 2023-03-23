@@ -106,13 +106,13 @@ task('deploySGLMarket', 'Deploy a Singularity market', deploySGLMarket__task);
 
 task(
     'deployFullStack',
-    'Deploy the stack, use it for the host chain. Includes the following contract:\nYieldBox, USD0, Penrose, MasterContracts, MarketHelper, MultiSwapper, SingularityModules, CurveSwapper, StableToUSD0Bidder',
+    'Deploy the stack, use it for the host chain. Includes the following contract:\nYieldBox, USDO, Penrose, MasterContracts, MarketHelper, MultiSwapper, SingularityModules, CurveSwapper, StableToUSD0Bidder',
     deployFullStack__task,
 );
 
 task(
     'deployLinkedChainStack',
-    'Deploy the stack, use it for the host chain. Includes the following contract:\nYieldBox, USD0, Penromse, MasterContracts, MarketHelper, MultiSwapper, SingularityModules, CurveSwapper, StableToUSD0Bidder',
+    'Deploy the stack, use it for the host chain. Includes the following contract:\nYieldBox, USDO, Penromse, MasterContracts, MarketHelper, MultiSwapper, SingularityModules, CurveSwapper, StableToUSD0Bidder',
     deployLinkedChainStack__task,
 );
 

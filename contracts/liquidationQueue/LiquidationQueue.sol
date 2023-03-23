@@ -290,7 +290,7 @@ contract LiquidationQueue is ILiquidationQueue {
         require(pool <= MAX_BID_POOLS, "LQ: premium too high");
         require(
             address(liquidationQueueMeta.usdoSwapper) != address(0),
-            "LQ: USD0 swapper not set"
+            "LQ: USDO swapper not set"
         );
 
         uint256 usdoAssetId = penrose.usdoAssetId();
@@ -485,7 +485,7 @@ contract LiquidationQueue is ILiquidationQueue {
     ///      Singularity should send the `collateralAmountToLiquidate` to this contract before calling this function.
     /// Tx will fail if it can't transfer allowed Penrose asset from Singularity.
     /// @param collateralAmountToLiquidate The amount of collateral to liquidate.
-    /// @param swapData Swap data necessary for swapping USD0 to market asset; necessary only if bidder added USD0
+    /// @param swapData Swap data necessary for swapping USDO to market asset; necessary only if bidder added USDO
     /// @return totalAmountExecuted The amount of asset that was executed.
     /// @return totalCollateralLiquidated The amount of collateral that was liquidated.
     function executeBids(
@@ -702,7 +702,7 @@ contract LiquidationQueue is ILiquidationQueue {
         finalCollateralAmount = entry.liquidatedAssetAmount;
         finalDiscountedCollateralAmount = discountedBidderAmount;
         finalUsdoAmount = entry.usdoAmount;
-        //Execute the swap if USD0 was provided and it's different from the liqudation asset id
+        //Execute the swap if USDO was provided and it's different from the liqudation asset id
         if (entry.swapOnExecute) {
             yieldBox.transfer(
                 address(this),
@@ -747,7 +747,7 @@ contract LiquidationQueue is ILiquidationQueue {
             MODE.SUB
         );
 
-        //Execute the swap if USD0 was provided and it's different from the liqudation asset id
+        //Execute the swap if USDO was provided and it's different from the liqudation asset id
         uint256 usdoAssetId = penrose.usdoAssetId();
         if (entry.swapOnExecute) {
             finalUsdoAmount = liquidationQueueMeta
@@ -798,7 +798,7 @@ contract LiquidationQueue is ILiquidationQueue {
             msg.sender,
             user,
             pool,
-            isUsdo ? amount : 0, //USD0 amount
+            isUsdo ? amount : 0, //USDO amount
             isUsdo ? 0 : amount, //liquidated asset amount
             block.timestamp
         );

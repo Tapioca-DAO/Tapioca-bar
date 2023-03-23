@@ -35,9 +35,16 @@ export const deployLinkedChainStack__task = async (
         throw new Error('Chain not found');
     }
 
-    const weth = hre.SDK.db
+    let weth = hre.SDK.db
         .loadGlobalDeployment(tag, 'tap-token', chainInfo.chainId)
         .find((e) => e.name.startsWith('WETHMock'));
+
+    if (!weth) {
+        //try to take it again from local deployment
+        weth = hre.SDK.db
+            .loadLocalDeployment(tag, chainInfo.chainId)
+            .find((e) => e.name.startsWith('WETHMock'));
+    }
 
     if (!weth) {
         throw new Error('[-] Token not found');
@@ -47,8 +54,8 @@ export const deployLinkedChainStack__task = async (
     const [ybURI, yieldBox] = await buildYieldBox(hre, weth.address);
     VM.add(ybURI).add(yieldBox);
 
-    // 02 USD0
-    VM.add(await buildUSD0(hre, chainInfo.address));
+    // 02 USDO
+    VM.add(await buildUSD0(hre, chainInfo.address, signer.address));
 
     // 03 - MarketsProxy
     const marketProxy = await buildMarketProxy(

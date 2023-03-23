@@ -36,8 +36,8 @@ interface ILiquidationQueue {
         uint256 activationTime; // Time needed before a bid can be activated for execution
         uint256 minBidAmount; // Minimum bid amount
         address feeCollector; // Address of the fee collector
-        IBidder bidExecutionSwapper; //Allows swapping USD0 to collateral when a bid is executed
-        IBidder usdoSwapper; //Allows swapping any other stablecoin to USD0
+        IBidder bidExecutionSwapper; //Allows swapping USDO to collateral when a bid is executed
+        IBidder usdoSwapper; //Allows swapping any other stablecoin to USDO
     }
 
     struct BidExecutionData {

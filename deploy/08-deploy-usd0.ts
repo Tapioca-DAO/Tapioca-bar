@@ -12,19 +12,19 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const chainId = await hre.getChainId();
     const contracts: TContract[] = [];
 
-    console.log('\n Deploying USD0');
+    console.log('\n Deploying USDO');
     const yieldBoxContract = await getDeployment(hre, 'YieldBox');
 
     const args = [constants[chainId].address, yieldBoxContract.address];
-    await deploy('USD0', {
+    await deploy('USDO', {
         from: deployer,
         log: true,
         args,
     });
-    await verify(hre, 'USD0', args);
-    const deployedUSD0 = await deployments.get('USD0');
+    await verify(hre, 'USDO', args);
+    const deployedUSD0 = await deployments.get('USDO');
     contracts.push({
-        name: 'USD0',
+        name: 'USDO',
         address: deployedUSD0.address,
         meta: { constructorArguments: args },
     });
@@ -36,7 +36,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
     await updateDeployments(contracts, chainId);
 
-    console.log('\n Setting USD0');
+    console.log('\n Setting USDO');
     try {
         const penrose = await deployments.get('Penrose');
         const penroseContract = await hre.ethers.getContractAt(
@@ -51,4 +51,4 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 };
 
 export default func;
-func.tags = ['USD0'];
+func.tags = ['USDO'];

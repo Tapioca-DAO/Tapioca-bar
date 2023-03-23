@@ -357,7 +357,7 @@ contract MarketsHelper {
         singularity.addAsset(address(this), msg.sender, false, _share);
     }
 
-    /// @notice deposits asset to YieldBox, mints USD0 and lends it to Singularity
+    /// @notice deposits asset to YieldBox, mints USDO and lends it to Singularity
     /// @param singularity the Singularity address
     /// @param bingBang the BingBang address
     /// @param _collateralAmount the amount added to BingBang as collateral

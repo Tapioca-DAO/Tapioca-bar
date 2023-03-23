@@ -47,7 +47,7 @@ describe('Mocks test', () => {
         await timeTravel(30000);
         await expect(
             usd0.freeMint(ethers.utils.parseEther('1')),
-        ).to.be.revertedWith('USD0: too early');
+        ).to.be.revertedWith('USDO: too early');
         await timeTravel(86500);
         await usd0.freeMint(ethers.utils.parseEther('1'));
 
@@ -56,6 +56,6 @@ describe('Mocks test', () => {
         await usd0.setMintLimit(ethers.utils.parseEther('1'));
         await expect(
             usd0.freeMint(ethers.utils.parseEther('2')),
-        ).to.be.revertedWith('USD0: amount too big');
+        ).to.be.revertedWith('USDO: amount too big');
     });
 });
