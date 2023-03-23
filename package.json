@@ -17,6 +17,7 @@
     "deploy:mainnet": "npx hardhat deploy --network mainnet",
     "deploy:testnet": "npx hardhat run scripts/exportStagingAddresses.ts --network rinkeby",
     "deploy:testEnv": "hardhat deploy --tags testEnv --network",
+    "deploy:multicall": "hardhat deploy --tags Multicall --network",
     "deploy:mocks": "hardhat deploy --tags Mocks --network",
     "deploy:usd0": "hardhat deploy --tags USD0 --network",
     "deploy:oracleMock": "hardhat deploy --tags OracleMock --network",
@@ -84,7 +85,7 @@
     "inquirer": "^8.2.5",
     "load-json-file": "^7.0.1",
     "lodash": "^4.17.21",
-    "tapioca-sdk": "^1.3.65",
+    "tapioca-sdk": "^1.3.68",
     "uuid": "^9.0.0"
   }
 }

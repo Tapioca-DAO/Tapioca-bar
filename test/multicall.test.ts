@@ -2,7 +2,7 @@ import { ethers } from 'hardhat';
 import { expect } from 'chai';
 import { register } from './test.utils';
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
-import { MulticallWithReason } from '../typechain';
+import { Multicall3 } from '../typechain';
 
 describe('Multicall test', () => {
     it('should test revert string', async () => {
@@ -12,11 +12,11 @@ describe('Multicall test', () => {
         await revertContract.deployed();
 
         const multiCall = await (
-            await ethers.getContractFactory('MulticallWithReason')
+            await ethers.getContractFactory('Multicall3')
         ).deploy();
         await multiCall.deployed();
 
-        const calls: MulticallWithReason.Call3Struct[] = [];
+        const calls: Multicall3.Call3Struct[] = [];
         const callData = revertContract.interface.encodeFunctionData(
             'shouldRevert',
             [1],
@@ -39,7 +39,7 @@ describe('Multicall test', () => {
         await tapiocaDeployer.deployed();
 
         const multiCall = await (
-            await ethers.getContractFactory('MulticallWithReason')
+            await ethers.getContractFactory('Multicall3')
         ).deploy();
         await multiCall.deployed();
 
@@ -58,16 +58,12 @@ describe('Multicall test', () => {
                 .split('x')[1];
         const salt = ethers.utils.solidityKeccak256(['string'], ['RandomSalt']);
 
-        const determinsticAddress = tapiocaDeployer.callStatic[
-            'computeAddress(bytes32,bytes32)'
-        ](salt, creationCode);
-
         const callData = tapiocaDeployer.interface.encodeFunctionData(
             'deploy',
             [0, salt, creationCode, 'ContractThatCannotBeDeployed'],
         );
 
-        const calls: MulticallWithReason.Call3Struct[] = [];
+        const calls: Multicall3.Call3Struct[] = [];
         calls.push({
             target: tapiocaDeployer.address,
             allowFailure: false,

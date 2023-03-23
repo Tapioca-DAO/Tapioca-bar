@@ -1,5 +1,6 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { buildYieldBoxAssets } from '../setups/900-buildYieldBoxAssets';
+import { typechain } from 'tapioca-sdk';
 
 // hh registerYbAssets --network ...
 export const registerYbAssets__task = async (
@@ -18,9 +19,10 @@ export const registerYbAssets__task = async (
     const deps = [...strats, yieldBoxDep];
     const calls = await buildYieldBoxAssets(hre, deps);
 
-    const multiCall = await hre.ethers.getContractAt(
-        'Multicall3',
-        hre.SDK.config.MULTICALL_ADDRESS,
+    const signer = (await hre.ethers.getSigners())[0];
+    const multiCall = typechain.Multicall.Multicall3__factory.connect(
+        hre.SDK.config.MULTICALL_ADDRESSES[chainInfo?.chainId],
+        signer,
     );
 
     // Execute
