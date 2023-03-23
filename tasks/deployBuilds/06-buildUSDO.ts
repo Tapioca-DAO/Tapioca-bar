@@ -14,7 +14,7 @@ export const buildUSD0 = async (
             lzEndPoint,
             // YieldBox, to be replaced by VM
             hre.ethers.constants.AddressZero,
-            owner
+            owner,
         ],
         dependsOn: [{ argPosition: 1, deploymentName: 'YieldBox' }],
     };
