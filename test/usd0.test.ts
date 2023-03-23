@@ -4,12 +4,16 @@ import { expect } from 'chai';
 import { register } from './test.utils';
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 
-describe('USD0', () => {
+describe('USDO', () => {
     it('should test initial values', async () => {
         const { registerUsd0Contract, deployer, yieldBox } = await loadFixture(
             register,
         );
-        const { usd0 } = await registerUsd0Contract('1', yieldBox.address);
+        const { usd0 } = await registerUsd0Contract(
+            '1',
+            yieldBox.address,
+            deployer.address,
+        );
 
         const signerIsAllowedToMint = await usd0.allowedMinter(
             1,
@@ -30,7 +34,11 @@ describe('USD0', () => {
         const { registerUsd0Contract, deployer, yieldBox } = await loadFixture(
             register,
         );
-        const { usd0 } = await registerUsd0Contract('1', yieldBox.address);
+        const { usd0 } = await registerUsd0Contract(
+            '1',
+            yieldBox.address,
+            deployer.address,
+        );
         const minter = new ethers.Wallet(
             ethers.Wallet.createRandom().privateKey,
             ethers.provider,
@@ -54,7 +62,11 @@ describe('USD0', () => {
     it('should mint and burn', async () => {
         const { registerUsd0Contract, deployer, BN, eoas, yieldBox } =
             await loadFixture(register);
-        const { usd0 } = await registerUsd0Contract('1', yieldBox.address);
+        const { usd0 } = await registerUsd0Contract(
+            '1',
+            yieldBox.address,
+            deployer.address,
+        );
         const normalUser = eoas[1];
 
         const amount = BN(1000).mul((1e18).toString());
@@ -64,7 +76,7 @@ describe('USD0', () => {
 
         await expect(
             usd0.connect(normalUser).mint(normalUser.address, amount),
-        ).to.be.revertedWith('USD0: unauthorized');
+        ).to.be.revertedWith('USDO: unauthorized');
         await usd0.connect(deployer).mint(normalUser.address, amount);
 
         usd0Balance = await usd0.balanceOf(normalUser.address);
@@ -72,7 +84,7 @@ describe('USD0', () => {
 
         await expect(
             usd0.connect(normalUser).burn(normalUser.address, amount),
-        ).to.be.revertedWith('USD0: unauthorized');
+        ).to.be.revertedWith('USDO: unauthorized');
         await usd0.connect(deployer).burn(normalUser.address, amount);
         usd0Balance = await usd0.balanceOf(normalUser.address);
         expect(usd0Balance.eq(0)).to.be.true;
@@ -81,7 +93,11 @@ describe('USD0', () => {
     it('should flashMint successfully', async () => {
         const { registerUsd0Contract, deployer, BN, weth, yieldBox } =
             await loadFixture(register);
-        const { usd0 } = await registerUsd0Contract('1', yieldBox.address);
+        const { usd0 } = await registerUsd0Contract(
+            '1',
+            yieldBox.address,
+            deployer.address,
+        );
 
         //deploy flash borrower
         const flashBorrower = await (
@@ -114,22 +130,26 @@ describe('USD0', () => {
 
         await expect(
             flashBorrower.flashBorrow(usd0.address, 0),
-        ).to.be.revertedWith('USD0: amount not valid');
+        ).to.be.revertedWith('USDO: amount not valid');
 
         const maxFlashMint = await usd0.maxFlashMint();
         await expect(
             flashBorrower.flashBorrow(usd0.address, maxFlashMint.add(1)),
-        ).to.be.revertedWith('USD0: amount too big');
+        ).to.be.revertedWith('USDO: amount too big');
 
         await expect(
             flashBorrower.flashBorrow(weth.address, amount),
-        ).to.be.revertedWith('USD0: token not valid');
+        ).to.be.revertedWith('USDO: token not valid');
     });
 
     it('should not flashMint for a malicious operator', async () => {
         const { registerUsd0Contract, deployer, BN, weth, yieldBox } =
             await loadFixture(register);
-        const { usd0 } = await registerUsd0Contract('1', yieldBox.address);
+        const { usd0 } = await registerUsd0Contract(
+            '1',
+            yieldBox.address,
+            deployer.address,
+        );
 
         //deploy flash borrower
         const flashBorrower = await (
@@ -148,6 +168,6 @@ describe('USD0', () => {
         await usd0.transfer(flashBorrower.address, flashFee);
         await expect(
             flashBorrower.flashBorrow(usd0.address, amount),
-        ).to.be.revertedWith('USD0: repay not approved');
+        ).to.be.revertedWith('USDO: repay not approved');
     });
 });

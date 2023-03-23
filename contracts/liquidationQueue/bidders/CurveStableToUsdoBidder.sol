@@ -24,14 +24,14 @@ __/\\\\\\\\\\\\\\\_____/\\\\\\\\\_____/\\\\\\\\\\\\\____/\\\\\\\\\\\_______/\\\\
 
 */
 
-/// @title Swaps Stable to USD0 through Curve
-/// @dev Performs a swap operation between stable and USD0 through 3CRV+USD0 pool
+/// @title Swaps Stable to USDO through Curve
+/// @dev Performs a swap operation between stable and USDO through 3CRV+USDO pool
 contract CurveStableToUsdoBidder is BoringOwnable {
     // ************ //
     // *** VARS *** //
     // ************ //
 
-    /// @notice 3Crv+USD0 swapper
+    /// @notice 3Crv+USDO swapper
     ISwapper public curveSwapper;
     /// @notice Curve pool assets number
     uint256 curveAssetsLength;
@@ -54,7 +54,7 @@ contract CurveStableToUsdoBidder is BoringOwnable {
     // ********************** //
     /// @notice returns the unique name
     function name() external pure returns (string memory) {
-        return "stable -> USD0 (3Crv+USD0)";
+        return "stable -> USDO (3Crv+USDO)";
     }
 
     /// @notice returns the amount of collateral
@@ -67,7 +67,7 @@ contract CurveStableToUsdoBidder is BoringOwnable {
     ) external view returns (uint256) {
         require(
             IPenrose(singularity.penrose()).usdoToken() != address(0),
-            "USD0 not set"
+            "USDO not set"
         );
 
         uint256 usdoAssetId = IPenrose(singularity.penrose()).usdoAssetId();
@@ -95,7 +95,7 @@ contract CurveStableToUsdoBidder is BoringOwnable {
     ) external view returns (uint256) {
         require(
             IPenrose(singularity.penrose()).usdoToken() != address(0),
-            "USD0 not set"
+            "USDO not set"
         );
 
         uint256 usdoAssetId = IPenrose(singularity.penrose()).usdoAssetId();
@@ -128,7 +128,7 @@ contract CurveStableToUsdoBidder is BoringOwnable {
     ) external returns (uint256) {
         require(
             IPenrose(singularity.penrose()).usdoToken() != address(0),
-            "USD0 not set"
+            "USDO not set"
         );
         IYieldBox yieldBox = IYieldBox(singularity.yieldBox());
         ILiquidationQueue liquidationQueue = ILiquidationQueue(
@@ -173,7 +173,7 @@ contract CurveStableToUsdoBidder is BoringOwnable {
     // *** OWNER FUNCTIONS *** //
     // *********************** //
     /// @notice sets the Curve swapper
-    /// @dev used for USD0 to WETH swap
+    /// @dev used for USDO to WETH swap
     /// @param _swapper The curve pool swapper address
     function setCurveSwapper(ISwapper _swapper) external onlyOwner {
         emit CurveSwapperUpdated(address(curveSwapper), address(_swapper));

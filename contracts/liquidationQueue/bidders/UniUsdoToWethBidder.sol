@@ -23,9 +23,9 @@ __/\\\\\\\\\\\\\\\_____/\\\\\\\\\_____/\\\\\\\\\\\\\____/\\\\\\\\\\\_______/\\\\
 
 */
 
-/// @title Swaps USD0 to WETH UniswapV2
+/// @title Swaps USDO to WETH UniswapV2
 /// @dev Performs 1 swap operation:
-///     - USD0 to Weth through UniV2
+///     - USDO to Weth through UniV2
 contract UniUsdoToWethBidder is BoringOwnable {
     // ************ //
     // *** VARS *** //
@@ -55,7 +55,7 @@ contract UniUsdoToWethBidder is BoringOwnable {
     // ********************** //
     /// @notice returns the unique name
     function name() external pure returns (string memory) {
-        return "USD0 -> WETH (Uniswap V2)";
+        return "USDO -> WETH (Uniswap V2)";
     }
 
     /// @notice returns token tokenIn amount based on tokenOut amount
@@ -95,7 +95,7 @@ contract UniUsdoToWethBidder is BoringOwnable {
     ) external view returns (uint256) {
         require(
             IPenrose(singularity.penrose()).usdoToken() != address(0),
-            "USD0 not set"
+            "USDO not set"
         );
         uint256 usdoAssetId = IPenrose(singularity.penrose()).usdoAssetId();
         require(tokenInId == usdoAssetId, "token not valid");
@@ -125,7 +125,7 @@ contract UniUsdoToWethBidder is BoringOwnable {
     ) external returns (uint256) {
         require(
             IPenrose(singularity.penrose()).usdoToken() != address(0),
-            "USD0 not set"
+            "USDO not set"
         );
         IYieldBox yieldBox = IYieldBox(singularity.yieldBox());
         ILiquidationQueue liquidationQueue = ILiquidationQueue(

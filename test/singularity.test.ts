@@ -1222,7 +1222,7 @@ describe('Singularity test', () => {
             BN,
             timeTravel,
         } = await loadFixture(register);
-        //deploy and register USD0
+        //deploy and register USDO
 
         const usdoStratregy = await bar.emptyStrategies(usd0.address);
         const usdoAssetId = await yieldBox.ids(

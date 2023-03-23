@@ -110,6 +110,7 @@ describe('MarketsProxy', () => {
                 wethAssetId,
                 createWethUsd0Singularity,
                 deployCurveStableToUsdoBidder,
+                deployer,
             );
             return {
                 proxySrc,
@@ -143,7 +144,7 @@ describe('MarketsProxy', () => {
         await usd0Dst.mint(deployer.address, usdoAmount);
         await weth.connect(eoa1).freeMint(wethAmount);
 
-        //add USD0 for borrowing
+        //add USDO for borrowing
         const usdoLendValue = usdoAmount.div(2);
         await usd0Dst.approve(yieldBox.address, usdoLendValue);
 
@@ -340,6 +341,7 @@ describe('MarketsProxy', () => {
                 wethAssetId,
                 createWethUsd0Singularity,
                 deployCurveStableToUsdoBidder,
+                deployer
             );
             return {
                 proxySrc,
@@ -373,7 +375,7 @@ describe('MarketsProxy', () => {
         await usd0Dst.mint(deployer.address, usdoAmount);
         await weth.connect(eoa1).freeMint(wethAmount);
 
-        //add USD0 for borrowing
+        //add USDO for borrowing
         const usdoLendValue = usdoAmount.div(2);
         await usd0Dst.approve(yieldBox.address, usdoLendValue);
 
@@ -558,6 +560,7 @@ describe('MarketsProxy', () => {
                 wethAssetId,
                 createWethUsd0Singularity,
                 deployCurveStableToUsdoBidder,
+                deployer
             );
             return {
                 proxySrc,
@@ -591,7 +594,7 @@ describe('MarketsProxy', () => {
         await usd0Dst.mint(deployer.address, usdoAmount);
         await weth.connect(eoa1).freeMint(wethAmount);
 
-        //add USD0 for borrowing
+        //add USDO for borrowing
         const usdoLendValue = usdoAmount.div(2);
         await usd0Dst.approve(yieldBox.address, usdoLendValue);
 
@@ -1571,6 +1574,7 @@ async function setupUsd0Environment(
     collateralId: any,
     registerSingularity: any,
     registerBidder: any,
+    deployer: any,
 ) {
     //omnichain configuration
     const chainIdSrc = 1;
@@ -1617,8 +1621,8 @@ async function setupUsd0Environment(
 
     //deploy usd0 tokens
     const usd0Src = await (
-        await ethers.getContractFactory('USD0')
-    ).deploy(lzEndpointSrc.address, yieldBox.address);
+        await ethers.getContractFactory('USDO')
+    ).deploy(lzEndpointSrc.address, yieldBox.address, deployer.address);
     await usd0Src.deployed();
 
     const usd0SrcStrategy = await createTokenEmptyStrategy(
@@ -1639,8 +1643,8 @@ async function setupUsd0Environment(
     );
 
     const usd0Dst = await (
-        await ethers.getContractFactory('USD0')
-    ).deploy(lzEndpointDst.address, yieldBox.address);
+        await ethers.getContractFactory('USDO')
+    ).deploy(lzEndpointDst.address, yieldBox.address, deployer.address);
     await usd0Dst.deployed();
     const usd0DstStrategy = await createTokenEmptyStrategy(
         yieldBox.address,
@@ -1659,7 +1663,7 @@ async function setupUsd0Environment(
         0,
     );
 
-    //configure trusted remotes for USD0
+    //configure trusted remotes for USDO
     await lzEndpointSrc.setDestLzEndpoint(
         usd0Dst.address,
         lzEndpointDst.address,

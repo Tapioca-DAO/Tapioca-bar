@@ -7,7 +7,7 @@ import {
 } from '../deploy/utils';
 import { usd0 as TUSD0 } from '../typechain/contracts';
 
-// Airdrop gas from Goerli to Fuji, can only send the same amount. Need 1 USD0 available for each transaction
+// Airdrop gas from Goerli to Fuji, can only send the same amount. Need 1 USDO available for each transaction
 // hh airdropGas --amount 0.24 --dst-chain 10106 --dst-address 0xAF933E0E75E0576511e17b173cc6e3D0a09DB764 --network arbitrum_goerli
 export const airdropGas__task = async (
     taskArgs: {
@@ -28,10 +28,10 @@ export const airdropGas__task = async (
     if (!toChain) throw new Error('[-] To chain not supported');
 
     const usd0 = await hre.ethers.getContractAt(
-        'USD0',
+        'USDO',
         SDK.API.utils.getDeployment(
             'Tapioca-Bar',
-            'USD0',
+            'USDO',
             await hre.getChainId(),
         ).address,
     );

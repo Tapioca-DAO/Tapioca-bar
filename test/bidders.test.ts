@@ -15,7 +15,7 @@ describe('Bidders test', () => {
         } = await loadFixture(register);
 
         let savedName = await usdoToWethBidder.name();
-        expect(savedName).to.eq('USD0 -> WETH (Uniswap V2)');
+        expect(savedName).to.eq('USDO -> WETH (Uniswap V2)');
 
         const { stableToUsdoBidder } = await deployCurveStableToUsdoBidder(
             bar,
@@ -24,7 +24,7 @@ describe('Bidders test', () => {
         );
 
         savedName = await stableToUsdoBidder.name();
-        expect(savedName).to.eq('stable -> USD0 (3Crv+USD0)');
+        expect(savedName).to.eq('stable -> USDO (3Crv+USDO)');
     });
 
     it('should not get input or output amount', async () => {

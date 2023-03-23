@@ -43,15 +43,13 @@ export const deployEmptyStrats__task = async (
             break;
         case StratType.USDO:
             project = SDK.API.config.TAPIOCA_PROJECTS_NAME.TapiocaBar;
-            name = 'USD0';
+            name = 'USDO';
             break;
         case StratType.TAP:
             project = SDK.API.config.TAPIOCA_PROJECTS_NAME.TapToken;
             name = 'TapOFT';
             break;
     }
-    console.log(`-------- name    ${name}`);
-    console.log(`-------- project ${project}`);
 
     const VM = await loadVM(hre, tag);
 

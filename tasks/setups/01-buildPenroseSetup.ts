@@ -1,7 +1,7 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { TDeploymentVMContract } from 'tapioca-sdk/dist/ethers/hardhat/DeployerVM';
 import { Multicall3 } from 'tapioca-sdk/dist/typechain/utils/MultiCall';
-import { MultiSwapper, Penrose, USD0 } from '../../typechain';
+import { MultiSwapper, Penrose, USDO } from '../../typechain';
 import { getAfterDepContract } from '../utils';
 
 export const buildPenroseSetup = async (
@@ -17,7 +17,7 @@ export const buildPenroseSetup = async (
         deps,
         'MultiSwapper',
     );
-    const usd0 = await getAfterDepContract<USD0>(hre, deps, 'USD0');
+    const usd0 = await getAfterDepContract<USDO>(hre, deps, 'USDO');
 
     /**
      * Add calls
@@ -28,7 +28,7 @@ export const buildPenroseSetup = async (
     console.log('[+] +Setting: Setting MultiSwapper');
     await (await penrose.setSwapper(multiSwapper.address, true)).wait(3);
 
-    console.log('[+] +Setting: Setting USD0');
+    console.log('[+] +Setting: Setting USDO');
     await (await penrose.setUsdoToken(usd0.address)).wait(3);
 
     return calls;

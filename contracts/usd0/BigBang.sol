@@ -42,7 +42,7 @@ contract BigBang is BoringOwnable {
     IPenrose public penrose;
     YieldBox public yieldBox;
     IERC20 public collateral;
-    IUSD0 public asset;
+    IUSDO public asset;
     uint256 public collateralId;
     uint256 public assetId;
 
@@ -215,7 +215,7 @@ contract BigBang is BoringOwnable {
             "BigBang: bad pair"
         );
 
-        asset = IUSD0(_asset);
+        asset = IUSDO(_asset);
         assetId = penrose.usdoAssetId();
         collateral = _collateral;
         collateralId = _collateralId;
@@ -371,7 +371,7 @@ contract BigBang is BoringOwnable {
 
     /// @notice Gets the exchange rate. I.e how much collateral to buy 1e18 asset.
     /// @dev This function is supposed to be invoked if needed because Oracle queries can be expensive.
-    ///      Oracle should consider USD0 at 1$
+    ///      Oracle should consider USDO at 1$
     /// @return updated True if `exchangeRate` was updated.
     /// @return rate The new exchange rate.
     function updateExchangeRate() public returns (bool updated, uint256 rate) {
@@ -913,7 +913,7 @@ contract BigBang is BoringOwnable {
         uint256 toWithdraw = (amount - part); //acrrued
         uint256 toBurn = amount - toWithdraw;
         yieldBox.withdraw(assetId, from, address(this), amount, 0);
-        //burn USD0
+        //burn USDO
         if (toBurn > 0) {
             asset.burn(address(this), toBurn);
         }
@@ -938,7 +938,7 @@ contract BigBang is BoringOwnable {
 
         userBorrowPart[from] += part;
 
-        //mint USD0
+        //mint USDO
         asset.mint(address(this), amount);
 
         //deposit borrowed amount to user

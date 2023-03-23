@@ -33,13 +33,26 @@ export const deployFullStack__task = async (
         throw new Error('Chain not found');
     }
 
-    const tapToken = hre.SDK.db
+    let tapToken = hre.SDK.db
         .loadGlobalDeployment(tag, 'tap-token', chainInfo.chainId)
         .find((e) => e.name === 'TapOFT');
 
-    const weth = hre.SDK.db
+    let weth = hre.SDK.db
         .loadGlobalDeployment(tag, 'tap-token', chainInfo.chainId)
         .find((e) => e.name.startsWith('WETHMock'));
+
+    if (!weth) {
+        //try to take it again from local deployment
+        weth = hre.SDK.db
+            .loadLocalDeployment(tag, chainInfo.chainId)
+            .find((e) => e.name.startsWith('WETHMock'));
+    }
+    if (!tapToken) {
+        //try to take it again from local deployment
+        tapToken = hre.SDK.db
+            .loadLocalDeployment(tag, chainInfo.chainId)
+            .find((e) => e.name.startsWith('TapOFT'));
+    }
 
     if (!tapToken || !weth) {
         throw new Error('[-] Token not found');
@@ -74,8 +87,8 @@ export const deployFullStack__task = async (
     const [liq, lendBorrow] = await buildSingularityModules(hre);
     VM.add(liq).add(lendBorrow);
 
-    // 06 USD0
-    VM.add(await buildUSD0(hre, chainInfo.address));
+    // 06 USDO
+    VM.add(await buildUSD0(hre, chainInfo.address, signer.address));
 
     // 07 - CurveSwapper-buildStableToUSD0Bidder
     const [curveSwapper, curveStableToUsd0] = await buildStableToUSD0Bidder(
@@ -93,7 +106,7 @@ export const deployFullStack__task = async (
     VM.add(marketProxy);
 
     // Add and execute
-    await VM.execute(3);
+    await VM.execute(3, false);
     VM.save();
     const { wantToVerify } = await inquirer.prompt({
         type: 'confirm',

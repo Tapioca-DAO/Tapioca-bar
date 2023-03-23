@@ -2,7 +2,7 @@ import { expect } from 'chai';
 import { ethers } from 'hardhat';
 import { register } from './test.utils';
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
-import { BigBang, MarketsHelper, USD0, WETH9Mock } from '../typechain';
+import { BigBang, MarketsHelper, USDO, WETH9Mock } from '../typechain';
 import { BigNumber, BigNumberish } from 'ethers';
 import { Singularity } from '../typechain/contracts/singularity/Singularity';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
@@ -15,12 +15,12 @@ describe('e2e tests', () => {
     - deposit WETH into YieldBox
     - add collateral to Weth-BigBang
     - deposit WETH into Weth-BigBang
-    - borrow USD0 from Weth-BigBang
-    - lend USD0 to Weth-Usd0-Singularity
+    - borrow USDO from Weth-BigBang
+    - lend USDO to Weth-Usd0-Singularity
 
     ---Borrowers---
     - add collateral to Weth-Usd0-Singularity
-    - borrow USD0 from Weth-Usd0-Singularity
+    - borrow USDO from Weth-Usd0-Singularity
     
     ---1/2 Borrowers---
     - repay
@@ -87,7 +87,7 @@ describe('e2e tests', () => {
             false,
         );
 
-        //get USD0 from minter and lent it WETH-USD0 Singularity
+        //get USDO from minter and lent it WETH-USDO Singularity
         await addUsd0Module(
             weth,
             wethMintVal,
@@ -110,7 +110,7 @@ describe('e2e tests', () => {
         );
         await setYieldBoxApprovalPlug(deployer, yieldBox, wethBigBangMarket);
 
-        // add WETH and borrow USD0 from WETH-USD00-Singularity
+        // add WETH and borrow USDO from WETH-USD00-Singularity
         await borrowFromSingularityModule(
             borrowers,
             wethMintVal.div(10),
@@ -143,7 +143,7 @@ describe('e2e tests', () => {
             const repayer = repayArr[i];
             const repayerUsd0Balance = await usd0.balanceOf(repayer.address);
 
-            await usd0.transfer(repayer.address, repayerUsd0Balance.div(2)); //add extra USD0 for repayment
+            await usd0.transfer(repayer.address, repayerUsd0Balance.div(2)); //add extra USDO for repayment
 
             await usd0
                 .connect(repayer)
@@ -318,7 +318,7 @@ describe('e2e tests', () => {
 
         //try to repay without borrowing
         await mintUsd0Plug(deployer, usd0, usdoBorrowVal);
-        await transferPlug(deployer, repayArr[0].address, usd0, usdoBorrowVal); //add extra USD0 for repayment
+        await transferPlug(deployer, repayArr[0].address, usd0, usdoBorrowVal); //add extra USDO for repayment
         await approvePlug(
             repayArr[0],
             usd0,
@@ -433,7 +433,7 @@ describe('e2e tests', () => {
             false,
         );
 
-        //get USD0 from minter and lent it WETH-USD0 Singularity
+        //get USDO from minter and lent it WETH-USDO Singularity
         await addUsd0Module(
             weth,
             wethMintVal,
@@ -541,7 +541,7 @@ async function mintWethPlug(
 
 async function mintUsd0Plug(
     signer: SignerWithAddress,
-    usd0: USD0,
+    usd0: USDO,
     val: BigNumberish,
 ) {
     await usd0.setMinterStatus(signer.address, true);
@@ -853,7 +853,7 @@ async function addUsd0Module(
             ethers.utils.toUtf8Bytes(''),
         );
 
-        //lend USD0 to WethUSD0Singularity
+        //lend USDO to WethUSD0Singularity
         await setYieldBoxApprovalPlug(lender, yieldBox, wethUsdoSingularity);
         await addAssetToSingularityPlug(
             lender,
@@ -872,7 +872,7 @@ async function borrowFromSingularityModule(
     wethUsdoSingularity: Singularity,
     yieldBox: any,
     usdoAssetId: BigNumberish,
-    usd0: USD0,
+    usd0: USDO,
 ) {
     for (let i = 0; i < borrowers.length; i++) {
         const borrower = borrowers[i];
@@ -907,7 +907,7 @@ async function borrowFromSingularityModule(
 
 async function repayModule(
     repayArr: any[],
-    usd0: USD0,
+    usd0: USDO,
     deployer: SignerWithAddress,
     usdoBorrowVal: BigNumber,
     marketsHelper: MarketsHelper,
@@ -922,7 +922,7 @@ async function repayModule(
         const repayerUsd0Balance = await usd0.balanceOf(repayer.address);
         const transferVal = repayerUsd0Balance.div(2);
 
-        await transferPlug(deployer, repayer.address, usd0, transferVal); //add extra USD0 for repayment
+        await transferPlug(deployer, repayer.address, usd0, transferVal); //add extra USDO for repayment
 
         await approvePlug(
             repayer,
@@ -946,7 +946,7 @@ async function repayModule(
 async function liquidateModule(
     liquidateArr: any[],
     wethUsdoSingularity: Singularity,
-    usd0: USD0,
+    usd0: USDO,
     yieldBox: any,
     wethAssetId: BigNumberish,
     deployer: SignerWithAddress,

@@ -137,11 +137,11 @@ async function loadStrats(
 
     const usd0Strategy = hre.SDK.db.getLocalDeployment(
         await hre.getChainId(),
-        'ERC20WithoutStrategy-USD0',
+        'ERC20WithoutStrategy-USDO',
         tag,
     );
     if (!usd0Strategy) {
-        throw new Error('[-] USD0 strategy not found');
+        throw new Error('[-] USDO strategy not found');
     }
 
     VM.add({
@@ -195,7 +195,7 @@ async function loadContracts(hre: HardhatRuntimeEnvironment, tag: string) {
 
     const { contract: usd0 } = await hre.SDK.hardhatUtils.getLocalContract(
         hre,
-        'USD0',
+        'USDO',
         tag,
     );
 

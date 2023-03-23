@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.18;
 
-import "../usd0/IUSD0.sol";
+import "../usd0/IUSDO.sol";
 import "../swappers/ISwapper.sol";
 
 interface IPenrose {
