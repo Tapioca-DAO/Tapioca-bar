@@ -54,7 +54,9 @@ async function registerUsd0Contract(
 
     const usd0 = await (
         await ethers.getContractFactory('USDO')
-    ).deploy(lzEndpointContract.address, yieldBox, owner, { gasPrice: gasPrice });
+    ).deploy(lzEndpointContract.address, yieldBox, owner, {
+        gasPrice: gasPrice,
+    });
     await usd0.deployed();
     log(
         `Deployed UDS0 ${usd0.address} with args [${lzEndpointContract.address},${yieldBox}]`,

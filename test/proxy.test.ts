@@ -341,7 +341,7 @@ describe('MarketsProxy', () => {
                 wethAssetId,
                 createWethUsd0Singularity,
                 deployCurveStableToUsdoBidder,
-                deployer
+                deployer,
             );
             return {
                 proxySrc,
@@ -560,7 +560,7 @@ describe('MarketsProxy', () => {
                 wethAssetId,
                 createWethUsd0Singularity,
                 deployCurveStableToUsdoBidder,
-                deployer
+                deployer,
             );
             return {
                 proxySrc,
