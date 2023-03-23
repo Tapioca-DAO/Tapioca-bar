@@ -6,16 +6,21 @@ import { TDeploymentVMContract } from 'tapioca-sdk/dist/ethers/hardhat/DeployerV
 import { TContract } from 'tapioca-sdk/dist/shared';
 import { getDeployments } from './views/getDeployments';
 
-export const loadVM = async (hre: HardhatRuntimeEnvironment, tag: string) => {
+export const loadVM = async (
+    hre: HardhatRuntimeEnvironment,
+    tag: string,
+    debugMode = false,
+) => {
     const signer = (await hre.ethers.getSigners())[0];
     const VM = new hre.SDK.DeployerVM(hre, {
         // Change this if you get bytecode size error / gas required exceeds allowance (550000000)/ anything related to bytecode size
         // Could be different by network/RPC provider
         bytecodeSizeLimit: 100_000,
-        multicall: typechain.Multicall.Multicall3__factory.connect(
+        multicall: typechain.Multicall.MulticallWithReason__factory.connect(
             hre.SDK.config.MULTICALL_ADDRESS,
             signer,
         ),
+        debugMode,
         tag,
     });
     return VM;
