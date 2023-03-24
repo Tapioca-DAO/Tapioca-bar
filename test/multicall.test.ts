@@ -32,7 +32,7 @@ describe('Multicall test', () => {
         );
     });
 
-    it.only('should test revert string through TapiocaDeployer', async () => {
+    it('should test revert string through TapiocaDeployer', async () => {
         const tapiocaDeployer = await (
             await ethers.getContractFactory('TapiocaDeployerMock')
         ).deploy();

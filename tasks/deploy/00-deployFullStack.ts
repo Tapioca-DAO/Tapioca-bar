@@ -1,3 +1,4 @@
+import { Contract } from 'ethers';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import inquirer from 'inquirer';
 import { typechain } from 'tapioca-sdk';
@@ -14,7 +15,7 @@ import { buildSingularityModules } from '../deployBuilds/08-buildSingularityModu
 import { buildMarketProxy } from '../deployBuilds/09-buildMarketProxy';
 import { buildPenroseSetup } from '../setups/01-buildPenroseSetup';
 import { buildMasterContractsSetup } from '../setups/02-buildMasterContractsSetup';
-import { loadVM } from '../utils';
+import { loadVM, deployMultisigMock, transferOwnership } from '../utils';
 
 // hh deployFullStack --network goerli
 export const deployFullStack__task = async (
@@ -72,39 +73,49 @@ export const deployFullStack__task = async (
         ],
     });
     const penroseMock = await deployments.get('PenroseMock');
-    console.log(`penroseMock ${penroseMock.address}`);
+
+    // Owner deployment
+    const multisig = await deployMultisigMock(hre, 1, [
+        hre.SDK.config.MULTICALL_ADDRESSES[chainInfo?.chainId],
+    ]);
+    console.log(`[+] Multisig deployed on ${multisig}`);
 
     // 00 - Deploy YieldBox
     const [ybURI, yieldBox] = await buildYieldBox(hre, weth.address);
     VM.add(ybURI).add(yieldBox);
 
     // 01 - Penrose
-    VM.add(
-        await buildPenrose(hre, tapToken.address, weth.address, signer.address),
+    const penrose = await buildPenrose(
+        hre,
+        tapToken.address,
+        weth.address,
+        signer.address,
     );
+    VM.add(penrose);
 
     // 02 - Master contracts
     const [sgl, bb] = await buildMasterContracts(hre);
     VM.add(sgl).add(bb);
 
     // 03 - MarketHelper
-    VM.add(await buildMarketHelpers(hre));
+    const marketHelper = await buildMarketHelpers(hre);
+    VM.add(marketHelper);
 
     // 04 - MultiSwapper
-    VM.add(
-        await buildMultiSwapper(
-            hre,
-            constants[chainInfo.chainId].uniV2Factory,
-            constants[chainInfo.chainId].uniV2PairHash,
-        ),
+    const multiSwapper = await buildMultiSwapper(
+        hre,
+        constants[chainInfo.chainId].uniV2Factory,
+        constants[chainInfo.chainId].uniV2PairHash,
     );
+    VM.add(multiSwapper);
 
     // 05 - SingularityModules
     const [liq, lendBorrow] = await buildSingularityModules(hre);
     VM.add(liq).add(lendBorrow);
 
     // 06 USDO
-    VM.add(await buildUSD0(hre, chainInfo.address, signer.address));
+    const usdo = await buildUSD0(hre, chainInfo.address, signer.address);
+    VM.add(usdo);
 
     // 07 - CurveSwapper-buildStableToUSD0Bidder
     const [curveSwapper, curveStableToUsd0] = await buildStableToUSD0Bidder(
@@ -166,6 +177,16 @@ export const deployFullStack__task = async (
             }
         }
     }
+
+    //Transfer ownership
+    console.log('[+] Transferring ownership');
+    await transferOwnership(
+        hre,
+        [usdo, marketProxy],
+        tag,
+        chainInfo.chainId,
+        multisig,
+    );
 
     console.log('[+] Stack deployed! 🎉');
 };
