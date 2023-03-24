@@ -55,8 +55,24 @@ export const deployFullStack__task = async (
     }
 
     if (!tapToken || !weth) {
-        throw new Error('[-] Token not found');
+        throw new Error(`[-] Token not found: ${tapToken}, ${weth}`);
     }
+
+    const { deployments, getNamedAccounts } = hre;
+    const { deploy } = deployments;
+    const { deployer } = await getNamedAccounts();
+    await deploy('PenroseMock', {
+        from: deployer,
+        log: true,
+        args: [
+            hre.ethers.constants.AddressZero,
+            hre.ethers.constants.AddressZero,
+            hre.ethers.constants.AddressZero,
+            hre.ethers.constants.AddressZero,
+        ],
+    });
+    const penroseMock = await deployments.get('PenroseMock');
+    console.log(`penroseMock ${penroseMock.address}`);
 
     // 00 - Deploy YieldBox
     const [ybURI, yieldBox] = await buildYieldBox(hre, weth.address);
@@ -94,10 +110,11 @@ export const deployFullStack__task = async (
     const [curveSwapper, curveStableToUsd0] = await buildStableToUSD0Bidder(
         hre,
         constants[chainInfo.chainId].crvStablePool,
+        penroseMock.address,
     );
     VM.add(curveSwapper).add(curveStableToUsd0);
 
-    // 08 - MarketsProxy
+    // 08 MarketsProxy
     const marketProxy = await buildMarketProxy(
         hre,
         chainInfo.address,
@@ -106,7 +123,7 @@ export const deployFullStack__task = async (
     VM.add(marketProxy);
 
     // Add and execute
-    await VM.execute(3, true);
+    await VM.execute(3);
     VM.save();
     const { wantToVerify } = await inquirer.prompt({
         type: 'confirm',
