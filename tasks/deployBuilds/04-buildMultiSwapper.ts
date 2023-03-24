@@ -12,11 +12,11 @@ export const buildMultiSwapper = async (
         deploymentName: 'MultiSwapper',
         args: [
             uniV2Factory,
-            // YieldBox, to be replaced by VM
+            // Penrose, to be replaced by VM
             hre.ethers.constants.AddressZero,
             uniV2PairHash,
         ],
-        dependsOn: [{ argPosition: 1, deploymentName: 'YieldBox' }],
-        runStaticSimulation: false,
+        dependsOn: [{ argPosition: 1, deploymentName: 'Penrose' }],
+        runStaticSimulation: false
     };
 };

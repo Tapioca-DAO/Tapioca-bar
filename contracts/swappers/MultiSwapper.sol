@@ -26,9 +26,9 @@ contract MultiSwapper is ISwapper {
     /// @param _factory UniswapV2Factory address
     /// @param _tapiocaBar Penrose address
     /// @param _pairCodeHash UniswapV2 pair code hash
-    constructor(address _factory, YieldBox _yieldBox, bytes32 _pairCodeHash) {
+    constructor(address _factory, IPenrose _tapiocaBar, bytes32 _pairCodeHash) {
         factory = _factory;
-        yieldBox = _yieldBox;
+        yieldBox = YieldBox(_tapiocaBar.yieldBox());
         pairCodeHash = _pairCodeHash;
     }
 
