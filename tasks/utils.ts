@@ -1,8 +1,11 @@
-import { Contract } from 'ethers';
+import { Contract, ContractFactory } from 'ethers';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import _ from 'lodash';
 import { typechain } from 'tapioca-sdk';
-import { TDeploymentVMContract } from 'tapioca-sdk/dist/ethers/hardhat/DeployerVM';
+import {
+    IDeployerVMAdd,
+    TDeploymentVMContract,
+} from 'tapioca-sdk/dist/ethers/hardhat/DeployerVM';
 import { TContract } from 'tapioca-sdk/dist/shared';
 import { getDeployments } from './views/getDeployments';
 
@@ -25,7 +28,7 @@ export const loadVM = async (
     const VM = new hre.SDK.DeployerVM(hre, {
         // Change this if you get bytecode size error / gas required exceeds allowance (550000000)/ anything related to bytecode size
         // Could be different by network/RPC provider
-        bytecodeSizeLimit: 100_000,
+        bytecodeSizeLimit: 80_000,
         multicall: typechain.Multicall.Multicall3__factory.connect(
             multicallAddress,
             signer,
@@ -112,4 +115,66 @@ export const getBigBangContract = async (
         bigBangAddress,
     );
     return { bigBangContract, bigBangAddress };
+};
+
+export const deployMultisigMock = async (
+    hre: HardhatRuntimeEnvironment,
+    numOfConfiramtions: number,
+    owners: string[],
+): Promise<string> => {
+    const { deployments, getNamedAccounts } = hre;
+    const { deploy } = deployments;
+    const { deployer } = await getNamedAccounts();
+
+    await deploy('MultisigMock', {
+        from: deployer,
+        log: true,
+        args: [numOfConfiramtions],
+    });
+    const deployed = await deployments.get('MultisigMock');
+
+    await hre.run('verify', {
+        address: deployed.address,
+        constructorArgsParams: [numOfConfiramtions.toString()],
+    });
+
+    for (let i = 0; i < owners.length; i++) {
+        const ctr = await hre.ethers.getContractAt(
+            'MultisigMock',
+            deployed.address,
+        );
+        await ctr.addOwner(owners[i]);
+    }
+    return deployed.address;
+};
+
+export const getLocalContract = async (
+    hre: HardhatRuntimeEnvironment,
+    contractName: string,
+    contractAddress?: string,
+) => {
+    if (!contractAddress) return;
+    return await hre.ethers.getContractAt(contractName, contractAddress);
+};
+
+export const transferOwnership = async (
+    hre: HardhatRuntimeEnvironment,
+    deployments: IDeployerVMAdd<ContractFactory>[],
+    tag: string,
+    chainId: string,
+    multisigAddress: string,
+) => {
+    for (let i = 0; i < deployments.length; i++) {
+        const deployment = deployments[i];
+
+        const crtContract = await getLocalContract(
+            hre,
+            deployment.deploymentName,
+            hre.SDK.db
+                .loadLocalDeployment(tag, chainId)
+                .find((e) => e.name.startsWith(deployment.deploymentName))
+                ?.address,
+        );
+        await crtContract.transferOwnership(multisigAddress);
+    }
 };

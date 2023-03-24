@@ -2,6 +2,148 @@
     "default": {
         "421613": [
             {
+                "name": "YieldBoxURIBuilder",
+                "address": "0x260B56717Eb1005B399c816Bf9b10E1e4AE2E78a",
+                "meta": {
+                    "args": [],
+                    "salt": "0x58a926bcc398324bb733093bfd754040d575f3e42909b73a30bda5c8305d5cdb",
+                    "create2": true
+                }
+            },
+            {
+                "name": "YieldBox",
+                "address": "0xB5e81EF6980435E0466E63eE7762FFc0Ce55B543",
+                "meta": {
+                    "args": [
+                        "0x1120004B3f02d01a882A0f8eB8AB4c82f11CDcfC",
+                        "0x260B56717Eb1005B399c816Bf9b10E1e4AE2E78a"
+                    ],
+                    "salt": "0xb4fca5ac8ad1f268e8806ae44e0ebadcfaa16e355fffe35b7ac784973a0ae126",
+                    "create2": true
+                }
+            },
+            {
+                "name": "Penrose",
+                "address": "0x5F7d6e4d86850E28b89eB10289D2b73f467380DB",
+                "meta": {
+                    "args": [
+                        "0xB5e81EF6980435E0466E63eE7762FFc0Ce55B543",
+                        "0xbdaEf1c088AF3B558Ae39d3e081Cd86698d96dd6",
+                        "0x1120004B3f02d01a882A0f8eB8AB4c82f11CDcfC",
+                        "0x40282d3Cf4890D9806BC1853e97a59C93D813653"
+                    ],
+                    "salt": "0x8a4346b59be11f5c406c81cdbb9c03cb211d4c24e6e1ce0c682c4a1572194540",
+                    "create2": true
+                }
+            },
+            {
+                "name": "MediumRiskMC",
+                "address": "0x081b09C77D5bf3929418b8aD51F973aE789Daa7C",
+                "meta": {
+                    "args": [],
+                    "salt": "0xa98af56548b12a4af60d1d003d6dd52749eeba9dc1c8496f9d63345aa0fb29b1",
+                    "create2": true
+                }
+            },
+            {
+                "name": "BigBangMediumRiskMC",
+                "address": "0x8E44bAb1833453448AF11b14aBD3a3107C9B3092",
+                "meta": {
+                    "args": [],
+                    "salt": "0xd3ca2196cc4ae037984b616d9bc5158cab25ef7345cba8b4a7ebfa77acc3961d",
+                    "create2": true
+                }
+            },
+            {
+                "name": "MarketsHelper",
+                "address": "0x130c2e86B3e8Be73CdcD69eE2165C154e137E0E4",
+                "meta": {
+                    "args": [],
+                    "salt": "0x607cf2a966d7e1ca8983ccd3f341846e500b77fe79f644f396fa0c55a03ce081",
+                    "create2": true
+                }
+            },
+            {
+                "name": "MultiSwapper",
+                "address": "0xCCA3501Fa7B198b043e2ff766FC32ca9d93ea1C5",
+                "meta": {
+                    "args": [
+                        "0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f",
+                        "0x5F7d6e4d86850E28b89eB10289D2b73f467380DB",
+                        "0x68ddfd89d43db94fbd68a4abd2861ebcbfea56c0fd36334bbb95f0661c3171a2"
+                    ],
+                    "salt": "0x048bf2867613cf455234bf64c0f7c883ab3354fd05f3adbff73d2188362402c3",
+                    "create2": true
+                }
+            },
+            {
+                "name": "SGLLiquidation",
+                "address": "0x7946E5ad26E45e9dBf785Cc0E807903E1D5E6520",
+                "meta": {
+                    "args": [],
+                    "salt": "0x5e8804eca2ddf20f18f2775950ba12a6da50205ed91d119a6b4daa4302499fa8",
+                    "create2": true
+                }
+            },
+            {
+                "name": "SGLLendingBorrowing",
+                "address": "0x4C278972621a71aC73a274D6E4eF8C847f7c6Af3",
+                "meta": {
+                    "args": [],
+                    "salt": "0x21b5a90035f554d0cba37064f9c2bd676999fc3898441bc8d044fe3035ff789f",
+                    "create2": true
+                }
+            },
+            {
+                "name": "USDO",
+                "address": "0x4Fe759DdD923e98Bd6FC1b61c52d329F56767caE",
+                "meta": {
+                    "args": [
+                        "0x6aB5Ae6822647046626e83ee6dB8187151E1d5ab",
+                        "0xB5e81EF6980435E0466E63eE7762FFc0Ce55B543",
+                        "0x40282d3Cf4890D9806BC1853e97a59C93D813653"
+                    ],
+                    "salt": "0x9b63bf779e25145ab2c21a107263abe7d720c4fad0d1cc9f3e4f8bbe6e27a38a",
+                    "create2": true
+                }
+            },
+            {
+                "name": "CurveSwapper",
+                "address": "0x1A5220D1ee0f03F80cd3574A8f0f58A103618631",
+                "meta": {
+                    "args": [
+                        "0x803147a1f65f9b838e7be39bac1a4f51e6d29a18",
+                        "0x5F7d6e4d86850E28b89eB10289D2b73f467380DB"
+                    ],
+                    "salt": "0xaab70ff2283a451e69ea413e58faed5b10f9cbad68069415f3b9fc89bfcda55c",
+                    "create2": true
+                }
+            },
+            {
+                "name": "CurveStableToUsdoBidder",
+                "address": "0xEF0f25FBeF288DFFc4402E33bF639f96400C858c",
+                "meta": {
+                    "args": [
+                        "0x1A5220D1ee0f03F80cd3574A8f0f58A103618631",
+                        "4"
+                    ],
+                    "salt": "0x1bfdc19fc848646268063c53dd77cc46358e933ab75d73c05e1f2470d335e8b5",
+                    "create2": true
+                }
+            },
+            {
+                "name": "MarketsProxy",
+                "address": "0x3B54Ba562012c09339A9466f6B5B8B227BAB2204",
+                "meta": {
+                    "args": [
+                        "0x6aB5Ae6822647046626e83ee6dB8187151E1d5ab",
+                        "0x40282d3Cf4890D9806BC1853e97a59C93D813653"
+                    ],
+                    "salt": "0x80773d3be621098ccd4008c0cccdcff0b2422b06b27a49442fc0202d88a48a0f",
+                    "create2": true
+                }
+            },
+            {
                 "name": "TapiocaDeployer",
                 "address": "0xECaF4E24dAc642d964B86F9461408d0C1f5d28A9",
                 "meta": {}

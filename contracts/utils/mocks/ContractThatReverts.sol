@@ -9,4 +9,8 @@ contract ContractThatReverts {
         count = _count;
         revert(revertStr);
     }
+
+    function shouldNotRevert(uint256 _count) external {
+        count = _count;
+    }
 }
