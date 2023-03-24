@@ -9,6 +9,7 @@ import {
 export const buildStableToUSD0Bidder = async (
     hre: HardhatRuntimeEnvironment,
     crvStablePoolAddr: string,
+    penroseMock: string,
     curvePoolAssetCount = '4',
 ): Promise<
     [
@@ -23,9 +24,10 @@ export const buildStableToUSD0Bidder = async (
             args: [
                 crvStablePoolAddr,
                 // Penrose, to be replaced by VM
-                hre.ethers.constants.AddressZero,
+                penroseMock,
             ],
             dependsOn: [{ argPosition: 1, deploymentName: 'Penrose' }],
+            runStaticSimulation: false,
         },
         {
             contract: await hre.ethers.getContractFactory(
@@ -38,6 +40,7 @@ export const buildStableToUSD0Bidder = async (
                 curvePoolAssetCount,
             ],
             dependsOn: [{ argPosition: 0, deploymentName: 'CurveSwapper' }],
+            runStaticSimulation: false,
         },
     ];
 };

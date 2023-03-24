@@ -20,5 +20,6 @@ export const buildPenrose = async (
             owner,
         ],
         dependsOn: [{ argPosition: 0, deploymentName: 'YieldBox' }],
+        runStaticSimulation: false,
     };
 };
