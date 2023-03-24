@@ -17,6 +17,6 @@ export const buildMultiSwapper = async (
             uniV2PairHash,
         ],
         dependsOn: [{ argPosition: 1, deploymentName: 'Penrose' }],
-        runStaticSimulation: false
+        runStaticSimulation: false,
     };
 };
