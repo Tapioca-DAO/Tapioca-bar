@@ -4,17 +4,17 @@ pragma solidity ^0.8.18;
 contract MultisigMock {
     address[] public owners;
     mapping(address => bool) public isOwner;
-    uint public numConfirmationsRequired;
+    uint256 public numConfirmationsRequired;
 
     struct Transaction {
         address to;
-        uint value;
+        uint256 value;
         bytes data;
         bool executed;
-        uint numConfirmations;
+        uint256 numConfirmations;
     }
 
-    mapping(uint => mapping(address => bool)) public isConfirmed;
+    mapping(uint256 => mapping(address => bool)) public isConfirmed;
 
     Transaction[] public transactions;
 
@@ -22,22 +22,22 @@ contract MultisigMock {
         require(isOwner[msg.sender], "not owner");
         _;
     }
-    modifier txExists(uint _txIndex) {
+    modifier txExists(uint256 _txIndex) {
         require(_txIndex < transactions.length, "tx does not exist");
         _;
     }
 
-    modifier notExecuted(uint _txIndex) {
+    modifier notExecuted(uint256 _txIndex) {
         require(!transactions[_txIndex].executed, "tx already executed");
         _;
     }
 
-    modifier notConfirmed(uint _txIndex) {
+    modifier notConfirmed(uint256 _txIndex) {
         require(!isConfirmed[_txIndex][msg.sender], "tx already confirmed");
         _;
     }
 
-    constructor(uint _numConfirmationsRequired) {
+    constructor(uint256 _numConfirmationsRequired) {
         isOwner[msg.sender] = true;
         owners.push(msg.sender);
 
@@ -49,7 +49,7 @@ contract MultisigMock {
         owners.push(_owner);
     }
 
-    function getTransactionCount() public view returns (uint) {
+    function getTransactionCount() public view returns (uint256) {
         return transactions.length;
     }
 
@@ -59,7 +59,7 @@ contract MultisigMock {
 
     function submitTransaction(
         address _to,
-        uint _value,
+        uint256 _value,
         bytes memory _data
     ) public onlyOwner {
         transactions.push(
@@ -74,7 +74,7 @@ contract MultisigMock {
     }
 
     function confirmTransaction(
-        uint _txIndex
+        uint256 _txIndex
     )
         public
         onlyOwner
@@ -88,7 +88,7 @@ contract MultisigMock {
     }
 
     function executeTransaction(
-        uint _txIndex
+        uint256 _txIndex
     ) public onlyOwner txExists(_txIndex) notExecuted(_txIndex) {
         Transaction storage transaction = transactions[_txIndex];
 
@@ -99,23 +99,37 @@ contract MultisigMock {
 
         transaction.executed = true;
 
-        (bool success, ) = transaction.to.call{value: transaction.value}(
-            transaction.data
-        );
-        require(success, "tx failed");
+        (bool success, bytes memory returnData) = transaction.to.call{
+            value: transaction.value
+        }(transaction.data);
+        if (!success) {
+            _getRevertMsg(returnData);
+        }
+    }
+
+    function _getRevertMsg(bytes memory _returnData) private pure {
+        // If the _res length is less than 68, then
+        // the transaction failed with custom error or silently (without a revert message)
+        if (_returnData.length < 68) revert("Reason unknown");
+
+        assembly {
+            // Slice the sighash.
+            _returnData := add(_returnData, 0x04)
+        }
+        revert(abi.decode(_returnData, (string))); // All that remains is the revert string
     }
 
     function getTransaction(
-        uint _txIndex
+        uint256 _txIndex
     )
         public
         view
         returns (
             address to,
-            uint value,
+            uint256 value,
             bytes memory data,
             bool executed,
-            uint numConfirmations
+            uint256 numConfirmations
         )
     {
         Transaction storage transaction = transactions[_txIndex];
