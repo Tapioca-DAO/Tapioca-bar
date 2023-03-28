@@ -9,14 +9,13 @@ export const buildEmptyStrat = async (
     token: TContract,
 ): Promise<IDeployerVMAdd<ContractFactory>> => {
     console.log(`TOKEN NAME ${token.name}`);
+    if (!token.address) throw '[-] Token needs to be deployed';
+    if (!yieldBoxAddress) throw '[-] YieldBox needs to be deployed';
+
     return {
         deploymentName: 'ERC20WithoutStrategy-' + token.name,
         contract: await hre.ethers.getContractFactory('ERC20WithoutStrategy'),
-        args: [
-            yieldBoxAddress,
-            // USDO, to be replaced by VM
-            hre.ethers.constants.AddressZero,
-        ],
+        args: [yieldBoxAddress, token.address],
         meta: {
             stratFor: token.name,
         },

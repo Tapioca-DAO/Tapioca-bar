@@ -6,11 +6,10 @@ import SDK from 'tapioca-sdk';
 
 enum StratType {
     TOFT = 0,
-    MarketsProxy = 1,
-    USDO = 2,
-    TAP = 3,
+    USDO = 1,
+    TAP = 2,
 }
-// hh 01-deployEmptyStrats --network arbitrum_goerli --type 0/1/2/3
+// hh 01-deployEmptyStrats --network arbitrum_goerli --type 0/1/2
 export const deployEmptyStrats__task = async (
     taskArgs: { type: string },
     hre: HardhatRuntimeEnvironment,
@@ -22,6 +21,7 @@ export const deployEmptyStrats__task = async (
     if (!chainInfo) {
         throw new Error('Chain not found');
     }
+    
     const tag = await hre.SDK.hardhatUtils.askForTag(hre, 'local');
 
     const yieldBox = hre.SDK.db
@@ -36,10 +36,6 @@ export const deployEmptyStrats__task = async (
         case StratType.TOFT:
             project = SDK.API.config.TAPIOCA_PROJECTS_NAME.TapiocaZ;
             name = 'TapiocaOFT';
-            break;
-        case StratType.MarketsProxy:
-            project = SDK.API.config.TAPIOCA_PROJECTS_NAME.TapiocaBar;
-            name = 'MarketsProxy';
             break;
         case StratType.USDO:
             project = SDK.API.config.TAPIOCA_PROJECTS_NAME.TapiocaBar;
@@ -70,9 +66,7 @@ export const deployEmptyStrats__task = async (
 
     console.log('[+] Deploying', tokens.length, 'strategies...');
     for (let i = 0; i < tokens.length; i++) {
-        VM.add(
-            await buildEmptyStrat(hre, yieldBox?.address as string, tokens[i]),
-        );
+        VM.add(await buildEmptyStrat(hre, yieldBox?.address, tokens[i]));
     }
 
     await VM.execute(3);
