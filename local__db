@@ -454,6 +454,82 @@
         ],
         "421613": [
             {
+                "name": "Tapioca Singularity TapiocaOFT-Arbitrum/USDO-OracleMock-TapiocaOFT-Arbitrum",
+                "address": "0x890aE45917B2120FE186A324fB6d6478D371bb3D",
+                "meta": {
+                    "isSGLMarket": true,
+                    "collateral": {
+                        "collateralAddress": "0x6D50d68FDD88A90825AE96DF792aE63a899f3c98",
+                        "collateralStrategyAddress": "0xe37D89CB902E1ac5276F8C3daa77112aA9f94ADb"
+                    },
+                    "asset": {
+                        "assetAddress": "0xdb7aaEf15Ed018e8C3ff21997114eD9f7F2BBF94",
+                        "assetStrategyAddress": "0x5c10bd8FC5724F1d675B134917Bd1AAE48E812db"
+                    }
+                }
+            },
+            {
+                "name": "OracleMock",
+                "address": "0xae38170Ff34c2DBc0014f63e4AD9dFA0A6b70CCF",
+                "meta": {
+                    "args": [
+                        "OracleMock-TapiocaOFT-Arbitrum",
+                        "OCM-TapiocaOFT-Arbitrum",
+                        {
+                            "type": "BigNumber",
+                            "hex": "0x0de0b6b3a7640000"
+                        }
+                    ],
+                    "salt": "0x8f19a86a98b0693484500deffd4945750e42e3916b1e30e9b3eb29cdb06dc7f5",
+                    "create2": true
+                }
+            },
+            {
+                "name": "Tapioca Singularity TapiocaOFT-WETHMock/USDO-OracleMock-TapiocaOFT-WETHMock",
+                "address": "0x16618e91596c544251F81b3DcC8a9F00ABBd9Fb4",
+                "meta": {
+                    "isSGLMarket": true,
+                    "collateral": {
+                        "collateralAddress": "0xC6043B557283b7e0807406196Cb8Ed33cd27016c",
+                        "collateralStrategyAddress": "0xB4a1e87db3bA2A6477b46Ae03c7246F88558466E"
+                    },
+                    "asset": {
+                        "assetAddress": "0xdb7aaEf15Ed018e8C3ff21997114eD9f7F2BBF94",
+                        "assetStrategyAddress": "0x5c10bd8FC5724F1d675B134917Bd1AAE48E812db"
+                    }
+                }
+            },
+            {
+                "name": "Tapioca Singularity TapiocaOFT-Avalanche/USDO-OracleMock-TapiocaOFT-Avalanche",
+                "address": "0x6165B5e93b9d77689149fAFf1e08a1e709f0877D",
+                "meta": {
+                    "isSGLMarket": true,
+                    "collateral": {
+                        "collateralAddress": "0xBf080bC15964085A7206FfA5E755079993Bcf7Ab",
+                        "collateralStrategyAddress": "0x753E681988d963384B03e2Ced5f1B083375a2AE6"
+                    },
+                    "asset": {
+                        "assetAddress": "0xdb7aaEf15Ed018e8C3ff21997114eD9f7F2BBF94",
+                        "assetStrategyAddress": "0x5c10bd8FC5724F1d675B134917Bd1AAE48E812db"
+                    }
+                }
+            },
+            {
+                "name": "Tapioca Singularity TapiocaOFT-Polygon/USDO-OracleMock-TapiocaOFT-Polygon",
+                "address": "0x149797878b1f04bd8322700249f009dd8d97bc92",
+                "meta": {
+                    "isSGLMarket": true,
+                    "collateral": {
+                        "collateralAddress": "0x6cbdc4f2c808c9e061f77a8b415548142b576e3c",
+                        "collateralStrategyAddress": "0xd3F31b3Ca268BA2c7eD9Eb33F96Fcccf52614Cb6"
+                    },
+                    "asset": {
+                        "assetAddress": "0xdb7aaef15ed018e8c3ff21997114ed9f7f2bbf94",
+                        "assetStrategyAddress": "0x5c10bd8FC5724F1d675B134917Bd1AAE48E812db"
+                    }
+                }
+            },
+            {
                 "name": "ERC20WithoutStrategy-TapiocaOFT-Polygon",
                 "address": "0xd3F31b3Ca268BA2c7eD9Eb33F96Fcccf52614Cb6",
                 "meta": {
