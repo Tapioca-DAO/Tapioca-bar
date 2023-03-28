@@ -34,7 +34,7 @@ export const registerYbAssets__task = async (
             await hre.getChainId(),
         )
         .filter((a) => stratForNames.find((e) => a.name.startsWith(e)));
-     const tapOFTTokens = hre.SDK.db
+    const tapOFTTokens = hre.SDK.db
         .loadGlobalDeployment(
             tag,
             hre.SDK.config.TAPIOCA_PROJECTS_NAME.TapToken,

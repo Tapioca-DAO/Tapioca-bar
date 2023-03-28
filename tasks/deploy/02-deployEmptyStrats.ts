@@ -21,7 +21,7 @@ export const deployEmptyStrats__task = async (
     if (!chainInfo) {
         throw new Error('Chain not found');
     }
-    
+
     const tag = await hre.SDK.hardhatUtils.askForTag(hre, 'local');
 
     const yieldBox = hre.SDK.db
