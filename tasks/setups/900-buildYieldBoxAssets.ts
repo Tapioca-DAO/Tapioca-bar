@@ -4,6 +4,7 @@ import { Multicall3 } from '../../typechain/contracts/MultiCall';
 
 export const buildYieldBoxAssets = async (
     hre: HardhatRuntimeEnvironment,
+    tag: string,
     deps: (TDeploymentVMContract & { meta: { stratFor?: string } })[],
 ): Promise<Multicall3.Call3Struct[]> => {
     const calls: Multicall3.Call3Struct[] = [];
@@ -27,16 +28,21 @@ export const buildYieldBoxAssets = async (
      */
     console.log('[+] +Call queue: Adding calls to register assets on YieldBox');
 
-    const assets = deps.filter((e) => e.meta.stratFor);
+    const strategies = deps.filter((e) => e.meta?.stratFor);
 
-    for (const asset of assets) {
-        console.log(`\t+registering ${asset.name}`);
+    for (const strategy of strategies) {
+        console.log(`\t+registering ${strategy.name}`);
+
+        const stratForAddress = deps.find(
+            (e) => e.name == strategy.meta.stratFor,
+        )?.address;
+
         calls.push({
             target: yieldBoxAddr,
             callData: yieldBox.interface.encodeFunctionData('registerAsset', [
                 1,
-                asset.meta.stratFor!,
-                asset.address,
+                stratForAddress,
+                strategy.address,
                 0,
             ]),
             allowFailure: false,

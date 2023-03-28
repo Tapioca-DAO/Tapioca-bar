@@ -24,12 +24,16 @@ export const deploySGLMarket__task = async (
         token,
     } = await loadContracts(hre, tag);
 
-    const { tokenStrategy, usd0Strategy, oracleAddress } = await loadStrats(
-        hre,
+    const { usd0Strategy, oracleAddress } = await loadStrats(hre, tag, token);
+
+    const tokenStrategy = hre.SDK.db.getLocalDeployment(
+        await hre.getChainId(),
+        `ERC20WithoutStrategy-${token.name}`,
         tag,
-        token,
-        yieldBox.address,
     );
+    if (!tokenStrategy) {
+        throw '[-] Token strategy not found. Use deployEmptyStrategy to create one';
+    }
 
     const [asset, collateral] = [
         {
@@ -101,6 +105,7 @@ export const deploySGLMarket__task = async (
             },
         },
     ]);
+    VM.save();
 };
 
 async function loadAssets(
@@ -131,27 +136,49 @@ async function loadStrats(
     hre: HardhatRuntimeEnvironment,
     tag: string,
     token: TContract,
-    yieldBoxAddr: string,
 ) {
     const VM = await loadVM(hre, tag);
 
-    const usd0Strategy = hre.SDK.db.getLocalDeployment(
+    let usd0Strategy = hre.SDK.db.getLocalDeployment(
         await hre.getChainId(),
         'ERC20WithoutStrategy-USDO',
         tag,
     );
+
+    //if host chain, USDO strategy might be available in Penrose
+    if (!usd0Strategy) {
+        const penroseDeployment = hre.SDK.db.getLocalDeployment(
+            await hre.getChainId(),
+            'Penrose',
+            tag,
+        );
+        const penroseContract = await hre.ethers.getContractAt(
+            'Penrose',
+            penroseDeployment?.address,
+        );
+        if (!penroseContract) {
+            throw new Error('[-] Penrose not found on host chain');
+        }
+        const usdoDeployment = hre.SDK.db.getLocalDeployment(
+            await hre.getChainId(),
+            'USDO',
+            tag,
+        );
+        if (!usdoDeployment) {
+            throw new Error('[-] USDO not found on host chain');
+        }
+        const strategyAddress = await penroseContract.emptyStrategies(
+            usdoDeployment.address,
+        );
+        usd0Strategy = {
+            name: 'ERC20WithoutStrategy-USDO',
+            address: strategyAddress,
+            meta: {},
+        };
+    }
     if (!usd0Strategy) {
         throw new Error('[-] USDO strategy not found');
     }
-
-    VM.add({
-        contract: await hre.ethers.getContractFactory('ERC20WithoutStrategy'),
-        deploymentName: 'ERC20WithoutStrategy-' + token.name,
-        args: [yieldBoxAddr, usd0Strategy.address],
-        meta: {
-            stratFor: token.name,
-        },
-    });
 
     const { oracleRate } = await inquirer.prompt({
         type: 'input',
@@ -173,8 +200,7 @@ async function loadStrats(
 
     return {
         usd0Strategy,
-        tokenStrategy: VM.list()[0],
-        oracleAddress: VM.list()[1],
+        oracleAddress: VM.list()[0],
     };
 }
 
@@ -230,6 +256,7 @@ async function loadContracts(hre: HardhatRuntimeEnvironment, tag: string) {
             'Which token do you want to deploy a market for? (List loaded from tapiocaz repo)',
         choices: tokens.map((e) => e.name),
     });
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const token = tokens.find((e) => e.name === tokenName)!;
 
     return {
