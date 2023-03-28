@@ -1,11 +1,6 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import SDK from 'tapioca-sdk';
-import {
-    registerLiquidationQueue,
-    registerMarket,
-    updateDeployments,
-} from '../deploy/utils';
-import { usd0 as TUSD0 } from '../typechain/contracts';
+import { USDO } from '../typechain';
 
 // Airdrop gas from Goerli to Fuji, can only send the same amount. Need 1 USDO available for each transaction
 // hh airdropGas --amount 0.24 --dst-chain 10106 --dst-address 0xAF933E0E75E0576511e17b173cc6e3D0a09DB764 --network arbitrum_goerli
@@ -27,14 +22,13 @@ export const airdropGas__task = async (
     if (!fromChain) throw new Error('[-] From chain not supported');
     if (!toChain) throw new Error('[-] To chain not supported');
 
-    const usd0 = await hre.ethers.getContractAt(
-        'USDO',
-        SDK.API.utils.getDeployment(
-            'Tapioca-Bar',
+    const usd0 = (
+        await hre.SDK.hardhatUtils.getLocalContract<USDO>(
+            hre,
             'USDO',
-            await hre.getChainId(),
-        ).address,
-    );
+            await hre.SDK.hardhatUtils.askForTag(hre, 'local'),
+        )
+    ).contract;
 
     const { deployer: signer } = await hre.getNamedAccounts();
 
@@ -48,7 +42,7 @@ export const airdropGas__task = async (
         await usd0.estimateSendFee(
             taskArgs.dstChain,
             signer.padEnd(66, '0'),
-            (1e18).toString(),
+            (1e10).toString(),
             false,
             adapterParams,
         )
@@ -58,7 +52,7 @@ export const airdropGas__task = async (
         signer,
         taskArgs.dstChain,
         signer.padEnd(66, '0'),
-        (1e18).toString(),
+        (1e10).toString(),
         {
             adapterParams,
             refundAddress: signer,

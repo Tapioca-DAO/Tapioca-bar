@@ -613,7 +613,8 @@ async function depositAddCollateralAndBorrowPlug(
     shouldRevert?: boolean,
     revertMessage?: string,
 ) {
-    let share, amount;
+    const share = await yieldBox.balanceOf(signer.address, assetId);
+    const amount = await yieldBox.toAmount(assetId, share, false);
 
     if (shouldRevert) {
         await expect(
@@ -640,8 +641,7 @@ async function depositAddCollateralAndBorrowPlug(
             withdraw,
             withdrawData,
         );
-    share = await yieldBox.balanceOf(signer.address, assetId);
-    amount = await yieldBox.toAmount(assetId, share, false);
+
     if (!withdraw) {
         expect(amount.eq(borrowValue)).to.be.true;
     } else {
