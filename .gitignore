@@ -2,10 +2,11 @@ node_modules
 .env
 coverage
 coverage.json
-typechain
+yarn.lock
 package-lock.json
 
 __MACOSX
 #Hardhat files
 cache
 artifacts
+

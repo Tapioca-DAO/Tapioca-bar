@@ -45,13 +45,31 @@ export const deployEmptyStrats__task = async (
             project = SDK.API.config.TAPIOCA_PROJECTS_NAME.TapToken;
             name = 'TapOFT';
             break;
+        default:
+            console.log('Specific deployment:');
+            project = SDK.API.config.TAPIOCA_PROJECTS_NAME.TapiocaBar;
+            const { testTokenName } = await inquirer.prompt({
+                type: 'input',
+                name: 'testTokenName',
+                message:
+                    'What is the token you want to register the strategy for?',
+            });
+            name = testTokenName;
+            console.log(`Will deploy a strategy for: ${name} contract`);
+            break;
     }
 
-    const VM = await loadVM(hre, tag);
+    const VM = await loadVM(hre, tag, true);
 
-    const tokens = hre.SDK.db
+    let tokens = hre.SDK.db
         .loadGlobalDeployment(tag, project, await hre.getChainId())
         .filter((e) => e.name.startsWith(name));
+
+    if (tokens.length == 0) {
+        tokens = hre.SDK.db
+            .loadLocalDeployment(tag, await hre.getChainId())
+            .filter((e) => e.name.startsWith(name));
+    }
 
     console.log('[+] Found', tokens.length, 'tokens');
     console.log(tokens.map((e) => `\t${e.name}`));

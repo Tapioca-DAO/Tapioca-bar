@@ -12,7 +12,7 @@ import { setLiquidationQueueBidSwapper__task } from './tasks/execs/setLiquidatio
 import { setLiquidationQueueExecutionSwapper__task } from './tasks/execs/setLiquidationQueueExecutionSwapper';
 import { setProxyAdapterParams__task } from './tasks/execs/setProxyAdapterParams';
 import { setProxyTrustedRemote__task } from './tasks/execs/setProxyTrustedRemote';
-import { registerYbAssets__task } from './tasks/deploy/registerYbAssets';
+import { registerYbAssets__task } from './tasks/execs/registerYbAssets';
 import { hasStoredPayload__task } from './tasks/test-hasStoredPayload';
 import { otherChainBorrow__task } from './tasks/test-otherChainBorrow';
 import { retryPayload__task } from './tasks/test-retryPayload';

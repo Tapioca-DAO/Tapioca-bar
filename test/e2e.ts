@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import { ethers } from 'hardhat';
-import { register } from './test.utils';
+import { register, BN } from './test.utils';
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 import { BigBang, MarketsHelper, USDO, WETH9Mock } from '../typechain';
 import { BigNumber, BigNumberish } from 'ethers';
@@ -613,8 +613,8 @@ async function depositAddCollateralAndBorrowPlug(
     shouldRevert?: boolean,
     revertMessage?: string,
 ) {
-    const share = await yieldBox.balanceOf(signer.address, assetId);
-    const amount = await yieldBox.toAmount(assetId, share, false);
+    let share = BN(0),
+        amount = BN(0);
 
     if (shouldRevert) {
         await expect(
@@ -628,9 +628,11 @@ async function depositAddCollateralAndBorrowPlug(
                     withdraw,
                     withdrawData,
                 ),
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         ).to.be.revertedWith(revertMessage!);
         return { share, amount };
     }
+
     await marketsHelper
         .connect(signer)
         .depositAddCollateralAndBorrow(
@@ -641,6 +643,9 @@ async function depositAddCollateralAndBorrowPlug(
             withdraw,
             withdrawData,
         );
+
+    share = await yieldBox.balanceOf(signer.address, assetId);
+    amount = await yieldBox.toAmount(assetId, share, false);
 
     if (!withdraw) {
         expect(amount.eq(borrowValue)).to.be.true;

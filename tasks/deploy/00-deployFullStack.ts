@@ -142,7 +142,11 @@ export const deployFullStack__task = async (
         message: 'Do you want to verify the contracts?',
     });
     if (wantToVerify) {
-        await VM.verify();
+        try {
+            await VM.verify();
+        } catch {
+            console.log('[-] Verification failed');
+        }
     }
 
     // After deployment setup
