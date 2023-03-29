@@ -60,8 +60,6 @@ contract SGLStorage is BoringOwnable, ERC20 {
     mapping(address => uint256) public userCollateralShare;
     // userAssetFraction is called balanceOf for ERC20 compatibility (it's in ERC20.sol)
     mapping(address => uint256) public userBorrowPart;
-    // map of operator approval
-    mapping(address => mapping(address => bool)) public isApprovedForAll;
 
     /// @notice Exchange and interest rate tracking.
     /// This is 'cached' here because calls to Oracles can be very expensive.
