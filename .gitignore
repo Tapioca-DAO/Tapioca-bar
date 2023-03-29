@@ -2,9 +2,6 @@ node_modules
 .env
 coverage
 coverage.json
-typechain
-tapioca-sdk
-gitsub_tapioca-sdk
 yarn.lock
 package-lock.json
 
