@@ -65,7 +65,7 @@ contract SGLLendingBorrowing is SGLCommon {
         address to,
         bool skim,
         uint256 share
-    ) public notPaused allowed(from) {
+    ) public notPaused {
         _addCollateral(from, to, skim, share);
     }
 
