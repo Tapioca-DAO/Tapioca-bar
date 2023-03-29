@@ -46,7 +46,7 @@ export const deployEmptyStrats__task = async (
             name = 'TapOFT';
             break;
         default:
-            console.log('Testing...');
+            console.log('Specific deployment:');
             project = SDK.API.config.TAPIOCA_PROJECTS_NAME.TapiocaBar;
             const { testTokenName } = await inquirer.prompt({
                 type: 'input',
@@ -55,7 +55,7 @@ export const deployEmptyStrats__task = async (
                     'What is the token you want to register the strategy for?',
             });
             name = testTokenName;
-            console.log(`Testing for: ${name}`);
+            console.log(`Will deploy a strategy for: ${name} contract`);
             break;
     }
 
