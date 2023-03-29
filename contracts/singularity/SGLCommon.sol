@@ -241,7 +241,7 @@ contract SGLCommon is SGLStorage {
         address to,
         bool skim,
         uint256 share
-    ) public notPaused allowed(from) returns (uint256 fraction) {
+    ) public notPaused returns (uint256 fraction) {
         accrue();
         fraction = _addAsset(from, to, skim, share);
     }
