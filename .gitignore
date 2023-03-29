@@ -4,6 +4,7 @@ coverage
 coverage.json
 yarn.lock
 package-lock.json
+typechain
 
 __MACOSX
 #Hardhat files
