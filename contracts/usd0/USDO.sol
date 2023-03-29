@@ -67,7 +67,11 @@ contract USDO is BaseOFT, IERC3156FlashLender {
         address _lzEndpoint,
         IYieldBox _yieldBox,
         address _owner
-    ) OFTV2("USDO", "USDO", 8, _lzEndpoint) BaseOFT(_yieldBox) {
+    )
+        OFTV2("USDO", "USDO", 8, _lzEndpoint)
+        BaseOFT(_yieldBox)
+        ERC20Permit("USDO")
+    {
         uint256 chain = _getChainId();
         allowedMinter[chain][msg.sender] = true;
         allowedBurner[chain][msg.sender] = true;

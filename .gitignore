@@ -6,6 +6,7 @@ typechain
 tapioca-sdk
 gitsub_tapioca-sdk
 yarn.lock
+package-lock.json
 __MACOSX
 #Hardhat files
 cache

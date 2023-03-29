@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
+import {BaseBoringBatchable} from "@boringcrypto/boring-solidity/contracts/BoringBatchable.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/draft-ERC20Permit.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "tapioca-sdk/dist/contracts/libraries/LzLib.sol";
 import "tapioca-sdk/dist/contracts/token/oft/v2/OFTV2.sol";
@@ -28,7 +30,7 @@ import "./interfaces/IYieldBox.sol";
 //         ####*  (((((((((((((((((((
 //                     ,**//*,.
 
-abstract contract BaseOFT is OFTV2 {
+abstract contract BaseOFT is OFTV2, ERC20Permit, BaseBoringBatchable {
     using SafeERC20 for IERC20;
     using BytesLib for bytes;
 
