@@ -1,0 +1,39 @@
+{
+  "language": "Solidity",
+  "sources": {
+    "contracts/mocks/MultisigMock.sol": {
+      "content": "// SPDX-License-Identifier: UNLICENSED\npragma solidity ^0.8.18;\n\ncontract MultisigMock {\n    address[] public owners;\n    mapping(address => bool) public isOwner;\n    uint256 public numConfirmationsRequired;\n\n    struct Transaction {\n        address to;\n        uint256 value;\n        bytes data;\n        bool executed;\n        uint256 numConfirmations;\n    }\n\n    mapping(uint256 => mapping(address => bool)) public isConfirmed;\n\n    Transaction[] public transactions;\n\n    modifier onlyOwner() {\n        require(isOwner[msg.sender], \"not owner\");\n        _;\n    }\n    modifier txExists(uint256 _txIndex) {\n        require(_txIndex < transactions.length, \"tx does not exist\");\n        _;\n    }\n\n    modifier notExecuted(uint256 _txIndex) {\n        require(!transactions[_txIndex].executed, \"tx already executed\");\n        _;\n    }\n\n    modifier notConfirmed(uint256 _txIndex) {\n        require(!isConfirmed[_txIndex][msg.sender], \"tx already confirmed\");\n        _;\n    }\n\n    constructor(uint256 _numConfirmationsRequired) {\n        isOwner[msg.sender] = true;\n        owners.push(msg.sender);\n\n        numConfirmationsRequired = _numConfirmationsRequired;\n    }\n\n    function addOwner(address _owner) external {\n        isOwner[_owner] = true;\n        owners.push(_owner);\n    }\n\n    function getTransactionCount() public view returns (uint256) {\n        return transactions.length;\n    }\n\n    function getOwners() public view returns (address[] memory) {\n        return owners;\n    }\n\n    function submitTransaction(\n        address _to,\n        uint256 _value,\n        bytes memory _data\n    ) public onlyOwner {\n        transactions.push(\n            Transaction({\n                to: _to,\n                value: _value,\n                data: _data,\n                executed: false,\n                numConfirmations: 0\n            })\n        );\n    }\n\n    function confirmTransaction(\n        uint256 _txIndex\n    )\n        public\n        onlyOwner\n        txExists(_txIndex)\n        notExecuted(_txIndex)\n        notConfirmed(_txIndex)\n    {\n        Transaction storage transaction = transactions[_txIndex];\n        transaction.numConfirmations += 1;\n        isConfirmed[_txIndex][msg.sender] = true;\n    }\n\n    function executeTransaction(\n        uint256 _txIndex\n    ) public onlyOwner txExists(_txIndex) notExecuted(_txIndex) {\n        Transaction storage transaction = transactions[_txIndex];\n\n        require(\n            transaction.numConfirmations >= numConfirmationsRequired,\n            \"cannot execute tx\"\n        );\n\n        transaction.executed = true;\n\n        (bool success, bytes memory returnData) = transaction.to.call{\n            value: transaction.value\n        }(transaction.data);\n        if (!success) {\n            _getRevertMsg(returnData);\n        }\n    }\n\n    function _getRevertMsg(bytes memory _returnData) private pure {\n        // If the _res length is less than 68, then\n        // the transaction failed with custom error or silently (without a revert message)\n        if (_returnData.length < 68) revert(\"Reason unknown\");\n\n        assembly {\n            // Slice the sighash.\n            _returnData := add(_returnData, 0x04)\n        }\n        revert(abi.decode(_returnData, (string))); // All that remains is the revert string\n    }\n\n    function getTransaction(\n        uint256 _txIndex\n    )\n        public\n        view\n        returns (\n            address to,\n            uint256 value,\n            bytes memory data,\n            bool executed,\n            uint256 numConfirmations\n        )\n    {\n        Transaction storage transaction = transactions[_txIndex];\n\n        return (\n            transaction.to,\n            transaction.value,\n            transaction.data,\n            transaction.executed,\n            transaction.numConfirmations\n        );\n    }\n}\n"
+    },
+    "contracts/utils/mocks/ContractThatReverts.sol": {
+      "content": "// SPDX-License-Identifier: UNLICENSED\npragma solidity >0.8.0;\n\ncontract ContractThatReverts {\n    uint256 public count;\n    string public revertStr = \"This method reverted. So awesome!\";\n\n    function shouldRevert(uint256 _count) external {\n        count = _count;\n        revert(revertStr);\n    }\n\n    function shouldNotRevert(uint256 _count) external {\n        count = _count;\n    }\n}\n"
+    }
+  },
+  "settings": {
+    "viaIR": true,
+    "optimizer": {
+      "enabled": true,
+      "runs": 1000
+    },
+    "outputSelection": {
+      "*": {
+        "*": [
+          "abi",
+          "evm.bytecode",
+          "evm.deployedBytecode",
+          "evm.methodIdentifiers",
+          "metadata",
+          "devdoc",
+          "userdoc",
+          "storageLayout",
+          "evm.gasEstimates"
+        ],
+        "": [
+          "ast"
+        ]
+      }
+    },
+    "metadata": {
+      "useLiteralContent": true
+    }
+  }
+}
