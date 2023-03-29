@@ -11,6 +11,17 @@ import type {
 
 const _abi = [
   {
+    inputs: [
+      {
+        internalType: "bytes",
+        name: "innerError",
+        type: "bytes",
+      },
+    ],
+    name: "BatchError",
+    type: "error",
+  },
+  {
     inputs: [],
     name: "TOFT_YB_ETHDeposit",
     type: "error",
@@ -382,6 +393,19 @@ const _abi = [
   },
   {
     inputs: [],
+    name: "DOMAIN_SEPARATOR",
+    outputs: [
+      {
+        internalType: "bytes32",
+        name: "",
+        type: "bytes32",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
     name: "NO_EXTRA_GAS",
     outputs: [
       {
@@ -536,6 +560,24 @@ const _abi = [
       },
     ],
     stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "bytes[]",
+        name: "calls",
+        type: "bytes[]",
+      },
+      {
+        internalType: "bool",
+        name: "revertOnFail",
+        type: "bool",
+      },
+    ],
+    name: "batch",
+    outputs: [],
+    stateMutability: "payable",
     type: "function",
   },
   {
@@ -1018,6 +1060,25 @@ const _abi = [
     type: "function",
   },
   {
+    inputs: [
+      {
+        internalType: "address",
+        name: "owner",
+        type: "address",
+      },
+    ],
+    name: "nonces",
+    outputs: [
+      {
+        internalType: "uint256",
+        name: "",
+        type: "uint256",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
     inputs: [],
     name: "owner",
     outputs: [
@@ -1047,6 +1108,49 @@ const _abi = [
       },
     ],
     stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "address",
+        name: "owner",
+        type: "address",
+      },
+      {
+        internalType: "address",
+        name: "spender",
+        type: "address",
+      },
+      {
+        internalType: "uint256",
+        name: "value",
+        type: "uint256",
+      },
+      {
+        internalType: "uint256",
+        name: "deadline",
+        type: "uint256",
+      },
+      {
+        internalType: "uint8",
+        name: "v",
+        type: "uint8",
+      },
+      {
+        internalType: "bytes32",
+        name: "r",
+        type: "bytes32",
+      },
+      {
+        internalType: "bytes32",
+        name: "s",
+        type: "bytes32",
+      },
+    ],
+    name: "permit",
+    outputs: [],
+    stateMutability: "nonpayable",
     type: "function",
   },
   {

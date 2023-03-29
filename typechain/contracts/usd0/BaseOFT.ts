@@ -45,6 +45,7 @@ export declare namespace ICommonOFT {
 export interface BaseOFTInterface extends utils.Interface {
   functions: {
     "DEFAULT_PAYLOAD_SIZE_LIMIT()": FunctionFragment;
+    "DOMAIN_SEPARATOR()": FunctionFragment;
     "NO_EXTRA_GAS()": FunctionFragment;
     "PT_SEND()": FunctionFragment;
     "PT_SEND_AND_CALL()": FunctionFragment;
@@ -55,6 +56,7 @@ export interface BaseOFTInterface extends utils.Interface {
     "allowance(address,address)": FunctionFragment;
     "approve(address,uint256)": FunctionFragment;
     "balanceOf(address)": FunctionFragment;
+    "batch(bytes[],bool)": FunctionFragment;
     "callOnOFTReceived(uint16,bytes,uint64,bytes32,address,uint256,bytes,uint256)": FunctionFragment;
     "circulatingSupply()": FunctionFragment;
     "creditedPackets(uint16,bytes,uint64)": FunctionFragment;
@@ -73,8 +75,10 @@ export interface BaseOFTInterface extends utils.Interface {
     "minDstGasLookup(uint16,uint16)": FunctionFragment;
     "name()": FunctionFragment;
     "nonblockingLzReceive(uint16,bytes,uint64,bytes)": FunctionFragment;
+    "nonces(address)": FunctionFragment;
     "owner()": FunctionFragment;
     "payloadSizeLimitLookup(uint16)": FunctionFragment;
+    "permit(address,address,uint256,uint256,uint8,bytes32,bytes32)": FunctionFragment;
     "precrime()": FunctionFragment;
     "renounceOwnership()": FunctionFragment;
     "retrieveFromYB(uint256,uint256,uint16,address,bytes,bool)": FunctionFragment;
@@ -107,6 +111,7 @@ export interface BaseOFTInterface extends utils.Interface {
   getFunction(
     nameOrSignatureOrTopic:
       | "DEFAULT_PAYLOAD_SIZE_LIMIT"
+      | "DOMAIN_SEPARATOR"
       | "NO_EXTRA_GAS"
       | "PT_SEND"
       | "PT_SEND_AND_CALL"
@@ -117,6 +122,7 @@ export interface BaseOFTInterface extends utils.Interface {
       | "allowance"
       | "approve"
       | "balanceOf"
+      | "batch"
       | "callOnOFTReceived"
       | "circulatingSupply"
       | "creditedPackets"
@@ -135,8 +141,10 @@ export interface BaseOFTInterface extends utils.Interface {
       | "minDstGasLookup"
       | "name"
       | "nonblockingLzReceive"
+      | "nonces"
       | "owner"
       | "payloadSizeLimitLookup"
+      | "permit"
       | "precrime"
       | "renounceOwnership"
       | "retrieveFromYB"
@@ -168,6 +176,10 @@ export interface BaseOFTInterface extends utils.Interface {
 
   encodeFunctionData(
     functionFragment: "DEFAULT_PAYLOAD_SIZE_LIMIT",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "DOMAIN_SEPARATOR",
     values?: undefined
   ): string;
   encodeFunctionData(
@@ -206,6 +218,10 @@ export interface BaseOFTInterface extends utils.Interface {
   encodeFunctionData(
     functionFragment: "balanceOf",
     values: [PromiseOrValue<string>]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "batch",
+    values: [PromiseOrValue<BytesLike>[], PromiseOrValue<boolean>]
   ): string;
   encodeFunctionData(
     functionFragment: "callOnOFTReceived",
@@ -319,10 +335,26 @@ export interface BaseOFTInterface extends utils.Interface {
       PromiseOrValue<BytesLike>
     ]
   ): string;
+  encodeFunctionData(
+    functionFragment: "nonces",
+    values: [PromiseOrValue<string>]
+  ): string;
   encodeFunctionData(functionFragment: "owner", values?: undefined): string;
   encodeFunctionData(
     functionFragment: "payloadSizeLimitLookup",
     values: [PromiseOrValue<BigNumberish>]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "permit",
+    values: [
+      PromiseOrValue<string>,
+      PromiseOrValue<string>,
+      PromiseOrValue<BigNumberish>,
+      PromiseOrValue<BigNumberish>,
+      PromiseOrValue<BigNumberish>,
+      PromiseOrValue<BytesLike>,
+      PromiseOrValue<BytesLike>
+    ]
   ): string;
   encodeFunctionData(functionFragment: "precrime", values?: undefined): string;
   encodeFunctionData(
@@ -472,6 +504,10 @@ export interface BaseOFTInterface extends utils.Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
+    functionFragment: "DOMAIN_SEPARATOR",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
     functionFragment: "NO_EXTRA_GAS",
     data: BytesLike
   ): Result;
@@ -499,6 +535,7 @@ export interface BaseOFTInterface extends utils.Interface {
   decodeFunctionResult(functionFragment: "allowance", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "approve", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "balanceOf", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "batch", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "callOnOFTReceived",
     data: BytesLike
@@ -556,11 +593,13 @@ export interface BaseOFTInterface extends utils.Interface {
     functionFragment: "nonblockingLzReceive",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(functionFragment: "nonces", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "owner", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "payloadSizeLimitLookup",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(functionFragment: "permit", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "precrime", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "renounceOwnership",
@@ -902,6 +941,8 @@ export interface BaseOFT extends BaseContract {
   functions: {
     DEFAULT_PAYLOAD_SIZE_LIMIT(overrides?: CallOverrides): Promise<[BigNumber]>;
 
+    DOMAIN_SEPARATOR(overrides?: CallOverrides): Promise<[string]>;
+
     NO_EXTRA_GAS(overrides?: CallOverrides): Promise<[BigNumber]>;
 
     PT_SEND(overrides?: CallOverrides): Promise<[number]>;
@@ -932,6 +973,12 @@ export interface BaseOFT extends BaseContract {
       account: PromiseOrValue<string>,
       overrides?: CallOverrides
     ): Promise<[BigNumber]>;
+
+    batch(
+      calls: PromiseOrValue<BytesLike>[],
+      revertOnFail: PromiseOrValue<boolean>,
+      overrides?: PayableOverrides & { from?: PromiseOrValue<string> }
+    ): Promise<ContractTransaction>;
 
     callOnOFTReceived(
       _srcChainId: PromiseOrValue<BigNumberish>,
@@ -1050,12 +1097,28 @@ export interface BaseOFT extends BaseContract {
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<ContractTransaction>;
 
+    nonces(
+      owner: PromiseOrValue<string>,
+      overrides?: CallOverrides
+    ): Promise<[BigNumber]>;
+
     owner(overrides?: CallOverrides): Promise<[string]>;
 
     payloadSizeLimitLookup(
       arg0: PromiseOrValue<BigNumberish>,
       overrides?: CallOverrides
     ): Promise<[BigNumber]>;
+
+    permit(
+      owner: PromiseOrValue<string>,
+      spender: PromiseOrValue<string>,
+      value: PromiseOrValue<BigNumberish>,
+      deadline: PromiseOrValue<BigNumberish>,
+      v: PromiseOrValue<BigNumberish>,
+      r: PromiseOrValue<BytesLike>,
+      s: PromiseOrValue<BytesLike>,
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<ContractTransaction>;
 
     precrime(overrides?: CallOverrides): Promise<[string]>;
 
@@ -1207,6 +1270,8 @@ export interface BaseOFT extends BaseContract {
 
   DEFAULT_PAYLOAD_SIZE_LIMIT(overrides?: CallOverrides): Promise<BigNumber>;
 
+  DOMAIN_SEPARATOR(overrides?: CallOverrides): Promise<string>;
+
   NO_EXTRA_GAS(overrides?: CallOverrides): Promise<BigNumber>;
 
   PT_SEND(overrides?: CallOverrides): Promise<number>;
@@ -1237,6 +1302,12 @@ export interface BaseOFT extends BaseContract {
     account: PromiseOrValue<string>,
     overrides?: CallOverrides
   ): Promise<BigNumber>;
+
+  batch(
+    calls: PromiseOrValue<BytesLike>[],
+    revertOnFail: PromiseOrValue<boolean>,
+    overrides?: PayableOverrides & { from?: PromiseOrValue<string> }
+  ): Promise<ContractTransaction>;
 
   callOnOFTReceived(
     _srcChainId: PromiseOrValue<BigNumberish>,
@@ -1355,12 +1426,28 @@ export interface BaseOFT extends BaseContract {
     overrides?: Overrides & { from?: PromiseOrValue<string> }
   ): Promise<ContractTransaction>;
 
+  nonces(
+    owner: PromiseOrValue<string>,
+    overrides?: CallOverrides
+  ): Promise<BigNumber>;
+
   owner(overrides?: CallOverrides): Promise<string>;
 
   payloadSizeLimitLookup(
     arg0: PromiseOrValue<BigNumberish>,
     overrides?: CallOverrides
   ): Promise<BigNumber>;
+
+  permit(
+    owner: PromiseOrValue<string>,
+    spender: PromiseOrValue<string>,
+    value: PromiseOrValue<BigNumberish>,
+    deadline: PromiseOrValue<BigNumberish>,
+    v: PromiseOrValue<BigNumberish>,
+    r: PromiseOrValue<BytesLike>,
+    s: PromiseOrValue<BytesLike>,
+    overrides?: Overrides & { from?: PromiseOrValue<string> }
+  ): Promise<ContractTransaction>;
 
   precrime(overrides?: CallOverrides): Promise<string>;
 
@@ -1512,6 +1599,8 @@ export interface BaseOFT extends BaseContract {
   callStatic: {
     DEFAULT_PAYLOAD_SIZE_LIMIT(overrides?: CallOverrides): Promise<BigNumber>;
 
+    DOMAIN_SEPARATOR(overrides?: CallOverrides): Promise<string>;
+
     NO_EXTRA_GAS(overrides?: CallOverrides): Promise<BigNumber>;
 
     PT_SEND(overrides?: CallOverrides): Promise<number>;
@@ -1542,6 +1631,12 @@ export interface BaseOFT extends BaseContract {
       account: PromiseOrValue<string>,
       overrides?: CallOverrides
     ): Promise<BigNumber>;
+
+    batch(
+      calls: PromiseOrValue<BytesLike>[],
+      revertOnFail: PromiseOrValue<boolean>,
+      overrides?: CallOverrides
+    ): Promise<void>;
 
     callOnOFTReceived(
       _srcChainId: PromiseOrValue<BigNumberish>,
@@ -1660,12 +1755,28 @@ export interface BaseOFT extends BaseContract {
       overrides?: CallOverrides
     ): Promise<void>;
 
+    nonces(
+      owner: PromiseOrValue<string>,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
     owner(overrides?: CallOverrides): Promise<string>;
 
     payloadSizeLimitLookup(
       arg0: PromiseOrValue<BigNumberish>,
       overrides?: CallOverrides
     ): Promise<BigNumber>;
+
+    permit(
+      owner: PromiseOrValue<string>,
+      spender: PromiseOrValue<string>,
+      value: PromiseOrValue<BigNumberish>,
+      deadline: PromiseOrValue<BigNumberish>,
+      v: PromiseOrValue<BigNumberish>,
+      r: PromiseOrValue<BytesLike>,
+      s: PromiseOrValue<BytesLike>,
+      overrides?: CallOverrides
+    ): Promise<void>;
 
     precrime(overrides?: CallOverrides): Promise<string>;
 
@@ -1964,6 +2075,8 @@ export interface BaseOFT extends BaseContract {
   estimateGas: {
     DEFAULT_PAYLOAD_SIZE_LIMIT(overrides?: CallOverrides): Promise<BigNumber>;
 
+    DOMAIN_SEPARATOR(overrides?: CallOverrides): Promise<BigNumber>;
+
     NO_EXTRA_GAS(overrides?: CallOverrides): Promise<BigNumber>;
 
     PT_SEND(overrides?: CallOverrides): Promise<BigNumber>;
@@ -1993,6 +2106,12 @@ export interface BaseOFT extends BaseContract {
     balanceOf(
       account: PromiseOrValue<string>,
       overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
+    batch(
+      calls: PromiseOrValue<BytesLike>[],
+      revertOnFail: PromiseOrValue<boolean>,
+      overrides?: PayableOverrides & { from?: PromiseOrValue<string> }
     ): Promise<BigNumber>;
 
     callOnOFTReceived(
@@ -2108,11 +2227,27 @@ export interface BaseOFT extends BaseContract {
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<BigNumber>;
 
+    nonces(
+      owner: PromiseOrValue<string>,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
     owner(overrides?: CallOverrides): Promise<BigNumber>;
 
     payloadSizeLimitLookup(
       arg0: PromiseOrValue<BigNumberish>,
       overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
+    permit(
+      owner: PromiseOrValue<string>,
+      spender: PromiseOrValue<string>,
+      value: PromiseOrValue<BigNumberish>,
+      deadline: PromiseOrValue<BigNumberish>,
+      v: PromiseOrValue<BigNumberish>,
+      r: PromiseOrValue<BytesLike>,
+      s: PromiseOrValue<BytesLike>,
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<BigNumber>;
 
     precrime(overrides?: CallOverrides): Promise<BigNumber>;
@@ -2268,6 +2403,8 @@ export interface BaseOFT extends BaseContract {
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
+    DOMAIN_SEPARATOR(overrides?: CallOverrides): Promise<PopulatedTransaction>;
+
     NO_EXTRA_GAS(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     PT_SEND(overrides?: CallOverrides): Promise<PopulatedTransaction>;
@@ -2299,6 +2436,12 @@ export interface BaseOFT extends BaseContract {
     balanceOf(
       account: PromiseOrValue<string>,
       overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
+    batch(
+      calls: PromiseOrValue<BytesLike>[],
+      revertOnFail: PromiseOrValue<boolean>,
+      overrides?: PayableOverrides & { from?: PromiseOrValue<string> }
     ): Promise<PopulatedTransaction>;
 
     callOnOFTReceived(
@@ -2414,11 +2557,27 @@ export interface BaseOFT extends BaseContract {
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<PopulatedTransaction>;
 
+    nonces(
+      owner: PromiseOrValue<string>,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
     owner(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     payloadSizeLimitLookup(
       arg0: PromiseOrValue<BigNumberish>,
       overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
+    permit(
+      owner: PromiseOrValue<string>,
+      spender: PromiseOrValue<string>,
+      value: PromiseOrValue<BigNumberish>,
+      deadline: PromiseOrValue<BigNumberish>,
+      v: PromiseOrValue<BigNumberish>,
+      r: PromiseOrValue<BytesLike>,
+      s: PromiseOrValue<BytesLike>,
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<PopulatedTransaction>;
 
     precrime(overrides?: CallOverrides): Promise<PopulatedTransaction>;

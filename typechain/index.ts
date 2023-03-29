@@ -52,6 +52,8 @@ export type { IMasterContract } from "./@boringcrypto/boring-solidity/contracts/
 export { IMasterContract__factory } from "./factories/@boringcrypto/boring-solidity/contracts/interfaces/IMasterContract__factory";
 export type { Ownable } from "./@openzeppelin/contracts/access/Ownable";
 export { Ownable__factory } from "./factories/@openzeppelin/contracts/access/Ownable__factory";
+export type { ERC20Permit } from "./@openzeppelin/contracts/token/ERC20/extensions/draft-ERC20Permit.sol/ERC20Permit";
+export { ERC20Permit__factory } from "./factories/@openzeppelin/contracts/token/ERC20/extensions/draft-ERC20Permit.sol/ERC20Permit__factory";
 export type { IERC20Permit } from "./@openzeppelin/contracts/token/ERC20/extensions/draft-IERC20Permit.sol/IERC20Permit";
 export { IERC20Permit__factory } from "./factories/@openzeppelin/contracts/token/ERC20/extensions/draft-IERC20Permit.sol/IERC20Permit__factory";
 export type { IERC20Metadata } from "./@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata";
