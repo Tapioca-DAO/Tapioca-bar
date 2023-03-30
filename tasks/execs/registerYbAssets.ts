@@ -4,7 +4,7 @@ import { typechain } from 'tapioca-sdk';
 
 // hh registerYbAssets --network ...
 export const registerYbAssets__task = async (
-    tasksArgs: { createStrategy?: boolean },
+    {},
     hre: HardhatRuntimeEnvironment,
 ) => {
     const chainInfo = hre.SDK.utils.getChainBy(

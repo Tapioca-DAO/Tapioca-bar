@@ -24,7 +24,7 @@ export const deployFullStack__task = async (
 ) => {
     const tag = await hre.SDK.hardhatUtils.askForTag(hre, 'local');
     const signer = (await hre.ethers.getSigners())[0];
-    const VM = await loadVM(hre, tag);
+    const VM = await loadVM(hre, tag, true);
 
     const chainInfo = hre.SDK.utils.getChainBy(
         'chainId',
@@ -74,11 +74,7 @@ export const deployFullStack__task = async (
     });
     const penroseMock = await deployments.get('PenroseMock');
 
-    // Owner deployment
-    const multisig = await deployMultisigMock(hre, 1, [
-        hre.SDK.config.MULTICALL_ADDRESSES[chainInfo?.chainId],
-    ]);
-    console.log(`[+] Multisig deployed on ${multisig}`);
+    const multisig = await VM.getMultisig();
 
     // 00 - Deploy YieldBox
     const [ybURI, yieldBox] = await buildYieldBox(hre, weth.address);
@@ -151,10 +147,9 @@ export const deployFullStack__task = async (
 
     // After deployment setup
     const vmList = VM.list();
-    const multiCall = typechain.Multicall.Multicall3__factory.connect(
-        hre.SDK.config.MULTICALL_ADDRESSES[chainInfo?.chainId],
-        signer,
-    );
+
+    const multiCall = await VM.getMulticall();
+
     const calls: Multicall3.Call3Struct[] = [
         ...(await buildPenroseSetup(hre, vmList, signer.address)),
         ...(await buildMasterContractsSetup(hre, vmList)),
@@ -181,16 +176,6 @@ export const deployFullStack__task = async (
             }
         }
     }
-
-    //Transfer ownership
-    console.log('[+] Transferring ownership');
-    await transferOwnership(
-        hre,
-        [usdo, marketProxy],
-        tag,
-        chainInfo.chainId,
-        multisig,
-    );
 
     console.log('[+] Stack deployed! 🎉');
 };
