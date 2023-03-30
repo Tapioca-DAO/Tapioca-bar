@@ -1,5 +1,7 @@
 import { time } from '@nomicfoundation/hardhat-network-helpers';
-import { BigNumber, BigNumberish } from 'ethers';
+import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
+import { BigNumber, BigNumberish, Signature, Wallet } from 'ethers';
+import { splitSignature } from 'ethers/lib/utils';
 import hre, { ethers } from 'hardhat';
 import {
     CurveStableToUsdoBidder,
@@ -7,6 +9,7 @@ import {
     MultiSwapper,
     OracleMock,
     Penrose,
+    SGLERC20,
     Singularity,
     UniswapV2Factory,
     UniswapV2Router02,
@@ -1069,6 +1072,69 @@ export async function createTokenEmptyStrategy(
     });
     await noStrategy.deployed();
     return noStrategy;
+}
+
+export async function getERC20PermitSignature(
+    wallet: Wallet | SignerWithAddress,
+    token: Singularity,
+    spender: string,
+    value: BigNumberish = ethers.constants.MaxUint256,
+    deadline = ethers.constants.MaxUint256,
+    permitConfig?: {
+        nonce?: BigNumberish;
+        name?: string;
+        chainId?: number;
+        version?: string;
+    },
+): Promise<Signature> {
+    const [nonce, _, version, chainId] = await Promise.all([
+        permitConfig?.nonce ?? token.nonces(wallet.address),
+        permitConfig?.name ?? token.name(),
+        permitConfig?.version ?? '1',
+        permitConfig?.chainId ?? wallet.getChainId(),
+    ]);
+
+    return splitSignature(
+        await wallet._signTypedData(
+            {
+                name: 'Tapioca Singularity',
+                version,
+                chainId,
+                verifyingContract: token.address,
+            },
+            {
+                Permit: [
+                    {
+                        name: 'owner',
+                        type: 'address',
+                    },
+                    {
+                        name: 'spender',
+                        type: 'address',
+                    },
+                    {
+                        name: 'value',
+                        type: 'uint256',
+                    },
+                    {
+                        name: 'nonce',
+                        type: 'uint256',
+                    },
+                    {
+                        name: 'deadline',
+                        type: 'uint256',
+                    },
+                ],
+            },
+            {
+                owner: wallet.address,
+                spender,
+                value,
+                nonce,
+                deadline,
+            },
+        ),
+    );
 }
 
 const gasPrice = 22000000000; //55gwei
