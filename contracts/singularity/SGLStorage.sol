@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-import "@boringcrypto/boring-solidity/contracts/ERC20.sol";
 import "@boringcrypto/boring-solidity/contracts/BoringOwnable.sol";
 import "@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol";
 import "@boringcrypto/boring-solidity/contracts/libraries/BoringRebase.sol";
@@ -12,6 +11,7 @@ import "../liquidationQueue/ILiquidationQueue.sol";
 import "../interfaces/IPenrose.sol";
 import "../interfaces/IOracle.sol";
 import "tapioca-sdk/dist/contracts/YieldBox/contracts/YieldBox.sol";
+import "./SGLERC20.sol";
 
 // solhint-disable max-line-length
 
@@ -29,7 +29,7 @@ __/\\\\\\\\\\\\\\\_____/\\\\\\\\\_____/\\\\\\\\\\\\\____/\\\\\\\\\\\_______/\\\\
 
 */
 
-contract SGLStorage is BoringOwnable, ERC20 {
+contract SGLStorage is BoringOwnable, SGLERC20 {
     using RebaseLibrary for Rebase;
     using BoringERC20 for IERC20;
 
@@ -167,6 +167,8 @@ contract SGLStorage is BoringOwnable, ERC20 {
 
     // Fees
     uint256 internal constant FEE_PRECISION = 1e5;
+
+    constructor() SGLERC20("Tapioca Singularity") {}
 
     // ********************** //
     // *** VIEW FUNCTIONS *** //
