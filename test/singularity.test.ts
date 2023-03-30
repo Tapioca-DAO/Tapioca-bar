@@ -1,6 +1,6 @@
 import { ethers } from 'hardhat';
 import { expect } from 'chai';
-import { register } from './test.utils';
+import { getERC20PermitSignature, register } from './test.utils';
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 
 describe('Singularity test', () => {
@@ -2297,5 +2297,39 @@ describe('Singularity test', () => {
         );
         expect(closingFactor.eq(prevClosingFactor)).to.be.true;
         prevClosingFactor = closingFactor;
+    });
+
+    describe.only('Permit', async () => {
+        it('should test permit', async () => {
+            const { deployer, eoa1, wethUsdcSingularity, BN } =
+                await loadFixture(register);
+
+            console.log(deployer.address);
+
+            const deadline =
+                (await ethers.provider.getBlock('latest')).timestamp + 10_000;
+
+            const { v, r, s } = await getERC20PermitSignature(
+                deployer,
+                wethUsdcSingularity,
+                eoa1.address,
+                (1e18).toString(),
+                BN(deadline),
+            );
+
+            await expect(
+                wethUsdcSingularity.permit(
+                    deployer.address,
+                    eoa1.address,
+                    (1e18).toString(),
+                    deadline,
+                    v,
+                    r,
+                    s,
+                ),
+            )
+                .to.emit(wethUsdcSingularity, 'Approval')
+                .withArgs(deployer.address, eoa1.address, (1e18).toString());
+        });
     });
 });
