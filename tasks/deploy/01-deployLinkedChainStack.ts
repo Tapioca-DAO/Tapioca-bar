@@ -38,12 +38,6 @@ export const deployLinkedChainStack__task = async (
         throw new Error('[-] Token not found');
     }
 
-    // Owner deployment
-    const multisig = await deployMultisigMock(hre, 1, [
-        hre.SDK.config.MULTICALL_ADDRESSES[chainInfo?.chainId],
-    ]);
-    console.log(`[+] Multisig deployed on ${multisig}`);
-
     // 01 YieldBox
     const [ybURI, yieldBox] = await buildYieldBox(hre, weth.address);
     VM.add(ybURI).add(yieldBox);
@@ -75,16 +69,6 @@ export const deployLinkedChainStack__task = async (
             console.log('[-] Verification failed');
         }
     }
-
-    //Transfer ownership
-    console.log('[+] Transferring ownership');
-    await transferOwnership(
-        hre,
-        [usdo, marketProxy],
-        tag,
-        chainInfo.chainId,
-        multisig,
-    );
 
     console.log('[+] Stack deployed! 🎉');
 };

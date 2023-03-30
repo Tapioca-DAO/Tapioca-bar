@@ -196,7 +196,11 @@ async function loadStrats(
     );
     await VM.execute(3);
     VM.save();
-    await VM.verify();
+    try {
+        await VM.verify();
+    } catch {
+        console.log('[-] Verification failed');
+    }
 
     return {
         usd0Strategy,
