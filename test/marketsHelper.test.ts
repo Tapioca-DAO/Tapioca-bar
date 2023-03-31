@@ -1,7 +1,9 @@
 import { ethers } from 'hardhat';
 import { expect } from 'chai';
-import { register } from './test.utils';
+import { BN, createTokenEmptyStrategy, register } from './test.utils';
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
+import { TapiocaOFTMock__factory } from '../gitsub_tapioca-sdk/src/typechain/TapiocaZ/factories/mocks/TapiocaOFTMock__factory';
+import hre from 'hardhat';
 
 describe('MarketsHelper test', () => {
     it('Should deposit to yieldBox & add asset to singularity through SGL helper', async () => {
@@ -703,5 +705,220 @@ describe('MarketsHelper test', () => {
 
         const wethBalanceAfter = await weth.balanceOf(deployer.address);
         expect(wethBalanceAfter.eq(0)).to.be.true;
+    });
+
+    describe.only('TOFT => MarketHelper', () => {
+        it('should deposit, add collateral and borrow through SGL helper', async () => {
+            const {
+                yieldBox,
+                deployer,
+                usdc,
+                usdcAssetId,
+                eoa1,
+                marketsHelper,
+                approveTokensAndSetBarApproval,
+                registerSingularity,
+                mediumRiskMC,
+                timeTravel,
+                bar,
+            } = await loadFixture(register);
+
+            // -------------------  Get LZ endpoints -------------------
+            const lzEndpoint1 = await (
+                await ethers.getContractFactory('LZEndpointMock')
+            ).deploy(1);
+            const lzEndpoint2 = await (
+                await ethers.getContractFactory('LZEndpointMock')
+            ).deploy(2);
+
+            // -------------------   Create TOFT -------------------
+            const erc20Mock = await (
+                await ethers.getContractFactory('ERC20Mock')
+            ).deploy(BN(100e18), 18, BN(10e18));
+
+            const toftHost = await new TapiocaOFTMock__factory()
+                .connect(deployer)
+                .deploy(
+                    lzEndpoint1.address,
+                    false,
+                    erc20Mock.address,
+                    yieldBox.address,
+                    'toftMock',
+                    'toftMock',
+                    18,
+                    1,
+                );
+
+            const toftLinked = await new TapiocaOFTMock__factory()
+                .connect(deployer)
+                .deploy(
+                    lzEndpoint2.address,
+                    false,
+                    erc20Mock.address,
+                    yieldBox.address,
+                    'toftMock',
+                    'toftMock',
+                    18,
+                    1,
+                );
+
+            // -------------------  Link TOFTs -------------------
+            lzEndpoint1.setDestLzEndpoint(
+                toftLinked.address,
+                lzEndpoint2.address,
+            );
+            lzEndpoint2.setDestLzEndpoint(
+                toftHost.address,
+                lzEndpoint1.address,
+            );
+
+            await toftHost.setTrustedRemote(
+                2,
+                ethers.utils.solidityPack(
+                    ['address', 'address'],
+                    [toftLinked.address, toftHost.address],
+                ),
+            );
+            await toftLinked.setTrustedRemote(
+                1,
+                ethers.utils.solidityPack(
+                    ['address', 'address'],
+                    [toftHost.address, toftLinked.address],
+                ),
+            );
+            await toftHost.setMinDstGas(2, 774, 200_00);
+            await toftHost.setMinDstGas(2, 775, 200_00);
+            await toftLinked.setMinDstGas(1, 774, 200_00);
+            await toftLinked.setMinDstGas(1, 775, 200_00);
+
+            // ------------------- Deploy TOFT mock oracle -------------------
+            const toftUsdcPrice = BN(22e18);
+            const toftUsdcOracle = await (
+                await ethers.getContractFactory('OracleMock')
+            ).deploy('WETHMOracle', 'WETHMOracle', toftUsdcPrice.toString());
+
+            // ------------------- Register Penrose Asset -------------------
+            const toftHostStrategy = await createTokenEmptyStrategy(
+                yieldBox.address,
+                toftHost.address,
+            );
+            await yieldBox.registerAsset(
+                1,
+                toftHost.address,
+                toftHostStrategy.address,
+                0,
+            );
+
+            const toftHostAssetId = await yieldBox.ids(
+                1,
+                toftHost.address,
+                toftHostStrategy.address,
+                0,
+            );
+            // ------------------- Deploy ToftUSDC medium risk MC clone-------------------
+            const { singularityMarket: toftUsdcSingularity } =
+                await registerSingularity(
+                    mediumRiskMC.address,
+                    yieldBox,
+                    bar,
+                    toftHost,
+                    toftHostAssetId,
+                    usdc,
+                    usdcAssetId,
+                    toftUsdcOracle,
+                    ethers.utils.parseEther('1'),
+                    false,
+                );
+            // ------------------- Init SGL -------------------
+
+            await (await toftHost.freeMint(deployer.address, 1000)).wait();
+            await timeTravel(86500);
+            const mintValShare = await yieldBox.toShare(
+                await toftUsdcSingularity.assetId(),
+                1000,
+                false,
+            );
+            await (await toftHost.approve(yieldBox.address, 1000)).wait();
+            await (
+                await yieldBox.depositAsset(
+                    await toftUsdcSingularity.assetId(),
+                    deployer.address,
+                    deployer.address,
+                    0,
+                    mintValShare,
+                )
+            ).wait();
+            await (
+                await yieldBox.setApprovalForAll(
+                    toftUsdcSingularity.address,
+                    true,
+                )
+            ).wait();
+            await (
+                await toftUsdcSingularity.addAsset(
+                    deployer.address,
+                    deployer.address,
+                    false,
+                    mintValShare,
+                )
+            ).wait();
+
+            // ------------------- Actual TOFT test -------------------
+
+            const assetId = await toftUsdcSingularity.assetId();
+            const collateralId = await toftUsdcSingularity.collateralId();
+
+            const borrowAmount = ethers.BigNumber.from((1e17).toString());
+            const toftMintVal = ethers.BigNumber.from((1e18).toString()).mul(
+                10,
+            );
+            const usdcMintVal = toftMintVal
+                .mul(10)
+                .mul(toftUsdcPrice.div((1e18).toString()));
+
+            // We get asset
+            await toftLinked.freeMint(deployer.address, toftMintVal);
+            await usdc.connect(eoa1).freeMint(usdcMintVal);
+
+            // We lend WETH as deployer
+            await approveTokensAndSetBarApproval();
+            await (
+                await toftLinked.approve(
+                    yieldBox.address,
+                    ethers.constants.MaxUint256,
+                )
+            ).wait();
+            await (
+                await yieldBox.setApprovalForAll(
+                    toftUsdcSingularity.address,
+                    true,
+                )
+            ).wait();
+
+            // We test market helper deposit
+            await usdc.approve(marketsHelper.address, borrowAmount);
+            hre.tracer.enabled = true;
+            await toftUsdcSingularity.approve(
+                marketsHelper.address,
+                usdcMintVal,
+            );
+
+            await toftLinked.sendToYBAndBorrow(
+                deployer.address,
+                deployer.address,
+                toftMintVal,
+                borrowAmount,
+                marketsHelper.address,
+                toftUsdcSingularity.address,
+                1,
+                {
+                    extraGasLimit: 1000000,
+                    strategyDeposit: false,
+                    wrap: false,
+                    zroPaymentAddress: deployer.address,
+                },
+                { value: ethers.utils.parseEther('20') },
+            );
+        });
     });
 });
