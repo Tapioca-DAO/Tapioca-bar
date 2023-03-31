@@ -179,8 +179,9 @@ contract MarketsHelper {
     // *** PUBLIC FUNCTIONS *** //
     // ************************ //
 
-    /// @notice deposts collateral to YieldBox, adds collateral to Singularity, borrows and can withdraw to personal address
+    /// @notice deposits collateral to YieldBox, adds collateral to Singularity, borrows and can withdraw to personal address
     /// @param market the Singularity or BigBang address
+    /// @param _user the address to deposit from and withdraw to
     /// @param _collateralAmount the collateral amount to add
     /// @param _borrowAmount the amount to borrow
     /// @param deposit_ if true, deposits to YieldBox from `msg.sender`
@@ -188,6 +189,7 @@ contract MarketsHelper {
     /// @param _withdrawData custom withdraw data; ignore if you need to withdraw on the same chain
     function depositAddCollateralAndBorrow(
         IMarket market,
+        address _user,
         uint256 _collateralAmount,
         uint256 _borrowAmount,
         bool deposit_,
@@ -224,15 +226,15 @@ contract MarketsHelper {
         //add collateral
         _setApprovalForYieldBox(market, yieldBox);
         market.addCollateral(
-            deposit_ ? address(this) : msg.sender,
-            msg.sender,
+            deposit_ ? address(this) : _user,
+            _user,
             false,
             _share
         );
 
         //borrow
-        address borrowReceiver = withdraw_ ? address(this) : msg.sender;
-        market.borrow(msg.sender, borrowReceiver, _borrowAmount);
+        address borrowReceiver = withdraw_ ? address(this) : _user;
+        market.borrow(_user, borrowReceiver, _borrowAmount);
 
         if (withdraw_) {
             _withdraw(
@@ -327,9 +329,11 @@ contract MarketsHelper {
 
     /// @notice deposits asset to YieldBox and lends it to Singularity
     /// @param singularity the singularity address
+    /// @param _user the address to deposit from and lend to
     /// @param _amount the amount to lend
     function depositAndAddAsset(
         ISingularity singularity,
+        address _user,
         uint256 _amount,
         bool deposit_
     ) external {
@@ -354,7 +358,7 @@ contract MarketsHelper {
 
         //add asset
         _setApprovalForYieldBox(singularity, yieldBox);
-        singularity.addAsset(address(this), msg.sender, false, _share);
+        singularity.addAsset(address(this), _user, false, _share);
     }
 
     /// @notice deposits asset to YieldBox, mints USDO and lends it to Singularity
