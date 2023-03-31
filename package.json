@@ -3,7 +3,7 @@
     "license": "MIT",
     "scripts": {
         "compile": "NODE_ENV=compile hardhat compile --quiet && npm run lint:sol",
-        "lint:ts": "eslint ./deploy ./tasks ./test ./*.ts --fix",
+        "lint:ts": "eslint ./tasks ./test ./*.ts --fix",
         "lint:sol": "prettier --write \"./contracts/**/*.sol\" && solhint \"./contracts/**/*.sol\" --fix",
         "lint": "npm run lint:ts && npm run lint:sol",
         "clean": "rm -rf ./cache && rm -rf ./artifacts && rm -rf ./.openzeppelin",
@@ -86,7 +86,7 @@
         "inquirer": "^8.2.5",
         "load-json-file": "^7.0.1",
         "lodash": "^4.17.21",
-        "tapioca-sdk": "^1.3.79",
+        "tapioca-sdk": "^1.3.82",
         "uuid": "^9.0.0"
     }
 }

@@ -1,5 +1,5 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
-import { registerBigBangMarket, updateDeployments } from '../../deploy/utils';
+import { registerBigBangMarket, updateDeployments } from './utils';
 
 export const deployBigBang__task = async (
     taskArgs: any,

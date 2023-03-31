@@ -11,7 +11,7 @@ export const buildOracleMock = async (
 ): Promise<IDeployerVMAdd<OracleMock__factory>> => {
     return {
         contract: await hre.ethers.getContractFactory('OracleMock'),
-        deploymentName: 'OracleMock',
+        deploymentName: name,
         args: [name, symbol, rate],
     };
 };
