@@ -2299,12 +2299,10 @@ describe('Singularity test', () => {
         prevClosingFactor = closingFactor;
     });
 
-    describe.only('Permit', async () => {
+    describe('Permit', async () => {
         it('should test permit', async () => {
             const { deployer, eoa1, wethUsdcSingularity, BN } =
                 await loadFixture(register);
-
-            console.log(deployer.address);
 
             const deadline =
                 (await ethers.provider.getBlock('latest')).timestamp + 10_000;

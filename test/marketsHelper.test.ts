@@ -22,6 +22,7 @@ describe('MarketsHelper test', () => {
         await weth.approve(marketsHelper.address, mintVal);
         await marketsHelper.depositAndAddAsset(
             wethUsdcSingularity.address,
+            deployer.address,
             mintVal,
             true,
         );
@@ -69,6 +70,7 @@ describe('MarketsHelper test', () => {
             .connect(eoa1)
             .depositAddCollateralAndBorrow(
                 wethUsdcSingularity.address,
+                eoa1.address,
                 usdcMintVal,
                 borrowAmount,
                 true,
@@ -80,6 +82,7 @@ describe('MarketsHelper test', () => {
     it('should deposit, add collateral, borrow and withdraw through SGL helper', async () => {
         const {
             weth,
+            deployer,
             wethUsdcSingularity,
             usdc,
             eoa1,
@@ -114,6 +117,7 @@ describe('MarketsHelper test', () => {
             .connect(eoa1)
             .depositAddCollateralAndBorrow(
                 wethUsdcSingularity.address,
+                eoa1.address,
                 usdcMintVal,
                 borrowAmount,
                 true,
@@ -125,6 +129,7 @@ describe('MarketsHelper test', () => {
     it('should deposit, add collateral, borrow and withdraw through SGL helper without withdraw', async () => {
         const {
             weth,
+            deployer,
             wethUsdcSingularity,
             usdc,
             eoa1,
@@ -159,6 +164,7 @@ describe('MarketsHelper test', () => {
             .connect(eoa1)
             .depositAddCollateralAndBorrow(
                 wethUsdcSingularity.address,
+                eoa1.address,
                 usdcMintVal,
                 borrowAmount,
                 true,
@@ -170,6 +176,7 @@ describe('MarketsHelper test', () => {
     it('should add collateral, borrow and withdraw through SGL helper', async () => {
         const {
             weth,
+            deployer,
             wethUsdcSingularity,
             usdc,
             usdcAssetId,
@@ -218,6 +225,7 @@ describe('MarketsHelper test', () => {
             .connect(eoa1)
             .depositAddCollateralAndBorrow(
                 wethUsdcSingularity.address,
+                eoa1.address,
                 usdcMintVal,
                 borrowAmount,
                 false,
@@ -232,6 +240,7 @@ describe('MarketsHelper test', () => {
             wethUsdcSingularity,
             usdc,
             eoa1,
+            deployer,
             initContracts,
             marketsHelper,
             __wethUsdcPrice,
@@ -263,6 +272,7 @@ describe('MarketsHelper test', () => {
             .connect(eoa1)
             .depositAddCollateralAndBorrow(
                 wethUsdcSingularity.address,
+                eoa1.address,
                 usdcMintVal,
                 borrowAmount,
                 true,
@@ -297,6 +307,7 @@ describe('MarketsHelper test', () => {
             weth,
             wethUsdcSingularity,
             usdc,
+            deployer,
             eoa1,
             initContracts,
             yieldBox,
@@ -331,6 +342,7 @@ describe('MarketsHelper test', () => {
             .connect(eoa1)
             .depositAddCollateralAndBorrow(
                 wethUsdcSingularity.address,
+                eoa1.address,
                 usdcMintVal,
                 borrowAmount,
                 true,

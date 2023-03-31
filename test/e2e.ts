@@ -622,6 +622,7 @@ async function depositAddCollateralAndBorrowPlug(
                 .connect(signer)
                 .depositAddCollateralAndBorrow(
                     Singularity.address,
+                    signer.address,
                     collateralValue,
                     borrowValue,
                     true,
@@ -637,6 +638,7 @@ async function depositAddCollateralAndBorrowPlug(
         .connect(signer)
         .depositAddCollateralAndBorrow(
             Singularity.address,
+            signer.address,
             collateralValue,
             borrowValue,
             true,

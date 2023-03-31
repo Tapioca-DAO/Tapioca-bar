@@ -677,6 +677,7 @@ describe('MarketsProxy', () => {
             .connect(eoa1)
             .depositAddCollateralAndBorrow(
                 singularityDst.address,
+                eoa1.address,
                 wethDepositAmount,
                 usdoBorrowVal.div(2),
                 true,
@@ -702,6 +703,7 @@ describe('MarketsProxy', () => {
             .connect(eoa1)
             .depositAddCollateralAndBorrow(
                 singularityDst.address,
+                eoa1.address,
                 wethDepositAmount,
                 usdoBorrowVal.div(2),
                 true,

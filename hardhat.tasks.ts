@@ -1,6 +1,5 @@
 import '@nomiclabs/hardhat-ethers';
 import { task } from 'hardhat/config';
-import { deployBigBang__task } from './tasks/deploy/deployBigBang';
 
 import { setBorrowCap__task } from './tasks/execs/setBorrowCap';
 
@@ -24,7 +23,6 @@ import { getParticipantSingularityInfo__task } from './tasks/views/getParticipan
 import { getSingularityMarkets__task } from './tasks/views/getSingularityMarkets';
 import { getSingularityTotals__task } from './tasks/views/getSingularityTotals';
 import { whitelistSingularity__task } from './tasks/whitelistSingularity';
-import { deployMarket__task } from './tasks/deploy/___deployMarket';
 import {
     getLocalDeployments__task,
     getSDKDeployments__task,
@@ -115,19 +113,6 @@ task(
     'Deploy the stack, use it for the host chain. Includes the following contract:\nYieldBox, USDO, Penromse, MasterContracts, MarketHelper, MultiSwapper, SingularityModules, CurveSwapper, StableToUSD0Bidder',
     deployLinkedChainStack__task,
 );
-
-task(
-    'deployMarket',
-    'Deploy a Singularity market, a Liquidation Queue and initialize it.',
-    deployMarket__task,
-)
-    .addParam('name', 'Market name')
-    .addParam('exchangeRatePrecision', 'Collateral decimals');
-
-task('deployBigBang', 'Deploy a BigBang market', deployBigBang__task)
-    .addParam('name', 'Market name')
-    .addParam('exchangeRatePrecision', 'Collateral decimals');
-
 task('deployOracleMock', 'Deploy Oracle mock', deployOracleMock__task).addParam(
     'name',
     'Market name',
