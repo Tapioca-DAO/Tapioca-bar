@@ -707,7 +707,7 @@ describe('MarketsHelper test', () => {
         expect(wethBalanceAfter.eq(0)).to.be.true;
     });
 
-    describe.only('TOFT => MarketHelper', () => {
+    describe('TOFT => MarketHelper', () => {
         it('should deposit, add collateral and borrow through SGL helper', async () => {
             const {
                 yieldBox,
@@ -716,7 +716,6 @@ describe('MarketsHelper test', () => {
                 usdcAssetId,
                 eoa1,
                 marketsHelper,
-                approveTokensAndSetBarApproval,
                 registerSingularity,
                 mediumRiskMC,
                 timeTravel,
@@ -821,54 +820,17 @@ describe('MarketsHelper test', () => {
                     mediumRiskMC.address,
                     yieldBox,
                     bar,
-                    toftHost,
-                    toftHostAssetId,
                     usdc,
                     usdcAssetId,
+                    toftHost,
+                    toftHostAssetId,
                     toftUsdcOracle,
                     ethers.utils.parseEther('1'),
                     false,
                 );
             // ------------------- Init SGL -------------------
 
-            await (await toftHost.freeMint(deployer.address, 1000)).wait();
-            await timeTravel(86500);
-            const mintValShare = await yieldBox.toShare(
-                await toftUsdcSingularity.assetId(),
-                1000,
-                false,
-            );
-            await (await toftHost.approve(yieldBox.address, 1000)).wait();
-            await (
-                await yieldBox.depositAsset(
-                    await toftUsdcSingularity.assetId(),
-                    deployer.address,
-                    deployer.address,
-                    0,
-                    mintValShare,
-                )
-            ).wait();
-            await (
-                await yieldBox.setApprovalForAll(
-                    toftUsdcSingularity.address,
-                    true,
-                )
-            ).wait();
-            await (
-                await toftUsdcSingularity.addAsset(
-                    deployer.address,
-                    deployer.address,
-                    false,
-                    mintValShare,
-                )
-            ).wait();
-
-            // ------------------- Actual TOFT test -------------------
-
-            const assetId = await toftUsdcSingularity.assetId();
-            const collateralId = await toftUsdcSingularity.collateralId();
-
-            const borrowAmount = ethers.BigNumber.from((1e17).toString());
+            const borrowAmount = ethers.BigNumber.from((1e5).toString());
             const toftMintVal = ethers.BigNumber.from((1e18).toString()).mul(
                 10,
             );
@@ -876,31 +838,31 @@ describe('MarketsHelper test', () => {
                 .mul(10)
                 .mul(toftUsdcPrice.div((1e18).toString()));
 
+            await timeTravel(86500);
+
             // We get asset
-            await toftLinked.freeMint(deployer.address, toftMintVal);
+
             await usdc.connect(eoa1).freeMint(usdcMintVal);
 
-            // We lend WETH as deployer
-            await approveTokensAndSetBarApproval();
             await (
-                await toftLinked.approve(
-                    yieldBox.address,
-                    ethers.constants.MaxUint256,
-                )
+                await usdc
+                    .connect(eoa1)
+                    .approve(marketsHelper.address, usdcMintVal)
             ).wait();
-            await (
-                await yieldBox.setApprovalForAll(
+            await marketsHelper
+                .connect(eoa1)
+                .depositAndAddAsset(
                     toftUsdcSingularity.address,
+                    eoa1.address,
+                    usdcMintVal,
                     true,
-                )
-            ).wait();
+                );
+            // ------------------- Actual TOFT test -------------------
 
-            // We test market helper deposit
-            await usdc.approve(marketsHelper.address, borrowAmount);
-            hre.tracer.enabled = true;
+            await toftLinked.freeMint(deployer.address, toftMintVal);
             await toftUsdcSingularity.approve(
                 marketsHelper.address,
-                usdcMintVal,
+                borrowAmount,
             );
 
             await toftLinked.sendToYBAndBorrow(
