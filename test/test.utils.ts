@@ -1075,6 +1075,7 @@ export async function createTokenEmptyStrategy(
 }
 
 export async function getERC20PermitSignature(
+    type: 'Permit' | 'PermitBorrow',
     wallet: Wallet | SignerWithAddress,
     token: Singularity,
     spender: string,
@@ -1094,6 +1095,29 @@ export async function getERC20PermitSignature(
         permitConfig?.chainId ?? wallet.getChainId(),
     ]);
 
+    const permit = [
+        {
+            name: 'owner',
+            type: 'address',
+        },
+        {
+            name: 'spender',
+            type: 'address',
+        },
+        {
+            name: 'value',
+            type: 'uint256',
+        },
+        {
+            name: 'nonce',
+            type: 'uint256',
+        },
+        {
+            name: 'deadline',
+            type: 'uint256',
+        },
+    ];
+
     return splitSignature(
         await wallet._signTypedData(
             {
@@ -1102,30 +1126,7 @@ export async function getERC20PermitSignature(
                 chainId,
                 verifyingContract: token.address,
             },
-            {
-                Permit: [
-                    {
-                        name: 'owner',
-                        type: 'address',
-                    },
-                    {
-                        name: 'spender',
-                        type: 'address',
-                    },
-                    {
-                        name: 'value',
-                        type: 'uint256',
-                    },
-                    {
-                        name: 'nonce',
-                        type: 'uint256',
-                    },
-                    {
-                        name: 'deadline',
-                        type: 'uint256',
-                    },
-                ],
-            },
+            type === 'Permit' ? { Permit: permit } : { PermitBorrow: permit },
             {
                 owner: wallet.address,
                 spender,

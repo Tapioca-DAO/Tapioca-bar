@@ -1,7 +1,10 @@
 import { ethers } from 'hardhat';
 import { expect } from 'chai';
 import { getERC20PermitSignature, register } from './test.utils';
-import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
+import {
+    loadFixture,
+    takeSnapshot,
+} from '@nomicfoundation/hardhat-network-helpers';
 
 describe('Singularity test', () => {
     it('should add addset, remove asset and update exchange rate in a single tx', async () => {
@@ -2300,7 +2303,7 @@ describe('Singularity test', () => {
     });
 
     describe('Permit', async () => {
-        it('should test permit', async () => {
+        it.only('should test permit lend & borrow', async () => {
             const { deployer, eoa1, wethUsdcSingularity, BN } =
                 await loadFixture(register);
 
@@ -2308,6 +2311,7 @@ describe('Singularity test', () => {
                 (await ethers.provider.getBlock('latest')).timestamp + 10_000;
 
             const { v, r, s } = await getERC20PermitSignature(
+                'Permit',
                 deployer,
                 wethUsdcSingularity,
                 eoa1.address,
@@ -2315,6 +2319,7 @@ describe('Singularity test', () => {
                 BN(deadline),
             );
 
+            const snapshot = await takeSnapshot();
             await expect(
                 wethUsdcSingularity.permit(
                     deployer.address,
@@ -2328,6 +2333,52 @@ describe('Singularity test', () => {
             )
                 .to.emit(wethUsdcSingularity, 'Approval')
                 .withArgs(deployer.address, eoa1.address, (1e18).toString());
+
+            await snapshot.restore();
+            await expect(
+                wethUsdcSingularity.permitBorrow(
+                    deployer.address,
+                    eoa1.address,
+                    (1e18).toString(),
+                    deadline,
+                    v,
+                    r,
+                    s,
+                ),
+            ).to.be.reverted;
+
+            {
+                const deadline =
+                    (await ethers.provider.getBlock('latest')).timestamp +
+                    10_000;
+
+                const { v, r, s } = await getERC20PermitSignature(
+                    'PermitBorrow',
+                    deployer,
+                    wethUsdcSingularity,
+                    eoa1.address,
+                    (1e18).toString(),
+                    BN(deadline),
+                );
+
+                await expect(
+                    wethUsdcSingularity.permitBorrow(
+                        deployer.address,
+                        eoa1.address,
+                        (1e18).toString(),
+                        deadline,
+                        v,
+                        r,
+                        s,
+                    ),
+                )
+                    .to.emit(wethUsdcSingularity, 'ApprovalBorrow')
+                    .withArgs(
+                        deployer.address,
+                        eoa1.address,
+                        (1e18).toString(),
+                    );
+            }
         });
     });
 });

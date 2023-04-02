@@ -48,6 +48,12 @@ contract SGLERC20 is IERC20, IERC20Permit, EIP712 {
     /// @notice owner > nonce mapping. Used in `permit`.
     mapping(address => uint256) private _nonces;
 
+    event ApprovalBorrow(
+        address indexed owner,
+        address indexed spender,
+        uint256 value
+    );
+
     /**
      * @dev Initializes the {EIP712} domain separator using the `name` parameter, and setting `version` to `"1"`.
      *
@@ -147,7 +153,7 @@ contract SGLERC20 is IERC20, IERC20Permit, EIP712 {
         uint256 amount
     ) internal {
         allowanceBorrow[owner][spender] = amount;
-        emit Approval(owner, spender, amount);
+        emit ApprovalBorrow(owner, spender, amount);
     }
 
     /**
@@ -162,7 +168,7 @@ contract SGLERC20 is IERC20, IERC20Permit, EIP712 {
         bytes32 r,
         bytes32 s
     ) external virtual override(IERC20, IERC20Permit) {
-        _permit(false, owner, spender, value, deadline, v, r, s);
+        _permit(true, owner, spender, value, deadline, v, r, s);
     }
 
     function permitBorrow(
@@ -174,11 +180,11 @@ contract SGLERC20 is IERC20, IERC20Permit, EIP712 {
         bytes32 r,
         bytes32 s
     ) external virtual {
-        _permit(true, owner, spender, value, deadline, v, r, s);
+        _permit(false, owner, spender, value, deadline, v, r, s);
     }
 
     function _permit(
-        bool asset, // 0 = asset, 1 = collateral
+        bool asset, // 1 = asset, 0 = collateral
         address owner,
         address spender,
         uint256 value,
