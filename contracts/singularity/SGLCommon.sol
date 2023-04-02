@@ -9,25 +9,32 @@ contract SGLCommon is SGLStorage {
     // ***************** //
     // *** MODIFIERS *** //
     // ***************** //
-    /// Check if msg.sender has right to execute Lend operations
-    modifier allowedLend(address from) virtual {
-        if (
-            from != msg.sender &&
-            allowance[from][msg.sender] <= _yieldBoxShares[from][ASSET_SIG]
-        ) {
-            revert NotApproved(from, msg.sender);
+    function _allowedLend(address from, uint share) internal {
+        if (from != msg.sender) {
+            if (allowance[from][msg.sender] < share) {
+                revert NotApproved(from, msg.sender);
+            }
+            allowance[from][msg.sender] -= share;
         }
+    }
+
+    function _allowedBorrow(address from, uint share) internal {
+        if (from != msg.sender) {
+            if (allowanceBorrow[from][msg.sender] < share) {
+                revert NotApproved(from, msg.sender);
+            }
+            allowanceBorrow[from][msg.sender] -= share;
+        }
+    }
+
+    /// Check if msg.sender has right to execute Lend operations
+    modifier allowedLend(address from, uint share) virtual {
+        _allowedLend(from, share);
         _;
     }
     /// Check if msg.sender has right to execute borrow operations
-    modifier allowedBorrow(address from) virtual {
-        if (
-            from != msg.sender &&
-            allowanceBorrow[from][msg.sender] <=
-            _yieldBoxShares[from][COLLATERAL_SIG]
-        ) {
-            revert NotApproved(from, msg.sender);
-        }
+    modifier allowedBorrow(address from, uint share) virtual {
+        _allowedBorrow(from, share);
         _;
     }
 
@@ -233,10 +240,10 @@ contract SGLCommon is SGLStorage {
         address from,
         address to,
         uint256 fraction
-    ) public notPaused allowedLend(from) returns (uint256 share) {
+    ) public notPaused returns (uint256 share) {
         accrue();
-
         share = _removeAsset(from, to, fraction, true);
+        _allowedLend(from, share);
     }
 
     /// @notice Adds assets to the lending pair.

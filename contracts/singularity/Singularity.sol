@@ -390,7 +390,7 @@ contract Singularity is SGLCommon {
         uint256 amount,
         bytes calldata adapterParams,
         address payable refundAddress
-    ) public payable allowedLend(from) {
+    ) public payable allowedLend(from, amount) {
         if (dstChainId == 0) {
             yieldBox.withdraw(
                 assetId,

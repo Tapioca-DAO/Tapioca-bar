@@ -20,18 +20,13 @@ contract SGLLendingBorrowing is SGLCommon {
         address from,
         address to,
         uint256 amount
-    )
-        public
-        notPaused
-        solvent(from)
-        allowedBorrow(from)
-        returns (uint256 part, uint256 share)
-    {
+    ) public notPaused solvent(from) returns (uint256 part, uint256 share) {
         updateExchangeRate();
 
         accrue();
 
         (part, share) = _borrow(from, to, amount);
+        _allowedBorrow(from, share);
     }
 
     /// @notice Repays a loan.
@@ -77,7 +72,7 @@ contract SGLLendingBorrowing is SGLCommon {
         address from,
         address to,
         uint256 share
-    ) public notPaused solvent(from) allowedBorrow(from) {
+    ) public notPaused solvent(from) allowedBorrow(from, share) {
         // accrue must be called because we check solvency
         accrue();
 
@@ -101,7 +96,7 @@ contract SGLLendingBorrowing is SGLCommon {
         external
         notPaused
         solvent(from)
-        allowedBorrow(from)
+        allowedBorrow(from, share)
         returns (uint256 amountOut)
     {
         require(penrose.swappers(swapper), "SGL: Invalid swapper");
@@ -160,17 +155,12 @@ contract SGLLendingBorrowing is SGLCommon {
         uint256 minAmountOut,
         ISwapper swapper,
         bytes calldata dexData
-    )
-        external
-        notPaused
-        solvent(from)
-        allowedBorrow(from)
-        returns (uint256 amountOut)
-    {
+    ) external notPaused solvent(from) returns (uint256 amountOut) {
         require(penrose.swappers(swapper), "SGL: Invalid swapper");
 
         // Let this fail first to save gas:
         uint256 supplyShare = yieldBox.toShare(assetId, supplyAmount, true);
+        _allowedLend(from, supplyShare);
         if (supplyShare > 0) {
             yieldBox.transfer(from, address(swapper), assetId, supplyShare);
         }
