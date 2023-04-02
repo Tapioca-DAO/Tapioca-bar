@@ -9,15 +9,32 @@ contract SGLCommon is SGLStorage {
     // ***************** //
     // *** MODIFIERS *** //
     // ***************** //
-    /// Modifier to check if the msg.sender is allowed to use funds belonging to the 'from' address.
-    /// If 'from' is msg.sender, it's allowed.
-    /// msg.sender can be an allowed operator if his allowance equal or exceed the balance of the user 'from'.
-    modifier allowed(address from) virtual {
-        if (
-            from != msg.sender && allowance[from][msg.sender] <= balanceOf[from]
-        ) {
-            revert NotApproved(from, msg.sender);
+    function _allowedLend(address from, uint share) internal {
+        if (from != msg.sender) {
+            if (allowance[from][msg.sender] < share) {
+                revert NotApproved(from, msg.sender);
+            }
+            allowance[from][msg.sender] -= share;
         }
+    }
+
+    function _allowedBorrow(address from, uint share) internal {
+        if (from != msg.sender) {
+            if (allowanceBorrow[from][msg.sender] < share) {
+                revert NotApproved(from, msg.sender);
+            }
+            allowanceBorrow[from][msg.sender] -= share;
+        }
+    }
+
+    /// Check if msg.sender has right to execute Lend operations
+    modifier allowedLend(address from, uint share) virtual {
+        _allowedLend(from, share);
+        _;
+    }
+    /// Check if msg.sender has right to execute borrow operations
+    modifier allowedBorrow(address from, uint share) virtual {
+        _allowedBorrow(from, share);
         _;
     }
 
@@ -223,10 +240,10 @@ contract SGLCommon is SGLStorage {
         address from,
         address to,
         uint256 fraction
-    ) public notPaused allowed(from) returns (uint256 share) {
+    ) public notPaused returns (uint256 share) {
         accrue();
-
         share = _removeAsset(from, to, fraction, true);
+        _allowedLend(from, share);
     }
 
     /// @notice Adds assets to the lending pair.
@@ -300,6 +317,7 @@ contract SGLCommon is SGLStorage {
 
     /// @dev Helper function to move tokens.
     /// @param from Account to debit tokens from, in `yieldBox`.
+    /// @param to The user that receives the tokens.
     /// @param _assetId The ERC-20 token asset ID in yieldBox.
     /// @param share The amount in shares to add.
     /// @param total Grand total amount to deduct from this contract's balance. Only applicable if `skim` is True.
@@ -308,12 +326,15 @@ contract SGLCommon is SGLStorage {
     /// False if tokens from msg.sender in `yieldBox` should be transferred.
     function _addTokens(
         address from,
+        address to,
         uint256 _assetId,
         uint256 share,
         uint256 total,
         bool skim
     ) internal {
-        _yieldBoxShares[from][_assetId] += share;
+        bytes32 _asset_sig = _assetId == assetId ? ASSET_SIG : COLLATERAL_SIG;
+
+        _yieldBoxShares[to][_asset_sig] += share;
 
         if (skim) {
             require(
@@ -321,7 +342,7 @@ contract SGLCommon is SGLStorage {
                 "SGL: too much"
             );
         } else {
-            yieldBox.transfer(from, address(this), _assetId, share); // added a 'from' instead of 'msg.sender' -0xGAB
+            yieldBox.transfer(from, address(this), _assetId, share);
         }
     }
 
@@ -346,7 +367,7 @@ contract SGLCommon is SGLStorage {
         balanceOf[to] += fraction;
         emit Transfer(address(0), to, fraction);
 
-        _addTokens(from, assetId, share, totalAssetShare, skim);
+        _addTokens(from, to, assetId, share, totalAssetShare, skim);
         emit LogAddAsset(skim ? address(yieldBox) : from, to, share, fraction);
     }
 
@@ -374,10 +395,10 @@ contract SGLCommon is SGLStorage {
         emit LogRemoveAsset(from, to, share, fraction);
         yieldBox.transfer(address(this), to, assetId, share);
         if (updateYieldBoxShares) {
-            if (share > _yieldBoxShares[from][assetId]) {
-                _yieldBoxShares[from][assetId] = 0; //some assets accrue in time
+            if (share > _yieldBoxShares[from][ASSET_SIG]) {
+                _yieldBoxShares[from][ASSET_SIG] = 0; //some assets accrue in time
             } else {
-                _yieldBoxShares[from][assetId] -= share;
+                _yieldBoxShares[from][ASSET_SIG] -= share;
             }
         }
     }

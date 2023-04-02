@@ -120,9 +120,9 @@ contract Singularity is SGLCommon {
         address _user,
         uint256 _assetId
     ) external view returns (uint256) {
+        bytes32 sig = _assetId == assetId ? ASSET_SIG : COLLATERAL_SIG;
         return
-            yieldBox.balanceOf(_user, _assetId) +
-            _yieldBoxShares[_user][_assetId];
+            yieldBox.balanceOf(_user, _assetId) + _yieldBoxShares[_user][sig];
     }
 
     // ************************ //
@@ -390,7 +390,7 @@ contract Singularity is SGLCommon {
         uint256 amount,
         bytes calldata adapterParams,
         address payable refundAddress
-    ) public payable allowed(from) {
+    ) public payable allowedLend(from, amount) {
         if (dstChainId == 0) {
             yieldBox.withdraw(
                 assetId,

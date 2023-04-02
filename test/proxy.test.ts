@@ -2,6 +2,8 @@ import { expect } from 'chai';
 import { ethers } from 'hardhat';
 import { register, createTokenEmptyStrategy } from './test.utils';
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
+import { Singularity } from '../typechain';
+import hre from 'hardhat';
 
 describe('MarketsProxy', () => {
     let loadSetup: () => Promise<{
@@ -221,6 +223,7 @@ describe('MarketsProxy', () => {
             'addCollateral',
             [eoa1.address, eoa1.address, false, _wethValShare],
         );
+
         await proxySrc
             .connect(eoa1)
             .executeOnChain(
@@ -256,6 +259,9 @@ describe('MarketsProxy', () => {
             eoa1.address,
             usdoBorrowVal,
         ]);
+        await singularityDst
+            .connect(eoa1)
+            .approveBorrow(proxyDst.address, ethers.constants.MaxUint256);
         await proxySrc
             .connect(eoa1)
             .executeOnChain(
@@ -275,6 +281,11 @@ describe('MarketsProxy', () => {
             ethers.Wallet.createRandom().privateKey,
             ethers.provider,
         );
+        await singularityDst.approveBorrow(
+            proxyDst.address,
+            ethers.constants.MaxUint256,
+        );
+
         await singularityDst
             .connect(eoa1)
             .withdrawTo(
@@ -489,6 +500,9 @@ describe('MarketsProxy', () => {
         let sglEthBalance = await ethers.provider.getBalance(
             singularityDst.address,
         );
+        await singularityDst
+            .connect(eoa1)
+            .approveBorrow(proxyDst.address, ethers.constants.MaxUint256);
         await proxySrc
             .connect(eoa1)
             .executeOnChain(
@@ -614,10 +628,6 @@ describe('MarketsProxy', () => {
 
         // Approve singularityDst actions
         await yieldBox.setApprovalForAll(singularityDst.address, true);
-        await singularityDst.approve(
-            proxyDst.address,
-            ethers.constants.MaxUint256,
-        );
 
         const balanceBefore = await singularityDst.balanceOf(deployer.address);
         const addAssetFn = singularityDst.interface.encodeFunctionData(
@@ -672,7 +682,7 @@ describe('MarketsProxy', () => {
 
         await singularityDst
             .connect(eoa1)
-            .approve(marketsHelper.address, ethers.constants.MaxUint256);
+            .approveBorrow(marketsHelper.address, ethers.constants.MaxUint256);
         await marketsHelper
             .connect(eoa1)
             .depositAddCollateralAndBorrow(
@@ -699,6 +709,9 @@ describe('MarketsProxy', () => {
         const usdoBalance = await usd0Dst.balanceOf(eoa1.address);
         expect(usdoBalance.gt(0)).to.be.true;
 
+        await singularityDst
+            .connect(eoa1)
+            .approveBorrow(marketsHelper.address, ethers.constants.MaxUint256);
         await marketsHelper
             .connect(eoa1)
             .depositAddCollateralAndBorrow(
@@ -956,6 +969,9 @@ describe('MarketsProxy', () => {
             'addCollateral',
             [eoa1.address, eoa1.address, false, usdcMintValShare],
         );
+        await singularityDst
+            .connect(eoa1)
+            .approveBorrow(proxyDst.address, ethers.constants.MaxUint256);
         await proxySrc
             .connect(eoa1)
             .executeOnChain(
@@ -991,6 +1007,9 @@ describe('MarketsProxy', () => {
             eoa1.address,
             wethBorrowVal,
         ]);
+        await singularityDst
+            .connect(eoa1)
+            .approveBorrow(proxyDst.address, ethers.constants.MaxUint256);
         await proxySrc
             .connect(eoa1)
             .executeOnChain(
@@ -1024,6 +1043,7 @@ describe('MarketsProxy', () => {
             false,
             borrowPart,
         ]);
+
         await proxySrc
             .connect(eoa1)
             .executeOnChain(
@@ -1145,6 +1165,10 @@ describe('MarketsProxy', () => {
         );
         await proxySrc.setMinDstGas(await lzEndpointDst.getChainId(), 1, 1);
         await proxySrc.setUseCustomAdapterParams(true);
+
+        await singularityDst
+            .connect(eoa1)
+            .approveBorrow(proxyDst.address, ethers.constants.MaxUint256);
         await proxySrc
             .connect(eoa1)
             .executeOnChain(
@@ -1267,6 +1291,7 @@ describe('MarketsProxy', () => {
             'addCollateral',
             [eoa1.address, eoa1.address, false, usdcMintValShare],
         );
+
         await proxySrc
             .connect(eoa1)
             .executeOnChain(
@@ -1295,6 +1320,9 @@ describe('MarketsProxy', () => {
             eoa1.address,
             wethBorrowVal,
         ]);
+        await singularityDst
+            .connect(eoa1)
+            .approveBorrow(proxyDst.address, ethers.constants.MaxUint256);
         await proxySrc
             .connect(eoa1)
             .executeOnChain(
@@ -1481,6 +1509,9 @@ describe('MarketsProxy', () => {
             eoa1.address,
             wethBorrowVal,
         ]);
+        await singularityDst
+            .connect(eoa1)
+            .approveBorrow(proxyDst.address, ethers.constants.MaxUint256);
         await proxySrc
             .connect(eoa1)
             .executeOnChain(
@@ -1716,7 +1747,8 @@ async function setupUsd0Environment(
         ethers.utils.parseEther('1'),
         false,
     );
-    const singularitySrc = srcSingularityDeployments.wethUsdoSingularity;
+    const singularitySrc =
+        srcSingularityDeployments.wethUsdoSingularity as Singularity;
 
     const dstSingularityDeployments = await registerSingularity(
         usd0Dst,
@@ -1730,7 +1762,8 @@ async function setupUsd0Environment(
         ethers.utils.parseEther('1'),
         false,
     );
-    const singularityDst = dstSingularityDeployments.wethUsdoSingularity;
+    const singularityDst =
+        dstSingularityDeployments.wethUsdoSingularity as Singularity;
 
     await proxySrc.updateMarketStatus(singularitySrc.address, true);
     await proxyDst.updateMarketStatus(singularityDst.address, true);

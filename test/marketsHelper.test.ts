@@ -67,7 +67,7 @@ describe('MarketsHelper test', () => {
         await usdc.connect(eoa1).approve(marketsHelper.address, usdcMintVal);
         await wethUsdcSingularity
             .connect(eoa1)
-            .approve(marketsHelper.address, usdcMintVal);
+            .approveBorrow(marketsHelper.address, ethers.constants.MaxUint256);
         await marketsHelper
             .connect(eoa1)
             .depositAddCollateralAndBorrow(
@@ -93,7 +93,10 @@ describe('MarketsHelper test', () => {
             __wethUsdcPrice,
             approveTokensAndSetBarApproval,
             wethDepositAndAddAsset,
+            yieldBox,
         } = await loadFixture(register);
+
+        const collateralId = await wethUsdcSingularity.collateralId();
 
         await initContracts(); // To prevent `Singularity: below minimum`
 
@@ -114,7 +117,8 @@ describe('MarketsHelper test', () => {
         await usdc.connect(eoa1).approve(marketsHelper.address, usdcMintVal);
         await wethUsdcSingularity
             .connect(eoa1)
-            .approve(marketsHelper.address, usdcMintVal);
+            .approveBorrow(marketsHelper.address, ethers.constants.MaxUint256);
+
         await marketsHelper
             .connect(eoa1)
             .depositAddCollateralAndBorrow(
@@ -140,7 +144,10 @@ describe('MarketsHelper test', () => {
             __wethUsdcPrice,
             approveTokensAndSetBarApproval,
             wethDepositAndAddAsset,
+            yieldBox,
         } = await loadFixture(register);
+
+        const collateralId = await wethUsdcSingularity.collateralId();
 
         await initContracts(); // To prevent `Singularity: below minimum`
 
@@ -161,7 +168,7 @@ describe('MarketsHelper test', () => {
         await usdc.connect(eoa1).approve(marketsHelper.address, usdcMintVal);
         await wethUsdcSingularity
             .connect(eoa1)
-            .approve(marketsHelper.address, usdcMintVal);
+            .approveBorrow(marketsHelper.address, ethers.constants.MaxUint256);
         await marketsHelper
             .connect(eoa1)
             .depositAddCollateralAndBorrow(
@@ -192,6 +199,8 @@ describe('MarketsHelper test', () => {
             usdcDepositAndAddCollateral,
         } = await loadFixture(register);
 
+        const collateralId = await wethUsdcSingularity.collateralId();
+        const assetId = await wethUsdcSingularity.assetId();
         await initContracts(); // To prevent `Singularity: below minimum`
 
         const borrowAmount = ethers.BigNumber.from((1e17).toString());
@@ -212,7 +221,7 @@ describe('MarketsHelper test', () => {
         await usdc.connect(eoa1).approve(marketsHelper.address, usdcMintVal);
         await wethUsdcSingularity
             .connect(eoa1)
-            .approve(marketsHelper.address, usdcMintVal);
+            .approve(marketsHelper.address, ethers.constants.MaxUint256);
         await yieldBox
             .connect(eoa1)
             .depositAsset(
@@ -223,6 +232,9 @@ describe('MarketsHelper test', () => {
                 0,
             );
 
+        await wethUsdcSingularity
+            .connect(eoa1)
+            .approveBorrow(marketsHelper.address, ethers.constants.MaxUint256);
         await marketsHelper
             .connect(eoa1)
             .depositAddCollateralAndBorrow(
@@ -248,8 +260,11 @@ describe('MarketsHelper test', () => {
             __wethUsdcPrice,
             approveTokensAndSetBarApproval,
             wethDepositAndAddAsset,
+            yieldBox,
         } = await loadFixture(register);
 
+        const assetId = await wethUsdcSingularity.assetId();
+        const collateralId = await wethUsdcSingularity.collateralId();
         await initContracts(); // To prevent `Singularity: below minimum`
 
         const borrowAmount = ethers.BigNumber.from((1e17).toString());
@@ -269,7 +284,7 @@ describe('MarketsHelper test', () => {
         await usdc.connect(eoa1).approve(marketsHelper.address, usdcMintVal);
         await wethUsdcSingularity
             .connect(eoa1)
-            .approve(marketsHelper.address, usdcMintVal);
+            .approveBorrow(marketsHelper.address, ethers.constants.MaxUint256);
         await marketsHelper
             .connect(eoa1)
             .depositAddCollateralAndBorrow(
@@ -292,7 +307,10 @@ describe('MarketsHelper test', () => {
             .approve(marketsHelper.address, userBorrowPart.mul(2));
         await wethUsdcSingularity
             .connect(eoa1)
-            .approve(marketsHelper.address, userBorrowPart.mul(2));
+            .approve(
+                marketsHelper.address,
+                await yieldBox.toShare(assetId, userBorrowPart.mul(2), true),
+            );
         await marketsHelper
             .connect(eoa1)
             .depositAndRepay(
@@ -319,6 +337,7 @@ describe('MarketsHelper test', () => {
             wethDepositAndAddAsset,
         } = await loadFixture(register);
 
+        const collateralId = await wethUsdcSingularity.collateralId();
         await initContracts(); // To prevent `Singularity: below minimum`
 
         const borrowAmount = ethers.BigNumber.from((1e17).toString());
@@ -338,7 +357,7 @@ describe('MarketsHelper test', () => {
         await usdc.connect(eoa1).approve(marketsHelper.address, usdcMintVal);
         await wethUsdcSingularity
             .connect(eoa1)
-            .approve(marketsHelper.address, usdcMintVal);
+            .approveBorrow(marketsHelper.address, ethers.constants.MaxUint256);
 
         await marketsHelper
             .connect(eoa1)
@@ -355,14 +374,7 @@ describe('MarketsHelper test', () => {
         const userBorrowPart = await wethUsdcSingularity.userBorrowPart(
             eoa1.address,
         );
-        await weth.connect(eoa1).freeMint(userBorrowPart.mul(2));
 
-        await weth
-            .connect(eoa1)
-            .approve(marketsHelper.address, userBorrowPart.mul(2));
-        await wethUsdcSingularity
-            .connect(eoa1)
-            .approve(marketsHelper.address, userBorrowPart.mul(2));
         const collateralShare = await wethUsdcSingularity.userCollateralShare(
             eoa1.address,
         );
@@ -372,6 +384,20 @@ describe('MarketsHelper test', () => {
             false,
         );
         const usdcBalanceBefore = await usdc.balanceOf(eoa1.address);
+
+        await weth.connect(eoa1).freeMint(userBorrowPart.mul(2));
+
+        await weth
+            .connect(eoa1)
+            .approve(marketsHelper.address, userBorrowPart.mul(2));
+
+        await wethUsdcSingularity
+            .connect(eoa1)
+            .approveBorrow(
+                marketsHelper.address,
+                await yieldBox.toShare(collateralId, collateralAmount, true),
+            );
+
         await marketsHelper
             .connect(eoa1)
             .depositRepayAndRemoveCollateral(
