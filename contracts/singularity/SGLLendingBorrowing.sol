@@ -24,7 +24,7 @@ contract SGLLendingBorrowing is SGLCommon {
         public
         notPaused
         solvent(from)
-        allowed(from)
+        allowedBorrow(from)
         returns (uint256 part, uint256 share)
     {
         updateExchangeRate();
@@ -46,7 +46,7 @@ contract SGLLendingBorrowing is SGLCommon {
         address to,
         bool skim,
         uint256 part
-    ) public notPaused allowed(from) returns (uint256 amount) {
+    ) public notPaused returns (uint256 amount) {
         updateExchangeRate();
 
         accrue();
@@ -77,7 +77,7 @@ contract SGLLendingBorrowing is SGLCommon {
         address from,
         address to,
         uint256 share
-    ) public notPaused solvent(from) allowed(from) {
+    ) public notPaused solvent(from) allowedBorrow(from) {
         // accrue must be called because we check solvency
         accrue();
 
@@ -101,7 +101,7 @@ contract SGLLendingBorrowing is SGLCommon {
         external
         notPaused
         solvent(from)
-        allowed(from)
+        allowedBorrow(from)
         returns (uint256 amountOut)
     {
         require(penrose.swappers(swapper), "SGL: Invalid swapper");
@@ -164,7 +164,7 @@ contract SGLLendingBorrowing is SGLCommon {
         external
         notPaused
         solvent(from)
-        allowed(from)
+        allowedBorrow(from)
         returns (uint256 amountOut)
     {
         require(penrose.swappers(swapper), "SGL: Invalid swapper");
@@ -208,7 +208,14 @@ contract SGLLendingBorrowing is SGLCommon {
         userCollateralShare[to] += share;
         uint256 oldTotalCollateralShare = totalCollateralShare;
         totalCollateralShare = oldTotalCollateralShare + share;
-        _addTokens(from, collateralId, share, oldTotalCollateralShare, skim);
+        _addTokens(
+            from,
+            to,
+            collateralId,
+            share,
+            oldTotalCollateralShare,
+            skim
+        );
         emit LogAddCollateral(skim ? address(yieldBox) : from, to, share);
     }
 
@@ -222,10 +229,10 @@ contract SGLLendingBorrowing is SGLCommon {
         totalCollateralShare -= share;
         emit LogRemoveCollateral(from, to, share);
         yieldBox.transfer(address(this), to, collateralId, share);
-        if (share > _yieldBoxShares[from][collateralId]) {
-            _yieldBoxShares[from][collateralId] = 0; //accrues in time
+        if (share > _yieldBoxShares[from][COLLATERAL_SIG]) {
+            _yieldBoxShares[from][COLLATERAL_SIG] = 0; //accrues in time
         } else {
-            _yieldBoxShares[from][collateralId] -= share;
+            _yieldBoxShares[from][COLLATERAL_SIG] -= share;
         }
     }
 
@@ -267,7 +274,7 @@ contract SGLLendingBorrowing is SGLCommon {
 
         uint256 share = yieldBox.toShare(assetId, amount, true);
         uint128 totalShare = totalAsset.elastic;
-        _addTokens(from, assetId, share, uint256(totalShare), skim);
+        _addTokens(from, to, assetId, share, uint256(totalShare), skim);
         totalAsset.elastic = totalShare + uint128(share);
         emit LogRepay(skim ? address(yieldBox) : from, to, amount, part);
     }
