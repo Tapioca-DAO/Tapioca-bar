@@ -21,12 +21,11 @@ contract SGLLendingBorrowing is SGLCommon {
         address to,
         uint256 amount
     ) public notPaused solvent(from) returns (uint256 part, uint256 share) {
+        _allowedBorrow(from, userCollateralShare[from]);
         updateExchangeRate();
 
         accrue();
-
         (part, share) = _borrow(from, to, amount);
-        _allowedBorrow(from, share);
     }
 
     /// @notice Repays a loan.
