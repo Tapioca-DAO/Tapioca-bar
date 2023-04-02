@@ -2303,7 +2303,7 @@ describe('Singularity test', () => {
     });
 
     describe('Permit', async () => {
-        it.only('should test permit lend & borrow', async () => {
+        it('should test permit lend & borrow', async () => {
             const { deployer, eoa1, wethUsdcSingularity, BN } =
                 await loadFixture(register);
 
