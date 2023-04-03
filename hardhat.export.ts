@@ -94,6 +94,7 @@ const config: HardhatUserConfig & { dodoc?: any; vyper: any } = {
         ...supportedChains,
         hardhat: {
             forking: {
+                blockNumber: 16963096,
                 url: `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`,
             },
             hardfork: 'merge',

@@ -25,6 +25,11 @@ contract SGLERC20 is IERC20, IERC20Permit, EIP712 {
         keccak256(
             "Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)"
         );
+    bytes32 private constant _PERMIT_TYPEHASH_BORROW =
+        keccak256(
+            "PermitBorrow(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)"
+        );
+
     /**
      * @dev In previous versions `_PERMIT_TYPEHASH` was declared as `immutable`.
      * However, to ensure consistency with the upgradeable transpiler, we will continue
@@ -38,8 +43,16 @@ contract SGLERC20 is IERC20, IERC20Permit, EIP712 {
     mapping(address => uint256) public override balanceOf;
     /// @notice owner > spender > allowance mapping.
     mapping(address => mapping(address => uint256)) public override allowance;
+    /// @notice owner > spender > allowance mapping.
+    mapping(address => mapping(address => uint256)) public allowanceBorrow;
     /// @notice owner > nonce mapping. Used in `permit`.
     mapping(address => uint256) private _nonces;
+
+    event ApprovalBorrow(
+        address indexed owner,
+        address indexed spender,
+        uint256 value
+    );
 
     /**
      * @dev Initializes the {EIP712} domain separator using the `name` parameter, and setting `version` to `"1"`.
@@ -126,6 +139,23 @@ contract SGLERC20 is IERC20, IERC20Permit, EIP712 {
         emit Approval(owner, spender, amount);
     }
 
+    function approveBorrow(
+        address spender,
+        uint256 amount
+    ) public returns (bool) {
+        _approveBorrow(msg.sender, spender, amount);
+        return true;
+    }
+
+    function _approveBorrow(
+        address owner,
+        address spender,
+        uint256 amount
+    ) internal {
+        allowanceBorrow[owner][spender] = amount;
+        emit ApprovalBorrow(owner, spender, amount);
+    }
+
     /**
      * @dev See {IERC20Permit-permit}.
      */
@@ -138,11 +168,36 @@ contract SGLERC20 is IERC20, IERC20Permit, EIP712 {
         bytes32 r,
         bytes32 s
     ) external virtual override(IERC20, IERC20Permit) {
+        _permit(true, owner, spender, value, deadline, v, r, s);
+    }
+
+    function permitBorrow(
+        address owner,
+        address spender,
+        uint256 value,
+        uint256 deadline,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external virtual {
+        _permit(false, owner, spender, value, deadline, v, r, s);
+    }
+
+    function _permit(
+        bool asset, // 1 = asset, 0 = collateral
+        address owner,
+        address spender,
+        uint256 value,
+        uint256 deadline,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) internal {
         require(block.timestamp <= deadline, "ERC20Permit: expired deadline");
 
         bytes32 structHash = keccak256(
             abi.encode(
-                _PERMIT_TYPEHASH,
+                asset ? _PERMIT_TYPEHASH : _PERMIT_TYPEHASH_BORROW,
                 owner,
                 spender,
                 value,
@@ -156,7 +211,11 @@ contract SGLERC20 is IERC20, IERC20Permit, EIP712 {
         address signer = ECDSA.recover(hash, v, r, s);
         require(signer == owner, "ERC20Permit: invalid signature");
 
-        _approve(owner, spender, value);
+        if (asset) {
+            _approve(owner, spender, value);
+        } else {
+            _approveBorrow(owner, spender, value);
+        }
     }
 
     /**

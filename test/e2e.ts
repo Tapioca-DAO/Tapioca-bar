@@ -1,12 +1,17 @@
-import { expect } from 'chai';
-import { ethers } from 'hardhat';
-import { register, BN } from './test.utils';
-import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
-import { BigBang, MarketsHelper, USDO, WETH9Mock } from '../typechain';
-import { BigNumber, BigNumberish } from 'ethers';
-import { Singularity } from '../typechain/contracts/singularity/Singularity';
+import { loadFixture, time } from '@nomicfoundation/hardhat-network-helpers';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { time } from '@nomicfoundation/hardhat-network-helpers';
+import { expect } from 'chai';
+import { BigNumber, BigNumberish } from 'ethers';
+import { ethers } from 'hardhat';
+import {
+    BigBang,
+    MarketsHelper,
+    USDO,
+    WETH9Mock,
+    YieldBox,
+} from '../typechain';
+import { Singularity } from '../typechain/contracts/singularity/Singularity';
+import { BN, register } from './test.utils';
 
 describe('e2e tests', () => {
     /*
@@ -46,7 +51,6 @@ describe('e2e tests', () => {
             deployCurveStableToUsdoBidder,
             timeTravel,
         } = await loadFixture(register);
-
         const usdoStratregy = await bar.emptyStrategies(usd0.address);
         const usdoAssetId = await yieldBox.ids(
             1,
@@ -106,6 +110,7 @@ describe('e2e tests', () => {
             wethUsdoSingularity,
             marketsHelper,
             yieldBox,
+            await wethUsdoSingularity.collateralId(),
             ethers.constants.MaxUint256,
         );
         await setYieldBoxApprovalPlug(deployer, yieldBox, wethBigBangMarket);
@@ -139,6 +144,7 @@ describe('e2e tests', () => {
         );
         await usd0.setMinterStatus(deployer.address, true);
         await usd0.mint(deployer.address, usdoBorrowVal.mul(100));
+
         for (let i = 0; i < repayArr.length; i++) {
             const repayer = repayArr[i];
             const repayerUsd0Balance = await usd0.balanceOf(repayer.address);
@@ -151,12 +157,7 @@ describe('e2e tests', () => {
                     marketsHelper.address,
                     repayerUsd0Balance.add(repayerUsd0Balance.div(2)),
                 );
-            await wethUsdoSingularity
-                .connect(repayer)
-                .approve(
-                    marketsHelper.address,
-                    repayerUsd0Balance.add(repayerUsd0Balance.div(2)),
-                );
+
             await marketsHelper
                 .connect(repayer)
                 .depositAndRepay(
@@ -244,6 +245,7 @@ describe('e2e tests', () => {
             wethUsdoSingularity,
             marketsHelper,
             yieldBox,
+            await wethUsdoSingularity.collateralId(),
             ethers.constants.MaxUint256,
         );
         await setYieldBoxApprovalPlug(deployer, yieldBox, wethBigBangMarket);
@@ -255,6 +257,7 @@ describe('e2e tests', () => {
             wethUsdoSingularity,
             marketsHelper,
             yieldBox,
+            await wethUsdoSingularity.collateralId(),
             wethMintVal,
         );
 
@@ -296,6 +299,7 @@ describe('e2e tests', () => {
             wethUsdoSingularity,
             marketsHelper,
             yieldBox,
+            await wethUsdoSingularity.collateralId(),
             wethMintVal.mul(10),
         );
         await depositAddCollateralAndBorrowPlug(
@@ -325,6 +329,7 @@ describe('e2e tests', () => {
             wethUsdoSingularity,
             marketsHelper,
             yieldBox,
+            await wethUsdoSingularity.assetId(),
             usdoBorrowVal,
         );
         await depositAndRepayPlug(
@@ -351,6 +356,7 @@ describe('e2e tests', () => {
             wethUsdoSingularity,
             marketsHelper,
             yieldBox,
+            await wethUsdoSingularity.assetId(),
             extraUsd0,
         );
         await depositToYieldBoxPlug(
@@ -459,6 +465,7 @@ describe('e2e tests', () => {
                 wethUsdoSingularity,
                 marketsHelper,
                 yieldBox,
+                await wethUsdoSingularity.collateralId(),
                 borrowerCollateralValue,
             );
 
@@ -495,6 +502,7 @@ describe('e2e tests', () => {
             wethUsdoSingularity,
             marketsHelper,
             yieldBox,
+            await wethUsdoSingularity.collateralId(),
             ethers.constants.MaxUint256,
         );
 
@@ -571,16 +579,27 @@ async function bigBangApprovePlug(
     await BigBang.connect(signer).updateOperator(marketsHelper.address, true);
 }
 
+// TODO use correct amount
 async function approvePlug(
     signer: SignerWithAddress,
     token: any,
-    Singularity: any,
+    Singularity: Singularity,
     marketsHelper: MarketsHelper,
-    yieldBox: any,
+    yieldBox: YieldBox,
+    assetId: BigNumberish,
     val: BigNumberish,
 ) {
     await tokenApprovalPlug(signer, token, marketsHelper, yieldBox, val);
-    await Singularity.connect(signer).approve(marketsHelper.address, val);
+    await Singularity.connect(signer).approve(
+        marketsHelper.address,
+        // TODO use correct amount
+        ethers.constants.MaxUint256,
+    );
+    await Singularity.connect(signer).approveBorrow(
+        marketsHelper.address,
+        // TODO use correct amount
+        ethers.constants.MaxUint256,
+    );
 }
 
 async function transferPlug(
@@ -892,9 +911,9 @@ async function borrowFromSingularityModule(
             wethUsdoSingularity,
             marketsHelper,
             yieldBox,
+            await wethUsdoSingularity.collateralId(),
             wethMintVal,
         );
-
         await depositAddCollateralAndBorrowPlug(
             borrower,
             marketsHelper,
@@ -937,6 +956,7 @@ async function repayModule(
             wethUsdoSingularity,
             marketsHelper,
             yieldBox,
+            await wethUsdoSingularity.assetId(),
             repayerUsd0Balance.add(transferVal),
         );
 
@@ -976,6 +996,7 @@ async function liquidateModule(
         wethUsdoSingularity,
         marketsHelper,
         yieldBox,
+        await wethUsdoSingularity.assetId(),
         extraUsd0,
     );
     await depositToYieldBoxPlug(
