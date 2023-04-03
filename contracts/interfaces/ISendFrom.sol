@@ -29,4 +29,6 @@ interface ISendFrom {
         uint256 _amount,
         LzCallParams calldata _callParams
     ) external payable;
+
+    function useCustomAdapterParams() external view returns (bool);
 }

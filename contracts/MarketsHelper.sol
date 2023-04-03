@@ -535,7 +535,9 @@ contract MarketsHelper {
             return;
         }
 
-        market.withdrawTo{value: msg.value}(
+        market.withdrawTo{
+            value: msg.value > 0 ? msg.value : address(this).balance
+        }(
             _from,
             _destChain,
             _receiver,
@@ -565,4 +567,6 @@ contract MarketsHelper {
             "transfer failed"
         );
     }
+
+    receive() external payable {}
 }

@@ -733,13 +733,11 @@ describe('MarketsHelper test', () => {
         expect(wethBalanceAfter.eq(0)).to.be.true;
     });
 
-    describe('TOFT => MarketHelper', () => {
+    describe.only('TOFT => MarketHelper', () => {
         it('should deposit, add collateral and borrow through SGL helper', async () => {
             const {
                 yieldBox,
                 deployer,
-                usdc,
-                usdcAssetId,
                 eoa1,
                 marketsHelper,
                 registerSingularity,
@@ -761,6 +759,11 @@ describe('MarketsHelper test', () => {
                 await ethers.getContractFactory('ERC20Mock')
             ).deploy(BN(100e18), 18, BN(10e18));
 
+            const assetMock = await (
+                await ethers.getContractFactory('ERC20Mock')
+            ).deploy(BN(100e18), 18, BN(10e18));
+
+            // Collateral
             const toftHost = await new TapiocaOFTMock__factory()
                 .connect(deployer)
                 .deploy(
@@ -786,8 +789,85 @@ describe('MarketsHelper test', () => {
                     18,
                     1,
                 );
+            // const toftHost = await (
+            //     await ethers.getContractFactory('TapiocaOFTMock')
+            // ).deploy(
+            //     lzEndpoint1.address,
+            //     false,
+            //     erc20Mock.address,
+            //     yieldBox.address,
+            //     'toftMock',
+            //     'toftMock',
+            //     18,
+            //     1,
+            // );
+
+            // const toftLinked = await (
+            //     await ethers.getContractFactory('TapiocaOFTMock')
+            // ).deploy(
+            //     lzEndpoint2.address,
+            //     false,
+            //     erc20Mock.address,
+            //     yieldBox.address,
+            //     'toftMock',
+            //     'toftMock',
+            //     18,
+            //     1,
+            // );
+
+            // Asset
+            const assetHost = await new TapiocaOFTMock__factory()
+                .connect(deployer)
+                .deploy(
+                    lzEndpoint1.address,
+                    false,
+                    assetMock.address,
+                    yieldBox.address,
+                    'toftMock',
+                    'toftMock',
+                    18,
+                    1,
+                );
+
+            const assetLinked = await new TapiocaOFTMock__factory()
+                .connect(deployer)
+                .deploy(
+                    lzEndpoint2.address,
+                    false,
+                    assetMock.address,
+                    yieldBox.address,
+                    'toftMock',
+                    'toftMock',
+                    18,
+                    1,
+                );
+            // const assetHost = await (
+            //     await ethers.getContractFactory('TapiocaOFTMock')
+            // ).deploy(
+            //     lzEndpoint1.address,
+            //     false,
+            //     assetMock.address,
+            //     yieldBox.address,
+            //     'toftMock',
+            //     'toftMock',
+            //     18,
+            //     1,
+            // );
+            // const assetLinked = await (
+            //     await ethers.getContractFactory('TapiocaOFTMock')
+            // ).deploy(
+            //     lzEndpoint2.address,
+            //     false,
+            //     assetMock.address,
+            //     yieldBox.address,
+            //     'toftMock',
+            //     'toftMock',
+            //     18,
+            //     1,
+            // );
 
             // -------------------  Link TOFTs -------------------
+            // Collateral
             lzEndpoint1.setDestLzEndpoint(
                 toftLinked.address,
                 lzEndpoint2.address,
@@ -816,6 +896,36 @@ describe('MarketsHelper test', () => {
             await toftLinked.setMinDstGas(1, 774, 200_00);
             await toftLinked.setMinDstGas(1, 775, 200_00);
 
+            // Asset
+            lzEndpoint1.setDestLzEndpoint(
+                assetLinked.address,
+                lzEndpoint2.address,
+            );
+            lzEndpoint2.setDestLzEndpoint(
+                assetHost.address,
+                lzEndpoint1.address,
+            );
+
+            await assetHost.setTrustedRemote(
+                2,
+                ethers.utils.solidityPack(
+                    ['address', 'address'],
+                    [assetLinked.address, assetHost.address],
+                ),
+            );
+            await assetLinked.setTrustedRemote(
+                1,
+                ethers.utils.solidityPack(
+                    ['address', 'address'],
+                    [assetHost.address, assetLinked.address],
+                ),
+            );
+
+            await assetHost.setMinDstGas(2, 0, 200_00);
+            await assetLinked.setMinDstGas(1, 0, 200_00);
+            await assetHost.setMinDstGas(2, 1, 200_00);
+            await assetLinked.setMinDstGas(1, 1, 200_00);
+
             // ------------------- Deploy TOFT mock oracle -------------------
             const toftUsdcPrice = BN(22e18);
             const toftUsdcOracle = await (
@@ -823,6 +933,7 @@ describe('MarketsHelper test', () => {
             ).deploy('WETHMOracle', 'WETHMOracle', toftUsdcPrice.toString());
 
             // ------------------- Register Penrose Asset -------------------
+            // Collateral
             const toftHostStrategy = await createTokenEmptyStrategy(
                 yieldBox.address,
                 toftHost.address,
@@ -840,14 +951,32 @@ describe('MarketsHelper test', () => {
                 toftHostStrategy.address,
                 0,
             );
+            // Asset
+            const assetHostStrategy = await createTokenEmptyStrategy(
+                yieldBox.address,
+                assetHost.address,
+            );
+            await yieldBox.registerAsset(
+                1,
+                assetHost.address,
+                assetHostStrategy.address,
+                0,
+            );
+
+            const assetHostId = await yieldBox.ids(
+                1,
+                assetHost.address,
+                assetHostStrategy.address,
+                0,
+            );
             // ------------------- Deploy ToftUSDC medium risk MC clone-------------------
             const { singularityMarket: toftUsdcSingularity } =
                 await registerSingularity(
                     mediumRiskMC.address,
                     yieldBox,
                     bar,
-                    usdc,
-                    usdcAssetId,
+                    assetHost,
+                    assetHostId,
                     toftHost,
                     toftHostAssetId,
                     toftUsdcOracle,
@@ -856,7 +985,7 @@ describe('MarketsHelper test', () => {
                 );
             // ------------------- Init SGL -------------------
 
-            const borrowAmount = ethers.BigNumber.from((1e5).toString());
+            const borrowAmount = ethers.BigNumber.from((1e10).toString());
             const toftMintVal = ethers.BigNumber.from((1e18).toString()).mul(
                 10,
             );
@@ -868,10 +997,10 @@ describe('MarketsHelper test', () => {
 
             // We get asset
 
-            await usdc.connect(eoa1).freeMint(usdcMintVal);
+            await assetHost.connect(eoa1).freeMint(eoa1.address, usdcMintVal);
 
             await (
-                await usdc
+                await assetHost
                     .connect(eoa1)
                     .approve(marketsHelper.address, usdcMintVal)
             ).wait();
@@ -884,11 +1013,32 @@ describe('MarketsHelper test', () => {
                     true,
                 );
             // ------------------- Actual TOFT test -------------------
+            const collateralId = await toftUsdcSingularity.collateralId();
 
-            await toftLinked.freeMint(deployer.address, toftMintVal);
+            await toftUsdcSingularity.approveBorrow(
+                marketsHelper.address,
+                await yieldBox.toShare(collateralId, toftMintVal, true),
+            );
             await toftUsdcSingularity.approve(
                 marketsHelper.address,
+                await yieldBox.toShare(collateralId, borrowAmount, true),
+            );
+
+            hre.tracer.enabled = true;
+            hre.tracer.nameTags[lzEndpoint1.address] = 'lzEndpoint1';
+            hre.tracer.nameTags[lzEndpoint2.address] = 'lzEndpoint2';
+            hre.tracer.nameTags[marketsHelper.address] = 'marketsHelper';
+            hre.tracer.nameTags[assetHost.address] = 'assetHost';
+            hre.tracer.nameTags[assetLinked.address] = 'assetLinked';
+
+            const withdrawFees = await assetHost.estimateSendFee(
+                2,
+                ethers.utils
+                    .solidityPack(['address'], [assetLinked.address])
+                    .padEnd(66, '0'),
                 borrowAmount,
+                false,
+                '0x',
             );
 
             await toftLinked.sendToYBAndBorrow(
@@ -899,13 +1049,18 @@ describe('MarketsHelper test', () => {
                 marketsHelper.address,
                 toftUsdcSingularity.address,
                 1,
+                withdrawFees.nativeFee,
                 {
-                    extraGasLimit: 1000000,
+                    extraGasLimit: 1_000_000,
                     strategyDeposit: false,
                     wrap: false,
                     zroPaymentAddress: deployer.address,
                 },
                 { value: ethers.utils.parseEther('20') },
+            );
+
+            expect(await assetLinked.balanceOf(deployer.address)).to.be.eq(
+                borrowAmount,
             );
         });
     });

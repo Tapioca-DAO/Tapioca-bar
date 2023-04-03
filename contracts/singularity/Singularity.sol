@@ -419,10 +419,14 @@ contract Singularity is SGLCommon {
         );
 
         yieldBox.withdraw(assetId, from, address(this), amount, 0);
+
+        bytes memory _adapterParams;
         ISendFrom.LzCallParams memory callParams = ISendFrom.LzCallParams({
             refundAddress: msg.value > 0 ? refundAddress : payable(this),
             zroPaymentAddress: address(0),
-            adapterParams: adapterParams
+            adapterParams: ISendFrom(address(asset)).useCustomAdapterParams()
+                ? adapterParams
+                : _adapterParams
         });
         ISendFrom(address(asset)).sendFrom{
             value: msg.value > 0 ? msg.value : address(this).balance
