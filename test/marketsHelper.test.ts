@@ -989,9 +989,9 @@ describe('MarketsHelper test', () => {
             const toftMintVal = ethers.BigNumber.from((1e18).toString()).mul(
                 10,
             );
-            const usdcMintVal = toftMintVal
-                .mul(10)
-                .mul(toftUsdcPrice.div((1e18).toString()));
+            const usdcMintVal = ethers.BigNumber.from((1e18).toString()).mul(
+                100,
+            );
 
             await timeTravel(86500);
 
@@ -1024,7 +1024,7 @@ describe('MarketsHelper test', () => {
                 await yieldBox.toShare(collateralId, borrowAmount, true),
             );
 
-            hre.tracer.enabled = true;
+            // hre.tracer.enabled = true;
             hre.tracer.nameTags[lzEndpoint1.address] = 'lzEndpoint1';
             hre.tracer.nameTags[lzEndpoint2.address] = 'lzEndpoint2';
             hre.tracer.nameTags[marketsHelper.address] = 'marketsHelper';
@@ -1041,6 +1041,21 @@ describe('MarketsHelper test', () => {
                 '0x',
             );
 
+            console.log(
+                'Asset',
+                (await toftUsdcSingularity.asset()).toLowerCase(),
+            );
+            console.log(
+                'Collateral',
+                (await toftUsdcSingularity.collateral()).toLowerCase(),
+            );
+
+            console.log('AssetLinked', assetLinked.address.toLowerCase());
+            console.log('TOFTHost', toftHost.address.toLowerCase());
+            console.log('TOFTLInked', toftLinked.address.toLowerCase());
+            console.log('AssetHost', assetHost.address.toLowerCase());
+            console.log('AssetLinked', assetLinked.address.toLowerCase());
+            await toftLinked.freeMint(deployer.address, toftMintVal);
             await toftLinked.sendToYBAndBorrow(
                 deployer.address,
                 deployer.address,
