@@ -84,13 +84,19 @@ contract Magnetar is Ownable, MagnetarData {
                     _actionCalldata,
                     (YieldBoxDeposit)
                 );
-                IDepositAsset(data.target).depositAsset(
-                    data.assetId,
-                    msg.sender,
-                    data.to,
-                    data.amount,
-                    data.share
-                );
+                (uint256 amountOut, uint256 shareOut) = IDepositAsset(
+                    data.target
+                ).depositAsset(
+                        data.assetId,
+                        msg.sender,
+                        data.to,
+                        data.amount,
+                        data.share
+                    );
+                returnData[i] = Result({
+                    success: true,
+                    returnData: abi.encode(amountOut, shareOut)
+                });
             } else if (_action == SGL_ADD_COLLATERAL) {
                 SGLAddCollateralData memory data = abi.decode(
                     _actionCalldata,
@@ -107,11 +113,13 @@ contract Magnetar is Ownable, MagnetarData {
                     _actionCalldata,
                     (SGLBorrowData)
                 );
-                ISingularityOperations(data.target).borrow(
-                    msg.sender,
-                    data.to,
-                    data.amount
-                );
+                (uint256 part, uint256 share) = ISingularityOperations(
+                    data.target
+                ).borrow(msg.sender, data.to, data.amount);
+                returnData[i] = Result({
+                    success: true,
+                    returnData: abi.encode(part, share)
+                });
             } else if (_action == SGL_WITHDRAW_TO) {
                 SGLWithdrawTo memory data = abi.decode(
                     _actionCalldata,
@@ -125,12 +133,12 @@ contract Magnetar is Ownable, MagnetarData {
                     data.adapterParams,
                     data.refundAddress
                 );
+            } else {
+                revert("Magnetar: action not valid");
             }
         }
 
         require(msg.value == valAccumulator, "Magnetar: value mismatch");
-
-        //TODO compute return data
     }
 
     // ********************** //
