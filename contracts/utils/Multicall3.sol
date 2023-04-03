@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.18;
 
+import "@openzeppelin/contracts/access/Ownable.sol";
+
 /// @title Multicall3
 /// @notice Aggregate results from multiple function calls
 /// @dev Multicall & Multicall2 backwards-compatible
@@ -10,7 +12,7 @@ pragma solidity 0.8.18;
 /// @author Nick Johnson <arachnid@notdot.net>
 /// @author Andreas Bigger <andreas@nascent.xyz>
 /// @author Matt Solomon <matt@mattsolomon.dev>
-contract Multicall3 {
+contract Multicall3 is Ownable {
     struct Call {
         address target;
         bytes callData;
@@ -34,6 +36,20 @@ contract Multicall3 {
         bytes returnData;
     }
 
+    mapping(address => bool) public availableTargets;
+
+    function addTargets(address[] calldata addresses) external onlyOwner {
+        for (uint256 i = 0; i < addresses.length; i++) {
+            availableTargets[addresses[i]] = true;
+        }
+    }
+
+    function removeTargets(address[] calldata addresses) external onlyOwner {
+        for (uint256 i = 0; i < addresses.length; i++) {
+            availableTargets[addresses[i]] = false;
+        }
+    }
+
     /// @notice Backwards-compatible call aggregation with Multicall
     /// @param calls An array of Call structs
     /// @return blockNumber The block number where the calls were executed
@@ -44,8 +60,12 @@ contract Multicall3 {
         blockNumber = block.number;
         uint256 length = calls.length;
         returnData = new bytes[](length);
-        Call calldata call;
+        Call memory call;
         for (uint256 i = 0; i < length; ) {
+            require(
+                availableTargets[call.target],
+                "Multicall3: target not available"
+            );
             bool success;
             call = calls[i];
             (success, returnData[i]) = call.target.call(call.callData);
@@ -67,8 +87,12 @@ contract Multicall3 {
     ) public payable returns (Result[] memory returnData) {
         uint256 length = calls.length;
         returnData = new Result[](length);
-        Call calldata call;
+        Call memory call;
         for (uint256 i = 0; i < length; ) {
+            require(
+                availableTargets[call.target],
+                "Multicall3: target not available"
+            );
             Result memory result = returnData[i];
             call = calls[i];
             (result.success, result.returnData) = call.target.call(
@@ -136,10 +160,14 @@ contract Multicall3 {
     ) public payable returns (Result[] memory returnData) {
         uint256 length = calls.length;
         returnData = new Result[](length);
-        Call3 calldata calli;
+        Call3 memory calli;
         for (uint256 i = 0; i < length; ) {
             Result memory result = returnData[i];
             calli = calls[i];
+            require(
+                availableTargets[calli.target],
+                "Multicall3: target not available"
+            );
             (result.success, result.returnData) = calli.target.call(
                 calli.callData
             );
@@ -184,10 +212,14 @@ contract Multicall3 {
     ) public payable returns (Result[] memory returnData) {
         uint256 length = calls.length;
         returnData = new Result[](length);
-        Call3 calldata calli;
+        Call3 memory calli;
         for (uint256 i = 0; i < length; ) {
             Result memory result = returnData[i];
             calli = calls[i];
+            require(
+                availableTargets[calli.target],
+                "Multicall3: target not available"
+            );
             (result.success, result.returnData) = calli.target.call(
                 calli.callData
             );
@@ -210,10 +242,14 @@ contract Multicall3 {
         uint256 valAccumulator;
         uint256 length = calls.length;
         returnData = new Result[](length);
-        Call3Value calldata calli;
+        Call3Value memory calli;
         for (uint256 i = 0; i < length; ) {
             Result memory result = returnData[i];
             calli = calls[i];
+            require(
+                availableTargets[calli.target],
+                "Multicall3: target not available"
+            );
             uint256 val = calli.value;
             // Humanity will be a Type V Kardashev Civilization before this overflows - andreas
             // ~ 10^25 Wei in existence << ~ 10^76 size uint fits in a uint256
@@ -267,10 +303,14 @@ contract Multicall3 {
         uint256 valAccumulator;
         uint256 length = calls.length;
         returnData = new Result[](length);
-        Call3Value calldata calli;
+        Call3Value memory calli;
         for (uint256 i = 0; i < length; ) {
             Result memory result = returnData[i];
             calli = calls[i];
+            require(
+                availableTargets[calli.target],
+                "Multicall3: target not available"
+            );
             uint256 val = calli.value;
             // Humanity will be a Type V Kardashev Civilization before this overflows - andreas
             // ~ 10^25 Wei in existence << ~ 10^76 size uint fits in a uint256
@@ -315,7 +355,7 @@ contract Multicall3 {
         view
         returns (uint256 difficulty)
     {
-        difficulty = block.difficulty;
+        difficulty = block.prevrandao;
     }
 
     /// @notice Returns the block gas limit
