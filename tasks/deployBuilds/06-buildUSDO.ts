@@ -17,5 +17,6 @@ export const buildUSD0 = async (
             owner,
         ],
         dependsOn: [{ argPosition: 1, deploymentName: 'YieldBox' }],
+        runStaticSimulation: false,
     };
 };

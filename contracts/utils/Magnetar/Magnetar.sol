@@ -25,10 +25,13 @@ __/\\\\\\\\\\\\\\\_____/\\\\\\\\\_____/\\\\\\\\\\\\\____/\\\\\\\\\\\_______/\\\\
 contract Magnetar is Ownable, MagnetarData, MagnetarActionsData {
     using BoringERC20 for IERC20;
 
+    constructor(address _owner) {
+        transferOwnership(_owner);
+    }
+
     // ************************ //
     // *** PUBLIC FUNCTIONS *** //
     // ************************ //
-
     /// @notice Batch multiple calls together
     /// @param calls The list of actions to perform
     function burst(
@@ -148,7 +151,9 @@ contract Magnetar is Ownable, MagnetarData, MagnetarActionsData {
                     (SGLWithdrawToData)
                 );
                 _checkSender(data.from);
-                ISingularityOperations(_action.target).withdrawTo(
+                ISingularityOperations(_action.target).withdrawTo{
+                    value: _action.value
+                }(
                     msg.sender,
                     data.dstChainId,
                     data.receiver,
