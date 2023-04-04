@@ -5,6 +5,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol";
 
 import "./MagnetarData.sol";
+import "./MagnetarActionsData.sol";
 
 /*
 
@@ -21,7 +22,7 @@ __/\\\\\\\\\\\\\\\_____/\\\\\\\\\_____/\\\\\\\\\\\\\____/\\\\\\\\\\\_______/\\\\
 */
 
 //TODO: decide if we should add whitelisted contracts or 'target' is always passed from outside
-contract Magnetar is Ownable, MagnetarData {
+contract Magnetar is Ownable, MagnetarData, MagnetarActionsData {
     using BoringERC20 for IERC20;
 
     // ************************ //
@@ -29,69 +30,82 @@ contract Magnetar is Ownable, MagnetarData {
     // ************************ //
 
     /// @notice Batch multiple calls together
-    /// @param actions The list of actions to perform
-    /// @param callDatas The list of actions' data
+    /// @param calls The list of actions to perform
     function burst(
-        uint16[] calldata actions,
-        bytes[] calldata callDatas
+        Call[] calldata calls
     ) external payable returns (Result[] memory returnData) {
-        require(
-            actions.length == callDatas.length,
-            "Magnetar: array length mismatch"
-        );
-        require(actions.length > 0, "Magnetar: no objects around");
-
         uint256 valAccumulator;
 
-        uint256 length = actions.length;
+        uint256 length = calls.length;
         returnData = new Result[](length);
 
         for (uint256 i = 0; i < length; i++) {
-            uint16 _action = actions[i];
-            bytes memory _actionCalldata = callDatas[i];
+            Call calldata _action = calls[i];
+            if (!_action.allowFailure) {
+                require(
+                    _action.call.length > 0,
+                    string.concat(
+                        "Magnetar: Missing call for action with index",
+                        string(abi.encode(i))
+                    )
+                );
+            }
 
-            if (_action == PERMIT_ALL) {
-                _permit(_actionCalldata, true);
-            } else if (_action == PERMIT) {
-                _permit(_actionCalldata, false);
-            } else if (_action == TOFT_WRAP) {
-                WrapData memory data = abi.decode(_actionCalldata, (WrapData));
-                if (data.isNative) {
+            if (_action.id == PERMIT_ALL) {
+                _permit(
+                    _action.target,
+                    _action.call,
+                    true,
+                    _action.allowFailure
+                );
+            } else if (_action.id == PERMIT) {
+                _permit(
+                    _action.target,
+                    _action.call,
+                    false,
+                    _action.allowFailure
+                );
+            } else if (_action.id == TOFT_WRAP) {
+                WrapData memory data = abi.decode(_action.call[4:], (WrapData));
+                _checkSender(data.from);
+                if (_action.value > 0) {
                     unchecked {
-                        valAccumulator += data.value;
+                        valAccumulator += _action.value;
                     }
-                    ITOFTOperations(data.target).wrapNative{value: data.value}(
-                        data.to
-                    );
+                    ITOFTOperations(_action.target).wrapNative{
+                        value: _action.value
+                    }(data.to);
                 } else {
-                    ITOFTOperations(data.target).wrap(
+                    ITOFTOperations(_action.target).wrap(
                         msg.sender,
                         data.to,
-                        data.value
+                        data.amount
                     );
                 }
-            } else if (_action == TOFT_SEND_FROM) {
+            } else if (_action.id == TOFT_SEND_FROM) {
                 TOFTSendFromData memory data = abi.decode(
-                    _actionCalldata,
+                    _action.call[4:],
                     (TOFTSendFromData)
                 );
+                _checkSender(data.from);
                 unchecked {
-                    valAccumulator += data.value;
+                    valAccumulator += _action.value;
                 }
-                ISendFrom(data.target).sendFrom{value: data.value}(
+                ISendFrom(_action.target).sendFrom{value: _action.value}(
                     msg.sender,
                     data.dstChainId,
                     data.to,
                     data.amount,
                     data.callParams
                 );
-            } else if (_action == YB_DEPOSIT_ASSET) {
+            } else if (_action.id == YB_DEPOSIT_ASSET) {
                 YieldBoxDepositData memory data = abi.decode(
-                    _actionCalldata,
+                    _action.call[4:],
                     (YieldBoxDepositData)
                 );
+                _checkSender(data.from);
                 (uint256 amountOut, uint256 shareOut) = IDepositAsset(
-                    data.target
+                    _action.target
                 ).depositAsset(
                         data.assetId,
                         msg.sender,
@@ -103,35 +117,38 @@ contract Magnetar is Ownable, MagnetarData {
                     success: true,
                     returnData: abi.encode(amountOut, shareOut)
                 });
-            } else if (_action == SGL_ADD_COLLATERAL) {
+            } else if (_action.id == SGL_ADD_COLLATERAL) {
                 SGLAddCollateralData memory data = abi.decode(
-                    _actionCalldata,
+                    _action.call[4:],
                     (SGLAddCollateralData)
                 );
-                ISingularityOperations(data.target).addCollateral(
+                _checkSender(data.from);
+                ISingularityOperations(_action.target).addCollateral(
                     msg.sender,
                     data.to,
                     data.skim,
                     data.share
                 );
-            } else if (_action == SGL_BORROW) {
+            } else if (_action.id == SGL_BORROW) {
                 SGLBorrowData memory data = abi.decode(
-                    _actionCalldata,
+                    _action.call[4:],
                     (SGLBorrowData)
                 );
+                _checkSender(data.from);
                 (uint256 part, uint256 share) = ISingularityOperations(
-                    data.target
+                    _action.target
                 ).borrow(msg.sender, data.to, data.amount);
                 returnData[i] = Result({
                     success: true,
                     returnData: abi.encode(part, share)
                 });
-            } else if (_action == SGL_WITHDRAW_TO) {
+            } else if (_action.id == SGL_WITHDRAW_TO) {
                 SGLWithdrawToData memory data = abi.decode(
-                    _actionCalldata,
+                    _action.call[4:],
                     (SGLWithdrawToData)
                 );
-                ISingularityOperations(data.target).withdrawTo(
+                _checkSender(data.from);
+                ISingularityOperations(_action.target).withdrawTo(
                     msg.sender,
                     data.dstChainId,
                     data.receiver,
@@ -139,27 +156,26 @@ contract Magnetar is Ownable, MagnetarData {
                     data.adapterParams,
                     data.refundAddress
                 );
-            } else if (_action == SGL_LEND) {
+            } else if (_action.id == SGL_LEND) {
                 SGLLendData memory data = abi.decode(
-                    _actionCalldata,
+                    _action.call[4:],
                     (SGLLendData)
                 );
-                uint256 fraction = ISingularityOperations(data.target).addAsset(
-                    msg.sender,
-                    data.to,
-                    data.skim,
-                    data.share
-                );
+                _checkSender(data.from);
+                uint256 fraction = ISingularityOperations(_action.target)
+                    .addAsset(msg.sender, data.to, data.skim, data.share);
                 returnData[i] = Result({
                     success: true,
                     returnData: abi.encode(fraction)
                 });
-            } else if (_action == SGL_REPAY) {
+            } else if (_action.id == SGL_REPAY) {
                 SGLRepayData memory data = abi.decode(
-                    _actionCalldata,
+                    _action.call[4:],
                     (SGLRepayData)
                 );
-                uint256 amount = ISingularityOperations(data.target).repay(
+                _checkSender(data.from);
+
+                uint256 amount = ISingularityOperations(_action.target).repay(
                     msg.sender,
                     data.to,
                     data.skim,
@@ -169,25 +185,24 @@ contract Magnetar is Ownable, MagnetarData {
                     success: true,
                     returnData: abi.encode(amount)
                 });
-            } else if (_action == TOFT_SEND_APPROVAL) {
+            } else if (_action.id == TOFT_SEND_APPROVAL) {
                 SendApprovalData memory data = abi.decode(
-                    _actionCalldata,
+                    _action.call[4:],
                     (SendApprovalData)
                 );
-
-                ITOFTOperations(data.target).sendApproval{value: data.value}(
-                    data.lzDstChainId,
-                    data.approval,
-                    data.sendOptions
-                );
-            } else if (_action == TOFT_SEND_AND_BORROW) {
+                _checkSender(data.approval.owner);
+                ITOFTOperations(_action.target).sendApproval{
+                    value: _action.value
+                }(data.lzDstChainId, data.approval, data.options);
+            } else if (_action.id == TOFT_SEND_AND_BORROW) {
                 TOFTSendAndBorrowData memory data = abi.decode(
-                    _actionCalldata,
+                    _action.call[4:],
                     (TOFTSendAndBorrowData)
                 );
+                _checkSender(data.from);
 
-                ITOFTOperations(data.target).sendToYBAndBorrow{
-                    value: data.value
+                ITOFTOperations(_action.target).sendToYBAndBorrow{
+                    value: _action.value
                 }(
                     msg.sender,
                     data.to,
@@ -197,44 +212,51 @@ contract Magnetar is Ownable, MagnetarData {
                     data.market,
                     data.lzDstChainId,
                     data.withdrawLzFeeAmount,
-                    data.sendOptions
+                    data.options
                 );
-            } else if (_action == TOFT_SEND_AND_LEND) {
+            } else if (_action.id == TOFT_SEND_AND_LEND) {
                 TOFTSendAndLendData memory data = abi.decode(
-                    _actionCalldata,
+                    _action.call[4:],
                     (TOFTSendAndLendData)
                 );
+                _checkSender(data.from);
 
-                ITOFTOperations(data.target).sendToYBAndLend{value: data.value}(
+                ITOFTOperations(_action.target).sendToYBAndLend{
+                    value: _action.value
+                }(
                     msg.sender,
                     data.to,
                     data.amount,
                     data.marketHelper,
                     data.market,
                     data.lzDstChainId,
-                    data.sendOptions
+                    data.options
                 );
-            } else if (_action == TOFT_SEND_YB) {
+            } else if (_action.id == TOFT_SEND_YB) {
                 TOFTSendToYBData memory data = abi.decode(
-                    _actionCalldata,
+                    _action.call[4:],
                     (TOFTSendToYBData)
                 );
+                _checkSender(data.from);
 
-                ITOFTOperations(data.target).sendToYB{value: data.value}(
+                ITOFTOperations(_action.target).sendToYB{value: _action.value}(
                     msg.sender,
                     data.to,
                     data.amount,
                     data.assetId,
                     data.lzDstChainId,
-                    data.sendOptions
+                    data.options
                 );
-            } else if (_action == TOFT_RETRIEVE_YB) {
+            } else if (_action.id == TOFT_RETRIEVE_YB) {
                 TOFTRetrieveYBData memory data = abi.decode(
-                    _actionCalldata,
+                    _action.call[4:],
                     (TOFTRetrieveYBData)
                 );
+                _checkSender(data.from);
 
-                ITOFTOperations(data.target).retrieveFromYB{value: data.value}(
+                ITOFTOperations(_action.target).retrieveFromYB{
+                    value: _action.value
+                }(
                     msg.sender,
                     data.amount,
                     data.assetId,
@@ -321,28 +343,45 @@ contract Magnetar is Ownable, MagnetarData {
     // ************************* //
     // *** PRIVATE FUNCTIONS *** //
     // ************************* //
-    function _permit(bytes memory actionCalldata, bool permitAll) private {
-        PermitData memory permitData = abi.decode(actionCalldata, (PermitData));
-
-        if (!permitAll) {
-            IPermit(permitData.target).permit(
-                msg.sender,
-                permitData.spender,
-                permitData.value,
-                permitData.deadline,
-                permitData.v,
-                permitData.r,
-                permitData.s
+    function _permit(
+        address target,
+        bytes calldata actionCalldata,
+        bool permitAll,
+        bool allowFailure
+    ) private {
+        if (permitAll) {
+            PermitAllData memory permitData = abi.decode(
+                actionCalldata[4:],
+                (PermitAllData)
             );
+            _checkSender(permitData.owner);
         } else {
-            IPermitAll(permitData.target).permitAll(
-                msg.sender,
-                permitData.spender,
-                permitData.deadline,
-                permitData.v,
-                permitData.r,
-                permitData.s
+            PermitData memory permitData = abi.decode(
+                actionCalldata[4:],
+                (PermitData)
             );
+            _checkSender(permitData.owner);
         }
+
+        (bool success, bytes memory returnData) = target.call(actionCalldata);
+        if (!success && !allowFailure) {
+            _getRevertMsg(returnData);
+        }
+    }
+
+    function _checkSender(address sent) private view {
+        require(msg.sender == sent, "Magnetar: unauthorized");
+    }
+
+    function _getRevertMsg(bytes memory _returnData) private pure {
+        // If the _res length is less than 68, then
+        // the transaction failed with custom error or silently (without a revert message)
+        if (_returnData.length < 68) revert("Reason unknown");
+
+        assembly {
+            // Slice the sighash.
+            _returnData := add(_returnData, 0x04)
+        }
+        revert(abi.decode(_returnData, (string))); // All that remains is the revert string
     }
 }

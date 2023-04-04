@@ -12,7 +12,7 @@ const MAX_DEADLINE = 9999999999999;
 const symbol = 'MTKN';
 const version = '1';
 
-describe.only('Magnetar', () => {
+describe('Magnetar', () => {
     async function getYieldBoxPermitSignature(
         permitType: 'asset' | 'all',
         wallet: SignerWithAddress,
@@ -106,19 +106,6 @@ describe.only('Magnetar', () => {
         message: { owner, spender, value, nonce, deadline },
     });
 
-    const buildPermitAllData = (
-        chainId: number,
-        verifyingContract: string,
-        owner: string,
-        spender: string,
-        nonce: number,
-        deadline = MAX_DEADLINE,
-    ) => ({
-        primaryType: 'PermitAll',
-        types: { EIP712Domain, PermitAll },
-        domain: { name, version, chainId, verifyingContract },
-        message: { owner, spender, nonce, deadline },
-    });
     it('should test an array of permits', async () => {
         const { deployer, eoa1 } = await loadFixture(register);
 
@@ -165,20 +152,20 @@ describe.only('Magnetar', () => {
         const signature = signTypedMessage(privateKey, { data });
         const { v, r, s } = fromRpcSig(signature);
 
-        const permitEncoded = ethers.utils.defaultAbiCoder.encode(
-            [
-                'address',
-                'address',
-                'uint256',
-                'uint256',
-                'uint8',
-                'bytes32',
-                'bytes32',
-            ],
-            [tokenOne.address, eoa1.address, value, MAX_DEADLINE, v, r, s],
+        const permitEncodedFnData = tokenOne.interface.encodeFunctionData(
+            'permit',
+            [deployer.address, eoa1.address, value, MAX_DEADLINE, v, r, s],
         );
 
-        await magnetar.connect(deployer).burst([2], [permitEncoded]);
+        await magnetar.connect(deployer).burst([
+            {
+                id: 2,
+                target: tokenOne.address,
+                value: 0,
+                allowFailure: false,
+                call: permitEncodedFnData,
+            },
+        ]);
 
         const allowance = await tokenOne.allowance(
             deployer.address,
@@ -186,8 +173,17 @@ describe.only('Magnetar', () => {
         );
         expect(allowance.eq(value)).to.be.true;
 
-        await expect(magnetar.connect(deployer).burst([2], [permitEncoded])).to
-            .be.reverted;
+        await expect(
+            magnetar.connect(deployer).burst([
+                {
+                    id: 2,
+                    target: tokenOne.address,
+                    value: 0,
+                    allowFailure: false,
+                    call: permitEncodedFnData,
+                },
+            ]),
+        ).to.be.reverted;
     });
 
     it('should execute YB deposit asset', async () => {
@@ -259,26 +255,15 @@ describe.only('Magnetar', () => {
         const signature = signTypedMessage(privateKey, { data });
         const { v, r, s } = fromRpcSig(signature);
 
-        const permitEncoded = ethers.utils.defaultAbiCoder.encode(
-            [
-                'address',
-                'address',
-                'uint256',
-                'uint256',
-                'uint8',
-                'bytes32',
-                'bytes32',
-            ],
-            [
-                tokenOne.address,
-                yieldBox.address,
-                mintVal,
-                MAX_DEADLINE,
-                v,
-                r,
-                s,
-            ],
-        );
+        const permitEncoded = tokenOne.interface.encodeFunctionData('permit', [
+            deployer.address,
+            yieldBox.address,
+            mintVal,
+            MAX_DEADLINE,
+            v,
+            r,
+            s,
+        ]);
 
         const permitAllSigData = await getYieldBoxPermitSignature(
             'all',
@@ -287,53 +272,58 @@ describe.only('Magnetar', () => {
             magnetar.address,
             tokenOneAssetId.toNumber(),
         );
-
-        const permitAllEncoded = ethers.utils.defaultAbiCoder.encode(
+        const permitAllEncoded = yieldBox.interface.encodeFunctionData(
+            'permitAll',
             [
-                'address',
-                'address',
-                'uint256',
-                'uint256',
-                'uint8',
-                'bytes32',
-                'bytes32',
-                'bool',
-            ],
-            [
-                yieldBox.address,
+                deployer.address,
                 magnetar.address,
-                mintVal,
                 MAX_DEADLINE,
                 permitAllSigData.v,
                 permitAllSigData.r,
                 permitAllSigData.s,
-                false,
             ],
         );
 
-        const depositAssetEncoded = ethers.utils.defaultAbiCoder.encode(
-            ['address', 'address', 'uint256', 'uint256', 'uint256'],
+        const depositAssetEncoded = yieldBox.interface.encodeFunctionData(
+            'depositAsset',
             [
-                yieldBox.address,
+                tokenOneAssetId,
+                deployer.address,
                 deployer.address,
                 0,
                 mintValShare,
-                tokenOneAssetId,
             ],
         );
+
+        const calls = [
+            {
+                id: 2,
+                target: tokenOne.address,
+                value: 0,
+                allowFailure: false,
+                call: permitEncoded,
+            },
+            {
+                id: 1,
+                target: yieldBox.address,
+                value: 0,
+                allowFailure: false,
+                call: permitAllEncoded,
+            },
+            {
+                id: 3,
+                target: yieldBox.address,
+                value: 0,
+                allowFailure: false,
+                call: depositAssetEncoded,
+            },
+        ];
+
         const magnetarStaticCallData = await magnetar
             .connect(deployer)
-            .callStatic.burst(
-                [2, 1, 3],
-                [permitEncoded, permitAllEncoded, depositAssetEncoded],
-            );
+            .callStatic.burst(calls);
 
-        await magnetar
-            .connect(deployer)
-            .burst(
-                [2, 1, 3],
-                [permitEncoded, permitAllEncoded, depositAssetEncoded],
-            );
+        await magnetar.connect(deployer).burst(calls);
 
         const ybBalance = await yieldBox.balanceOf(
             deployer.address,
@@ -507,26 +497,15 @@ describe.only('Magnetar', () => {
         const signature = signTypedMessage(privateKey, { data });
         const { v, r, s } = fromRpcSig(signature);
 
-        const permitEncoded = ethers.utils.defaultAbiCoder.encode(
-            [
-                'address',
-                'address',
-                'uint256',
-                'uint256',
-                'uint8',
-                'bytes32',
-                'bytes32',
-            ],
-            [
-                usd0.address,
-                yieldBox.address,
-                usdoAmount.toNumber(),
-                MAX_DEADLINE,
-                v,
-                r,
-                s,
-            ],
-        );
+        const permitEncoded = usd0.interface.encodeFunctionData('permit', [
+            deployer.address,
+            yieldBox.address,
+            usdoAmount,
+            MAX_DEADLINE,
+            v,
+            r,
+            s,
+        ]);
 
         let permitAllSigData = await getYieldBoxPermitSignature(
             'all',
@@ -535,37 +514,16 @@ describe.only('Magnetar', () => {
             magnetar.address,
             usdoAssetId.toNumber(),
         );
-        const permitAllEncoded = ethers.utils.defaultAbiCoder.encode(
+        const permitAllEncoded = yieldBox.interface.encodeFunctionData(
+            'permitAll',
             [
-                'address',
-                'address',
-                'uint256',
-                'uint256',
-                'uint8',
-                'bytes32',
-                'bytes32',
-                'bool',
-            ],
-            [
-                yieldBox.address,
+                deployer.address,
                 magnetar.address,
-                usdoAmount.toNumber(),
                 MAX_DEADLINE,
                 permitAllSigData.v,
                 permitAllSigData.r,
                 permitAllSigData.s,
-                false,
             ],
-        );
-
-        const depositAssetEncoded = ethers.utils.defaultAbiCoder.encode(
-            ['address', 'address', 'uint256', 'uint256', 'uint256'],
-            [yieldBox.address, deployer.address, 0, usdoShare, usdoAssetId],
-        );
-
-        const sglLendEncoded = ethers.utils.defaultAbiCoder.encode(
-            ['address', 'address', 'bool', 'uint256'],
-            [wethUsdoSingularity.address, deployer.address, false, usdoShare],
         );
 
         permitAllSigData = await getYieldBoxPermitSignature(
@@ -577,41 +535,66 @@ describe.only('Magnetar', () => {
             MAX_DEADLINE,
             { nonce: 1 },
         );
-        const permitAllSGLEncoded = ethers.utils.defaultAbiCoder.encode(
+        const permitAllSGLEncoded = yieldBox.interface.encodeFunctionData(
+            'permitAll',
             [
-                'address',
-                'address',
-                'uint256',
-                'uint256',
-                'uint8',
-                'bytes32',
-                'bytes32',
-                'bool',
-            ],
-            [
-                yieldBox.address,
+                deployer.address,
                 wethUsdoSingularity.address,
-                usdoAmount.toNumber(),
                 MAX_DEADLINE,
                 permitAllSigData.v,
                 permitAllSigData.r,
                 permitAllSigData.s,
-                false,
             ],
         );
+        const depositAssetEncoded = yieldBox.interface.encodeFunctionData(
+            'depositAsset',
+            [usdoAssetId, deployer.address, deployer.address, 0, usdoShare],
+        );
 
-        await magnetar
-            .connect(deployer)
-            .burst(
-                [2, 1, 1, 3, 8],
-                [
-                    permitEncoded,
-                    permitAllEncoded,
-                    permitAllSGLEncoded,
-                    depositAssetEncoded,
-                    sglLendEncoded,
-                ],
-            );
+        const sglLendEncoded = wethUsdoSingularity.interface.encodeFunctionData(
+            'addAsset',
+            [deployer.address, deployer.address, false, usdoShare],
+        );
+
+        const calls = [
+            {
+                id: 2,
+                target: usd0.address,
+                value: 0,
+                allowFailure: false,
+                call: permitEncoded,
+            },
+            {
+                id: 1,
+                target: yieldBox.address,
+                value: 0,
+                allowFailure: false,
+                call: permitAllEncoded,
+            },
+            {
+                id: 1,
+                target: yieldBox.address,
+                value: 0,
+                allowFailure: false,
+                call: permitAllSGLEncoded,
+            },
+            {
+                id: 3,
+                target: yieldBox.address,
+                value: 0,
+                allowFailure: false,
+                call: depositAssetEncoded,
+            },
+            {
+                id: 8,
+                target: wethUsdoSingularity.address,
+                value: 0,
+                allowFailure: false,
+                call: sglLendEncoded,
+            },
+        ];
+
+        await magnetar.connect(deployer).burst(calls);
 
         const ybBalance = await yieldBox.balanceOf(
             deployer.address,
