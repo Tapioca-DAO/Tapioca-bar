@@ -1,8 +1,8 @@
-import { ethers } from 'hardhat';
 import { expect } from 'chai';
+import { ethers } from 'hardhat';
 
-import { register } from './test.utils';
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
+import { BN, getERC20PermitSignature, register } from './test.utils';
 
 describe('USDO', () => {
     it('should test initial values', async () => {
@@ -169,5 +169,142 @@ describe('USDO', () => {
         await expect(
             flashBorrower.flashBorrow(usd0.address, amount),
         ).to.be.revertedWith('USDO: repay not approved');
+    });
+
+    describe('permit', () => {
+        it('should forward permit', async () => {
+            const { yieldBox, deployer } = await loadFixture(register);
+
+            // -------------------  Get LZ endpoints -------------------
+            const lzEndpoint1 = await (
+                await ethers.getContractFactory('LZEndpointMock')
+            ).deploy(1);
+            const lzEndpoint2 = await (
+                await ethers.getContractFactory('LZEndpointMock')
+            ).deploy(2);
+
+            // -------------------   Create TOFT -------------------
+            const assetHost = await (
+                await ethers.getContractFactory('USDO')
+            ).deploy(lzEndpoint1.address, yieldBox.address, deployer.address);
+
+            const assetLinked = await (
+                await ethers.getContractFactory('USDO')
+            ).deploy(lzEndpoint2.address, yieldBox.address, deployer.address);
+
+            // ------------------- OFT Setup -------------------
+            lzEndpoint1.setDestLzEndpoint(
+                assetLinked.address,
+                lzEndpoint2.address,
+            );
+            lzEndpoint2.setDestLzEndpoint(
+                assetHost.address,
+                lzEndpoint1.address,
+            );
+            await assetHost.setTrustedRemote(
+                2,
+                ethers.utils.solidityPack(
+                    ['address', 'address'],
+                    [assetLinked.address, assetHost.address],
+                ),
+            );
+            await assetLinked.setTrustedRemote(
+                1,
+                ethers.utils.solidityPack(
+                    ['address', 'address'],
+                    [assetHost.address, assetLinked.address],
+                ),
+            );
+
+            // ------------------- ERC20 Setup -------------------
+
+            const eoa1 = (await ethers.getSigners())[1];
+            const deadline = BN(
+                (await ethers.provider.getBlock('latest')).timestamp + 10_000,
+            );
+            const bigDummyAmount = BN(1e18).mul(10);
+            const { r, s, v } = await getERC20PermitSignature(
+                deployer,
+                assetHost,
+                eoa1.address,
+                bigDummyAmount,
+                deadline,
+            );
+
+            // ------------------- TEST -------------------
+            await assetHost.freeMint(bigDummyAmount);
+
+            await expect(
+                assetHost
+                    .connect(eoa1)
+                    .transferFrom(
+                        deployer.address,
+                        eoa1.address,
+                        bigDummyAmount,
+                    ),
+            ).to.be.revertedWith('ERC20: insufficient allowance');
+
+            // False approval
+            await expect(
+                assetLinked.connect(eoa1).sendApproval(
+                    1,
+                    {
+                        target: assetHost.address,
+                        owner: deployer.address,
+                        spender: eoa1.address,
+                        value: bigDummyAmount.mul(69),
+                        deadline,
+                        r,
+                        s,
+                        v,
+                    },
+                    {
+                        extraGasLimit: 200_000,
+                        strategyDeposit: false,
+                        zroPaymentAddress: ethers.constants.AddressZero,
+                    },
+                    { value: ethers.utils.parseEther('2') },
+                ),
+            ).to.emit(assetHost, 'MessageFailed');
+            await expect(
+                assetHost
+                    .connect(eoa1)
+                    .transferFrom(
+                        deployer.address,
+                        eoa1.address,
+                        bigDummyAmount,
+                    ),
+            ).to.be.reverted;
+
+            // Successful approval
+            await assetLinked.connect(eoa1).sendApproval(
+                1,
+                {
+                    target: assetHost.address,
+                    owner: deployer.address,
+                    spender: eoa1.address,
+                    value: bigDummyAmount,
+                    deadline,
+                    r,
+                    s,
+                    v,
+                },
+                {
+                    extraGasLimit: 200_000,
+                    strategyDeposit: false,
+                    zroPaymentAddress: ethers.constants.AddressZero,
+                },
+                { value: ethers.utils.parseEther('2') },
+            );
+            await expect(
+                assetHost
+                    .connect(eoa1)
+                    .transferFrom(
+                        deployer.address,
+                        eoa1.address,
+                        bigDummyAmount,
+                    ),
+            ).to.not.be.reverted;
+        });
     });
 });

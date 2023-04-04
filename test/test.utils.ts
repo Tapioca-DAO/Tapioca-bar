@@ -6,6 +6,7 @@ import hre, { ethers } from 'hardhat';
 import {
     CurveStableToUsdoBidder,
     ERC20Mock,
+    ERC20Permit,
     MultiSwapper,
     OracleMock,
     Penrose,
@@ -1075,6 +1076,69 @@ export async function createTokenEmptyStrategy(
 }
 
 export async function getERC20PermitSignature(
+    wallet: Wallet | SignerWithAddress,
+    token: ERC20Permit,
+    spender: string,
+    value: BigNumberish = ethers.constants.MaxUint256,
+    deadline = ethers.constants.MaxUint256,
+    permitConfig?: {
+        nonce?: BigNumberish;
+        name?: string;
+        chainId?: number;
+        version?: string;
+    },
+): Promise<Signature> {
+    const [nonce, name, version, chainId] = await Promise.all([
+        permitConfig?.nonce ?? token.nonces(wallet.address),
+        permitConfig?.name ?? token.name(),
+        permitConfig?.version ?? '1',
+        permitConfig?.chainId ?? wallet.getChainId(),
+    ]);
+
+    return splitSignature(
+        await wallet._signTypedData(
+            {
+                name,
+                version,
+                chainId,
+                verifyingContract: token.address,
+            },
+            {
+                Permit: [
+                    {
+                        name: 'owner',
+                        type: 'address',
+                    },
+                    {
+                        name: 'spender',
+                        type: 'address',
+                    },
+                    {
+                        name: 'value',
+                        type: 'uint256',
+                    },
+                    {
+                        name: 'nonce',
+                        type: 'uint256',
+                    },
+                    {
+                        name: 'deadline',
+                        type: 'uint256',
+                    },
+                ],
+            },
+            {
+                owner: wallet.address,
+                spender,
+                value,
+                nonce,
+                deadline,
+            },
+        ),
+    );
+}
+
+export async function getSGLPermitSignature(
     type: 'Permit' | 'PermitBorrow',
     wallet: Wallet | SignerWithAddress,
     token: Singularity,

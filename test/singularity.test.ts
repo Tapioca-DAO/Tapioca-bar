@@ -1,6 +1,6 @@
 import { ethers } from 'hardhat';
 import { expect } from 'chai';
-import { getERC20PermitSignature, register } from './test.utils';
+import { getSGLPermitSignature, register } from './test.utils';
 import {
     loadFixture,
     takeSnapshot,
@@ -2310,7 +2310,7 @@ describe('Singularity test', () => {
             const deadline =
                 (await ethers.provider.getBlock('latest')).timestamp + 10_000;
 
-            const { v, r, s } = await getERC20PermitSignature(
+            const { v, r, s } = await getSGLPermitSignature(
                 'Permit',
                 deployer,
                 wethUsdcSingularity,
@@ -2352,7 +2352,7 @@ describe('Singularity test', () => {
                     (await ethers.provider.getBlock('latest')).timestamp +
                     10_000;
 
-                const { v, r, s } = await getERC20PermitSignature(
+                const { v, r, s } = await getSGLPermitSignature(
                     'PermitBorrow',
                     deployer,
                     wethUsdcSingularity,
