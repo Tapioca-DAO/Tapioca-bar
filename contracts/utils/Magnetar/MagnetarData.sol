@@ -28,9 +28,9 @@ interface IPermitAll {
 
 interface ITOFTOperations {
     function wrap(
-        address _fromAddress,
-        address _toAddress,
-        uint256 _amount
+        address fromAddress,
+        address toAddress,
+        uint256 amount
     ) external;
 
     function wrapNative(address _toAddress) external payable;
@@ -60,15 +60,44 @@ interface ITOFTOperations {
     ) external payable;
 
     function sendToYBAndBorrow(
-        address _from,
-        address _to,
+        address from,
+        address to,
         uint256 amount,
         uint256 borrowAmount,
-        address _marketHelper,
-        address _market,
+        address marketHelper,
+        address market,
         uint16 lzDstChainId,
         uint256 withdrawLzFeeAmount,
         SendOptions calldata options
+    ) external payable;
+
+    function sendToYBAndLend(
+        address from,
+        address to,
+        uint256 amount,
+        address marketHelper,
+        address market,
+        uint16 lzDstChainId,
+        SendOptions calldata options
+    ) external payable;
+
+    function sendToYB(
+        address from,
+        address to,
+        uint256 amount,
+        uint256 assetId,
+        uint16 lzDstChainId,
+        SendOptions calldata options
+    ) external payable;
+
+    function retrieveFromYB(
+        address from,
+        uint256 amount,
+        uint256 assetId,
+        uint16 lzDstChainId,
+        address zroPaymentAddress,
+        bytes memory airdropAdapterParam,
+        bool strategyWithdrawal
     ) external payable;
 }
 
@@ -126,18 +155,22 @@ contract MagnetarData {
     // ************ //
 
     //TODO: decide on uint size after all operations
-    uint32 internal constant PERMIT_ALL = 1;
-    uint32 internal constant PERMIT = 2;
-    uint32 internal constant YB_DEPOSIT_ASSET = 3;
-    uint32 internal constant SGL_ADD_COLLATERAL = 4;
-    uint32 internal constant SGL_BORROW = 5;
-    uint32 internal constant SGL_WITHDRAW_TO = 6;
-    uint32 internal constant SGL_LEND = 7;
-    uint32 internal constant SGL_REPAY = 8;
-    uint32 internal constant TOFT_WRAP = 9;
-    uint32 internal constant TOFT_SEND_FROM = 10;
-    uint32 internal constant TOFT_SEND_APPROVAL = 11;
-    uint32 internal constant TOFT_SEND_AND_BORROW = 12;
+    uint16 internal constant PERMIT_ALL = 1;
+    uint16 internal constant PERMIT = 2;
+    uint16 internal constant YB_DEPOSIT_ASSET = 3;
+    uint16 internal constant YB_WITHDRAW_ASSET = 4;
+    uint16 internal constant SGL_ADD_COLLATERAL = 5;
+    uint16 internal constant SGL_BORROW = 6;
+    uint16 internal constant SGL_WITHDRAW_TO = 7;
+    uint16 internal constant SGL_LEND = 8;
+    uint16 internal constant SGL_REPAY = 9;
+    uint16 internal constant TOFT_WRAP = 10;
+    uint16 internal constant TOFT_SEND_FROM = 11;
+    uint16 internal constant TOFT_SEND_APPROVAL = 12;
+    uint16 internal constant TOFT_SEND_AND_BORROW = 13;
+    uint16 internal constant TOFT_SEND_AND_LEND = 14;
+    uint16 internal constant TOFT_SEND_YB = 15;
+    uint16 internal constant TOFT_RETRIEVE_YB = 16;
 
     struct Result {
         bool success;
@@ -152,7 +185,6 @@ contract MagnetarData {
         uint8 v;
         bytes32 r;
         bytes32 s;
-        bool isPermitAll;
     }
 
     struct WrapData {
@@ -183,7 +215,39 @@ contract MagnetarData {
         ITOFTOperations.SendOptions sendOptions;
     }
 
-    struct SendFromData {
+    struct TOFTSendAndLendData {
+        address target;
+        uint256 value;
+        address to;
+        uint256 amount;
+        address marketHelper;
+        address market;
+        uint16 lzDstChainId;
+        ITOFTOperations.SendOptions sendOptions;
+    }
+
+    struct TOFTSendToYBData {
+        address target;
+        uint256 value;
+        address to;
+        uint256 amount;
+        uint256 assetId;
+        uint16 lzDstChainId;
+        ITOFTOperations.SendOptions sendOptions;
+    }
+
+    struct TOFTRetrieveYBData {
+        address target;
+        uint256 value;
+        uint256 amount;
+        uint256 assetId;
+        uint16 lzDstChainId;
+        address zroPaymentAddress;
+        bytes airdropAdapterParam;
+        bool strategyWithdrawal;
+    }
+
+    struct TOFTSendFromData {
         address target;
         bytes32 to;
         uint16 dstChainId;

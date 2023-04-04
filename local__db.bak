@@ -395,6 +395,15 @@
         ],
         "421613": [
             {
+                "name": "Magnetar",
+                "address": "0xfc31e438668672136b0421b18716D909eB752909",
+                "meta": {
+                    "args": [],
+                    "salt": "0x3553e61351cfc39bf7f28269cf47402dd6723fa5db9d087771dcfb6a2177a44f",
+                    "create2": true
+                }
+            },
+            {
                 "name": "YieldBoxURIBuilder",
                 "address": "0x540294956733187efd5E418EDFAfbc9954Cd963c",
                 "meta": {

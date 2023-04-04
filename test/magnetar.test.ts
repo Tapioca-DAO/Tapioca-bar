@@ -12,7 +12,7 @@ const MAX_DEADLINE = 9999999999999;
 const symbol = 'MTKN';
 const version = '1';
 
-describe('Magnetar', () => {
+describe.only('Magnetar', () => {
     async function getYieldBoxPermitSignature(
         permitType: 'asset' | 'all',
         wallet: SignerWithAddress,
@@ -174,18 +174,8 @@ describe('Magnetar', () => {
                 'uint8',
                 'bytes32',
                 'bytes32',
-                'bool',
             ],
-            [
-                tokenOne.address,
-                eoa1.address,
-                value,
-                MAX_DEADLINE,
-                v,
-                r,
-                s,
-                false,
-            ],
+            [tokenOne.address, eoa1.address, value, MAX_DEADLINE, v, r, s],
         );
 
         await magnetar.connect(deployer).burst([2], [permitEncoded]);
@@ -278,7 +268,6 @@ describe('Magnetar', () => {
                 'uint8',
                 'bytes32',
                 'bytes32',
-                'bool',
             ],
             [
                 tokenOne.address,
@@ -288,7 +277,6 @@ describe('Magnetar', () => {
                 v,
                 r,
                 s,
-                false,
             ],
         );
 
@@ -299,6 +287,7 @@ describe('Magnetar', () => {
             magnetar.address,
             tokenOneAssetId.toNumber(),
         );
+
         const permitAllEncoded = ethers.utils.defaultAbiCoder.encode(
             [
                 'address',
@@ -527,7 +516,6 @@ describe('Magnetar', () => {
                 'uint8',
                 'bytes32',
                 'bytes32',
-                'bool',
             ],
             [
                 usd0.address,
@@ -537,7 +525,6 @@ describe('Magnetar', () => {
                 v,
                 r,
                 s,
-                false,
             ],
         );
 
@@ -616,7 +603,7 @@ describe('Magnetar', () => {
         await magnetar
             .connect(deployer)
             .burst(
-                [2, 1, 1, 3, 7],
+                [2, 1, 1, 3, 8],
                 [
                     permitEncoded,
                     permitAllEncoded,

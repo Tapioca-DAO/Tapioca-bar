@@ -396,10 +396,10 @@
         "421613": [
             {
                 "name": "Magnetar",
-                "address": "0xF567c2cE3DDE8887C9c173804Da7A33ddbABB8C2",
+                "address": "0xa2fB4df3849eb3b1d1E1E6F7DCa3Efb1c2a123dd",
                 "meta": {
                     "args": [],
-                    "salt": "0xddc452488531b6a127247e691fe011b1367dad9a8920f47d03f9381ee24704b1",
+                    "salt": "0xac50b01ccc3696bfcffcdd3717573154251ae0729368c028f038617c72b9e68f",
                     "create2": true
                 }
             },

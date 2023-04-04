@@ -32,7 +32,7 @@ contract Magnetar is Ownable, MagnetarData {
     /// @param actions The list of actions to perform
     /// @param callDatas The list of actions' data
     function burst(
-        uint32[] calldata actions,
+        uint16[] calldata actions,
         bytes[] calldata callDatas
     ) external payable returns (Result[] memory returnData) {
         require(
@@ -47,7 +47,7 @@ contract Magnetar is Ownable, MagnetarData {
         returnData = new Result[](length);
 
         for (uint256 i = 0; i < length; i++) {
-            uint32 _action = actions[i];
+            uint16 _action = actions[i];
             bytes memory _actionCalldata = callDatas[i];
 
             if (_action == PERMIT_ALL) {
@@ -71,9 +71,9 @@ contract Magnetar is Ownable, MagnetarData {
                     );
                 }
             } else if (_action == TOFT_SEND_FROM) {
-                SendFromData memory data = abi.decode(
+                TOFTSendFromData memory data = abi.decode(
                     _actionCalldata,
-                    (SendFromData)
+                    (TOFTSendFromData)
                 );
                 unchecked {
                     valAccumulator += data.value;
@@ -198,6 +198,50 @@ contract Magnetar is Ownable, MagnetarData {
                     data.lzDstChainId,
                     data.withdrawLzFeeAmount,
                     data.sendOptions
+                );
+            } else if (_action == TOFT_SEND_AND_LEND) {
+                TOFTSendAndLendData memory data = abi.decode(
+                    _actionCalldata,
+                    (TOFTSendAndLendData)
+                );
+
+                ITOFTOperations(data.target).sendToYBAndLend{value: data.value}(
+                    msg.sender,
+                    data.to,
+                    data.amount,
+                    data.marketHelper,
+                    data.market,
+                    data.lzDstChainId,
+                    data.sendOptions
+                );
+            } else if (_action == TOFT_SEND_YB) {
+                TOFTSendToYBData memory data = abi.decode(
+                    _actionCalldata,
+                    (TOFTSendToYBData)
+                );
+
+                ITOFTOperations(data.target).sendToYB{value: data.value}(
+                    msg.sender,
+                    data.to,
+                    data.amount,
+                    data.assetId,
+                    data.lzDstChainId,
+                    data.sendOptions
+                );
+            } else if (_action == TOFT_RETRIEVE_YB) {
+                TOFTRetrieveYBData memory data = abi.decode(
+                    _actionCalldata,
+                    (TOFTRetrieveYBData)
+                );
+
+                ITOFTOperations(data.target).retrieveFromYB{value: data.value}(
+                    msg.sender,
+                    data.amount,
+                    data.assetId,
+                    data.lzDstChainId,
+                    data.zroPaymentAddress,
+                    data.airdropAdapterParam,
+                    data.strategyWithdrawal
                 );
             } else {
                 revert("Magnetar: action not valid");
