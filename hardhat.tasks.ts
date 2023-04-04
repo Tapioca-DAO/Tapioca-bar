@@ -30,6 +30,7 @@ import {
 import { deployFullStack__task } from './tasks/deploy/00-deployFullStack';
 import { deployLinkedChainStack__task } from './tasks/deploy/01-deployLinkedChainStack';
 import { deploySGLMarket__task } from './tasks/deploy/deploySGLMarket';
+import { deployMagnetar__task } from './tasks/deploy/05-deployMagnetar';
 
 task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
     const accounts = await hre.ethers.getSigners();
@@ -117,6 +118,8 @@ task('deployOracleMock', 'Deploy Oracle mock', deployOracleMock__task).addParam(
     'name',
     'Market name',
 );
+
+task('deployMagnetar', 'Deploy Magnetar', deployMagnetar__task);
 
 task(
     'deployEmptyStrats',
