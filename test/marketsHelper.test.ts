@@ -740,11 +740,9 @@ describe('MarketsHelper test', () => {
             const {
                 yieldBox,
                 deployer,
-                eoa1,
                 marketsHelper,
                 registerSingularity,
                 mediumRiskMC,
-                timeTravel,
                 bar,
             } = await loadFixture(register);
 
@@ -791,27 +789,13 @@ describe('MarketsHelper test', () => {
             );
 
             // Asset
-            const assetHost = await TapiocaOFTMock__factory.deploy(
-                lzEndpoint1.address,
-                false,
-                erc20Mock.address,
-                yieldBox.address,
-                'assetHost',
-                'assetHost',
-                18,
-                1,
-            );
+            const assetHost = await (
+                await ethers.getContractFactory('USDO')
+            ).deploy(lzEndpoint1.address, yieldBox.address, deployer.address);
 
-            const assetLinked = await TapiocaOFTMock__factory.deploy(
-                lzEndpoint2.address,
-                false,
-                erc20Mock.address,
-                yieldBox.address,
-                'assetLinked',
-                'assetLinked',
-                18,
-                1,
-            );
+            const assetLinked = await (
+                await ethers.getContractFactory('USDO')
+            ).deploy(lzEndpoint2.address, yieldBox.address, deployer.address);
 
             // -------------------  Link TOFTs -------------------
 
@@ -935,7 +919,7 @@ describe('MarketsHelper test', () => {
 
             // ------------------- Actual TOFT test -------------------
             // We get asset
-            await assetLinked.freeMint(deployer.address, assetMintVal);
+            await assetLinked.freeMint(assetMintVal);
 
             expect(
                 await assetCollateralSingularity.balanceOf(deployer.address),
@@ -950,7 +934,6 @@ describe('MarketsHelper test', () => {
                 {
                     extraGasLimit: 1_000_000,
                     strategyDeposit: false,
-                    wrap: false,
                     zroPaymentAddress: ethers.constants.AddressZero,
                 },
                 { value: ethers.utils.parseEther('2') },
