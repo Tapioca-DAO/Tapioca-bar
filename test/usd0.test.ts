@@ -172,7 +172,7 @@ describe('USDO', () => {
     });
 
     describe('permit', () => {
-        it.only('should forward permit', async () => {
+        it('should forward permit', async () => {
             const { yieldBox, deployer } = await loadFixture(register);
 
             // -------------------  Get LZ endpoints -------------------
