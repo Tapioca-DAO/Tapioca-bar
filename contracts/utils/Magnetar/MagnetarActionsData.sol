@@ -72,24 +72,6 @@ abstract contract MagnetarActionsData {
         ITOFTOperations.SendOptions options;
     }
 
-    struct TOFTRetrieveYBData {
-        address from;
-        uint256 amount;
-        uint256 assetId;
-        uint16 lzDstChainId;
-        address zroPaymentAddress;
-        bytes airdropAdapterParam;
-        bool strategyWithdrawal;
-    }
-
-    struct TOFTSendFromData {
-        address from;
-        uint16 dstChainId;
-        bytes32 to;
-        uint256 amount;
-        ISendFrom.LzCallParams callParams;
-    }
-
     // YieldBox
     struct YieldBoxDepositData {
         uint256 assetId;
@@ -111,15 +93,6 @@ abstract contract MagnetarActionsData {
         address from;
         address to;
         uint256 amount;
-    }
-
-    struct SGLWithdrawToData {
-        address from;
-        uint16 dstChainId;
-        bytes32 receiver;
-        uint256 amount;
-        bytes adapterParams;
-        address payable refundAddress;
     }
 
     struct SGLLendData {
@@ -232,6 +205,14 @@ interface ITOFTOperations {
         address zroPaymentAddress,
         bytes memory airdropAdapterParam,
         bool strategyWithdrawal
+    ) external payable;
+
+    function sendFrom(
+        address _from,
+        uint16 _dstChainId,
+        bytes32 _toAddress,
+        uint256 _amount,
+        ISendFrom.LzCallParams calldata _callParams
     ) external payable;
 }
 

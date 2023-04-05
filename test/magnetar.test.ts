@@ -5,7 +5,7 @@ import { signTypedMessage } from 'eth-sig-util';
 import { fromRpcSig } from 'ethereumjs-utils';
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { YieldBox } from '../typechain';
+import { Singularity, YieldBox } from '../typechain';
 
 const MAX_DEADLINE = 9999999999999;
 
@@ -106,12 +106,142 @@ describe('Magnetar', () => {
         message: { owner, spender, value, nonce, deadline },
     });
 
+    it.only('should test send from', async () => {
+        const {
+            deployer,
+            usd0,
+            wethUsdcSingularity,
+            bar,
+            proxyDeployer,
+            mediumRiskMC,
+            yieldBox,
+            weth,
+            usdc,
+            wethAssetId,
+            createWethUsd0Singularity,
+            deployCurveStableToUsdoBidder,
+        } = await loadFixture(register);
+
+        const magnetar = await (
+            await ethers.getContractFactory('Magnetar')
+        ).deploy(deployer.address);
+        await magnetar.deployed();
+        const {
+            proxySrc,
+            proxyDst,
+            singularitySrc,
+            singularityDst,
+            lzEndpointSrc,
+            lzEndpointDst,
+            usd0Src,
+            usd0Dst,
+            usd0DstId,
+            usd0SrcId,
+        } = await setupUsd0Environment(
+            proxyDeployer,
+            mediumRiskMC,
+            yieldBox,
+            bar,
+            usdc,
+            weth,
+            wethAssetId,
+            createWethUsd0Singularity,
+            deployCurveStableToUsdoBidder,
+            deployer,
+        );
+        const adapterParams = ethers.utils.solidityPack(
+            ['uint16', 'uint256'],
+            [1, 2250000],
+        );
+
+        const usdoAmount = ethers.BigNumber.from((1e18).toString()).mul(100);
+        await usd0Dst.mint(deployer.address, usdoAmount);
+
+        await usd0Dst.setUseCustomAdapterParams(true);
+        await usd0Src.setUseCustomAdapterParams(true);
+
+        await usd0Src.setMinDstGas(await lzEndpointDst.getChainId(), 1, 1);
+        await usd0Src.setMinDstGas(await lzEndpointDst.getChainId(), 0, 1);
+        await usd0Src.setMinDstGas(await lzEndpointDst.getChainId(), 2, 1);
+        await usd0Dst.setMinDstGas(await lzEndpointSrc.getChainId(), 1, 1);
+        await usd0Dst.setMinDstGas(await lzEndpointSrc.getChainId(), 0, 1);
+        await usd0Dst.setMinDstGas(await lzEndpointSrc.getChainId(), 2, 1);
+
+        const sendFromEncoded = usd0Dst.interface.encodeFunctionData(
+            'sendFrom',
+            [
+                deployer.address,
+                1,
+                ethers.utils.defaultAbiCoder.encode(
+                    ['address'],
+                    [deployer.address],
+                ),
+                usdoAmount,
+                {
+                    refundAddress: deployer.address,
+                    zroPaymentAddress: ethers.constants.AddressZero,
+                    adapterParams,
+                },
+            ],
+        );
+        await usd0Dst.approve(magnetar.address, ethers.constants.MaxUint256);
+        await magnetar.connect(deployer).burst(
+            [
+                {
+                    id: 11,
+                    target: usd0Dst.address,
+                    value: ethers.utils.parseEther('1'),
+                    allowFailure: false,
+                    call: sendFromEncoded,
+                },
+            ],
+            { value: ethers.utils.parseEther('1') },
+        );
+
+        const usdoDstBalance = await usd0Dst.balanceOf(deployer.address);
+        expect(usdoDstBalance.eq(0)).to.be.true;
+
+        const usdoSrcBalance = await usd0Src.balanceOf(deployer.address);
+        expect(usdoSrcBalance.gt(0)).to.be.true;
+        console.log(usdoSrcBalance);
+        return;
+
+        const withdrawToFn = wethUsdcSingularity.interface.encodeFunctionData(
+            'withdrawTo',
+            [
+                deployer.address,
+                BN(2),
+                ethers.utils.defaultAbiCoder.encode(
+                    ['address'],
+                    [deployer.address],
+                ),
+                BN(1),
+                adapterParams,
+                deployer.address,
+            ],
+        );
+
+        await usd0.approve(magnetar.address, ethers.constants.MaxUint256);
+        await magnetar.connect(deployer).burst(
+            [
+                {
+                    id: 7,
+                    target: usd0.address,
+                    value: ethers.utils.parseEther('1'),
+                    allowFailure: false,
+                    call: withdrawToFn,
+                },
+            ],
+            { value: ethers.utils.parseEther('1') },
+        );
+    });
+
     it('should test an array of permits', async () => {
         const { deployer, eoa1 } = await loadFixture(register);
 
         const magnetar = await (
             await ethers.getContractFactory('Magnetar')
-        ).deploy();
+        ).deploy(deployer.address);
         await magnetar.deployed();
 
         const name = 'Token One';
@@ -192,7 +322,7 @@ describe('Magnetar', () => {
 
         const magnetar = await (
             await ethers.getContractFactory('Magnetar')
-        ).deploy();
+        ).deploy(deployer.address);
         await magnetar.deployed();
 
         const name = 'Token One';
@@ -358,7 +488,7 @@ describe('Magnetar', () => {
 
         const magnetar = await (
             await ethers.getContractFactory('Magnetar')
-        ).deploy();
+        ).deploy(deployer.address);
         await magnetar.deployed();
 
         const usdoStratregy = await bar.emptyStrategies(usd0.address);
@@ -634,4 +764,217 @@ const PermitAll = [
 async function getChainId(): Promise<number> {
     const chainIdHex = await hre.network.provider.send('eth_chainId', []);
     return BN(chainIdHex).toNumber();
+}
+
+async function setupUsd0Environment(
+    proxyDeployer: any,
+    mediumRiskMC: any,
+    yieldBox: any,
+    bar: any,
+    usdc: any,
+    collateral: any,
+    collateralId: any,
+    registerSingularity: any,
+    registerBidder: any,
+    deployer: any,
+) {
+    //omnichain configuration
+    const chainIdSrc = 1;
+    const chainIdDst = (await ethers.provider.getNetwork()).chainId;
+
+    const LZEndpointMock = await ethers.getContractFactory('LZEndpointMock');
+
+    const lzEndpointSrc = await LZEndpointMock.deploy(chainIdSrc);
+    const lzEndpointDst = await LZEndpointMock.deploy(chainIdDst);
+
+    const saltSrc = ethers.utils.formatBytes32String('ProxySrc');
+    const saltDst = ethers.utils.formatBytes32String('ProxyDst');
+
+    await proxyDeployer.deployWithCreate2(lzEndpointSrc.address, saltSrc);
+    await proxyDeployer.deployWithCreate2(lzEndpointDst.address, saltDst);
+
+    const proxySrc = await ethers.getContractAt(
+        'MarketsProxy',
+        await proxyDeployer.proxies(0),
+    );
+    const proxyDst = await ethers.getContractAt(
+        'MarketsProxy',
+        await proxyDeployer.proxies(1),
+    );
+
+    lzEndpointSrc.setDestLzEndpoint(proxyDst.address, lzEndpointDst.address);
+    lzEndpointDst.setDestLzEndpoint(proxySrc.address, lzEndpointSrc.address);
+
+    await proxySrc.setTrustedRemote(
+        chainIdDst,
+        ethers.utils.solidityPack(
+            ['address', 'address'],
+            [proxyDst.address, proxySrc.address],
+        ),
+    );
+
+    await proxyDst.setTrustedRemote(
+        chainIdSrc,
+        ethers.utils.solidityPack(
+            ['address', 'address'],
+            [proxySrc.address, proxyDst.address],
+        ),
+    );
+
+    //deploy usd0 tokens
+    const usd0Src = await (
+        await ethers.getContractFactory('USDO')
+    ).deploy(lzEndpointSrc.address, yieldBox.address, deployer.address);
+    await usd0Src.deployed();
+
+    const usd0SrcStrategy = await createTokenEmptyStrategy(
+        yieldBox.address,
+        usd0Src.address,
+    );
+    await yieldBox.registerAsset(
+        1,
+        usd0Src.address,
+        usd0SrcStrategy.address,
+        0,
+    );
+    const usd0SrcId = await yieldBox.ids(
+        1,
+        usd0Src.address,
+        usd0SrcStrategy.address,
+        0,
+    );
+
+    const usd0Dst = await (
+        await ethers.getContractFactory('USDO')
+    ).deploy(lzEndpointDst.address, yieldBox.address, deployer.address);
+    await usd0Dst.deployed();
+    const usd0DstStrategy = await createTokenEmptyStrategy(
+        yieldBox.address,
+        usd0Dst.address,
+    );
+    await yieldBox.registerAsset(
+        1,
+        usd0Dst.address,
+        usd0DstStrategy.address,
+        0,
+    );
+    const usd0DstId = await yieldBox.ids(
+        1,
+        usd0Dst.address,
+        usd0DstStrategy.address,
+        0,
+    );
+
+    //configure trusted remotes for USDO
+    await lzEndpointSrc.setDestLzEndpoint(
+        usd0Dst.address,
+        lzEndpointDst.address,
+    );
+    await lzEndpointDst.setDestLzEndpoint(
+        usd0Src.address,
+        lzEndpointSrc.address,
+    );
+
+    const dstPath = ethers.utils.solidityPack(
+        ['address', 'address'],
+        [usd0Dst.address, usd0Src.address],
+    );
+    const srcPath = ethers.utils.solidityPack(
+        ['address', 'address'],
+        [usd0Src.address, usd0Dst.address],
+    );
+    await usd0Src.setTrustedRemote(chainIdDst, dstPath);
+    await usd0Dst.setTrustedRemote(chainIdSrc, srcPath);
+
+    //deploy bidders
+    const stableToUsdoBidderSrcInfo = await registerBidder(
+        bar,
+        usdc,
+        usd0Src,
+        false,
+    );
+    const stableToUsdoBidderSrc = stableToUsdoBidderSrcInfo.stableToUsdoBidder;
+
+    const stableToUsdoBidderDstInfo = await registerBidder(
+        bar,
+        usdc,
+        usd0Dst,
+        false,
+    );
+    const stableToUsdoBidderDst = stableToUsdoBidderDstInfo.stableToUsdoBidder;
+
+    //deploy singularities
+    const srcSingularityDeployments = await registerSingularity(
+        usd0Src,
+        collateral,
+        bar,
+        usd0SrcId,
+        collateralId,
+        mediumRiskMC,
+        yieldBox,
+        stableToUsdoBidderSrc,
+        ethers.utils.parseEther('1'),
+        false,
+    );
+    const singularitySrc =
+        srcSingularityDeployments.wethUsdoSingularity as Singularity;
+
+    const dstSingularityDeployments = await registerSingularity(
+        usd0Dst,
+        collateral,
+        bar,
+        usd0DstId,
+        collateralId,
+        mediumRiskMC,
+        yieldBox,
+        stableToUsdoBidderDst,
+        ethers.utils.parseEther('1'),
+        false,
+    );
+    const singularityDst =
+        dstSingularityDeployments.wethUsdoSingularity as Singularity;
+
+    await proxySrc.updateMarketStatus(singularitySrc.address, true);
+    await proxyDst.updateMarketStatus(singularityDst.address, true);
+
+    const proxySrcSingularitySrcStatus = await proxySrc.markets(
+        singularitySrc.address,
+    );
+    const proxySrcSingularityDstStatus = await proxySrc.markets(
+        singularityDst.address,
+    );
+    expect(proxySrcSingularitySrcStatus).to.be.true;
+    expect(proxySrcSingularityDstStatus).to.be.false;
+
+    const proxyDstSingularitySrcStatus = await proxyDst.markets(
+        singularitySrc.address,
+    );
+    const proxyDstSingularityDstStatus = await proxyDst.markets(
+        singularityDst.address,
+    );
+    expect(proxyDstSingularitySrcStatus).to.be.false;
+    expect(proxyDstSingularityDstStatus).to.be.true;
+    return {
+        proxySrc,
+        proxyDst,
+        singularitySrc,
+        singularityDst,
+        lzEndpointSrc,
+        lzEndpointDst,
+        usd0Src,
+        usd0Dst,
+        usd0SrcId,
+        usd0DstId,
+    };
+}
+
+export async function createTokenEmptyStrategy(
+    yieldBox: string,
+    token: string,
+) {
+    const noStrategy = await (
+        await ethers.getContractFactory('ERC20WithoutStrategy')
+    ).deploy(yieldBox, token);
+    await noStrategy.deployed();
+    return noStrategy;
 }
