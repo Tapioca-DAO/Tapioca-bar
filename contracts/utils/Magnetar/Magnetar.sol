@@ -86,20 +86,33 @@ contract Magnetar is Ownable, MagnetarData, MagnetarActionsData {
                     );
                 }
             } else if (_action.id == TOFT_SEND_FROM) {
-                TOFTSendFromData memory data = abi.decode(
-                    _action.call[4:],
-                    (TOFTSendFromData)
-                );
-                _checkSender(data.from);
+                (
+                    address from,
+                    uint16 dstChainId,
+                    bytes32 to,
+                    uint256 amount,
+                    ISendFrom.LzCallParams memory lzCallParams
+                ) = abi.decode(
+                        _action.call[4:],
+                        (
+                            address,
+                            uint16,
+                            bytes32,
+                            uint256,
+                            (ISendFrom.LzCallParams)
+                        )
+                    );
+
+                _checkSender(from);
                 unchecked {
                     valAccumulator += _action.value;
                 }
                 ISendFrom(_action.target).sendFrom{value: _action.value}(
                     msg.sender,
-                    data.dstChainId,
-                    data.to,
-                    data.amount,
-                    data.callParams
+                    dstChainId,
+                    to,
+                    amount,
+                    lzCallParams
                 );
             } else if (_action.id == YB_DEPOSIT_ASSET) {
                 YieldBoxDepositData memory data = abi.decode(
@@ -146,20 +159,32 @@ contract Magnetar is Ownable, MagnetarData, MagnetarActionsData {
                     returnData: abi.encode(part, share)
                 });
             } else if (_action.id == SGL_WITHDRAW_TO) {
-                SGLWithdrawToData memory data = abi.decode(
-                    _action.call[4:],
-                    (SGLWithdrawToData)
-                );
-                _checkSender(data.from);
+                (
+                    address from,
+                    uint16 dstChainId,
+                    bytes32 receiver,
+                    uint256 amount,
+                    bytes memory adapterParams,
+                    address payable refundAddress
+                ) = abi.decode(
+                        _action.call[4:],
+                        (address, uint16, bytes32, uint256, bytes, address)
+                    );
+
+                _checkSender(from);
+                unchecked {
+                    valAccumulator += _action.value;
+                }
+
                 ISingularityOperations(_action.target).withdrawTo{
                     value: _action.value
                 }(
                     msg.sender,
-                    data.dstChainId,
-                    data.receiver,
-                    data.amount,
-                    data.adapterParams,
-                    data.refundAddress
+                    dstChainId,
+                    receiver,
+                    amount,
+                    adapterParams,
+                    refundAddress
                 );
             } else if (_action.id == SGL_LEND) {
                 SGLLendData memory data = abi.decode(
@@ -196,6 +221,11 @@ contract Magnetar is Ownable, MagnetarData, MagnetarActionsData {
                     (SendApprovalData)
                 );
                 _checkSender(data.approval.owner);
+
+                unchecked {
+                    valAccumulator += _action.value;
+                }
+
                 ITOFTOperations(_action.target).sendApproval{
                     value: _action.value
                 }(data.lzDstChainId, data.approval, data.options);
@@ -205,6 +235,10 @@ contract Magnetar is Ownable, MagnetarData, MagnetarActionsData {
                     (TOFTSendAndBorrowData)
                 );
                 _checkSender(data.from);
+
+                unchecked {
+                    valAccumulator += _action.value;
+                }
 
                 ITOFTOperations(_action.target).sendToYBAndBorrow{
                     value: _action.value
@@ -226,6 +260,10 @@ contract Magnetar is Ownable, MagnetarData, MagnetarActionsData {
                 );
                 _checkSender(data.from);
 
+                unchecked {
+                    valAccumulator += _action.value;
+                }
+
                 ITOFTOperations(_action.target).sendToYBAndLend{
                     value: _action.value
                 }(
@@ -244,6 +282,10 @@ contract Magnetar is Ownable, MagnetarData, MagnetarActionsData {
                 );
                 _checkSender(data.from);
 
+                unchecked {
+                    valAccumulator += _action.value;
+                }
+
                 ITOFTOperations(_action.target).sendToYB{value: _action.value}(
                     msg.sender,
                     data.to,
@@ -253,22 +295,42 @@ contract Magnetar is Ownable, MagnetarData, MagnetarActionsData {
                     data.options
                 );
             } else if (_action.id == TOFT_RETRIEVE_YB) {
-                TOFTRetrieveYBData memory data = abi.decode(
-                    _action.call[4:],
-                    (TOFTRetrieveYBData)
-                );
-                _checkSender(data.from);
+                (
+                    address from,
+                    uint256 amount,
+                    uint256 assetId,
+                    uint16 lzDstChainId,
+                    address zroPaymentAddress,
+                    bytes memory airdropAdapterParam,
+                    bool strategyWithdrawal
+                ) = abi.decode(
+                        _action.call[4:],
+                        (
+                            address,
+                            uint256,
+                            uint256,
+                            uint16,
+                            address,
+                            bytes,
+                            bool
+                        )
+                    );
+                _checkSender(from);
+
+                unchecked {
+                    valAccumulator += _action.value;
+                }
 
                 ITOFTOperations(_action.target).retrieveFromYB{
                     value: _action.value
                 }(
                     msg.sender,
-                    data.amount,
-                    data.assetId,
-                    data.lzDstChainId,
-                    data.zroPaymentAddress,
-                    data.airdropAdapterParam,
-                    data.strategyWithdrawal
+                    amount,
+                    assetId,
+                    lzDstChainId,
+                    zroPaymentAddress,
+                    airdropAdapterParam,
+                    strategyWithdrawal
                 );
             } else {
                 revert("Magnetar: action not valid");
