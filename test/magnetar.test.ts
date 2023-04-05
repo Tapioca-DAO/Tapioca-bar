@@ -106,11 +106,98 @@ describe('Magnetar', () => {
         message: { owner, spender, value, nonce, deadline },
     });
 
-    it.only('should test send from', async () => {
+    it.only('should test sendToYb', async () => {
         const {
             deployer,
-            usd0,
-            wethUsdcSingularity,
+            bar,
+            proxyDeployer,
+            mediumRiskMC,
+            yieldBox,
+            weth,
+            usdc,
+            wethAssetId,
+            createWethUsd0Singularity,
+            deployCurveStableToUsdoBidder,
+        } = await loadFixture(register);
+
+        const magnetar = await (
+            await ethers.getContractFactory('Magnetar')
+        ).deploy(deployer.address);
+        await magnetar.deployed();
+        const {
+            proxySrc,
+            proxyDst,
+            singularitySrc,
+            singularityDst,
+            lzEndpointSrc,
+            lzEndpointDst,
+            usd0Src,
+            usd0Dst,
+            usd0DstId,
+            usd0SrcId,
+        } = await setupUsd0Environment(
+            proxyDeployer,
+            mediumRiskMC,
+            yieldBox,
+            bar,
+            usdc,
+            weth,
+            wethAssetId,
+            createWethUsd0Singularity,
+            deployCurveStableToUsdoBidder,
+            deployer,
+        );
+
+        const usdoAmount = ethers.BigNumber.from((1e18).toString()).mul(100);
+        await usd0Dst.mint(deployer.address, usdoAmount);
+
+        await usd0Dst.setUseCustomAdapterParams(true);
+        await usd0Src.setUseCustomAdapterParams(true);
+
+        await usd0Src.setMinDstGas(await lzEndpointDst.getChainId(), 1, 1);
+        await usd0Src.setMinDstGas(await lzEndpointDst.getChainId(), 0, 1);
+        await usd0Dst.setMinDstGas(await lzEndpointSrc.getChainId(), 1, 1);
+        await usd0Dst.setMinDstGas(await lzEndpointSrc.getChainId(), 0, 1);
+
+        await yieldBox.setApprovalForAll(usd0Src.address, true);
+        await yieldBox.setApprovalForAll(usd0Dst.address, true);
+
+        const sendToYbEncoded = usd0Dst.interface.encodeFunctionData(
+            'sendToYB',
+            [
+                deployer.address,
+                deployer.address,
+                usdoAmount,
+                usd0SrcId,
+                await lzEndpointSrc.getChainId(),
+                {
+                    extraGasLimit: 500000,
+                    zroPaymentAddress: ethers.constants.AddressZero,
+                    strategyDeposit: false,
+                },
+            ],
+        );
+        await usd0Dst.approve(magnetar.address, ethers.constants.MaxUint256);
+        await magnetar.connect(deployer).burst(
+            [
+                {
+                    id: 15,
+                    target: usd0Dst.address,
+                    value: ethers.utils.parseEther('2'),
+                    allowFailure: false,
+                    call: sendToYbEncoded,
+                },
+            ],
+            { value: ethers.utils.parseEther('2') },
+        );
+
+        const ybBalance = await yieldBox.balanceOf(deployer.address, usd0SrcId);
+        console.log(`ybBalance ${ybBalance}`);
+    });
+
+    it('should test send from', async () => {
+        const {
+            deployer,
             bar,
             proxyDeployer,
             mediumRiskMC,
@@ -162,10 +249,8 @@ describe('Magnetar', () => {
 
         await usd0Src.setMinDstGas(await lzEndpointDst.getChainId(), 1, 1);
         await usd0Src.setMinDstGas(await lzEndpointDst.getChainId(), 0, 1);
-        await usd0Src.setMinDstGas(await lzEndpointDst.getChainId(), 2, 1);
         await usd0Dst.setMinDstGas(await lzEndpointSrc.getChainId(), 1, 1);
         await usd0Dst.setMinDstGas(await lzEndpointSrc.getChainId(), 0, 1);
-        await usd0Dst.setMinDstGas(await lzEndpointSrc.getChainId(), 2, 1);
 
         const sendFromEncoded = usd0Dst.interface.encodeFunctionData(
             'sendFrom',
@@ -203,37 +288,6 @@ describe('Magnetar', () => {
 
         const usdoSrcBalance = await usd0Src.balanceOf(deployer.address);
         expect(usdoSrcBalance.gt(0)).to.be.true;
-        console.log(usdoSrcBalance);
-        return;
-
-        const withdrawToFn = wethUsdcSingularity.interface.encodeFunctionData(
-            'withdrawTo',
-            [
-                deployer.address,
-                BN(2),
-                ethers.utils.defaultAbiCoder.encode(
-                    ['address'],
-                    [deployer.address],
-                ),
-                BN(1),
-                adapterParams,
-                deployer.address,
-            ],
-        );
-
-        await usd0.approve(magnetar.address, ethers.constants.MaxUint256);
-        await magnetar.connect(deployer).burst(
-            [
-                {
-                    id: 7,
-                    target: usd0.address,
-                    value: ethers.utils.parseEther('1'),
-                    allowFailure: false,
-                    call: withdrawToFn,
-                },
-            ],
-            { value: ethers.utils.parseEther('1') },
-        );
     });
 
     it('should test an array of permits', async () => {

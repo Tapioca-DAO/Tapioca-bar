@@ -146,7 +146,6 @@ interface ITOFTOperations {
         uint256 extraGasLimit;
         address zroPaymentAddress;
         bool strategyDeposit;
-        bool wrap;
     }
 
     struct IApproval {

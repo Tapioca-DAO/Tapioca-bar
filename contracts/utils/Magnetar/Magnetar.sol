@@ -221,6 +221,11 @@ contract Magnetar is Ownable, MagnetarData, MagnetarActionsData {
                     (SendApprovalData)
                 );
                 _checkSender(data.approval.owner);
+
+                unchecked {
+                    valAccumulator += _action.value;
+                }
+
                 ITOFTOperations(_action.target).sendApproval{
                     value: _action.value
                 }(data.lzDstChainId, data.approval, data.options);
@@ -230,6 +235,10 @@ contract Magnetar is Ownable, MagnetarData, MagnetarActionsData {
                     (TOFTSendAndBorrowData)
                 );
                 _checkSender(data.from);
+
+                unchecked {
+                    valAccumulator += _action.value;
+                }
 
                 ITOFTOperations(_action.target).sendToYBAndBorrow{
                     value: _action.value
@@ -251,6 +260,10 @@ contract Magnetar is Ownable, MagnetarData, MagnetarActionsData {
                 );
                 _checkSender(data.from);
 
+                unchecked {
+                    valAccumulator += _action.value;
+                }
+
                 ITOFTOperations(_action.target).sendToYBAndLend{
                     value: _action.value
                 }(
@@ -268,6 +281,10 @@ contract Magnetar is Ownable, MagnetarData, MagnetarActionsData {
                     (TOFTSendToYBData)
                 );
                 _checkSender(data.from);
+
+                unchecked {
+                    valAccumulator += _action.value;
+                }
 
                 ITOFTOperations(_action.target).sendToYB{value: _action.value}(
                     msg.sender,
@@ -298,8 +315,12 @@ contract Magnetar is Ownable, MagnetarData, MagnetarActionsData {
                             bool
                         )
                     );
-
                 _checkSender(from);
+
+                unchecked {
+                    valAccumulator += _action.value;
+                }
+
                 ITOFTOperations(_action.target).retrieveFromYB{
                     value: _action.value
                 }(
