@@ -172,6 +172,10 @@ contract Magnetar is Ownable, MagnetarData, MagnetarActionsData {
                     );
 
                 _checkSender(from);
+                unchecked {
+                    valAccumulator += _action.value;
+                }
+
                 ISingularityOperations(_action.target).withdrawTo{
                     value: _action.value
                 }(
