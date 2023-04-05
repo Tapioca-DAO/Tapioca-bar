@@ -106,7 +106,7 @@ describe('Magnetar', () => {
         message: { owner, spender, value, nonce, deadline },
     });
 
-    it.only('should test sendToYb', async () => {
+    it('should test sendToYb', async () => {
         const {
             deployer,
             bar,
@@ -192,7 +192,7 @@ describe('Magnetar', () => {
         );
 
         const ybBalance = await yieldBox.balanceOf(deployer.address, usd0SrcId);
-        console.log(`ybBalance ${ybBalance}`);
+        expect(ybBalance.gt(0)).to.be.true;
     });
 
     it('should test send from', async () => {
