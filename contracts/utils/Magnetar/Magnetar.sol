@@ -217,11 +217,27 @@ contract Magnetar is Ownable, MagnetarData, MagnetarActionsData {
                     returnData: abi.encode(amount)
                 });
             } else if (_action.id == TOFT_SEND_AND_BORROW) {
-                TOFTSendAndBorrowData memory data = abi.decode(
-                    _action.call[4:],
-                    (TOFTSendAndBorrowData)
-                );
-                _checkSender(data.from);
+                (
+                    address from,
+                    address to,
+                    uint16 lzDstChainId,
+                    ITOFTOperations.IBorrowParams memory borrowParams,
+                    ITOFTOperations.IWithdrawParams memory withdrawParams,
+                    ITOFTOperations.ITOFTSendOptions memory options,
+                    ITOFTOperations.ITOFTApproval[] memory approvals
+                ) = abi.decode(
+                        _action.call[4:],
+                        (
+                            address,
+                            address,
+                            uint16,
+                            ITOFTOperations.IBorrowParams,
+                            ITOFTOperations.IWithdrawParams,
+                            ITOFTOperations.ITOFTSendOptions,
+                            ITOFTOperations.ITOFTApproval[]
+                        )
+                    );
+                _checkSender(from);
 
                 unchecked {
                     valAccumulator += _action.value;
@@ -231,15 +247,14 @@ contract Magnetar is Ownable, MagnetarData, MagnetarActionsData {
                     value: _action.value
                 }(
                     msg.sender,
-                    data.to,
-                    data.lzDstChainId,
-                    data.borrowParams,
-                    data.withdrawParams,
-                    data.options,
-                    data.approvals
+                    to,
+                    lzDstChainId,
+                    borrowParams,
+                    withdrawParams,
+                    options,
+                    approvals
                 );
             } else if (_action.id == TOFT_SEND_AND_LEND) {
-                console.log("decoding");
                 (
                     address from,
                     address to,
@@ -259,19 +274,15 @@ contract Magnetar is Ownable, MagnetarData, MagnetarActionsData {
                         )
                     );
 
-                console.log("check");
                 _checkSender(from);
 
                 unchecked {
                     valAccumulator += _action.value;
                 }
 
-                console.log("op");
                 ITOFTOperations(_action.target).sendToYBAndLend{
                     value: _action.value
                 }(msg.sender, to, dstChainId, lendParams, options, approvals);
-
-                console.log("fin");
             } else if (_action.id == TOFT_SEND_YB) {
                 TOFTSendToYBData memory data = abi.decode(
                     _action.call[4:],
