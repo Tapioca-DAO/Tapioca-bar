@@ -6,7 +6,6 @@ import "@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol";
 
 import "./MagnetarData.sol";
 import "./MagnetarActionsData.sol";
-import "hardhat/console.sol";
 
 /*
 
