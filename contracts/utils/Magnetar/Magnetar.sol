@@ -6,7 +6,6 @@ import "@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol";
 
 import "./MagnetarData.sol";
 import "./MagnetarActionsData.sol";
-import "hardhat/console.sol";
 
 /*
 
@@ -284,9 +283,9 @@ contract Magnetar is Ownable, MagnetarData, MagnetarActionsData {
                     value: _action.value
                 }(msg.sender, to, dstChainId, lendParams, options, approvals);
             } else if (_action.id == TOFT_SEND_YB) {
-                TOFTSendToYBData memory data = abi.decode(
+                USDOSendToYBData memory data = abi.decode(
                     _action.call[4:],
-                    (TOFTSendToYBData)
+                    (USDOSendToYBData)
                 );
                 _checkSender(data.from);
 

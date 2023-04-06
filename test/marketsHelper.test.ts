@@ -14,7 +14,7 @@ import { BaseTOFT } from '../typechain';
 
 import hre from 'hardhat';
 
-describe.skip('MarketsHelper test', () => {
+describe('MarketsHelper test', () => {
     it('Should deposit to yieldBox & add asset to singularity through SGL helper', async () => {
         const {
             weth,
@@ -137,7 +137,7 @@ describe.skip('MarketsHelper test', () => {
                 borrowAmount,
                 true,
                 true,
-                ethers.utils.toUtf8Bytes(''),
+                encodeMarketHelperWithdrawData(false, 0, eoa1.address, '0x00'),
             );
     });
 
@@ -314,7 +314,7 @@ describe.skip('MarketsHelper test', () => {
                 borrowAmount,
                 true,
                 true,
-                ethers.utils.toUtf8Bytes(''),
+                encodeMarketHelperWithdrawData(false, 0, eoa1.address, '0x00'),
             );
 
         const userBorrowPart = await wethUsdcSingularity.userBorrowPart(
@@ -388,7 +388,7 @@ describe.skip('MarketsHelper test', () => {
                 borrowAmount,
                 true,
                 true,
-                ethers.utils.toUtf8Bytes(''),
+                encodeMarketHelperWithdrawData(false, 0, eoa1.address, '0x00'),
             );
 
         const userBorrowPart = await wethUsdcSingularity.userBorrowPart(
@@ -626,7 +626,12 @@ describe.skip('MarketsHelper test', () => {
                 fraction,
                 totalBingBangCollateral,
                 true,
-                ethers.utils.toUtf8Bytes(''),
+                encodeMarketHelperWithdrawData(
+                    false,
+                    0,
+                    deployer.address,
+                    '0x00',
+                ),
             ),
         ).to.be.revertedWith('SGL: min limit');
 
@@ -637,7 +642,7 @@ describe.skip('MarketsHelper test', () => {
             await yieldBox.toAmount(usdoAssetId, fraction.div(3), false),
             totalBingBangCollateral.div(5),
             true,
-            ethers.utils.toUtf8Bytes(''),
+            encodeMarketHelperWithdrawData(false, 0, deployer.address, '0x00'),
         );
         const wethBalanceAfter = await weth.balanceOf(deployer.address);
 
@@ -741,7 +746,7 @@ describe.skip('MarketsHelper test', () => {
             await yieldBox.toAmount(usdoAssetId, fraction.div(3), false),
             totalBingBangCollateral.div(5),
             false,
-            ethers.utils.toUtf8Bytes(''),
+            encodeMarketHelperWithdrawData(false, 0, deployer.address, '0x00'),
         );
         const wethCollateralAfter = await wethBigBangMarket.userCollateralShare(
             deployer.address,
@@ -1904,3 +1909,22 @@ describe.skip('MarketsHelper test', () => {
         });
     });
 });
+
+function encodeMarketHelperWithdrawData(
+    otherChain: boolean,
+    destChain: number,
+    receiver: string,
+    adapterParams: string,
+) {
+    const receiverSplit = receiver.split('0x');
+
+    return ethers.utils.defaultAbiCoder.encode(
+        ['bool', 'uint16', 'bytes32', 'bytes'],
+        [
+            otherChain,
+            destChain,
+            '0x'.concat(receiverSplit[1].padStart(64, '0')),
+            adapterParams,
+        ],
+    );
+}

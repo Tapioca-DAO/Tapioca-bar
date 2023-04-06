@@ -33,7 +33,7 @@ describe('e2e tests', () => {
     ---1/2 Borrowers---
     - get liquidated
     */
-    it.skip('should use minterSingularity and market to add, borrow and get liquidated', async () => {
+    it('should use minterSingularity and market to add, borrow and get liquidated', async () => {
         const {
             bar,
             wethBigBangMarket,
@@ -271,7 +271,12 @@ describe('e2e tests', () => {
             wethMintVal,
             usdoBorrowVal,
             true,
-            ethers.utils.toUtf8Bytes(''),
+            encodeMarketHelperWithdrawData(
+                false,
+                0,
+                borrowers[0].address,
+                '0x00',
+            ),
             true,
             'SGL: min limit',
         );
@@ -311,7 +316,12 @@ describe('e2e tests', () => {
             wethMintVal.mul(10),
             usdoBorrowVal.mul(10),
             true,
-            ethers.utils.toUtf8Bytes(''),
+            encodeMarketHelperWithdrawData(
+                false,
+                0,
+                borrowers[borrowers.length - 1].address,
+                '0x00',
+            ),
             true,
             'SGL: no return data',
         );
@@ -472,6 +482,7 @@ describe('e2e tests', () => {
             const previousBorrowerUsd0Balance = await usd0.balanceOf(
                 borrower.address,
             );
+
             await depositAddCollateralAndBorrowPlug(
                 borrower,
                 marketsHelper,
@@ -481,7 +492,12 @@ describe('e2e tests', () => {
                 borrowerCollateralValue,
                 borrowerBorrowValue,
                 true,
-                ethers.utils.toUtf8Bytes(''),
+                encodeMarketHelperWithdrawData(
+                    false,
+                    0,
+                    borrower.address,
+                    '0x00',
+                ),
             );
 
             const finalBorrowerUsd0Balance = await usd0.balanceOf(
@@ -841,6 +857,25 @@ async function liquidatePlug(
     }
 }
 
+function encodeMarketHelperWithdrawData(
+    otherChain: boolean,
+    destChain: number,
+    receiver: string,
+    adapterParams: string,
+) {
+    const receiverSplit = receiver.split('0x');
+
+    return ethers.utils.defaultAbiCoder.encode(
+        ['bool', 'uint16', 'bytes32', 'bytes'],
+        [
+            otherChain,
+            destChain,
+            '0x'.concat(receiverSplit[1].padStart(64, '0')),
+            adapterParams,
+        ],
+    );
+}
+
 //modules
 async function addUsd0Module(
     weth: WETH9Mock,
@@ -876,7 +911,7 @@ async function addUsd0Module(
             wethMintVal,
             usdoBorrowVal,
             false,
-            ethers.utils.toUtf8Bytes(''),
+            encodeMarketHelperWithdrawData(false, 0, lender.address, '0x00'),
         );
 
         //lend USDO to WethUSD0Singularity
@@ -923,7 +958,7 @@ async function borrowFromSingularityModule(
             wethMintVal,
             usdoBorrowVal,
             true,
-            ethers.utils.toUtf8Bytes(''),
+            encodeMarketHelperWithdrawData(false, 0, borrower.address, '0x00'),
         );
 
         const borrowerUsd0Balance = await usd0.balanceOf(borrower.address);
