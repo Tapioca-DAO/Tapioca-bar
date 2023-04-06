@@ -45,26 +45,20 @@ abstract contract MagnetarActionsData {
     struct TOFTSendAndBorrowData {
         address from;
         address to;
-        uint256 amount;
-        uint256 borrowAmount;
-        address marketHelper;
-        address market;
         uint16 lzDstChainId;
-        uint256 withdrawLzFeeAmount;
-        bool withdrawOnOtherChain;
-        uint16 withdrawLzChainId;
-        bytes withdrawAdapterParams;
+        ITOFTOperations.IBorrowParams borrowParams;
+        ITOFTOperations.IWithdrawParams withdrawParams;
         ITOFTOperations.SendOptions options;
+        ITOFTOperations.IApproval[] approvals;
     }
 
     struct TOFTSendAndLendData {
         address from;
         address to;
-        uint256 amount;
-        address marketHelper;
-        address market;
         uint16 lzDstChainId;
+        ITOFTOperations.ILendParams lendParams;
         ITOFTOperations.SendOptions options;
+        ITOFTOperations.IApproval[] approvals;
     }
 
     struct TOFTSendToYBData {
@@ -138,22 +132,16 @@ interface IPermitAll {
 }
 
 interface ITOFTOperations {
-    function wrap(
-        address fromAddress,
-        address toAddress,
-        uint256 amount
-    ) external;
-
-    function wrapNative(address _toAddress) external payable;
-
+    // Structs
     struct SendOptions {
         uint256 extraGasLimit;
         address zroPaymentAddress;
         bool strategyDeposit;
+        bool wrap;
     }
-
     struct IApproval {
         address target;
+        bool permitBorrow;
         address owner;
         address spender;
         uint256 value;
@@ -162,6 +150,32 @@ interface ITOFTOperations {
         bytes32 r;
         bytes32 s;
     }
+    struct IWithdrawParams {
+        uint256 withdrawLzFeeAmount;
+        bool withdrawOnOtherChain;
+        uint16 withdrawLzChainId;
+        bytes withdrawAdapterParams;
+    }
+    struct IBorrowParams {
+        uint256 amount;
+        uint256 borrowAmount;
+        address marketHelper;
+        address market;
+    }
+    struct ILendParams {
+        uint256 amount;
+        address marketHelper;
+        address market;
+    }
+
+    // Functions
+    function wrap(
+        address fromAddress,
+        address toAddress,
+        uint256 amount
+    ) external;
+
+    function wrapNative(address _toAddress) external payable;
 
     function sendApproval(
         uint16 lzDstChainId,
@@ -173,26 +187,20 @@ interface ITOFTOperations {
     function sendToYBAndBorrow(
         address _from,
         address _to,
-        uint256 amount,
-        uint256 borrowAmount,
-        address _marketHelper,
-        address _market,
         uint16 lzDstChainId,
-        uint256 withdrawLzFeeAmount,
-        bool withdrawOnOtherChain,
-        uint16 withdrawLzChainId,
-        bytes calldata withdrawAdapterParams,
-        SendOptions calldata options
+        IBorrowParams calldata borrowParams,
+        IWithdrawParams calldata withdrawParams,
+        SendOptions calldata options,
+        IApproval[] calldata approvals
     ) external payable;
 
     function sendToYBAndLend(
-        address from,
-        address to,
-        uint256 amount,
-        address marketHelper,
-        address market,
+        address _from,
+        address _to,
         uint16 lzDstChainId,
-        SendOptions calldata options
+        ILendParams calldata lendParams,
+        SendOptions calldata options,
+        IApproval[] calldata approvals
     ) external payable;
 
     function sendToYB(
