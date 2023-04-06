@@ -6,6 +6,7 @@ import "@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol";
 
 import "./MagnetarData.sol";
 import "./MagnetarActionsData.sol";
+import "hardhat/console.sol";
 
 /*
 
@@ -215,57 +216,12 @@ contract Magnetar is Ownable, MagnetarData, MagnetarActionsData {
                     success: true,
                     returnData: abi.encode(amount)
                 });
-            } else if (_action.id == TOFT_SEND_APPROVAL) {
-                SendApprovalData memory data = abi.decode(
-                    _action.call[4:],
-                    (SendApprovalData)
-                );
-                _checkSender(data.approval.owner);
-
-                unchecked {
-                    valAccumulator += _action.value;
-                }
-
-                ITOFTOperations(_action.target).sendApproval{
-                    value: _action.value
-                }(
-                    data.lzDstChainId,
-                    data.permitBorrow,
-                    data.approval,
-                    data.options
-                );
             } else if (_action.id == TOFT_SEND_AND_BORROW) {
-                (
-                    address from,
-                    address to,
-                    uint256 amount,
-                    uint256 borrowAmount,
-                    address marketHelper,
-                    address market,
-                    uint16 lzDstChainId,
-                    uint256 withdrawLzFeeAmount,
-                    bool withdrawOnOtherChain,
-                    uint16 withdrawLzChainId,
-                    bytes memory withdrawAdapterParams,
-                    ITOFTOperations.SendOptions memory options
-                ) = abi.decode(
-                        _action.call[4:],
-                        (
-                            address,
-                            address,
-                            uint256,
-                            uint256,
-                            address,
-                            address,
-                            uint16,
-                            uint256,
-                            bool,
-                            uint16,
-                            bytes,
-                            (ITOFTOperations.SendOptions)
-                        )
-                    );
-                _checkSender(from);
+                TOFTSendAndBorrowData memory data = abi.decode(
+                    _action.call[4:],
+                    (TOFTSendAndBorrowData)
+                );
+                _checkSender(data.from);
 
                 unchecked {
                     valAccumulator += _action.value;
@@ -275,40 +231,38 @@ contract Magnetar is Ownable, MagnetarData, MagnetarActionsData {
                     value: _action.value
                 }(
                     msg.sender,
-                    to,
-                    amount,
-                    borrowAmount,
-                    marketHelper,
-                    market,
-                    lzDstChainId,
-                    withdrawLzFeeAmount,
-                    withdrawOnOtherChain,
-                    withdrawLzChainId,
-                    withdrawAdapterParams,
-                    options
+                    data.to,
+                    data.lzDstChainId,
+                    data.borrowParams,
+                    data.withdrawParams,
+                    data.options,
+                    data.approvals
                 );
             } else if (_action.id == TOFT_SEND_AND_LEND) {
+                console.log("decoding");
                 TOFTSendAndLendData memory data = abi.decode(
                     _action.call[4:],
                     (TOFTSendAndLendData)
                 );
+                console.log("check");
                 _checkSender(data.from);
 
                 unchecked {
                     valAccumulator += _action.value;
                 }
 
+                console.log("op");
                 ITOFTOperations(_action.target).sendToYBAndLend{
                     value: _action.value
                 }(
                     msg.sender,
                     data.to,
-                    data.amount,
-                    data.marketHelper,
-                    data.market,
                     data.lzDstChainId,
-                    data.options
+                    data.lendParams,
+                    data.options,
+                    data.approvals
                 );
+                console.log("fin");
             } else if (_action.id == TOFT_SEND_YB) {
                 TOFTSendToYBData memory data = abi.decode(
                     _action.call[4:],
