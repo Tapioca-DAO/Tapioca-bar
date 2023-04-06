@@ -531,7 +531,7 @@ describe('MarketsProxy', () => {
         expect(balanceOfReceiver.eq(usdoBorrowVal)).to.be.true;
     });
 
-    it.skip('should test with OFT singularity through helper', async () => {
+    it('should test with OFT singularity through helper', async () => {
         const {
             createWethUsd0Singularity,
             proxyDeployer,
@@ -692,7 +692,7 @@ describe('MarketsProxy', () => {
                 usdoBorrowVal.div(2),
                 true,
                 true,
-                ethers.utils.toUtf8Bytes(''),
+                encodeMarketHelperWithdrawData(false, 0, eoa1.address, '0x00'),
                 {
                     value: ethers.utils.parseEther('10'),
                 },
@@ -1910,4 +1910,23 @@ async function setupEnvironment(
         lzEndpointSrc,
         lzEndpointDst,
     };
+}
+
+function encodeMarketHelperWithdrawData(
+    otherChain: boolean,
+    destChain: number,
+    receiver: string,
+    adapterParams: string,
+) {
+    const receiverSplit = receiver.split('0x');
+
+    return ethers.utils.defaultAbiCoder.encode(
+        ['bool', 'uint16', 'bytes32', 'bytes'],
+        [
+            otherChain,
+            destChain,
+            '0x'.concat(receiverSplit[1].padStart(64, '0')),
+            adapterParams,
+        ],
+    );
 }

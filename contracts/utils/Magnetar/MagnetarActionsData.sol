@@ -62,6 +62,14 @@ abstract contract MagnetarActionsData {
         uint16 lzDstChainId;
         ITOFTOperations.ITOFTSendOptions options;
     }
+    struct USDOSendToYBData {
+        address from;
+        address to;
+        uint256 amount;
+        uint256 assetId;
+        uint16 lzDstChainId;
+        ITOFTOperations.IUSDOSendOptions options;
+    }
 
     // YieldBox
     struct YieldBoxDepositData {
@@ -211,6 +219,15 @@ interface ITOFTOperations {
         uint256 assetId,
         uint16 lzDstChainId,
         ITOFTSendOptions calldata options
+    ) external payable;
+
+    function sendToYB(
+        address from,
+        address to,
+        uint256 amount,
+        uint256 assetId,
+        uint16 lzDstChainId,
+        IUSDOSendOptions calldata options
     ) external payable;
 
     function retrieveFromYB(
