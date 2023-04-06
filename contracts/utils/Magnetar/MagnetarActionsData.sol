@@ -35,21 +35,14 @@ abstract contract MagnetarActionsData {
         address to;
     }
 
-    struct SendApprovalData {
-        uint16 lzDstChainId;
-        bool permitBorrow;
-        ITOFTOperations.IApproval approval;
-        ITOFTOperations.SendOptions options;
-    }
-
     struct TOFTSendAndBorrowData {
         address from;
         address to;
         uint16 lzDstChainId;
         ITOFTOperations.IBorrowParams borrowParams;
         ITOFTOperations.IWithdrawParams withdrawParams;
-        ITOFTOperations.SendOptions options;
-        ITOFTOperations.IApproval[] approvals;
+        ITOFTOperations.ITOFTSendOptions options;
+        ITOFTOperations.ITOFTApproval[] approvals;
     }
 
     struct TOFTSendAndLendData {
@@ -57,8 +50,8 @@ abstract contract MagnetarActionsData {
         address to;
         uint16 lzDstChainId;
         ITOFTOperations.ILendParams lendParams;
-        ITOFTOperations.SendOptions options;
-        ITOFTOperations.IApproval[] approvals;
+        ITOFTOperations.IUSDOSendOptions options;
+        ITOFTOperations.IUSDOApproval[] approvals;
     }
 
     struct TOFTSendToYBData {
@@ -67,7 +60,7 @@ abstract contract MagnetarActionsData {
         uint256 amount;
         uint256 assetId;
         uint16 lzDstChainId;
-        ITOFTOperations.SendOptions options;
+        ITOFTOperations.ITOFTSendOptions options;
     }
 
     // YieldBox
@@ -133,15 +126,30 @@ interface IPermitAll {
 
 interface ITOFTOperations {
     // Structs
-    struct SendOptions {
+    struct ITOFTSendOptions {
         uint256 extraGasLimit;
         address zroPaymentAddress;
         bool strategyDeposit;
         bool wrap;
     }
-    struct IApproval {
+    struct IUSDOSendOptions {
+        uint256 extraGasLimit;
+        address zroPaymentAddress;
+        bool strategyDeposit;
+    }
+    struct ITOFTApproval {
         address target;
         bool permitBorrow;
+        address owner;
+        address spender;
+        uint256 value;
+        uint256 deadline;
+        uint8 v;
+        bytes32 r;
+        bytes32 s;
+    }
+    struct IUSDOApproval {
+        address target;
         address owner;
         address spender;
         uint256 value;
@@ -177,21 +185,14 @@ interface ITOFTOperations {
 
     function wrapNative(address _toAddress) external payable;
 
-    function sendApproval(
-        uint16 lzDstChainId,
-        bool permitBorrow,
-        IApproval calldata approval,
-        SendOptions calldata options
-    ) external payable;
-
     function sendToYBAndBorrow(
         address _from,
         address _to,
         uint16 lzDstChainId,
         IBorrowParams calldata borrowParams,
         IWithdrawParams calldata withdrawParams,
-        SendOptions calldata options,
-        IApproval[] calldata approvals
+        ITOFTSendOptions calldata options,
+        ITOFTApproval[] calldata approvals
     ) external payable;
 
     function sendToYBAndLend(
@@ -199,8 +200,8 @@ interface ITOFTOperations {
         address _to,
         uint16 lzDstChainId,
         ILendParams calldata lendParams,
-        SendOptions calldata options,
-        IApproval[] calldata approvals
+        IUSDOSendOptions calldata options,
+        IUSDOApproval[] calldata approvals
     ) external payable;
 
     function sendToYB(
@@ -209,7 +210,7 @@ interface ITOFTOperations {
         uint256 amount,
         uint256 assetId,
         uint16 lzDstChainId,
-        SendOptions calldata options
+        ITOFTSendOptions calldata options
     ) external payable;
 
     function retrieveFromYB(

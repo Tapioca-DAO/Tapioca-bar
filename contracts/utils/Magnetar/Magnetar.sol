@@ -6,6 +6,7 @@ import "@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol";
 
 import "./MagnetarData.sol";
 import "./MagnetarActionsData.sol";
+import "hardhat/console.sol";
 
 /*
 
@@ -238,16 +239,19 @@ contract Magnetar is Ownable, MagnetarData, MagnetarActionsData {
                     data.approvals
                 );
             } else if (_action.id == TOFT_SEND_AND_LEND) {
+                console.log("decoding");
                 TOFTSendAndLendData memory data = abi.decode(
                     _action.call[4:],
                     (TOFTSendAndLendData)
                 );
+                console.log("check");
                 _checkSender(data.from);
 
                 unchecked {
                     valAccumulator += _action.value;
                 }
 
+                console.log("op");
                 ITOFTOperations(_action.target).sendToYBAndLend{
                     value: _action.value
                 }(
@@ -258,6 +262,7 @@ contract Magnetar is Ownable, MagnetarData, MagnetarActionsData {
                     data.options,
                     data.approvals
                 );
+                console.log("fin");
             } else if (_action.id == TOFT_SEND_YB) {
                 TOFTSendToYBData memory data = abi.decode(
                     _action.call[4:],

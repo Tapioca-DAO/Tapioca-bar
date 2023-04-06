@@ -12,6 +12,8 @@ import {
 import { TapiocaOFTMock__factory } from '../gitsub_tapioca-sdk/src/typechain/TapiocaZ/factories/mocks/TapiocaOFTMock__factory';
 import { BaseTOFT } from '../typechain';
 
+import hre from 'hardhat';
+
 describe('MarketsHelper test', () => {
     it('Should deposit to yieldBox & add asset to singularity through SGL helper', async () => {
         const {
@@ -741,7 +743,7 @@ describe('MarketsHelper test', () => {
     });
 
     describe('TOFT => MarketHelper', () => {
-        it.only('should deposit and add asset through SGL helper', async () => {
+        it('should deposit and add asset through SGL helper', async () => {
             const {
                 yieldBox,
                 deployer,
@@ -980,7 +982,8 @@ describe('MarketsHelper test', () => {
                 await yieldBox.toShare(assetHostId, assetMintVal, false),
             );
         });
-        it('should deposit and add asset through Magnetar', async () => {
+
+        it.only('should deposit and add asset through Magnetar', async () => {
             const {
                 yieldBox,
                 deployer,
@@ -1166,6 +1169,30 @@ describe('MarketsHelper test', () => {
                 toftUsdcPrice.div((1e18).toString()),
             );
 
+            // ------------------- Permit Setup -------------------
+            const deadline = BN(
+                (await ethers.provider.getBlock('latest')).timestamp + 10_000,
+            );
+            const permitLendAmount = ethers.constants.MaxUint256;
+            const permitLend = await getSGLPermitSignature(
+                'Permit',
+                deployer,
+                assetCollateralSingularity,
+                marketsHelper.address,
+                permitLendAmount,
+                deadline,
+            );
+            const permitLendStruct: BaseTOFT.IApprovalStruct = {
+                deadline,
+                owner: deployer.address,
+                spender: marketsHelper.address,
+                value: permitLendAmount,
+                r: permitLend.r,
+                s: permitLend.s,
+                v: permitLend.v,
+                target: assetCollateralSingularity.address,
+            };
+
             // ------------------- Actual TOFT test -------------------
             // We get asset
             await assetLinked.freeMint(assetMintVal);
@@ -1173,21 +1200,23 @@ describe('MarketsHelper test', () => {
             expect(
                 await assetCollateralSingularity.balanceOf(deployer.address),
             ).to.be.equal(0);
-
             const sendToYbAndLendFn = assetLinked.interface.encodeFunctionData(
                 'sendToYBAndLend',
                 [
                     deployer.address,
                     deployer.address,
-                    assetMintVal,
-                    marketsHelper.address,
-                    assetCollateralSingularity.address,
                     1,
+                    {
+                        amount: assetMintVal,
+                        marketHelper: marketsHelper.address,
+                        market: assetCollateralSingularity.address,
+                    },
                     {
                         extraGasLimit: 1_000_000,
                         strategyDeposit: false,
                         zroPaymentAddress: ethers.constants.AddressZero,
                     },
+                    [permitLendStruct],
                 ],
             );
 
@@ -1195,6 +1224,7 @@ describe('MarketsHelper test', () => {
                 magnetar.address,
                 ethers.constants.MaxUint256,
             );
+            hre.tracer.enabled = true;
             await magnetar.connect(deployer).burst(
                 [
                     {

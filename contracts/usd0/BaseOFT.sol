@@ -48,11 +48,9 @@ abstract contract BaseOFT is OFTV2, ERC20Permit, BaseBoringBatchable {
         uint256 extraGasLimit;
         address zroPaymentAddress;
         bool strategyDeposit;
-        bool wrap;
     }
     struct IApproval {
         address target;
-        bool permitBorrow;
         address owner;
         address spender;
         uint256 value;
