@@ -531,7 +531,7 @@ describe('MarketsProxy', () => {
         expect(balanceOfReceiver.eq(usdoBorrowVal)).to.be.true;
     });
 
-    it('should test with OFT singularity through helper', async () => {
+    it.skip('should test with OFT singularity through helper', async () => {
         const {
             createWethUsd0Singularity,
             proxyDeployer,

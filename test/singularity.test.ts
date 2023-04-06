@@ -1763,24 +1763,6 @@ describe('Singularity test', () => {
         });
     });
 
-    it('should test withdrawTo checks', async () => {
-        const { wethUsdcSingularity, deployer } = await loadFixture(register);
-
-        await expect(
-            wethUsdcSingularity.withdrawTo(
-                deployer.address,
-                1,
-                ethers.utils.defaultAbiCoder.encode(
-                    ['address'],
-                    [deployer.address],
-                ),
-                100,
-                ethers.utils.toUtf8Bytes(''),
-                deployer.address,
-            ),
-        ).to;
-    });
-
     it('should test yieldBoxShares', async () => {
         const {
             eoa1,

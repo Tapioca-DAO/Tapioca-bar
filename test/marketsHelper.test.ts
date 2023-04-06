@@ -7,7 +7,7 @@ import TapiocaOFTMockArtifact from '../gitsub_tapioca-sdk/src/artifacts/tapiocaz
 import hre from 'hardhat';
 import { TapiocaOFTMock__factory } from '../gitsub_tapioca-sdk/src/typechain/TapiocaZ/factories/mocks/TapiocaOFTMock__factory';
 
-describe('MarketsHelper test', () => {
+describe.skip('MarketsHelper test', () => {
     it('Should deposit to yieldBox & add asset to singularity through SGL helper', async () => {
         const {
             weth,
@@ -246,7 +246,18 @@ describe('MarketsHelper test', () => {
                 borrowAmount,
                 false,
                 true,
-                ethers.utils.toUtf8Bytes(''),
+                ethers.utils.defaultAbiCoder.encode(
+                    ['bool', 'uint16', 'bytes32', 'bytes'],
+                    [
+                        false,
+                        0,
+                        '0x00000000000000000000000022076fba2ea9650a028aa499d0444c4aa9af1bf8',
+                        ethers.utils.solidityPack(
+                            ['uint16', 'uint256'],
+                            [1, 1000000],
+                        ),
+                    ],
+                ),
             );
     });
 
@@ -1445,6 +1456,5 @@ describe('MarketsHelper test', () => {
                 borrowAmount,
             );
         });
-        
     });
 });

@@ -519,12 +519,10 @@ contract MarketsHelper {
         uint16 _destChain;
         bytes32 _receiver;
         bytes memory _adapterParams;
-        if (_withdrawData.length > 0) {
-            (_otherChain, _destChain, _receiver, _adapterParams) = abi.decode(
-                _withdrawData,
-                (bool, uint16, bytes32, bytes)
-            );
-        }
+        (_otherChain, _destChain, _receiver, _adapterParams) = abi.decode(
+            _withdrawData,
+            (bool, uint16, bytes32, bytes)
+        );
         if (!_otherChain) {
             yieldBox.withdraw(
                 _withdrawCollateral ? market.collateralId() : market.assetId(),
@@ -544,7 +542,7 @@ contract MarketsHelper {
             _receiver,
             _amount,
             _adapterParams,
-            payable(msg.sender)
+            msg.value > 0 ? payable(msg.sender) : payable(this)
         );
     }
 
