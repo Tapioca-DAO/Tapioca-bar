@@ -1,11 +1,16 @@
-import { ethers } from 'hardhat';
-import { expect } from 'chai';
-import { BN, createTokenEmptyStrategy, register } from './test.utils';
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
+import { expect } from 'chai';
+import { ethers } from 'hardhat';
 import TapiocaOFTMockArtifact from '../gitsub_tapioca-sdk/src/artifacts/tapiocaz/contracts/mocks/TapiocaOFTMock.sol/TapiocaOFTMock.json';
+import {
+    BN,
+    createTokenEmptyStrategy,
+    getSGLPermitSignature,
+    register,
+} from './test.utils';
 
-import hre from 'hardhat';
 import { TapiocaOFTMock__factory } from '../gitsub_tapioca-sdk/src/typechain/TapiocaZ/factories/mocks/TapiocaOFTMock__factory';
+import { BaseTOFT } from '../typechain';
 
 describe('MarketsHelper test', () => {
     it('Should deposit to yieldBox & add asset to singularity through SGL helper', async () => {
@@ -1395,20 +1400,61 @@ describe('MarketsHelper test', () => {
                     true,
                 );
 
+            // ------------------- ERC20 Setup -------------------
+            const deadline = BN(
+                (await ethers.provider.getBlock('latest')).timestamp + 10_000,
+            );
+
+            const permitBorrowAmount = ethers.constants.MaxUint256;
+            const permitBorrow = await getSGLPermitSignature(
+                'PermitBorrow',
+                deployer,
+                assetCollateralSingularity,
+                marketsHelper.address,
+                permitBorrowAmount,
+                deadline,
+            );
+            const permitBorrowStruct: BaseTOFT.IApprovalStruct = {
+                deadline,
+                permitBorrow: true,
+                owner: deployer.address,
+                spender: marketsHelper.address,
+                value: permitBorrowAmount,
+                r: permitBorrow.r,
+                s: permitBorrow.s,
+                v: permitBorrow.v,
+                target: assetCollateralSingularity.address,
+            };
+
+            const permitLendAmount = ethers.constants.MaxUint256;
+            const permitLend = await getSGLPermitSignature(
+                'Permit',
+                deployer,
+                assetCollateralSingularity,
+                marketsHelper.address,
+                permitLendAmount,
+                deadline,
+                {
+                    nonce: (
+                        await assetCollateralSingularity.nonces(
+                            deployer.address,
+                        )
+                    ).add(1),
+                },
+            );
+            const permitLendStruct: BaseTOFT.IApprovalStruct = {
+                deadline,
+                permitBorrow: false,
+                owner: deployer.address,
+                spender: marketsHelper.address,
+                value: permitLendAmount,
+                r: permitLend.r,
+                s: permitLend.s,
+                v: permitLend.v,
+                target: assetCollateralSingularity.address,
+            };
+
             // ------------------- Actual TOFT test -------------------
-
-            // Approve
-            const collateralId =
-                await assetCollateralSingularity.collateralId();
-            await assetCollateralSingularity.approveBorrow(
-                marketsHelper.address,
-                await yieldBox.toShare(collateralId, assetMintVal, true),
-            );
-            await assetCollateralSingularity.approve(
-                marketsHelper.address,
-                await yieldBox.toShare(collateralId, borrowAmount, true),
-            );
-
             const withdrawFees = await assetHost.estimateSendFee(
                 2,
                 ethers.utils
@@ -1424,27 +1470,35 @@ describe('MarketsHelper test', () => {
                 deployer.address,
                 collateralMintVal,
             );
+
             await collateralLinked.sendToYBAndBorrow(
                 deployer.address,
                 deployer.address,
-                collateralMintVal,
-                borrowAmount,
-                marketsHelper.address,
-                assetCollateralSingularity.address,
                 1,
-                withdrawFees.nativeFee,
+                {
+                    amount: collateralMintVal,
+                    borrowAmount,
+                    marketHelper: marketsHelper.address,
+                    market: assetCollateralSingularity.address,
+                },
+                {
+                    withdrawAdapterParams: '0x00',
+                    withdrawLzChainId: 2,
+                    withdrawLzFeeAmount: withdrawFees.nativeFee,
+                    withdrawOnOtherChain: true,
+                },
                 {
                     extraGasLimit: 1000000,
                     strategyDeposit: false,
                     wrap: false,
                     zroPaymentAddress: deployer.address,
                 },
+                [permitBorrowStruct, permitLendStruct],
                 { value: ethers.utils.parseEther('2') },
             );
             expect(await assetLinked.balanceOf(deployer.address)).to.be.eq(
                 borrowAmount,
             );
         });
-        
     });
 });
