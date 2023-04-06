@@ -11,6 +11,7 @@ import '@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol';
 import '../../yieldbox/contracts/enums/YieldBoxTokenType.sol';
 import '../../yieldbox/contracts/strategies/BaseStrategy.sol';
 
+import '../interfaces/IFeeCollector.sol';
 import '../interfaces/gmx/IGlpManager.sol';
 import '../interfaces/gmx/IGmxRewardDistributor.sol';
 import '../interfaces/gmx/IGmxRewardRouter.sol';
@@ -45,6 +46,10 @@ contract GlpStrategy is BaseERC20Strategy, BoringOwnable {
     uint160 internal constant UNI_MAX_SQRT_RATIO =
         1461446703485210103287273052203988822378723970342;
 
+    uint256 internal constant FEE_BPS = 100;
+    address public feeRecipient;
+    uint256 public feesPending;
+
     constructor(
         IYieldBox _yieldBox,
         IGmxRewardRouterV2 _gmxRewardRouter,
@@ -73,6 +78,8 @@ contract GlpStrategy is BaseERC20Strategy, BoringOwnable {
         glpManager = IGlpManager(glpRewardRouter.glpManager());
         glpVester = IGmxVester(gmxRewardRouter.glpVester());
         gmxVester = IGmxVester(gmxRewardRouter.gmxVester());
+
+        feeRecipient = owner;
     }
 
     // (For the GMX-ETH pool)
@@ -101,6 +108,22 @@ contract GlpStrategy is BaseERC20Strategy, BoringOwnable {
         _vestByGlp();
         _stakeEsGmx();
         _vestByEsGmx();
+    }
+
+    function setFeeRecipient(address recipient) external onlyOwner {
+        feeRecipient = recipient;
+    }
+
+    function withdrawFees() external {
+        uint256 feeAmount = feesPending;
+        if (feeAmount > 0) {
+            uint256 wethAmount = weth.balanceOf(address(this));
+            if (wethAmount < feeAmount) {
+                feeAmount = wethAmount;
+            }
+            weth.safeTransfer(feeRecipient, feeAmount);
+            feesPending -= feeAmount;
+        }
     }
 
     function _currentBalance() internal view override returns (uint256 amount) {
@@ -142,7 +165,13 @@ contract GlpStrategy is BaseERC20Strategy, BoringOwnable {
 
     function _buyGlp() private {
         uint256 wethAmount = weth.balanceOf(address(this));
-        if (wethAmount > 0) {
+        uint256 _feesPending = feesPending;
+        if (wethAmount > _feesPending) {
+            wethAmount -= _feesPending;
+            uint256 fee = wethAmount * FEE_BPS / 10_000;
+            feesPending = _feesPending + fee;
+            wethAmount -= fee;
+
             weth.approve(address(glpManager), wethAmount);
             glpRewardRouter.mintAndStakeGlp(address(weth), wethAmount, 0, 0);
         }
