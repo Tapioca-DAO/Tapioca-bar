@@ -14,7 +14,7 @@ import { BaseTOFT } from '../typechain';
 
 import hre from 'hardhat';
 
-describe.skip('MarketsHelper test', () => {
+describe('MarketsHelper test', () => {
     it('Should deposit to yieldBox & add asset to singularity through SGL helper', async () => {
         const {
             weth,
@@ -1211,6 +1211,7 @@ describe.skip('MarketsHelper test', () => {
             expect(
                 await assetCollateralSingularity.balanceOf(deployer.address),
             ).to.be.equal(0);
+            console.log(`---- Testing sendToYBAndLend`);
             const sendToYbAndLendFn = assetLinked.interface.encodeFunctionData(
                 'sendToYBAndLend',
                 [

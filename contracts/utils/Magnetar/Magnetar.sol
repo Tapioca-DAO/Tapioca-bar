@@ -240,12 +240,27 @@ contract Magnetar is Ownable, MagnetarData, MagnetarActionsData {
                 );
             } else if (_action.id == TOFT_SEND_AND_LEND) {
                 console.log("decoding");
-                TOFTSendAndLendData memory data = abi.decode(
-                    _action.call[4:],
-                    (TOFTSendAndLendData)
-                );
+                (
+                    address from,
+                    address to,
+                    uint16 dstChainId,
+                    ITOFTOperations.ILendParams memory lendParams,
+                    ITOFTOperations.IUSDOSendOptions memory options,
+                    ITOFTOperations.IUSDOApproval[] memory approvals
+                ) = abi.decode(
+                        _action.call[4:],
+                        (
+                            address,
+                            address,
+                            uint16,
+                            (ITOFTOperations.ILendParams),
+                            (ITOFTOperations.IUSDOSendOptions),
+                            (ITOFTOperations.IUSDOApproval[])
+                        )
+                    );
+
                 console.log("check");
-                _checkSender(data.from);
+                _checkSender(from);
 
                 unchecked {
                     valAccumulator += _action.value;
@@ -254,14 +269,8 @@ contract Magnetar is Ownable, MagnetarData, MagnetarActionsData {
                 console.log("op");
                 ITOFTOperations(_action.target).sendToYBAndLend{
                     value: _action.value
-                }(
-                    msg.sender,
-                    data.to,
-                    data.lzDstChainId,
-                    data.lendParams,
-                    data.options,
-                    data.approvals
-                );
+                }(msg.sender, to, dstChainId, lendParams, options, approvals);
+
                 console.log("fin");
             } else if (_action.id == TOFT_SEND_YB) {
                 TOFTSendToYBData memory data = abi.decode(
