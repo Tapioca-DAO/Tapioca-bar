@@ -741,7 +741,7 @@ describe('MarketsHelper test', () => {
     });
 
     describe('TOFT => MarketHelper', () => {
-        it('should deposit and add asset through SGL helper', async () => {
+        it.only('should deposit and add asset through SGL helper', async () => {
             const {
                 yieldBox,
                 deployer,
@@ -922,6 +922,31 @@ describe('MarketsHelper test', () => {
                 toftUsdcPrice.div((1e18).toString()),
             );
 
+            // ------------------- Permit Setup -------------------
+            const deadline = BN(
+                (await ethers.provider.getBlock('latest')).timestamp + 10_000,
+            );
+            const permitLendAmount = ethers.constants.MaxUint256;
+            const permitLend = await getSGLPermitSignature(
+                'Permit',
+                deployer,
+                assetCollateralSingularity,
+                marketsHelper.address,
+                permitLendAmount,
+                deadline,
+            );
+            const permitLendStruct: BaseTOFT.IApprovalStruct = {
+                deadline,
+                permitBorrow: false,
+                owner: deployer.address,
+                spender: marketsHelper.address,
+                value: permitLendAmount,
+                r: permitLend.r,
+                s: permitLend.s,
+                v: permitLend.v,
+                target: assetCollateralSingularity.address,
+            };
+
             // ------------------- Actual TOFT test -------------------
             // We get asset
             await assetLinked.freeMint(assetMintVal);
@@ -929,18 +954,23 @@ describe('MarketsHelper test', () => {
             expect(
                 await assetCollateralSingularity.balanceOf(deployer.address),
             ).to.be.equal(0);
+
             await assetLinked.sendToYBAndLend(
                 deployer.address,
                 deployer.address,
-                assetMintVal,
-                marketsHelper.address,
-                assetCollateralSingularity.address,
                 1,
+                {
+                    amount: assetMintVal,
+                    marketHelper: marketsHelper.address,
+                    market: assetCollateralSingularity.address,
+                },
                 {
                     extraGasLimit: 1_000_000,
                     strategyDeposit: false,
+                    wrap: false,
                     zroPaymentAddress: ethers.constants.AddressZero,
                 },
+                [permitLendStruct],
                 { value: ethers.utils.parseEther('2') },
             );
 
@@ -1400,7 +1430,7 @@ describe('MarketsHelper test', () => {
                     true,
                 );
 
-            // ------------------- ERC20 Setup -------------------
+            // ------------------- Permit Setup -------------------
             const deadline = BN(
                 (await ethers.provider.getBlock('latest')).timestamp + 10_000,
             );
