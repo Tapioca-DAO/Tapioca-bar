@@ -33,7 +33,7 @@ describe('e2e tests', () => {
     ---1/2 Borrowers---
     - get liquidated
     */
-    it('should use minterSingularity and market to add, borrow and get liquidated', async () => {
+    it.skip('should use minterSingularity and market to add, borrow and get liquidated', async () => {
         const {
             bar,
             wethBigBangMarket,

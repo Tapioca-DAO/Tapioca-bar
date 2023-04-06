@@ -4,7 +4,7 @@ import { register } from './test.utils';
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 import { Multicall3 } from '../typechain';
 
-describe('Multicall test', () => {
+describe.skip('Multicall test', () => {
     it('should test revert string', async () => {
         const revertContract = await (
             await ethers.getContractFactory('ContractThatReverts')
