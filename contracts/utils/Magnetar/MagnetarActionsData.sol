@@ -37,6 +37,7 @@ abstract contract MagnetarActionsData {
 
     struct SendApprovalData {
         uint16 lzDstChainId;
+        bool permitBorrow;
         ITOFTOperations.IApproval approval;
         ITOFTOperations.SendOptions options;
     }
@@ -50,6 +51,9 @@ abstract contract MagnetarActionsData {
         address market;
         uint16 lzDstChainId;
         uint256 withdrawLzFeeAmount;
+        bool withdrawOnOtherChain;
+        uint16 withdrawLzChainId;
+        bytes withdrawAdapterParams;
         ITOFTOperations.SendOptions options;
     }
 
@@ -161,19 +165,23 @@ interface ITOFTOperations {
 
     function sendApproval(
         uint16 lzDstChainId,
+        bool permitBorrow,
         IApproval calldata approval,
         SendOptions calldata options
     ) external payable;
 
     function sendToYBAndBorrow(
-        address from,
-        address to,
+        address _from,
+        address _to,
         uint256 amount,
         uint256 borrowAmount,
-        address marketHelper,
-        address market,
+        address _marketHelper,
+        address _market,
         uint16 lzDstChainId,
         uint256 withdrawLzFeeAmount,
+        bool withdrawOnOtherChain,
+        uint16 withdrawLzChainId,
+        bytes calldata withdrawAdapterParams,
         SendOptions calldata options
     ) external payable;
 
