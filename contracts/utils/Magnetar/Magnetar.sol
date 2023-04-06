@@ -228,13 +228,44 @@ contract Magnetar is Ownable, MagnetarData, MagnetarActionsData {
 
                 ITOFTOperations(_action.target).sendApproval{
                     value: _action.value
-                }(data.lzDstChainId, data.approval, data.options);
-            } else if (_action.id == TOFT_SEND_AND_BORROW) {
-                TOFTSendAndBorrowData memory data = abi.decode(
-                    _action.call[4:],
-                    (TOFTSendAndBorrowData)
+                }(
+                    data.lzDstChainId,
+                    data.permitBorrow,
+                    data.approval,
+                    data.options
                 );
-                _checkSender(data.from);
+            } else if (_action.id == TOFT_SEND_AND_BORROW) {
+                (
+                    address from,
+                    address to,
+                    uint256 amount,
+                    uint256 borrowAmount,
+                    address marketHelper,
+                    address market,
+                    uint16 lzDstChainId,
+                    uint256 withdrawLzFeeAmount,
+                    bool withdrawOnOtherChain,
+                    uint16 withdrawLzChainId,
+                    bytes memory withdrawAdapterParams,
+                    ITOFTOperations.SendOptions memory options
+                ) = abi.decode(
+                        _action.call[4:],
+                        (
+                            address,
+                            address,
+                            uint256,
+                            uint256,
+                            address,
+                            address,
+                            uint16,
+                            uint256,
+                            bool,
+                            uint16,
+                            bytes,
+                            (ITOFTOperations.SendOptions)
+                        )
+                    );
+                _checkSender(from);
 
                 unchecked {
                     valAccumulator += _action.value;
@@ -244,14 +275,17 @@ contract Magnetar is Ownable, MagnetarData, MagnetarActionsData {
                     value: _action.value
                 }(
                     msg.sender,
-                    data.to,
-                    data.amount,
-                    data.borrowAmount,
-                    data.marketHelper,
-                    data.market,
-                    data.lzDstChainId,
-                    data.withdrawLzFeeAmount,
-                    data.options
+                    to,
+                    amount,
+                    borrowAmount,
+                    marketHelper,
+                    market,
+                    lzDstChainId,
+                    withdrawLzFeeAmount,
+                    withdrawOnOtherChain,
+                    withdrawLzChainId,
+                    withdrawAdapterParams,
+                    options
                 );
             } else if (_action.id == TOFT_SEND_AND_LEND) {
                 TOFTSendAndLendData memory data = abi.decode(

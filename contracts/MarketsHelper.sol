@@ -9,6 +9,7 @@ import "./interfaces/IOracle.sol";
 import "./usd0/interfaces/IBigBang.sol";
 import "./singularity/interfaces/ISingularity.sol";
 import "tapioca-sdk/dist/contracts/YieldBox/contracts/YieldBox.sol";
+import "tapioca-sdk/dist/contracts/libraries/LzLib.sol";
 
 /// @title Useful helper functions for `Singularity` and `BingBang`
 contract MarketsHelper {
@@ -528,7 +529,7 @@ contract MarketsHelper {
             yieldBox.withdraw(
                 _withdrawCollateral ? market.collateralId() : market.assetId(),
                 address(this),
-                msg.sender,
+                LzLib.bytes32ToAddress(_receiver),
                 _amount,
                 _share
             );
