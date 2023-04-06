@@ -519,6 +519,11 @@ contract MarketsHelper {
         uint16 _destChain;
         bytes32 _receiver;
         bytes memory _adapterParams;
+        require(
+            _withdrawData.length > 0,
+            "MarketHelper: withdrawData is empty"
+        );
+
         (_otherChain, _destChain, _receiver, _adapterParams) = abi.decode(
             _withdrawData,
             (bool, uint16, bytes32, bytes)
