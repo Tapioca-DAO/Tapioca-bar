@@ -39,6 +39,7 @@ abstract contract MagnetarActionsData {
         address from;
         address to;
         uint16 lzDstChainId;
+        bytes airdropAdapterParams;
         ITOFTOperations.IBorrowParams borrowParams;
         ITOFTOperations.IWithdrawParams withdrawParams;
         ITOFTOperations.ITOFTSendOptions options;
@@ -197,6 +198,7 @@ interface ITOFTOperations {
         address _from,
         address _to,
         uint16 lzDstChainId,
+        bytes calldata airdropAdapterParams,
         IBorrowParams calldata borrowParams,
         IWithdrawParams calldata withdrawParams,
         ITOFTSendOptions calldata options,

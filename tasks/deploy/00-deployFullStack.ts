@@ -128,7 +128,7 @@ export const deployFullStack__task = async (
     VM.add(marketProxy);
 
     // Add and execute
-    await VM.execute(3);
+    await VM.execute(3, false);
     VM.save();
     const { wantToVerify } = await inquirer.prompt({
         type: 'confirm',

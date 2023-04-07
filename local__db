@@ -3,415 +3,415 @@
         "4002": [
             {
                 "name": "ERC20WithoutStrategy-TapOFT",
-                "address": "0x889f3E3627F240924D211c2236eB67fD96A4BAf3",
+                "address": "0xF1f4c7673A8f435413cbF8a768fee8b4baf5bBd5",
                 "meta": {
                     "stratFor": "TapOFT",
                     "args": [
-                        "0x1C90b9EbE8579816cE18680C0B5A7f16aB19fF9c",
-                        "0x6D52C7abc6fc486ABF88991faF15466083c584Cc"
+                        "0x53173479E3CB4271Aa9B8d878ffA765386FEaD15",
+                        "0x62305BBe02f49a0277011563D00B553101dd8F46"
                     ],
-                    "salt": "0xf7812c45615dc2ee9938ff9e57aa29bd7c9a19c5dd247cea40185652c0b9e6e3",
+                    "salt": "0xd771f5fc4c65c99e8bec3f20a80255ee7205355ea5c0974aef31f89b05d853bd",
                     "create2": true
                 }
             },
             {
                 "name": "ERC20WithoutStrategy-USDO",
-                "address": "0xE7816CE4ED17E604aDD02F4d2d4e3020Ba6f92D4",
+                "address": "0xF3C27d8824871176d12278348F8f63D8B25007D8",
                 "meta": {
                     "stratFor": "USDO",
                     "args": [
-                        "0x1C90b9EbE8579816cE18680C0B5A7f16aB19fF9c",
-                        "0xC7FA823B4CC17FFd699fb7d6DdF101fd1636e90C"
+                        "0x53173479E3CB4271Aa9B8d878ffA765386FEaD15",
+                        "0xA46135EC17Cf4c3F1C7a80aEb6fa2E0d3247fDba"
                     ],
-                    "salt": "0xe854c6eee07be7e71681e35f1fdcf5d673bcf159d61e3e665357c46c43a9c5b3",
+                    "salt": "0x9fac51a17b28f295aa8078a7277fc7d591c561fb4ee28f3cc0d70a3f857d0c76",
                     "create2": true
                 }
             },
             {
                 "name": "ERC20WithoutStrategy-TapiocaOFT-Fantom",
-                "address": "0xbadb118a6C017cfBc7f58405bfd3d14f8a36d055",
+                "address": "0xBF73AcAa5680229aCDfc8d8D13a43A15EAa4eE10",
                 "meta": {
                     "stratFor": "TapiocaOFT-Fantom",
                     "args": [
-                        "0x1C90b9EbE8579816cE18680C0B5A7f16aB19fF9c",
-                        "0xc0e7E5b4cD242ADa94CB05C6BA9178e104a0e0cd"
+                        "0x53173479E3CB4271Aa9B8d878ffA765386FEaD15",
+                        "0x1bE2C49e39eAE9E882F12eeE04495A5f398A3c72"
                     ],
-                    "salt": "0xe17008893c1b16ac1079b5b409cae1684359f2df2ca178509ea9f24a20f01d25",
+                    "salt": "0x110939aefac7468c8c21b858ee34d134c25b14b68c0b65aa29262bf37702e7a0",
                     "create2": true
                 }
             },
             {
                 "name": "ERC20WithoutStrategy-TapiocaOFT-Polygon",
-                "address": "0x96755B585496b136a9f23335C5fa83F65A8729BB",
+                "address": "0xe6578ac63E0a45b1407e1F49Bfbf3835658528cc",
                 "meta": {
                     "stratFor": "TapiocaOFT-Polygon",
                     "args": [
-                        "0x1C90b9EbE8579816cE18680C0B5A7f16aB19fF9c",
-                        "0xB00a7c1e461841fED9886dB0b9172f986E8436FD"
+                        "0x53173479E3CB4271Aa9B8d878ffA765386FEaD15",
+                        "0x6aFF06c852FB51a4DDc1b4cb230B05c0bde3e04C"
                     ],
-                    "salt": "0xff21215ab90ab98dde4cd4de479a9d11c6a06e19f5e4c434b647592a6cdeda35",
+                    "salt": "0xa7122e7d93d71a544438b3097e3332d90c78f6f0ea7d37f8b81850188e817109",
                     "create2": true
                 }
             },
             {
                 "name": "ERC20WithoutStrategy-TapiocaOFT-Avalanche",
-                "address": "0xFa24984582dd403182426Cb40E5c4fDFAb35a551",
+                "address": "0x33273049aD1700B824C67DF1b3DCaf1053e07798",
                 "meta": {
                     "stratFor": "TapiocaOFT-Avalanche",
                     "args": [
-                        "0x1C90b9EbE8579816cE18680C0B5A7f16aB19fF9c",
-                        "0x0F0ccd504c416b64d72ED362F9E390Aa27517042"
+                        "0x53173479E3CB4271Aa9B8d878ffA765386FEaD15",
+                        "0x8d03e371DCb6d4eF7a4F1db1E0CE8FEf88EEA46b"
                     ],
-                    "salt": "0xdd1b98a7a09654c9b575da6fe88b0dbca5eeb99cbdb0298be5dc2950e4b2f2c0",
+                    "salt": "0xf54b7312afa8ef7f2e77cf2a66c5826473c00ca9308a3ed1ffc797e821beea9f",
                     "create2": true
                 }
             },
             {
                 "name": "ERC20WithoutStrategy-TapiocaOFT-WETHMock",
-                "address": "0xD5AFffe33f434c4C35cD539B7a5BFB367f018B86",
+                "address": "0x54A401694a736f2f61795932FC53423cA37d2b71",
                 "meta": {
                     "stratFor": "TapiocaOFT-WETHMock",
                     "args": [
-                        "0x1C90b9EbE8579816cE18680C0B5A7f16aB19fF9c",
-                        "0x92065aD0C1f4e2A7dc562fCd25528BB6A886d57D"
+                        "0x53173479E3CB4271Aa9B8d878ffA765386FEaD15",
+                        "0x8C42E804695ed52033dd19DD020299D80F71172c"
                     ],
-                    "salt": "0xbc788653687e546149c057b0e86987cf76d3d79ad6fb02db34ee6eb62325c3b4",
+                    "salt": "0x43bee8b9eb245e51cd4aaa9d54b9f15df82a02da215e338ea65d30e2b6e318d1",
                     "create2": true
                 }
             },
             {
                 "name": "YieldBoxURIBuilder",
-                "address": "0x7880942c4a271d55bc490Ee6c047cc1A6D516611",
+                "address": "0x170404fF0B0c535EF4b5cd7780028814A755C380",
                 "meta": {
                     "args": [],
-                    "salt": "0xe3b3293c3c34f75021b534e4c41e9348484db65c3b520043b30715f5345fef5b",
+                    "salt": "0x39e32007ea9f8206a46b0293ee816f86f0437e94d719d1abd467fbc032f55e70",
                     "create2": true
                 }
             },
             {
                 "name": "YieldBox",
-                "address": "0x1C90b9EbE8579816cE18680C0B5A7f16aB19fF9c",
+                "address": "0x53173479E3CB4271Aa9B8d878ffA765386FEaD15",
                 "meta": {
                     "args": [
-                        "0x5c072C50ae615f30178e7fE4561Cb656ACA1B055",
-                        "0x7880942c4a271d55bc490Ee6c047cc1A6D516611"
+                        "0x40BFad8b38f64a850e2dFeCf50Fbd5466e4F27F7",
+                        "0x170404fF0B0c535EF4b5cd7780028814A755C380"
                     ],
-                    "salt": "0xb993f5e839c42d4f2a4aa6e4c8e84a4a415aaaba6f79d6b881c3751ff73c0afc",
+                    "salt": "0xfebf1ec68e1cd6e1d18c0be9e2e1084ab71c88174762f55b9feeb3e0b8de52a6",
                     "create2": true
                 }
             },
             {
                 "name": "USDO",
-                "address": "0xC7FA823B4CC17FFd699fb7d6DdF101fd1636e90C",
+                "address": "0xA46135EC17Cf4c3F1C7a80aEb6fa2E0d3247fDba",
                 "meta": {
                     "args": [
                         "0x7dcAD72640F835B0FA36EFD3D6d3ec902C7E5acf",
-                        "0x1C90b9EbE8579816cE18680C0B5A7f16aB19fF9c",
+                        "0x53173479E3CB4271Aa9B8d878ffA765386FEaD15",
                         "0x40282d3Cf4890D9806BC1853e97a59C93D813653"
                     ],
-                    "salt": "0xa18e1e51e844f6c0c827b1293e3a82cb115954f386566709c642da492b02d992",
+                    "salt": "0x6dd521938f283c86475b145937b60b3135b0b075afc99e349c20b541032df3ca",
                     "create2": true
                 }
             },
             {
                 "name": "MarketsProxy",
-                "address": "0xE4f8aC93De73678aB4E2572BA603A30701C84745",
+                "address": "0x817A72459eF55D61590F954F7E346219D5D42009",
                 "meta": {
                     "args": [
                         "0x7dcAD72640F835B0FA36EFD3D6d3ec902C7E5acf",
                         "0x40282d3Cf4890D9806BC1853e97a59C93D813653"
                     ],
-                    "salt": "0x6f77a97a9d0794a26011688f17efa386c531e6df851752eced0797e0a4a3bedd",
+                    "salt": "0x519067e70cc55d58a6bc5f01274db239e1e27fd8faedfe70e610bb5728f404c4",
                     "create2": true
                 }
             },
             {
                 "name": "TapiocaDeployer",
-                "address": "0x94360f1f43F3B29faa2d8DE0d57186a742d474e1",
+                "address": "0xEddd79507c9a356701416AB58B8D25Daeb3D2737",
                 "meta": {}
             }
         ],
         "43113": [
             {
                 "name": "ERC20WithoutStrategy-TapOFT",
-                "address": "0x36b1a6560B957EeE4FdEf20CE215a8BBb0d7fD66",
+                "address": "0xB1B0a27953c5f1235Fc991C60634efC87Caf5E04",
                 "meta": {
                     "stratFor": "TapOFT",
                     "args": [
-                        "0xce831cF888cad6e3b5C8C1CC9DBe439f5dF766b9",
-                        "0xa8575aA23b27822c6Fd9781f5F94F9F2f14931a7"
+                        "0x5d5A2211e1D27d4bc4Dc05f75a9423BbAfc27827",
+                        "0x3a2C9f7B9444D8769dAFb798Caf372d15e584a7A"
                     ],
-                    "salt": "0xce3ec43b8b62b3855c518386cc490834d3bd9bdcb618c7ce0f6afb62911add9c",
+                    "salt": "0x96b771479b31c178734aa3168c4fccd61758fe4798d27e95d654a57496d28c4b",
                     "create2": true
                 }
             },
             {
                 "name": "ERC20WithoutStrategy-USDO",
-                "address": "0x2185eBBEc9B1e4183eDeA9ED5698C6de063F9580",
+                "address": "0x89331998F7619bF32b7eCA2d4A08c996B12F2708",
                 "meta": {
                     "stratFor": "USDO",
                     "args": [
-                        "0xce831cF888cad6e3b5C8C1CC9DBe439f5dF766b9",
-                        "0x49353A69036a6b83e5B497C1b596374b26DfA098"
+                        "0x5d5A2211e1D27d4bc4Dc05f75a9423BbAfc27827",
+                        "0x9B2802A6600039801605e64171D8b4F9C5B9b123"
                     ],
-                    "salt": "0xa779496418574bff47f1213e5b7da1f3389f7c1a0fcf36e67990431c7f03884f",
+                    "salt": "0x349a199e491b67c44fc29487eefa267d9ec2ea92640cacee615c6bf0c14c555f",
                     "create2": true
                 }
             },
             {
                 "name": "ERC20WithoutStrategy-TapiocaOFT-Fantom",
-                "address": "0x524452758AA55B5c76F2b640E33e6A5A718B2d96",
+                "address": "0x252E59840fc057B5097DC80Cf3aD659Ba995195c",
                 "meta": {
                     "stratFor": "TapiocaOFT-Fantom",
                     "args": [
-                        "0xce831cF888cad6e3b5C8C1CC9DBe439f5dF766b9",
-                        "0x3399Fe382B099C9549cA164607aC7986766cFE59"
+                        "0x5d5A2211e1D27d4bc4Dc05f75a9423BbAfc27827",
+                        "0x64d6F17B3bb3ba9286CCeC9962bf80987b923C76"
                     ],
-                    "salt": "0x31a70b7a3d0eedc2053a4a2b9d9a1b57a14d06a3406d21a63acc39672614fd3b",
+                    "salt": "0xa41940e75f9bf7e8cefd80e358898f9014bdcd9bb67de9d5a5dcb86c4da8d5fd",
                     "create2": true
                 }
             },
             {
                 "name": "ERC20WithoutStrategy-TapiocaOFT-Polygon",
-                "address": "0x78a09CD3b8346640D036a14D2EecEFa8E60F8e75",
+                "address": "0x350a034498C1Ca5Bd15F311207b48DC0fFb32EF9",
                 "meta": {
                     "stratFor": "TapiocaOFT-Polygon",
                     "args": [
-                        "0xce831cF888cad6e3b5C8C1CC9DBe439f5dF766b9",
-                        "0x07f13E3F7aB3Ce0E82bE2dde8EeBe0301E2084ac"
+                        "0x5d5A2211e1D27d4bc4Dc05f75a9423BbAfc27827",
+                        "0x6D5ed9762143716115438aE4c3dc398B35a05270"
                     ],
-                    "salt": "0xd1599096aeb20d1647c326621dcd15f7e427e995919b9785e0644f500df457eb",
+                    "salt": "0x4dd249ba2d61f1ec9375ea71337827612eb7e250d5cfb0a3eaaf583c18c0386a",
                     "create2": true
                 }
             },
             {
                 "name": "ERC20WithoutStrategy-TapiocaOFT-Avalanche",
-                "address": "0x21E96792FEA8092eE9E0A7BdBbdE29915332956c",
+                "address": "0x15dF686d7Ab90fA0DE00655EF7A2F146DCAa4faa",
                 "meta": {
                     "stratFor": "TapiocaOFT-Avalanche",
                     "args": [
-                        "0xce831cF888cad6e3b5C8C1CC9DBe439f5dF766b9",
-                        "0x80402cC67A1edb6f17d930BCE9fe3C6479FE9Ab6"
+                        "0x5d5A2211e1D27d4bc4Dc05f75a9423BbAfc27827",
+                        "0x9678bB23369b7A35Df0Cf4F274eCA9D852aD2E9F"
                     ],
-                    "salt": "0x620828e51947c39b63e1133af2a2b727c3f16b30ee330ac390af104fe560bb75",
+                    "salt": "0xed4e9e2acfefe4d546b5bca9baa36e4d484d7c177e9d1260ac999d46a372c48a",
                     "create2": true
                 }
             },
             {
                 "name": "ERC20WithoutStrategy-TapiocaOFT-WETHMock",
-                "address": "0x5528FE620ec13bC715bD7e3A983971C44aF7C43c",
+                "address": "0xb6264B22bfFDC78743181d3eFEBd7879F3D968E1",
                 "meta": {
                     "stratFor": "TapiocaOFT-WETHMock",
                     "args": [
-                        "0xce831cF888cad6e3b5C8C1CC9DBe439f5dF766b9",
-                        "0xeDC40259312D0a23943f778974f6d89A9f7Fc31B"
+                        "0x5d5A2211e1D27d4bc4Dc05f75a9423BbAfc27827",
+                        "0x1B0F27df2460eAdcc03dF39Bb54580c5804A9288"
                     ],
-                    "salt": "0x97637ac12e29ac96bb879b2354b0f971b93c06a2b538c18c67dbef514d77fca0",
+                    "salt": "0xf9ac36e751331212b8f9ea5999e53ac61cda0cfdae71922f48a896707c33681a",
                     "create2": true
                 }
             },
             {
                 "name": "YieldBoxURIBuilder",
-                "address": "0xD01E9199fE2F2DE71B901e82Ee029CbF9e461b27",
+                "address": "0x50D39c751A6251566AB91e060Db0b13dE238A559",
                 "meta": {
                     "args": [],
-                    "salt": "0x65710dbab4112acf719e4c4beb84d710ab88ced79d62d731e337fb775a4eb955",
+                    "salt": "0x18b5e696d7660bb6b678d5a5ea4fb97935bb8e71409d6fcf9cd8931328666b75",
                     "create2": true
                 }
             },
             {
                 "name": "YieldBox",
-                "address": "0xce831cF888cad6e3b5C8C1CC9DBe439f5dF766b9",
+                "address": "0x5d5A2211e1D27d4bc4Dc05f75a9423BbAfc27827",
                 "meta": {
                     "args": [
-                        "0xEE10293Eb0d327Df24cd12e2063f7C7ed3d0B2eb",
-                        "0xD01E9199fE2F2DE71B901e82Ee029CbF9e461b27"
+                        "0xb45fB174CFF225E9C122f36BD6218d6E1A308382",
+                        "0x50D39c751A6251566AB91e060Db0b13dE238A559"
                     ],
-                    "salt": "0x86e611b3e543c3dce999c72208e7300158948874edf88a7f9a1699a2e4d49d48",
+                    "salt": "0xd43a9680db9e8ec9e7c71379d3a76984d240adf9bb7e29c2f789a7e6f7278869",
                     "create2": true
                 }
             },
             {
                 "name": "USDO",
-                "address": "0x49353A69036a6b83e5B497C1b596374b26DfA098",
+                "address": "0x9B2802A6600039801605e64171D8b4F9C5B9b123",
                 "meta": {
                     "args": [
                         "0x93f54D755A063cE7bB9e6Ac47Eccc8e33411d706",
-                        "0xce831cF888cad6e3b5C8C1CC9DBe439f5dF766b9",
+                        "0x5d5A2211e1D27d4bc4Dc05f75a9423BbAfc27827",
                         "0x40282d3Cf4890D9806BC1853e97a59C93D813653"
                     ],
-                    "salt": "0x66c349e55e1d1212afb79efa05946a252b992e8e89cc8b7184991767b22e76d9",
+                    "salt": "0x9a6ce5f9124c2aac5fcc679030d9dfd65d9ec0469ba0850b813b4c73bbc5a772",
                     "create2": true
                 }
             },
             {
                 "name": "MarketsProxy",
-                "address": "0x15710FB731E7d06dD71669b95F1BfED9a58eBf8e",
+                "address": "0xbD0418d9a677874e2F381a7b13c9c88e78f8319F",
                 "meta": {
                     "args": [
                         "0x93f54D755A063cE7bB9e6Ac47Eccc8e33411d706",
                         "0x40282d3Cf4890D9806BC1853e97a59C93D813653"
                     ],
-                    "salt": "0xe18bd78cf0c8942fb9fd5c190653441d489a653ff08af22b3edeb53f2d747990",
+                    "salt": "0x4ec69266017dfebe12d705af7dc5e3e80d2cd4d8784dcf9918868811c2b702c4",
                     "create2": true
                 }
             },
             {
                 "name": "TapiocaDeployer",
-                "address": "0xBa605aA5Cf2eCcA435a0E92907c03682397CEeE8",
+                "address": "0xfD6DeBf00fBeF34c63e71f90439D309044E52b4A",
                 "meta": {}
             }
         ],
         "80001": [
             {
                 "name": "ERC20WithoutStrategy-TapOFT",
-                "address": "0xB76E38D37D478033F4A093159EDb15bDa5537f98",
+                "address": "0x628314a05e2A62B0594390967AD8cb76F3622447",
                 "meta": {
                     "stratFor": "TapOFT",
                     "args": [
-                        "0xB8d7C139A9834e67801221fC151Ee84f66F52D97",
-                        "0x2D3b14013dfe669846313E780184FC96C4943900"
+                        "0xf896B2AA1300964755cc4f71C6fB5748412C08bc",
+                        "0x1269665A74CD1E88ca540aB06Fa28Ab54ebbEcF5"
                     ],
-                    "salt": "0x582141dd9573fde1b9e731187f83a36fefc74cc7b195af600c0ffb4fd58a11ff",
+                    "salt": "0xd5d31df7222ae50cb68ac3d9ec7bbe7b1e4592812b0c38347105b62f32bd2c94",
                     "create2": true
                 }
             },
             {
                 "name": "ERC20WithoutStrategy-USDO",
-                "address": "0x6A1f5ee2bF7b5E7Ae5ebef97F5750E3BC05c1264",
+                "address": "0x6AcD7Ba2775d4b13f8c7fA6c7573Fa1dfAe54a02",
                 "meta": {
                     "stratFor": "USDO",
                     "args": [
-                        "0xB8d7C139A9834e67801221fC151Ee84f66F52D97",
-                        "0x64a68a81036Bca31c2d0cc3361f14b4eed3Faf28"
+                        "0xf896B2AA1300964755cc4f71C6fB5748412C08bc",
+                        "0xC8f0A0AeEAb81C1B8AF346967194b21B5ddB23e3"
                     ],
-                    "salt": "0x7b9581ee1e3d73369dd5816faccb55cc4793e67bd5267985c86951f23a983cc1",
+                    "salt": "0x74ca15253143b31c1382d59d31df99054113327a1eea8fbf2f2b40c5bf7d5f92",
                     "create2": true
                 }
             },
             {
                 "name": "ERC20WithoutStrategy-TapiocaOFT-Fantom",
-                "address": "0xb244b9cCc6c64B3a60731f6f4D0f3637a8D4B96A",
+                "address": "0x0E5D8eFf9842cfF0146883171ADF441d5692BbA5",
                 "meta": {
                     "stratFor": "TapiocaOFT-Fantom",
                     "args": [
-                        "0xB8d7C139A9834e67801221fC151Ee84f66F52D97",
-                        "0x1b6d1aCddEcC27b47bff64D3EC921903AC01B241"
+                        "0xf896B2AA1300964755cc4f71C6fB5748412C08bc",
+                        "0x516AB54bA5D69E74428318e7684A099e38a12bbe"
                     ],
-                    "salt": "0xe1e0654e3f421032a5ab1aeaad3fd77eaee5116577e42d911a9e26a796c7a575",
+                    "salt": "0x93c4efb1e62ccc2d54890d2fb4d53d39c692c40ad55ed7cd6507affa7d078ae9",
                     "create2": true
                 }
             },
             {
                 "name": "ERC20WithoutStrategy-TapiocaOFT-Polygon",
-                "address": "0xfFEe644A6524AAF9E110c045eFa688B0f46C869D",
+                "address": "0xe3CF17F3A91290C7ac912C04087124E0b5ff296a",
                 "meta": {
                     "stratFor": "TapiocaOFT-Polygon",
                     "args": [
-                        "0xB8d7C139A9834e67801221fC151Ee84f66F52D97",
-                        "0xF09Ca45019a3930125761aa119Cde8a820fd2bdA"
+                        "0xf896B2AA1300964755cc4f71C6fB5748412C08bc",
+                        "0x7C13Efd04f6Ec25d360e9eE2B7deBbf05E579c0c"
                     ],
-                    "salt": "0x3e12e937457ec7a12dc5c16fbbe26fb1bc1be74a47b5ee8d6636bed907010451",
+                    "salt": "0x9875f95ebfc36d2fe23c3be8237ef297343ea71dec4b157dd50e3c9f449dc94b",
                     "create2": true
                 }
             },
             {
                 "name": "ERC20WithoutStrategy-TapiocaOFT-Avalanche",
-                "address": "0x43D5F6259cccD08CC4d9018000E2D29f12D777bb",
+                "address": "0x1E28dc8fCF99685e6e06F685aDa856ec93d98bA5",
                 "meta": {
                     "stratFor": "TapiocaOFT-Avalanche",
                     "args": [
-                        "0xB8d7C139A9834e67801221fC151Ee84f66F52D97",
-                        "0xC042803c8eED274FE5cd00385ca24520329B9A5f"
+                        "0xf896B2AA1300964755cc4f71C6fB5748412C08bc",
+                        "0x31AB73f4bf37F82d9D0E579674a8751C9D097E7f"
                     ],
-                    "salt": "0x9c2b178b86eab16cf2889857788445b4d09f6494d70af5818cffcc10cbdb3d43",
+                    "salt": "0xf88d71674780da0d86de403b666342feb65193b90a9d90b327d6e767c2ba7fd7",
                     "create2": true
                 }
             },
             {
                 "name": "ERC20WithoutStrategy-TapiocaOFT-WETHMock",
-                "address": "0xc1A3DD3b692546410a4857d2e94edAB32C0FDB82",
+                "address": "0xe5D6d73DcD184A7a6F478c08B0c1E243FdC7885B",
                 "meta": {
                     "stratFor": "TapiocaOFT-WETHMock",
                     "args": [
-                        "0xB8d7C139A9834e67801221fC151Ee84f66F52D97",
-                        "0xB547E802040091b5cFA25c31C64e7146a92E2f03"
+                        "0xf896B2AA1300964755cc4f71C6fB5748412C08bc",
+                        "0x90734dBC046ffa2a93a92CE01F0eB84bdD842751"
                     ],
-                    "salt": "0x29f431d8bacfca78b0579c5b080f5518acad2850cbd691c83812c977c82a0a04",
+                    "salt": "0x8c60316b95944d7e9b3f719260a742322fbcabe1ed86f674b918c1bfec060eaf",
                     "create2": true
                 }
             },
             {
                 "name": "YieldBoxURIBuilder",
-                "address": "0xb603413a8446055cBc3c5b21BecF28cE3BF631FF",
+                "address": "0xc08190F84250Efd005FE0E4D82D0d5231C44D6E3",
                 "meta": {
                     "args": [],
-                    "salt": "0x32abbff64148aa0410beddc10202f04a24bc7a5b721396d04199b792d9312177",
+                    "salt": "0x1936caf86520a34812477128500270f860eb0d590d1124c38202e646b0880c79",
                     "create2": true
                 }
             },
             {
                 "name": "YieldBox",
-                "address": "0xB8d7C139A9834e67801221fC151Ee84f66F52D97",
+                "address": "0xf896B2AA1300964755cc4f71C6fB5748412C08bc",
                 "meta": {
                     "args": [
-                        "0x9394A42324E5907a325ebAEB1e46d5750B02ecc4",
-                        "0xb603413a8446055cBc3c5b21BecF28cE3BF631FF"
+                        "0xEa71Dc040453d13B735D5054d525dBE4dA56361f",
+                        "0xc08190F84250Efd005FE0E4D82D0d5231C44D6E3"
                     ],
-                    "salt": "0xfccc4926696476b82415f9e3a9f7fedefd692845d0328f44cbe53d077e2ef95f",
+                    "salt": "0x8c1c3dd33276fe56a4f36f5b6e881193136534bad8a34c4f122aa34a017fa289",
                     "create2": true
                 }
             },
             {
                 "name": "USDO",
-                "address": "0x64a68a81036Bca31c2d0cc3361f14b4eed3Faf28",
+                "address": "0xC8f0A0AeEAb81C1B8AF346967194b21B5ddB23e3",
                 "meta": {
                     "args": [
                         "0xf69186dfBa60DdB133E91E9A4B5673624293d8F8",
-                        "0xB8d7C139A9834e67801221fC151Ee84f66F52D97",
+                        "0xf896B2AA1300964755cc4f71C6fB5748412C08bc",
                         "0x40282d3Cf4890D9806BC1853e97a59C93D813653"
                     ],
-                    "salt": "0xcfa11fcaeb5e9474ed1d51ba00256a4a869a6c9ad565051192fd70f2dd883174",
+                    "salt": "0x92ed860eaa751f1c38226d4b961c873f7447c87598534576a63740debe1b8bf5",
                     "create2": true
                 }
             },
             {
                 "name": "MarketsProxy",
-                "address": "0x87588D72d538B263Fa004b67d52aC80ef0249A88",
+                "address": "0x022f043aCd978781C995B217285f0d7B943B0660",
                 "meta": {
                     "args": [
                         "0xf69186dfBa60DdB133E91E9A4B5673624293d8F8",
                         "0x40282d3Cf4890D9806BC1853e97a59C93D813653"
                     ],
-                    "salt": "0xa4a4cd37a7ab2fb63bd17af527d98bd90bd34ff429e6c7e5295c2e0c5d8a0097",
+                    "salt": "0x883f7351b824f18283697d93bf9e8f9f85137baa76033de29b87c33331d2f95d",
                     "create2": true
                 }
             },
             {
                 "name": "TapiocaDeployer",
-                "address": "0x38c3085975A0cCd5832673EB7d8fc1115046781c",
+                "address": "0x8ECC03Cb9573e492C4eB8A65458589D497F4bFCb",
                 "meta": {}
             }
         ],
         "421613": [
             {
                 "name": "Tapioca Singularity TapiocaOFT-WETHMock/USDO-OracleMock-TapiocaOFT-WETHMock",
-                "address": "0xa7e73052f4d5D9049e8E9d50AB84CA2fA718a927",
+                "address": "0x4302FC348f8DBe38d34b633d246Ce3aa7b0B573E",
                 "meta": {
                     "isSGLMarket": true,
                     "collateral": {
-                        "collateralAddress": "0xdA75b97A4768c4B98fD50da6f2Aa834Cad0e6fc8",
-                        "collateralStrategyAddress": "0xb759B5Cbcc31A53eAB1389AbF38a606306b2Bac6"
+                        "collateralAddress": "0xFFe362bA3776e26FE42A467ED7f3E32181487b17",
+                        "collateralStrategyAddress": "0x9062Da35102E60304C486012c02965263CE19C24"
                     },
                     "asset": {
-                        "assetAddress": "0x5326CCad9D030e533d372bFAF2a09BEEDD6F3F2f",
-                        "assetStrategyAddress": "0x830B2032ed37b283933fE15de08D24733f217D89"
+                        "assetAddress": "0xBd2FB1328f8Ef95CeFAa9264f3DEB6b3Fa42323a",
+                        "assetStrategyAddress": "0x5221FCF85E71cc7F9757023D278a7E65C68650ec"
                     }
                 }
             },
             {
                 "name": "OracleMock-TapiocaOFT-WETHMock",
-                "address": "0x0294eECB174eb11d2037A4E7C04e9C1B7f7416E0",
+                "address": "0xD78fD703EB72D89f41D4f62A04Bbf9F15875FBAC",
                 "meta": {
                     "args": [
                         "OracleMock-TapiocaOFT-WETHMock",
@@ -421,28 +421,28 @@
                             "hex": "0x012edc9ab5d000"
                         }
                     ],
-                    "salt": "0x38ac532fc3849a97fc15d25004fdf8dd2a825c48d2d257d1a4a8919eda3a951e",
+                    "salt": "0x172dc1ff062e35d2107d8de1f35cd3f63a9d9de540f4dbf54811b3fadd50adc3",
                     "create2": true
                 }
             },
             {
                 "name": "Tapioca Singularity TapiocaOFT-Avalanche/USDO-OracleMock-TapiocaOFT-Avalanche",
-                "address": "0x10140cfe6238705BeCCD5321b9715E06D1b99659",
+                "address": "0x83Ce0b761D4F31e246cbe738b918e7113547530b",
                 "meta": {
                     "isSGLMarket": true,
                     "collateral": {
-                        "collateralAddress": "0x394396cD83Fd31b0c0bdd7416964Ca5784219Be0",
-                        "collateralStrategyAddress": "0x2b10533CA98ea227aa042a04E9B56b07691cB710"
+                        "collateralAddress": "0x827D9022014928478e384c5A1AAF0A63bCC908c1",
+                        "collateralStrategyAddress": "0x96Ce1Db9167355168E1f016BD1bE03722B9E5cCF"
                     },
                     "asset": {
-                        "assetAddress": "0x5326CCad9D030e533d372bFAF2a09BEEDD6F3F2f",
-                        "assetStrategyAddress": "0x830B2032ed37b283933fE15de08D24733f217D89"
+                        "assetAddress": "0xBd2FB1328f8Ef95CeFAa9264f3DEB6b3Fa42323a",
+                        "assetStrategyAddress": "0x5221FCF85E71cc7F9757023D278a7E65C68650ec"
                     }
                 }
             },
             {
                 "name": "OracleMock-TapiocaOFT-Avalanche",
-                "address": "0xb203367fB67A837F041610f78006cDF57F247EBD",
+                "address": "0x3aF622AeE3800743C2994bA559500719da4AEdC7",
                 "meta": {
                     "args": [
                         "OracleMock-TapiocaOFT-Avalanche",
@@ -452,28 +452,28 @@
                             "hex": "0xc970597ec3c000"
                         }
                     ],
-                    "salt": "0xff8a241617027cb613b7985273b031ab45886cf402e1ed64e78e0f72f27c90ce",
+                    "salt": "0x69dd860742c01f700cdcafe86535f53746c137a056d88172fdc844eadc645064",
                     "create2": true
                 }
             },
             {
                 "name": "Tapioca Singularity TapiocaOFT-Polygon/USDO-OracleMock-TapiocaOFT-Polygon",
-                "address": "0xD1C4FB37443d3Cfc6024c5919340887BcD71E452",
+                "address": "0x35fF8Ba3e7Fa5246089F7523df5539cE42A26b59",
                 "meta": {
                     "isSGLMarket": true,
                     "collateral": {
-                        "collateralAddress": "0x3814FF0Cb1a936eC2765D706121aFdAC5E82Db3F",
-                        "collateralStrategyAddress": "0x60833de2438C0Ee36c6099FEeD0Ab6748AF5f2C9"
+                        "collateralAddress": "0xA716c891ae41b1097EC6fAd14f33842a26074C76",
+                        "collateralStrategyAddress": "0xA2916B1BFFABDf2Ba407692919410C46114d8783"
                     },
                     "asset": {
-                        "assetAddress": "0x5326CCad9D030e533d372bFAF2a09BEEDD6F3F2f",
-                        "assetStrategyAddress": "0x830B2032ed37b283933fE15de08D24733f217D89"
+                        "assetAddress": "0xBd2FB1328f8Ef95CeFAa9264f3DEB6b3Fa42323a",
+                        "assetStrategyAddress": "0x5221FCF85E71cc7F9757023D278a7E65C68650ec"
                     }
                 }
             },
             {
                 "name": "OracleMock-TapiocaOFT-Polygon",
-                "address": "0x33EfD52479fEBC2001c9d16d9705417d9cA564b6",
+                "address": "0xDf64de348F579099E6D7C8eDc971B9EA1f83a1d5",
                 "meta": {
                     "args": [
                         "OracleMock-TapiocaOFT-Polygon",
@@ -483,28 +483,28 @@
                             "hex": "0x0853a0d2313c0000"
                         }
                     ],
-                    "salt": "0xce473b43544000e7849e89191781a28307fd7d9bbda82b9750064a77f6f8b890",
+                    "salt": "0x43e9beeb49bd6af3b69bc0f6d77467ff8f9342f63094de91ac3a4c212a8080a3",
                     "create2": true
                 }
             },
             {
                 "name": "Tapioca Singularity TapiocaOFT-Fantom/USDO-OracleMock-TapiocaOFT-Fantom",
-                "address": "0xCa2E70ca96a0177233cc3F98e5f616e166349E6d",
+                "address": "0xE2C21Ac2BAB5C0883F5C070aD5E012698edef01A",
                 "meta": {
                     "isSGLMarket": true,
                     "collateral": {
-                        "collateralAddress": "0xbA6055a0ac96bA744924521F7a9C2C6d6719bb8C",
-                        "collateralStrategyAddress": "0x4953716d4742d8EbD00762eF8DCE57b8d5DE77B0"
+                        "collateralAddress": "0x4A7e99Ec46B3517b436fFF7aE830D67D4D1b5814",
+                        "collateralStrategyAddress": "0xc45BD92779D9b10D37F0CABebE9F619be041f051"
                     },
                     "asset": {
-                        "assetAddress": "0x5326CCad9D030e533d372bFAF2a09BEEDD6F3F2f",
-                        "assetStrategyAddress": "0x830B2032ed37b283933fE15de08D24733f217D89"
+                        "assetAddress": "0xBd2FB1328f8Ef95CeFAa9264f3DEB6b3Fa42323a",
+                        "assetStrategyAddress": "0x5221FCF85E71cc7F9757023D278a7E65C68650ec"
                     }
                 }
             },
             {
                 "name": "OracleMock-TapiocaOFT-Fantom",
-                "address": "0x528b80b6a65DD7cB6e437ef41897c7e4001a2bd9",
+                "address": "0x28419FE02b98bB614faAEb09EC2322e29fb0BBA0",
                 "meta": {
                     "args": [
                         "OracleMock-TapiocaOFT-Fantom",
@@ -514,207 +514,207 @@
                             "hex": "0x0853a0d2313c0000"
                         }
                     ],
-                    "salt": "0x07238ee5015cec14cf3b15db04ded4239f38e923a0bf8c4c0cfdd571b3eaefb7",
+                    "salt": "0xb09143ab7e560667dc51dc54d659e86e3bb1ab3011304b7481a97b27d9a2a666",
                     "create2": true
                 }
             },
             {
                 "name": "ERC20WithoutStrategy-TapiocaOFT-Fantom",
-                "address": "0x4953716d4742d8EbD00762eF8DCE57b8d5DE77B0",
+                "address": "0xc45BD92779D9b10D37F0CABebE9F619be041f051",
                 "meta": {
                     "stratFor": "TapiocaOFT-Fantom",
                     "args": [
-                        "0x3c5516976396A45734D0380eE7D6D91606A6D0CE",
-                        "0xbA6055a0ac96bA744924521F7a9C2C6d6719bb8C"
+                        "0x6fE8F6605C03a48e7D38730277CE972bf61656E8",
+                        "0x4A7e99Ec46B3517b436fFF7aE830D67D4D1b5814"
                     ],
-                    "salt": "0xe46ef04a3cf8ab072f72b5a9fe08f44b0c7a925b0c843d4d005569d20bc1613e",
+                    "salt": "0x5b7fcddf8782b46a5668654b371e3cacf3d7df7bbc367806462bd40197698b48",
                     "create2": true
                 }
             },
             {
                 "name": "ERC20WithoutStrategy-TapiocaOFT-Polygon",
-                "address": "0x60833de2438C0Ee36c6099FEeD0Ab6748AF5f2C9",
+                "address": "0xA2916B1BFFABDf2Ba407692919410C46114d8783",
                 "meta": {
                     "stratFor": "TapiocaOFT-Polygon",
                     "args": [
-                        "0x3c5516976396A45734D0380eE7D6D91606A6D0CE",
-                        "0x3814FF0Cb1a936eC2765D706121aFdAC5E82Db3F"
+                        "0x6fE8F6605C03a48e7D38730277CE972bf61656E8",
+                        "0xA716c891ae41b1097EC6fAd14f33842a26074C76"
                     ],
-                    "salt": "0x322ec10e2bfeb3e95f21d8389f2290c3fb337b95211852923ff8b08dcf4ca4d6",
+                    "salt": "0x77e3c57cb10c295103a93e48c8b89e53a48d6f7a5a2454206b31b4a68627e338",
                     "create2": true
                 }
             },
             {
                 "name": "ERC20WithoutStrategy-TapiocaOFT-Avalanche",
-                "address": "0x2b10533CA98ea227aa042a04E9B56b07691cB710",
+                "address": "0x96Ce1Db9167355168E1f016BD1bE03722B9E5cCF",
                 "meta": {
                     "stratFor": "TapiocaOFT-Avalanche",
                     "args": [
-                        "0x3c5516976396A45734D0380eE7D6D91606A6D0CE",
-                        "0x394396cD83Fd31b0c0bdd7416964Ca5784219Be0"
+                        "0x6fE8F6605C03a48e7D38730277CE972bf61656E8",
+                        "0x827D9022014928478e384c5A1AAF0A63bCC908c1"
                     ],
-                    "salt": "0x644cbb2137d2fe6edf27af6e9d163d8d1b62d8ee79752a8311185d194d2ecd16",
+                    "salt": "0x8cbea8f342f0d3548c8ace292723efb00cb2066201d18e8547dbcf33b9c2975c",
                     "create2": true
                 }
             },
             {
                 "name": "ERC20WithoutStrategy-TapiocaOFT-WETHMock",
-                "address": "0xb759B5Cbcc31A53eAB1389AbF38a606306b2Bac6",
+                "address": "0x9062Da35102E60304C486012c02965263CE19C24",
                 "meta": {
                     "stratFor": "TapiocaOFT-WETHMock",
                     "args": [
-                        "0x3c5516976396A45734D0380eE7D6D91606A6D0CE",
-                        "0xdA75b97A4768c4B98fD50da6f2Aa834Cad0e6fc8"
+                        "0x6fE8F6605C03a48e7D38730277CE972bf61656E8",
+                        "0xFFe362bA3776e26FE42A467ED7f3E32181487b17"
                     ],
-                    "salt": "0x3b19eaa9629195874d565b7c3703d8ac2330041b353b5599ab02a495f84c80fd",
+                    "salt": "0x2c91199de2760942ad18e1239d4da2415b75285863c44c13ebe32e873043641c",
                     "create2": true
                 }
             },
             {
                 "name": "YieldBoxURIBuilder",
-                "address": "0xf7dD4640ff0e955E816729952a7108bC510c971a",
+                "address": "0x1B4D41412706cc6E07DA86cf24dd0a3F11f4b88B",
                 "meta": {
                     "args": [],
-                    "salt": "0xfd0df4af9c65966741ec10b4b63ba6d5974edaeb365d4e5b8ef4c77f4ead5590",
+                    "salt": "0x77f7ae639023a5cf93172b2052f9913935569b0ee3ec59ed513f4cb072d2ad74",
                     "create2": true
                 }
             },
             {
                 "name": "YieldBox",
-                "address": "0x3c5516976396A45734D0380eE7D6D91606A6D0CE",
+                "address": "0x6fE8F6605C03a48e7D38730277CE972bf61656E8",
                 "meta": {
                     "args": [
-                        "0x5B217e2d8301F41f55Bd7058134fc300B09C26D9",
-                        "0xf7dD4640ff0e955E816729952a7108bC510c971a"
+                        "0xE8DB2A17F8CF7F9BC4b28F7aDA908244341b5184",
+                        "0x1B4D41412706cc6E07DA86cf24dd0a3F11f4b88B"
                     ],
-                    "salt": "0xaa89836cfd2649f7036a0b51c6861e6a782460156c39fa56d81cb53b5dc6a2a2",
+                    "salt": "0xc270eb7845d67845abf1a9e738838602072b8872368db724b270c7271d721b21",
                     "create2": true
                 }
             },
             {
                 "name": "Penrose",
-                "address": "0x393467d5384F38744c18f4a9BbF53cfF707B9E55",
+                "address": "0x94298D8762b9e322D1B6523935bA9bcF6CfC7865",
                 "meta": {
                     "args": [
-                        "0x3c5516976396A45734D0380eE7D6D91606A6D0CE",
-                        "0xcDB4AD3Cf26Bd88ee2A9dD493b325B72A86f27be",
-                        "0x5B217e2d8301F41f55Bd7058134fc300B09C26D9",
+                        "0x6fE8F6605C03a48e7D38730277CE972bf61656E8",
+                        "0x270217FB04682439AC892C6E8A0C2Df3038aE273",
+                        "0xE8DB2A17F8CF7F9BC4b28F7aDA908244341b5184",
                         "0x40282d3Cf4890D9806BC1853e97a59C93D813653"
                     ],
-                    "salt": "0x09d5f5e0607315f955255919744ed3f94192ea94bbac0978ceca3492b635c15f",
+                    "salt": "0xb4fbe3ebb840827d499f397ad2feddb72094628a1ef002bb67c5a6a3f99f551b",
                     "create2": true
                 }
             },
             {
                 "name": "MediumRiskMC",
-                "address": "0xAF82409bD334B9DB82Cb2f71cF6d54Aa682Bd4eB",
+                "address": "0xEF76851cD5Df565F5C04985932c61a145273a4Ec",
                 "meta": {
                     "args": [],
-                    "salt": "0x7d1a850562c351867cda84369d1d8010845f41fb7db5ec75fda7c71377e918ac",
+                    "salt": "0xa60a1230983a8e89a2b8c87af001359bc9686e01d452ac265aaef735c1e0738c",
                     "create2": true
                 }
             },
             {
                 "name": "BigBangMediumRiskMC",
-                "address": "0x2211571dF1Ac2Ad492e14a1546B326C7C04b9155",
+                "address": "0x0BadC3FfF98dcd3b1E4af89519566EFf13C7E651",
                 "meta": {
                     "args": [],
-                    "salt": "0x167caebe91d77b0cb96c141068ac1ebc9c788518b5465361e38d3c19f42b47c0",
+                    "salt": "0x4d158d08ac9a78ef3a003c09cb99cbe981bb10921714ddf1e0b464fb407653cc",
                     "create2": true
                 }
             },
             {
                 "name": "MarketsHelper",
-                "address": "0x8dDdF8689Ca630B6476e0edf80e821542E5430B1",
+                "address": "0x5368fc49Bab2e85cE78748Dd64E14b89D3a36f92",
                 "meta": {
                     "args": [],
-                    "salt": "0x1f5ac94c5000d3a3a33daf1f35fd1a840d7df0ea07ebc494fa344a385ee1f5ba",
+                    "salt": "0xca131769f84fcb17131e6eae1ff050495c0be1d68508180be7f7d6993c86f0c2",
                     "create2": true
                 }
             },
             {
                 "name": "MultiSwapper",
-                "address": "0xC172e0e29914ca19f67e8cCe48D832018B03bE6F",
+                "address": "0x9751216513fA4Cb3ad2974AeE0fBE75A14b2D903",
                 "meta": {
                     "args": [
                         "0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f",
-                        "0x393467d5384F38744c18f4a9BbF53cfF707B9E55",
+                        "0x94298D8762b9e322D1B6523935bA9bcF6CfC7865",
                         "0x68ddfd89d43db94fbd68a4abd2861ebcbfea56c0fd36334bbb95f0661c3171a2"
                     ],
-                    "salt": "0x59b4f244d8c049833bc51b5cb511a16d7d0570e8a5997289d60f4fd590e26f2c",
+                    "salt": "0xd6def14f65bdb553484e17f31a81a432e5b2bda4d3e3c3e0e85bc60712725a4d",
                     "create2": true
                 }
             },
             {
                 "name": "SGLLiquidation",
-                "address": "0xa74B3df20fcF565f7e092784E99734C6B6Ad80D8",
+                "address": "0x318F6551255A8Af719E43DfFaAcc46E635dDCaf0",
                 "meta": {
                     "args": [],
-                    "salt": "0x5dc210819f19c5f66bacbd75ca8ac2357b2935d7b00d55005a38b95e4640cdc8",
+                    "salt": "0xa3d7be7564b1e6f66ad60c01c5952c0c26ff21e34eae7c1c56770e30262a765f",
                     "create2": true
                 }
             },
             {
                 "name": "SGLLendingBorrowing",
-                "address": "0x870477bEE97D7E627E96808d54Cfab376c7E6672",
+                "address": "0xD5d47BbD306bd95244109F980fD6035EcAbF4c21",
                 "meta": {
                     "args": [],
-                    "salt": "0xfebb3c05cc4cf8f90af7a9c76e78702e8ca4f9831f83f9585e4c67d12a0e418c",
+                    "salt": "0x77922193f2ec56a61b80252458b3d5e82acb094f1fe854a6d5fe910b1fa6d655",
                     "create2": true
                 }
             },
             {
                 "name": "USDO",
-                "address": "0x5326CCad9D030e533d372bFAF2a09BEEDD6F3F2f",
+                "address": "0xBd2FB1328f8Ef95CeFAa9264f3DEB6b3Fa42323a",
                 "meta": {
                     "args": [
                         "0x6aB5Ae6822647046626e83ee6dB8187151E1d5ab",
-                        "0x3c5516976396A45734D0380eE7D6D91606A6D0CE",
+                        "0x6fE8F6605C03a48e7D38730277CE972bf61656E8",
                         "0x40282d3Cf4890D9806BC1853e97a59C93D813653"
                     ],
-                    "salt": "0x4cfe05f21dcd47024974db696fecefdf507748c39f836cb7c4433f6916bd08e9",
+                    "salt": "0x98775e8c2ce85587ce0a800876f87ced76e0f4b04c6eca20622927ebcc7d42d9",
                     "create2": true
                 }
             },
             {
                 "name": "CurveSwapper",
-                "address": "0xECDcC0cd6663CaaDc45486b41ba1998a4E39ae58",
+                "address": "0x3C1Be497E9F60e2047Ee0342321d4Ad4Af8A1831",
                 "meta": {
                     "args": [
                         "0x803147a1f65f9b838e7be39bac1a4f51e6d29a18",
-                        "0x393467d5384F38744c18f4a9BbF53cfF707B9E55"
+                        "0x94298D8762b9e322D1B6523935bA9bcF6CfC7865"
                     ],
-                    "salt": "0xceac5e2920f79812ef8c865fcad363fb4d0927c3fcf0ea7a11cc82f5e6e7f745",
+                    "salt": "0x518af5d757739c3c670b9d78748e76f8586934098239e04da4d8395bdd753fe3",
                     "create2": true
                 }
             },
             {
                 "name": "CurveStableToUsdoBidder",
-                "address": "0x55Bf5fCb14CBDb8dBF748ad347147331C6068D21",
+                "address": "0x6F2300ebaB04f9f8786EA983c38f29Be23c25469",
                 "meta": {
                     "args": [
-                        "0xECDcC0cd6663CaaDc45486b41ba1998a4E39ae58",
+                        "0x3C1Be497E9F60e2047Ee0342321d4Ad4Af8A1831",
                         "4"
                     ],
-                    "salt": "0x3afbd447f26d2fd1e393c91ecbe827b989df3b91b092a845df2ab1ba48b3c1ae",
+                    "salt": "0xe92f4948b0fab6421b1c78660c8bc49ff4b036a743f77933bed3093f6935e796",
                     "create2": true
                 }
             },
             {
                 "name": "MarketsProxy",
-                "address": "0x888deef90C7DAe555f279b8B714673C711e0DD52",
+                "address": "0x4e31af2a5D9Fc5aC5297bEc3611f65066499A2A5",
                 "meta": {
                     "args": [
                         "0x6aB5Ae6822647046626e83ee6dB8187151E1d5ab",
                         "0x40282d3Cf4890D9806BC1853e97a59C93D813653"
                     ],
-                    "salt": "0x4ceeb0cd9de40e7529af42165d56386506a5660845c5f0ba6e196efca408de32",
+                    "salt": "0xc01284ffbea94cc5f39f7abefe3ea44ab5fedb105dff1dd3ba8f1124e67a4d4d",
                     "create2": true
                 }
             },
             {
                 "name": "TapiocaDeployer",
-                "address": "0x2fF0Bc1b17d23ac927164C4C229D6b9FfEF3e236",
+                "address": "0x6F24aAa0696F365A20A0E4762a9056E04eFF5837",
                 "meta": {}
             }
         ]
