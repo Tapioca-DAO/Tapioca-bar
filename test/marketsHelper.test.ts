@@ -1262,7 +1262,8 @@ describe('MarketsHelper test', () => {
                 await yieldBox.toShare(assetHostId, assetMintVal, false),
             );
         });
-        it.only('should deposit, and borrow through Magnetar', async () => {
+
+        it('should deposit, and borrow through Magnetar', async () => {
             const {
                 yieldBox,
                 eoa1,
@@ -1544,7 +1545,7 @@ describe('MarketsHelper test', () => {
                 ['uint16', 'uint', 'uint', 'address'],
                 [
                     2, //it needs to be 2
-                    800000, //extra gas limit; min 200k
+                    913_823, //extra gas limit; min 200k
                     ethers.utils.parseEther('2.678'), //amount of eth to airdrop
                     marketsHelper.address,
                 ],
@@ -1585,7 +1586,6 @@ describe('MarketsHelper test', () => {
                 ethers.constants.MaxUint256,
             );
 
-            hre.tracer.enabled = true;
             await magnetar.connect(deployer).burst(
                 [
                     {
@@ -1602,23 +1602,23 @@ describe('MarketsHelper test', () => {
             );
             hre.tracer.enabled = false;
 
-            console.log(`deployer      ${deployer.address}`);
-            console.log(`mhelper       ${marketsHelper.address}`);
-            console.log(`magnetar      ${magnetar.address}`);
-            console.log(`market        ${assetCollateralSingularity.address}`);
-            console.log(`assetHost     ${assetHost.address}`);
-            console.log(`assetLinked   ${assetLinked.address}`);
+            // console.log(`deployer      ${deployer.address}`);
+            // console.log(`mhelper       ${marketsHelper.address}`);
+            // console.log(`magnetar      ${magnetar.address}`);
+            // console.log(`market        ${assetCollateralSingularity.address}`);
+            // console.log(`assetHost     ${assetHost.address}`);
+            // console.log(`assetLinked   ${assetLinked.address}`);
 
-            console.log(
-                `assetLinked  balance  ${await assetLinked.balanceOf(
-                    deployer.address,
-                )}`,
-            );
-            console.log(
-                `assetHost    balance  ${await assetHost.balanceOf(
-                    deployer.address,
-                )}`,
-            );
+            // console.log(
+            //     `assetLinked  balance  ${await assetLinked.balanceOf(
+            //         deployer.address,
+            //     )}`,
+            // );
+            // console.log(
+            //     `assetHost    balance  ${await assetHost.balanceOf(
+            //         deployer.address,
+            //     )}`,
+            // );
 
             expect(await assetLinked.balanceOf(deployer.address)).to.be.eq(
                 borrowAmount,
@@ -1903,6 +1903,16 @@ describe('MarketsHelper test', () => {
                 '0x',
             );
 
+            const airdropAdapterParams = ethers.utils.solidityPack(
+                ['uint16', 'uint', 'uint', 'address'],
+                [
+                    2, //it needs to be 2
+                    1_000_000, //extra gas limit; min 200k
+                    ethers.utils.parseEther('2.678'), //amount of eth to airdrop
+                    marketsHelper.address,
+                ],
+            );
+
             // Execute
             await collateralLinked.freeMint(
                 deployer.address,
@@ -1913,6 +1923,7 @@ describe('MarketsHelper test', () => {
                 deployer.address,
                 deployer.address,
                 1,
+                airdropAdapterParams,
                 {
                     amount: collateralMintVal,
                     borrowAmount,
@@ -1932,7 +1943,7 @@ describe('MarketsHelper test', () => {
                     zroPaymentAddress: deployer.address,
                 },
                 [permitBorrowStruct, permitLendStruct],
-                { value: ethers.utils.parseEther('2') },
+                { value: ethers.utils.parseEther('10') },
             );
             expect(await assetLinked.balanceOf(deployer.address)).to.be.eq(
                 borrowAmount,
