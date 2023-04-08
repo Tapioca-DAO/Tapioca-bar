@@ -250,7 +250,11 @@ task(
 task('airdropGas', 'Airdrop gas to msg.sender', airdropGas__task)
     .addParam('amount', 'Amount of gas to airdrop')
     .addParam('dstChain', 'Destination chain id')
-    .addParam('dstAddress', 'Destination address');
+    .addParam('dstAddress', 'Destination address')
+    .addOptionalParam(
+        'recursive',
+        'Number of time the airdrop should be called',
+    );
 
 task(
     'testCrossChainBorrow',
