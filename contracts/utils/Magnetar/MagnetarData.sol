@@ -19,6 +19,7 @@ abstract contract MagnetarData {
     uint16 internal constant TOFT_SEND_YB = 15;
     uint16 internal constant TOFT_RETRIEVE_YB = 16;
     uint16 internal constant HELPER_LEND = 17;
+    uint16 internal constant HELPER_BORROW = 18;
 
     struct Call {
         uint16 id;

@@ -692,6 +692,7 @@ describe('MarketsProxy', () => {
                 usdoBorrowVal.div(2),
                 true,
                 true,
+                true,
                 encodeMarketHelperWithdrawData(false, 0, eoa1.address, '0x00'),
                 {
                     value: ethers.utils.parseEther('10'),
@@ -719,6 +720,7 @@ describe('MarketsProxy', () => {
                 eoa1.address,
                 wethDepositAmount,
                 usdoBorrowVal.div(2),
+                true,
                 true,
                 true,
                 withdrawData,

@@ -115,6 +115,18 @@ abstract contract MagnetarActionsData {
         address from;
         uint256 amount;
         bool deposit;
+        bool extractFromSender;
+    }
+
+    struct HelperBorrowData {
+        address market;
+        address user;
+        uint256 collateralAmount;
+        uint256 borrowAmount;
+        bool extractFromSender;
+        bool deposit;
+        bool withdraw;
+        bytes withdrawData;
     }
 }
 
@@ -142,11 +154,23 @@ interface IPermitAll {
 }
 
 interface IHelperOperations {
+    function depositAddCollateralAndBorrow(
+        IMarket market,
+        address _user,
+        uint256 _collateralAmount,
+        uint256 _borrowAmount,
+        bool extractFromSender,
+        bool deposit_,
+        bool withdraw_,
+        bytes calldata _withdrawData
+    ) external payable;
+
     function depositAndAddAsset(
         ISingularity singularity,
         address _user,
         uint256 _amount,
-        bool deposit_
+        bool deposit_,
+        bool extractFromSender
     ) external;
 }
 
