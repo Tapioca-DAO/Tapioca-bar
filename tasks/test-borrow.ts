@@ -51,29 +51,36 @@ export const testCrossChainBorrow__task = async (
     // Load USDO on fromChain
     const usdo__from__dep = hre.SDK.db
         .loadGlobalDeployment(tag, 'tapioca-bar', fromChain.chainId)
-        .find((e) => e.name.toLowerCase().includes('usdo'));
+        .find((e) => e.name.toLowerCase() === 'usdo');
 
     if (!usdo__from__dep)
         throw new Error(`[-] No USDO found for chain ${toChain.name}`);
 
-    const usdoFrom = USDO__factory.connect(usdo__from__dep.address, deployer);
+    const usdoFrom = await hre.ethers.getContractAt(
+        'USDO',
+        usdo__from__dep.address,
+    );
 
     // Load USDO on toChain
     const usdo__to__dep = hre.SDK.db
         .loadGlobalDeployment(tag, 'tapioca-bar', toChain.chainId)
-        .find((e) => e.name.toLowerCase().includes('usdo'));
+        .find((e) => e.name.toLowerCase() === 'usdo');
 
     if (!usdo__to__dep)
         throw new Error(`[-] No USDO found for chain ${toChain.name}`);
 
-    const usdoTo = USDO__factory.connect(usdo__to__dep.address, toNetwork);
+    const usdoTo = await hre.ethers.getContractAt(
+        'USDO',
+        usdo__to__dep.address,
+        toNetwork,
+    );
 
     // Load Singularity toChain
-    const localDeployments = hre.SDK.db.loadLocalDeployment(
+    const localToDeployments = hre.SDK.db.loadLocalDeployment(
         tag,
         toChain.chainId,
     );
-    const choices = localDeployments
+    const choices = localToDeployments
         .map((e) => e.name)
         .filter(
             (e) =>
@@ -88,7 +95,7 @@ export const testCrossChainBorrow__task = async (
         choices,
     });
 
-    const sgl__dep = localDeployments.find(
+    const sgl__dep = localToDeployments.find(
         (e) => e.name === contractName,
     ) as TContract;
     if (!sgl__dep) throw new Error(`[-] No contract found for ${contractName}`);
@@ -98,8 +105,8 @@ export const testCrossChainBorrow__task = async (
     ).connect(toNetwork);
 
     // Load market helper
-    const marketsHelper__dep = localDeployments.find(
-        (e) => (e.name = 'MarketsHelper'),
+    const marketsHelper__dep = localToDeployments.find(
+        (e) => e.name.toLowerCase() === 'marketshelper',
     );
     if (!marketsHelper__dep) throw new Error('[-] No MarketsHelper found');
     const marketsHelper = await hre.ethers.getContractAt(
@@ -129,19 +136,20 @@ export const testCrossChainBorrow__task = async (
 
     // ------------------- Permit Setup -------------------
     const deadline = hre.ethers.BigNumber.from(
-        (await hre.ethers.provider.getBlock('latest')).timestamp + 30_000,
+        (await toNetwork.provider.getBlock('latest')).timestamp + 18000000,
     );
 
     const permitBorrowAmount = hre.ethers.constants.MaxUint256;
     const permitBorrow = await getSGLPermitSignature(
         hre,
         'PermitBorrow',
-        deployer,
+        toNetwork,
         singularity,
         marketsHelper.address,
         permitBorrowAmount,
         deadline,
     );
+
     const permitBorrowStruct: BaseTOFT.IApprovalStruct = {
         deadline,
         permitBorrow: true,
@@ -158,7 +166,7 @@ export const testCrossChainBorrow__task = async (
     const permitLend = await getSGLPermitSignature(
         hre,
         'Permit',
-        deployer,
+        toNetwork,
         singularity,
         marketsHelper.address,
         permitLendAmount,
@@ -181,14 +189,18 @@ export const testCrossChainBorrow__task = async (
 
     // ---------------------------------- Prepare borrow OP ----------------------------------
 
-    const withdrawFees = await usdoTo.estimateSendFee(
-        2,
-        hre.ethers.utils
-            .solidityPack(['address'], [deployer.address])
-            .padEnd(66, '0'),
-        borrowAmount,
-        false,
-        '0x',
+    const withdrawFees = (
+        await usdoTo.estimateSendFee(
+            fromChain.lzChainId,
+            '0x'.concat(deployer.address.split('0x')[1].padStart(64, '0')),
+            borrowAmount,
+            false,
+            hre.ethers.utils.solidityPack(['uint16', 'uint256'], [1, 200000]),
+        )
+    ).nativeFee;
+    console.log(
+        '[+] Withdraw fees',
+        hre.ethers.utils.formatEther(withdrawFees),
     );
 
     const airdropAdapterParams = hre.ethers.utils.solidityPack(
@@ -196,12 +208,83 @@ export const testCrossChainBorrow__task = async (
         [
             2, //it needs to be 2
             1_000_000, //extra gas limit; min 200k
-            withdrawFees.nativeFee, //amount of eth to airdrop
+            withdrawFees, //amount of eth to airdrop
             marketsHelper.address,
         ],
     );
 
+    const erc20 = await hre.ethers.getContractAt(
+        'ERC20Mock',
+        await toftFrom.erc20(),
+    );
+
+    // check allowance
+    if (
+        (await erc20.allowance(deployer.address, toftFrom.address)).lt(
+            collateralToDeposit,
+        )
+    ) {
+        console.log('[+] Free minting');
+        await (
+            await erc20.freeMint(
+                hre.ethers.BigNumber.from(100).mul((10e18).toString()),
+            )
+        ).wait(3);
+        console.log('[+] Approving ERC20 wrap');
+        (
+            await erc20.approve(
+                toftFrom.address,
+                hre.ethers.constants.MaxUint256,
+            )
+        ).wait(3);
+    }
+
     // ---------------------------------- Execute borrow OP ----------------------------------
+
+    const call = toftFrom.interface.encodeFunctionData('sendToYBAndBorrow', [
+        deployer.address,
+        deployer.address,
+        toChain.lzChainId,
+        airdropAdapterParams,
+        {
+            amount: collateralToDeposit,
+            borrowAmount,
+            market: singularity.address,
+            marketHelper: marketsHelper.address,
+        },
+        {
+            withdrawAdapterParams: hre.ethers.utils.solidityPack(
+                ['uint16', 'uint256'],
+                [1, 200000],
+            ),
+            withdrawLzChainId: fromChain.lzChainId,
+            withdrawLzFeeAmount: withdrawFees,
+            withdrawOnOtherChain: true,
+        },
+        {
+            extraGasLimit: 1_000_000,
+            strategyDeposit: false,
+            wrap: true,
+            zroPaymentAddress: deployer.address,
+        },
+        [permitBorrowStruct, permitLendStruct],
+    ]);
+
+    const lz = await hre.ethers.getContractAt(
+        'ILayerZeroEndpoint',
+        await toftFrom.lzEndpoint(),
+    );
+    const callFee = (
+        await lz.estimateFees(
+            toChain.lzChainId,
+            toftFrom.address,
+            call,
+            false,
+            airdropAdapterParams,
+        )
+    ).nativeFee;
+
+    console.log(`[+] Call fee: ${hre.ethers.utils.formatEther(callFee)} Ether`);
 
     const tx = await (
         await toftFrom.sendToYBAndBorrow(
@@ -216,19 +299,22 @@ export const testCrossChainBorrow__task = async (
                 market: singularity.address,
             },
             {
-                withdrawAdapterParams: '0x00',
+                withdrawAdapterParams: hre.ethers.utils.solidityPack(
+                    ['uint16', 'uint256'],
+                    [1, 200000],
+                ),
                 withdrawLzChainId: fromChain.lzChainId,
-                withdrawLzFeeAmount: withdrawFees.nativeFee,
+                withdrawLzFeeAmount: withdrawFees,
                 withdrawOnOtherChain: true,
             },
             {
                 extraGasLimit: 1_000_000,
                 strategyDeposit: false,
-                wrap: false,
+                wrap: true,
                 zroPaymentAddress: deployer.address,
             },
             [permitBorrowStruct, permitLendStruct],
-            { value: hre.ethers.utils.parseEther('10') },
+            { value: callFee.add(withdrawFees) },
         )
     ).wait();
     console.log(`[+] Borrow Tx ${tx.transactionHash}`);

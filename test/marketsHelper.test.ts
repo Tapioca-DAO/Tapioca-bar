@@ -1942,7 +1942,7 @@ describe('MarketsHelper test', () => {
                     wrap: false,
                     zroPaymentAddress: deployer.address,
                 },
-                [permitBorrowStruct, permitLendStruct],
+                [],
                 { value: ethers.utils.parseEther('10') },
             );
             expect(await assetLinked.balanceOf(deployer.address)).to.be.eq(
