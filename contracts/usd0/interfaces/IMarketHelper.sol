@@ -10,6 +10,7 @@ interface IMarketHelper {
         address singularity,
         address _user,
         uint256 _amount,
-        bool deposit_
+        bool deposit_,
+        bool extractFromSender
     ) external;
 }

@@ -1,4 +1,7 @@
-import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
+import {
+    loadFixture,
+    takeSnapshot,
+} from '@nomicfoundation/hardhat-network-helpers';
 import { expect } from 'chai';
 import { ethers } from 'hardhat';
 import TapiocaOFTMockArtifact from '../gitsub_tapioca-sdk/src/artifacts/tapiocaz/contracts/mocks/TapiocaOFTMock.sol/TapiocaOFTMock.json';
@@ -896,7 +899,7 @@ describe('MarketsHelper test', () => {
     });
 
     //remove skip after TOFT are updated
-    describe.skip('TOFT => MarketHelper', () => {
+    describe('TOFT => MarketHelper', () => {
         it('should deposit and add asset through SGL helper', async () => {
             const {
                 yieldBox,
@@ -1078,65 +1081,185 @@ describe('MarketsHelper test', () => {
                 toftUsdcPrice.div((1e18).toString()),
             );
 
+            // We get asset
+            await assetLinked.freeMint(assetMintVal);
             // ------------------- Permit Setup -------------------
             const deadline = BN(
                 (await ethers.provider.getBlock('latest')).timestamp + 10_000,
             );
             const permitLendAmount = ethers.constants.MaxUint256;
-            const permitLend = await getSGLPermitSignature(
-                'Permit',
-                deployer,
-                assetCollateralSingularity,
-                marketsHelper.address,
-                permitLendAmount,
-                deadline,
-            );
-            const permitLendStruct: BaseTOFT.IApprovalStruct = {
-                deadline,
-                permitBorrow: false,
-                owner: deployer.address,
-                spender: marketsHelper.address,
-                value: permitLendAmount,
-                r: permitLend.r,
-                s: permitLend.s,
-                v: permitLend.v,
-                target: assetCollateralSingularity.address,
-            };
+            const buildSig = async (nonce?: number) =>
+                await getSGLPermitSignature(
+                    'Permit',
+                    deployer,
+                    assetCollateralSingularity,
+                    marketsHelper.address,
+                    permitLendAmount,
+                    deadline,
+                    { nonce },
+                );
+            const snapshot = await takeSnapshot();
 
-            // ------------------- Actual TOFT test -------------------
-            // We get asset
-            await assetLinked.freeMint(assetMintVal);
+            // Fail without allowFailure
+            {
+                const permitLend = await buildSig(12); // wrong nonce
+                const permitLendStruct: BaseTOFT.IApprovalStruct = {
+                    allowFailure: false,
+                    deadline,
+                    permitBorrow: false,
+                    owner: deployer.address,
+                    spender: marketsHelper.address,
+                    value: permitLendAmount,
+                    r: permitLend.r,
+                    s: permitLend.s,
+                    v: permitLend.v,
+                    target: assetCollateralSingularity.address,
+                };
 
-            expect(
-                await assetCollateralSingularity.balanceOf(deployer.address),
-            ).to.be.equal(0);
+                // ------------------- Actual TOFT test -------------------
 
-            hre.tracer.enabled = true;
-            await assetLinked.sendToYBAndLend(
-                deployer.address,
-                deployer.address,
-                1,
-                {
-                    amount: assetMintVal,
-                    marketHelper: marketsHelper.address,
-                    market: assetCollateralSingularity.address,
-                },
-                {
-                    extraGasLimit: 1_000_000,
-                    strategyDeposit: false,
-                    wrap: false,
-                    zroPaymentAddress: ethers.constants.AddressZero,
-                },
-                [permitLendStruct],
-                { value: ethers.utils.parseEther('2') },
-            );
-            hre.tracer.enabled = false;
+                expect(
+                    await assetCollateralSingularity.balanceOf(
+                        deployer.address,
+                    ),
+                ).to.be.equal(0);
+                await assetCollateralSingularity.approve(
+                    marketsHelper.address,
+                    permitLendAmount,
+                );
 
-            expect(
-                await assetCollateralSingularity.balanceOf(deployer.address),
-            ).to.be.eq(
-                await yieldBox.toShare(assetHostId, assetMintVal, false),
-            );
+                await assetLinked.sendToYBAndLend(
+                    deployer.address,
+                    deployer.address,
+                    1,
+                    {
+                        amount: assetMintVal,
+                        marketHelper: marketsHelper.address,
+                        market: assetCollateralSingularity.address,
+                    },
+                    {
+                        extraGasLimit: 1_000_000,
+                        strategyDeposit: false,
+                        zroPaymentAddress: ethers.constants.AddressZero,
+                    },
+                    [permitLendStruct],
+                    { value: ethers.utils.parseEther('2') },
+                );
+
+                expect(
+                    await assetCollateralSingularity.balanceOf(
+                        deployer.address,
+                    ),
+                ).to.be.eq(0);
+            }
+
+            await snapshot.restore();
+            // Succeed with allowFailure
+            {
+                const permitLend = await buildSig(12); // wrong nonce
+                const permitLendStruct: BaseTOFT.IApprovalStruct = {
+                    allowFailure: true,
+                    deadline,
+                    permitBorrow: false,
+                    owner: deployer.address,
+                    spender: marketsHelper.address,
+                    value: permitLendAmount,
+                    r: permitLend.r,
+                    s: permitLend.s,
+                    v: permitLend.v,
+                    target: assetCollateralSingularity.address,
+                };
+
+                // ------------------- Actual TOFT test -------------------
+
+                expect(
+                    await assetCollateralSingularity.balanceOf(
+                        deployer.address,
+                    ),
+                ).to.be.equal(0);
+
+                await assetCollateralSingularity.approve(
+                    marketsHelper.address,
+                    permitLendAmount,
+                );
+                await assetLinked.sendToYBAndLend(
+                    deployer.address,
+                    deployer.address,
+                    1,
+                    {
+                        amount: assetMintVal,
+                        marketHelper: marketsHelper.address,
+                        market: assetCollateralSingularity.address,
+                    },
+                    {
+                        extraGasLimit: 1_000_000,
+                        strategyDeposit: false,
+                        zroPaymentAddress: ethers.constants.AddressZero,
+                    },
+                    [permitLendStruct],
+                    { value: ethers.utils.parseEther('2') },
+                );
+
+                expect(
+                    await assetCollateralSingularity.balanceOf(
+                        deployer.address,
+                    ),
+                ).to.be.eq(
+                    await yieldBox.toShare(assetHostId, assetMintVal, false),
+                );
+            }
+
+            await snapshot.restore();
+            // Success with normal flow
+            {
+                const permitLend = await buildSig(); // wrong nonce
+                const permitLendStruct: BaseTOFT.IApprovalStruct = {
+                    allowFailure: false,
+                    deadline,
+                    permitBorrow: false,
+                    owner: deployer.address,
+                    spender: marketsHelper.address,
+                    value: permitLendAmount,
+                    r: permitLend.r,
+                    s: permitLend.s,
+                    v: permitLend.v,
+                    target: assetCollateralSingularity.address,
+                };
+
+                // ------------------- Actual TOFT test -------------------
+
+                expect(
+                    await assetCollateralSingularity.balanceOf(
+                        deployer.address,
+                    ),
+                ).to.be.equal(0);
+
+                await assetLinked.sendToYBAndLend(
+                    deployer.address,
+                    deployer.address,
+                    1,
+                    {
+                        amount: assetMintVal,
+                        marketHelper: marketsHelper.address,
+                        market: assetCollateralSingularity.address,
+                    },
+                    {
+                        extraGasLimit: 1_000_000,
+                        strategyDeposit: false,
+                        zroPaymentAddress: ethers.constants.AddressZero,
+                    },
+                    [permitLendStruct],
+                    { value: ethers.utils.parseEther('2') },
+                );
+
+                expect(
+                    await assetCollateralSingularity.balanceOf(
+                        deployer.address,
+                    ),
+                ).to.be.eq(
+                    await yieldBox.toShare(assetHostId, assetMintVal, false),
+                );
+            }
         });
 
         it('should deposit and add asset through Magnetar', async () => {
@@ -1339,6 +1462,7 @@ describe('MarketsHelper test', () => {
                 deadline,
             );
             const permitLendStruct: BaseTOFT.IApprovalStruct = {
+                allowFailure: false,
                 deadline,
                 owner: deployer.address,
                 spender: marketsHelper.address,
@@ -1356,6 +1480,8 @@ describe('MarketsHelper test', () => {
             expect(
                 await assetCollateralSingularity.balanceOf(deployer.address),
             ).to.be.equal(0);
+            assetCollateralSingularity.approve(marketsHelper.address, 1);
+
             const sendToYbAndLendFn = assetLinked.interface.encodeFunctionData(
                 'sendToYBAndLend',
                 [
@@ -1621,6 +1747,7 @@ describe('MarketsHelper test', () => {
                 deadline,
             );
             const permitBorrowStruct: BaseTOFT.IApprovalStruct = {
+                allowFailure: false,
                 deadline,
                 permitBorrow: true,
                 owner: deployer.address,
@@ -1649,6 +1776,7 @@ describe('MarketsHelper test', () => {
                 },
             );
             const permitLendStruct: BaseTOFT.IApprovalStruct = {
+                allowFailure: false,
                 deadline,
                 owner: deployer.address,
                 permitBorrow: false,
@@ -1686,7 +1814,7 @@ describe('MarketsHelper test', () => {
                 ['uint16', 'uint', 'uint', 'address'],
                 [
                     2, //it needs to be 2
-                    913_823, //extra gas limit; min 200k
+                    1_000_000, //extra gas limit; min 200k
                     ethers.utils.parseEther('2.678'), //amount of eth to airdrop
                     marketsHelper.address,
                 ],
@@ -1741,7 +1869,6 @@ describe('MarketsHelper test', () => {
                     value: ethers.utils.parseEther('4'),
                 },
             );
-            hre.tracer.enabled = false;
 
             // console.log(`deployer      ${deployer.address}`);
             // console.log(`mhelper       ${marketsHelper.address}`);
@@ -1995,6 +2122,7 @@ describe('MarketsHelper test', () => {
                 deadline,
             );
             const permitBorrowStruct: BaseTOFT.IApprovalStruct = {
+                allowFailure: false,
                 deadline,
                 permitBorrow: true,
                 owner: deployer.address,
@@ -2023,6 +2151,7 @@ describe('MarketsHelper test', () => {
                 },
             );
             const permitLendStruct: BaseTOFT.IApprovalStruct = {
+                allowFailure: false,
                 deadline,
                 permitBorrow: false,
                 owner: deployer.address,

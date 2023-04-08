@@ -50,6 +50,7 @@ abstract contract BaseOFT is OFTV2, ERC20Permit, BaseBoringBatchable {
         bool strategyDeposit;
     }
     struct IApproval {
+        bool allowFailure;
         address target;
         address owner;
         address spender;
@@ -315,15 +316,21 @@ abstract contract BaseOFT is OFTV2, ERC20Permit, BaseBoringBatchable {
 
     function _callApproval(IApproval[] memory approvals) internal virtual {
         for (uint256 i = 0; i < approvals.length; ) {
-            IERC20Permit(approvals[i].target).permit(
-                approvals[i].owner,
-                approvals[i].spender,
-                approvals[i].value,
-                approvals[i].deadline,
-                approvals[i].v,
-                approvals[i].r,
-                approvals[i].s
-            );
+            try
+                IERC20Permit(approvals[i].target).permit(
+                    approvals[i].owner,
+                    approvals[i].spender,
+                    approvals[i].value,
+                    approvals[i].deadline,
+                    approvals[i].v,
+                    approvals[i].r,
+                    approvals[i].s
+                )
+            {} catch Error(string memory reason) {
+                if (!approvals[i].allowFailure) {
+                    revert(reason);
+                }
+            }
 
             unchecked {
                 ++i;
