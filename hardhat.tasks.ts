@@ -31,6 +31,7 @@ import {
 import { deployFullStack__task } from './tasks/deploy/00-deployFullStack';
 import { deployLinkedChainStack__task } from './tasks/deploy/01-deployLinkedChainStack';
 import { deploySGLMarket__task } from './tasks/deploy/deploySGLMarket';
+import { testCrossChainBorrow__task } from './tasks/test-borrow';
 
 task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
     const accounts = await hre.ethers.getSigners();
@@ -249,3 +250,9 @@ task('airdropGas', 'Airdrop gas to msg.sender', airdropGas__task)
     .addParam('amount', 'Amount of gas to airdrop')
     .addParam('dstChain', 'Destination chain id')
     .addParam('dstAddress', 'Destination address');
+
+task(
+    'testCrossChainBorrow',
+    'Test crosschain borrow',
+    testCrossChainBorrow__task,
+);
