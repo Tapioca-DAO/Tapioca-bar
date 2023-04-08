@@ -1608,6 +1608,7 @@ describe('MarketsHelper test', () => {
                 deadline,
             );
             const permitBorrowStruct: BaseTOFT.IApprovalStruct = {
+                allowFailure: false,
                 deadline,
                 permitBorrow: true,
                 owner: deployer.address,
@@ -1636,6 +1637,7 @@ describe('MarketsHelper test', () => {
                 },
             );
             const permitLendStruct: BaseTOFT.IApprovalStruct = {
+                allowFailure: false,
                 deadline,
                 owner: deployer.address,
                 permitBorrow: false,
@@ -1980,6 +1982,7 @@ describe('MarketsHelper test', () => {
                 deadline,
             );
             const permitBorrowStruct: BaseTOFT.IApprovalStruct = {
+                allowFailure: false,
                 deadline,
                 permitBorrow: true,
                 owner: deployer.address,
@@ -2008,6 +2011,7 @@ describe('MarketsHelper test', () => {
                 },
             );
             const permitLendStruct: BaseTOFT.IApprovalStruct = {
+                allowFailure: false,
                 deadline,
                 permitBorrow: false,
                 owner: deployer.address,
