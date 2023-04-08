@@ -7,7 +7,6 @@ import "@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol";
 import "./MagnetarData.sol";
 import "./MagnetarActionsData.sol";
 
-
 /*
 
 __/\\\\\\\\\\\\\\\_____/\\\\\\\\\_____/\\\\\\\\\\\\\____/\\\\\\\\\\\_______/\\\\\_____________/\\\\\\\\\_____/\\\\\\\\\____        
@@ -342,6 +341,19 @@ contract Magnetar is Ownable, MagnetarData, MagnetarActionsData {
                     zroPaymentAddress,
                     airdropAdapterParam,
                     strategyWithdrawal
+                );
+            } else if (_action.id == HELPER_LEND) {
+                HelperLendData memory data = abi.decode(
+                    _action.call[4:],
+                    (HelperLendData)
+                );
+                _checkSender(data.from);
+
+                IHelperOperations(_action.target).depositAndAddAsset(
+                    ISingularity(data.market),
+                    data.from,
+                    data.amount,
+                    data.deposit
                 );
             } else {
                 revert("Magnetar: action not valid");

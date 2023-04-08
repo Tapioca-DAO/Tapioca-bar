@@ -210,7 +210,7 @@ contract MarketsHelper {
             false
         );
         if (deposit_) {
-            _extractTokens(collateralAddress, _collateralAmount);
+            _extractTokens(msg.sender, collateralAddress, _collateralAmount);
             IERC20(collateralAddress).approve(
                 address(yieldBox),
                 _collateralAmount
@@ -267,7 +267,7 @@ contract MarketsHelper {
 
         //deposit into the yieldbox
         if (deposit_) {
-            _extractTokens(assetAddress, _depositAmount);
+            _extractTokens(msg.sender, assetAddress, _depositAmount);
             IERC20(assetAddress).approve(address(yieldBox), _depositAmount);
             yieldBox.depositAsset(
                 assetId,
@@ -346,7 +346,7 @@ contract MarketsHelper {
         uint256 _share = yieldBox.toShare(assetId, _amount, false);
         if (deposit_) {
             //deposit into the yieldbox
-            _extractTokens(assetAddress, _amount);
+            _extractTokens(_user, assetAddress, _amount);
             IERC20(assetAddress).approve(address(yieldBox), _amount);
             yieldBox.depositAsset(
                 assetId,
@@ -387,7 +387,7 @@ contract MarketsHelper {
 
         if (deposit_) {
             //deposit to YieldBox
-            _extractTokens(collateralAddress, _collateralAmount);
+            _extractTokens(msg.sender, collateralAddress, _collateralAmount);
             IERC20(collateralAddress).approve(
                 address(yieldBox),
                 _collateralAmount
@@ -565,9 +565,13 @@ contract MarketsHelper {
         isApproved = yieldBox.isApprovedForAll(address(this), address(market));
     }
 
-    function _extractTokens(address _token, uint256 _amount) private {
+    function _extractTokens(
+        address _from,
+        address _token,
+        uint256 _amount
+    ) private {
         require(
-            ERC20(_token).transferFrom(msg.sender, address(this), _amount),
+            ERC20(_token).transferFrom(_from, address(this), _amount),
             "transfer failed"
         );
     }

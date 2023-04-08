@@ -39,6 +39,42 @@ describe('MarketsHelper test', () => {
         );
     });
 
+    it('Should deposit to yieldBox & add asset to singularity through Magnetar', async () => {
+        const {
+            weth,
+            yieldBox,
+            wethUsdcSingularity,
+            deployer,
+            initContracts,
+            marketsHelper,
+        } = await loadFixture(register);
+
+        await initContracts(); // To prevent `Singularity: below minimum`
+
+        const magnetar = await (
+            await ethers.getContractFactory('Magnetar')
+        ).deploy(deployer.address);
+        await magnetar.deployed();
+
+        const mintVal = ethers.BigNumber.from((1e18).toString()).mul(10);
+        weth.freeMint(mintVal);
+
+        await weth.approve(marketsHelper.address, ethers.constants.MaxUint256);
+        const lendFn = marketsHelper.interface.encodeFunctionData(
+            'depositAndAddAsset',
+            [wethUsdcSingularity.address, deployer.address, mintVal, true],
+        );
+        await magnetar.connect(deployer).burst([
+            {
+                id: 17,
+                target: marketsHelper.address,
+                value: ethers.utils.parseEther('2'),
+                allowFailure: false,
+                call: lendFn,
+            },
+        ]);
+    });
+
     it('should deposit, add collateral and borrow through SGL helper', async () => {
         const {
             weth,
