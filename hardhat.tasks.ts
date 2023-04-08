@@ -32,6 +32,7 @@ import { deployFullStack__task } from './tasks/deploy/00-deployFullStack';
 import { deployLinkedChainStack__task } from './tasks/deploy/01-deployLinkedChainStack';
 import { deploySGLMarket__task } from './tasks/deploy/deploySGLMarket';
 import { testCrossChainBorrow__task } from './tasks/test-borrow';
+import { testCrossChainLend__task } from './tasks/test-lend';
 
 task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
     const accounts = await hre.ethers.getSigners();
@@ -256,3 +257,5 @@ task(
     'Test crosschain borrow',
     testCrossChainBorrow__task,
 );
+
+task('testCrossChainLend', 'Test crosschain lend', testCrossChainLend__task);
