@@ -342,6 +342,56 @@ contract Magnetar is Ownable, MagnetarData, MagnetarActionsData {
                     airdropAdapterParam,
                     strategyWithdrawal
                 );
+            } else if (_action.id == HELPER_LEND) {
+                HelperLendData memory data = abi.decode(
+                    _action.call[4:],
+                    (HelperLendData)
+                );
+                _checkSender(data.from);
+
+                IHelperOperations(_action.target).depositAndAddAsset(
+                    ISingularity(data.market),
+                    data.from,
+                    data.amount,
+                    data.deposit,
+                    false
+                );
+            } else if (_action.id == HELPER_BORROW) {
+                (
+                    address market,
+                    address user,
+                    uint256 collateralAmount,
+                    uint256 borrowAmount,
+                    ,
+                    bool deposit,
+                    bool withdraw,
+                    bytes memory withdrawData
+                ) = abi.decode(
+                        _action.call[4:],
+                        (
+                            address,
+                            address,
+                            uint256,
+                            uint256,
+                            bool,
+                            bool,
+                            bool,
+                            bytes
+                        )
+                    );
+
+                _checkSender(user);
+
+                IHelperOperations(_action.target).depositAddCollateralAndBorrow(
+                    IMarket(market),
+                    user,
+                    collateralAmount,
+                    borrowAmount,
+                    false,
+                    deposit,
+                    withdraw,
+                    withdrawData
+                );
             } else {
                 revert("Magnetar: action not valid");
             }

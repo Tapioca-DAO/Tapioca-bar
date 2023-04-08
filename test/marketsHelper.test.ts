@@ -39,7 +39,138 @@ describe('MarketsHelper test', () => {
             deployer.address,
             mintVal,
             true,
+            true,
         );
+    });
+
+    it('Should deposit to yieldBox & add asset to singularity through Magnetar', async () => {
+        const {
+            weth,
+            yieldBox,
+            wethUsdcSingularity,
+            deployer,
+            initContracts,
+            marketsHelper,
+            wethAssetId,
+        } = await loadFixture(register);
+
+        await initContracts(); // To prevent `Singularity: below minimum`
+
+        const magnetar = await (
+            await ethers.getContractFactory('Magnetar')
+        ).deploy(deployer.address);
+        await magnetar.deployed();
+
+        const mintVal = ethers.BigNumber.from((1e18).toString()).mul(10);
+        weth.freeMint(mintVal);
+
+        await weth.approve(marketsHelper.address, ethers.constants.MaxUint256);
+        const lendFn = marketsHelper.interface.encodeFunctionData(
+            'depositAndAddAsset',
+            [
+                wethUsdcSingularity.address,
+                deployer.address,
+                mintVal,
+                true,
+                false,
+            ],
+        );
+
+        let balanceOfSGL = await wethUsdcSingularity.balanceOf(
+            deployer.address,
+        );
+        expect(balanceOfSGL.gt(0)).to.be.true;
+
+        await magnetar.connect(deployer).burst([
+            {
+                id: 17,
+                target: marketsHelper.address,
+                value: ethers.utils.parseEther('2'),
+                allowFailure: false,
+                call: lendFn,
+            },
+        ]);
+
+        balanceOfSGL = await wethUsdcSingularity.balanceOf(deployer.address);
+        const amount = await yieldBox.toAmount(
+            wethAssetId,
+            balanceOfSGL,
+            false,
+        );
+        expect(amount.gte(mintVal)).to.be.true;
+    });
+
+    it('should deposit, add collateral, borrow and withdraw through Magnetar', async () => {
+        const {
+            weth,
+            deployer,
+            wethUsdcSingularity,
+            usdc,
+            eoa1,
+            initContracts,
+            marketsHelper,
+            __wethUsdcPrice,
+            approveTokensAndSetBarApproval,
+            wethDepositAndAddAsset,
+            yieldBox,
+        } = await loadFixture(register);
+
+        const collateralId = await wethUsdcSingularity.collateralId();
+
+        const magnetar = await (
+            await ethers.getContractFactory('Magnetar')
+        ).deploy(deployer.address);
+        await magnetar.deployed();
+
+        await initContracts(); // To prevent `Singularity: below minimum`
+
+        const borrowAmount = ethers.BigNumber.from((1e17).toString());
+        const wethMintVal = ethers.BigNumber.from((1e18).toString()).mul(10);
+        const usdcMintVal = wethMintVal
+            .mul(10)
+            .mul(__wethUsdcPrice.div((1e18).toString()));
+
+        // We get asset
+        await weth.freeMint(wethMintVal);
+        await usdc.connect(eoa1).freeMint(usdcMintVal);
+
+        // We lend WETH as deployer
+        await approveTokensAndSetBarApproval();
+        await wethDepositAndAddAsset(wethMintVal);
+
+        await usdc.connect(eoa1).approve(marketsHelper.address, usdcMintVal);
+        await wethUsdcSingularity
+            .connect(eoa1)
+            .approveBorrow(marketsHelper.address, ethers.constants.MaxUint256);
+
+        const borrowFn = marketsHelper.interface.encodeFunctionData(
+            'depositAddCollateralAndBorrow',
+            [
+                wethUsdcSingularity.address,
+                eoa1.address,
+                usdcMintVal,
+                borrowAmount,
+                true,
+                true,
+                true,
+                encodeMarketHelperWithdrawData(false, 0, eoa1.address, '0x00'),
+            ],
+        );
+
+        let borrowPart = await wethUsdcSingularity.userBorrowPart(eoa1.address);
+        expect(borrowPart.eq(0)).to.be.true;
+
+        await magnetar.connect(eoa1).burst([
+            {
+                id: 18,
+                target: marketsHelper.address,
+                value: ethers.utils.parseEther('2'),
+                allowFailure: false,
+                call: borrowFn,
+            },
+        ]);
+        borrowPart = await wethUsdcSingularity.userBorrowPart(eoa1.address);
+        expect(borrowPart.gte(borrowAmount)).to.be.true;
     });
 
     it('should deposit, add collateral and borrow through SGL helper', async () => {
@@ -87,6 +218,7 @@ describe('MarketsHelper test', () => {
                 eoa1.address,
                 usdcMintVal,
                 borrowAmount,
+                true,
                 true,
                 false,
                 ethers.utils.toUtf8Bytes(''),
@@ -140,6 +272,7 @@ describe('MarketsHelper test', () => {
                 borrowAmount,
                 true,
                 true,
+                true,
                 encodeMarketHelperWithdrawData(false, 0, eoa1.address, '0x00'),
             );
     });
@@ -188,6 +321,7 @@ describe('MarketsHelper test', () => {
                 eoa1.address,
                 usdcMintVal,
                 borrowAmount,
+                true,
                 true,
                 false,
                 ethers.utils.toUtf8Bytes(''),
@@ -254,6 +388,7 @@ describe('MarketsHelper test', () => {
                 eoa1.address,
                 usdcMintVal,
                 borrowAmount,
+                true,
                 false,
                 true,
                 ethers.utils.defaultAbiCoder.encode(
@@ -315,6 +450,7 @@ describe('MarketsHelper test', () => {
                 eoa1.address,
                 usdcMintVal,
                 borrowAmount,
+                true,
                 true,
                 true,
                 encodeMarketHelperWithdrawData(false, 0, eoa1.address, '0x00'),
@@ -389,6 +525,7 @@ describe('MarketsHelper test', () => {
                 eoa1.address,
                 usdcMintVal,
                 borrowAmount,
+                true,
                 true,
                 true,
                 encodeMarketHelperWithdrawData(false, 0, eoa1.address, '0x00'),
@@ -761,6 +898,7 @@ describe('MarketsHelper test', () => {
         expect(wethBalanceAfter.eq(0)).to.be.true;
     });
 
+    //remove skip after TOFT are updated
     describe('TOFT => MarketHelper', () => {
         it('should deposit and add asset through SGL helper', async () => {
             const {
@@ -1592,6 +1730,7 @@ describe('MarketsHelper test', () => {
                     eoa1.address,
                     assetMintVal,
                     true,
+                    true,
                 );
 
             // ------------------- Permit Setup -------------------
@@ -1675,7 +1814,7 @@ describe('MarketsHelper test', () => {
                 ['uint16', 'uint', 'uint', 'address'],
                 [
                     2, //it needs to be 2
-                    913_823, //extra gas limit; min 200k
+                    1_000_000, //extra gas limit; min 200k
                     ethers.utils.parseEther('2.678'), //amount of eth to airdrop
                     marketsHelper.address,
                 ],
@@ -1964,6 +2103,7 @@ describe('MarketsHelper test', () => {
                     assetCollateralSingularity.address,
                     eoa1.address,
                     assetMintVal,
+                    true,
                     true,
                 );
 

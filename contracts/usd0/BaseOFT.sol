@@ -307,6 +307,7 @@ abstract contract BaseOFT is OFTV2, ERC20Permit, BaseBoringBatchable {
             lendParams.market,
             from,
             lendParams.amount,
+            true,
             true
         );
 

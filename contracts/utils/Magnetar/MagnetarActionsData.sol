@@ -2,6 +2,7 @@
 pragma solidity ^0.8.18;
 
 import "../../interfaces/ISendFrom.sol";
+import "../../singularity/interfaces/ISingularity.sol";
 
 abstract contract MagnetarActionsData {
     // GENERIC
@@ -108,6 +109,25 @@ abstract contract MagnetarActionsData {
         bool skim;
         uint256 part;
     }
+
+    struct HelperLendData {
+        address market;
+        address from;
+        uint256 amount;
+        bool deposit;
+        bool extractFromSender;
+    }
+
+    struct HelperBorrowData {
+        address market;
+        address user;
+        uint256 collateralAmount;
+        uint256 borrowAmount;
+        bool extractFromSender;
+        bool deposit;
+        bool withdraw;
+        bytes withdrawData;
+    }
 }
 
 interface IPermit {
@@ -130,6 +150,27 @@ interface IPermitAll {
         uint8 v,
         bytes32 r,
         bytes32 s
+    ) external;
+}
+
+interface IHelperOperations {
+    function depositAddCollateralAndBorrow(
+        IMarket market,
+        address _user,
+        uint256 _collateralAmount,
+        uint256 _borrowAmount,
+        bool extractFromSender,
+        bool deposit_,
+        bool withdraw_,
+        bytes calldata _withdrawData
+    ) external payable;
+
+    function depositAndAddAsset(
+        ISingularity singularity,
+        address _user,
+        uint256 _amount,
+        bool deposit_,
+        bool extractFromSender
     ) external;
 }
 

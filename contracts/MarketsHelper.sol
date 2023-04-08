@@ -185,6 +185,7 @@ contract MarketsHelper {
     /// @param _user the address to deposit from and withdraw to
     /// @param _collateralAmount the collateral amount to add
     /// @param _borrowAmount the amount to borrow
+    /// @param extractFromSender extracts tokens either from _user or from msg.sender
     /// @param deposit_ if true, deposits to YieldBox from `msg.sender`
     /// @param withdraw_ if true, withdraws from YieldBox to `msg.sender`
     /// @param _withdrawData custom withdraw data; ignore if you need to withdraw on the same chain
@@ -193,6 +194,7 @@ contract MarketsHelper {
         address _user,
         uint256 _collateralAmount,
         uint256 _borrowAmount,
+        bool extractFromSender,
         bool deposit_,
         bool withdraw_,
         bytes calldata _withdrawData
@@ -210,7 +212,11 @@ contract MarketsHelper {
             false
         );
         if (deposit_) {
-            _extractTokens(collateralAddress, _collateralAmount);
+            _extractTokens(
+                extractFromSender ? msg.sender : _user,
+                collateralAddress,
+                _collateralAmount
+            );
             IERC20(collateralAddress).approve(
                 address(yieldBox),
                 _collateralAmount
@@ -267,7 +273,7 @@ contract MarketsHelper {
 
         //deposit into the yieldbox
         if (deposit_) {
-            _extractTokens(assetAddress, _depositAmount);
+            _extractTokens(msg.sender, assetAddress, _depositAmount);
             IERC20(assetAddress).approve(address(yieldBox), _depositAmount);
             yieldBox.depositAsset(
                 assetId,
@@ -336,7 +342,8 @@ contract MarketsHelper {
         ISingularity singularity,
         address _user,
         uint256 _amount,
-        bool deposit_
+        bool deposit_,
+        bool extractFromSender
     ) external {
         uint256 assetId = singularity.assetId();
         YieldBox yieldBox = YieldBox(singularity.yieldBox());
@@ -346,7 +353,11 @@ contract MarketsHelper {
         uint256 _share = yieldBox.toShare(assetId, _amount, false);
         if (deposit_) {
             //deposit into the yieldbox
-            _extractTokens(assetAddress, _amount);
+            _extractTokens(
+                extractFromSender ? msg.sender : _user,
+                assetAddress,
+                _amount
+            );
             IERC20(assetAddress).approve(address(yieldBox), _amount);
             yieldBox.depositAsset(
                 assetId,
@@ -387,7 +398,7 @@ contract MarketsHelper {
 
         if (deposit_) {
             //deposit to YieldBox
-            _extractTokens(collateralAddress, _collateralAmount);
+            _extractTokens(msg.sender, collateralAddress, _collateralAmount);
             IERC20(collateralAddress).approve(
                 address(yieldBox),
                 _collateralAmount
@@ -565,9 +576,13 @@ contract MarketsHelper {
         isApproved = yieldBox.isApprovedForAll(address(this), address(market));
     }
 
-    function _extractTokens(address _token, uint256 _amount) private {
+    function _extractTokens(
+        address _from,
+        address _token,
+        uint256 _amount
+    ) private {
         require(
-            ERC20(_token).transferFrom(msg.sender, address(this), _amount),
+            ERC20(_token).transferFrom(_from, address(this), _amount),
             "transfer failed"
         );
     }
