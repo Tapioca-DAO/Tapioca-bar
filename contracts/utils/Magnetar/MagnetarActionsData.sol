@@ -147,6 +147,7 @@ interface ITOFTOperations {
         bool strategyDeposit;
     }
     struct ITOFTApproval {
+        bool allowFailure;
         address target;
         bool permitBorrow;
         address owner;
@@ -158,6 +159,7 @@ interface ITOFTOperations {
         bytes32 s;
     }
     struct IUSDOApproval {
+        bool allowFailure;
         address target;
         address owner;
         address spender;
