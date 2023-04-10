@@ -159,16 +159,20 @@ describe('MarketsHelper test', () => {
 
         let borrowPart = await wethUsdcSingularity.userBorrowPart(eoa1.address);
         expect(borrowPart.eq(0)).to.be.true;
-
-        await magnetar.connect(eoa1).burst([
+        await magnetar.connect(eoa1).burst(
+            [
+                {
+                    id: 18,
+                    target: marketsHelper.address,
+                    value: ethers.utils.parseEther('2'),
+                    allowFailure: false,
+                    call: borrowFn,
+                },
+            ],
             {
-                id: 18,
-                target: marketsHelper.address,
                 value: ethers.utils.parseEther('2'),
-                allowFailure: false,
-                call: borrowFn,
             },
-        ]);
+        );
         borrowPart = await wethUsdcSingularity.userBorrowPart(eoa1.address);
         expect(borrowPart.gte(borrowAmount)).to.be.true;
     });

@@ -379,10 +379,15 @@ contract Magnetar is Ownable, MagnetarData, MagnetarActionsData {
                             bytes
                         )
                     );
-
                 _checkSender(user);
 
-                IHelperOperations(_action.target).depositAddCollateralAndBorrow(
+                unchecked {
+                    valAccumulator += _action.value;
+                }
+
+                IHelperOperations(_action.target).depositAddCollateralAndBorrow{
+                    value: _action.value
+                }(
                     IMarket(market),
                     user,
                     collateralAmount,
