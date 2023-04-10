@@ -558,7 +558,7 @@ contract MarketsHelper {
             _receiver,
             _amount,
             _adapterParams,
-            msg.value > 0 ? payable(msg.sender) : payable(this)
+            payable(LzLib.bytes32ToAddress(_receiver))
         );
     }
 
