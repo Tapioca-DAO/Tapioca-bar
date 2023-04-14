@@ -10,7 +10,7 @@ describe('Bidders test', () => {
             wethUsdcSingularity,
             usdc,
             usd0,
-            bar,
+            yieldBox,
             deployCurveStableToUsdoBidder,
         } = await loadFixture(register);
 
@@ -18,7 +18,7 @@ describe('Bidders test', () => {
         expect(savedName).to.eq('USDO -> WETH (Uniswap V2)');
 
         const { stableToUsdoBidder } = await deployCurveStableToUsdoBidder(
-            bar,
+            yieldBox,
             usdc,
             usd0,
         );
@@ -34,6 +34,7 @@ describe('Bidders test', () => {
             usdc,
             usd0,
             bar,
+            yieldBox,
             deployCurveStableToUsdoBidder,
         } = await loadFixture(register);
 
@@ -47,7 +48,7 @@ describe('Bidders test', () => {
         ).to.be.revertedWith('token not valid');
 
         const { stableToUsdoBidder } = await deployCurveStableToUsdoBidder(
-            bar,
+            yieldBox,
             usdc,
             usd0,
         );
@@ -59,6 +60,7 @@ describe('Bidders test', () => {
             wethUsdcSingularity,
             usdc,
             bar,
+            yieldBox,
             multiSwapper,
             usd0,
             deployCurveStableToUsdoBidder,
@@ -69,7 +71,7 @@ describe('Bidders test', () => {
         ).to.emit(usdoToWethBidder, 'UniV2SwapperUpdated');
 
         const { stableToUsdoBidder, curveSwapper } =
-            await deployCurveStableToUsdoBidder(bar, usdc, usd0);
+            await deployCurveStableToUsdoBidder(yieldBox, usdc, usd0);
 
         await expect(
             stableToUsdoBidder.setCurveSwapper(curveSwapper.address),
@@ -82,13 +84,13 @@ describe('Bidders test', () => {
             wethUsdcSingularity,
             usdc,
             bar,
-            yieldBox,
             deployCurveStableToUsdoBidder,
             usd0,
+            yieldBox,
         } = await loadFixture(register);
 
         const { stableToUsdoBidder } = await deployCurveStableToUsdoBidder(
-            bar,
+            yieldBox,
             usdc,
             usd0,
         );
@@ -141,7 +143,7 @@ describe('Bidders test', () => {
         } = await loadFixture(register);
 
         const { stableToUsdoBidder } = await deployCurveStableToUsdoBidder(
-            bar,
+            yieldBox,
             usdc,
             usd0,
         );

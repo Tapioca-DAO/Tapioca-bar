@@ -3,6 +3,7 @@ import { expect } from 'chai';
 import { BN, register, setBalance } from './test.utils';
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/dist/src/signers';
+import { MockSwapper__factory } from '../typechain/factories/contracts/mocks';
 
 const { formatUnits } = ethers.utils;
 
@@ -65,9 +66,8 @@ describe('Singularity Leverage', () => {
             return part.mul(el).div(total.base);
         };
 
-        const mockSwapper = await (
-            await ethers.getContractFactory('MockSwapper')
-        ).deploy(yieldBox.address);
+        const MockSwapper = new MockSwapper__factory(deployer);
+        const mockSwapper = await MockSwapper.deploy(yieldBox.address);
         await mockSwapper.deployed();
         await bar.setSwapper(mockSwapper.address, true);
 

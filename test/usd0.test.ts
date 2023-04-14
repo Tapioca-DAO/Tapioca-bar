@@ -3,6 +3,10 @@ import { ethers } from 'hardhat';
 
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 import { BN, getERC20PermitSignature, register } from './test.utils';
+import {
+    FlashBorrowerMock__factory,
+    FlashMaliciousBorrowerMock__factory,
+} from '../gitsub_tapioca-sdk/src/typechain/tapioca-mocks';
 
 describe('USDO', () => {
     it('should test initial values', async () => {
@@ -100,9 +104,8 @@ describe('USDO', () => {
         );
 
         //deploy flash borrower
-        const flashBorrower = await (
-            await ethers.getContractFactory('FlashBorrowerMock')
-        ).deploy(usd0.address);
+        const FlashBorrowerMock = new FlashBorrowerMock__factory(deployer);
+        const flashBorrower = await FlashBorrowerMock.deploy(usd0.address);
         await flashBorrower.deployed();
 
         //try to mint usd0
@@ -152,9 +155,11 @@ describe('USDO', () => {
         );
 
         //deploy flash borrower
-        const flashBorrower = await (
-            await ethers.getContractFactory('FlashMaliciousBorrowerMock')
-        ).deploy(usd0.address);
+        const FlashMaliciousBorrowerMock =
+            new FlashMaliciousBorrowerMock__factory(deployer);
+        const flashBorrower = await FlashMaliciousBorrowerMock.deploy(
+            usd0.address,
+        );
         await flashBorrower.deployed();
 
         const amount = BN(1e18).mul(1000);

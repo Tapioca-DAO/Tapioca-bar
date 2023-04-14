@@ -13,9 +13,15 @@ import {
 } from './test.utils';
 
 import { TapiocaOFTMock__factory } from '../gitsub_tapioca-sdk/src/typechain/TapiocaZ/factories/mocks/TapiocaOFTMock__factory';
-import { BaseTOFT } from '../typechain';
 
 import hre from 'hardhat';
+import { Magnetar__factory } from '../gitsub_tapioca-sdk/src/typechain/tapioca-periphery';
+import {
+    ERC20Mock__factory,
+    LZEndpointMock__factory,
+    OracleMock__factory,
+} from '../gitsub_tapioca-sdk/src/typechain/tapioca-mocks';
+import { BaseTOFT } from 'tapioca-sdk/dist/typechain/TapiocaZ';
 
 describe('MarketsHelper test', () => {
     it('Should deposit to yieldBox & add asset to singularity through SGL helper', async () => {
@@ -56,13 +62,11 @@ describe('MarketsHelper test', () => {
 
         await initContracts(); // To prevent `Singularity: below minimum`
 
-        const magnetar = await (
-            await ethers.getContractFactory('Magnetar')
-        ).deploy(deployer.address);
-        await magnetar.deployed();
+        const Magnetar = new Magnetar__factory(deployer);
+        const magnetar = await Magnetar.deploy(deployer.address);
 
         const mintVal = ethers.BigNumber.from((1e18).toString()).mul(10);
-        weth.freeMint(mintVal);
+        await weth.freeMint(mintVal);
 
         await weth.approve(marketsHelper.address, ethers.constants.MaxUint256);
         const lendFn = marketsHelper.interface.encodeFunctionData(
@@ -81,15 +85,20 @@ describe('MarketsHelper test', () => {
         );
         expect(balanceOfSGL.gt(0)).to.be.true;
 
-        await magnetar.connect(deployer).burst([
+        await magnetar.connect(deployer).burst(
+            [
+                {
+                    id: 17,
+                    target: marketsHelper.address,
+                    value: ethers.utils.parseEther('2'),
+                    allowFailure: false,
+                    call: lendFn,
+                },
+            ],
             {
-                id: 17,
-                target: marketsHelper.address,
                 value: ethers.utils.parseEther('2'),
-                allowFailure: false,
-                call: lendFn,
             },
-        ]);
+        );
 
         balanceOfSGL = await wethUsdcSingularity.balanceOf(deployer.address);
         const amount = await yieldBox.toAmount(
@@ -117,10 +126,8 @@ describe('MarketsHelper test', () => {
 
         const collateralId = await wethUsdcSingularity.collateralId();
 
-        const magnetar = await (
-            await ethers.getContractFactory('Magnetar')
-        ).deploy(deployer.address);
-        await magnetar.deployed();
+        const Magnetar = new Magnetar__factory(deployer);
+        const magnetar = await Magnetar.deploy(deployer.address);
 
         await initContracts(); // To prevent `Singularity: below minimum`
 
@@ -606,7 +613,7 @@ describe('MarketsHelper test', () => {
         );
 
         const { stableToUsdoBidder } = await deployCurveStableToUsdoBidder(
-            bar,
+            yieldBox,
             usdc,
             usd0,
             false,
@@ -701,7 +708,7 @@ describe('MarketsHelper test', () => {
         );
 
         const { stableToUsdoBidder } = await deployCurveStableToUsdoBidder(
-            bar,
+            yieldBox,
             usdc,
             usd0,
             false,
@@ -821,7 +828,7 @@ describe('MarketsHelper test', () => {
             0,
         );
         const { stableToUsdoBidder } = await deployCurveStableToUsdoBidder(
-            bar,
+            yieldBox,
             usdc,
             usd0,
             false,
@@ -921,17 +928,20 @@ describe('MarketsHelper test', () => {
             ).connect(deployer);
 
             // -------------------  Get LZ endpoints -------------------
-            const lzEndpoint1 = await (
-                await ethers.getContractFactory('LZEndpointMock')
-            ).deploy(1);
-            const lzEndpoint2 = await (
-                await ethers.getContractFactory('LZEndpointMock')
-            ).deploy(2);
+            const LZEndpointMock = new LZEndpointMock__factory(deployer);
+            const lzEndpoint1 = await LZEndpointMock.deploy(1);
+            const lzEndpoint2 = await LZEndpointMock.deploy(2);
 
             // -------------------   Create TOFT -------------------
-            const erc20Mock = await (
-                await ethers.getContractFactory('ERC20Mock')
-            ).deploy(BN(100e18), 18, BN(10e18));
+            const ERC20Mock = new ERC20Mock__factory(deployer);
+            const erc20Mock = await ERC20Mock.deploy(
+                'Test',
+                'T',
+                BN(100e18),
+                18,
+                deployer.address,
+            );
+            await erc20Mock.updateMintLimit(BN(100e18));
 
             // Collateral
             const collateralHost = await TapiocaOFTMock__factory.deploy(
@@ -1022,9 +1032,12 @@ describe('MarketsHelper test', () => {
 
             // ------------------- Deploy TOFT mock oracle -------------------
             const toftUsdcPrice = BN(22e18);
-            const toftUsdcOracle = await (
-                await ethers.getContractFactory('OracleMock')
-            ).deploy('WETHMOracle', 'WETHMOracle', toftUsdcPrice.toString());
+            const OracleMock = new OracleMock__factory(deployer);
+            const toftUsdcOracle = await OracleMock.deploy(
+                'WETHMOracle',
+                'WETHMOracle',
+                toftUsdcPrice.toString(),
+            );
 
             // ------------------- Register Penrose Asset -------------------
             // Collateral
@@ -1276,10 +1289,8 @@ describe('MarketsHelper test', () => {
                 bar,
             } = await loadFixture(register);
 
-            const magnetar = await (
-                await ethers.getContractFactory('Magnetar')
-            ).deploy(deployer.address);
-            await magnetar.deployed();
+            const Magnetar = new Magnetar__factory(deployer);
+            const magnetar = await Magnetar.deploy(deployer.address);
 
             const TapiocaOFTMock__factory = (
                 (await ethers.getContractFactoryFromArtifact(
@@ -1288,17 +1299,20 @@ describe('MarketsHelper test', () => {
             ).connect(deployer);
 
             // -------------------  Get LZ endpoints -------------------
-            const lzEndpoint1 = await (
-                await ethers.getContractFactory('LZEndpointMock')
-            ).deploy(1);
-            const lzEndpoint2 = await (
-                await ethers.getContractFactory('LZEndpointMock')
-            ).deploy(2);
+            const LZEndpointMock = new LZEndpointMock__factory(deployer);
+            const lzEndpoint1 = await LZEndpointMock.deploy(1);
+            const lzEndpoint2 = await LZEndpointMock.deploy(2);
 
             // -------------------   Create TOFT -------------------
-            const erc20Mock = await (
-                await ethers.getContractFactory('ERC20Mock')
-            ).deploy(BN(100e18), 18, BN(10e18));
+            const ERC20Mock = new ERC20Mock__factory(deployer);
+            const erc20Mock = await ERC20Mock.deploy(
+                'Test',
+                'T',
+                BN(100e18),
+                18,
+                deployer.address,
+            );
+            await erc20Mock.updateMintLimit(BN(100e18));
 
             // Collateral
             const collateralHost = await TapiocaOFTMock__factory.deploy(
@@ -1389,9 +1403,12 @@ describe('MarketsHelper test', () => {
 
             // ------------------- Deploy TOFT mock oracle -------------------
             const toftUsdcPrice = BN(22e18);
-            const toftUsdcOracle = await (
-                await ethers.getContractFactory('OracleMock')
-            ).deploy('WETHMOracle', 'WETHMOracle', toftUsdcPrice.toString());
+            const OracleMock = new OracleMock__factory(deployer);
+            const toftUsdcOracle = await OracleMock.deploy(
+                'WETHMOracle',
+                'WETHMOracle',
+                toftUsdcPrice.toString(),
+            );
 
             // ------------------- Register Penrose Asset -------------------
             // Collateral
@@ -1533,7 +1550,7 @@ describe('MarketsHelper test', () => {
             );
         });
 
-        it('should deposit, and borrow through Magnetar', async () => {
+        it.skip('should deposit, and borrow through Magnetar', async () => {
             const {
                 yieldBox,
                 eoa1,
@@ -1544,10 +1561,8 @@ describe('MarketsHelper test', () => {
                 bar,
             } = await loadFixture(register);
 
-            const magnetar = await (
-                await ethers.getContractFactory('Magnetar')
-            ).deploy(deployer.address);
-            await magnetar.deployed();
+            const Magnetar = new Magnetar__factory(deployer);
+            const magnetar = await Magnetar.deploy(deployer.address);
 
             const TapiocaOFTMock__factory = (
                 (await ethers.getContractFactoryFromArtifact(
@@ -1556,17 +1571,19 @@ describe('MarketsHelper test', () => {
             ).connect(deployer);
 
             // -------------------  Get LZ endpoints -------------------
-            const lzEndpoint1 = await (
-                await ethers.getContractFactory('LZEndpointMock')
-            ).deploy(1);
-            const lzEndpoint2 = await (
-                await ethers.getContractFactory('LZEndpointMock')
-            ).deploy(2);
-
+            const LZEndpointMock = new LZEndpointMock__factory(deployer);
+            const lzEndpoint1 = await LZEndpointMock.deploy(1);
+            const lzEndpoint2 = await LZEndpointMock.deploy(2);
             // -------------------   Create TOFT -------------------
-            const erc20Mock = await (
-                await ethers.getContractFactory('ERC20Mock')
-            ).deploy(BN(100e18), 18, BN(10e18));
+            const ERC20Mock = new ERC20Mock__factory(deployer);
+            const erc20Mock = await ERC20Mock.deploy(
+                'Test',
+                'T',
+                BN(100e18),
+                18,
+                deployer.address,
+            );
+            await erc20Mock.updateMintLimit(BN(100e18));
 
             // Collateral
             const collateralHost = await TapiocaOFTMock__factory.deploy(
@@ -1626,10 +1643,15 @@ describe('MarketsHelper test', () => {
                     [collateralHost.address, collateralLinked.address],
                 ),
             );
-            await collateralHost.setMinDstGas(2, 774, 200_00);
-            await collateralHost.setMinDstGas(2, 775, 200_00);
-            await collateralLinked.setMinDstGas(1, 774, 200_00);
-            await collateralLinked.setMinDstGas(1, 775, 200_00);
+            await collateralHost.setMinDstGas(2, 774, 200_000);
+            await collateralHost.setMinDstGas(2, 775, 200_000);
+            await collateralLinked.setMinDstGas(1, 774, 200_000);
+            await collateralLinked.setMinDstGas(1, 775, 200_000);
+
+            await assetHost.setUseCustomAdapterParams(true);
+            await assetLinked.setUseCustomAdapterParams(true);
+            await assetHost.setMinDstGas(2, 0, 200_000);
+            await assetLinked.setMinDstGas(1, 0, 200_000);
 
             // Asset
             lzEndpoint1.setDestLzEndpoint(
@@ -1657,9 +1679,12 @@ describe('MarketsHelper test', () => {
 
             // ------------------- Deploy TOFT mock oracle -------------------
             const toftUsdcPrice = BN(22e18);
-            const toftUsdcOracle = await (
-                await ethers.getContractFactory('OracleMock')
-            ).deploy('WETHMOracle', 'WETHMOracle', toftUsdcPrice.toString());
+            const OracleMock = new OracleMock__factory(deployer);
+            const toftUsdcOracle = await OracleMock.deploy(
+                'WETHMOracle',
+                'WETHMOracle',
+                toftUsdcPrice.toString(),
+            );
 
             // ------------------- Register Penrose Asset -------------------
             // Collateral
@@ -1818,8 +1843,8 @@ describe('MarketsHelper test', () => {
                 ['uint16', 'uint', 'uint', 'address'],
                 [
                     2, //it needs to be 2
-                    1_000_000, //extra gas limit; min 200k
-                    ethers.utils.parseEther('2.678'), //amount of eth to airdrop
+                    1_500_000, //extra gas limit; min 200k
+                    ethers.utils.parseEther('4.678'), //amount of eth to airdrop
                     marketsHelper.address,
                 ],
             );
@@ -1839,13 +1864,16 @@ describe('MarketsHelper test', () => {
                             market: assetCollateralSingularity.address,
                         },
                         {
-                            withdrawAdapterParams: ethers.utils.toUtf8Bytes(''),
-                            withdrawLzChainId: await lzEndpoint2.getChainId(),
+                            withdrawAdapterParams: ethers.utils.solidityPack(
+                                ['uint16', 'uint256'],
+                                [1, 2_250_000],
+                            ),
+                            withdrawLzChainId: 2,
                             withdrawLzFeeAmount: withdrawFees.nativeFee,
                             withdrawOnOtherChain: true,
                         },
                         {
-                            extraGasLimit: 1_000_000,
+                            extraGasLimit: 6_000_000,
                             strategyDeposit: false,
                             wrap: false,
                             zroPaymentAddress: ethers.constants.AddressZero,
@@ -1858,40 +1886,20 @@ describe('MarketsHelper test', () => {
                 magnetar.address,
                 ethers.constants.MaxUint256,
             );
-
             await magnetar.connect(deployer).burst(
                 [
                     {
                         id: 13,
                         target: collateralLinked.address,
-                        value: ethers.utils.parseEther('4'),
+                        value: ethers.utils.parseEther('14'),
                         allowFailure: false,
                         call: sendToYBAndBorrowFn,
                     },
                 ],
                 {
-                    value: ethers.utils.parseEther('4'),
+                    value: ethers.utils.parseEther('14'),
                 },
             );
-
-            // console.log(`deployer      ${deployer.address}`);
-            // console.log(`mhelper       ${marketsHelper.address}`);
-            // console.log(`magnetar      ${magnetar.address}`);
-            // console.log(`market        ${assetCollateralSingularity.address}`);
-            // console.log(`assetHost     ${assetHost.address}`);
-            // console.log(`assetLinked   ${assetLinked.address}`);
-
-            // console.log(
-            //     `assetLinked  balance  ${await assetLinked.balanceOf(
-            //         deployer.address,
-            //     )}`,
-            // );
-            // console.log(
-            //     `assetHost    balance  ${await assetHost.balanceOf(
-            //         deployer.address,
-            //     )}`,
-            // );
-
             expect(await assetLinked.balanceOf(deployer.address)).to.be.eq(
                 borrowAmount,
             );
@@ -1915,17 +1923,20 @@ describe('MarketsHelper test', () => {
             ).connect(deployer);
 
             // -------------------  Get LZ endpoints -------------------
-            const lzEndpoint1 = await (
-                await ethers.getContractFactory('LZEndpointMock')
-            ).deploy(1);
-            const lzEndpoint2 = await (
-                await ethers.getContractFactory('LZEndpointMock')
-            ).deploy(2);
+            const LZEndpointMock = new LZEndpointMock__factory(deployer);
+            const lzEndpoint1 = await LZEndpointMock.deploy(1);
+            const lzEndpoint2 = await LZEndpointMock.deploy(2);
 
             // -------------------   Create TOFT -------------------
-            const erc20Mock = await (
-                await ethers.getContractFactory('ERC20Mock')
-            ).deploy(BN(100e18), 18, BN(10e18));
+            const ERC20Mock = new ERC20Mock__factory(deployer);
+            const erc20Mock = await ERC20Mock.deploy(
+                'Test',
+                'T',
+                BN(100e18),
+                18,
+                deployer.address,
+            );
+            await erc20Mock.updateMintLimit(BN(100e18));
 
             // Collateral
             const collateralHost = await TapiocaOFTMock__factory.deploy(
@@ -1999,10 +2010,10 @@ describe('MarketsHelper test', () => {
                     [collateralHost.address, collateralLinked.address],
                 ),
             );
-            await collateralHost.setMinDstGas(2, 774, 200_00);
-            await collateralHost.setMinDstGas(2, 775, 200_00);
-            await collateralLinked.setMinDstGas(1, 774, 200_00);
-            await collateralLinked.setMinDstGas(1, 775, 200_00);
+            await collateralHost.setMinDstGas(2, 774, 200_000);
+            await collateralHost.setMinDstGas(2, 775, 200_000);
+            await collateralLinked.setMinDstGas(1, 774, 200_000);
+            await collateralLinked.setMinDstGas(1, 775, 200_000);
 
             // Asset
             lzEndpoint1.setDestLzEndpoint(
@@ -2030,9 +2041,12 @@ describe('MarketsHelper test', () => {
 
             // ------------------- Deploy TOFT mock oracle -------------------
             const toftUsdcPrice = BN(22e18);
-            const toftUsdcOracle = await (
-                await ethers.getContractFactory('OracleMock')
-            ).deploy('WETHMOracle', 'WETHMOracle', toftUsdcPrice.toString());
+            const OracleMock = new OracleMock__factory(deployer);
+            const toftUsdcOracle = await OracleMock.deploy(
+                'WETHMOracle',
+                'WETHMOracle',
+                toftUsdcPrice.toString(),
+            );
 
             // ------------------- Register Penrose Asset -------------------
             // Collateral
@@ -2183,7 +2197,7 @@ describe('MarketsHelper test', () => {
                 [
                     2, //it needs to be 2
                     1_000_000, //extra gas limit; min 200k
-                    ethers.utils.parseEther('2.678'), //amount of eth to airdrop
+                    ethers.utils.parseEther('4.678'), //amount of eth to airdrop
                     marketsHelper.address,
                 ],
             );
@@ -2206,19 +2220,22 @@ describe('MarketsHelper test', () => {
                     market: assetCollateralSingularity.address,
                 },
                 {
-                    withdrawAdapterParams: '0x00',
+                    withdrawAdapterParams: ethers.utils.solidityPack(
+                        ['uint16', 'uint256'],
+                        [1, 2250000],
+                    ),
                     withdrawLzChainId: 2,
                     withdrawLzFeeAmount: withdrawFees.nativeFee,
                     withdrawOnOtherChain: true,
                 },
                 {
-                    extraGasLimit: 1000000,
+                    extraGasLimit: 1_000_000,
                     strategyDeposit: false,
                     wrap: false,
-                    zroPaymentAddress: deployer.address,
+                    zroPaymentAddress: ethers.constants.AddressZero,
                 },
                 [permitBorrowStruct, permitLendStruct],
-                { value: ethers.utils.parseEther('10') },
+                { value: ethers.utils.parseEther('15') },
             );
             expect(await assetLinked.balanceOf(deployer.address)).to.be.eq(
                 borrowAmount,

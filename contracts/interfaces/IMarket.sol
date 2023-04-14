@@ -44,6 +44,13 @@ interface IMarket {
 
     function removeCollateral(address from, address to, uint256 share) external;
 
+    function addAsset(
+        address from,
+        address to,
+        bool skim,
+        uint256 share
+    ) external returns (uint256 fraction);
+
     function repay(
         address from,
         address to,
