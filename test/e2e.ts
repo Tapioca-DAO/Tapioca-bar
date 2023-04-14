@@ -3,15 +3,11 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { expect } from 'chai';
 import { BigNumber, BigNumberish } from 'ethers';
 import { ethers } from 'hardhat';
-import {
-    BigBang,
-    MarketsHelper,
-    USDO,
-    WETH9Mock,
-    YieldBox,
-} from '../typechain';
+import { BigBang, MarketsHelper, USDO } from '../typechain';
 import { Singularity } from '../typechain/contracts/singularity/Singularity';
 import { BN, register } from './test.utils';
+
+import OracleMockArtifact from '../gitsub_tapioca-sdk/src/artifacts/tapioca-mocks/contracts/OracleMock.sol/OracleMock.json';
 
 describe('e2e tests', () => {
     /*
@@ -73,7 +69,7 @@ describe('e2e tests', () => {
         const borrowers = eoasArr.splice(-middle);
 
         const { stableToUsdoBidder } = await deployCurveStableToUsdoBidder(
-            bar,
+            yieldBox,
             usdc,
             usd0,
             false,
@@ -221,7 +217,7 @@ describe('e2e tests', () => {
         const borrowers = eoasArr.splice(-middle);
 
         const { stableToUsdoBidder } = await deployCurveStableToUsdoBidder(
-            bar,
+            yieldBox,
             usdc,
             usd0,
             false,
@@ -431,7 +427,7 @@ describe('e2e tests', () => {
         const usdoBorrowVal = wethMintVal.mul(50).div(100).mul(1000);
 
         const { stableToUsdoBidder } = await deployCurveStableToUsdoBidder(
-            bar,
+            yieldBox,
             usdc,
             usd0,
             false,
@@ -750,10 +746,12 @@ async function priceDropPlug(
     signer: SignerWithAddress,
     Singularity: Singularity,
 ) {
-    const oracle = await ethers.getContractAt(
-        'OracleMock',
+    const oracle = new ethers.Contract(
         await Singularity.oracle(),
+        OracleMockArtifact.abi,
+        signer,
     );
+
     const oracleData = await Singularity.oracleData();
     const currentPrice = (await oracle.peek(oracleData))[1];
     const priceDrop = currentPrice.mul(80).div(100);

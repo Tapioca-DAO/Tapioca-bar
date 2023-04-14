@@ -1431,6 +1431,7 @@ describe('BigBang test', () => {
             wbtcAssetId,
             yieldBox,
             deployer,
+            timeTravel,
             bar,
         } = await loadFixture(register);
 
@@ -1439,6 +1440,8 @@ describe('BigBang test', () => {
         await yieldBox.setApprovalForAll(wethBigBangMarket.address, true);
 
         const wethMintVal = ethers.BigNumber.from((1e18).toString()).mul(50);
+        await weth.updateMintLimit(wethMintVal.mul(100));
+        await timeTravel(86401);
         await weth.freeMint(wethMintVal);
         const valShare = await yieldBox.toShare(
             wethAssetId,
@@ -1487,6 +1490,8 @@ describe('BigBang test', () => {
         await yieldBox.setApprovalForAll(wbtcBigBangMarket.address, true);
 
         const wbtcMintVal = ethers.BigNumber.from((1e18).toString()).mul(50);
+        await wbtc.updateMintLimit(wbtcMintVal.mul(10));
+        await timeTravel(86401);
         await wbtc.freeMint(wbtcMintVal);
         const wbtcValShare = await yieldBox.toShare(
             wbtcAssetId,

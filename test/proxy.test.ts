@@ -4,6 +4,7 @@ import { register, createTokenEmptyStrategy } from './test.utils';
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 import { Singularity } from '../typechain';
 import hre from 'hardhat';
+import { LZEndpointMock__factory } from '../gitsub_tapioca-sdk/src/typechain/tapioca-mocks';
 
 describe('MarketsProxy', () => {
     let loadSetup: () => Promise<{
@@ -1358,12 +1359,10 @@ describe('MarketsProxy', () => {
                 value: ethers.utils.parseEther('10'),
             },
         );
-
         const borrowPartFinal = await singularityDst.userBorrowPart(
             eoa1.address,
         );
         expect(borrowPartFinal.lt(borrowPart)).to.be.true;
-
         await expect(
             yieldBox
                 .connect(eoa1)
@@ -1373,6 +1372,9 @@ describe('MarketsProxy', () => {
                     eoa1.address,
                     0,
                     wethBorrowVal,
+                    {
+                        gasLimit: 2000000,
+                    },
                 ),
         ).to.be.reverted;
     });
@@ -1615,8 +1617,7 @@ async function setupUsd0Environment(
     const chainIdSrc = 1;
     const chainIdDst = (await ethers.provider.getNetwork()).chainId;
 
-    const LZEndpointMock = await ethers.getContractFactory('LZEndpointMock');
-
+    const LZEndpointMock = new LZEndpointMock__factory(deployer);
     const lzEndpointSrc = await LZEndpointMock.deploy(chainIdSrc);
     const lzEndpointDst = await LZEndpointMock.deploy(chainIdDst);
 
@@ -1816,8 +1817,9 @@ async function setupEnvironment(
     const chainIdSrc = 1;
     const chainIdDst = 2;
 
-    const LZEndpointMock = await ethers.getContractFactory('LZEndpointMock');
-
+    const LZEndpointMock = new LZEndpointMock__factory(
+        (await ethers.getSigners())[0],
+    );
     const lzEndpointSrc = await LZEndpointMock.deploy(chainIdSrc);
     const lzEndpointDst = await LZEndpointMock.deploy(chainIdDst);
 

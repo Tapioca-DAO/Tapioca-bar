@@ -1,4 +1,4 @@
-import { ethers } from 'hardhat';
+import hre, { ethers } from 'hardhat';
 import { expect } from 'chai';
 import { getSGLPermitSignature, register } from './test.utils';
 import {
@@ -8,13 +8,20 @@ import {
 
 describe('Singularity test', () => {
     it('should add addset, remove asset and update exchange rate in a single tx', async () => {
-        const { weth, yieldBox, wethUsdcSingularity, deployer, initContracts } =
-            await loadFixture(register);
+        const {
+            weth,
+            yieldBox,
+            usdc,
+            wethUsdcSingularity,
+            deployer,
+            initContracts,
+            bar,
+        } = await loadFixture(register);
 
         await initContracts(); // To prevent `Singularity: below minimum`
 
         const mintVal = ethers.BigNumber.from((1e18).toString()).mul(10);
-        weth.freeMint(mintVal);
+        await weth.freeMint(mintVal);
 
         const balanceBefore = await weth.balanceOf(deployer.address);
         // Deposit assets to bar
@@ -346,7 +353,7 @@ describe('Singularity test', () => {
         await initContracts(); // To prevent `Singularity: below minimum`
 
         const mintVal = ethers.BigNumber.from((1e18).toString()).mul(10);
-        weth.freeMint(mintVal);
+        await weth.freeMint(mintVal);
 
         const balanceBefore = await weth.balanceOf(deployer.address);
         // Deposit assets to bar
@@ -962,7 +969,7 @@ describe('Singularity test', () => {
         const decimals = await wethUsdcSingularity.decimals();
         const totalSupply = await wethUsdcSingularity.totalSupply();
 
-        expect(symbol.toLowerCase()).to.contain('tmftm/weth-wethmoracle');
+        expect(symbol.toLowerCase()).to.contain('tmusdcm/wethm-wethmoracle');
         expect(decimals).to.eq(18);
         expect(totalSupply).to.eq(0);
     });
@@ -1298,7 +1305,7 @@ describe('Singularity test', () => {
         );
 
         const { stableToUsdoBidder } = await deployCurveStableToUsdoBidder(
-            bar,
+            yieldBox,
             usdc,
             usd0,
         );

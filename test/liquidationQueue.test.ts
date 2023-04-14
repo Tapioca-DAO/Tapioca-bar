@@ -936,7 +936,7 @@ describe('LiquidationQueue test', () => {
 
         //deploy and register usdoSwapper and bidExecutionSwapper
         const { stableToUsdoBidder, curveSwapper } =
-            await deployCurveStableToUsdoBidder(bar, usdc, usd0);
+            await deployCurveStableToUsdoBidder(yieldBox, usdc, usd0);
 
         const usdofnData = wethUsdcSingularity.interface.encodeFunctionData(
             'updateLQUsdoSwapper',
@@ -1075,7 +1075,7 @@ describe('LiquidationQueue test', () => {
 
         //deploy and register usdoSwapper and bidExecutionSwapper
         const { stableToUsdoBidder } = await deployCurveStableToUsdoBidder(
-            bar,
+            yieldBox,
             usdc,
             usd0,
         );
@@ -1185,7 +1185,7 @@ describe('LiquidationQueue test', () => {
 
         //deploy and register usdoSwapper and bidExecutionSwapper
         const { stableToUsdoBidder } = await deployCurveStableToUsdoBidder(
-            bar,
+            yieldBox,
             usdc,
             usd0,
         );
@@ -1309,7 +1309,7 @@ describe('LiquidationQueue test', () => {
 
         //deploy and register usdoSwapper and bidExecutionSwapper
         const { stableToUsdoBidder } = await deployCurveStableToUsdoBidder(
-            bar,
+            yieldBox,
             usdc,
             usd0,
         );
@@ -1564,7 +1564,7 @@ describe('LiquidationQueue test', () => {
 
         //deploy and register usdoSwapper and bidExecutionSwapper
         const { stableToUsdoBidder } = await deployCurveStableToUsdoBidder(
-            bar,
+            yieldBox,
             usdc,
             usd0,
         );
