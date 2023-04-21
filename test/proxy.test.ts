@@ -545,7 +545,7 @@ describe('MarketsProxy', () => {
             wethAssetId,
             wethUsdcOracle,
             eoa1,
-            marketsHelper,
+            magnetar,
             deployCurveStableToUsdoBidder,
             __wethUsdcPrice,
         } = await loadFixture(register);
@@ -659,10 +659,10 @@ describe('MarketsProxy', () => {
 
         await weth
             .connect(eoa1)
-            .approve(marketsHelper.address, ethers.constants.MaxUint256);
+            .approve(magnetar.address, ethers.constants.MaxUint256);
         await singularityDst
             .connect(eoa1)
-            .approve(marketsHelper.address, ethers.constants.MaxUint256);
+            .approve(magnetar.address, ethers.constants.MaxUint256);
 
         const randomReceiver = new ethers.Wallet(
             ethers.Wallet.createRandom().privateKey,
@@ -683,8 +683,8 @@ describe('MarketsProxy', () => {
 
         await singularityDst
             .connect(eoa1)
-            .approveBorrow(marketsHelper.address, ethers.constants.MaxUint256);
-        await marketsHelper
+            .approveBorrow(magnetar.address, ethers.constants.MaxUint256);
+        await magnetar
             .connect(eoa1)
             .depositAddCollateralAndBorrow(
                 singularityDst.address,
@@ -713,8 +713,8 @@ describe('MarketsProxy', () => {
 
         await singularityDst
             .connect(eoa1)
-            .approveBorrow(marketsHelper.address, ethers.constants.MaxUint256);
-        await marketsHelper
+            .approveBorrow(magnetar.address, ethers.constants.MaxUint256);
+        await magnetar
             .connect(eoa1)
             .depositAddCollateralAndBorrow(
                 singularityDst.address,
@@ -1390,7 +1390,7 @@ describe('MarketsProxy', () => {
             usdcAssetId,
             eoa1,
             multiSwapper,
-            marketsHelper,
+            magnetar,
             __wethUsdcPrice,
         } = await loadFixture(register);
 
@@ -1585,7 +1585,7 @@ describe('MarketsProxy', () => {
             ),
             false,
         );
-        const feesAmountInAsset = await marketsHelper.getAmountForAssetFraction(
+        const feesAmountInAsset = await magnetar.getAmountForAssetFraction(
             singularityDst.address,
 
             (

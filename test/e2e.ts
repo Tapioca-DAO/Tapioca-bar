@@ -3,11 +3,13 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { expect } from 'chai';
 import { BigNumber, BigNumberish } from 'ethers';
 import { ethers } from 'hardhat';
-import { BigBang, MarketsHelper, USDO } from '../typechain';
+import { BigBang, ERC20, ERC20Mock, USDO } from '../typechain';
 import { Singularity } from '../typechain/contracts/singularity/Singularity';
 import { BN, register } from './test.utils';
 
-import OracleMockArtifact from '../gitsub_tapioca-sdk/src/artifacts/tapioca-mocks/contracts/OracleMock.sol/OracleMock.json';
+import OracleMockArtifact from '../gitsub_tapioca-sdk/src/artifacts/tapioca-mocks/OracleMock.json';
+import { MagnetarV2 } from '../gitsub_tapioca-sdk/src/typechain/tapioca-periphery/Magnetar/MagnetarV2';
+import { YieldBox } from '../typechain/yieldbox/contracts';
 
 describe('e2e tests', () => {
     /*
@@ -35,7 +37,7 @@ describe('e2e tests', () => {
             wethBigBangMarket,
             usd0,
             createWethUsd0Singularity,
-            marketsHelper,
+            magnetar,
             weth,
             wethAssetId,
             yieldBox,
@@ -91,7 +93,7 @@ describe('e2e tests', () => {
         await addUsd0Module(
             weth,
             wethMintVal,
-            marketsHelper,
+            magnetar,
             wethBigBangMarket,
             usdoBorrowVal,
             yieldBox,
@@ -104,7 +106,7 @@ describe('e2e tests', () => {
             deployer,
             weth,
             wethUsdoSingularity,
-            marketsHelper,
+            magnetar,
             yieldBox,
             await wethUsdoSingularity.collateralId(),
             ethers.constants.MaxUint256,
@@ -117,7 +119,7 @@ describe('e2e tests', () => {
             wethMintVal.div(10),
             usdoBorrowVal.div(10),
             weth,
-            marketsHelper,
+            magnetar,
             wethUsdoSingularity,
             yieldBox,
             usdoAssetId,
@@ -134,7 +136,7 @@ describe('e2e tests', () => {
             usd0,
             deployer,
             usdoBorrowVal,
-            marketsHelper,
+            magnetar,
             wethUsdoSingularity,
             yieldBox,
         );
@@ -150,16 +152,18 @@ describe('e2e tests', () => {
             await usd0
                 .connect(repayer)
                 .approve(
-                    marketsHelper.address,
+                    magnetar.address,
                     repayerUsd0Balance.add(repayerUsd0Balance.div(2)),
                 );
 
-            await marketsHelper
+            await magnetar
                 .connect(repayer)
                 .depositAndRepay(
                     wethUsdoSingularity.address,
+                    repayer.address,
                     repayerUsd0Balance.add(repayerUsd0Balance.div(2)),
                     repayerUsd0Balance,
+                    true,
                     true,
                 );
         }
@@ -174,7 +178,7 @@ describe('e2e tests', () => {
             deployer,
             timeTravel,
             multiSwapper,
-            marketsHelper,
+            magnetar,
         );
     });
 
@@ -184,7 +188,7 @@ describe('e2e tests', () => {
             wethBigBangMarket,
             usd0,
             createWethUsd0Singularity,
-            marketsHelper,
+            magnetar,
             weth,
             wethAssetId,
             yieldBox,
@@ -239,7 +243,7 @@ describe('e2e tests', () => {
             deployer,
             weth,
             wethUsdoSingularity,
-            marketsHelper,
+            magnetar,
             yieldBox,
             await wethUsdoSingularity.collateralId(),
             ethers.constants.MaxUint256,
@@ -251,7 +255,7 @@ describe('e2e tests', () => {
             borrowers[0],
             weth,
             wethUsdoSingularity,
-            marketsHelper,
+            magnetar,
             yieldBox,
             await wethUsdoSingularity.collateralId(),
             wethMintVal,
@@ -260,7 +264,7 @@ describe('e2e tests', () => {
         //try to borrow without lender
         await depositAddCollateralAndBorrowPlug(
             borrowers[0],
-            marketsHelper,
+            magnetar,
             wethUsdoSingularity,
             yieldBox,
             usdoAssetId,
@@ -281,7 +285,7 @@ describe('e2e tests', () => {
         await addUsd0Module(
             weth,
             wethMintVal,
-            marketsHelper,
+            magnetar,
             wethBigBangMarket,
             usdoBorrowVal,
             yieldBox,
@@ -298,14 +302,14 @@ describe('e2e tests', () => {
             borrowers[borrowers.length - 1],
             weth,
             wethUsdoSingularity,
-            marketsHelper,
+            magnetar,
             yieldBox,
             await wethUsdoSingularity.collateralId(),
             wethMintVal.mul(10),
         );
         await depositAddCollateralAndBorrowPlug(
             borrowers[borrowers.length - 1],
-            marketsHelper,
+            magnetar,
             wethUsdoSingularity,
             yieldBox,
             usdoAssetId,
@@ -333,14 +337,14 @@ describe('e2e tests', () => {
             repayArr[0],
             usd0,
             wethUsdoSingularity,
-            marketsHelper,
+            magnetar,
             yieldBox,
             await wethUsdoSingularity.assetId(),
             usdoBorrowVal,
         );
         await depositAndRepayPlug(
             repayArr[0],
-            marketsHelper,
+            magnetar,
             wethUsdoSingularity,
             usdoBorrowVal,
             usdoBorrowVal,
@@ -360,7 +364,7 @@ describe('e2e tests', () => {
             deployer,
             usd0,
             wethUsdoSingularity,
-            marketsHelper,
+            magnetar,
             yieldBox,
             await wethUsdoSingularity.assetId(),
             extraUsd0,
@@ -397,7 +401,7 @@ describe('e2e tests', () => {
             wethBigBangMarket,
             usd0,
             createWethUsd0Singularity,
-            marketsHelper,
+            magnetar,
             weth,
             wethAssetId,
             yieldBox,
@@ -449,7 +453,7 @@ describe('e2e tests', () => {
         await addUsd0Module(
             weth,
             wethMintVal,
-            marketsHelper,
+            magnetar,
             wethBigBangMarket,
             usdoBorrowVal,
             yieldBox,
@@ -469,7 +473,7 @@ describe('e2e tests', () => {
                 borrower,
                 weth,
                 wethUsdoSingularity,
-                marketsHelper,
+                magnetar,
                 yieldBox,
                 await wethUsdoSingularity.collateralId(),
                 borrowerCollateralValue,
@@ -481,7 +485,7 @@ describe('e2e tests', () => {
 
             await depositAddCollateralAndBorrowPlug(
                 borrower,
-                marketsHelper,
+                magnetar,
                 wethUsdoSingularity,
                 yieldBox,
                 usdoAssetId,
@@ -512,7 +516,7 @@ describe('e2e tests', () => {
             borrower,
             usd0,
             wethUsdoSingularity,
-            marketsHelper,
+            magnetar,
             yieldBox,
             await wethUsdoSingularity.collateralId(),
             ethers.constants.MaxUint256,
@@ -521,7 +525,7 @@ describe('e2e tests', () => {
         for (let i = 0; i < 10; i++) {
             await depositAndRepayPlug(
                 borrower,
-                marketsHelper,
+                magnetar,
                 wethUsdoSingularity,
                 repayPart.mul(2),
                 repayPart,
@@ -536,7 +540,7 @@ describe('e2e tests', () => {
         await mintUsd0Plug(borrower, usd0, borrowedAfterRepayment.mul(2));
         await depositAndRepayPlug(
             borrower,
-            marketsHelper,
+            magnetar,
             wethUsdoSingularity,
             borrowedAfterRepayment.mul(2),
             borrowedAfterRepayment,
@@ -552,7 +556,7 @@ describe('e2e tests', () => {
 //plugs
 async function mintWethPlug(
     signer: SignerWithAddress,
-    weth: WETH9Mock,
+    weth: ERC20Mock,
     val: BigNumberish,
 ) {
     await weth.connect(signer).freeMint(val);
@@ -571,11 +575,11 @@ async function mintUsd0Plug(
 async function tokenApprovalPlug(
     signer: SignerWithAddress,
     token: any,
-    marketsHelper: MarketsHelper,
+    magnetar: MagnetarV2,
     yieldBox: any,
     val: BigNumberish,
 ) {
-    await token.connect(signer).approve(marketsHelper.address, val);
+    await token.connect(signer).approve(magnetar.address, val);
     await token.approve(yieldBox.address, val);
 }
 
@@ -583,12 +587,12 @@ async function bigBangApprovePlug(
     signer: SignerWithAddress,
     token: any,
     BigBang: any,
-    marketsHelper: MarketsHelper,
+    magnetar: MagnetarV2,
     yieldBox: any,
     val: BigNumberish,
 ) {
-    await tokenApprovalPlug(signer, token, marketsHelper, yieldBox, val);
-    await BigBang.connect(signer).updateOperator(marketsHelper.address, true);
+    await tokenApprovalPlug(signer, token, magnetar, yieldBox, val);
+    await BigBang.connect(signer).updateOperator(magnetar.address, true);
 }
 
 // TODO use correct amount
@@ -596,19 +600,19 @@ async function approvePlug(
     signer: SignerWithAddress,
     token: any,
     Singularity: Singularity,
-    marketsHelper: MarketsHelper,
+    magnetar: MagnetarV2,
     yieldBox: YieldBox,
     assetId: BigNumberish,
     val: BigNumberish,
 ) {
-    await tokenApprovalPlug(signer, token, marketsHelper, yieldBox, val);
+    await tokenApprovalPlug(signer, token, magnetar, yieldBox, val);
     await Singularity.connect(signer).approve(
-        marketsHelper.address,
+        magnetar.address,
         // TODO use correct amount
         ethers.constants.MaxUint256,
     );
     await Singularity.connect(signer).approveBorrow(
-        marketsHelper.address,
+        magnetar.address,
         // TODO use correct amount
         ethers.constants.MaxUint256,
     );
@@ -633,7 +637,7 @@ async function setYieldBoxApprovalPlug(
 
 async function depositAddCollateralAndBorrowPlug(
     signer: SignerWithAddress,
-    marketsHelper: MarketsHelper,
+    magnetar: MagnetarV2,
     Singularity: any,
     yieldBox: any,
     assetId: BigNumberish,
@@ -649,7 +653,7 @@ async function depositAddCollateralAndBorrowPlug(
 
     if (shouldRevert) {
         await expect(
-            marketsHelper
+            magnetar
                 .connect(signer)
                 .depositAddCollateralAndBorrow(
                     Singularity.address,
@@ -666,7 +670,7 @@ async function depositAddCollateralAndBorrowPlug(
         return { share, amount };
     }
 
-    await marketsHelper
+    await magnetar
         .connect(signer)
         .depositAddCollateralAndBorrow(
             Singularity.address,
@@ -710,7 +714,7 @@ async function addAssetToSingularityPlug(
 
 async function depositAndRepayPlug(
     signer: SignerWithAddress,
-    marketsHelper: MarketsHelper,
+    magnetar: MagnetarV2,
     Singularity: Singularity,
     depositVal: BigNumberish,
     repayVal: BigNumberish,
@@ -719,12 +723,14 @@ async function depositAndRepayPlug(
 ) {
     if (shouldRevert) {
         await expect(
-            marketsHelper
+            magnetar
                 .connect(signer)
                 .depositAndRepay(
                     Singularity.address,
+                    signer.address,
                     depositVal,
                     repayVal,
+                    true,
                     true,
                 ),
         ).to.be.revertedWith(revertMessage!);
@@ -734,9 +740,16 @@ async function depositAndRepayPlug(
     const previousBorrowAmount = await Singularity.userBorrowPart(
         signer.address,
     );
-    await marketsHelper
+    await magnetar
         .connect(signer)
-        .depositAndRepay(Singularity.address, depositVal, repayVal, true);
+        .depositAndRepay(
+            Singularity.address,
+            signer.address,
+            depositVal,
+            repayVal,
+            true,
+            true,
+        );
     const finalBorrowAmount = await Singularity.userBorrowPart(signer.address);
 
     expect(finalBorrowAmount.lt(previousBorrowAmount)).to.be.true;
@@ -878,9 +891,9 @@ function encodeMarketHelperWithdrawData(
 
 //modules
 async function addUsd0Module(
-    weth: WETH9Mock,
+    weth: ERC20Mock,
     wethMintVal: BigNumberish,
-    marketsHelper: MarketsHelper,
+    magnetar: MagnetarV2,
     wethBigBangMarket: BigBang,
     usdoBorrowVal: BigNumberish,
     yieldBox: any,
@@ -897,14 +910,14 @@ async function addUsd0Module(
             lender,
             weth,
             wethBigBangMarket,
-            marketsHelper,
+            magnetar,
             yieldBox,
             wethMintVal,
         );
 
         const { share, amount } = await depositAddCollateralAndBorrowPlug(
             lender,
-            marketsHelper,
+            magnetar,
             wethBigBangMarket,
             yieldBox,
             usdoAssetId,
@@ -928,8 +941,8 @@ async function borrowFromSingularityModule(
     borrowers: any[],
     wethMintVal: BigNumber,
     usdoBorrowVal: BigNumber,
-    weth: WETH9Mock,
-    marketsHelper: MarketsHelper,
+    weth: ERC20Mock,
+    magnetar: MagnetarV2,
     wethUsdoSingularity: Singularity,
     yieldBox: any,
     usdoAssetId: BigNumberish,
@@ -944,14 +957,14 @@ async function borrowFromSingularityModule(
             borrower,
             weth,
             wethUsdoSingularity,
-            marketsHelper,
+            magnetar,
             yieldBox,
             await wethUsdoSingularity.collateralId(),
             wethMintVal,
         );
         await depositAddCollateralAndBorrowPlug(
             borrower,
-            marketsHelper,
+            magnetar,
             wethUsdoSingularity,
             yieldBox,
             usdoAssetId,
@@ -971,7 +984,7 @@ async function repayModule(
     usd0: USDO,
     deployer: SignerWithAddress,
     usdoBorrowVal: BigNumber,
-    marketsHelper: MarketsHelper,
+    magnetar: MagnetarV2,
     wethUsdoSingularity: Singularity,
     yieldBox: any,
 ) {
@@ -989,7 +1002,7 @@ async function repayModule(
             repayer,
             usd0,
             wethUsdoSingularity,
-            marketsHelper,
+            magnetar,
             yieldBox,
             await wethUsdoSingularity.assetId(),
             repayerUsd0Balance.add(transferVal),
@@ -997,7 +1010,7 @@ async function repayModule(
 
         await depositAndRepayPlug(
             repayer,
-            marketsHelper,
+            magnetar,
             wethUsdoSingularity,
             repayerUsd0Balance.add(transferVal),
             repayerUsd0Balance,
@@ -1014,7 +1027,7 @@ async function liquidateModule(
     deployer: SignerWithAddress,
     timeTravel: any,
     multiSwapper: any,
-    marketsHelper: any,
+    magnetar: any,
 ) {
     const liquidationQueue = await ethers.getContractAt(
         'LiquidationQueue',
@@ -1029,7 +1042,7 @@ async function liquidateModule(
         deployer,
         usd0,
         wethUsdoSingularity,
-        marketsHelper,
+        magnetar,
         yieldBox,
         await wethUsdoSingularity.assetId(),
         extraUsd0,

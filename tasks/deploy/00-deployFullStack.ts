@@ -4,7 +4,6 @@ import { Multicall3 } from 'tapioca-sdk/dist/typechain/utils/MultiCall';
 import { buildYieldBox } from '../deployBuilds/00-buildYieldBox';
 import { buildPenrose } from '../deployBuilds/01-buildPenrose';
 import { buildMasterContracts } from '../deployBuilds/02-buildMasterContracts';
-import { buildMarketHelpers } from '../deployBuilds/03-buildMarketHelpers';
 import { buildMultiSwapper } from '../deployBuilds/04-buildMultiSwapper';
 import { buildUSD0 } from '../deployBuilds/06-buildUSDO';
 import { buildStableToUSD0Bidder } from '../deployBuilds/07-buildStableToUSD0Bidder';
@@ -90,10 +89,6 @@ export const deployFullStack__task = async (
     // 02 - Master contracts
     const [sgl, bb] = await buildMasterContracts(hre);
     VM.add(sgl).add(bb);
-
-    // 03 - MarketHelper
-    const marketHelper = await buildMarketHelpers(hre);
-    VM.add(marketHelper);
 
     // 04 - MultiSwapper
     const multiSwapper = await buildMultiSwapper(

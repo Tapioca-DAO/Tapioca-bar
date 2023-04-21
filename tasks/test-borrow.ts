@@ -3,11 +3,11 @@ import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { getSingularityContract } from './utils';
 import inquirer from 'inquirer';
 
-import TapiocaOFTMockArtifact from '../gitsub_tapioca-sdk/src/artifacts/tapiocaz/contracts/mocks/TapiocaOFTMock.sol/TapiocaOFTMock.json';
-import { TapiocaOFTMock__factory } from '../gitsub_tapioca-sdk/src/typechain/TapiocaZ/factories/mocks/TapiocaOFTMock__factory';
+import TapiocaOFTArtifact from '../gitsub_tapioca-sdk/src/artifacts/tapiocaz/TapiocaOFT.json';
+import { TapiocaOFT__factory } from '../gitsub_tapioca-sdk/src/typechain/TapiocaZ/factories/TapiocaOFT__factory';
 import { TContract } from 'tapioca-sdk/dist/shared';
 import { Singularity, USDO__factory } from '../typechain';
-import { BaseTOFT } from '../gitsub_tapioca-sdk/src/typechain/TapiocaZ/mocks/TapiocaOFTMock';
+import { BaseTOFT } from '../gitsub_tapioca-sdk/src/typechain/TapiocaZ/TapiocaOFT';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { splitSignature } from 'ethers/lib/utils';
 
@@ -35,8 +35,8 @@ export const testCrossChainBorrow__task = async (
 
     const TapiocaOFTMock__factory = (
         (await hre.ethers.getContractFactoryFromArtifact(
-            TapiocaOFTMockArtifact,
-        )) as TapiocaOFTMock__factory
+            TapiocaOFTArtifact,
+        )) as TapiocaOFT__factory
     ).connect(deployer);
 
     // Load TOFT on fromChain
