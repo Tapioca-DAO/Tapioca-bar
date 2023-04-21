@@ -25,6 +25,7 @@ import {
     CurveSwapper__factory,
     CurveSwapper,
 } from '../gitsub_tapioca-sdk/src/typechain/tapioca-periphery';
+import { MagnetarV2__factory } from '../gitsub_tapioca-sdk/src/typechain/tapioca-periphery/factories/Magnetar';
 
 import {
     UniswapV2Factory,
@@ -39,7 +40,7 @@ import {
     Singularity,
     USDO,
 } from '../typechain';
-import { TapiocaOFTMock } from 'tapioca-sdk/dist/typechain/TapiocaZ/mocks';
+import { TapiocaOFT } from 'tapioca-sdk/dist/typechain/TapiocaZ';
 
 ethers.utils.Logger.setLogLevel(ethers.utils.Logger.levels.ERROR);
 
@@ -582,6 +583,12 @@ async function uniV2EnvironnementSetup(
         __uniFactory,
         __uniRouter,
     };
+}
+
+async function registerMagnetar(deployer: any) {
+    const MagnetarV2 = new MagnetarV2__factory(deployer);
+    const magnetar = await MagnetarV2.deploy(deployer.address);
+    return { magnetar };
 }
 
 async function registerMultiSwapper(
@@ -1442,6 +1449,10 @@ export async function register(staging?: boolean) {
 
     log(`Deployed WbtcUsdcSingularity ${wbtcUsdcSingularity.address}`, staging);
 
+    log('Deploying Magnetar', staging);
+    const { magnetar } = await registerMagnetar(deployer);
+    log(`Deployed Magnetar ${magnetar.address}`, staging);
+
     // ------------------- 8 Set feeTo -------------------
     log('Setting feeTo and feeVeTap', staging);
     const singularityFeeTo = ethers.Wallet.createRandom();
@@ -1565,17 +1576,6 @@ export async function register(staging?: boolean) {
         staging,
     );
 
-    // ------------------- 15 Create MarketsHelper -------------------
-    log('Deploying MarketsHelper', staging);
-    const marketsHelper = await (
-        await ethers.getContractFactory('MarketsHelper')
-    ).deploy({ gasPrice: gasPrice });
-    await marketsHelper.deployed();
-    log(
-        `Deployed MarketsHelper ${marketsHelper.address} with no args`,
-        staging,
-    );
-
     // ------------------- 16 Create UniswapUsdoToWethBidder -------------------
     log('Deploying UniswapUsdoToWethBidder', staging);
     const { usdoToWethBidder } = await registerUniUsdoToWethBidder(
@@ -1675,7 +1675,6 @@ export async function register(staging?: boolean) {
         wbtcUsdcSingularity,
         _sglWbtcUsdcLendingBorrowingModule,
         _sglWbtcUsdcLiquidationModule,
-        marketsHelper,
         eoa1,
         multiSwapper,
         singularityFeeTo,
@@ -1688,6 +1687,7 @@ export async function register(staging?: boolean) {
         mediumRiskMC,
         mediumRiskBigBangMC,
         proxyDeployer,
+        magnetar,
         registerSingularity,
         __uniFactory,
         __uniRouter,
