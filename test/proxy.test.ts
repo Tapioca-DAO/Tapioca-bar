@@ -276,7 +276,6 @@ describe('MarketsProxy', () => {
             );
         const borrowPart = await singularityDst.userBorrowPart(eoa1.address);
         expect(borrowPart.gt(0)).to.be.true;
-
     });
 
     it('should test with OFT singularity', async () => {
@@ -477,7 +476,6 @@ describe('MarketsProxy', () => {
 
         const borrowPart = await singularityDst.userBorrowPart(eoa1.address);
         expect(borrowPart.gt(0)).to.be.true;
-
     });
 
     it('should test with OFT singularity through helper', async () => {
@@ -616,7 +614,6 @@ describe('MarketsProxy', () => {
             ethers.Wallet.createRandom().privateKey,
             ethers.provider,
         );
-       
 
         await singularityDst
             .connect(eoa1)
@@ -664,7 +661,7 @@ describe('MarketsProxy', () => {
         await singularityDst
             .connect(eoa1)
             .approveBorrow(magnetar.address, ethers.constants.MaxUint256);
-            
+
         await magnetar
             .connect(eoa1)
             .depositAddCollateralAndBorrow(
