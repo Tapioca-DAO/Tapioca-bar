@@ -381,57 +381,6 @@ contract Singularity is SGLCommon {
         emit LogYieldBoxFeesDeposit(feeShares, amount);
     }
 
-    /// @notice Withdraw to another layer
-    /// @dev if `dstChainId` is 0, withdraw happens on the same chain
-    function withdrawTo(
-        address from,
-        uint16 dstChainId,
-        bytes32 receiver,
-        uint256 amount,
-        bytes calldata adapterParams,
-        address payable refundAddress
-    ) public payable allowedLend(from, amount) {
-        if (dstChainId == 0) {
-            yieldBox.withdraw(
-                assetId,
-                from,
-                LzLib.bytes32ToAddress(receiver),
-                amount,
-                0
-            );
-            return;
-        }
-        try
-            IERC165(address(asset)).supportsInterface(
-                type(ISendFrom).interfaceId
-            )
-        {} catch {
-            return;
-        }
-
-        require(
-            yieldBox.toAmount(
-                assetId,
-                yieldBox.balanceOf(from, assetId),
-                false
-            ) >= amount,
-            "SGL: not available"
-        );
-
-        yieldBox.withdraw(assetId, from, address(this), amount, 0);
-        bytes memory _adapterParams;
-        ISendFrom.LzCallParams memory callParams = ISendFrom.LzCallParams({
-            refundAddress: msg.value > 0 ? refundAddress : payable(this),
-            zroPaymentAddress: address(0),
-            adapterParams: ISendFrom(address(asset)).useCustomAdapterParams()
-                ? adapterParams
-                : _adapterParams
-        });
-        ISendFrom(address(asset)).sendFrom{
-            value: msg.value > 0 ? msg.value : address(this).balance
-        }(address(this), dstChainId, receiver, amount, callParams);
-    }
-
     // *********************** //
     // *** OWNER FUNCTIONS *** //
     // *********************** //

@@ -276,39 +276,6 @@ describe('MarketsProxy', () => {
             );
         const borrowPart = await singularityDst.userBorrowPart(eoa1.address);
         expect(borrowPart.gt(0)).to.be.true;
-
-        //withdrawing to destination
-        const randomReceiver = new ethers.Wallet(
-            ethers.Wallet.createRandom().privateKey,
-            ethers.provider,
-        );
-        await singularityDst.approveBorrow(
-            proxyDst.address,
-            ethers.constants.MaxUint256,
-        );
-
-        await singularityDst
-            .connect(eoa1)
-            .withdrawTo(
-                eoa1.address,
-                await lzEndpointSrc.getChainId(),
-                ethers.utils.defaultAbiCoder.encode(
-                    ['address'],
-                    [randomReceiver.address],
-                ),
-                borrowPart.div(2),
-                ethers.utils.toUtf8Bytes(''),
-                eoa1.address,
-                {
-                    value: ethers.utils.parseEther('2'),
-                },
-            );
-
-        const balanceOfReceiver = await usd0Src.balanceOf(
-            randomReceiver.address,
-        );
-        expect(balanceOfReceiver.gt(0)).to.be.true;
-        expect(balanceOfReceiver.eq(borrowPart.div(2))).to.be.true;
     });
 
     it('should test with OFT singularity', async () => {
@@ -483,21 +450,6 @@ describe('MarketsProxy', () => {
             ['uint16', 'uint', 'uint', 'address'],
             [2, 2250000, ethers.utils.parseEther('3'), singularityDst.address],
         );
-        const withdrawFn = singularityDst.interface.encodeFunctionData(
-            'withdrawTo',
-            [
-                eoa1.address,
-                await lzEndpointSrc.getChainId(),
-                ethers.utils.defaultAbiCoder.encode(
-                    ['address'],
-                    [randomReceiver.address],
-                ),
-                usdoBorrowVal,
-                ethers.utils.toUtf8Bytes(''),
-                eoa1.address,
-            ],
-        );
-
         let sglEthBalance = await ethers.provider.getBalance(
             singularityDst.address,
         );
@@ -509,7 +461,7 @@ describe('MarketsProxy', () => {
             .executeOnChain(
                 await lzEndpointDst.getChainId(),
                 singularityDst.address,
-                [addCollateralFn, borrowFn, withdrawFn],
+                [addCollateralFn, borrowFn],
                 airdropAdapterParams,
                 { value: ethers.utils.parseEther('10') },
             );
@@ -524,12 +476,6 @@ describe('MarketsProxy', () => {
 
         const borrowPart = await singularityDst.userBorrowPart(eoa1.address);
         expect(borrowPart.gt(0)).to.be.true;
-
-        const balanceOfReceiver = await usd0Src.balanceOf(
-            randomReceiver.address,
-        );
-        expect(balanceOfReceiver.gt(0)).to.be.true;
-        expect(balanceOfReceiver.eq(usdoBorrowVal)).to.be.true;
     });
 
     it('should test with OFT singularity through helper', async () => {
@@ -668,18 +614,6 @@ describe('MarketsProxy', () => {
             ethers.Wallet.createRandom().privateKey,
             ethers.provider,
         );
-        const withdrawData = new ethers.utils.AbiCoder().encode(
-            ['bool', 'uint256', 'bytes32', 'bytes'],
-            [
-                true,
-                await lzEndpointSrc.getChainId(),
-                ethers.utils.defaultAbiCoder.encode(
-                    ['address'],
-                    [randomReceiver.address],
-                ),
-                ethers.utils.toUtf8Bytes(''),
-            ],
-        );
 
         await singularityDst
             .connect(eoa1)
@@ -711,9 +645,23 @@ describe('MarketsProxy', () => {
         const usdoBalance = await usd0Dst.balanceOf(eoa1.address);
         expect(usdoBalance.gt(0)).to.be.true;
 
+        const withdrawData = new ethers.utils.AbiCoder().encode(
+            ['bool', 'uint256', 'bytes32', 'bytes'],
+            [
+                true,
+                await lzEndpointSrc.getChainId(),
+                ethers.utils.defaultAbiCoder.encode(
+                    ['address'],
+                    [randomReceiver.address],
+                ),
+                ethers.utils.toUtf8Bytes(''),
+            ],
+        );
+
         await singularityDst
             .connect(eoa1)
             .approveBorrow(magnetar.address, ethers.constants.MaxUint256);
+
         await magnetar
             .connect(eoa1)
             .depositAddCollateralAndBorrow(
