@@ -1522,7 +1522,7 @@ describe('MarketsProxy', () => {
         }
         await expect(
             bar.withdrawAllSingularityFees(markets, swappers, swapData),
-        ).to.emit(singularityDst, 'LogYieldBoxFeesDeposit');
+        ).to.emit(bar, 'LogYieldBoxFeesDeposit');
 
         const mixologistFeeVeTap = await bar.feeTo();
         const tapAmountHarvested = await yieldBox.toAmount(

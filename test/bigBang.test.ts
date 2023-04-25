@@ -471,10 +471,16 @@ describe('BigBang test', () => {
         expect(userBorrowedAmount.gt(0)).to.be.true;
 
         await expect(
-            wethBigBangMarket.depositFeesToYieldBox(multiSwapper.address, {
-                minAssetAmount: '1',
-            }),
-        ).to.emit(wethBigBangMarket, 'LogYieldBoxFeesDeposit');
+            bar.withdrawAllBigBangFees(
+                [wethBigBangMarket.address],
+                [multiSwapper.address],
+                [
+                    {
+                        minAssetAmount: '1',
+                    },
+                ],
+            ),
+        ).to.emit(bar, 'LogYieldBoxFeesDeposit');
 
         yieldBoxBalanceOfFeeVeTap = await yieldBox.toAmount(
             await wethBigBangMarket.collateralId(),
@@ -644,10 +650,16 @@ describe('BigBang test', () => {
             ),
         );
         await expect(
-            wethBigBangMarket.depositFeesToYieldBox(multiSwapper.address, {
-                minAssetAmount: calcAmount.div(2),
-            }),
-        ).to.emit(wethBigBangMarket, 'LogYieldBoxFeesDeposit');
+            bar.withdrawAllBigBangFees(
+                [wethBigBangMarket.address],
+                [multiSwapper.address],
+                [
+                    {
+                        minAssetAmount: calcAmount.div(2),
+                    },
+                ],
+            ),
+        ).to.emit(bar, 'LogYieldBoxFeesDeposit');
 
         yieldBoxBalanceOfFee = await yieldBox.toAmount(
             collateralId,
@@ -813,10 +825,16 @@ describe('BigBang test', () => {
 
         //deposit fees to yieldBox
         await expect(
-            wethBigBangMarket.depositFeesToYieldBox(multiSwapper.address, {
-                minAssetAmount: '1',
-            }),
-        ).to.emit(wethBigBangMarket, 'LogYieldBoxFeesDeposit');
+            bar.withdrawAllBigBangFees(
+                [wethBigBangMarket.address],
+                [multiSwapper.address],
+                [
+                    {
+                        minAssetAmount: '1',
+                    },
+                ],
+            ),
+        ).to.emit(bar, 'LogYieldBoxFeesDeposit');
 
         const feeVeTap = await bar.feeTo();
         const yieldBoxBalanceOfFee = await yieldBox.toAmount(
@@ -969,10 +987,16 @@ describe('BigBang test', () => {
 
         //deposit fees to yieldBox
         await expect(
-            wethBigBangMarket.depositFeesToYieldBox(multiSwapper.address, {
-                minAssetAmount: '1',
-            }),
-        ).to.emit(wethBigBangMarket, 'LogYieldBoxFeesDeposit');
+            bar.withdrawAllBigBangFees(
+                [wethBigBangMarket.address],
+                [multiSwapper.address],
+                [
+                    {
+                        minAssetAmount: '1',
+                    },
+                ],
+            ),
+        ).to.emit(bar, 'LogYieldBoxFeesDeposit');
 
         const yieldBoxBalanceOfFeeVe = await yieldBox.toAmount(
             await wethBigBangMarket.collateralId(),
@@ -1011,10 +1035,16 @@ describe('BigBang test', () => {
 
         const balance = await usd0.balanceOf(wethBigBangMarket.address);
         await expect(
-            wethBigBangMarket.depositFeesToYieldBox(multiSwapper.address, {
-                minAssetAmount: '1',
-            }),
-        ).to.emit(wethBigBangMarket, 'LogYieldBoxFeesDeposit');
+            bar.withdrawAllBigBangFees(
+                [wethBigBangMarket.address],
+                [multiSwapper.address],
+                [
+                    {
+                        minAssetAmount: '1',
+                    },
+                ],
+            ),
+        ).to.emit(bar, 'LogYieldBoxFeesDeposit');
 
         const yieldBoxFinalBalanceOfFeeVe = await yieldBox.toAmount(
             await wethBigBangMarket.collateralId(),
@@ -1127,9 +1157,15 @@ describe('BigBang test', () => {
         userBorrowPart = await wethBigBangMarket.userBorrowPart(eoa1.address);
         expect(userBorrowPart.eq(0)).to.be.true;
 
-        await wethBigBangMarket.depositFeesToYieldBox(multiSwapper.address, {
-            minAssetAmount: 1,
-        });
+        await bar.withdrawAllBigBangFees(
+            [wethBigBangMarket.address],
+            [multiSwapper.address],
+            [
+                {
+                    minAssetAmount: '1',
+                },
+            ],
+        );
 
         const feeVeTap = await bar.feeTo();
         const yieldBoxBalanceOfFeeVeTapShare = await yieldBox.balanceOf(
@@ -1146,20 +1182,33 @@ describe('BigBang test', () => {
     });
 
     it('should not allow depositing fees with invalid swapper', async () => {
-        const { wethBigBangMarket, multiSwapper } = await loadFixture(register);
+        const { wethBigBangMarket, multiSwapper, bar } = await loadFixture(
+            register,
+        );
 
         await expect(
-            wethBigBangMarket.depositFeesToYieldBox(
-                ethers.constants.AddressZero,
-                { minAssetAmount: 1 },
+            bar.withdrawAllBigBangFees(
+                [wethBigBangMarket.address],
+                [wethBigBangMarket.address],
+                [
+                    {
+                        minAssetAmount: '1',
+                    },
+                ],
             ),
-        ).to.be.revertedWith('BigBang: Invalid swapper');
+        ).to.be.revertedWith('Penrose: Invalid swapper');
 
         await expect(
-            wethBigBangMarket.depositFeesToYieldBox(multiSwapper.address, {
-                minAssetAmount: 1,
-            }),
-        ).to.not.emit(wethBigBangMarket, 'LogYieldBoxFeesDeposit');
+            bar.withdrawAllBigBangFees(
+                [wethBigBangMarket.address],
+                [multiSwapper.address],
+                [
+                    {
+                        minAssetAmount: '1',
+                    },
+                ],
+            ),
+        ).to.not.emit(bar, 'LogYieldBoxFeesDeposit');
     });
 
     it('should test setters', async () => {

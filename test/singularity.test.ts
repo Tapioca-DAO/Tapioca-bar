@@ -946,7 +946,7 @@ describe('Singularity test', () => {
         }
         await expect(
             bar.withdrawAllSingularityFees(markets, swappers, swapData),
-        ).to.emit(wethUsdcSingularity, 'LogYieldBoxFeesDeposit');
+        ).to.emit(bar, 'LogYieldBoxFeesDeposit');
 
         const amountHarvested = await yieldBox.toAmount(
             await bar.wethAssetId(),
@@ -1078,16 +1078,22 @@ describe('Singularity test', () => {
     });
 
     it('deposit fees to yieldbox should not work for inexistent swapper', async () => {
-        const { wethUsdcSingularity } = await loadFixture(register);
+        const { wethUsdcSingularity, bar } = await loadFixture(register);
+        await expect(
+            bar.withdrawAllSingularityFees(
+                [wethUsdcSingularity.address],
+                [ethers.constants.AddressZero],
+                [{ minAssetAmount: 1 }],
+            ),
+        ).to.be.revertedWith('Penrose: zero address');
 
         await expect(
-            wethUsdcSingularity.depositFeesToYieldBox(
-                ethers.constants.AddressZero,
-                {
-                    minAssetAmount: 1,
-                },
+            bar.withdrawAllSingularityFees(
+                [wethUsdcSingularity.address],
+                [wethUsdcSingularity.address],
+                [{ minAssetAmount: 1 }],
             ),
-        ).to.be.revertedWith('SGL: Invalid swapper');
+        ).to.be.revertedWith('Penrose: Invalid swapper');
     });
 
     it('should not be allowed to initialize twice', async () => {
@@ -1648,7 +1654,7 @@ describe('Singularity test', () => {
 
         await expect(
             bar.withdrawAllSingularityFees(markets, swappers, swapData),
-        ).to.emit(wethUsdcSingularity, 'LogYieldBoxFeesDeposit');
+        ).to.emit(bar, 'LogYieldBoxFeesDeposit');
 
         const amountHarvested = await yieldBox.toAmount(
             wethAssetId,
@@ -1711,6 +1717,7 @@ describe('Singularity test', () => {
             wethDepositAndAddAsset,
             usdcDepositAndAddCollateral,
             eoas,
+            bar,
         } = await loadFixture(register);
 
         const assetId = await wethUsdcSingularity.assetId();
@@ -1765,9 +1772,15 @@ describe('Singularity test', () => {
         }
 
         timeTravel(10 * 86400);
-        await wethUsdcSingularity.depositFeesToYieldBox(multiSwapper.address, {
-            minAssetAmount: 1,
-        });
+        await bar.withdrawAllSingularityFees(
+            [wethUsdcSingularity.address],
+            [multiSwapper.address],
+            [
+                {
+                    minAssetAmount: 1,
+                },
+            ],
+        );
     });
 
     it('should test yieldBoxShares', async () => {
