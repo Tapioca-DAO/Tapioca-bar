@@ -456,7 +456,7 @@ contract Penrose is BoringOwnable, BoringFactory {
     function _depositFeesToYieldBox(
         IMarket market,
         ISwapper swapper,
-        IPenrose.SwapData calldata swapData
+        IPenrose.SwapData calldata dexData
     ) public {
         require(swappers[swapper], "Penrose: Invalid swapper");
 
@@ -477,13 +477,19 @@ contract Penrose is BoringOwnable, BoringFactory {
             path[0] = market.asset();
             path[1] = address(wethToken);
 
-            (amount, ) = swapper.swap(
+            ISwapper.SwapData memory swapData = swapper.buildSwapData(
                 assetId,
                 wethAssetId,
+                0,
                 feeShares,
+                true,
+                true
+            );
+            (amount, ) = swapper.swap(
+                swapData,
+                dexData.minAssetAmount,
                 feeTo,
-                swapData.minAssetAmount,
-                abi.encode(path)
+                ""
             );
         } else {
             yieldBox.transfer(address(this), feeTo, assetId, feeShares);

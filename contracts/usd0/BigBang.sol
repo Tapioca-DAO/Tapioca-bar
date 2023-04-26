@@ -6,11 +6,11 @@ import "@boringcrypto/boring-solidity/contracts/ERC20.sol";
 import "@boringcrypto/boring-solidity/contracts/libraries/BoringRebase.sol";
 import "@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol";
 
-import "../swappers/ISwapper.sol";
 import "./interfaces/IBigBang.sol";
 import "../interfaces/IOracle.sol";
 import "../interfaces/IPenrose.sol";
 import "../interfaces/ISendFrom.sol";
+import "tapioca-periph/contracts/interfaces/ISwapper.sol";
 import "tapioca-sdk/dist/contracts/YieldBox/contracts/YieldBox.sol";
 
 // solhint-disable max-line-length
@@ -738,7 +738,7 @@ contract BigBang is BoringOwnable {
         uint256 maxBorrowPart,
         ISwapper swapper,
         uint256 _exchangeRate,
-        bytes calldata swapData
+        bytes calldata _dexData
     ) private {
         if (_isSolvent(user, _exchangeRate)) return;
 
@@ -777,19 +777,21 @@ contract BigBang is BoringOwnable {
         );
 
         uint256 minAssetMount = 0;
-        if (swapData.length > 0) {
-            minAssetMount = abi.decode(swapData, (uint256));
+        if (_dexData.length > 0) {
+            minAssetMount = abi.decode(_dexData, (uint256));
         }
 
         uint256 balanceBefore = yieldBox.balanceOf(address(this), assetId);
-        swapper.swap(
+
+        ISwapper.SwapData memory swapData = swapper.buildSwapData(
             collateralId,
             assetId,
+            0,
             collateralShare,
-            address(this),
-            minAssetMount,
-            abi.encode(_collateralToAssetSwapPath())
+            true,
+            true
         );
+        swapper.swap(swapData, minAssetMount, address(this), "");
         uint256 balanceAfter = yieldBox.balanceOf(address(this), assetId);
 
         uint256 returnedShare = balanceAfter - balanceBefore;

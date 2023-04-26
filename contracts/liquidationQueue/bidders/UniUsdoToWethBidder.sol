@@ -5,8 +5,8 @@ import "@boringcrypto/boring-solidity/contracts/BoringOwnable.sol";
 
 import "../../interfaces/IPenrose.sol";
 import "../ILiquidationQueue.sol";
-import "../../swappers/ISwapper.sol";
 import "../../singularity/interfaces/ISingularity.sol";
+import "tapioca-periph/contracts/interfaces/ISwapper.sol";
 import "tapioca-sdk/dist/contracts/YieldBox/contracts/interfaces/IYieldBox.sol";
 
 /*
@@ -72,17 +72,19 @@ contract UniUsdoToWethBidder is BoringOwnable {
             "token not valid"
         );
         IYieldBox yieldBox = IYieldBox(singularity.yieldBox());
-
         uint256 shareOut = yieldBox.toShare(wethId, amountOut, false);
 
-        (, address tokenInAddress, , ) = yieldBox.assets(tokenInId);
-        (, address tokenOutAddress, , ) = yieldBox.assets(wethId);
+        ISwapper.SwapData memory swapData = univ2Swapper.buildSwapData(
+            tokenInId,
+            wethId,
+            0,
+            0,
+            true,
+            true
+        );
+        swapData.amountData.shareOut = shareOut;
 
-        address[] memory path = new address[](2);
-        path[0] = tokenInAddress;
-        path[1] = tokenOutAddress;
-
-        return univ2Swapper.getInputAmount(wethId, shareOut, abi.encode(path));
+        return univ2Swapper.getInputAmount(swapData, "");
     }
 
     /// @notice returns the amount of collateral
@@ -192,13 +194,20 @@ contract UniUsdoToWethBidder is BoringOwnable {
             tokenInAmount,
             false
         );
-        (uint256 outAmount, ) = univ2Swapper.swap(
+
+        ISwapper.SwapData memory swapData = univ2Swapper.buildSwapData(
             tokenInId,
             tokenOutId,
+            0,
             tokenInShare,
-            to,
+            true,
+            true
+        );
+        (uint256 outAmount, ) = univ2Swapper.swap(
+            swapData,
             minAmount,
-            abi.encode(swapPath)
+            to,
+            "0x00"
         );
 
         return outAmount;
@@ -216,11 +225,16 @@ contract UniUsdoToWethBidder is BoringOwnable {
         swapPath[0] = tokenInAddress;
         swapPath[1] = tokenOutAddress;
         uint256 tokenInShare = yieldBox.toShare(tokenInId, amountIn, false);
-        return
-            univ2Swapper.getOutputAmount(
-                tokenInId,
-                tokenInShare,
-                abi.encode(swapPath)
-            );
+
+        ISwapper.SwapData memory swapData = univ2Swapper.buildSwapData(
+            tokenInId,
+            tokenOutId,
+            0,
+            tokenInShare,
+            true,
+            true
+        );
+
+        return univ2Swapper.getOutputAmount(swapData, "0x00");
     }
 }

@@ -24,6 +24,7 @@ import {
 import {
     CurveSwapper__factory,
     CurveSwapper,
+    UniswapV2Swapper__factory,
 } from '../gitsub_tapioca-sdk/src/typechain/tapioca-periphery';
 import { MagnetarV2__factory } from '../gitsub_tapioca-sdk/src/typechain/tapioca-periphery/factories/Magnetar';
 
@@ -592,19 +593,25 @@ async function registerMagnetar(deployer: any) {
 }
 
 async function registerMultiSwapper(
+    deployer: any,
+    yieldBox: YieldBox,
     bar: Penrose,
     __uniFactoryAddress: string,
-    __uniFactoryPairCodeHash: string,
+    __uniRouterAddress: string,
     staging?: boolean,
 ) {
-    const multiSwapper = await (
-        await ethers.getContractFactory('MultiSwapper')
-    ).deploy(__uniFactoryAddress, bar.address, __uniFactoryPairCodeHash, {
-        gasPrice: gasPrice,
-    });
-    await multiSwapper.deployed();
+    const MultiSwapper = new UniswapV2Swapper__factory(deployer);
+    const multiSwapper = await MultiSwapper.deploy(
+        __uniRouterAddress,
+        __uniFactoryAddress,
+        yieldBox.address,
+        {
+            gasPrice: gasPrice,
+        },
+    );
+
     log(
-        `Deployed MultiSwapper ${multiSwapper.address} with args [${__uniFactoryAddress}, ${bar.address}, ${__uniFactoryPairCodeHash}]`,
+        `Deployed MultiSwapper ${multiSwapper.address} with args [${__uniRouterAddress}, ${__uniFactoryAddress}, ${yieldBox.address}]`,
         staging,
     );
 
@@ -615,7 +622,7 @@ async function registerMultiSwapper(
 
     await verifyEtherscan(
         multiSwapper.address,
-        [__uniFactoryAddress, bar.address, __uniFactoryPairCodeHash],
+        [__uniRouterAddress, __uniFactoryAddress, yieldBox.address],
         staging,
     );
 
@@ -1387,9 +1394,11 @@ export async function register(staging?: boolean) {
     // ------------------- 5 Deploy MultiSwapper -------------------
     log('Registering MultiSwapper', staging);
     const { multiSwapper } = await registerMultiSwapper(
+        deployer,
+        yieldBox,
         bar,
         __uniFactory.address,
-        await __uniFactory.pairCodeHash(),
+        __uniRouter.address,
         staging,
     );
     log(`Deployed MultiSwapper ${multiSwapper.address}`, staging);
@@ -1695,6 +1704,7 @@ export async function register(staging?: boolean) {
         __wethTapMockPair,
         __wethUsdoMockPair,
         __tapUsdoMockPair,
+        createSimpleSwapData,
     };
 
     /**
@@ -1907,3 +1917,32 @@ export async function register(staging?: boolean) {
 
     return { ...initialSetup, ...utilFuncs, verifyEtherscanQueue };
 }
+
+const createSimpleSwapData = (
+    token1: string,
+    token2: string,
+    amountIn: BigNumberish,
+    amountOut: BigNumberish,
+) => {
+    const swapData = {
+        tokensData: {
+            tokenIn: token1,
+            tokenInId: 0,
+            tokenOut: token2,
+            tokenOutId: 0,
+        },
+        amountData: {
+            amountIn: amountIn,
+            amountOut: amountOut,
+            shareIn: 0,
+            shareOut: 0,
+        },
+        yieldBoxData: {
+            withdrawFromYb: false,
+            depositToYb: false,
+        },
+    };
+
+    return swapData;
+};
+

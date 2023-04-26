@@ -1,7 +1,9 @@
-import { ethers } from 'hardhat';
+import hre, { ethers } from 'hardhat';
 import { expect } from 'chai';
 import { register } from './test.utils';
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
+import CurveSwapperArtifact from '../gitsub_tapioca-sdk/src/artifacts/tapioca-periphery/CurveSwapper.json';
+import { CurveSwapper } from '../gitsub_tapioca-sdk/src/typechain/tapioca-periphery';
 
 describe('Bidders test', () => {
     it('should test name', async () => {
@@ -131,8 +133,7 @@ describe('Bidders test', () => {
         ).to.be.revertedWith('only LQ');
     });
 
-    //todo: remove skip when swappers references are updated
-    it.skip('should get inputAmout for CurveStableToUsdoBidder', async () => {
+    it('should get inputAmout for CurveStableToUsdoBidder', async () => {
         const {
             wethUsdcSingularity,
             usdc,
@@ -141,6 +142,7 @@ describe('Bidders test', () => {
             bar,
             yieldBox,
             deployCurveStableToUsdoBidder,
+            deployer
         } = await loadFixture(register);
 
         const { stableToUsdoBidder } = await deployCurveStableToUsdoBidder(
@@ -155,6 +157,25 @@ describe('Bidders test', () => {
             usdoStratregy,
             0,
         );
+
+        const swapper = await stableToUsdoBidder.curveSwapper();
+        const swapperContract = new ethers.Contract(
+            swapper,
+            CurveSwapperArtifact.abi,
+            deployer,
+        ) as CurveSwapper;
+
+        const testBuild = await swapperContract
+            .connect(deployer)
+            ['buildSwapData(uint256,uint256,uint256,uint256,bool,bool)'](
+                usdcAssetId,
+                usdoAssetId,
+                100,
+                0,
+                true,
+                true,
+            );
+        expect(testBuild.length).gt(0);
 
         await expect(
             await stableToUsdoBidder.getInputAmount(

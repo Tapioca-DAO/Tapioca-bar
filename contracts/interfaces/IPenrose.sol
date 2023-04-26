@@ -3,7 +3,7 @@
 pragma solidity ^0.8.18;
 
 import "../usd0/IUSDO.sol";
-import "../swappers/ISwapper.sol";
+import "tapioca-periph/contracts/interfaces/ISwapper.sol";
 
 interface IPenrose {
     /// @notice swap extra data
