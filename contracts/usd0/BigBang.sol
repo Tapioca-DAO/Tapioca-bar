@@ -120,7 +120,6 @@ contract BigBang is BoringOwnable {
         uint256 part
     );
     event LogWithdrawFees(address indexed feeTo, uint256 feesEarned);
-    event LogYieldBoxFeesDeposit(uint256 feeShares, uint256 tapAmount);
     event LogApprovalForAll(
         address indexed _from,
         address indexed _operator,
@@ -497,48 +496,26 @@ contract BigBang is BoringOwnable {
         _removeCollateral(from, to, share);
     }
 
-    /// @notice Withdraw the balance of `feeTo`, swap asset into TAP and deposit it to yieldBox of `feeTo`
-    function depositFeesToYieldBox(
-        ISwapper swapper,
-        IPenrose.SwapData calldata swapData
-    ) public notPaused {
-        require(penrose.swappers(swapper), "BigBang: Invalid swapper");
-
+    /// @notice Transfers fees to penrose
+    function refreshPenroseFees(
+        address
+    ) external onlyOwner notPaused returns (uint256 feeShares) {
         uint256 balance = asset.balanceOf(address(this));
         totalFees += balance;
+        feeShares = yieldBox.toShare(assetId, totalFees, false);
 
-        emit LogWithdrawFees(penrose.feeTo(), balance);
-
-        address _feeTo = penrose.feeTo();
         if (totalFees > 0) {
-            uint256 feeShares = yieldBox.toShare(assetId, totalFees, false);
-
             asset.approve(address(yieldBox), totalFees);
+
             yieldBox.depositAsset(
                 assetId,
                 address(this),
-                address(this),
+                msg.sender,
                 totalFees,
                 0
             );
 
             totalFees = 0;
-            yieldBox.transfer(
-                address(this),
-                address(swapper),
-                assetId,
-                feeShares
-            );
-            (uint256 colAmount, ) = swapper.swap(
-                assetId,
-                penrose.wethAssetId(),
-                feeShares,
-                _feeTo,
-                swapData.minAssetAmount,
-                abi.encode(_assetToWethSwapPath())
-            );
-
-            emit LogYieldBoxFeesDeposit(feeShares, colAmount);
         }
     }
 

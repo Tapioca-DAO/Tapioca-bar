@@ -77,4 +77,8 @@ interface IMarket {
         bytes[] calldata calls,
         bool revertOnFail
     ) external returns (bool[] memory successes, string[] memory results);
+
+    function refreshPenroseFees(
+        address feeTo
+    ) external returns (uint256 feeShares);
 }

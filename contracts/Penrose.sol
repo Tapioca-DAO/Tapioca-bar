@@ -118,7 +118,7 @@ contract Penrose is BoringOwnable, BoringFactory {
     // **************//
     // *** EVENTS *** //
     // ************** //
-    event ProtocolWithdrawal(IFee[] markets, uint256 timestamp);
+    event ProtocolWithdrawal(IMarket[] markets, uint256 timestamp);
     event RegisterSingularityMasterContract(
         address location,
         IPenrose.ContractType risk
@@ -137,6 +137,7 @@ contract Penrose is BoringOwnable, BoringFactory {
     event PausedUpdated(bool oldState, bool newState);
     event BigBangEthMarketSet(address indexed _newAddress);
     event BigBangEthMarketDebtRate(uint256 _rate);
+    event LogYieldBoxFeesDeposit(uint256 feeShares, uint256 ethAmount);
 
     // ******************//
     // *** MODIFIERS *** //
@@ -196,12 +197,12 @@ contract Penrose is BoringOwnable, BoringFactory {
     // *** PUBLIC FUNCTIONS *** //
     // ************************ //
 
-    /// @notice Loop through the master contracts and call `depositFeesToYieldBox()` to each one of their clones.
+    /// @notice Loop through the master contracts and call `_depositFeesToYieldBox()` to each one of their clones.
     /// @dev `swappers_` can have one element that'll be used for all clones. Or one swapper per MasterContract.
     /// @dev Fees are withdrawn in TAP and sent to the FeeDistributor contract
     /// @param swappers_ One or more swappers to convert the asset to TAP.
     function withdrawAllSingularityFees(
-        IFee[] calldata markets_,
+        IMarket[] calldata markets_,
         ISwapper[] calldata swappers_,
         IPenrose.SwapData[] calldata swapData_
     ) public notPaused {
@@ -217,12 +218,12 @@ contract Penrose is BoringOwnable, BoringFactory {
         emit ProtocolWithdrawal(markets_, block.timestamp);
     }
 
-    /// @notice Loop through the master contracts and call `depositFeesToYieldBox()` to each one of their clones.
+    /// @notice Loop through the master contracts and call `_depositFeesToYieldBox()` to each one of their clones.
     /// @dev `swappers_` can have one element that'll be used for all clones. Or one swapper per MasterContract.
     /// @dev Fees are withdrawn in TAP and sent to the FeeDistributor contract
     /// @param swappers_ One or more swappers to convert the asset to TAP.
     function withdrawAllBigBangFees(
-        IFee[] calldata markets_,
+        IMarket[] calldata markets_,
         ISwapper[] calldata swappers_,
         IPenrose.SwapData[] calldata swapData_
     ) public notPaused {
@@ -440,15 +441,55 @@ contract Penrose is BoringOwnable, BoringFactory {
     function _withdrawAllProtocolFees(
         ISwapper[] calldata swappers_,
         IPenrose.SwapData[] calldata swapData_,
-        IFee[] memory markets_
+        IMarket[] memory markets_
     ) private {
         uint256 length = markets_.length;
         unchecked {
             for (uint256 i = 0; i < length; ) {
-                markets_[i].depositFeesToYieldBox(swappers_[i], swapData_[i]);
+                _depositFeesToYieldBox(markets_[i], swappers_[i], swapData_[i]);
                 ++i;
             }
         }
+    }
+
+    /// @notice Withdraw the balance of `feeTo`, swap asset into TAP and deposit it to yieldBox of `feeTo`
+    function _depositFeesToYieldBox(
+        IMarket market,
+        ISwapper swapper,
+        IPenrose.SwapData calldata swapData
+    ) public {
+        require(swappers[swapper], "Penrose: Invalid swapper");
+
+        uint256 feeShares = market.refreshPenroseFees(feeTo);
+        if (feeShares == 0) return;
+
+        uint256 assetId = market.assetId();
+        uint256 amount = 0;
+        if (assetId != wethAssetId) {
+            yieldBox.transfer(
+                address(this),
+                address(swapper),
+                assetId,
+                feeShares
+            );
+
+            address[] memory path = new address[](2);
+            path[0] = market.asset();
+            path[1] = address(wethToken);
+
+            (amount, ) = swapper.swap(
+                assetId,
+                wethAssetId,
+                feeShares,
+                feeTo,
+                swapData.minAssetAmount,
+                abi.encode(path)
+            );
+        } else {
+            yieldBox.transfer(address(this), feeTo, assetId, feeShares);
+        }
+
+        emit LogYieldBoxFeesDeposit(feeShares, amount);
     }
 
     function _getMasterContractLength(

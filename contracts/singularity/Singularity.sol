@@ -337,53 +337,21 @@ contract Singularity is SGLCommon {
         emit LogWithdrawFees(_feeTo, _feesEarnedFraction);
     }
 
-    /// @notice Withdraw the balance of `feeTo`, swap asset into TAP and deposit it to yieldBox of `feeTo`
-    function depositFeesToYieldBox(
-        ISwapper swapper,
-        IPenrose.SwapData calldata swapData
-    ) public {
-        if (accrueInfo.feesEarnedFraction > 0) {
-            withdrawFeesEarned();
-        }
-        require(penrose.swappers(swapper), "SGL: Invalid swapper");
-        address _feeTo = penrose.feeTo();
-
-        uint256 feeShares = _removeAsset(
-            _feeTo,
-            address(this),
-            balanceOf[_feeTo],
-            false
-        );
-        if (feeShares == 0) return;
-
-        uint256 wethAssetId = penrose.wethAssetId();
-        uint256 amount = 0;
-        if (assetId != wethAssetId) {
-            yieldBox.transfer(
-                address(this),
-                address(swapper),
-                assetId,
-                feeShares
-            );
-
-            (amount, ) = swapper.swap(
-                assetId,
-                penrose.wethAssetId(),
-                feeShares,
-                _feeTo,
-                swapData.minAssetAmount,
-                abi.encode(_assetToWethSwapPath())
-            );
-        } else {
-            yieldBox.transfer(address(this), _feeTo, assetId, feeShares);
-        }
-
-        emit LogYieldBoxFeesDeposit(feeShares, amount);
-    }
-
     // *********************** //
     // *** OWNER FUNCTIONS *** //
     // *********************** //
+    /// @notice Transfers fees to penrose
+    /// @param feeTo fees receiver
+    function refreshPenroseFees(
+        address feeTo
+    ) external onlyOwner notPaused returns (uint256 feeShares) {
+        if (accrueInfo.feesEarnedFraction > 0) {
+            withdrawFeesEarned();
+        }
+
+        feeShares = _removeAsset(feeTo, msg.sender, balanceOf[feeTo], false);
+    }
+
     /// @notice Set the bonus amount a liquidator can make use of, on top of the amount needed to make the user solvent
     /// @param _val the new value
     function setLiquidationBonusAmount(uint256 _val) external onlyOwner {
