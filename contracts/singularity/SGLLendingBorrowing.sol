@@ -100,51 +100,51 @@ contract SGLLendingBorrowing is SGLCommon {
     {
         require(penrose.swappers(swapper), "SGL: Invalid swapper");
 
-        // updateExchangeRate();
-        // accrue();
+        updateExchangeRate();
+        accrue();
 
-        // _removeCollateral(from, address(swapper), share);
+        _removeCollateral(from, address(swapper), share);
 
-        // ISwapper.SwapData memory swapData = swapper.buildSwapData(
-        //     collateralId,
-        //     assetId,
-        //     0,
-        //     share,
-        //     true,
-        //     true
-        // );
+        ISwapper.SwapData memory swapData = swapper.buildSwapData(
+            collateralId,
+            assetId,
+            0,
+            share,
+            true,
+            true
+        );
 
-        // uint256 shareOut;
-        // (amountOut, shareOut) = swapper.swap(
-        //     swapData,
-        //     minAmountOut,
-        //     address(this),
-        //     dexData
-        // );
+        uint256 shareOut;
+        (amountOut, shareOut) = swapper.swap(
+            swapData,
+            minAmountOut,
+            address(this),
+            dexData
+        );
 
-        // // As long as the ratio is correct, we trust `amountOut` resp.
-        // // `shareOut`, because all money received by the swapper gets used up
-        // // one way or another, or the transaction will revert.
-        // require(amountOut >= minAmountOut, "SGL: not enough");
+        // As long as the ratio is correct, we trust `amountOut` resp.
+        // `shareOut`, because all money received by the swapper gets used up
+        // one way or another, or the transaction will revert.
+        require(amountOut >= minAmountOut, "SGL: not enough");
 
-        // uint256 partOwed = userBorrowPart[from];
-        // uint256 amountOwed = totalBorrow.toElastic(partOwed, true);
-        // uint256 shareOwed = yieldBox.toShare(assetId, amountOwed, true);
-        // if (shareOwed <= shareOut) {
-        //     // Skim the repayment; the swapper left it in the YB
-        //     _repay(from, from, true, partOwed);
-        //     yieldBox.transfer(
-        //         address(this),
-        //         from,
-        //         assetId,
-        //         shareOut - shareOwed
-        //     );
-        // } else {
-        //     // Repay as much as we can.
-        //     // TODO: Is this guaranteed to succeed? Fair amount of conversions..
-        //     uint256 partOut = totalBorrow.toBase(amountOut, false);
-        //     _repay(from, from, true, partOut);
-        // }
+        uint256 partOwed = userBorrowPart[from];
+        uint256 amountOwed = totalBorrow.toElastic(partOwed, true);
+        uint256 shareOwed = yieldBox.toShare(assetId, amountOwed, true);
+        if (shareOwed <= shareOut) {
+            // Skim the repayment; the swapper left it in the YB
+            _repay(from, from, true, partOwed);
+            yieldBox.transfer(
+                address(this),
+                from,
+                assetId,
+                shareOut - shareOwed
+            );
+        } else {
+            // Repay as much as we can.
+            // TODO: Is this guaranteed to succeed? Fair amount of conversions..
+            uint256 partOut = totalBorrow.toBase(amountOut, false);
+            _repay(from, from, true, partOut);
+        }
     }
 
     /// @notice Lever up: Borrow more and buy collateral with it.

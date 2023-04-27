@@ -203,12 +203,7 @@ contract UniUsdoToWethBidder is BoringOwnable {
             true,
             true
         );
-        (uint256 outAmount, ) = univ2Swapper.swap(
-            swapData,
-            minAmount,
-            to,
-            "0x00"
-        );
+        (uint256 outAmount, ) = univ2Swapper.swap(swapData, minAmount, to, "");
 
         return outAmount;
     }
@@ -235,6 +230,6 @@ contract UniUsdoToWethBidder is BoringOwnable {
             true
         );
 
-        return univ2Swapper.getOutputAmount(swapData, "0x00");
+        return univ2Swapper.getOutputAmount(swapData, "");
     }
 }

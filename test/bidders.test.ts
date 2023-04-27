@@ -142,7 +142,7 @@ describe('Bidders test', () => {
             bar,
             yieldBox,
             deployCurveStableToUsdoBidder,
-            deployer
+            deployer,
         } = await loadFixture(register);
 
         const { stableToUsdoBidder } = await deployCurveStableToUsdoBidder(

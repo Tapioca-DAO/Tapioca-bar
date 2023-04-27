@@ -1945,4 +1945,3 @@ const createSimpleSwapData = (
 
     return swapData;
 };
-

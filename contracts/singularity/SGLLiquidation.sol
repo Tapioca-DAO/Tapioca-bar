@@ -3,8 +3,6 @@ pragma solidity ^0.8.18;
 
 import "./SGLCommon.sol";
 
-import "hardhat/console.sol";
-
 // solhint-disable max-line-length
 
 contract SGLLiquidation is SGLCommon {
@@ -37,24 +35,24 @@ contract SGLLiquidation is SGLCommon {
         (, uint256 _exchangeRate) = updateExchangeRate();
         accrue();
 
-        // if (address(liquidationQueue) != address(0)) {
-        //     (, bool bidAvail, uint256 bidAmount) = liquidationQueue
-        //         .getNextAvailBidPool();
-        //     if (bidAvail) {
-        //         uint256 needed = 0;
-        //         for (uint256 i = 0; i < maxBorrowParts.length; i++) {
-        //             needed += maxBorrowParts[i];
-        //         }
-        //         if (bidAmount >= needed) {
-        //             _orderBookLiquidation(
-        //                 users,
-        //                 _exchangeRate,
-        //                 usdoToBorrowedSwapData
-        //             );
-        //             return;
-        //         }
-        //     }
-        // }
+        if (address(liquidationQueue) != address(0)) {
+            (, bool bidAvail, uint256 bidAmount) = liquidationQueue
+                .getNextAvailBidPool();
+            if (bidAvail) {
+                uint256 needed = 0;
+                for (uint256 i = 0; i < maxBorrowParts.length; i++) {
+                    needed += maxBorrowParts[i];
+                }
+                if (bidAmount >= needed) {
+                    _orderBookLiquidation(
+                        users,
+                        _exchangeRate,
+                        usdoToBorrowedSwapData
+                    );
+                    return;
+                }
+            }
+        }
         _closedLiquidation(
             users,
             maxBorrowParts,
@@ -296,8 +294,6 @@ contract SGLLiquidation is SGLCommon {
             minAssetAmount = abi.decode(dexData, (uint256));
         }
 
-        console.log(" --- building swap data %s", collateralShare);
-        console.log(" --- building swap data %s", minAssetAmount);
         ISwapper.SwapData memory swapData = swapper.buildSwapData(
             collateralId,
             assetId,
@@ -306,9 +302,7 @@ contract SGLLiquidation is SGLCommon {
             true,
             true
         );
-        console.log(" --- swapping");
-        swapper.swap(swapData, minAssetAmount, address(this), "0x00");
-        console.log(" --- swapped");
+        swapper.swap(swapData, minAssetAmount, address(this), "");
 
         _extractLiquidationFees(borrowShare, callerReward, address(swapper));
     }

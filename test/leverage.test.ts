@@ -1,9 +1,8 @@
-import { ethers } from 'hardhat';
+import hre, { ethers } from 'hardhat';
 import { expect } from 'chai';
 import { BN, register, setBalance } from './test.utils';
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
-import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/dist/src/signers';
-import { MockSwapper__factory } from '../typechain/factories/contracts/mocks';
+import { MockSwapper__factory } from '../gitsub_tapioca-sdk/src/typechain/tapioca-mocks';
 
 const { formatUnits } = ethers.utils;
 
@@ -170,6 +169,7 @@ describe('Singularity Leverage', () => {
             0,
         );
 
+        hre.tracer.enabled = true;
         // Sell some collateral
         await wethUsdcSingularity.connect(alice).sellCollateral(
             alice.address,
@@ -178,6 +178,7 @@ describe('Singularity Leverage', () => {
             mockSwapper.address,
             [],
         );
+        hre.tracer.enabled = false;
 
         // Some interest will have accrued.. but otherwise we expect to have
         // 0.334 ETH of the original loan + 0.0005 ETH of the open fee left:

@@ -493,7 +493,7 @@ describe('Singularity test', () => {
         ).to.not.be.reverted;
     });
 
-    it.only('Should lend Weth, deposit Usdc collateral and borrow Weth and be liquidated for price drop', async () => {
+    it('Should lend Weth, deposit Usdc collateral and borrow Weth and be liquidated for price drop', async () => {
         const {
             usdc,
             weth,
@@ -586,7 +586,7 @@ describe('Singularity test', () => {
             ),
         ).to.not.be.reverted;
         hre.tracer.enabled = false;
-        
+
         const userBorrowedAmountAfter =
             await wethUsdcSingularity.userBorrowPart(eoa1.address);
 
@@ -1545,7 +1545,7 @@ describe('Singularity test', () => {
         );
     });
 
-    it.only('should compute fee withdrawals and execute', async () => {
+    it('should compute fee withdrawals and execute', async () => {
         const {
             usdc,
             weth,
