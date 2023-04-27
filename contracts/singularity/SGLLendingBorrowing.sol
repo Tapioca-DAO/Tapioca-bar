@@ -104,13 +104,21 @@ contract SGLLendingBorrowing is SGLCommon {
         accrue();
 
         _removeCollateral(from, address(swapper), share);
-        uint256 shareOut;
-        (amountOut, shareOut) = swapper.swap(
+
+        ISwapper.SwapData memory swapData = swapper.buildSwapData(
             collateralId,
             assetId,
+            0,
             share,
-            address(this),
+            true,
+            true
+        );
+
+        uint256 shareOut;
+        (amountOut, shareOut) = swapper.swap(
+            swapData,
             minAmountOut,
+            address(this),
             dexData
         );
 
@@ -170,13 +178,20 @@ contract SGLLendingBorrowing is SGLCommon {
         uint256 borrowShare;
         (, borrowShare) = _borrow(from, address(swapper), borrowAmount);
 
-        uint256 collateralShare;
-        (amountOut, collateralShare) = swapper.swap(
+        ISwapper.SwapData memory swapData = swapper.buildSwapData(
             assetId,
             collateralId,
+            0,
             supplyShare + borrowShare,
-            address(this),
+            true,
+            true
+        );
+
+        uint256 collateralShare;
+        (amountOut, collateralShare) = swapper.swap(
+            swapData,
             minAmountOut,
+            address(this),
             dexData
         );
         require(amountOut >= minAmountOut, "SGL: not enough");

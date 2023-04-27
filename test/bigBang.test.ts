@@ -511,6 +511,7 @@ describe('BigBang test', () => {
             eoa1,
             multiSwapper,
             __wethUsdcPrice,
+            createSimpleSwapData,
         } = await loadFixture(register);
 
         const feeAmount = 50000; //50%
@@ -641,14 +642,13 @@ describe('BigBang test', () => {
             await usd0.balanceOf(wethBigBangMarket.address),
             false,
         );
-        const calcAmount = await multiSwapper.getOutputAmount(
-            assetId,
-            feeShareIn,
-            ethers.utils.defaultAbiCoder.encode(
-                ['address[]'],
-                [[usd0.address, collateralAddress]],
-            ),
-        );
+
+        //
+        const swapData = await multiSwapper[
+            'buildSwapData(uint256,uint256,uint256,uint256,bool,bool)'
+        ](assetId, collateralId, 0, feeShareIn, true, true);
+
+        const calcAmount = await multiSwapper.getOutputAmount(swapData, '0x00');
         await expect(
             bar.withdrawAllBigBangFees(
                 [wethBigBangMarket.address],

@@ -3,10 +3,10 @@
 pragma solidity ^0.8.18;
 
 import "../../interfaces/IOracle.sol";
-import "../../interfaces/IFee.sol";
 import "../../interfaces/IMarket.sol";
+import "tapioca-periph/contracts/interfaces/ISwapper.sol";
 
-interface ISingularity is IMarket, IFee {
+interface ISingularity is IMarket {
     struct AccrueInfo {
         uint64 interestPerSecond;
         uint64 lastAccrued;

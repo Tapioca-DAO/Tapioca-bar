@@ -6,10 +6,10 @@ import "@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol";
 import "@boringcrypto/boring-solidity/contracts/libraries/BoringRebase.sol";
 
 import "./interfaces/ISingularity.sol";
-import "../swappers/ISwapper.sol";
 import "../liquidationQueue/ILiquidationQueue.sol";
 import "../interfaces/IPenrose.sol";
 import "../interfaces/IOracle.sol";
+import "tapioca-periph/contracts/interfaces/ISwapper.sol";
 import "tapioca-sdk/dist/contracts/YieldBox/contracts/YieldBox.sol";
 import "./SGLERC20.sol";
 

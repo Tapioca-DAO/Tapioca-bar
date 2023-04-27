@@ -574,6 +574,8 @@ describe('Singularity test', () => {
         );
         const userBorrowedAmountBefore =
             await wethUsdcSingularity.userBorrowPart(eoa1.address);
+
+        hre.tracer.enabled = true;
         await expect(
             wethUsdcSingularity.liquidate(
                 [eoa1.address],
@@ -583,6 +585,8 @@ describe('Singularity test', () => {
                 data,
             ),
         ).to.not.be.reverted;
+        hre.tracer.enabled = false;
+
         const userBorrowedAmountAfter =
             await wethUsdcSingularity.userBorrowPart(eoa1.address);
 
@@ -1638,22 +1642,22 @@ describe('Singularity test', () => {
         const marketAsset = await wethUsdcSingularity.asset();
         const marketCollateral = await wethUsdcSingularity.collateral();
         const marketAssetId = await wethUsdcSingularity.assetId();
+
+        const swapData = await multiSwapper[
+            'buildSwapData(uint256,uint256,uint256,uint256,bool,bool)'
+        ](marketAssetId, collateralId, 0, feeShareIn, true, true);
         const feeMinAmount = await multiSwapper.getOutputAmount(
-            marketAssetId,
-            feeShareIn,
-            new ethers.utils.AbiCoder().encode(
-                ['address[]'],
-                [[marketCollateral, marketAsset]],
-            ),
+            swapData,
+            '0x00',
         );
 
         // Withdraw fees from Penrose
         const markets = [wethUsdcSingularity.address];
         const swappers = [multiSwapper.address];
-        const swapData = [{ minAssetAmount: feeMinAmount }];
+        const dexData = [{ minAssetAmount: feeMinAmount }];
 
         await expect(
-            bar.withdrawAllSingularityFees(markets, swappers, swapData),
+            bar.withdrawAllSingularityFees(markets, swappers, dexData),
         ).to.emit(bar, 'LogYieldBoxFeesDeposit');
 
         const amountHarvested = await yieldBox.toAmount(

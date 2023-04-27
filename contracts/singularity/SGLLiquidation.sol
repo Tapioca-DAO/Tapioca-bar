@@ -251,7 +251,7 @@ contract SGLLiquidation is SGLCommon {
         uint256 maxBorrowPart,
         ISwapper swapper,
         uint256 _exchangeRate,
-        bytes calldata swapData
+        bytes calldata dexData
     ) private {
         if (_isSolvent(user, _exchangeRate)) return;
 
@@ -289,18 +289,20 @@ contract SGLLiquidation is SGLCommon {
             collateralShare
         );
 
-        uint256 minAssetMount = 0;
-        if (swapData.length > 0) {
-            minAssetMount = abi.decode(swapData, (uint256));
+        uint256 minAssetAmount = 0;
+        if (dexData.length > 0) {
+            minAssetAmount = abi.decode(dexData, (uint256));
         }
-        swapper.swap(
+
+        ISwapper.SwapData memory swapData = swapper.buildSwapData(
             collateralId,
             assetId,
+            0,
             collateralShare,
-            address(this),
-            minAssetMount,
-            abi.encode(_collateralToAssetSwapPath())
+            true,
+            true
         );
+        swapper.swap(swapData, minAssetAmount, address(this), "");
 
         _extractLiquidationFees(borrowShare, callerReward, address(swapper));
     }

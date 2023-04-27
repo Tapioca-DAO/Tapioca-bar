@@ -6,8 +6,8 @@ import "@boringcrypto/boring-solidity/contracts/BoringOwnable.sol";
 import "../../interfaces/IPenrose.sol";
 import "../ILiquidationQueue.sol";
 import "../../libraries/ICurvePool.sol";
-import "../../swappers/CurveSwapper.sol";
 import "../../singularity/interfaces/ISingularity.sol";
+import "tapioca-periph/contracts/interfaces/ISwapper.sol";
 import "tapioca-sdk/dist/contracts/YieldBox/contracts/interfaces/IYieldBox.sol";
 
 /*
@@ -32,7 +32,7 @@ contract CurveStableToUsdoBidder is BoringOwnable {
     // ************ //
 
     /// @notice 3Crv+USDO swapper
-    ISwapper public curveSwapper;
+    ICurveSwapper public curveSwapper;
     /// @notice Curve pool assets number
     uint256 curveAssetsLength;
 
@@ -44,7 +44,7 @@ contract CurveStableToUsdoBidder is BoringOwnable {
     /// @notice creates a new CurveStableToUsdoBidder
     /// @param curveSwapper_ CurveSwapper address
     /// @param curvePoolAssetCount_ Curve pool assets number
-    constructor(ISwapper curveSwapper_, uint256 curvePoolAssetCount_) {
+    constructor(ICurveSwapper curveSwapper_, uint256 curvePoolAssetCount_) {
         curveSwapper = curveSwapper_;
         curveAssetsLength = curvePoolAssetCount_;
     }
@@ -175,7 +175,7 @@ contract CurveStableToUsdoBidder is BoringOwnable {
     /// @notice sets the Curve swapper
     /// @dev used for USDO to WETH swap
     /// @param _swapper The curve pool swapper address
-    function setCurveSwapper(ISwapper _swapper) external onlyOwner {
+    function setCurveSwapper(ICurveSwapper _swapper) external onlyOwner {
         emit CurveSwapperUpdated(address(curveSwapper), address(_swapper));
         curveSwapper = _swapper;
     }
@@ -184,9 +184,7 @@ contract CurveStableToUsdoBidder is BoringOwnable {
     // *** PRIVATE FUNCTIONS *** //
     // ************************* //
     function _getCurveIndex(address token) private view returns (uint256) {
-        ICurvePool pool = ICurvePool(
-            CurveSwapper(address(curveSwapper)).curvePool()
-        );
+        ICurvePool pool = ICurvePool(curveSwapper.curvePool());
         int256 index = -1;
         for (uint256 i = 0; i < curveAssetsLength; i++) {
             address tokenAtIndex = pool.coins(i);
@@ -214,8 +212,16 @@ contract CurveStableToUsdoBidder is BoringOwnable {
         indexes[1] = tokenOutCurveIndex;
 
         uint256 share = yieldBox.toShare(tokenInId, amountIn, false);
-        return
-            curveSwapper.getOutputAmount(tokenInId, share, abi.encode(indexes));
+
+        ISwapper.SwapData memory swapData = curveSwapper.buildSwapData(
+            tokenInId,
+            tokenOutId,
+            amountIn,
+            share,
+            true,
+            true
+        );
+        return curveSwapper.getOutputAmount(swapData, abi.encode(indexes));
     }
 
     function _swap(
@@ -237,12 +243,18 @@ contract CurveStableToUsdoBidder is BoringOwnable {
         indexes[1] = tokenOutCurveIndex;
         uint256 tokenInShare = yieldBox.toShare(stableAssetId, amountIn, false);
 
-        (uint256 amountOut, ) = curveSwapper.swap(
+        ISwapper.SwapData memory swapData = curveSwapper.buildSwapData(
             stableAssetId,
             usdoAssetId,
+            0,
             tokenInShare,
-            to,
+            true,
+            true
+        );
+        (uint256 amountOut, ) = curveSwapper.swap(
+            swapData,
             minAmount,
+            to,
             abi.encode(indexes)
         );
 

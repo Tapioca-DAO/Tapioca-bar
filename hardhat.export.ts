@@ -78,7 +78,6 @@ const config: HardhatUserConfig & { dodoc?: any; vyper: any } = {
                     optimizer: {
                         enabled: true,
                         runs: 300,
-                    },
                 },
             },
         ],
