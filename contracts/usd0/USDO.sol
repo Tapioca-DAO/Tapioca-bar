@@ -2,7 +2,7 @@
 pragma solidity ^0.8.18;
 
 import "tapioca-sdk/dist/contracts/interfaces/ILayerZeroEndpoint.sol";
-import "./BaseOFT.sol";
+import "./USDOMocks.sol";
 import "./interfaces/IERC3156FlashLender.sol";
 
 /*
@@ -20,7 +20,7 @@ __/\\\\\\\\\\\\\\\_____/\\\\\\\\\_____/\\\\\\\\\\\\\____/\\\\\\\\\\\_______/\\\\
 */
 
 /// @title USDO OFT contract
-contract USDO is BaseOFT, IERC3156FlashLender {
+contract USDO is USDOMocks, IERC3156FlashLender {
     // ************ //
     // *** VARS *** //
     // ************ //
@@ -69,7 +69,7 @@ contract USDO is BaseOFT, IERC3156FlashLender {
         address _owner
     )
         OFTV2("USDO", "USDO", 8, _lzEndpoint)
-        BaseOFT(_yieldBox)
+        USDOMocks(_yieldBox)
         ERC20Permit("USDO")
     {
         uint256 chain = _getChainId();
@@ -211,33 +211,5 @@ contract USDO is BaseOFT, IERC3156FlashLender {
     /// @dev Useful for testing.
     function _getChainId() private view returns (uint256) {
         return ILayerZeroEndpoint(lzEndpoint).getChainId();
-    }
-
-    // ************************* //
-    // ************************* //
-    // ************************* //
-    // ************************* //
-    //TODO: to be removed
-    // ************************* //
-    // *** TESTNET FUNCTIONS *** //
-    // ************************* //
-    mapping(address => uint256) public mintedAt;
-    uint256 public constant MINT_WINDOW = 24 hours;
-    uint256 public mintLimit;
-
-    function setMintLimit(uint256 _val) external onlyOwner {
-        mintLimit = _val;
-    }
-
-    function freeMint(uint256 _val) external {
-        require(_val <= mintLimit, "USDO: amount too big");
-        require(
-            mintedAt[msg.sender] + MINT_WINDOW <= block.timestamp,
-            "USDO: too early"
-        );
-
-        mintedAt[msg.sender] = block.timestamp;
-
-        _mint(msg.sender, _val);
     }
 }
