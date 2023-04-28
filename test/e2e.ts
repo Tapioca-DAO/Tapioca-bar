@@ -323,7 +323,7 @@ describe('e2e tests', () => {
                 '0x00',
             ),
             true,
-            'SGL: no return data',
+            'Market: no return data',
         );
 
         const borrowersMiddle = Math.ceil(borrowers.length / 2);
@@ -349,7 +349,7 @@ describe('e2e tests', () => {
             usdoBorrowVal,
             usdoBorrowVal,
             true,
-            'SGL: no return data',
+            'Market: no return data',
         );
 
         //try to liquidate

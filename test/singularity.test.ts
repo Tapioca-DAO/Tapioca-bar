@@ -220,7 +220,7 @@ describe('Singularity test', () => {
         expect(data.successes[0]).to.be.true;
         expect(data.successes[1]).to.be.false; //can't borrow as there are no lenders
 
-        expect(data.results[0]).to.eq('SGL: no return data');
+        expect(data.results[0]).to.eq('Market: no return data');
         expect(data.results[1]).to.eq('SGL: min limit');
 
         await expect(
@@ -1105,7 +1105,7 @@ describe('Singularity test', () => {
 
         await expect(
             wethUsdcSingularity.init(ethers.utils.toUtf8Bytes('')),
-        ).to.be.revertedWith('SGL: initialized');
+        ).to.be.revertedWith('Market: initialized');
         await wethUsdcSingularity.accrue();
         await wethUsdcSingularity.accrue();
     });
@@ -2128,7 +2128,7 @@ describe('Singularity test', () => {
         await approveTokensAndSetBarApproval();
         await expect(
             usdcDepositAndAddCollateral(usdcAmount),
-        ).to.be.revertedWith('SGL: paused');
+        ).to.be.revertedWith('Market: paused');
 
         await wethUsdcSingularity.updatePause(false);
 
@@ -2143,7 +2143,7 @@ describe('Singularity test', () => {
         await timeTravel(86500);
         await expect(
             wethDepositAndAddAsset(wethAmount, eoa1),
-        ).to.be.revertedWith('SGL: paused');
+        ).to.be.revertedWith('Market: paused');
 
         await wethUsdcSingularity.updatePause(false);
 

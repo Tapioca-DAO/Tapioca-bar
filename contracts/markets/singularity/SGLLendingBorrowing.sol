@@ -99,12 +99,9 @@ contract SGLLendingBorrowing is SGLCommon {
         returns (uint256 amountOut)
     {
         require(penrose.swappers(swapper), "SGL: Invalid swapper");
-
         updateExchangeRate();
         accrue();
-
         _removeCollateral(from, address(swapper), share);
-
         ISwapper.SwapData memory swapData = swapper.buildSwapData(
             collateralId,
             assetId,
@@ -113,7 +110,6 @@ contract SGLLendingBorrowing is SGLCommon {
             true,
             true
         );
-
         uint256 shareOut;
         (amountOut, shareOut) = swapper.swap(
             swapData,
@@ -121,12 +117,10 @@ contract SGLLendingBorrowing is SGLCommon {
             address(this),
             dexData
         );
-
         // As long as the ratio is correct, we trust `amountOut` resp.
         // `shareOut`, because all money received by the swapper gets used up
         // one way or another, or the transaction will revert.
         require(amountOut >= minAmountOut, "SGL: not enough");
-
         uint256 partOwed = userBorrowPart[from];
         uint256 amountOwed = totalBorrow.toElastic(partOwed, true);
         uint256 shareOwed = yieldBox.toShare(assetId, amountOwed, true);

@@ -5,7 +5,7 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 
 //todo: remove skip when swappers references are updated
-describe.skip('LiquidationQueue test', () => {
+describe('LiquidationQueue test', () => {
     it('should throw if premium too high or amount too low', async () => {
         const { liquidationQueue, deployer } = await loadFixture(register);
 
@@ -2200,8 +2200,8 @@ describe.skip('LiquidationQueue test', () => {
 
         await expect(
             wethUsdcSingularity.liquidate(
-                [deployer.address],
-                [await wethUsdcSingularity.userBorrowPart(deployer.address)],
+                [eoa1.address],
+                [await wethUsdcSingularity.userBorrowPart(eoa1.address)],
                 multiSwapper.address,
                 data,
                 data,

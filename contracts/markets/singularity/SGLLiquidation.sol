@@ -334,7 +334,6 @@ contract SGLLiquidation is SGLCommon {
                 );
             }
         }
-
         require(liquidatedCount > 0, "SGL: no users found");
     }
 }

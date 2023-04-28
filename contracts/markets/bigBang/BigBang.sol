@@ -3,15 +3,11 @@ pragma solidity ^0.8.18;
 
 import "@boringcrypto/boring-solidity/contracts/BoringOwnable.sol";
 import "@boringcrypto/boring-solidity/contracts/ERC20.sol";
-import "@boringcrypto/boring-solidity/contracts/libraries/BoringRebase.sol";
-import "@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol";
 
-import "./interfaces/IBigBang.sol";
-import "../interfaces/IOracle.sol";
-import "../interfaces/IPenrose.sol";
-import "../interfaces/ISendFrom.sol";
+import "tapioca-periph/contracts/interfaces/IBigBang.sol";
+import "tapioca-periph/contracts/interfaces/ISendFrom.sol";
 import "tapioca-periph/contracts/interfaces/ISwapper.sol";
-import "tapioca-sdk/dist/contracts/YieldBox/contracts/YieldBox.sol";
+import "../Market.sol";
 
 // solhint-disable max-line-length
 /*
@@ -28,7 +24,7 @@ __/\\\\\\\\\\\\\\\_____/\\\\\\\\\_____/\\\\\\\\\\\\\____/\\\\\\\\\\\_______/\\\\
 
 */
 
-contract BigBang is BoringOwnable {
+contract BigBang is BoringOwnable, Market {
     using RebaseLibrary for Rebase;
     using BoringERC20 for IERC20;
 
@@ -39,43 +35,12 @@ contract BigBang is BoringOwnable {
 
     IBigBang.AccrueInfo public accrueInfo;
 
-    IPenrose public penrose;
-    YieldBox public yieldBox;
-    IERC20 public collateral;
-    IUSDO public asset;
-    uint256 public collateralId;
-    uint256 public assetId;
-
-    // Total amounts
-    uint256 public totalCollateralShare; // Total collateral supplied
-    Rebase public totalBorrow; // elastic = Total token amount to be repayed by borrowers, base = Total parts of the debt held by borrowers
-    uint256 public totalBorrowCap;
-
-    // User balances
-    mapping(address => uint256) public userCollateralShare;
-    // userAssetFraction is called balanceOf for ERC20 compatibility (it's in ERC20.sol)
-
-    mapping(address => uint256) public userBorrowPart;
-
     // map of operator approval
     mapping(address => mapping(address => bool)) public isApprovedForAll;
 
-    /// @notice Exchange and interest rate tracking.
-    /// This is 'cached' here because calls to Oracles can be very expensive.
-    /// Asset -> collateral = assetAmount * exchangeRate.
-    uint256 public exchangeRate;
     uint256 public borrowingFee;
 
-    IOracle oracle;
-    bytes public oracleData;
-
-    uint256 public callerFee; // 90%
-    uint256 public protocolFee; // 10%
-    uint256 public collateralizationRate; // 75%
     uint256 public totalFees;
-
-    bool public paused;
-    address public conservator;
 
     bool private _isEthMarket;
     uint256 public maxDebtRate;
@@ -84,17 +49,9 @@ contract BigBang is BoringOwnable {
     uint256 public debtStartPoint;
     uint256 private constant DEBT_PRECISION = 1e18;
 
-    uint256 public minLiquidatorReward = 1e3; //1%
-    uint256 public maxLiquidatorReward = 1e4; //10%
-    uint256 public liquidationBonusAmount = 1e4; //10%
-
-    //errors
-    error NotApproved(address _from, address _operator);
-
     // ************** //
     // *** EVENTS *** //
     // ************** //
-    event LogExchangeRate(uint256 rate);
     event LogAccrue(uint256 accruedAmount, uint64 rate);
     event LogAddCollateral(
         address indexed from,
@@ -125,24 +82,14 @@ contract BigBang is BoringOwnable {
         address indexed _operator,
         bool _approved
     );
-    event LogBorrowCapUpdated(uint256 _oldVal, uint256 _newVal);
-    event LogStabilityFee(uint256 _oldFee, uint256 _newFee);
     event LogBorrowingFee(uint256 _oldVal, uint256 _newVal);
-    event ConservatorUpdated(address indexed old, address indexed _new);
-    event PausedUpdated(bool oldState, bool newState);
 
     // ***************** //
     // *** CONSTANTS *** //
     // ***************** //
     uint256 private constant LIQUIDATION_MULTIPLIER = 112000; // add 12%
-
     uint256 private constant MAX_BORROWING_FEE = 8e4; //at 80% for testing; TODO
     uint256 private constant MAX_STABILITY_FEE = 8e17; //at 80% for testing; TODO
-
-    uint256 private constant FEE_PRECISION = 1e5;
-    uint256 private EXCHANGE_RATE_PRECISION; //not costant, but can only be set in the 'init' method
-    uint256 private constant COLLATERALIZATION_RATE_PRECISION = 1e5; // Must be less than EXCHANGE_RATE_PRECISION (due to optimization in math)
-    uint256 private constant LIQUIDATION_MULTIPLIER_PRECISION = 1e5;
 
     // ***************** //
     // *** MODIFIERS *** //
@@ -155,23 +102,6 @@ contract BigBang is BoringOwnable {
             revert NotApproved(from, msg.sender);
         }
         _;
-    }
-    /// @dev Checks if the user is solvent in the closed liquidation case at the end of the function body.
-    modifier solvent(address from) {
-        _;
-        require(_isSolvent(from, exchangeRate), "BigBang: insolvent");
-    }
-
-    modifier notPaused() {
-        require(!paused, "BigBang: paused");
-        _;
-    }
-
-    bool private initialized;
-    modifier onlyOnce() {
-        require(!initialized, "BigBang: initialized");
-        _;
-        initialized = true;
     }
 
     /// @notice The init function that acts as a constructor
@@ -214,7 +144,7 @@ contract BigBang is BoringOwnable {
             "BigBang: bad pair"
         );
 
-        asset = IUSDO(_asset);
+        asset = IERC20(_asset);
         assetId = penrose.usdoAssetId();
         collateral = _collateral;
         collateralId = _collateralId;
@@ -244,75 +174,6 @@ contract BigBang is BoringOwnable {
     // ********************** //
     // *** VIEW FUNCTIONS *** //
     // ********************** //
-    /// @notice Return the amount of collateral for a `user` to be solvent, min TVL and max TVL. Returns 0 if user already solvent.
-    /// @dev We use a `CLOSED_COLLATERIZATION_RATE` that is a safety buffer when making the user solvent again,
-    ///      To prevent from being liquidated. This function is valid only if user is not solvent by `_isSolvent()`.
-    /// @param user The user to check solvency.
-    /// @param _exchangeRate The exchange rate asset/collateral.
-    /// @return amountToSolvency The amount of collateral to be solvent.
-    function computeTVLInfo(
-        address user,
-        uint256 _exchangeRate
-    )
-        public
-        view
-        returns (uint256 amountToSolvency, uint256 minTVL, uint256 maxTVL)
-    {
-        uint256 borrowPart = userBorrowPart[user];
-        if (borrowPart == 0) return (0, 0, 0);
-        uint256 collateralShare = userCollateralShare[user];
-
-        Rebase memory _totalBorrow = totalBorrow;
-
-        uint256 collateralAmountInAsset = yieldBox.toAmount(
-            collateralId,
-            (collateralShare *
-                (EXCHANGE_RATE_PRECISION / COLLATERALIZATION_RATE_PRECISION) *
-                collateralizationRate),
-            false
-        ) / _exchangeRate;
-        borrowPart = (borrowPart * _totalBorrow.elastic) / _totalBorrow.base;
-
-        amountToSolvency = borrowPart >= collateralAmountInAsset
-            ? borrowPart - collateralAmountInAsset
-            : 0;
-
-        (minTVL, maxTVL) = _computeMaxAndMinLTVInAsset(
-            collateralShare,
-            _exchangeRate
-        );
-    }
-
-    /// @notice Return the maximum liquidatable amount for user
-    function computeClosingFactor(
-        address user,
-        uint256 _exchangeRate
-    ) public view returns (uint256) {
-        if (_isSolvent(user, _exchangeRate)) return 0;
-
-        (uint256 amountToSolvency, , uint256 maxTVL) = computeTVLInfo(
-            user,
-            _exchangeRate
-        );
-        uint256 borrowed = userBorrowPart[user];
-        if (borrowed >= maxTVL) return borrowed;
-
-        return
-            amountToSolvency +
-            ((liquidationBonusAmount * borrowed) / FEE_PRECISION);
-    }
-
-    function computeLiquidatorReward(
-        address user,
-        uint256 _exchangeRate
-    ) public view returns (uint256) {
-        (uint256 minTVL, uint256 maxTVL) = _computeMaxAndMinLTVInAsset(
-            userCollateralShare[user],
-            _exchangeRate
-        );
-        return _getCallerReward(userBorrowPart[user], minTVL, maxTVL);
-    }
-
     /// @notice returns total market debt
     function getTotalDebt() external view returns (uint256) {
         return totalBorrow.elastic;
@@ -366,23 +227,6 @@ contract BigBang is BoringOwnable {
     /// @param status true/false
     function updateOperator(address operator, bool status) external {
         operators[msg.sender][operator] = status;
-    }
-
-    /// @notice Gets the exchange rate. I.e how much collateral to buy 1e18 asset.
-    /// @dev This function is supposed to be invoked if needed because Oracle queries can be expensive.
-    ///      Oracle should consider USDO at 1$
-    /// @return updated True if `exchangeRate` was updated.
-    /// @return rate The new exchange rate.
-    function updateExchangeRate() public returns (bool updated, uint256 rate) {
-        (updated, rate) = oracle.get("");
-
-        if (updated) {
-            exchangeRate = rate;
-            emit LogExchangeRate(rate);
-        } else {
-            // Return the old rate if fetching wasn't successful
-            rate = exchangeRate;
-        }
     }
 
     /// @notice Accrues the interest on the borrowed tokens and handles the accumulation of fees.
@@ -543,124 +387,9 @@ contract BigBang is BoringOwnable {
         );
     }
 
-    /// @notice Withdraw to another layer
-    function withdrawTo(
-        uint16 dstChainId,
-        bytes32 receiver,
-        uint256 amount,
-        bytes calldata adapterParams,
-        address payable refundAddress
-    ) public payable {
-        try
-            IERC165(address(asset)).supportsInterface(
-                type(ISendFrom).interfaceId
-            )
-        {} catch {
-            return;
-        }
-
-        uint256 available = yieldBox.toAmount(
-            assetId,
-            yieldBox.balanceOf(msg.sender, assetId),
-            false
-        );
-        require(available >= amount, "BigBang: not available");
-
-        yieldBox.withdraw(assetId, msg.sender, address(this), amount, 0);
-
-        ISendFrom.LzCallParams memory callParams = ISendFrom.LzCallParams({
-            refundAddress: refundAddress,
-            zroPaymentAddress: address(0),
-            adapterParams: adapterParams
-        });
-
-        ISendFrom(address(asset)).sendFrom{value: msg.value}(
-            address(this),
-            dstChainId,
-            receiver,
-            amount,
-            callParams
-        );
-    }
-
     // *********************** //
     // *** OWNER FUNCTIONS *** //
     // *********************** //
-    /// @notice Set the bonus amount a liquidator can make use of, on top of the amount needed to make the user solvent
-    /// @param _val the new value
-    function setLiquidationBonusAmount(uint256 _val) external onlyOwner {
-        require(_val < FEE_PRECISION, "BigBang: not valid");
-        liquidationBonusAmount = _val;
-    }
-
-    /// @notice Set the liquidator min reward
-    /// @param _val the new value
-    function setMinLiquidatorReward(uint256 _val) external onlyOwner {
-        require(_val < FEE_PRECISION, "BigBang: not valid");
-        require(_val < maxLiquidatorReward, "BigBang: not valid");
-        minLiquidatorReward = _val;
-    }
-
-    /// @notice Set the liquidator max reward
-    /// @param _val the new value
-    function setMaxLiquidatorReward(uint256 _val) external onlyOwner {
-        require(_val < FEE_PRECISION, "BigBang: not valid");
-        require(_val > minLiquidatorReward, "BigBang: not valid");
-        maxLiquidatorReward = _val;
-    }
-
-    /// @notice Set the Conservator address
-    /// @dev Conservator can pause the contract
-    /// @param _conservator The new address
-    function setConservator(address _conservator) external onlyOwner {
-        require(_conservator != address(0), "BigBang: address not valid");
-        emit ConservatorUpdated(conservator, _conservator);
-        conservator = _conservator;
-    }
-
-    /// @notice updates the pause state of the contract
-    /// @param val the new value
-    function updatePause(bool val) external {
-        require(msg.sender == conservator, "BigBang: unauthorized");
-        require(val != paused, "BigBang: same state");
-        emit PausedUpdated(paused, val);
-        paused = val;
-    }
-
-    /// @notice sets the protocol fee
-    /// @dev can only be called by the owner
-    /// @param _val the new value
-    function setProtocolFee(uint256 _val) external onlyOwner {
-        require(_val <= FEE_PRECISION, "BigBang: not valid");
-        protocolFee = _val;
-    }
-
-    /// @notice sets the caller fee
-    /// @dev can only be called by the owner
-    /// @param _val the new value
-    function setCallerFee(uint256 _val) external onlyOwner {
-        require(_val <= FEE_PRECISION, "BigBang: not valid");
-        callerFee = _val;
-    }
-
-    /// @notice sets the collateralization rate
-    /// @dev can only be called by the owner
-    /// @param _val the new value
-    function setCollateralizationRate(uint256 _val) external onlyOwner {
-        require(_val <= COLLATERALIZATION_RATE_PRECISION, "BigBang: not valid");
-        collateralizationRate = _val;
-    }
-
-    /// @notice sets max borrowable amount
-    function setBorrowCap(uint256 _cap) external onlyOwner notPaused {
-        emit LogBorrowCapUpdated(totalBorrowCap, _cap);
-        totalBorrowCap = _cap;
-    }
-
-    /// @notice Updates the variable debt ratio
-    /// @dev has to be called before accrue
-    function updateDebt() private {}
-
     /// @notice Updates the borrowing fee
     /// @param _borrowingFee the new value
     function updateBorrowingFee(uint256 _borrowingFee) external onlyOwner {
@@ -672,67 +401,6 @@ contract BigBang is BoringOwnable {
     // ************************* //
     // *** PRIVATE FUNCTIONS *** //
     // ************************* //
-    function _getRevertMsg(
-        bytes memory _returnData
-    ) private pure returns (string memory) {
-        // If the _res length is less than 68, then the transaction failed silently (without a revert message)
-        if (_returnData.length < 68) return "BingBang: no return data";
-        // solhint-disable-next-line no-inline-assembly
-        assembly {
-            // Slice the sighash.
-            _returnData := add(_returnData, 0x04)
-        }
-        return abi.decode(_returnData, (string)); // All that remains is the revert string
-    }
-
-    /// @notice construct Uniswap path
-    function _collateralToAssetSwapPath()
-        private
-        view
-        returns (address[] memory path)
-    {
-        path = new address[](2);
-        path[0] = address(collateral);
-        path[1] = address(asset);
-    }
-
-    function _assetToWethSwapPath()
-        internal
-        view
-        returns (address[] memory path)
-    {
-        path = new address[](2);
-        path[0] = address(asset);
-        path[1] = address(penrose.wethToken());
-    }
-
-    /// @notice Concrete implementation of `isSolvent`. Includes a parameter to allow caching `exchangeRate`.
-    /// @param _exchangeRate The exchange rate. Used to cache the `exchangeRate` between calls.
-    function _isSolvent(
-        address user,
-        uint256 _exchangeRate
-    ) internal view returns (bool) {
-        // accrue must have already been called!
-        uint256 borrowPart = userBorrowPart[user];
-        if (borrowPart == 0) return true;
-        uint256 collateralShare = userCollateralShare[user];
-
-        Rebase memory _totalBorrow = totalBorrow;
-
-        return
-            yieldBox.toAmount(
-                collateralId,
-                collateralShare *
-                    (EXCHANGE_RATE_PRECISION /
-                        COLLATERALIZATION_RATE_PRECISION) *
-                    collateralizationRate,
-                false
-            ) >=
-            // Moved exchangeRate here instead of dividing the other side to preserve more precision
-            (borrowPart * _totalBorrow.elastic * _exchangeRate) /
-                _totalBorrow.base;
-    }
-
     function _liquidateUser(
         address user,
         uint256 maxBorrowPart,
@@ -894,7 +562,7 @@ contract BigBang is BoringOwnable {
         yieldBox.withdraw(assetId, from, address(this), amount, 0);
         //burn USDO
         if (toBurn > 0) {
-            asset.burn(address(this), toBurn);
+            IUSDO(address(asset)).burn(address(this), toBurn);
         }
 
         emit LogRepay(from, to, amount, part);
@@ -918,7 +586,7 @@ contract BigBang is BoringOwnable {
         userBorrowPart[from] += part;
 
         //mint USDO
-        asset.mint(address(this), amount);
+        IUSDO(address(asset)).mint(address(this), amount);
 
         //deposit borrowed amount to user
         asset.approve(address(yieldBox), amount);
@@ -927,43 +595,6 @@ contract BigBang is BoringOwnable {
         share = yieldBox.toShare(assetId, amount, false);
 
         emit LogBorrow(from, to, amount, feeAmount, part);
-    }
-
-    /// @notice Returns the min and max LTV for user in asset price
-    function _computeMaxAndMinLTVInAsset(
-        uint256 collateralShare,
-        uint256 _exchangeRate
-    ) internal view returns (uint256 min, uint256 max) {
-        uint256 collateralAmount = yieldBox.toAmount(
-            collateralId,
-            collateralShare,
-            false
-        );
-
-        max = (collateralAmount * EXCHANGE_RATE_PRECISION) / _exchangeRate;
-        min = (max * collateralizationRate) / COLLATERALIZATION_RATE_PRECISION;
-    }
-
-    function _getCallerReward(
-        uint256 borrowed,
-        uint256 startTVLInAsset,
-        uint256 maxTVLInAsset
-    ) internal view returns (uint256) {
-        if (borrowed == 0) return 0;
-        if (startTVLInAsset == 0) return 0;
-
-        if (borrowed < startTVLInAsset) return 0;
-        if (borrowed >= maxTVLInAsset) return minLiquidatorReward;
-
-        uint256 rewardPercentage = ((borrowed - startTVLInAsset) *
-            FEE_PRECISION) / (maxTVLInAsset - startTVLInAsset);
-
-        int256 diff = int256(minLiquidatorReward) - int256(maxLiquidatorReward);
-        int256 reward = (diff * int256(rewardPercentage)) /
-            int256(FEE_PRECISION) +
-            int256(maxLiquidatorReward);
-
-        return uint256(reward);
     }
 
     function _updateBorrowAndCollateralShare(
