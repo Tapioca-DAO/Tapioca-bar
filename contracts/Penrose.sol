@@ -7,7 +7,7 @@ import "@boringcrypto/boring-solidity/contracts/BoringFactory.sol";
 import "tapioca-sdk/dist/contracts/YieldBox/contracts/YieldBox.sol";
 import "tapioca-sdk/dist/contracts/YieldBox/contracts/interfaces/IYieldBox.sol";
 import "tapioca-sdk/dist/contracts/YieldBox/contracts/strategies/ERC20WithoutStrategy.sol";
-import "./singularity/interfaces/ISingularity.sol";
+import "tapioca-periph/contracts/interfaces/ISingularity.sol";
 import "./interfaces/IPenrose.sol";
 
 // TODO: Permissionless market deployment

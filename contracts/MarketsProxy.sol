@@ -2,9 +2,9 @@
 pragma solidity ^0.8.18;
 
 import "@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol";
-import "tapioca-sdk/dist/contracts/lzApp/NonblockingLzApp.sol";
 
-import "./interfaces/IMarket.sol";
+import "tapioca-periph/contracts/interfaces/IMarket.sol";
+import "tapioca-sdk/dist/contracts/lzApp/NonblockingLzApp.sol";
 
 /*
 

@@ -38,116 +38,9 @@ contract SGLCommon is SGLStorage {
         _;
     }
 
-    modifier notPaused() {
-        require(!paused, "SGL: paused");
-        _;
-    }
-
-    /// @dev Checks if the user is solvent in the closed liquidation case at the end of the function body.
-    modifier solvent(address from) {
-        _;
-        require(_isSolvent(from, exchangeRate), "SGL: insolvent");
-    }
-
-    bool private initialized;
-    modifier onlyOnce() {
-        require(!initialized, "SGL: initialized");
-        _;
-        initialized = true;
-    }
-
-    // ********************** //
-    // *** VIEW FUNCTIONS *** //
-    // ********************** //
-    /// @notice Return the amount of collateral for a `user` to be solvent, min TVL and max TVL. Returns 0 if user already solvent.
-    /// @dev We use a `CLOSED_COLLATERIZATION_RATE` that is a safety buffer when making the user solvent again,
-    ///      To prevent from being liquidated. This function is valid only if user is not solvent by `_isSolvent()`.
-    /// @param user The user to check solvency.
-    /// @param _exchangeRate The exchange rate asset/collateral.
-    /// @return amountToSolvency The amount of collateral to be solvent.
-    function computeTVLInfo(
-        address user,
-        uint256 _exchangeRate
-    )
-        public
-        view
-        returns (uint256 amountToSolvency, uint256 minTVL, uint256 maxTVL)
-    {
-        uint256 borrowPart = userBorrowPart[user];
-        if (borrowPart == 0) return (0, 0, 0);
-        uint256 collateralShare = userCollateralShare[user];
-
-        Rebase memory _totalBorrow = totalBorrow;
-
-        uint256 collateralAmountInAsset = yieldBox.toAmount(
-            collateralId,
-            (collateralShare *
-                (EXCHANGE_RATE_PRECISION / COLLATERALIZATION_RATE_PRECISION) *
-                lqCollateralizationRate),
-            false
-        ) / _exchangeRate;
-        borrowPart = (borrowPart * _totalBorrow.elastic) / _totalBorrow.base;
-
-        amountToSolvency = borrowPart >= collateralAmountInAsset
-            ? borrowPart - collateralAmountInAsset
-            : 0;
-
-        (minTVL, maxTVL) = _computeMaxAndMinLTVInAsset(
-            collateralShare,
-            _exchangeRate
-        );
-    }
-
-    /// @notice Return the maximum liquidatable amount for user
-    function computeClosingFactor(
-        address user,
-        uint256 _exchangeRate
-    ) public view returns (uint256) {
-        if (_isSolvent(user, _exchangeRate)) return 0;
-
-        (uint256 amountToSolvency, , uint256 maxTVL) = computeTVLInfo(
-            user,
-            _exchangeRate
-        );
-        uint256 borrowed = userBorrowPart[user];
-        if (borrowed >= maxTVL) return borrowed;
-
-        return
-            amountToSolvency +
-            ((liquidationBonusAmount * borrowed) / FEE_PRECISION);
-    }
-
-    function computeLiquidatorReward(
-        address user,
-        uint256 _exchangeRate
-    ) public view returns (uint256) {
-        (uint256 minTVL, uint256 maxTVL) = _computeMaxAndMinLTVInAsset(
-            userCollateralShare[user],
-            _exchangeRate
-        );
-        return _getCallerReward(userBorrowPart[user], minTVL, maxTVL);
-    }
-
     // ************************ //
     // *** PUBLIC FUNCTIONS *** //
     // ************************ //
-
-    /// @notice Gets the exchange rate. I.e how much collateral to buy 1e18 asset.
-    /// This function is supposed to be invoked if needed because Oracle queries can be expensive.
-    /// @return updated True if `exchangeRate` was updated.
-    /// @return rate The new exchange rate.
-    function updateExchangeRate() public returns (bool updated, uint256 rate) {
-        (updated, rate) = oracle.get(oracleData);
-
-        if (updated) {
-            exchangeRate = rate;
-            emit LogExchangeRate(rate);
-        } else {
-            // Return the old rate if fetching wasn't successful
-            rate = exchangeRate;
-        }
-    }
-
     /// @notice Accrues the interest on the borrowed tokens and handles the accumulation of fees.
     function accrue() public {
         ISingularity.AccrueInfo memory _accrueInfo = accrueInfo;
@@ -266,55 +159,6 @@ contract SGLCommon is SGLStorage {
     // ************************** //
     // *** PRIVATE FUNCTIONS *** //
     // ************************* //
-    /// @notice construct Uniswap path
-    function _collateralToAssetSwapPath()
-        internal
-        view
-        returns (address[] memory path)
-    {
-        path = new address[](2);
-        path[0] = address(collateral);
-        path[1] = address(asset);
-    }
-
-    function _assetToWethSwapPath()
-        internal
-        view
-        returns (address[] memory path)
-    {
-        path = new address[](2);
-        path[0] = address(asset);
-        path[1] = address(penrose.wethToken());
-    }
-
-    /// @notice Concrete implementation of `isSolvent`. Includes a parameter to allow caching `exchangeRate`.
-    /// @param _exchangeRate The exchange rate. Used to cache the `exchangeRate` between calls.
-    function _isSolvent(
-        address user,
-        uint256 _exchangeRate
-    ) internal view returns (bool) {
-        // accrue must have already been called!
-        uint256 borrowPart = userBorrowPart[user];
-        if (borrowPart == 0) return true;
-        uint256 collateralShare = userCollateralShare[user];
-        if (collateralShare == 0) return false;
-
-        Rebase memory _totalBorrow = totalBorrow;
-
-        return
-            yieldBox.toAmount(
-                collateralId,
-                collateralShare *
-                    (EXCHANGE_RATE_PRECISION /
-                        COLLATERALIZATION_RATE_PRECISION) *
-                    closedCollateralizationRate,
-                false
-            ) >=
-            // Moved exchangeRate here instead of dividing the other side to preserve more precision
-            (borrowPart * _totalBorrow.elastic * _exchangeRate) /
-                _totalBorrow.base;
-    }
-
     /// @dev Helper function to move tokens.
     /// @param from Account to debit tokens from, in `yieldBox`.
     /// @param to The user that receives the tokens.
@@ -408,44 +252,5 @@ contract SGLCommon is SGLStorage {
         uint256 borrowPart
     ) internal view returns (uint256) {
         return totalBorrow.toElastic(borrowPart, false);
-    }
-
-    /// @notice Returns the min and max LTV for user in asset price
-    function _computeMaxAndMinLTVInAsset(
-        uint256 collateralShare,
-        uint256 _exchangeRate
-    ) internal view returns (uint256 min, uint256 max) {
-        uint256 collateralAmount = yieldBox.toAmount(
-            collateralId,
-            collateralShare,
-            false
-        );
-
-        max = (collateralAmount * EXCHANGE_RATE_PRECISION) / _exchangeRate;
-        min =
-            (max * closedCollateralizationRate) /
-            COLLATERALIZATION_RATE_PRECISION;
-    }
-
-    function _getCallerReward(
-        uint256 borrowed,
-        uint256 startTVLInAsset,
-        uint256 maxTVLInAsset
-    ) internal view returns (uint256) {
-        if (borrowed == 0) return 0;
-        if (startTVLInAsset == 0) return 0;
-
-        if (borrowed < startTVLInAsset) return 0;
-        if (borrowed >= maxTVLInAsset) return minLiquidatorReward;
-
-        uint256 rewardPercentage = ((borrowed - startTVLInAsset) *
-            FEE_PRECISION) / (maxTVLInAsset - startTVLInAsset);
-
-        int256 diff = int256(minLiquidatorReward) - int256(maxLiquidatorReward);
-        int256 reward = (diff * int256(rewardPercentage)) /
-            int256(FEE_PRECISION) +
-            int256(maxLiquidatorReward);
-
-        return uint256(reward);
     }
 }

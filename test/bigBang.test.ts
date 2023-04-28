@@ -392,7 +392,7 @@ describe('BigBang test', () => {
             wethBigBangMarket
                 .connect(eoa1)
                 .borrow(eoa1.address, eoa1.address, usdoBorrowVal),
-        ).to.be.revertedWith('BigBang: insolvent');
+        ).to.be.revertedWith('Market: insolvent');
 
         const totalSupplyBefore = await usd0.totalSupply();
 
@@ -561,7 +561,7 @@ describe('BigBang test', () => {
             wethBigBangMarket
                 .connect(eoa1)
                 .borrow(eoa1.address, eoa1.address, usdoBorrowVal),
-        ).to.be.revertedWith('BigBang: insolvent');
+        ).to.be.revertedWith('Market: insolvent');
 
         const totalSupplyBefore = await usd0.totalSupply();
 
@@ -1365,7 +1365,7 @@ describe('BigBang test', () => {
                 false,
                 valShare,
             ),
-        ).to.be.revertedWith('BigBang: paused');
+        ).to.be.revertedWith('Market: paused');
 
         await wethBigBangMarket.updatePause(false);
 
@@ -1390,7 +1390,7 @@ describe('BigBang test', () => {
                 deployer.address,
                 usdoBorrowVal,
             ),
-        ).to.be.revertedWith('BigBang: paused');
+        ).to.be.revertedWith('Market: paused');
 
         await wethBigBangMarket.updatePause(false);
 
@@ -1425,7 +1425,7 @@ describe('BigBang test', () => {
                 false,
                 userBorrowPart,
             ),
-        ).to.be.revertedWith('BigBang: paused');
+        ).to.be.revertedWith('Market: paused');
 
         await wethBigBangMarket.updatePause(false);
 
@@ -1452,7 +1452,7 @@ describe('BigBang test', () => {
                 deployer.address,
                 collateralShares,
             ),
-        ).to.be.revertedWith('BigBang: paused');
+        ).to.be.revertedWith('Market: paused');
 
         await wethBigBangMarket.updatePause(false);
 

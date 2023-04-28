@@ -5,7 +5,7 @@ import "./SGLCommon.sol";
 import "./SGLLiquidation.sol";
 import "./SGLLendingBorrowing.sol";
 
-import "../interfaces/ISendFrom.sol";
+import "tapioca-periph/contracts/interfaces/ISendFrom.sol";
 import "tapioca-sdk/dist/contracts/libraries/LzLib.sol";
 
 // solhint-disable max-line-length
@@ -99,7 +99,7 @@ contract Singularity is SGLCommon {
         liquidationMultiplier = 112000; //12%
         orderBookLiquidationMultiplier = 127000; //27%
 
-        closedCollateralizationRate = 75000;
+        collateralizationRate = 75000;
         lqCollateralizationRate = 25000;
         EXCHANGE_RATE_PRECISION = _exchangeRatePrecision > 0
             ? _exchangeRatePrecision
@@ -352,61 +352,12 @@ contract Singularity is SGLCommon {
         feeShares = _removeAsset(feeTo, msg.sender, balanceOf[feeTo], false);
     }
 
-    /// @notice Set the bonus amount a liquidator can make use of, on top of the amount needed to make the user solvent
-    /// @param _val the new value
-    function setLiquidationBonusAmount(uint256 _val) external onlyOwner {
-        require(_val < FEE_PRECISION, "SGL: not valid");
-        liquidationBonusAmount = _val;
-    }
-
-    /// @notice Set the liquidator min reward
-    /// @param _val the new value
-    function setMinLiquidatorReward(uint256 _val) external onlyOwner {
-        require(_val < FEE_PRECISION, "SGL: not valid");
-        require(_val < maxLiquidatorReward, "SGL: not valid");
-        minLiquidatorReward = _val;
-    }
-
-    /// @notice Set the liquidator max reward
-    /// @param _val the new value
-    function setMaxLiquidatorReward(uint256 _val) external onlyOwner {
-        require(_val < FEE_PRECISION, "SGL: not valid");
-        require(_val > minLiquidatorReward, "SGL: not valid");
-        maxLiquidatorReward = _val;
-    }
-
-    /// @notice Set the Conservator address
-    /// @dev Conservator can pause the contract
-    /// @param _conservator The new address
-    function setConservator(address _conservator) external onlyOwner {
-        require(_conservator != address(0), "SGL: address not valid");
-        emit ConservatorUpdated(conservator, _conservator);
-        conservator = _conservator;
-    }
-
-    /// @notice updates the pause state of the contract
-    /// @param val the new value
-    function updatePause(bool val) external {
-        require(msg.sender == conservator, "SGL: unauthorized");
-        require(val != paused, "SGL: same state");
-        emit PausedUpdated(paused, val);
-        paused = val;
-    }
-
     /// @notice sets the collateralization rate used for LiquidationQueue type liquidations
     /// @dev can only be called by the owner
     /// @param _val the new value
     function setLqCollateralizationRate(uint256 _val) external onlyOwner {
         require(_val <= COLLATERALIZATION_RATE_PRECISION, "SGL: not valid");
         lqCollateralizationRate = _val;
-    }
-
-    /// @notice sets closed collateralization rate
-    /// @dev can only be called by the owner
-    /// @param _val the new value
-    function setClosedCollateralizationRate(uint256 _val) external onlyOwner {
-        require(_val <= COLLATERALIZATION_RATE_PRECISION, "SGL: not valid");
-        closedCollateralizationRate = _val;
     }
 
     /// @notice sets the liquidation multiplier
@@ -433,22 +384,6 @@ contract Singularity is SGLCommon {
         borrowOpeningFee = _val;
     }
 
-    /// @notice sets the liquidator fee
-    /// @dev can only be called by the owner
-    /// @param _val the new value
-    function setCallerFee(uint256 _val) external onlyOwner {
-        require(_val <= FEE_PRECISION, "SGL: not valid");
-        callerFee = _val;
-    }
-
-    /// @notice sets the protocol fee
-    /// @dev can only be called by the owner
-    /// @param _val the new value
-    function setProtocolFee(uint256 _val) external onlyOwner {
-        require(_val <= FEE_PRECISION, "SGL: not valid");
-        protocolFee = _val;
-    }
-
     /// @notice Set a new LiquidationQueue.
     /// @param _liquidationQueue The address of the new LiquidationQueue contract.
     function setLiquidationQueue(
@@ -468,28 +403,9 @@ contract Singularity is SGLCommon {
         liquidationQueue.setUsdoSwapper(_swapper);
     }
 
-    /// @notice sets max borrowable amount
-    function setBorrowCap(uint256 _cap) external notPaused onlyOwner {
-        emit LogBorrowCapUpdated(totalBorrowCap, _cap);
-        totalBorrowCap = _cap;
-    }
-
     // ************************* //
     // *** PRIVATE FUNCTIONS *** //
     // ************************* //
-
-    function _getRevertMsg(
-        bytes memory _returnData
-    ) private pure returns (string memory) {
-        // If the _res length is less than 68, then the transaction failed silently (without a revert message)
-        if (_returnData.length < 68) return "SGL: no return data";
-        // solhint-disable-next-line no-inline-assembly
-        assembly {
-            // Slice the sighash.
-            _returnData := add(_returnData, 0x04)
-        }
-        return abi.decode(_returnData, (string)); // All that remains is the revert string
-    }
 
     function _extractModule(Module _module) private view returns (address) {
         address module;

@@ -5,7 +5,7 @@ import "@boringcrypto/boring-solidity/contracts/interfaces/IERC20.sol";
 
 import "../interfaces/IPenrose.sol";
 import "./ILiquidationQueue.sol";
-import "../singularity/interfaces/ISingularity.sol";
+import "tapioca-periph/contracts/interfaces/ISingularity.sol";
 import "tapioca-sdk/dist/contracts/YieldBox/contracts/interfaces/IStrategy.sol";
 import "tapioca-sdk/dist/contracts/YieldBox/contracts/strategies/ERC20WithoutStrategy.sol";
 
