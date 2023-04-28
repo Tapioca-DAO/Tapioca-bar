@@ -4,10 +4,11 @@ pragma solidity ^0.8.18;
 import "@boringcrypto/boring-solidity/contracts/BoringOwnable.sol";
 import "@boringcrypto/boring-solidity/contracts/libraries/BoringRebase.sol";
 import "@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol";
+
 import "tapioca-sdk/dist/contracts/YieldBox/contracts/YieldBox.sol";
+import "tapioca-periph/contracts/interfaces/IOracle.sol";
 
 import "../interfaces/IPenrose.sol";
-import "../interfaces/IOracle.sol";
 
 abstract contract Market is BoringOwnable {
     using RebaseLibrary for Rebase;
