@@ -7,6 +7,7 @@ import "@boringcrypto/boring-solidity/contracts/ERC20.sol";
 import "tapioca-periph/contracts/interfaces/IBigBang.sol";
 import "tapioca-periph/contracts/interfaces/ISendFrom.sol";
 import "tapioca-periph/contracts/interfaces/ISwapper.sol";
+
 import "../Market.sol";
 
 // solhint-disable max-line-length
@@ -34,9 +35,6 @@ contract BigBang is BoringOwnable, Market {
     mapping(address => mapping(address => bool)) public operators;
 
     IBigBang.AccrueInfo public accrueInfo;
-
-    // map of operator approval
-    mapping(address => mapping(address => bool)) public isApprovedForAll;
 
     uint256 public borrowingFee;
 
@@ -91,18 +89,7 @@ contract BigBang is BoringOwnable, Market {
     uint256 private constant MAX_BORROWING_FEE = 8e4; //at 80% for testing; TODO
     uint256 private constant MAX_STABILITY_FEE = 8e17; //at 80% for testing; TODO
 
-    // ***************** //
-    // *** MODIFIERS *** //
-    // ***************** //
-    /// Modifier to check if the msg.sender is allowed to use funds belonging to the 'from' address.
-    /// If 'from' is msg.sender, it's allowed.
-    /// If 'msg.sender' is an address (an operator) that is approved by 'from', it's allowed.
-    modifier allowed(address from) virtual {
-        if (from != msg.sender && !operators[from][msg.sender]) {
-            revert NotApproved(from, msg.sender);
-        }
-        _;
-    }
+    constructor() MarketERC20("Tapioca BigBang") {}
 
     /// @notice The init function that acts as a constructor
     function init(bytes calldata data) external onlyOnce {
@@ -271,13 +258,8 @@ contract BigBang is BoringOwnable, Market {
         address from,
         address to,
         uint256 amount
-    )
-        public
-        notPaused
-        solvent(from)
-        allowed(from)
-        returns (uint256 part, uint256 share)
-    {
+    ) public notPaused solvent(from) returns (uint256 part, uint256 share) {
+        _allowedBorrow(from, userCollateralShare[from]);
         updateExchangeRate();
 
         accrue();
@@ -296,7 +278,7 @@ contract BigBang is BoringOwnable, Market {
         address to,
         bool,
         uint256 part
-    ) public notPaused allowed(from) returns (uint256 amount) {
+    ) public notPaused returns (uint256 amount) {
         updateExchangeRate();
 
         accrue();
@@ -315,7 +297,7 @@ contract BigBang is BoringOwnable, Market {
         address to,
         bool skim,
         uint256 share
-    ) public notPaused allowed(from) {
+    ) public notPaused {
         userCollateralShare[to] += share;
         uint256 oldTotalCollateralShare = totalCollateralShare;
         totalCollateralShare = oldTotalCollateralShare + share;
@@ -331,7 +313,7 @@ contract BigBang is BoringOwnable, Market {
         address from,
         address to,
         uint256 share
-    ) public notPaused solvent(from) allowed(from) {
+    ) public notPaused solvent(from) allowedBorrow(from, share) {
         updateExchangeRate();
 
         // accrue must be called because we check solvency
@@ -386,6 +368,17 @@ contract BigBang is BoringOwnable, Market {
             collateralToAssetSwapData
         );
     }
+
+    function transfer(
+        address to,
+        uint256 amount
+    ) public override returns (bool) {}
+
+    function transferFrom(
+        address from,
+        address to,
+        uint256 amount
+    ) public override returns (bool) {}
 
     // *********************** //
     // *** OWNER FUNCTIONS *** //

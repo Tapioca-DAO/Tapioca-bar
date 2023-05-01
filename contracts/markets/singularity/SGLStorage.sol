@@ -10,7 +10,6 @@ import "../../interfaces/IPenrose.sol";
 import "tapioca-periph/contracts/interfaces/ISwapper.sol";
 import "tapioca-periph/contracts/interfaces/ISingularity.sol";
 import "tapioca-sdk/dist/contracts/YieldBox/contracts/YieldBox.sol";
-import "./SGLERC20.sol";
 
 import "../Market.sol";
 
@@ -30,7 +29,7 @@ __/\\\\\\\\\\\\\\\_____/\\\\\\\\\_____/\\\\\\\\\\\\\____/\\\\\\\\\\\_______/\\\\
 
 */
 
-contract SGLStorage is BoringOwnable, SGLERC20, Market {
+contract SGLStorage is BoringOwnable, Market {
     using RebaseLibrary for Rebase;
     using BoringERC20 for IERC20;
 
@@ -122,7 +121,7 @@ contract SGLStorage is BoringOwnable, SGLERC20, Market {
     uint64 internal constant MAXIMUM_INTEREST_PER_SECOND = 317097920000; // approx 1000% APR
     uint256 internal constant INTEREST_ELASTICITY = 28800e36; // Half or double in 28800 seconds (8 hours) if linear
 
-    constructor() SGLERC20("Tapioca Singularity") {}
+    constructor() MarketERC20("Tapioca Singularity") {}
 
     // ********************** //
     // *** VIEW FUNCTIONS *** //

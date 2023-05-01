@@ -19,7 +19,10 @@ __/\\\\\\\\\\\\\\\_____/\\\\\\\\\_____/\\\\\\\\\\\\\____/\\\\\\\\\\\_______/\\\\
 
 */
 
-contract SGLERC20 is IERC20, IERC20Permit, EIP712 {
+contract MarketERC20 is IERC20, IERC20Permit, EIP712 {
+    // ************ //
+    // *** VARS *** //
+    // ************ //
     // solhint-disable-next-line var-name-mixedcase
     bytes32 private constant _PERMIT_TYPEHASH =
         keccak256(
@@ -48,11 +51,51 @@ contract SGLERC20 is IERC20, IERC20Permit, EIP712 {
     /// @notice owner > nonce mapping. Used in `permit`.
     mapping(address => uint256) private _nonces;
 
+    // ************** //
+    // *** ERRORS *** //
+    // ************** //
+    error NotApproved(address _from, address _operator);
+
+    // ************** //
+    // *** EVENTS *** //
+    // ************** //
     event ApprovalBorrow(
         address indexed owner,
         address indexed spender,
         uint256 value
     );
+
+    // ***************** //
+    // *** MODIFIERS *** //
+    // ***************** //
+    function _allowedLend(address from, uint share) internal {
+        if (from != msg.sender) {
+            if (allowance[from][msg.sender] < share) {
+                revert NotApproved(from, msg.sender);
+            }
+            allowance[from][msg.sender] -= share;
+        }
+    }
+
+    function _allowedBorrow(address from, uint share) internal {
+        if (from != msg.sender) {
+            if (allowanceBorrow[from][msg.sender] < share) {
+                revert NotApproved(from, msg.sender);
+            }
+            allowanceBorrow[from][msg.sender] -= share;
+        }
+    }
+
+    /// Check if msg.sender has right to execute Lend operations
+    modifier allowedLend(address from, uint share) virtual {
+        _allowedLend(from, share);
+        _;
+    }
+    /// Check if msg.sender has right to execute borrow operations
+    modifier allowedBorrow(address from, uint share) virtual {
+        _allowedBorrow(from, share);
+        _;
+    }
 
     /**
      * @dev Initializes the {EIP712} domain separator using the `name` parameter, and setting `version` to `"1"`.
@@ -61,17 +104,34 @@ contract SGLERC20 is IERC20, IERC20Permit, EIP712 {
      */
     constructor(string memory name) EIP712(name, "1") {}
 
+    // ********************** //
+    // *** VIEW FUNCTIONS *** //
+    // ********************** //
     function totalSupply() public view virtual override returns (uint256) {}
 
     function nonces(address owner) public view returns (uint256) {
         return _nonces[owner];
     }
 
+    /**
+     * @dev See {IERC20Permit-DOMAIN_SEPARATOR}.
+     */
+    // solhint-disable-next-line func-name-mixedcase
+    function DOMAIN_SEPARATOR() external view override returns (bytes32) {
+        return _domainSeparatorV4();
+    }
+
+    // ************************ //
+    // *** PUBLIC FUNCTIONS *** //
+    // ************************ //
     /// @notice Transfers `amount` tokens from `msg.sender` to `to`.
     /// @param to The address to move the tokens.
     /// @param amount of the tokens to move.
     /// @return (bool) Returns True if succeeded.
-    function transfer(address to, uint256 amount) public returns (bool) {
+    function transfer(
+        address to,
+        uint256 amount
+    ) public virtual returns (bool) {
         // If `amount` is 0, or `msg.sender` is `to` nothing happens
         if (amount != 0 || msg.sender == to) {
             uint256 srcBalance = balanceOf[msg.sender];
@@ -96,7 +156,7 @@ contract SGLERC20 is IERC20, IERC20Permit, EIP712 {
         address from,
         address to,
         uint256 amount
-    ) public returns (bool) {
+    ) public virtual returns (bool) {
         // If `amount` is 0, or `from` is `to` nothing happens
         if (amount != 0) {
             uint256 srcBalance = balanceOf[from];
@@ -134,26 +194,12 @@ contract SGLERC20 is IERC20, IERC20Permit, EIP712 {
         return true;
     }
 
-    function _approve(address owner, address spender, uint256 amount) internal {
-        allowance[owner][spender] = amount;
-        emit Approval(owner, spender, amount);
-    }
-
     function approveBorrow(
         address spender,
         uint256 amount
     ) public returns (bool) {
         _approveBorrow(msg.sender, spender, amount);
         return true;
-    }
-
-    function _approveBorrow(
-        address owner,
-        address spender,
-        uint256 amount
-    ) internal {
-        allowanceBorrow[owner][spender] = amount;
-        emit ApprovalBorrow(owner, spender, amount);
     }
 
     /**
@@ -181,6 +227,21 @@ contract SGLERC20 is IERC20, IERC20Permit, EIP712 {
         bytes32 s
     ) external virtual {
         _permit(false, owner, spender, value, deadline, v, r, s);
+    }
+
+    // ************************* //
+    // *** PRIVATE FUNCTIONS *** //
+    // ************************* //
+
+    /**
+     * @dev "Consume a nonce": return the current value and increment.
+     *
+     * _Available since v4.1._
+     */
+    function _useNonce(
+        address owner
+    ) internal virtual returns (uint256 current) {
+        current = _nonces[owner]++;
     }
 
     function _permit(
@@ -218,22 +279,17 @@ contract SGLERC20 is IERC20, IERC20Permit, EIP712 {
         }
     }
 
-    /**
-     * @dev See {IERC20Permit-DOMAIN_SEPARATOR}.
-     */
-    // solhint-disable-next-line func-name-mixedcase
-    function DOMAIN_SEPARATOR() external view override returns (bytes32) {
-        return _domainSeparatorV4();
+    function _approveBorrow(
+        address owner,
+        address spender,
+        uint256 amount
+    ) internal {
+        allowanceBorrow[owner][spender] = amount;
+        emit ApprovalBorrow(owner, spender, amount);
     }
 
-    /**
-     * @dev "Consume a nonce": return the current value and increment.
-     *
-     * _Available since v4.1._
-     */
-    function _useNonce(
-        address owner
-    ) internal virtual returns (uint256 current) {
-        current = _nonces[owner]++;
+    function _approve(address owner, address spender, uint256 amount) internal {
+        allowance[owner][spender] = amount;
+        emit Approval(owner, spender, amount);
     }
 }

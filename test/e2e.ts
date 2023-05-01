@@ -49,6 +49,7 @@ describe('e2e tests', () => {
             deployCurveStableToUsdoBidder,
             timeTravel,
         } = await loadFixture(register);
+
         const usdoStratregy = await bar.emptyStrategies(usd0.address);
         const usdoAssetId = await yieldBox.ids(
             1,
@@ -593,6 +594,16 @@ async function bigBangApprovePlug(
 ) {
     await tokenApprovalPlug(signer, token, magnetar, yieldBox, val);
     await BigBang.connect(signer).updateOperator(magnetar.address, true);
+    await BigBang.connect(signer).approve(
+        magnetar.address,
+        // TODO use correct amount
+        ethers.constants.MaxUint256,
+    );
+    await BigBang.connect(signer).approveBorrow(
+        magnetar.address,
+        // TODO use correct amount
+        ethers.constants.MaxUint256,
+    );
 }
 
 // TODO use correct amount
