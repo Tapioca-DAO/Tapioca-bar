@@ -32,7 +32,7 @@ contract Penrose is BoringOwnable, BoringFactory {
     uint256 public immutable tapAssetId;
 
     /// @notice returns USDO contract
-    IUSDO public usdoToken;
+    IERC20 public usdoToken;
 
     /// @notice returns USDO asset id registered in the YieldBox contract
     uint256 public usdoAssetId;
@@ -277,7 +277,7 @@ contract Penrose is BoringOwnable, BoringFactory {
     /// @dev sets usdoToken and usdoAssetId
     /// @param _usdoToken the USDO token address
     function setUsdoToken(address _usdoToken) external onlyOwner {
-        usdoToken = IUSDO(_usdoToken);
+        usdoToken = IERC20(_usdoToken);
 
         emptyStrategies[_usdoToken] = IStrategy(
             address(

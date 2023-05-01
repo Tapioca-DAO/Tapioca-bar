@@ -97,6 +97,7 @@ contract SGLStorage is BoringOwnable, Market {
         uint256 amount,
         uint256 part
     );
+    event LogWithdrawFees(address indexed feeTo, uint256 feesEarnedFraction);
     event LogYieldBoxFeesDeposit(uint256 feeShares, uint256 ethAmount);
 
     // ***************** //

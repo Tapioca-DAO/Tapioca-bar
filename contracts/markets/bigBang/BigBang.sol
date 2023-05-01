@@ -7,6 +7,7 @@ import "@boringcrypto/boring-solidity/contracts/ERC20.sol";
 import "tapioca-periph/contracts/interfaces/IBigBang.sol";
 import "tapioca-periph/contracts/interfaces/ISendFrom.sol";
 import "tapioca-periph/contracts/interfaces/ISwapper.sol";
+import {IUSDOBase} from "tapioca-periph/contracts/interfaces/IUSDO.sol";
 
 import "../Market.sol";
 
@@ -550,7 +551,7 @@ contract BigBang is BoringOwnable, Market {
         yieldBox.withdraw(assetId, from, address(this), amount, 0);
         //burn USDO
         if (toBurn > 0) {
-            IUSDO(address(asset)).burn(address(this), toBurn);
+            IUSDOBase(address(asset)).burn(address(this), toBurn);
         }
 
         emit LogRepay(from, to, amount, part);
@@ -574,7 +575,7 @@ contract BigBang is BoringOwnable, Market {
         userBorrowPart[from] += part;
 
         //mint USDO
-        IUSDO(address(asset)).mint(address(this), amount);
+        IUSDOBase(address(asset)).mint(address(this), amount);
 
         //deposit borrowed amount to user
         asset.approve(address(yieldBox), amount);
