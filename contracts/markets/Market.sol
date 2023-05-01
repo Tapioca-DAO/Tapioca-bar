@@ -3,16 +3,15 @@ pragma solidity ^0.8.18;
 
 import "@boringcrypto/boring-solidity/contracts/BoringOwnable.sol";
 import "@boringcrypto/boring-solidity/contracts/libraries/BoringRebase.sol";
-import "@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol";
 
 import "tapioca-sdk/dist/contracts/YieldBox/contracts/YieldBox.sol";
 import "tapioca-periph/contracts/interfaces/IOracle.sol";
 
 import "../interfaces/IPenrose.sol";
+import "./MarketERC20.sol";
 
-abstract contract Market is BoringOwnable {
+abstract contract Market is MarketERC20, BoringOwnable {
     using RebaseLibrary for Rebase;
-    using BoringERC20 for IERC20;
 
     // ************ //
     // *** VARS *** //
@@ -55,11 +54,6 @@ abstract contract Market is BoringOwnable {
     uint256 internal constant COLLATERALIZATION_RATE_PRECISION = 1e5; // Must be less than EXCHANGE_RATE_PRECISION (due to optimization in math)
     uint256 internal constant FEE_PRECISION = 1e5;
     uint256 internal constant LIQUIDATION_MULTIPLIER_PRECISION = 1e5;
-
-    // ************** //
-    // *** ERRORS *** //
-    // ************** //
-    error NotApproved(address _from, address _operator);
 
     // ************** //
     // *** EVENTS *** //

@@ -54,16 +54,7 @@ describe('BigBang test', () => {
             0,
             valShare,
         );
-        await expect(
-            wethBigBangMarket
-                .connect(eoa1)
-                .addCollateral(
-                    deployer.address,
-                    deployer.address,
-                    false,
-                    valShare,
-                ),
-        ).to.be.reverted;
+
         await wethBigBangMarket.addCollateral(
             deployer.address,
             deployer.address,
@@ -1669,74 +1660,6 @@ describe('BigBang test', () => {
             debtDifference,
             extra.mul(1).div(100),
         );
-    });
-
-    it('should test approval', async () => {
-        const {
-            bar,
-            wethBigBangMarket,
-            weth,
-            usd0,
-            wethAssetId,
-            yieldBox,
-            eoa1,
-            multiSwapper,
-            timeTravel,
-            __wethUsdcPrice,
-            deployer,
-        } = await loadFixture(register);
-
-        await weth.approve(yieldBox.address, ethers.constants.MaxUint256);
-        await yieldBox.setApprovalForAll(wethBigBangMarket.address, true);
-
-        await weth
-            .connect(eoa1)
-            .approve(yieldBox.address, ethers.constants.MaxUint256);
-        await yieldBox
-            .connect(eoa1)
-            .setApprovalForAll(wethBigBangMarket.address, true);
-
-        const wethMintVal = ethers.BigNumber.from((1e18).toString()).mul(100);
-        await weth.connect(deployer).freeMint(wethMintVal);
-        const valShare = await yieldBox.toShare(
-            wethAssetId,
-            wethMintVal,
-            false,
-        );
-
-        await yieldBox
-            .connect(deployer)
-            .depositAsset(
-                wethAssetId,
-                deployer.address,
-                deployer.address,
-                0,
-                valShare,
-            );
-
-        await expect(
-            wethBigBangMarket
-                .connect(eoa1)
-                .addCollateral(
-                    deployer.address,
-                    deployer.address,
-                    false,
-                    valShare,
-                ),
-        ).to.be.revertedWithCustomError(wethBigBangMarket, 'NotApproved');
-
-        await wethBigBangMarket.updateOperator(eoa1.address, true);
-
-        await expect(
-            wethBigBangMarket
-                .connect(eoa1)
-                .addCollateral(
-                    deployer.address,
-                    deployer.address,
-                    false,
-                    valShare,
-                ),
-        ).to.not.be.revertedWithCustomError;
     });
 
     it('should batch calls', async () => {

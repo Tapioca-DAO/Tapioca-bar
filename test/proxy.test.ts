@@ -1310,8 +1310,6 @@ describe('MarketsProxy', () => {
         const borrowPartFinal = await singularityDst.userBorrowPart(
             eoa1.address,
         );
-        console.log(`borrowPartFinal ${borrowPartFinal}`);
-        console.log(`borrowPart      ${borrowPart}`);
         expect(borrowPartFinal.lte(borrowPart)).to.be.true;
         await expect(
             yieldBox

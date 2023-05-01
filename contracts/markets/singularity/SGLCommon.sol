@@ -6,38 +6,6 @@ import "./SGLStorage.sol";
 contract SGLCommon is SGLStorage {
     using RebaseLibrary for Rebase;
 
-    // ***************** //
-    // *** MODIFIERS *** //
-    // ***************** //
-    function _allowedLend(address from, uint share) internal {
-        if (from != msg.sender) {
-            if (allowance[from][msg.sender] < share) {
-                revert NotApproved(from, msg.sender);
-            }
-            allowance[from][msg.sender] -= share;
-        }
-    }
-
-    function _allowedBorrow(address from, uint share) internal {
-        if (from != msg.sender) {
-            if (allowanceBorrow[from][msg.sender] < share) {
-                revert NotApproved(from, msg.sender);
-            }
-            allowanceBorrow[from][msg.sender] -= share;
-        }
-    }
-
-    /// Check if msg.sender has right to execute Lend operations
-    modifier allowedLend(address from, uint share) virtual {
-        _allowedLend(from, share);
-        _;
-    }
-    /// Check if msg.sender has right to execute borrow operations
-    modifier allowedBorrow(address from, uint share) virtual {
-        _allowedBorrow(from, share);
-        _;
-    }
-
     // ************************ //
     // *** PUBLIC FUNCTIONS *** //
     // ************************ //
