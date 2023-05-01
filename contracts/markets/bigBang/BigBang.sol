@@ -74,12 +74,7 @@ contract BigBang is BoringOwnable, Market {
         uint256 amount,
         uint256 part
     );
-    event LogWithdrawFees(address indexed feeTo, uint256 feesEarned);
-    event LogApprovalForAll(
-        address indexed _from,
-        address indexed _operator,
-        bool _approved
-    );
+
     event LogBorrowingFee(uint256 _oldVal, uint256 _newVal);
 
     // ***************** //
