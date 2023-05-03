@@ -84,7 +84,7 @@ contract SGLLendingBorrowing is SGLCommon {
     /// @param minAmountOut Mininal proceeds required for the sale
     /// @param swapper Swapper to execute the sale
     /// @param dexData Additional data to pass to the swapper
-    /// @param amountOut Actual asset amount received in the sale
+    /// @return amountOut Actual asset amount received in the sale
     function sellCollateral(
         address from,
         uint256 share,
@@ -148,7 +148,7 @@ contract SGLLendingBorrowing is SGLCommon {
     /// @param minAmountOut Mininal collateral amount to receive
     /// @param swapper Swapper to execute the purchase
     /// @param dexData Additional data to pass to the swapper
-    /// @param amountOut Actual collateral amount purchased
+    /// @return amountOut Actual collateral amount purchased
     function buyCollateral(
         address from,
         uint256 borrowAmount,

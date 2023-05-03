@@ -3,7 +3,7 @@ pragma solidity ^0.8.18;
 
 import "tapioca-sdk/dist/contracts/interfaces/ILayerZeroEndpoint.sol";
 import "./USDOMocks.sol";
-import "./interfaces/IERC3156FlashLender.sol";
+import "tapioca-periph/contracts/interfaces/IERC3156FlashLender.sol";
 
 /*
 
@@ -47,13 +47,21 @@ contract USDO is USDOMocks, IERC3156FlashLender {
     // ************** //
     // *** EVENTS *** //
     // ************** //
+    /// @notice event emitted when USDO is minted
     event Minted(address indexed _for, uint256 _amount);
+    /// @notice event emitted when USDO is burned
     event Burned(address indexed _from, uint256 _amount);
+    /// @notice event emitted when a new address is set or removed from minters array
     event SetMinterStatus(address indexed _for, bool _status);
+    /// @notice event emitted when a new address is set or removed from burners array
     event SetBurnerStatus(address indexed _for, bool _status);
+    /// @notice event emitted when conservator address is updated
     event ConservatorUpdated(address indexed old, address indexed _new);
+    /// @notice event emitted when pause state is updated
     event PausedUpdated(bool oldState, bool newState);
+    /// @notice event emitted when flash mint fee is updated
     event FlashMintFeeUpdated(uint256 _old, uint256 _new);
+    /// @notice event emitted when max flash mintable amount is updated
     event MaxFlashMintUpdated(uint256 _old, uint256 _new);
 
     modifier notPaused() {
@@ -63,9 +71,11 @@ contract USDO is USDOMocks, IERC3156FlashLender {
 
     /// @notice creates a new USDO0 OFT contract
     /// @param _lzEndpoint LayerZero endpoint
+    /// @param _yieldBox the YieldBox address
+    /// @param _owner owner address
     constructor(
         address _lzEndpoint,
-        IYieldBox _yieldBox,
+        IYieldBoxBase _yieldBox,
         address _owner
     )
         OFTV2("USDO", "USDO", 8, _lzEndpoint)
@@ -97,6 +107,8 @@ contract USDO is USDOMocks, IERC3156FlashLender {
     }
 
     /// @notice returns the flash mint fee
+    /// @param token USDO address
+    /// @param amount the amount for which fee is computed
     function flashFee(
         address token,
         uint256 amount
@@ -108,6 +120,12 @@ contract USDO is USDOMocks, IERC3156FlashLender {
     // ************************ //
     // *** PUBLIC FUNCTIONS *** //
     // ************************ //
+    /// @notice performs a USDO flashloan
+    /// @param receiver the IERC3156FlashBorrower receiver
+    /// @param token USDO address
+    /// @param amount the amount to flashloan
+    /// @param data flashloan data
+    /// @return operation execution status
     function flashLoan(
         IERC3156FlashBorrower receiver,
         address token,
@@ -155,6 +173,7 @@ contract USDO is USDOMocks, IERC3156FlashLender {
     // *** OWNER FUNCTIONS *** //
     // *********************** //
     /// @notice set the max allowed USDO mintable through flashloan
+    /// @dev can only be called by the owner
     /// @param _val the new amount
     function setMaxFlashMintable(uint256 _val) external onlyOwner {
         emit MaxFlashMintUpdated(maxFlashMint, _val);
@@ -162,6 +181,7 @@ contract USDO is USDOMocks, IERC3156FlashLender {
     }
 
     /// @notice set the flashloan fee
+    /// @dev can only be called by the owner
     /// @param _val the new fee
     function setFlashMintFee(uint256 _val) external onlyOwner {
         require(_val < FLASH_MINT_FEE_PRECISION, "USDO: fee too big");
@@ -169,9 +189,9 @@ contract USDO is USDOMocks, IERC3156FlashLender {
         flashMintFee = _val;
     }
 
-    /// @notice Set the Conservator address
-    /// @dev Conservator can pause the contract
-    /// @param _conservator The new address
+    /// @notice set the Conservator address
+    /// @dev conservator can pause the contract
+    /// @param _conservator the new address
     function setConservator(address _conservator) external onlyOwner {
         require(_conservator != address(0), "USDO: address not valid");
         emit ConservatorUpdated(conservator, _conservator);
@@ -179,6 +199,7 @@ contract USDO is USDOMocks, IERC3156FlashLender {
     }
 
     /// @notice updates the pause state of the contract
+    /// @dev can only be called by the conservator
     /// @param val the new value
     function updatePause(bool val) external {
         require(msg.sender == conservator, "USDO: unauthorized");
@@ -188,6 +209,7 @@ contract USDO is USDOMocks, IERC3156FlashLender {
     }
 
     /// @notice sets/unsets address as minter
+    /// @dev can only be called by the owner
     /// @param _for role receiver
     /// @param _status true/false
     function setMinterStatus(address _for, bool _status) external onlyOwner {
@@ -196,6 +218,7 @@ contract USDO is USDOMocks, IERC3156FlashLender {
     }
 
     /// @notice sets/unsets address as burner
+    /// @dev can only be called by the owner
     /// @param _for role receiver
     /// @param _status true/false
     function setBurnerStatus(address _for, bool _status) external onlyOwner {

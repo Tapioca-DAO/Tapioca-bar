@@ -3,9 +3,9 @@ pragma solidity ^0.8.18;
 import "@boringcrypto/boring-solidity/contracts/BoringOwnable.sol";
 import "@boringcrypto/boring-solidity/contracts/interfaces/IERC20.sol";
 
-import "../interfaces/IPenrose.sol";
-import "./ILiquidationQueue.sol";
+import "tapioca-periph/contracts/interfaces/IPenrose.sol";
 import "tapioca-periph/contracts/interfaces/ISingularity.sol";
+import "tapioca-periph/contracts/interfaces/ILiquidationQueue.sol";
 import "tapioca-sdk/dist/contracts/YieldBox/contracts/interfaces/IStrategy.sol";
 import "tapioca-sdk/dist/contracts/YieldBox/contracts/strategies/ERC20WithoutStrategy.sol";
 
@@ -19,11 +19,9 @@ contract LiquidationQueue is ILiquidationQueue {
     // ************ //
     // *** VARS *** //
     // ************ //
-
     /**
      * General information about the LiquidationQueue contract.
      */
-
     /// @notice returns metadata information
     LiquidationQueueMeta public liquidationQueueMeta;
     /// @notice targeted market
@@ -90,7 +88,7 @@ contract LiquidationQueue is ILiquidationQueue {
     // ************** //
     // *** EVENTS *** //
     // ************** //
-
+    /// @notice event emitted when a bid is placed
     event Bid(
         address indexed caller,
         address indexed bidder,
@@ -99,7 +97,7 @@ contract LiquidationQueue is ILiquidationQueue {
         uint256 liquidatedAssetAmount,
         uint256 timestamp
     );
-
+    /// @notice event emitted when a bid is activated
     event ActivateBid(
         address indexed caller,
         address indexed bidder,
@@ -109,7 +107,7 @@ contract LiquidationQueue is ILiquidationQueue {
         uint256 collateralValue,
         uint256 timestamp
     );
-
+    /// @notice event emitted a bid is removed
     event RemoveBid(
         address indexed caller,
         address indexed bidder,
@@ -119,7 +117,7 @@ contract LiquidationQueue is ILiquidationQueue {
         uint256 collateralValue,
         uint256 timestamp
     );
-
+    /// @notice event emitted when bids are executed
     event ExecuteBids(
         address indexed caller,
         uint256 indexed pool,
@@ -128,15 +126,16 @@ contract LiquidationQueue is ILiquidationQueue {
         uint256 collateralLiquidated,
         uint256 timestamp
     );
-
+    /// @notice event emitted when funds are redeemed
     event Redeem(address indexed redeemer, address indexed to, uint256 amount);
+    /// @notice event emitted when bid swapper is updated
     event BidSwapperUpdated(IBidder indexed _old, address indexed _new);
+    /// @notice event emitted when usdo swapper is updated
     event UsdoSwapperUpdated(IBidder indexed _old, address indexed _new);
 
     // ***************** //
     // *** MODIFIERS *** //
     // ***************** //
-
     modifier Active() {
         require(onlyOnce, "LQ: Not initialized");
         _;
@@ -144,15 +143,16 @@ contract LiquidationQueue is ILiquidationQueue {
 
     /// @notice Acts as a 'constructor', should be called by a Singularity market.
     /// @param  _liquidationQueueMeta Info about the liquidations.
+    /// @param _singularity The Singularity market address
     function init(
         LiquidationQueueMeta calldata _liquidationQueueMeta,
-        address _mixologist
+        address _singularity
     ) external override {
         require(!onlyOnce, "LQ: Initialized");
 
         liquidationQueueMeta = _liquidationQueueMeta;
 
-        singularity = ISingularity(_mixologist);
+        singularity = ISingularity(_singularity);
         liquidatedAssetId = singularity.collateralId();
         marketAssetId = singularity.assetId();
         penrose = IPenrose(singularity.penrose());
@@ -178,13 +178,15 @@ contract LiquidationQueue is ILiquidationQueue {
     // ********************** //
     // *** VIEW FUNCTIONS *** //
     // ********************** //
-
     /// @notice returns targeted market
+    /// @return market name
     function market() public view returns (string memory) {
         return singularity.name();
     }
 
     /// @notice returns order book size
+    /// @param pool the pool id
+    /// @return size order book size
     function getOrderBookSize(uint256 pool) public view returns (uint256 size) {
         OrderBookPoolInfo memory poolInfo = orderBookInfos[pool];
         unchecked {
@@ -193,6 +195,8 @@ contract LiquidationQueue is ILiquidationQueue {
     }
 
     /// @notice returns an array of 'OrderBookPoolEntry' for a pool
+    /// @param pool the pool id
+    /// return x order book pool entries details
     function getOrderBookPoolEntries(
         uint256 pool
     ) external view returns (OrderBookPoolEntry[] memory x) {
@@ -240,6 +244,7 @@ contract LiquidationQueue is ILiquidationQueue {
     /// @notice returns user data for an existing bid pool
     /// @param pool the pool identifier
     /// @param user the user identifier
+    /// @return bidder information
     function getBidPoolUserInfo(
         uint256 pool,
         address user
@@ -248,6 +253,9 @@ contract LiquidationQueue is ILiquidationQueue {
     }
 
     /// @notice returns number of pool bids for user
+    /// @param user the user indentifier
+    /// @param pool the pool identifier
+    /// @return len user bids count
     function userBidIndexLength(
         address user,
         uint256 pool

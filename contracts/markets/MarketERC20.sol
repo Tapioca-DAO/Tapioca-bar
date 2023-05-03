@@ -54,11 +54,13 @@ contract MarketERC20 is IERC20, IERC20Permit, EIP712 {
     // ************** //
     // *** ERRORS *** //
     // ************** //
+    /// @notice error thrown when operation is not approved
     error NotApproved(address _from, address _operator);
 
     // ************** //
     // *** EVENTS *** //
     // ************** //
+    /// @notice event emitted when borrow approval is performed
     event ApprovalBorrow(
         address indexed owner,
         address indexed spender,
