@@ -558,6 +558,7 @@ describe('Singularity test', () => {
                 ),
             ).to.not.be.reverted;
         });
+
         it('should add addset, remove asset and update exchange rate in a single tx', async () => {
             const {
                 weth,
@@ -644,6 +645,7 @@ describe('Singularity test', () => {
             const balanceAfter = await weth.balanceOf(deployer.address);
             expect(balanceAfter).to.equal(balanceBefore);
         });
+
         it('Should lend Weth, deposit Usdc collateral and borrow Weth in a single tx', async () => {
             const {
                 usdc,
@@ -839,6 +841,133 @@ describe('Singularity test', () => {
     });
 
     describe('views', () => {
+        it('should compute permit share', async () => {
+            const {
+                usdc,
+                weth,
+                yieldBox,
+                eoa1,
+                approveTokensAndSetBarApproval,
+                deployer,
+                wethUsdcSingularity,
+                magnetar,
+                wethUsdcOracle,
+                __wethUsdcPrice,
+            } = await loadFixture(register);
+
+            const assetId = await wethUsdcSingularity.assetId();
+            const collateralId = await wethUsdcSingularity.collateralId();
+            const wethMintVal = ethers.BigNumber.from((1e18).toString()).mul(
+                10,
+            );
+            const usdcMintVal = wethMintVal.mul(
+                __wethUsdcPrice.div((1e18).toString()),
+            );
+            const wethBorrowVal = usdcMintVal
+                .mul(74)
+                .div(100)
+                .div(__wethUsdcPrice.div((1e18).toString()));
+
+            // We get asset
+            await weth.freeMint(wethMintVal);
+            await usdc.connect(eoa1).freeMint(usdcMintVal);
+
+            // We approve external operators
+            await approveTokensAndSetBarApproval();
+            await approveTokensAndSetBarApproval(eoa1);
+
+            const wethMintValShare = await yieldBox.toShare(
+                assetId,
+                wethMintVal,
+                false,
+            );
+            await (
+                await yieldBox.depositAsset(
+                    assetId,
+                    deployer.address,
+                    deployer.address,
+                    0,
+                    wethMintValShare,
+                )
+            ).wait();
+
+            const addAssetFn = wethUsdcSingularity.interface.encodeFunctionData(
+                'addAsset',
+                [deployer.address, deployer.address, false, wethMintValShare],
+            );
+            await (
+                await wethUsdcSingularity.execute([addAssetFn], true)
+            ).wait();
+            expect(
+                await wethUsdcSingularity.balanceOf(deployer.address),
+            ).to.be.equal(await yieldBox.toShare(assetId, wethMintVal, false));
+
+            const usdcMintValShare = await yieldBox.toShare(
+                collateralId,
+                usdcMintVal,
+                false,
+            );
+            await (
+                await yieldBox
+                    .connect(eoa1)
+                    .depositAsset(
+                        collateralId,
+                        eoa1.address,
+                        eoa1.address,
+                        usdcMintVal,
+                        0,
+                    )
+            ).wait();
+
+            const addCollateralFn =
+                wethUsdcSingularity.interface.encodeFunctionData(
+                    'addCollateral',
+                    [eoa1.address, eoa1.address, false, usdcMintValShare],
+                );
+            const borrowFn = wethUsdcSingularity.interface.encodeFunctionData(
+                'borrow',
+                [eoa1.address, eoa1.address, wethBorrowVal],
+            );
+
+            await (
+                await wethUsdcSingularity
+                    .connect(eoa1)
+                    .execute([addCollateralFn, borrowFn], true)
+            ).wait();
+
+            expect(
+                await wethUsdcSingularity.userCollateralShare(eoa1.address),
+            ).equal(await yieldBox.toShare(collateralId, usdcMintVal, false));
+
+            const dataFromHelper = (
+                await magnetar.singularityMarketInfo(eoa1.address, [
+                    wethUsdcSingularity.address,
+                ])
+            )[0];
+            expect(dataFromHelper.market[0].toLowerCase()).eq(
+                usdc.address.toLowerCase(),
+            );
+            expect(dataFromHelper.market[2].toLowerCase()).eq(
+                weth.address.toLowerCase(),
+            );
+            expect(dataFromHelper.market[4].toLowerCase()).eq(
+                wethUsdcOracle.address.toLowerCase(),
+            );
+            expect(dataFromHelper.market[7].eq(usdcMintValShare)).to.be.true;
+
+            const borrowed = await wethUsdcSingularity.userBorrowPart(
+                eoa1.address,
+            );
+            expect(dataFromHelper.market[9].eq(borrowed)).to.be.true;
+
+            const permitShare =
+                await wethUsdcSingularity.computeAllowedLendShare(
+                    1,
+                    await wethUsdcSingularity.assetId(),
+                );
+            expect(permitShare.gte(1)).to.be.true;
+        });
+
         it('should test yieldBoxShares', async () => {
             const {
                 eoa1,
@@ -987,6 +1116,16 @@ describe('Singularity test', () => {
                 wethMintVal,
                 false,
             );
+
+            const removeShareValueTest =
+                await wethUsdcSingularity.callStatic.removeAsset(
+                    deployer.address,
+                    deployer.address,
+                    mintValShare,
+                );
+            console.log(`removeShareValueTest ${removeShareValueTest}`);
+            console.log(`mintValShare ${mintValShare}`);
+
             await wethUsdcSingularity.removeAsset(
                 deployer.address,
                 deployer.address,

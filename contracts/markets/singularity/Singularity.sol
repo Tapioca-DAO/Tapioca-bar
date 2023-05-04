@@ -115,6 +115,19 @@ contract Singularity is SGLCommon {
     // ********************** //
     // *** VIEW FUNCTIONS *** //
     // ********************** //
+    /// @notice transforms amount to shares for a market's permit operation
+    /// @param amount the amount to transform
+    /// @param tokenId the YieldBox asset id
+    /// @return share amount transformed into shares
+    function computeAllowedLendShare(
+        uint256 amount,
+        uint256 tokenId
+    ) external view returns (uint256 share) {
+        uint256 allShare = totalAsset.elastic +
+            yieldBox.toShare(tokenId, totalBorrow.elastic, true);
+        share = (amount * allShare) / totalAsset.base;
+    }
+
     /// @notice returns Total yieldBox shares for user
     /// @param _user The user to check shares for
     /// @param _assetId The asset id to check shares for
