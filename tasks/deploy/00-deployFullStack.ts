@@ -59,17 +59,6 @@ export const deployFullStack__task = async (
     const { deployments, getNamedAccounts } = hre;
     const { deploy } = deployments;
     const { deployer } = await getNamedAccounts();
-    await deploy('PenroseMock', {
-        from: deployer,
-        log: true,
-        args: [
-            hre.ethers.constants.AddressZero,
-            hre.ethers.constants.AddressZero,
-            hre.ethers.constants.AddressZero,
-            hre.ethers.constants.AddressZero,
-        ],
-    });
-    const penroseMock = await deployments.get('PenroseMock');
 
     const multisig = await VM.getMultisig();
 
@@ -110,7 +99,6 @@ export const deployFullStack__task = async (
     const [curveSwapper, curveStableToUsd0] = await buildStableToUSD0Bidder(
         hre,
         constants[chainInfo.chainId].crvStablePool,
-        penroseMock.address,
     );
     VM.add(curveSwapper).add(curveStableToUsd0);
 

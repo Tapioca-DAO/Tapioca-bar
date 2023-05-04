@@ -1123,8 +1123,6 @@ describe('Singularity test', () => {
                     deployer.address,
                     mintValShare,
                 );
-            console.log(`removeShareValueTest ${removeShareValueTest}`);
-            console.log(`mintValShare ${mintValShare}`);
 
             await wethUsdcSingularity.removeAsset(
                 deployer.address,

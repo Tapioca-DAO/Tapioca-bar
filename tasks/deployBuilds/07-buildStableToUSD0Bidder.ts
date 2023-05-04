@@ -1,15 +1,12 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { IDeployerVMAdd } from 'tapioca-sdk/dist/ethers/hardhat/DeployerVM';
-import {
-    CurveStableToUsdoBidder__factory,
-    CurveSwapper__factory,
-} from '../../typechain';
+import { CurveSwapper__factory } from 'tapioca-sdk/dist/typechain/tapioca-periphery';
+import { CurveStableToUsdoBidder__factory } from '../../typechain';
 
 // TODO - @Rektora, didn't had time to check if this is relevant/needed, coming back to it later
 export const buildStableToUSD0Bidder = async (
     hre: HardhatRuntimeEnvironment,
     crvStablePoolAddr: string,
-    penroseMock: string,
     curvePoolAssetCount = '4',
 ): Promise<
     [
@@ -24,7 +21,7 @@ export const buildStableToUSD0Bidder = async (
             args: [
                 crvStablePoolAddr,
                 // Penrose, to be replaced by VM
-                penroseMock,
+                hre.ethers.constants.AddressZero,
             ],
             dependsOn: [{ argPosition: 1, deploymentName: 'Penrose' }],
             runStaticSimulation: false,
@@ -39,7 +36,10 @@ export const buildStableToUSD0Bidder = async (
                 hre.ethers.constants.AddressZero,
                 curvePoolAssetCount,
             ],
-            dependsOn: [{ argPosition: 0, deploymentName: 'CurveSwapper' }],
+            dependsOn: [
+                { argPosition: 0, deploymentName: 'CurveSwapper' },
+                { argPosition: 1, deploymentName: 'Penrose' },
+            ],
             runStaticSimulation: false,
         },
     ];
