@@ -154,7 +154,6 @@ contract USDO is USDOMocks, IERC3156FlashLender {
     // *********************** //
     // *** OWNER FUNCTIONS *** //
     // *********************** //
-
     /// @notice set the max allowed USDO mintable through flashloan
     /// @param _val the new amount
     function setMaxFlashMintable(uint256 _val) external onlyOwner {
