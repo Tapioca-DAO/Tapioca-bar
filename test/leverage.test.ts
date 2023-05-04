@@ -129,246 +129,256 @@ describe('Singularity Leverage', () => {
         };
     }
 
-    it('Should lever down by selling collateral', async () => {
-        const {
-            alice,
-            bob,
-            deployer,
-            mockSwapper,
-            usdc,
-            weth,
-            wethId,
-            usdcId,
-            yieldBox,
-            wethUsdcSingularity,
-        } = await loadFixture(setUp);
+    describe('lever down', () => {
+        it('Should lever down by selling collateral', async () => {
+            const {
+                alice,
+                bob,
+                deployer,
+                mockSwapper,
+                usdc,
+                weth,
+                wethId,
+                usdcId,
+                yieldBox,
+                wethUsdcSingularity,
+            } = await loadFixture(setUp);
 
-        // Alice now has a LTV ratio of a little over 50%; this equates to
-        // 2x leverage (on a "USDC long", or "ETH short")
-        // - $1000 worth of ETH (plus a little interest) borrowed, and
-        // - $2000 worth of USDC deposited as collateral
-        // Alice gets nervous, and wants to reduce this to 25% by selling
-        // some collateral. Paying 2/3 of the debt, or $666.66.. worth, results
-        // in -- up to a small amount of interest:
-        // - $333.333.. worth of ETH owed
-        // - $1333.333.. woth of USDC remaining
+            // Alice now has a LTV ratio of a little over 50%; this equates to
+            // 2x leverage (on a "USDC long", or "ETH short")
+            // - $1000 worth of ETH (plus a little interest) borrowed, and
+            // - $2000 worth of USDC deposited as collateral
+            // Alice gets nervous, and wants to reduce this to 25% by selling
+            // some collateral. Paying 2/3 of the debt, or $666.66.. worth, results
+            // in -- up to a small amount of interest:
+            // - $333.333.. worth of ETH owed
+            // - $1333.333.. woth of USDC remaining
 
-        // Alice is the first borrower and interest has not yet accrued
-        expect(
-            await wethUsdcSingularity.userBorrowPart(alice.address),
-        ).to.equal(E(10_005).div(10_000));
-        expect(await yieldBox.balanceOf(alice.address, usdcId)).to.equal(0);
+            // Alice is the first borrower and interest has not yet accrued
+            expect(
+                await wethUsdcSingularity.userBorrowPart(alice.address),
+            ).to.equal(E(10_005).div(10_000));
+            expect(await yieldBox.balanceOf(alice.address, usdcId)).to.equal(0);
 
-        // Populate the mock swapper with enough ETH:
-        await weth.approve(yieldBox.address, E(666).div(1000));
-        await yieldBox.depositAsset(
-            wethId,
-            deployer.address,
-            mockSwapper.address,
-            E(666).div(1000),
-            0,
-        );
+            // Populate the mock swapper with enough ETH:
+            await weth.approve(yieldBox.address, E(666).div(1000));
+            await yieldBox.depositAsset(
+                wethId,
+                deployer.address,
+                mockSwapper.address,
+                E(666).div(1000),
+                0,
+            );
 
-        hre.tracer.enabled = true;
-        // Sell some collateral
-        await wethUsdcSingularity.connect(alice).sellCollateral(
-            alice.address,
-            E(666).mul(1e8), // USDC in YieldBox shares
-            E(666).div(1000), // WETH in actual amount
-            mockSwapper.address,
-            [],
-        );
-        hre.tracer.enabled = false;
+            hre.tracer.enabled = true;
+            // Sell some collateral
+            await wethUsdcSingularity.connect(alice).sellCollateral(
+                alice.address,
+                E(666).mul(1e8), // USDC in YieldBox shares
+                E(666).div(1000), // WETH in actual amount
+                mockSwapper.address,
+                [],
+            );
+            hre.tracer.enabled = false;
 
-        // Some interest will have accrued.. but otherwise we expect to have
-        // 0.334 ETH of the original loan + 0.0005 ETH of the open fee left:
-        const debt = await wethUsdcSingularity.userBorrowPart(alice.address);
-        const interest = debt.sub(E(3345).div(10_000));
-        expect(interest).to.be.gte(0);
-        expect(interest).to.be.lte(E(1).div(1_000_000));
+            // Some interest will have accrued.. but otherwise we expect to have
+            // 0.334 ETH of the original loan + 0.0005 ETH of the open fee left:
+            const debt = await wethUsdcSingularity.userBorrowPart(
+                alice.address,
+            );
+            const interest = debt.sub(E(3345).div(10_000));
+            expect(interest).to.be.gte(0);
+            expect(interest).to.be.lte(E(1).div(1_000_000));
 
-        // All proceeds were used to pay some of the loan; Alice received none,
-        // but still has the 1 ETH loaned to her:
-        expect(await yieldBox.balanceOf(alice.address, wethId)).to.equal(
-            E(1).mul(1e8),
-        );
+            // All proceeds were used to pay some of the loan; Alice received none,
+            // but still has the 1 ETH loaned to her:
+            expect(await yieldBox.balanceOf(alice.address, wethId)).to.equal(
+                E(1).mul(1e8),
+            );
+        });
+
+        it('Should send the excess if "levering down past 0"', async () => {
+            const {
+                alice,
+                bob,
+                deployer,
+                mockSwapper,
+                usdc,
+                weth,
+                wethId,
+                usdcId,
+                yieldBox,
+                wethUsdcSingularity,
+            } = await loadFixture(setUp);
+
+            // Alice is the first borrower and interest has not yet accrued
+            expect(
+                await wethUsdcSingularity.userBorrowPart(alice.address),
+            ).to.equal(E(10_005).div(10_000));
+            expect(await yieldBox.balanceOf(alice.address, usdcId)).to.equal(0);
+
+            // We are going to sell $1500 of collateral to pay off the $1000.50 of
+            // debt, and we expect to get the rest back (minus some interest):
+
+            // Populate the mock swapper with enough ETH:
+            await weth.approve(yieldBox.address, E(1500).div(1000));
+            await yieldBox.depositAsset(
+                wethId,
+                deployer.address,
+                mockSwapper.address,
+                E(1500).div(1000),
+                0,
+            );
+
+            await wethUsdcSingularity.connect(alice).sellCollateral(
+                alice.address,
+                E(1500).mul(1e8), // USDC in YieldBox shares
+                E(1500).div(1000), // WETH in actual amount
+                mockSwapper.address,
+                [],
+            );
+
+            // The loan should be paid off:
+            expect(
+                await wethUsdcSingularity.userBorrowPart(alice.address),
+            ).to.equal(0);
+
+            // Alice owed 1.0005 ETH plus interest, which accrued before selling
+            // the collateral. The sale was for 1.5 ETH, and the excess went to
+            // Alice. This should be a little under 0.4995 to account for the
+            // interest, together with the 1 ETH already borrowed:
+            const upperBound = E(14995).div(10_000).mul(1e8); // in YieldBox shares
+            const balance = await yieldBox.balanceOf(alice.address, wethId);
+            const interest = upperBound.sub(balance);
+            expect(upperBound).to.be.gte(balance);
+            expect(interest).to.be.lte(E(1).mul(1e8).div(1_000_000)); // YB shares
+        });
     });
 
-    it('Should send the excess if "levering down past 0"', async () => {
-        const {
-            alice,
-            bob,
-            deployer,
-            mockSwapper,
-            usdc,
-            weth,
-            wethId,
-            usdcId,
-            yieldBox,
-            wethUsdcSingularity,
-        } = await loadFixture(setUp);
+    describe('lever up', () => {
+        it('Should lever up by buying collateral', async () => {
+            const {
+                alice,
+                bob,
+                deployer,
+                mockSwapper,
+                usdc,
+                weth,
+                wethId,
+                usdcId,
+                yieldBox,
+                wethUsdcSingularity,
+            } = await loadFixture(setUp);
 
-        // Alice is the first borrower and interest has not yet accrued
-        expect(
-            await wethUsdcSingularity.userBorrowPart(alice.address),
-        ).to.equal(E(10_005).div(10_000));
-        expect(await yieldBox.balanceOf(alice.address, usdcId)).to.equal(0);
+            // Alice now has a LTV ratio of a little over 50%; this equates to
+            // 2x leverage (on a "USDC long", or "ETH short")
+            // - $1000 worth of ETH (plus a little interest) borrowed, and
+            // - $2000 worth of USDC deposited as collateral
+            // Alice feels lucky and wants to go to 3x leverage, by borrowing
+            // another 1 ($1000 worth) ETH and "buying" USDC with it. The net
+            // result will be that alice owes a little over $2000, against $3000
+            // worth of collateral.
+            expect(
+                await wethUsdcSingularity.userBorrowPart(alice.address),
+            ).to.equal(E(10_005).div(10_000));
+            expect(await yieldBox.balanceOf(alice.address, wethId)).to.equal(
+                E(1).mul(1e8),
+            );
 
-        // We are going to sell $1500 of collateral to pay off the $1000.50 of
-        // debt, and we expect to get the rest back (minus some interest):
+            // Populate the mock swapper with enough USDC:
+            await usdc.approve(yieldBox.address, E(1000));
+            await yieldBox.depositAsset(
+                usdcId,
+                deployer.address,
+                mockSwapper.address,
+                E(1000),
+                0,
+            );
 
-        // Populate the mock swapper with enough ETH:
-        await weth.approve(yieldBox.address, E(1500).div(1000));
-        await yieldBox.depositAsset(
-            wethId,
-            deployer.address,
-            mockSwapper.address,
-            E(1500).div(1000),
-            0,
-        );
+            // Buy more collateral
+            await wethUsdcSingularity.connect(alice).buyCollateral(
+                alice.address,
+                E(1), // One ETH; in amount
+                0, // No additional payment
+                E(1000), // In actual amount again
+                mockSwapper.address,
+                [],
+            );
 
-        await wethUsdcSingularity.connect(alice).sellCollateral(
-            alice.address,
-            E(1500).mul(1e8), // USDC in YieldBox shares
-            E(1500).div(1000), // WETH in actual amount
-            mockSwapper.address,
-            [],
-        );
+            // Some interest will have accrued.. but otherwise we expect to have
+            // 1 ETH for the original loan, 1 more for the new loan, and
+            // 2 * 0.0005 = 0.0010 ETH of the open fee owed.
+            const totalDebt = await wethUsdcSingularity.totalBorrow();
+            const debt = (
+                await wethUsdcSingularity.userBorrowPart(alice.address)
+            )
+                .mul(totalDebt.elastic)
+                .div(totalDebt.base);
+            const interest = debt.sub(E(2_001).div(1000));
+            expect(interest).to.be.gte(0);
+            expect(interest).to.be.lte(E(1).div(1_000_000));
 
-        // The loan should be paid off:
-        expect(
-            await wethUsdcSingularity.userBorrowPart(alice.address),
-        ).to.equal(0);
-
-        // Alice owed 1.0005 ETH plus interest, which accrued before selling
-        // the collateral. The sale was for 1.5 ETH, and the excess went to
-        // Alice. This should be a little under 0.4995 to account for the
-        // interest, together with the 1 ETH already borrowed:
-        const upperBound = E(14995).div(10_000).mul(1e8); // in YieldBox shares
-        const balance = await yieldBox.balanceOf(alice.address, wethId);
-        const interest = upperBound.sub(balance);
-        expect(upperBound).to.be.gte(balance);
-        expect(interest).to.be.lte(E(1).mul(1e8).div(1_000_000)); // YB shares
+            // No tokens went to Alice; they were used by the swapper to buy more
+            // collateral:
+            expect(await yieldBox.balanceOf(alice.address, wethId)).to.equal(
+                E(1).mul(1e8),
+            );
+        });
     });
 
-    it('Should lever up by buying collateral', async () => {
-        const {
-            alice,
-            bob,
-            deployer,
-            mockSwapper,
-            usdc,
-            weth,
-            wethId,
-            usdcId,
-            yieldBox,
-            wethUsdcSingularity,
-        } = await loadFixture(setUp);
+    describe('down payment', () => {
+        it('Should enter into a new position with a down payment', async () => {
+            const {
+                carol,
+                deployer,
+                mockSwapper,
+                usdc,
+                weth,
+                wethId,
+                usdcId,
+                yieldBox,
+                wethUsdcSingularity,
+            } = await loadFixture(setUp);
 
-        // Alice now has a LTV ratio of a little over 50%; this equates to
-        // 2x leverage (on a "USDC long", or "ETH short")
-        // - $1000 worth of ETH (plus a little interest) borrowed, and
-        // - $2000 worth of USDC deposited as collateral
-        // Alice feels lucky and wants to go to 3x leverage, by borrowing
-        // another 1 ($1000 worth) ETH and "buying" USDC with it. The net
-        // result will be that alice owes a little over $2000, against $3000
-        // worth of collateral.
-        expect(
-            await wethUsdcSingularity.userBorrowPart(alice.address),
-        ).to.equal(E(10_005).div(10_000));
-        expect(await yieldBox.balanceOf(alice.address, wethId)).to.equal(
-            E(1).mul(1e8),
-        );
+            // Carol has no previous interactions with the protocol*, and wants to
+            // go "long USDC" 2.5x: control $5000 of USDC by supplying $2000 of ETH
+            // and borrowing the other $3000
+            // *) Other than approving the Singularity pair in the YieldBox
 
-        // Populate the mock swapper with enough USDC:
-        await usdc.approve(yieldBox.address, E(1000));
-        await yieldBox.depositAsset(
-            usdcId,
-            deployer.address,
-            mockSwapper.address,
-            E(1000),
-            0,
-        );
+            expect(await getDebtAmount(carol.address)).to.equal(0);
+            expect(await yieldBox.balanceOf(carol.address, wethId)).to.equal(0);
 
-        // Buy more collateral
-        await wethUsdcSingularity.connect(alice).buyCollateral(
-            alice.address,
-            E(1), // One ETH; in amount
-            0, // No additional payment
-            E(1000), // In actual amount again
-            mockSwapper.address,
-            [],
-        );
+            // Deposit $2000 into the YieldBox:
+            await weth.connect(carol).approve(yieldBox.address, E(2));
+            await yieldBox
+                .connect(carol)
+                .depositAsset(wethId, carol.address, carol.address, E(2), 0);
 
-        // Some interest will have accrued.. but otherwise we expect to have
-        // 1 ETH for the original loan, 1 more for the new loan, and
-        // 2 * 0.0005 = 0.0010 ETH of the open fee owed.
-        const totalDebt = await wethUsdcSingularity.totalBorrow();
-        const debt = (await wethUsdcSingularity.userBorrowPart(alice.address))
-            .mul(totalDebt.elastic)
-            .div(totalDebt.base);
-        const interest = debt.sub(E(2_001).div(1000));
-        expect(interest).to.be.gte(0);
-        expect(interest).to.be.lte(E(1).div(1_000_000));
+            // Populate the mock swapper with enough USDC:
+            await usdc.approve(yieldBox.address, E(5000));
+            await yieldBox.depositAsset(
+                usdcId,
+                deployer.address,
+                mockSwapper.address,
+                E(5000),
+                0,
+            );
 
-        // No tokens went to Alice; they were used by the swapper to buy more
-        // collateral:
-        expect(await yieldBox.balanceOf(alice.address, wethId)).to.equal(
-            E(1).mul(1e8),
-        );
-    });
+            // Borrow ETH and use it and the down payment to buy collateral:
+            await wethUsdcSingularity.connect(carol).buyCollateral(
+                carol.address,
+                E(3), // Three ETH borrowedj; in amount
+                E(2), // Two ETH supplied; in amount
+                E(5000), // 5000 USDC swapped into; in amount
+                mockSwapper.address,
+                [],
+            );
 
-    it('Should enter into a new position with a down payment', async () => {
-        const {
-            carol,
-            deployer,
-            mockSwapper,
-            usdc,
-            weth,
-            wethId,
-            usdcId,
-            yieldBox,
-            wethUsdcSingularity,
-        } = await loadFixture(setUp);
-
-        // Carol has no previous interactions with the protocol*, and wants to
-        // go "long USDC" 2.5x: control $5000 of USDC by supplying $2000 of ETH
-        // and borrowing the other $3000
-        // *) Other than approving the Singularity pair in the YieldBox
-
-        expect(await getDebtAmount(carol.address)).to.equal(0);
-        expect(await yieldBox.balanceOf(carol.address, wethId)).to.equal(0);
-
-        // Deposit $2000 into the YieldBox:
-        await weth.connect(carol).approve(yieldBox.address, E(2));
-        await yieldBox
-            .connect(carol)
-            .depositAsset(wethId, carol.address, carol.address, E(2), 0);
-
-        // Populate the mock swapper with enough USDC:
-        await usdc.approve(yieldBox.address, E(5000));
-        await yieldBox.depositAsset(
-            usdcId,
-            deployer.address,
-            mockSwapper.address,
-            E(5000),
-            0,
-        );
-
-        // Borrow ETH and use it and the down payment to buy collateral:
-        await wethUsdcSingularity.connect(carol).buyCollateral(
-            carol.address,
-            E(3), // Three ETH borrowedj; in amount
-            E(2), // Two ETH supplied; in amount
-            E(5000), // 5000 USDC swapped into; in amount
-            mockSwapper.address,
-            [],
-        );
-
-        // Carol borrowed 3 ETH, plus a borrow fee. No accruals have taken
-        // place since, therefore the debt should be exactly 3.0015 ETH:
-        expect(await getDebtAmount(carol.address)).to.equal(
-            E(30_015).div(10_000),
-        );
+            // Carol borrowed 3 ETH, plus a borrow fee. No accruals have taken
+            // place since, therefore the debt should be exactly 3.0015 ETH:
+            expect(await getDebtAmount(carol.address)).to.equal(
+                E(30_015).div(10_000),
+            );
+        });
     });
 });

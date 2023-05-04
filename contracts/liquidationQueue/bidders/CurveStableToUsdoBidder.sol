@@ -3,11 +3,11 @@ pragma solidity ^0.8.18;
 
 import "@boringcrypto/boring-solidity/contracts/BoringOwnable.sol";
 
-import "../../interfaces/IPenrose.sol";
-import "../ILiquidationQueue.sol";
-import "../../libraries/ICurvePool.sol";
 import "tapioca-periph/contracts/interfaces/ISwapper.sol";
+import "tapioca-periph/contracts/interfaces/IPenrose.sol";
 import "tapioca-periph/contracts/interfaces/ISingularity.sol";
+import "tapioca-periph/contracts/interfaces/ILiquidationQueue.sol";
+import "tapioca-periph/contracts/Swapper/interfaces/ICurvePool.sol";
 import "tapioca-sdk/dist/contracts/YieldBox/contracts/interfaces/IYieldBox.sol";
 
 /*
@@ -30,7 +30,6 @@ contract CurveStableToUsdoBidder is BoringOwnable {
     // ************ //
     // *** VARS *** //
     // ************ //
-
     /// @notice 3Crv+USDO swapper
     ICurveSwapper public curveSwapper;
     /// @notice Curve pool assets number
@@ -39,6 +38,7 @@ contract CurveStableToUsdoBidder is BoringOwnable {
     // ************** //
     // *** EVENTS *** //
     // ************** //
+    /// @notice event emitted when the ISwapper property is updated
     event CurveSwapperUpdated(address indexed _old, address indexed _new);
 
     /// @notice creates a new CurveStableToUsdoBidder
@@ -58,7 +58,10 @@ contract CurveStableToUsdoBidder is BoringOwnable {
     }
 
     /// @notice returns the amount of collateral
+    /// @param singularity Singularity market address
+    /// @param tokenInId Token in YielxBox id
     /// @param amountIn Stablecoin amount
+    /// @return output amount
     function getOutputAmount(
         ISingularity singularity,
         uint256 tokenInId,
@@ -85,8 +88,10 @@ contract CurveStableToUsdoBidder is BoringOwnable {
     }
 
     /// @notice returns token tokenIn amount based on tokenOut amount
-    /// @param tokenInId Token in asset id
+    /// @param singularity Singularity market address
+    /// @param tokenInId Token in YielxBox id
     /// @param amountOut Token out amount
+    /// @return input amount
     function getInputAmount(
         ISingularity singularity,
         uint256 tokenInId,
@@ -117,9 +122,11 @@ contract CurveStableToUsdoBidder is BoringOwnable {
     // ************************ //
 
     /// @notice swaps stable to collateral
+    /// @param singularity Singularity market address
     /// @param tokenInId Stablecoin asset id
     /// @param amountIn Stablecoin amount
     /// @param data extra data used for the swap operation
+    /// @return obtained amount
     function swap(
         ISingularity singularity,
         uint256 tokenInId,

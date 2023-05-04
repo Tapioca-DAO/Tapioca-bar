@@ -31,6 +31,8 @@ contract Singularity is SGLCommon {
     // ************ //
     // *** VARS *** //
     // ************ //
+    /// @notice enum representing each type of module associated with a Singularity market
+    /// @dev modules are contracts that holds a portion of the market's logic
     enum Module {
         Base,
         LendingBorrowing,
@@ -116,6 +118,7 @@ contract Singularity is SGLCommon {
     /// @notice returns Total yieldBox shares for user
     /// @param _user The user to check shares for
     /// @param _assetId The asset id to check shares for
+    /// @return shares value
     function yieldBoxShares(
         address _user,
         uint256 _assetId
@@ -131,6 +134,8 @@ contract Singularity is SGLCommon {
     /// @notice Allows batched call to Singularity.
     /// @param calls An array encoded call data.
     /// @param revertOnFail If True then reverts after a failed call and stops doing further calls.
+    /// @return successes count of successful operations
+    /// @return results array of revert messages
     function execute(
         bytes[] calldata calls,
         bool revertOnFail
@@ -242,7 +247,7 @@ contract Singularity is SGLCommon {
     /// @param minAmountOut Mininal proceeds required for the sale
     /// @param swapper Swapper to execute the sale
     /// @param dexData Additional data to pass to the swapper
-    /// @param amountOut Actual asset amount received in the sale
+    /// @return amountOut Actual asset amount received in the sale
     function sellCollateral(
         address from,
         uint256 share,
@@ -271,7 +276,7 @@ contract Singularity is SGLCommon {
     /// @param minAmountOut Mininal collateral amount to receive
     /// @param swapper Swapper to execute the purchase
     /// @param dexData Additional data to pass to the swapper
-    /// @param amountOut Actual collateral amount purchased
+    /// @return amountOut Actual collateral amount purchased
     function buyCollateral(
         address from,
         uint256 borrowAmount,
@@ -341,6 +346,7 @@ contract Singularity is SGLCommon {
     // *** OWNER FUNCTIONS *** //
     // *********************** //
     /// @notice Transfers fees to penrose
+    /// @dev can only be called by the owner
     /// @param feeTo fees receiver
     function refreshPenroseFees(
         address feeTo
@@ -394,11 +400,13 @@ contract Singularity is SGLCommon {
     }
 
     /// @notice Execute an only owner function inside of the LiquidationQueue
+    /// @param _swapper the new swapper address
     function updateLQExecutionSwapper(address _swapper) external onlyOwner {
         liquidationQueue.setBidExecutionSwapper(_swapper);
     }
 
     /// @notice Execute an only owner function inside of the LiquidationQueue
+    /// @param _swapper the new swapper address
     function updateLQUsdoSwapper(address _swapper) external onlyOwner {
         liquidationQueue.setUsdoSwapper(_swapper);
     }
@@ -406,7 +414,6 @@ contract Singularity is SGLCommon {
     // ************************* //
     // *** PRIVATE FUNCTIONS *** //
     // ************************* //
-
     function _extractModule(Module _module) private view returns (address) {
         address module;
         if (_module == Module.LendingBorrowing) {

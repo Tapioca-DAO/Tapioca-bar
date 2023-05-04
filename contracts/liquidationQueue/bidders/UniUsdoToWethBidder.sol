@@ -3,10 +3,10 @@ pragma solidity ^0.8.18;
 
 import "@boringcrypto/boring-solidity/contracts/BoringOwnable.sol";
 
-import "../../interfaces/IPenrose.sol";
-import "../ILiquidationQueue.sol";
-import "tapioca-periph/contracts/interfaces/ISingularity.sol";
+import "tapioca-periph/contracts/interfaces/IPenrose.sol";
 import "tapioca-periph/contracts/interfaces/ISwapper.sol";
+import "tapioca-periph/contracts/interfaces/ISingularity.sol";
+import "tapioca-periph/contracts/interfaces/ILiquidationQueue.sol";
 import "tapioca-sdk/dist/contracts/YieldBox/contracts/interfaces/IYieldBox.sol";
 
 /*
@@ -30,7 +30,6 @@ contract UniUsdoToWethBidder is BoringOwnable {
     // ************ //
     // *** VARS *** //
     // ************ //
-
     /// @notice UniswapV2 swapper
     ISwapper public univ2Swapper;
 
@@ -40,6 +39,7 @@ contract UniUsdoToWethBidder is BoringOwnable {
     // ************** //
     // *** EVENTS *** //
     // ************** //
+    /// @notice event emitted when the ISwapper property is updated
     event UniV2SwapperUpdated(address indexed _old, address indexed _new);
 
     /// @notice Creates a new UniUsdoToWethBidder contract
@@ -59,8 +59,10 @@ contract UniUsdoToWethBidder is BoringOwnable {
     }
 
     /// @notice returns token tokenIn amount based on tokenOut amount
-    /// @param tokenInId Token in asset id
+    /// @param singularity Singularity market address
+    /// @param tokenInId Input token YieldBox id
     /// @param amountOut Token out amount
+    /// @return amount out
     function getInputAmount(
         ISingularity singularity,
         uint256 tokenInId,
@@ -88,7 +90,10 @@ contract UniUsdoToWethBidder is BoringOwnable {
     }
 
     /// @notice returns the amount of collateral
+    /// @param singularity Singularity market address
+    /// @param tokenInId Token in YielxBox id
     /// @param amountIn Stablecoin amount
+    /// @return input amount
     function getOutputAmount(
         ISingularity singularity,
         uint256 tokenInId,
@@ -114,11 +119,12 @@ contract UniUsdoToWethBidder is BoringOwnable {
     // ************************ //
     // *** PUBLIC FUNCTIONS *** //
     // ************************ //
-
     /// @notice swaps stable to collateral
+    /// @param singularity Singularity market address
     /// @param tokenInId Token in asset Id
     /// @param amountIn Stablecoin amount
     /// @param data extra data used for the swap operation
+    /// @return obtained amount
     function swap(
         ISingularity singularity,
         uint256 tokenInId,

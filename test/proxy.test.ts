@@ -18,20 +18,19 @@ describe('MarketsProxy', () => {
 
     let bar: any,
         mediumRiskMC: any,
-        proxyDeployer: any,
         yieldBox: any,
         weth: any,
         wethAssetId: any,
         usdc: any,
         usdcAssetId: any,
         wethUsdcOracle: any,
-        registerSingularity: any;
+        registerSingularity: any,
+        deployer: any;
 
     beforeEach(async () => {
         const registerInfo = await loadFixture(register);
         bar = registerInfo.bar;
         mediumRiskMC = registerInfo.mediumRiskMC;
-        proxyDeployer = registerInfo.proxyDeployer;
         yieldBox = registerInfo.yieldBox;
         weth = registerInfo.weth;
         wethAssetId = registerInfo.wethAssetId;
@@ -39,6 +38,7 @@ describe('MarketsProxy', () => {
         usdcAssetId = registerInfo.usdcAssetId;
         wethUsdcOracle = registerInfo.wethUsdcOracle;
         registerSingularity = registerInfo.registerSingularity;
+        deployer = registerInfo.deployer;
 
         loadSetup = async () => {
             const {
@@ -49,7 +49,6 @@ describe('MarketsProxy', () => {
                 lzEndpointSrc,
                 lzEndpointDst,
             } = await setupEnvironment(
-                proxyDeployer,
                 mediumRiskMC,
                 yieldBox,
                 bar,
@@ -59,6 +58,7 @@ describe('MarketsProxy', () => {
                 usdcAssetId,
                 wethUsdcOracle,
                 registerSingularity,
+                deployer,
             );
             return {
                 proxySrc,
@@ -71,27 +71,64 @@ describe('MarketsProxy', () => {
         };
     });
 
-    it('should test with OFT singularity', async () => {
-        const {
-            createWethUsd0Singularity,
-            proxyDeployer,
-            deployer,
-            mediumRiskMC,
-            yieldBox,
-            bar,
-            weth,
-            usdc,
-            wethAssetId,
-            wethUsdcOracle,
-            eoa1,
-            deployCurveStableToUsdoBidder,
-            __wethUsdcPrice,
-        } = await loadFixture(register);
+    describe('OFT Singularity', () => {
+        it('should test with OFT singularity', async () => {
+            const {
+                createWethUsd0Singularity,
+                proxyDeployer,
+                deployer,
+                mediumRiskMC,
+                yieldBox,
+                bar,
+                weth,
+                usdc,
+                wethAssetId,
+                wethUsdcOracle,
+                eoa1,
+                deployCurveStableToUsdoBidder,
+                __wethUsdcPrice,
+            } = await loadFixture(register);
 
-        const newPrice = __wethUsdcPrice.div(1000000);
-        await wethUsdcOracle.set(newPrice);
+            const newPrice = __wethUsdcPrice.div(1000000);
+            await wethUsdcOracle.set(newPrice);
 
-        const loadSetup = async function loadSetupFn() {
+            const loadSetup = async function loadSetupFn() {
+                const {
+                    proxySrc,
+                    proxyDst,
+                    singularitySrc,
+                    singularityDst,
+                    lzEndpointSrc,
+                    lzEndpointDst,
+                    usd0Src,
+                    usd0Dst,
+                    usd0DstId,
+                    usd0SrcId,
+                } = await setupUsd0Environment(
+                    proxyDeployer,
+                    mediumRiskMC,
+                    yieldBox,
+                    bar,
+                    usdc,
+                    weth,
+                    wethAssetId,
+                    createWethUsd0Singularity,
+                    deployCurveStableToUsdoBidder,
+                    deployer,
+                );
+                return {
+                    proxySrc,
+                    proxyDst,
+                    singularitySrc,
+                    singularityDst,
+                    lzEndpointSrc,
+                    lzEndpointDst,
+                    usd0Src,
+                    usd0Dst,
+                    usd0DstId,
+                    usd0SrcId,
+                };
+            };
             const {
                 proxySrc,
                 proxyDst,
@@ -103,1448 +140,1488 @@ describe('MarketsProxy', () => {
                 usd0Dst,
                 usd0DstId,
                 usd0SrcId,
-            } = await setupUsd0Environment(
-                proxyDeployer,
-                mediumRiskMC,
-                yieldBox,
-                bar,
-                usdc,
-                weth,
-                wethAssetId,
-                createWethUsd0Singularity,
-                deployCurveStableToUsdoBidder,
-                deployer,
+            } = await loadFixture(loadSetup);
+
+            //get tokens
+            const wethAmount = ethers.BigNumber.from((1e18).toString()).mul(
+                100,
             );
-            return {
-                proxySrc,
-                proxyDst,
-                singularitySrc,
-                singularityDst,
-                lzEndpointSrc,
-                lzEndpointDst,
-                usd0Src,
-                usd0Dst,
-                usd0DstId,
-                usd0SrcId,
-            };
-        };
-        const {
-            proxySrc,
-            proxyDst,
-            singularitySrc,
-            singularityDst,
-            lzEndpointSrc,
-            lzEndpointDst,
-            usd0Src,
-            usd0Dst,
-            usd0DstId,
-            usd0SrcId,
-        } = await loadFixture(loadSetup);
+            const usdoAmount = ethers.BigNumber.from((1e18).toString()).mul(
+                20000,
+            );
+            await usd0Dst.mint(deployer.address, usdoAmount);
+            await weth.connect(eoa1).freeMint(wethAmount);
 
-        //get tokens
-        const wethAmount = ethers.BigNumber.from((1e18).toString()).mul(100);
-        const usdoAmount = ethers.BigNumber.from((1e18).toString()).mul(20000);
-        await usd0Dst.mint(deployer.address, usdoAmount);
-        await weth.connect(eoa1).freeMint(wethAmount);
+            //add USDO for borrowing
+            const usdoLendValue = usdoAmount.div(2);
+            await usd0Dst.approve(yieldBox.address, usdoLendValue);
 
-        //add USDO for borrowing
-        const usdoLendValue = usdoAmount.div(2);
-        await usd0Dst.approve(yieldBox.address, usdoLendValue);
+            const usdoLendValueShare = await yieldBox.toShare(
+                await singularityDst.assetId(),
+                usdoLendValue,
+                false,
+            );
 
-        const usdoLendValueShare = await yieldBox.toShare(
-            await singularityDst.assetId(),
-            usdoLendValue,
-            false,
-        );
-
-        await yieldBox.depositAsset(
-            await singularityDst.assetId(),
-            deployer.address,
-            deployer.address,
-            0,
-            usdoLendValueShare,
-        );
-
-        // Approve singularityDst actions
-        await yieldBox.setApprovalForAll(singularityDst.address, true);
-        await singularityDst.approve(
-            proxyDst.address,
-            ethers.constants.MaxUint256,
-        );
-
-        const balanceBefore = await singularityDst.balanceOf(deployer.address);
-        const addAssetFn = singularityDst.interface.encodeFunctionData(
-            'addAsset',
-            [deployer.address, deployer.address, false, usdoLendValueShare],
-        );
-
-        await proxySrc.executeOnChain(
-            await lzEndpointDst.getChainId(),
-            singularityDst.address,
-            [addAssetFn],
-            ethers.utils.toUtf8Bytes(''),
-            { value: ethers.utils.parseEther('1') },
-        );
-
-        const balanceAfter = await singularityDst.balanceOf(deployer.address);
-        expect(balanceAfter.gt(balanceBefore)).to.be.true;
-
-        // --- Borrowing ---
-        const wethDepositAmount = ethers.BigNumber.from((1e18).toString()).mul(
-            1,
-        );
-
-        await weth
-            .connect(eoa1)
-            .approve(yieldBox.address, ethers.constants.MaxUint256);
-        await yieldBox
-            .connect(eoa1)
-            .setApprovalForAll(singularityDst.address, true);
-        await singularityDst
-            .connect(eoa1)
-            .approve(proxyDst.address, ethers.constants.MaxUint256);
-
-        await yieldBox
-            .connect(eoa1)
-            .depositAsset(
-                wethAssetId,
-                eoa1.address,
-                eoa1.address,
-                wethDepositAmount,
+            await yieldBox.depositAsset(
+                await singularityDst.assetId(),
+                deployer.address,
+                deployer.address,
                 0,
+                usdoLendValueShare,
             );
 
-        const _wethValShare = await yieldBox.toShare(
-            wethAssetId,
-            wethDepositAmount,
-            false,
-        );
+            // Approve singularityDst actions
+            await yieldBox.setApprovalForAll(singularityDst.address, true);
+            await singularityDst.approve(
+                proxyDst.address,
+                ethers.constants.MaxUint256,
+            );
 
-        const addCollateralFn = singularityDst.interface.encodeFunctionData(
-            'addCollateral',
-            [eoa1.address, eoa1.address, false, _wethValShare],
-        );
+            const balanceBefore = await singularityDst.balanceOf(
+                deployer.address,
+            );
+            const addAssetFn = singularityDst.interface.encodeFunctionData(
+                'addAsset',
+                [deployer.address, deployer.address, false, usdoLendValueShare],
+            );
 
-        await proxySrc
-            .connect(eoa1)
-            .executeOnChain(
+            await proxySrc.executeOnChain(
                 await lzEndpointDst.getChainId(),
                 singularityDst.address,
-                [addCollateralFn],
+                [addAssetFn],
                 ethers.utils.toUtf8Bytes(''),
-                {
-                    value: ethers.utils.parseEther('1'),
-                },
+                { value: ethers.utils.parseEther('1') },
             );
 
-        const userCollateralShare = await singularityDst.userCollateralShare(
-            eoa1.address,
-        );
-        expect(userCollateralShare.gt(0)).to.be.true;
-
-        // Needs extraGas param; oterwhise it reverts
-        const adapterParam = ethers.utils.solidityPack(
-            ['uint16', 'uint256'],
-            [1, 2250000],
-        );
-        await proxySrc.setMinDstGas(await lzEndpointDst.getChainId(), 1, 1);
-        await proxySrc.setUseCustomAdapterParams(true);
-
-        const usdoBorrowVal = wethDepositAmount
-            .mul(74)
-            .div(100)
-            .mul(__wethUsdcPrice.div((1e18).toString()));
-
-        const borrowFn = singularityDst.interface.encodeFunctionData('borrow', [
-            eoa1.address,
-            eoa1.address,
-            usdoBorrowVal,
-        ]);
-        await singularityDst
-            .connect(eoa1)
-            .approveBorrow(proxyDst.address, ethers.constants.MaxUint256);
-        await proxySrc
-            .connect(eoa1)
-            .executeOnChain(
-                await lzEndpointDst.getChainId(),
-                singularityDst.address,
-                [borrowFn],
-                adapterParam,
-                {
-                    value: ethers.utils.parseEther('10'),
-                },
+            const balanceAfter = await singularityDst.balanceOf(
+                deployer.address,
             );
-        const borrowPart = await singularityDst.userBorrowPart(eoa1.address);
-        expect(borrowPart.gt(0)).to.be.true;
-    });
+            expect(balanceAfter.gt(balanceBefore)).to.be.true;
 
-    it('should test with OFT singularity', async () => {
-        const {
-            createWethUsd0Singularity,
-            proxyDeployer,
-            deployer,
-            mediumRiskMC,
-            yieldBox,
-            bar,
-            weth,
-            usdc,
-            wethAssetId,
-            wethUsdcOracle,
-            eoa1,
-            deployCurveStableToUsdoBidder,
-            __wethUsdcPrice,
-        } = await loadFixture(register);
+            // --- Borrowing ---
+            const wethDepositAmount = ethers.BigNumber.from(
+                (1e18).toString(),
+            ).mul(1);
 
-        const newPrice = __wethUsdcPrice.div(1000000);
-        await wethUsdcOracle.set(newPrice);
-
-        const loadSetup = async function loadSetupFn() {
-            const {
-                proxySrc,
-                proxyDst,
-                singularitySrc,
-                singularityDst,
-                lzEndpointSrc,
-                lzEndpointDst,
-                usd0Src,
-                usd0Dst,
-                usd0DstId,
-                usd0SrcId,
-            } = await setupUsd0Environment(
-                proxyDeployer,
-                mediumRiskMC,
-                yieldBox,
-                bar,
-                usdc,
-                weth,
-                wethAssetId,
-                createWethUsd0Singularity,
-                deployCurveStableToUsdoBidder,
-                deployer,
-            );
-            return {
-                proxySrc,
-                proxyDst,
-                singularitySrc,
-                singularityDst,
-                lzEndpointSrc,
-                lzEndpointDst,
-                usd0Src,
-                usd0Dst,
-                usd0DstId,
-                usd0SrcId,
-            };
-        };
-        const {
-            proxySrc,
-            proxyDst,
-            singularitySrc,
-            singularityDst,
-            lzEndpointSrc,
-            lzEndpointDst,
-            usd0Src,
-            usd0Dst,
-            usd0DstId,
-            usd0SrcId,
-        } = await loadFixture(loadSetup);
-
-        //get tokens
-        const wethAmount = ethers.BigNumber.from((1e18).toString()).mul(100);
-        const usdoAmount = ethers.BigNumber.from((1e18).toString()).mul(20000);
-        await usd0Dst.mint(deployer.address, usdoAmount);
-        await weth.connect(eoa1).freeMint(wethAmount);
-
-        //add USDO for borrowing
-        const usdoLendValue = usdoAmount.div(2);
-        await usd0Dst.approve(yieldBox.address, usdoLendValue);
-
-        const usdoLendValueShare = await yieldBox.toShare(
-            await singularityDst.assetId(),
-            usdoLendValue,
-            false,
-        );
-
-        await yieldBox.depositAsset(
-            await singularityDst.assetId(),
-            deployer.address,
-            deployer.address,
-            0,
-            usdoLendValueShare,
-        );
-
-        // Approve singularityDst actions
-        await yieldBox.setApprovalForAll(singularityDst.address, true);
-        await singularityDst.approve(
-            proxyDst.address,
-            ethers.constants.MaxUint256,
-        );
-
-        const balanceBefore = await singularityDst.balanceOf(deployer.address);
-        const addAssetFn = singularityDst.interface.encodeFunctionData(
-            'addAsset',
-            [deployer.address, deployer.address, false, usdoLendValueShare],
-        );
-
-        await proxySrc.executeOnChain(
-            await lzEndpointDst.getChainId(),
-            singularityDst.address,
-            [addAssetFn],
-            ethers.utils.toUtf8Bytes(''),
-            { value: ethers.utils.parseEther('1') },
-        );
-
-        const balanceAfter = await singularityDst.balanceOf(deployer.address);
-        expect(balanceAfter.gt(balanceBefore)).to.be.true;
-
-        // --- Borrowing ---
-        const wethDepositAmount = ethers.BigNumber.from((1e18).toString()).mul(
-            1,
-        );
-
-        await weth
-            .connect(eoa1)
-            .approve(yieldBox.address, ethers.constants.MaxUint256);
-        await yieldBox
-            .connect(eoa1)
-            .setApprovalForAll(singularityDst.address, true);
-        await singularityDst
-            .connect(eoa1)
-            .approve(proxyDst.address, ethers.constants.MaxUint256);
-
-        await yieldBox
-            .connect(eoa1)
-            .depositAsset(
-                wethAssetId,
-                eoa1.address,
-                eoa1.address,
-                wethDepositAmount,
-                0,
-            );
-
-        const _wethValShare = await yieldBox.toShare(
-            wethAssetId,
-            wethDepositAmount,
-            false,
-        );
-        const usdoBorrowVal = wethDepositAmount
-            .mul(74)
-            .div(100)
-            .mul(__wethUsdcPrice.div((1e18).toString()));
-
-        await proxySrc.setMinDstGas(await lzEndpointDst.getChainId(), 1, 1);
-        await proxySrc.setUseCustomAdapterParams(true);
-        const randomReceiver = new ethers.Wallet(
-            ethers.Wallet.createRandom().privateKey,
-            ethers.provider,
-        );
-        const addCollateralFn = singularityDst.interface.encodeFunctionData(
-            'addCollateral',
-            [eoa1.address, eoa1.address, false, _wethValShare],
-        );
-        const borrowFn = singularityDst.interface.encodeFunctionData('borrow', [
-            eoa1.address,
-            eoa1.address,
-            usdoBorrowVal,
-        ]);
-        const airdropAdapterParams = ethers.utils.solidityPack(
-            ['uint16', 'uint', 'uint', 'address'],
-            [2, 2250000, ethers.utils.parseEther('3'), singularityDst.address],
-        );
-        let sglEthBalance = await ethers.provider.getBalance(
-            singularityDst.address,
-        );
-        await singularityDst
-            .connect(eoa1)
-            .approveBorrow(proxyDst.address, ethers.constants.MaxUint256);
-        await proxySrc
-            .connect(eoa1)
-            .executeOnChain(
-                await lzEndpointDst.getChainId(),
-                singularityDst.address,
-                [addCollateralFn, borrowFn],
-                airdropAdapterParams,
-                { value: ethers.utils.parseEther('10') },
-            );
-        sglEthBalance = await ethers.provider.getBalance(
-            singularityDst.address,
-        );
-
-        const userCollateralShare = await singularityDst.userCollateralShare(
-            eoa1.address,
-        );
-        expect(userCollateralShare.gt(0)).to.be.true;
-
-        const borrowPart = await singularityDst.userBorrowPart(eoa1.address);
-        expect(borrowPart.gt(0)).to.be.true;
-    });
-
-    it('should test with OFT singularity through helper', async () => {
-        const {
-            createWethUsd0Singularity,
-            proxyDeployer,
-            deployer,
-            mediumRiskMC,
-            yieldBox,
-            bar,
-            weth,
-            usdc,
-            wethAssetId,
-            wethUsdcOracle,
-            eoa1,
-            magnetar,
-            deployCurveStableToUsdoBidder,
-            __wethUsdcPrice,
-        } = await loadFixture(register);
-
-        const newPrice = __wethUsdcPrice.div(1000000);
-        await wethUsdcOracle.set(newPrice);
-
-        const loadSetup = async function loadSetupFn() {
-            const {
-                proxySrc,
-                proxyDst,
-                singularitySrc,
-                singularityDst,
-                lzEndpointSrc,
-                lzEndpointDst,
-                usd0Src,
-                usd0Dst,
-                usd0DstId,
-                usd0SrcId,
-            } = await setupUsd0Environment(
-                proxyDeployer,
-                mediumRiskMC,
-                yieldBox,
-                bar,
-                usdc,
-                weth,
-                wethAssetId,
-                createWethUsd0Singularity,
-                deployCurveStableToUsdoBidder,
-                deployer,
-            );
-            return {
-                proxySrc,
-                proxyDst,
-                singularitySrc,
-                singularityDst,
-                lzEndpointSrc,
-                lzEndpointDst,
-                usd0Src,
-                usd0Dst,
-                usd0DstId,
-                usd0SrcId,
-            };
-        };
-        const {
-            proxySrc,
-            proxyDst,
-            singularitySrc,
-            singularityDst,
-            lzEndpointSrc,
-            lzEndpointDst,
-            usd0Src,
-            usd0Dst,
-            usd0DstId,
-            usd0SrcId,
-        } = await loadFixture(loadSetup);
-
-        //get tokens
-        const wethAmount = ethers.BigNumber.from((1e18).toString()).mul(100);
-        const usdoAmount = ethers.BigNumber.from((1e18).toString()).mul(20000);
-        await usd0Dst.mint(deployer.address, usdoAmount);
-        await weth.connect(eoa1).freeMint(wethAmount);
-
-        //add USDO for borrowing
-        const usdoLendValue = usdoAmount.div(2);
-        await usd0Dst.approve(yieldBox.address, usdoLendValue);
-
-        const usdoLendValueShare = await yieldBox.toShare(
-            await singularityDst.assetId(),
-            usdoLendValue,
-            false,
-        );
-
-        await yieldBox.depositAsset(
-            await singularityDst.assetId(),
-            deployer.address,
-            deployer.address,
-            0,
-            usdoLendValueShare,
-        );
-
-        // Approve singularityDst actions
-        await yieldBox.setApprovalForAll(singularityDst.address, true);
-
-        const balanceBefore = await singularityDst.balanceOf(deployer.address);
-        const addAssetFn = singularityDst.interface.encodeFunctionData(
-            'addAsset',
-            [deployer.address, deployer.address, false, usdoLendValueShare],
-        );
-
-        await proxySrc.executeOnChain(
-            await lzEndpointDst.getChainId(),
-            singularityDst.address,
-            [addAssetFn],
-            ethers.utils.toUtf8Bytes(''),
-            { value: ethers.utils.parseEther('1') },
-        );
-
-        const balanceAfter = await singularityDst.balanceOf(deployer.address);
-        expect(balanceAfter.gt(balanceBefore)).to.be.true;
-
-        // --- Borrowing ---
-
-        const wethDepositAmount = ethers.BigNumber.from((1e18).toString()).mul(
-            1,
-        );
-        const usdoBorrowVal = wethDepositAmount
-            .mul(74)
-            .div(100)
-            .mul(__wethUsdcPrice.div((1e18).toString()));
-
-        await weth
-            .connect(eoa1)
-            .approve(magnetar.address, ethers.constants.MaxUint256);
-        await singularityDst
-            .connect(eoa1)
-            .approve(magnetar.address, ethers.constants.MaxUint256);
-
-        const randomReceiver = new ethers.Wallet(
-            ethers.Wallet.createRandom().privateKey,
-            ethers.provider,
-        );
-
-        await singularityDst
-            .connect(eoa1)
-            .approveBorrow(magnetar.address, ethers.constants.MaxUint256);
-        await magnetar
-            .connect(eoa1)
-            .depositAddCollateralAndBorrow(
-                singularityDst.address,
-                eoa1.address,
-                wethDepositAmount,
-                usdoBorrowVal.div(2),
-                true,
-                true,
-                true,
-                encodeMarketHelperWithdrawData(false, 0, eoa1.address, '0x00'),
-                {
-                    value: ethers.utils.parseEther('10'),
-                },
-            );
-
-        const userCollateralShare = await singularityDst.userCollateralShare(
-            eoa1.address,
-        );
-        expect(userCollateralShare.gt(0)).to.be.true;
-
-        const borrowPart = await singularityDst.userBorrowPart(eoa1.address);
-        expect(borrowPart.gt(0)).to.be.true;
-
-        const usdoBalance = await usd0Dst.balanceOf(eoa1.address);
-        expect(usdoBalance.gt(0)).to.be.true;
-
-        const withdrawData = new ethers.utils.AbiCoder().encode(
-            ['bool', 'uint256', 'bytes32', 'bytes'],
-            [
-                true,
-                await lzEndpointSrc.getChainId(),
-                ethers.utils.defaultAbiCoder.encode(
-                    ['address'],
-                    [randomReceiver.address],
-                ),
-                ethers.utils.toUtf8Bytes(''),
-            ],
-        );
-
-        await singularityDst
-            .connect(eoa1)
-            .approveBorrow(magnetar.address, ethers.constants.MaxUint256);
-
-        await magnetar
-            .connect(eoa1)
-            .depositAddCollateralAndBorrow(
-                singularityDst.address,
-                eoa1.address,
-                wethDepositAmount,
-                usdoBorrowVal.div(2),
-                true,
-                true,
-                true,
-                withdrawData,
-                {
-                    value: ethers.utils.parseEther('10'),
-                },
-            );
-
-        const usdoSrcBalabce = await usd0Src.balanceOf(randomReceiver.address);
-        expect(usdoSrcBalabce.gt(0)).to.be.true;
-    });
-
-    it('should add assets to singularity from a different layers', async () => {
-        const { deployer, yieldBox, weth } = await loadFixture(register);
-
-        const { proxySrc, proxyDst, singularityDst, lzEndpointDst } =
-            await loadFixture(loadSetup);
-
-        // Get assets
-        const mintVal = ethers.BigNumber.from((1e18).toString()).mul(10);
-        weth.freeMint(mintVal);
-
-        // Deposit assets to YieldBox
-        const mintValShare = await yieldBox.toShare(
-            await singularityDst.assetId(),
-            mintVal,
-            false,
-        );
-        await weth.approve(yieldBox.address, mintVal);
-        await yieldBox.depositAsset(
-            await singularityDst.assetId(),
-            deployer.address,
-            deployer.address,
-            0,
-            mintValShare,
-        );
-
-        // Approve singularityDst actions
-        await yieldBox.setApprovalForAll(singularityDst.address, true);
-        await singularityDst.approve(proxyDst.address, mintVal);
-
-        const balanceBefore = await singularityDst.balanceOf(deployer.address);
-        const addAssetFn = singularityDst.interface.encodeFunctionData(
-            'addAsset',
-            [deployer.address, deployer.address, false, mintValShare],
-        );
-        await expect(
-            proxySrc.executeOnChain(
-                await lzEndpointDst.getChainId(),
-                singularityDst.address,
-                [],
-                ethers.utils.toUtf8Bytes(''),
-            ),
-        ).to.be.revertedWith('LayerZeroMock: not enough native for fees');
-        await proxySrc.executeOnChain(
-            await lzEndpointDst.getChainId(),
-            singularityDst.address,
-            [addAssetFn],
-            ethers.utils.toUtf8Bytes(''),
-            { value: ethers.utils.parseEther('1') },
-        );
-        const balanceAfter = await singularityDst.balanceOf(deployer.address);
-        expect(balanceAfter.eq(mintValShare)).to.be.true;
-        expect(balanceAfter.gt(balanceBefore)).to.be.true;
-    });
-
-    it('should add assets and remove them', async () => {
-        const { deployer, yieldBox, weth } = await loadFixture(register);
-
-        const { proxySrc, proxyDst, singularityDst, lzEndpointDst } =
-            await loadFixture(loadSetup);
-
-        // Get assets
-        const mintVal = ethers.BigNumber.from((1e18).toString()).mul(10);
-        weth.freeMint(mintVal);
-
-        // Deposit assets to YieldBox
-        let mintValShare = await yieldBox.toShare(
-            await singularityDst.assetId(),
-            mintVal,
-            false,
-        );
-        await weth.approve(yieldBox.address, mintVal);
-        await yieldBox.depositAsset(
-            await singularityDst.assetId(),
-            deployer.address,
-            deployer.address,
-            0,
-            mintValShare,
-        );
-
-        // Approve singularityDst actions
-        await yieldBox.setApprovalForAll(singularityDst.address, true);
-        await singularityDst.approve(
-            proxyDst.address,
-            ethers.constants.MaxUint256,
-        );
-
-        const balanceBefore = await singularityDst.balanceOf(deployer.address);
-        const addAssetFn = singularityDst.interface.encodeFunctionData(
-            'addAsset',
-            [deployer.address, deployer.address, false, mintValShare],
-        );
-
-        await expect(
-            proxySrc.executeOnChain(
-                await lzEndpointDst.getChainId(),
-                ethers.utils.solidityPack(
-                    ['address'],
-                    [singularityDst.address],
-                ),
-                [],
-                ethers.utils.toUtf8Bytes(''),
-            ),
-        ).to.be.revertedWith('LayerZeroMock: not enough native for fees');
-        await proxySrc.executeOnChain(
-            await lzEndpointDst.getChainId(),
-            singularityDst.address,
-            [addAssetFn],
-            ethers.utils.toUtf8Bytes(''),
-            { value: ethers.utils.parseEther('1') },
-        );
-        const balanceAfter = await singularityDst.balanceOf(deployer.address);
-        expect(balanceAfter.eq(mintValShare)).to.be.true;
-        expect(balanceAfter.gt(balanceBefore)).to.be.true;
-
-        mintValShare = await yieldBox.toShare(
-            await singularityDst.assetId(),
-            mintVal,
-            false,
-        );
-        const removeAssetFn = singularityDst.interface.encodeFunctionData(
-            'removeAsset',
-            [deployer.address, deployer.address, mintValShare.div(2)],
-        );
-        // Needs extraGas param; oterwhise it reverts
-        const adapterParam = ethers.utils.solidityPack(
-            ['uint16', 'uint256'],
-            [1, 2250000],
-        );
-        await proxySrc.setMinDstGas(await lzEndpointDst.getChainId(), 1, 1);
-        await proxySrc.setUseCustomAdapterParams(true);
-
-        await proxySrc.executeOnChain(
-            await lzEndpointDst.getChainId(),
-            singularityDst.address,
-            [removeAssetFn],
-            adapterParam,
-            {
-                value: ethers.utils.parseEther('10'),
-            },
-        );
-        const balanceFinal = await singularityDst.balanceOf(deployer.address);
-        expect(balanceFinal.eq(mintValShare.div(2))).to.be.true;
-    });
-
-    it('should add collateral, borrow and repay from a different layer', async () => {
-        const {
-            deployer,
-            yieldBox,
-            weth,
-            wethAssetId,
-            usdc,
-            usdcAssetId,
-            eoa1,
-            __wethUsdcPrice,
-        } = await loadFixture(register);
-
-        const { proxySrc, proxyDst, singularityDst, lzEndpointDst } =
-            await loadFixture(loadSetup);
-
-        // --- Lending ---
-        // Get assets
-        const mintVal = ethers.BigNumber.from((1e18).toString()).mul(10);
-        weth.freeMint(mintVal);
-
-        // Deposit assets to YieldBox
-        const mintValShare = await yieldBox.toShare(
-            await singularityDst.assetId(),
-            mintVal,
-            false,
-        );
-        await weth.approve(yieldBox.address, mintVal);
-        await yieldBox.depositAsset(
-            await singularityDst.assetId(),
-            deployer.address,
-            deployer.address,
-            0,
-            mintValShare,
-        );
-
-        // Approve singularityDst actions
-        await yieldBox.setApprovalForAll(singularityDst.address, true);
-        await singularityDst.approve(
-            proxyDst.address,
-            ethers.constants.MaxUint256,
-        );
-
-        const balanceBefore = await singularityDst.balanceOf(deployer.address);
-        const addAssetFn = singularityDst.interface.encodeFunctionData(
-            'addAsset',
-            [deployer.address, deployer.address, false, mintValShare],
-        );
-        await proxySrc.executeOnChain(
-            await lzEndpointDst.getChainId(),
-            singularityDst.address,
-            [addAssetFn],
-            ethers.utils.toUtf8Bytes(''),
-            { value: ethers.utils.parseEther('1') },
-        );
-        const balanceAfter = await singularityDst.balanceOf(deployer.address);
-        expect(balanceAfter.eq(mintValShare)).to.be.true;
-        expect(balanceAfter.gt(balanceBefore)).to.be.true;
-
-        // --- Borrowing ---
-        const usdcMintVal = mintVal.mul(__wethUsdcPrice.div((1e18).toString()));
-        const wethBorrowVal = usdcMintVal
-            .mul(74)
-            .div(100)
-            .div(__wethUsdcPrice.div((1e18).toString()));
-
-        await usdc.connect(eoa1).freeMint(usdcMintVal);
-        await usdc
-            .connect(eoa1)
-            .approve(yieldBox.address, ethers.constants.MaxUint256);
-        await yieldBox
-            .connect(eoa1)
-            .setApprovalForAll(singularityDst.address, true);
-        await singularityDst
-            .connect(eoa1)
-            .approve(proxyDst.address, ethers.constants.MaxUint256);
-
-        const usdcMintValShare = await yieldBox.toShare(
-            usdcAssetId,
-            usdcMintVal,
-            false,
-        );
-        await yieldBox
-            .connect(eoa1)
-            .depositAsset(
-                usdcAssetId,
-                eoa1.address,
-                eoa1.address,
-                usdcMintVal,
-                0,
-            );
-        const addCollateralFn = singularityDst.interface.encodeFunctionData(
-            'addCollateral',
-            [eoa1.address, eoa1.address, false, usdcMintValShare],
-        );
-        await singularityDst
-            .connect(eoa1)
-            .approveBorrow(proxyDst.address, ethers.constants.MaxUint256);
-        await proxySrc
-            .connect(eoa1)
-            .executeOnChain(
-                await lzEndpointDst.getChainId(),
-                singularityDst.address,
-                [addCollateralFn],
-                ethers.utils.toUtf8Bytes(''),
-                {
-                    value: ethers.utils.parseEther('2'),
-                },
-            );
-
-        const userCollateralShare = await singularityDst.userCollateralShare(
-            eoa1.address,
-        );
-        const userCollateralAmount = await yieldBox.toAmount(
-            usdcAssetId,
-            userCollateralShare,
-            false,
-        );
-        expect(userCollateralShare.eq(usdcMintValShare)).to.be.true;
-        expect(userCollateralAmount.eq(usdcMintVal)).to.be.true;
-
-        const adapterParam = ethers.utils.solidityPack(
-            ['uint16', 'uint256'],
-            [1, 2250000],
-        );
-        await proxySrc.setMinDstGas(await lzEndpointDst.getChainId(), 1, 1);
-        await proxySrc.setUseCustomAdapterParams(true);
-
-        const borrowFn = singularityDst.interface.encodeFunctionData('borrow', [
-            eoa1.address,
-            eoa1.address,
-            wethBorrowVal,
-        ]);
-        await singularityDst
-            .connect(eoa1)
-            .approveBorrow(proxyDst.address, ethers.constants.MaxUint256);
-        await proxySrc
-            .connect(eoa1)
-            .executeOnChain(
-                await lzEndpointDst.getChainId(),
-                singularityDst.address,
-                [borrowFn],
-                adapterParam,
-                {
-                    value: ethers.utils.parseEther('10'),
-                },
-            );
-        let borrowPart = await singularityDst.userBorrowPart(eoa1.address);
-        expect(borrowPart.gt(wethBorrowVal)).to.be.true;
-
-        await weth.connect(eoa1).freeMint(borrowPart);
-        await weth
-            .connect(eoa1)
-            .approve(yieldBox.address, ethers.constants.MaxUint256);
-        await yieldBox
-            .connect(eoa1)
-            .depositAsset(
-                wethAssetId,
-                eoa1.address,
-                eoa1.address,
-                borrowPart,
-                0,
-            );
-        const repayFn = singularityDst.interface.encodeFunctionData('repay', [
-            eoa1.address,
-            eoa1.address,
-            false,
-            borrowPart,
-        ]);
-
-        await proxySrc
-            .connect(eoa1)
-            .executeOnChain(
-                await lzEndpointDst.getChainId(),
-                singularityDst.address,
-                [repayFn],
-                adapterParam,
-                {
-                    value: ethers.utils.parseEther('10'),
-                },
-            );
-        borrowPart = await singularityDst.userBorrowPart(eoa1.address);
-        expect(borrowPart.eq(0)).to.be.true;
-    });
-
-    it('should add collateral & borrow in a single tx through the proxy', async () => {
-        const {
-            deployer,
-            yieldBox,
-            weth,
-            usdc,
-            usdcAssetId,
-            eoa1,
-            __wethUsdcPrice,
-        } = await loadFixture(register);
-
-        const { proxySrc, proxyDst, singularityDst, lzEndpointDst } =
-            await loadFixture(loadSetup);
-
-        // --- Lending ---
-        // Get assets
-        const mintVal = ethers.BigNumber.from((1e18).toString()).mul(10);
-        weth.freeMint(mintVal);
-
-        // Deposit assets to YieldBox
-        const mintValShare = await yieldBox.toShare(
-            await singularityDst.assetId(),
-            mintVal,
-            false,
-        );
-        await weth.approve(yieldBox.address, mintVal);
-        await yieldBox.depositAsset(
-            await singularityDst.assetId(),
-            deployer.address,
-            deployer.address,
-            0,
-            mintValShare,
-        );
-
-        // Approve singularityDst actions
-        await yieldBox.setApprovalForAll(singularityDst.address, true);
-        await singularityDst.approve(
-            proxyDst.address,
-            ethers.constants.MaxUint256,
-        );
-
-        const balanceBefore = await singularityDst.balanceOf(deployer.address);
-        const addAssetFn = singularityDst.interface.encodeFunctionData(
-            'addAsset',
-            [deployer.address, deployer.address, false, mintValShare],
-        );
-        await proxySrc.executeOnChain(
-            await lzEndpointDst.getChainId(),
-            singularityDst.address,
-            [addAssetFn],
-            ethers.utils.toUtf8Bytes(''),
-            { value: ethers.utils.parseEther('1') },
-        );
-        const balanceAfter = await singularityDst.balanceOf(deployer.address);
-        expect(balanceAfter.eq(mintValShare)).to.be.true;
-        expect(balanceAfter.gt(balanceBefore)).to.be.true;
-
-        // --- Borrowing ---
-        const usdcMintVal = mintVal.mul(__wethUsdcPrice.div((1e18).toString()));
-        const wethBorrowVal = usdcMintVal
-            .mul(74)
-            .div(100)
-            .div(__wethUsdcPrice.div((1e18).toString()));
-
-        await usdc.connect(eoa1).freeMint(usdcMintVal);
-        await usdc
-            .connect(eoa1)
-            .approve(yieldBox.address, ethers.constants.MaxUint256);
-        await yieldBox
-            .connect(eoa1)
-            .setApprovalForAll(singularityDst.address, true);
-        await singularityDst
-            .connect(eoa1)
-            .approve(proxyDst.address, ethers.constants.MaxUint256);
-        const usdcMintValShare = await yieldBox.toShare(
-            usdcAssetId,
-            usdcMintVal,
-            false,
-        );
-        await yieldBox
-            .connect(eoa1)
-            .depositAsset(
-                usdcAssetId,
-                eoa1.address,
-                eoa1.address,
-                usdcMintVal,
-                0,
-            );
-
-        const addCollateralFn = singularityDst.interface.encodeFunctionData(
-            'addCollateral',
-            [eoa1.address, eoa1.address, false, usdcMintValShare],
-        );
-        const borrowFn = singularityDst.interface.encodeFunctionData('borrow', [
-            eoa1.address,
-            eoa1.address,
-            wethBorrowVal,
-        ]);
-
-        // Needs extraGas param; oterwhise it reverts
-        const adapterParam = ethers.utils.solidityPack(
-            ['uint16', 'uint256'],
-            [1, 2250000],
-        );
-        await proxySrc.setMinDstGas(await lzEndpointDst.getChainId(), 1, 1);
-        await proxySrc.setUseCustomAdapterParams(true);
-
-        await singularityDst
-            .connect(eoa1)
-            .approveBorrow(proxyDst.address, ethers.constants.MaxUint256);
-        await proxySrc
-            .connect(eoa1)
-            .executeOnChain(
-                await lzEndpointDst.getChainId(),
-                singularityDst.address,
-                [addCollateralFn, borrowFn],
-                adapterParam,
-                {
-                    value: ethers.utils.parseEther('10'),
-                },
-            );
-        const userCollateralShare = await singularityDst.userCollateralShare(
-            eoa1.address,
-        );
-        expect(userCollateralShare.eq(usdcMintValShare)).to.be.true;
-        const borrowPart = await singularityDst.userBorrowPart(eoa1.address);
-        expect(borrowPart.gt(wethBorrowVal)).to.be.true;
-    });
-
-    it('should deposit, borrow, liquidate and fail-withdraw', async () => {
-        const {
-            deployer,
-            yieldBox,
-            weth,
-            usdc,
-            usdcAssetId,
-            wethUsdcOracle,
-            eoa1,
-            multiSwapper,
-            __wethUsdcPrice,
-        } = await loadFixture(register);
-
-        const { proxySrc, proxyDst, singularityDst, lzEndpointDst } =
-            await loadFixture(loadSetup);
-
-        // --- Lending ---
-        // Get assets
-        const mintVal = ethers.BigNumber.from((1e18).toString()).mul(10);
-        weth.freeMint(mintVal.mul(10));
-
-        // Deposit assets to YieldBox
-        const mintValShare = await yieldBox.toShare(
-            await singularityDst.assetId(),
-            mintVal.mul(10),
-            false,
-        );
-        await weth.approve(yieldBox.address, mintVal.mul(10));
-        await yieldBox.depositAsset(
-            await singularityDst.assetId(),
-            deployer.address,
-            deployer.address,
-            0,
-            mintValShare,
-        );
-        const adapterParam = ethers.utils.solidityPack(
-            ['uint16', 'uint256'],
-            [1, 2250000],
-        );
-        await proxySrc.setMinDstGas(await lzEndpointDst.getChainId(), 1, 1);
-        await proxySrc.setUseCustomAdapterParams(true);
-
-        // Approve singularityDst actions
-        await yieldBox.setApprovalForAll(singularityDst.address, true);
-        await singularityDst.approve(
-            proxyDst.address,
-            ethers.constants.MaxUint256,
-        );
-
-        const balanceBefore = await singularityDst.balanceOf(deployer.address);
-        const addAssetFn = singularityDst.interface.encodeFunctionData(
-            'addAsset',
-            [deployer.address, deployer.address, false, mintValShare],
-        );
-        await proxySrc.executeOnChain(
-            await lzEndpointDst.getChainId(),
-            singularityDst.address,
-            [addAssetFn],
-            adapterParam,
-            {
-                value: ethers.utils.parseEther('10'),
-            },
-        );
-        const balanceAfter = await singularityDst.balanceOf(deployer.address);
-        expect(balanceAfter.eq(mintValShare)).to.be.true;
-        expect(balanceAfter.gt(balanceBefore)).to.be.true;
-
-        // --- Borrowing ---
-        const usdcMintVal = mintVal.mul(__wethUsdcPrice.div((1e18).toString()));
-        const wethBorrowVal = usdcMintVal
-            .mul(74)
-            .div(100)
-            .div(__wethUsdcPrice.div((1e18).toString()));
-
-        await usdc.connect(eoa1).freeMint(usdcMintVal);
-        await usdc
-            .connect(eoa1)
-            .approve(yieldBox.address, ethers.constants.MaxUint256);
-        await yieldBox
-            .connect(eoa1)
-            .setApprovalForAll(singularityDst.address, true);
-        await singularityDst
-            .connect(eoa1)
-            .approve(proxyDst.address, ethers.constants.MaxUint256);
-
-        const usdcMintValShare = await yieldBox.toShare(
-            usdcAssetId,
-            usdcMintVal,
-            false,
-        );
-        await yieldBox
-            .connect(eoa1)
-            .depositAsset(
-                usdcAssetId,
-                eoa1.address,
-                eoa1.address,
-                usdcMintVal,
-                0,
-            );
-        const addCollateralFn = singularityDst.interface.encodeFunctionData(
-            'addCollateral',
-            [eoa1.address, eoa1.address, false, usdcMintValShare],
-        );
-
-        await proxySrc
-            .connect(eoa1)
-            .executeOnChain(
-                await lzEndpointDst.getChainId(),
-                singularityDst.address,
-                [addCollateralFn],
-                adapterParam,
-                {
-                    value: ethers.utils.parseEther('10'),
-                },
-            );
-
-        const userCollateralShare = await singularityDst.userCollateralShare(
-            eoa1.address,
-        );
-        const userCollateralAmount = await yieldBox.toAmount(
-            usdcAssetId,
-            userCollateralShare,
-            false,
-        );
-        expect(userCollateralShare.eq(usdcMintValShare)).to.be.true;
-        expect(userCollateralAmount.eq(usdcMintVal)).to.be.true;
-
-        const borrowFn = singularityDst.interface.encodeFunctionData('borrow', [
-            eoa1.address,
-            eoa1.address,
-            wethBorrowVal,
-        ]);
-        await singularityDst
-            .connect(eoa1)
-            .approveBorrow(proxyDst.address, ethers.constants.MaxUint256);
-        await proxySrc
-            .connect(eoa1)
-            .executeOnChain(
-                await lzEndpointDst.getChainId(),
-                ethers.utils.solidityPack(
-                    ['address'],
-                    [singularityDst.address],
-                ),
-                [borrowFn],
-                adapterParam,
-                { value: ethers.utils.parseEther('10') },
-            );
-        const borrowPart = await singularityDst.userBorrowPart(eoa1.address);
-        expect(borrowPart.gt(wethBorrowVal)).to.be.true;
-
-        const priceDrop = __wethUsdcPrice.mul(2).div(100);
-        await wethUsdcOracle.set(__wethUsdcPrice.add(priceDrop));
-
-        const data = new ethers.utils.AbiCoder().encode(['uint256'], [1]);
-        const liquidateFn = singularityDst.interface.encodeFunctionData(
-            'liquidate',
-            [[eoa1.address], [wethBorrowVal], multiSwapper.address, data, data],
-        );
-
-        await proxySrc.executeOnChain(
-            await lzEndpointDst.getChainId(),
-            singularityDst.address,
-            [liquidateFn],
-            adapterParam,
-            {
-                value: ethers.utils.parseEther('10'),
-            },
-        );
-        const borrowPartFinal = await singularityDst.userBorrowPart(
-            eoa1.address,
-        );
-        expect(borrowPartFinal.lte(borrowPart)).to.be.true;
-        await expect(
-            yieldBox
+            await weth
                 .connect(eoa1)
-                .withdraw(
-                    await singularityDst.collateralId(),
+                .approve(yieldBox.address, ethers.constants.MaxUint256);
+            await yieldBox
+                .connect(eoa1)
+                .setApprovalForAll(singularityDst.address, true);
+            await singularityDst
+                .connect(eoa1)
+                .approve(proxyDst.address, ethers.constants.MaxUint256);
+
+            await yieldBox
+                .connect(eoa1)
+                .depositAsset(
+                    wethAssetId,
                     eoa1.address,
                     eoa1.address,
+                    wethDepositAmount,
                     0,
-                    wethBorrowVal,
+                );
+
+            const _wethValShare = await yieldBox.toShare(
+                wethAssetId,
+                wethDepositAmount,
+                false,
+            );
+
+            const addCollateralFn = singularityDst.interface.encodeFunctionData(
+                'addCollateral',
+                [eoa1.address, eoa1.address, false, _wethValShare],
+            );
+
+            await proxySrc
+                .connect(eoa1)
+                .executeOnChain(
+                    await lzEndpointDst.getChainId(),
+                    singularityDst.address,
+                    [addCollateralFn],
+                    ethers.utils.toUtf8Bytes(''),
                     {
-                        gasLimit: 2000000,
+                        value: ethers.utils.parseEther('1'),
                     },
-                ),
-        ).to.be.reverted;
+                );
+
+            const userCollateralShare =
+                await singularityDst.userCollateralShare(eoa1.address);
+            expect(userCollateralShare.gt(0)).to.be.true;
+
+            // Needs extraGas param; oterwhise it reverts
+            const adapterParam = ethers.utils.solidityPack(
+                ['uint16', 'uint256'],
+                [1, 2250000],
+            );
+            await proxySrc.setMinDstGas(await lzEndpointDst.getChainId(), 1, 1);
+            await proxySrc.setUseCustomAdapterParams(true);
+
+            const usdoBorrowVal = wethDepositAmount
+                .mul(74)
+                .div(100)
+                .mul(__wethUsdcPrice.div((1e18).toString()));
+
+            const borrowFn = singularityDst.interface.encodeFunctionData(
+                'borrow',
+                [eoa1.address, eoa1.address, usdoBorrowVal],
+            );
+            await singularityDst
+                .connect(eoa1)
+                .approveBorrow(proxyDst.address, ethers.constants.MaxUint256);
+            await proxySrc
+                .connect(eoa1)
+                .executeOnChain(
+                    await lzEndpointDst.getChainId(),
+                    singularityDst.address,
+                    [borrowFn],
+                    adapterParam,
+                    {
+                        value: ethers.utils.parseEther('10'),
+                    },
+                );
+            const borrowPart = await singularityDst.userBorrowPart(
+                eoa1.address,
+            );
+            expect(borrowPart.gt(0)).to.be.true;
+        });
+
+        it('should test with OFT singularity', async () => {
+            const {
+                createWethUsd0Singularity,
+                proxyDeployer,
+                deployer,
+                mediumRiskMC,
+                yieldBox,
+                bar,
+                weth,
+                usdc,
+                wethAssetId,
+                wethUsdcOracle,
+                eoa1,
+                deployCurveStableToUsdoBidder,
+                __wethUsdcPrice,
+            } = await loadFixture(register);
+
+            const newPrice = __wethUsdcPrice.div(1000000);
+            await wethUsdcOracle.set(newPrice);
+
+            const loadSetup = async function loadSetupFn() {
+                const {
+                    proxySrc,
+                    proxyDst,
+                    singularitySrc,
+                    singularityDst,
+                    lzEndpointSrc,
+                    lzEndpointDst,
+                    usd0Src,
+                    usd0Dst,
+                    usd0DstId,
+                    usd0SrcId,
+                } = await setupUsd0Environment(
+                    proxyDeployer,
+                    mediumRiskMC,
+                    yieldBox,
+                    bar,
+                    usdc,
+                    weth,
+                    wethAssetId,
+                    createWethUsd0Singularity,
+                    deployCurveStableToUsdoBidder,
+                    deployer,
+                );
+                return {
+                    proxySrc,
+                    proxyDst,
+                    singularitySrc,
+                    singularityDst,
+                    lzEndpointSrc,
+                    lzEndpointDst,
+                    usd0Src,
+                    usd0Dst,
+                    usd0DstId,
+                    usd0SrcId,
+                };
+            };
+            const {
+                proxySrc,
+                proxyDst,
+                singularitySrc,
+                singularityDst,
+                lzEndpointSrc,
+                lzEndpointDst,
+                usd0Src,
+                usd0Dst,
+                usd0DstId,
+                usd0SrcId,
+            } = await loadFixture(loadSetup);
+
+            //get tokens
+            const wethAmount = ethers.BigNumber.from((1e18).toString()).mul(
+                100,
+            );
+            const usdoAmount = ethers.BigNumber.from((1e18).toString()).mul(
+                20000,
+            );
+            await usd0Dst.mint(deployer.address, usdoAmount);
+            await weth.connect(eoa1).freeMint(wethAmount);
+
+            //add USDO for borrowing
+            const usdoLendValue = usdoAmount.div(2);
+            await usd0Dst.approve(yieldBox.address, usdoLendValue);
+
+            const usdoLendValueShare = await yieldBox.toShare(
+                await singularityDst.assetId(),
+                usdoLendValue,
+                false,
+            );
+
+            await yieldBox.depositAsset(
+                await singularityDst.assetId(),
+                deployer.address,
+                deployer.address,
+                0,
+                usdoLendValueShare,
+            );
+
+            // Approve singularityDst actions
+            await yieldBox.setApprovalForAll(singularityDst.address, true);
+            await singularityDst.approve(
+                proxyDst.address,
+                ethers.constants.MaxUint256,
+            );
+
+            const balanceBefore = await singularityDst.balanceOf(
+                deployer.address,
+            );
+            const addAssetFn = singularityDst.interface.encodeFunctionData(
+                'addAsset',
+                [deployer.address, deployer.address, false, usdoLendValueShare],
+            );
+
+            await proxySrc.executeOnChain(
+                await lzEndpointDst.getChainId(),
+                singularityDst.address,
+                [addAssetFn],
+                ethers.utils.toUtf8Bytes(''),
+                { value: ethers.utils.parseEther('1') },
+            );
+
+            const balanceAfter = await singularityDst.balanceOf(
+                deployer.address,
+            );
+            expect(balanceAfter.gt(balanceBefore)).to.be.true;
+
+            // --- Borrowing ---
+            const wethDepositAmount = ethers.BigNumber.from(
+                (1e18).toString(),
+            ).mul(1);
+
+            await weth
+                .connect(eoa1)
+                .approve(yieldBox.address, ethers.constants.MaxUint256);
+            await yieldBox
+                .connect(eoa1)
+                .setApprovalForAll(singularityDst.address, true);
+            await singularityDst
+                .connect(eoa1)
+                .approve(proxyDst.address, ethers.constants.MaxUint256);
+
+            await yieldBox
+                .connect(eoa1)
+                .depositAsset(
+                    wethAssetId,
+                    eoa1.address,
+                    eoa1.address,
+                    wethDepositAmount,
+                    0,
+                );
+
+            const _wethValShare = await yieldBox.toShare(
+                wethAssetId,
+                wethDepositAmount,
+                false,
+            );
+            const usdoBorrowVal = wethDepositAmount
+                .mul(74)
+                .div(100)
+                .mul(__wethUsdcPrice.div((1e18).toString()));
+
+            await proxySrc.setMinDstGas(await lzEndpointDst.getChainId(), 1, 1);
+            await proxySrc.setUseCustomAdapterParams(true);
+            const randomReceiver = new ethers.Wallet(
+                ethers.Wallet.createRandom().privateKey,
+                ethers.provider,
+            );
+            const addCollateralFn = singularityDst.interface.encodeFunctionData(
+                'addCollateral',
+                [eoa1.address, eoa1.address, false, _wethValShare],
+            );
+            const borrowFn = singularityDst.interface.encodeFunctionData(
+                'borrow',
+                [eoa1.address, eoa1.address, usdoBorrowVal],
+            );
+            const airdropAdapterParams = ethers.utils.solidityPack(
+                ['uint16', 'uint', 'uint', 'address'],
+                [
+                    2,
+                    2250000,
+                    ethers.utils.parseEther('3'),
+                    singularityDst.address,
+                ],
+            );
+            let sglEthBalance = await ethers.provider.getBalance(
+                singularityDst.address,
+            );
+            await singularityDst
+                .connect(eoa1)
+                .approveBorrow(proxyDst.address, ethers.constants.MaxUint256);
+            await proxySrc
+                .connect(eoa1)
+                .executeOnChain(
+                    await lzEndpointDst.getChainId(),
+                    singularityDst.address,
+                    [addCollateralFn, borrowFn],
+                    airdropAdapterParams,
+                    { value: ethers.utils.parseEther('10') },
+                );
+            sglEthBalance = await ethers.provider.getBalance(
+                singularityDst.address,
+            );
+
+            const userCollateralShare =
+                await singularityDst.userCollateralShare(eoa1.address);
+            expect(userCollateralShare.gt(0)).to.be.true;
+
+            const borrowPart = await singularityDst.userBorrowPart(
+                eoa1.address,
+            );
+            expect(borrowPart.gt(0)).to.be.true;
+        });
+
+        it('should test with OFT singularity through helper', async () => {
+            const {
+                createWethUsd0Singularity,
+                proxyDeployer,
+                deployer,
+                mediumRiskMC,
+                yieldBox,
+                bar,
+                weth,
+                usdc,
+                wethAssetId,
+                wethUsdcOracle,
+                eoa1,
+                magnetar,
+                deployCurveStableToUsdoBidder,
+                __wethUsdcPrice,
+            } = await loadFixture(register);
+
+            const newPrice = __wethUsdcPrice.div(1000000);
+            await wethUsdcOracle.set(newPrice);
+
+            const loadSetup = async function loadSetupFn() {
+                const {
+                    proxySrc,
+                    proxyDst,
+                    singularitySrc,
+                    singularityDst,
+                    lzEndpointSrc,
+                    lzEndpointDst,
+                    usd0Src,
+                    usd0Dst,
+                    usd0DstId,
+                    usd0SrcId,
+                } = await setupUsd0Environment(
+                    proxyDeployer,
+                    mediumRiskMC,
+                    yieldBox,
+                    bar,
+                    usdc,
+                    weth,
+                    wethAssetId,
+                    createWethUsd0Singularity,
+                    deployCurveStableToUsdoBidder,
+                    deployer,
+                );
+                return {
+                    proxySrc,
+                    proxyDst,
+                    singularitySrc,
+                    singularityDst,
+                    lzEndpointSrc,
+                    lzEndpointDst,
+                    usd0Src,
+                    usd0Dst,
+                    usd0DstId,
+                    usd0SrcId,
+                };
+            };
+            const {
+                proxySrc,
+                proxyDst,
+                singularitySrc,
+                singularityDst,
+                lzEndpointSrc,
+                lzEndpointDst,
+                usd0Src,
+                usd0Dst,
+                usd0DstId,
+                usd0SrcId,
+            } = await loadFixture(loadSetup);
+
+            //get tokens
+            const wethAmount = ethers.BigNumber.from((1e18).toString()).mul(
+                100,
+            );
+            const usdoAmount = ethers.BigNumber.from((1e18).toString()).mul(
+                20000,
+            );
+            await usd0Dst.mint(deployer.address, usdoAmount);
+            await weth.connect(eoa1).freeMint(wethAmount);
+
+            //add USDO for borrowing
+            const usdoLendValue = usdoAmount.div(2);
+            await usd0Dst.approve(yieldBox.address, usdoLendValue);
+
+            const usdoLendValueShare = await yieldBox.toShare(
+                await singularityDst.assetId(),
+                usdoLendValue,
+                false,
+            );
+
+            await yieldBox.depositAsset(
+                await singularityDst.assetId(),
+                deployer.address,
+                deployer.address,
+                0,
+                usdoLendValueShare,
+            );
+
+            // Approve singularityDst actions
+            await yieldBox.setApprovalForAll(singularityDst.address, true);
+
+            const balanceBefore = await singularityDst.balanceOf(
+                deployer.address,
+            );
+            const addAssetFn = singularityDst.interface.encodeFunctionData(
+                'addAsset',
+                [deployer.address, deployer.address, false, usdoLendValueShare],
+            );
+
+            await proxySrc.executeOnChain(
+                await lzEndpointDst.getChainId(),
+                singularityDst.address,
+                [addAssetFn],
+                ethers.utils.toUtf8Bytes(''),
+                { value: ethers.utils.parseEther('1') },
+            );
+
+            const balanceAfter = await singularityDst.balanceOf(
+                deployer.address,
+            );
+            expect(balanceAfter.gt(balanceBefore)).to.be.true;
+
+            // --- Borrowing ---
+
+            const wethDepositAmount = ethers.BigNumber.from(
+                (1e18).toString(),
+            ).mul(1);
+            const usdoBorrowVal = wethDepositAmount
+                .mul(74)
+                .div(100)
+                .mul(__wethUsdcPrice.div((1e18).toString()));
+
+            await weth
+                .connect(eoa1)
+                .approve(magnetar.address, ethers.constants.MaxUint256);
+            await singularityDst
+                .connect(eoa1)
+                .approve(magnetar.address, ethers.constants.MaxUint256);
+
+            const randomReceiver = new ethers.Wallet(
+                ethers.Wallet.createRandom().privateKey,
+                ethers.provider,
+            );
+
+            await singularityDst
+                .connect(eoa1)
+                .approveBorrow(magnetar.address, ethers.constants.MaxUint256);
+            await magnetar
+                .connect(eoa1)
+                .depositAddCollateralAndBorrow(
+                    singularityDst.address,
+                    eoa1.address,
+                    wethDepositAmount,
+                    usdoBorrowVal.div(2),
+                    true,
+                    true,
+                    true,
+                    encodeMarketHelperWithdrawData(
+                        false,
+                        0,
+                        eoa1.address,
+                        '0x00',
+                    ),
+                    {
+                        value: ethers.utils.parseEther('10'),
+                    },
+                );
+
+            const userCollateralShare =
+                await singularityDst.userCollateralShare(eoa1.address);
+            expect(userCollateralShare.gt(0)).to.be.true;
+
+            const borrowPart = await singularityDst.userBorrowPart(
+                eoa1.address,
+            );
+            expect(borrowPart.gt(0)).to.be.true;
+
+            const usdoBalance = await usd0Dst.balanceOf(eoa1.address);
+            expect(usdoBalance.gt(0)).to.be.true;
+
+            const withdrawData = new ethers.utils.AbiCoder().encode(
+                ['bool', 'uint256', 'bytes32', 'bytes'],
+                [
+                    true,
+                    await lzEndpointSrc.getChainId(),
+                    ethers.utils.defaultAbiCoder.encode(
+                        ['address'],
+                        [randomReceiver.address],
+                    ),
+                    ethers.utils.toUtf8Bytes(''),
+                ],
+            );
+
+            await singularityDst
+                .connect(eoa1)
+                .approveBorrow(magnetar.address, ethers.constants.MaxUint256);
+
+            await magnetar
+                .connect(eoa1)
+                .depositAddCollateralAndBorrow(
+                    singularityDst.address,
+                    eoa1.address,
+                    wethDepositAmount,
+                    usdoBorrowVal.div(2),
+                    true,
+                    true,
+                    true,
+                    withdrawData,
+                    {
+                        value: ethers.utils.parseEther('10'),
+                    },
+                );
+
+            const usdoSrcBalabce = await usd0Src.balanceOf(
+                randomReceiver.address,
+            );
+            expect(usdoSrcBalabce.gt(0)).to.be.true;
+        });
     });
 
-    it('should withdraw fees through the proxy', async () => {
-        const {
-            deployer,
-            yieldBox,
-            bar,
-            weth,
-            wethAssetId,
-            usdc,
-            usdcAssetId,
-            eoa1,
-            multiSwapper,
-            magnetar,
-            __wethUsdcPrice,
-        } = await loadFixture(register);
+    describe('add assets', () => {
+        it('should add assets to singularity from a different layers', async () => {
+            const { deployer, yieldBox, weth } = await loadFixture(register);
 
-        const { proxySrc, proxyDst, singularityDst, lzEndpointDst } =
-            await loadFixture(loadSetup);
+            const { proxySrc, proxyDst, singularityDst, lzEndpointDst } =
+                await loadFixture(loadSetup);
 
-        const adapterParam = ethers.utils.solidityPack(
-            ['uint16', 'uint256'],
-            [1, 2250000],
-        );
-        await proxySrc.setMinDstGas(await lzEndpointDst.getChainId(), 1, 1);
-        await proxySrc.setUseCustomAdapterParams(true);
+            // Get assets
+            const mintVal = ethers.BigNumber.from((1e18).toString()).mul(10);
+            weth.freeMint(mintVal);
 
-        // --- Lending ---
-        // Get assets
-        const mintVal = ethers.BigNumber.from((1e18).toString()).mul(10);
-        weth.freeMint(mintVal.mul(10));
-
-        // Deposit assets to YieldBox
-        const mintValShare = await yieldBox.toShare(
-            await singularityDst.assetId(),
-            mintVal,
-            false,
-        );
-        await weth.approve(yieldBox.address, mintVal.mul(10));
-        await yieldBox.depositAsset(
-            await singularityDst.assetId(),
-            deployer.address,
-            deployer.address,
-            0,
-            mintValShare.mul(10),
-        );
-
-        // Approve singularityDst actions
-        await yieldBox.setApprovalForAll(singularityDst.address, true);
-        await singularityDst.approve(
-            proxyDst.address,
-            ethers.constants.MaxUint256,
-        );
-
-        const balanceBefore = await singularityDst.balanceOf(deployer.address);
-        const addAssetFn = singularityDst.interface.encodeFunctionData(
-            'addAsset',
-            [deployer.address, deployer.address, false, mintValShare],
-        );
-        await proxySrc.executeOnChain(
-            await lzEndpointDst.getChainId(),
-            singularityDst.address,
-            [addAssetFn],
-            adapterParam,
-            {
-                value: ethers.utils.parseEther('10'),
-            },
-        );
-        const balanceAfter = await singularityDst.balanceOf(deployer.address);
-        expect(balanceAfter.eq(mintValShare)).to.be.true;
-        expect(balanceAfter.gt(balanceBefore)).to.be.true;
-
-        // --- Borrowing ---
-        const usdcMintVal = mintVal.mul(__wethUsdcPrice.div((1e18).toString()));
-        const wethBorrowVal = usdcMintVal
-            .mul(74)
-            .div(100)
-            .div(__wethUsdcPrice.div((1e18).toString()));
-
-        await usdc.connect(eoa1).freeMint(usdcMintVal);
-        await usdc
-            .connect(eoa1)
-            .approve(yieldBox.address, ethers.constants.MaxUint256);
-        await yieldBox
-            .connect(eoa1)
-            .setApprovalForAll(singularityDst.address, true);
-        await singularityDst
-            .connect(eoa1)
-            .approve(proxyDst.address, ethers.constants.MaxUint256);
-
-        const usdcMintValShare = await yieldBox.toShare(
-            usdcAssetId,
-            usdcMintVal,
-            false,
-        );
-        await yieldBox
-            .connect(eoa1)
-            .depositAsset(
-                usdcAssetId,
-                eoa1.address,
-                eoa1.address,
-                usdcMintVal,
+            // Deposit assets to YieldBox
+            const mintValShare = await yieldBox.toShare(
+                await singularityDst.assetId(),
+                mintVal,
+                false,
+            );
+            await weth.approve(yieldBox.address, mintVal);
+            await yieldBox.depositAsset(
+                await singularityDst.assetId(),
+                deployer.address,
+                deployer.address,
                 0,
-            );
-        const addCollateralFn = singularityDst.interface.encodeFunctionData(
-            'addCollateral',
-            [eoa1.address, eoa1.address, false, usdcMintValShare],
-        );
-        await proxySrc
-            .connect(eoa1)
-            .executeOnChain(
-                await lzEndpointDst.getChainId(),
-                singularityDst.address,
-                [addCollateralFn],
-                adapterParam,
-                {
-                    value: ethers.utils.parseEther('10'),
-                },
+                mintValShare,
             );
 
-        const userCollateralShare = await singularityDst.userCollateralShare(
-            eoa1.address,
-        );
-        const userCollateralAmount = await yieldBox.toAmount(
-            usdcAssetId,
-            userCollateralShare,
-            false,
-        );
-        expect(userCollateralShare.eq(usdcMintValShare)).to.be.true;
-        expect(userCollateralAmount.eq(usdcMintVal)).to.be.true;
+            // Approve singularityDst actions
+            await yieldBox.setApprovalForAll(singularityDst.address, true);
+            await singularityDst.approve(proxyDst.address, mintVal);
 
-        const borrowFn = singularityDst.interface.encodeFunctionData('borrow', [
-            eoa1.address,
-            eoa1.address,
-            wethBorrowVal,
-        ]);
-        await singularityDst
-            .connect(eoa1)
-            .approveBorrow(proxyDst.address, ethers.constants.MaxUint256);
-        await proxySrc
-            .connect(eoa1)
-            .executeOnChain(
-                await lzEndpointDst.getChainId(),
-                ethers.utils.solidityPack(
-                    ['address'],
-                    [singularityDst.address],
+            const balanceBefore = await singularityDst.balanceOf(
+                deployer.address,
+            );
+            const addAssetFn = singularityDst.interface.encodeFunctionData(
+                'addAsset',
+                [deployer.address, deployer.address, false, mintValShare],
+            );
+            await expect(
+                proxySrc.executeOnChain(
+                    await lzEndpointDst.getChainId(),
+                    singularityDst.address,
+                    [],
+                    ethers.utils.toUtf8Bytes(''),
                 ),
-                [borrowFn],
-                adapterParam,
-                { value: ethers.utils.parseEther('10') },
-            );
-        let borrowPart = await singularityDst.userBorrowPart(eoa1.address);
-        expect(borrowPart.gt(wethBorrowVal)).to.be.true;
-
-        await weth.connect(eoa1).freeMint(borrowPart);
-        await weth
-            .connect(eoa1)
-            .approve(yieldBox.address, ethers.constants.MaxUint256);
-        await yieldBox
-            .connect(eoa1)
-            .depositAsset(
-                wethAssetId,
-                eoa1.address,
-                eoa1.address,
-                borrowPart,
-                0,
-            );
-        const repayFn = singularityDst.interface.encodeFunctionData('repay', [
-            eoa1.address,
-            eoa1.address,
-            false,
-            borrowPart,
-        ]);
-        await proxySrc
-            .connect(eoa1)
-            .executeOnChain(
+            ).to.be.revertedWith('LayerZeroMock: not enough native for fees');
+            await proxySrc.executeOnChain(
                 await lzEndpointDst.getChainId(),
                 singularityDst.address,
-                [repayFn],
+                [addAssetFn],
+                ethers.utils.toUtf8Bytes(''),
+                { value: ethers.utils.parseEther('1') },
+            );
+            const balanceAfter = await singularityDst.balanceOf(
+                deployer.address,
+            );
+            expect(balanceAfter.eq(mintValShare)).to.be.true;
+            expect(balanceAfter.gt(balanceBefore)).to.be.true;
+        });
+
+        it('should add assets and remove them', async () => {
+            const { deployer, yieldBox, weth } = await loadFixture(register);
+
+            const { proxySrc, proxyDst, singularityDst, lzEndpointDst } =
+                await loadFixture(loadSetup);
+
+            // Get assets
+            const mintVal = ethers.BigNumber.from((1e18).toString()).mul(10);
+            weth.freeMint(mintVal);
+
+            // Deposit assets to YieldBox
+            let mintValShare = await yieldBox.toShare(
+                await singularityDst.assetId(),
+                mintVal,
+                false,
+            );
+            await weth.approve(yieldBox.address, mintVal);
+            await yieldBox.depositAsset(
+                await singularityDst.assetId(),
+                deployer.address,
+                deployer.address,
+                0,
+                mintValShare,
+            );
+
+            // Approve singularityDst actions
+            await yieldBox.setApprovalForAll(singularityDst.address, true);
+            await singularityDst.approve(
+                proxyDst.address,
+                ethers.constants.MaxUint256,
+            );
+
+            const balanceBefore = await singularityDst.balanceOf(
+                deployer.address,
+            );
+            const addAssetFn = singularityDst.interface.encodeFunctionData(
+                'addAsset',
+                [deployer.address, deployer.address, false, mintValShare],
+            );
+
+            await expect(
+                proxySrc.executeOnChain(
+                    await lzEndpointDst.getChainId(),
+                    ethers.utils.solidityPack(
+                        ['address'],
+                        [singularityDst.address],
+                    ),
+                    [],
+                    ethers.utils.toUtf8Bytes(''),
+                ),
+            ).to.be.revertedWith('LayerZeroMock: not enough native for fees');
+            await proxySrc.executeOnChain(
+                await lzEndpointDst.getChainId(),
+                singularityDst.address,
+                [addAssetFn],
+                ethers.utils.toUtf8Bytes(''),
+                { value: ethers.utils.parseEther('1') },
+            );
+            const balanceAfter = await singularityDst.balanceOf(
+                deployer.address,
+            );
+            expect(balanceAfter.eq(mintValShare)).to.be.true;
+            expect(balanceAfter.gt(balanceBefore)).to.be.true;
+
+            mintValShare = await yieldBox.toShare(
+                await singularityDst.assetId(),
+                mintVal,
+                false,
+            );
+            const removeAssetFn = singularityDst.interface.encodeFunctionData(
+                'removeAsset',
+                [deployer.address, deployer.address, mintValShare.div(2)],
+            );
+            // Needs extraGas param; oterwhise it reverts
+            const adapterParam = ethers.utils.solidityPack(
+                ['uint16', 'uint256'],
+                [1, 2250000],
+            );
+            await proxySrc.setMinDstGas(await lzEndpointDst.getChainId(), 1, 1);
+            await proxySrc.setUseCustomAdapterParams(true);
+
+            await proxySrc.executeOnChain(
+                await lzEndpointDst.getChainId(),
+                singularityDst.address,
+                [removeAssetFn],
                 adapterParam,
                 {
                     value: ethers.utils.parseEther('10'),
                 },
             );
-        borrowPart = await singularityDst.userBorrowPart(eoa1.address);
-        expect(borrowPart.eq(0)).to.be.true;
+            const balanceFinal = await singularityDst.balanceOf(
+                deployer.address,
+            );
+            expect(balanceFinal.eq(mintValShare.div(2))).to.be.true;
+        });
+    });
 
-        // Withdraw fees from Penrose
-        const markets = await bar.singularityMarkets();
-        const swappers = [];
-        const swapData = [];
-        for (let i = 0; i < markets.length; i++) {
-            swappers.push(multiSwapper.address);
-            swapData.push({ minAssetAmount: 1 });
-        }
-        await expect(
-            bar.withdrawAllSingularityFees(markets, swappers, swapData),
-        ).to.emit(bar, 'LogYieldBoxFeesDeposit');
+    describe('borrow & repay', () => {
+        it('should add collateral, borrow and repay from a different layer', async () => {
+            const {
+                deployer,
+                yieldBox,
+                weth,
+                wethAssetId,
+                usdc,
+                usdcAssetId,
+                eoa1,
+                __wethUsdcPrice,
+            } = await loadFixture(register);
 
-        const mixologistFeeVeTap = await bar.feeTo();
-        const tapAmountHarvested = await yieldBox.toAmount(
-            await bar.tapAssetId(),
-            await yieldBox.balanceOf(
-                mixologistFeeVeTap,
+            const { proxySrc, proxyDst, singularityDst, lzEndpointDst } =
+                await loadFixture(loadSetup);
+
+            // --- Lending ---
+            // Get assets
+            const mintVal = ethers.BigNumber.from((1e18).toString()).mul(10);
+            weth.freeMint(mintVal);
+
+            // Deposit assets to YieldBox
+            const mintValShare = await yieldBox.toShare(
+                await singularityDst.assetId(),
+                mintVal,
+                false,
+            );
+            await weth.approve(yieldBox.address, mintVal);
+            await yieldBox.depositAsset(
+                await singularityDst.assetId(),
+                deployer.address,
+                deployer.address,
+                0,
+                mintValShare,
+            );
+
+            // Approve singularityDst actions
+            await yieldBox.setApprovalForAll(singularityDst.address, true);
+            await singularityDst.approve(
+                proxyDst.address,
+                ethers.constants.MaxUint256,
+            );
+
+            const balanceBefore = await singularityDst.balanceOf(
+                deployer.address,
+            );
+            const addAssetFn = singularityDst.interface.encodeFunctionData(
+                'addAsset',
+                [deployer.address, deployer.address, false, mintValShare],
+            );
+            await proxySrc.executeOnChain(
+                await lzEndpointDst.getChainId(),
+                singularityDst.address,
+                [addAssetFn],
+                ethers.utils.toUtf8Bytes(''),
+                { value: ethers.utils.parseEther('1') },
+            );
+            const balanceAfter = await singularityDst.balanceOf(
+                deployer.address,
+            );
+            expect(balanceAfter.eq(mintValShare)).to.be.true;
+            expect(balanceAfter.gt(balanceBefore)).to.be.true;
+
+            // --- Borrowing ---
+            const usdcMintVal = mintVal.mul(
+                __wethUsdcPrice.div((1e18).toString()),
+            );
+            const wethBorrowVal = usdcMintVal
+                .mul(74)
+                .div(100)
+                .div(__wethUsdcPrice.div((1e18).toString()));
+
+            await usdc.connect(eoa1).freeMint(usdcMintVal);
+            await usdc
+                .connect(eoa1)
+                .approve(yieldBox.address, ethers.constants.MaxUint256);
+            await yieldBox
+                .connect(eoa1)
+                .setApprovalForAll(singularityDst.address, true);
+            await singularityDst
+                .connect(eoa1)
+                .approve(proxyDst.address, ethers.constants.MaxUint256);
+
+            const usdcMintValShare = await yieldBox.toShare(
+                usdcAssetId,
+                usdcMintVal,
+                false,
+            );
+            await yieldBox
+                .connect(eoa1)
+                .depositAsset(
+                    usdcAssetId,
+                    eoa1.address,
+                    eoa1.address,
+                    usdcMintVal,
+                    0,
+                );
+            const addCollateralFn = singularityDst.interface.encodeFunctionData(
+                'addCollateral',
+                [eoa1.address, eoa1.address, false, usdcMintValShare],
+            );
+            await singularityDst
+                .connect(eoa1)
+                .approveBorrow(proxyDst.address, ethers.constants.MaxUint256);
+            await proxySrc
+                .connect(eoa1)
+                .executeOnChain(
+                    await lzEndpointDst.getChainId(),
+                    singularityDst.address,
+                    [addCollateralFn],
+                    ethers.utils.toUtf8Bytes(''),
+                    {
+                        value: ethers.utils.parseEther('2'),
+                    },
+                );
+
+            const userCollateralShare =
+                await singularityDst.userCollateralShare(eoa1.address);
+            const userCollateralAmount = await yieldBox.toAmount(
+                usdcAssetId,
+                userCollateralShare,
+                false,
+            );
+            expect(userCollateralShare.eq(usdcMintValShare)).to.be.true;
+            expect(userCollateralAmount.eq(usdcMintVal)).to.be.true;
+
+            const adapterParam = ethers.utils.solidityPack(
+                ['uint16', 'uint256'],
+                [1, 2250000],
+            );
+            await proxySrc.setMinDstGas(await lzEndpointDst.getChainId(), 1, 1);
+            await proxySrc.setUseCustomAdapterParams(true);
+
+            const borrowFn = singularityDst.interface.encodeFunctionData(
+                'borrow',
+                [eoa1.address, eoa1.address, wethBorrowVal],
+            );
+            await singularityDst
+                .connect(eoa1)
+                .approveBorrow(proxyDst.address, ethers.constants.MaxUint256);
+            await proxySrc
+                .connect(eoa1)
+                .executeOnChain(
+                    await lzEndpointDst.getChainId(),
+                    singularityDst.address,
+                    [borrowFn],
+                    adapterParam,
+                    {
+                        value: ethers.utils.parseEther('10'),
+                    },
+                );
+            let borrowPart = await singularityDst.userBorrowPart(eoa1.address);
+            expect(borrowPart.gt(wethBorrowVal)).to.be.true;
+
+            await weth.connect(eoa1).freeMint(borrowPart);
+            await weth
+                .connect(eoa1)
+                .approve(yieldBox.address, ethers.constants.MaxUint256);
+            await yieldBox
+                .connect(eoa1)
+                .depositAsset(
+                    wethAssetId,
+                    eoa1.address,
+                    eoa1.address,
+                    borrowPart,
+                    0,
+                );
+            const repayFn = singularityDst.interface.encodeFunctionData(
+                'repay',
+                [eoa1.address, eoa1.address, false, borrowPart],
+            );
+
+            await proxySrc
+                .connect(eoa1)
+                .executeOnChain(
+                    await lzEndpointDst.getChainId(),
+                    singularityDst.address,
+                    [repayFn],
+                    adapterParam,
+                    {
+                        value: ethers.utils.parseEther('10'),
+                    },
+                );
+            borrowPart = await singularityDst.userBorrowPart(eoa1.address);
+            expect(borrowPart.eq(0)).to.be.true;
+        });
+
+        it('should add collateral & borrow in a single tx through the proxy', async () => {
+            const {
+                deployer,
+                yieldBox,
+                weth,
+                usdc,
+                usdcAssetId,
+                eoa1,
+                __wethUsdcPrice,
+            } = await loadFixture(register);
+
+            const { proxySrc, proxyDst, singularityDst, lzEndpointDst } =
+                await loadFixture(loadSetup);
+
+            // --- Lending ---
+            // Get assets
+            const mintVal = ethers.BigNumber.from((1e18).toString()).mul(10);
+            weth.freeMint(mintVal);
+
+            // Deposit assets to YieldBox
+            const mintValShare = await yieldBox.toShare(
+                await singularityDst.assetId(),
+                mintVal,
+                false,
+            );
+            await weth.approve(yieldBox.address, mintVal);
+            await yieldBox.depositAsset(
+                await singularityDst.assetId(),
+                deployer.address,
+                deployer.address,
+                0,
+                mintValShare,
+            );
+
+            // Approve singularityDst actions
+            await yieldBox.setApprovalForAll(singularityDst.address, true);
+            await singularityDst.approve(
+                proxyDst.address,
+                ethers.constants.MaxUint256,
+            );
+
+            const balanceBefore = await singularityDst.balanceOf(
+                deployer.address,
+            );
+            const addAssetFn = singularityDst.interface.encodeFunctionData(
+                'addAsset',
+                [deployer.address, deployer.address, false, mintValShare],
+            );
+            await proxySrc.executeOnChain(
+                await lzEndpointDst.getChainId(),
+                singularityDst.address,
+                [addAssetFn],
+                ethers.utils.toUtf8Bytes(''),
+                { value: ethers.utils.parseEther('1') },
+            );
+            const balanceAfter = await singularityDst.balanceOf(
+                deployer.address,
+            );
+            expect(balanceAfter.eq(mintValShare)).to.be.true;
+            expect(balanceAfter.gt(balanceBefore)).to.be.true;
+
+            // --- Borrowing ---
+            const usdcMintVal = mintVal.mul(
+                __wethUsdcPrice.div((1e18).toString()),
+            );
+            const wethBorrowVal = usdcMintVal
+                .mul(74)
+                .div(100)
+                .div(__wethUsdcPrice.div((1e18).toString()));
+
+            await usdc.connect(eoa1).freeMint(usdcMintVal);
+            await usdc
+                .connect(eoa1)
+                .approve(yieldBox.address, ethers.constants.MaxUint256);
+            await yieldBox
+                .connect(eoa1)
+                .setApprovalForAll(singularityDst.address, true);
+            await singularityDst
+                .connect(eoa1)
+                .approve(proxyDst.address, ethers.constants.MaxUint256);
+            const usdcMintValShare = await yieldBox.toShare(
+                usdcAssetId,
+                usdcMintVal,
+                false,
+            );
+            await yieldBox
+                .connect(eoa1)
+                .depositAsset(
+                    usdcAssetId,
+                    eoa1.address,
+                    eoa1.address,
+                    usdcMintVal,
+                    0,
+                );
+
+            const addCollateralFn = singularityDst.interface.encodeFunctionData(
+                'addCollateral',
+                [eoa1.address, eoa1.address, false, usdcMintValShare],
+            );
+            const borrowFn = singularityDst.interface.encodeFunctionData(
+                'borrow',
+                [eoa1.address, eoa1.address, wethBorrowVal],
+            );
+
+            // Needs extraGas param; oterwhise it reverts
+            const adapterParam = ethers.utils.solidityPack(
+                ['uint16', 'uint256'],
+                [1, 2250000],
+            );
+            await proxySrc.setMinDstGas(await lzEndpointDst.getChainId(), 1, 1);
+            await proxySrc.setUseCustomAdapterParams(true);
+
+            await singularityDst
+                .connect(eoa1)
+                .approveBorrow(proxyDst.address, ethers.constants.MaxUint256);
+            await proxySrc
+                .connect(eoa1)
+                .executeOnChain(
+                    await lzEndpointDst.getChainId(),
+                    singularityDst.address,
+                    [addCollateralFn, borrowFn],
+                    adapterParam,
+                    {
+                        value: ethers.utils.parseEther('10'),
+                    },
+                );
+            const userCollateralShare =
+                await singularityDst.userCollateralShare(eoa1.address);
+            expect(userCollateralShare.eq(usdcMintValShare)).to.be.true;
+            const borrowPart = await singularityDst.userBorrowPart(
+                eoa1.address,
+            );
+            expect(borrowPart.gt(wethBorrowVal)).to.be.true;
+        });
+
+        it('should deposit, borrow, liquidate and fail-withdraw', async () => {
+            const {
+                deployer,
+                yieldBox,
+                weth,
+                usdc,
+                usdcAssetId,
+                wethUsdcOracle,
+                eoa1,
+                multiSwapper,
+                __wethUsdcPrice,
+            } = await loadFixture(register);
+
+            const { proxySrc, proxyDst, singularityDst, lzEndpointDst } =
+                await loadFixture(loadSetup);
+
+            // --- Lending ---
+            // Get assets
+            const mintVal = ethers.BigNumber.from((1e18).toString()).mul(10);
+            weth.freeMint(mintVal.mul(10));
+
+            // Deposit assets to YieldBox
+            const mintValShare = await yieldBox.toShare(
+                await singularityDst.assetId(),
+                mintVal.mul(10),
+                false,
+            );
+            await weth.approve(yieldBox.address, mintVal.mul(10));
+            await yieldBox.depositAsset(
+                await singularityDst.assetId(),
+                deployer.address,
+                deployer.address,
+                0,
+                mintValShare,
+            );
+            const adapterParam = ethers.utils.solidityPack(
+                ['uint16', 'uint256'],
+                [1, 2250000],
+            );
+            await proxySrc.setMinDstGas(await lzEndpointDst.getChainId(), 1, 1);
+            await proxySrc.setUseCustomAdapterParams(true);
+
+            // Approve singularityDst actions
+            await yieldBox.setApprovalForAll(singularityDst.address, true);
+            await singularityDst.approve(
+                proxyDst.address,
+                ethers.constants.MaxUint256,
+            );
+
+            const balanceBefore = await singularityDst.balanceOf(
+                deployer.address,
+            );
+            const addAssetFn = singularityDst.interface.encodeFunctionData(
+                'addAsset',
+                [deployer.address, deployer.address, false, mintValShare],
+            );
+            await proxySrc.executeOnChain(
+                await lzEndpointDst.getChainId(),
+                singularityDst.address,
+                [addAssetFn],
+                adapterParam,
+                {
+                    value: ethers.utils.parseEther('10'),
+                },
+            );
+            const balanceAfter = await singularityDst.balanceOf(
+                deployer.address,
+            );
+            expect(balanceAfter.eq(mintValShare)).to.be.true;
+            expect(balanceAfter.gt(balanceBefore)).to.be.true;
+
+            // --- Borrowing ---
+            const usdcMintVal = mintVal.mul(
+                __wethUsdcPrice.div((1e18).toString()),
+            );
+            const wethBorrowVal = usdcMintVal
+                .mul(74)
+                .div(100)
+                .div(__wethUsdcPrice.div((1e18).toString()));
+
+            await usdc.connect(eoa1).freeMint(usdcMintVal);
+            await usdc
+                .connect(eoa1)
+                .approve(yieldBox.address, ethers.constants.MaxUint256);
+            await yieldBox
+                .connect(eoa1)
+                .setApprovalForAll(singularityDst.address, true);
+            await singularityDst
+                .connect(eoa1)
+                .approve(proxyDst.address, ethers.constants.MaxUint256);
+
+            const usdcMintValShare = await yieldBox.toShare(
+                usdcAssetId,
+                usdcMintVal,
+                false,
+            );
+            await yieldBox
+                .connect(eoa1)
+                .depositAsset(
+                    usdcAssetId,
+                    eoa1.address,
+                    eoa1.address,
+                    usdcMintVal,
+                    0,
+                );
+            const addCollateralFn = singularityDst.interface.encodeFunctionData(
+                'addCollateral',
+                [eoa1.address, eoa1.address, false, usdcMintValShare],
+            );
+
+            await proxySrc
+                .connect(eoa1)
+                .executeOnChain(
+                    await lzEndpointDst.getChainId(),
+                    singularityDst.address,
+                    [addCollateralFn],
+                    adapterParam,
+                    {
+                        value: ethers.utils.parseEther('10'),
+                    },
+                );
+
+            const userCollateralShare =
+                await singularityDst.userCollateralShare(eoa1.address);
+            const userCollateralAmount = await yieldBox.toAmount(
+                usdcAssetId,
+                userCollateralShare,
+                false,
+            );
+            expect(userCollateralShare.eq(usdcMintValShare)).to.be.true;
+            expect(userCollateralAmount.eq(usdcMintVal)).to.be.true;
+
+            const borrowFn = singularityDst.interface.encodeFunctionData(
+                'borrow',
+                [eoa1.address, eoa1.address, wethBorrowVal],
+            );
+            await singularityDst
+                .connect(eoa1)
+                .approveBorrow(proxyDst.address, ethers.constants.MaxUint256);
+            await proxySrc
+                .connect(eoa1)
+                .executeOnChain(
+                    await lzEndpointDst.getChainId(),
+                    ethers.utils.solidityPack(
+                        ['address'],
+                        [singularityDst.address],
+                    ),
+                    [borrowFn],
+                    adapterParam,
+                    { value: ethers.utils.parseEther('10') },
+                );
+            const borrowPart = await singularityDst.userBorrowPart(
+                eoa1.address,
+            );
+            expect(borrowPart.gt(wethBorrowVal)).to.be.true;
+
+            const priceDrop = __wethUsdcPrice.mul(2).div(100);
+            await wethUsdcOracle.set(__wethUsdcPrice.add(priceDrop));
+
+            const data = new ethers.utils.AbiCoder().encode(['uint256'], [1]);
+            const liquidateFn = singularityDst.interface.encodeFunctionData(
+                'liquidate',
+                [
+                    [eoa1.address],
+                    [wethBorrowVal],
+                    multiSwapper.address,
+                    data,
+                    data,
+                ],
+            );
+
+            await proxySrc.executeOnChain(
+                await lzEndpointDst.getChainId(),
+                singularityDst.address,
+                [liquidateFn],
+                adapterParam,
+                {
+                    value: ethers.utils.parseEther('10'),
+                },
+            );
+            const borrowPartFinal = await singularityDst.userBorrowPart(
+                eoa1.address,
+            );
+            expect(borrowPartFinal.lte(borrowPart)).to.be.true;
+            await expect(
+                yieldBox
+                    .connect(eoa1)
+                    .withdraw(
+                        await singularityDst.collateralId(),
+                        eoa1.address,
+                        eoa1.address,
+                        0,
+                        wethBorrowVal,
+                        {
+                            gasLimit: 2000000,
+                        },
+                    ),
+            ).to.be.reverted;
+        });
+    });
+
+    describe('fees', () => {
+        it('should withdraw fees through the proxy', async () => {
+            const {
+                deployer,
+                yieldBox,
+                bar,
+                weth,
+                wethAssetId,
+                usdc,
+                usdcAssetId,
+                eoa1,
+                multiSwapper,
+                magnetar,
+                __wethUsdcPrice,
+            } = await loadFixture(register);
+
+            const { proxySrc, proxyDst, singularityDst, lzEndpointDst } =
+                await loadFixture(loadSetup);
+
+            const adapterParam = ethers.utils.solidityPack(
+                ['uint16', 'uint256'],
+                [1, 2250000],
+            );
+            await proxySrc.setMinDstGas(await lzEndpointDst.getChainId(), 1, 1);
+            await proxySrc.setUseCustomAdapterParams(true);
+
+            // --- Lending ---
+            // Get assets
+            const mintVal = ethers.BigNumber.from((1e18).toString()).mul(10);
+            weth.freeMint(mintVal.mul(10));
+
+            // Deposit assets to YieldBox
+            const mintValShare = await yieldBox.toShare(
+                await singularityDst.assetId(),
+                mintVal,
+                false,
+            );
+            await weth.approve(yieldBox.address, mintVal.mul(10));
+            await yieldBox.depositAsset(
+                await singularityDst.assetId(),
+                deployer.address,
+                deployer.address,
+                0,
+                mintValShare.mul(10),
+            );
+
+            // Approve singularityDst actions
+            await yieldBox.setApprovalForAll(singularityDst.address, true);
+            await singularityDst.approve(
+                proxyDst.address,
+                ethers.constants.MaxUint256,
+            );
+
+            const balanceBefore = await singularityDst.balanceOf(
+                deployer.address,
+            );
+            const addAssetFn = singularityDst.interface.encodeFunctionData(
+                'addAsset',
+                [deployer.address, deployer.address, false, mintValShare],
+            );
+            await proxySrc.executeOnChain(
+                await lzEndpointDst.getChainId(),
+                singularityDst.address,
+                [addAssetFn],
+                adapterParam,
+                {
+                    value: ethers.utils.parseEther('10'),
+                },
+            );
+            const balanceAfter = await singularityDst.balanceOf(
+                deployer.address,
+            );
+            expect(balanceAfter.eq(mintValShare)).to.be.true;
+            expect(balanceAfter.gt(balanceBefore)).to.be.true;
+
+            // --- Borrowing ---
+            const usdcMintVal = mintVal.mul(
+                __wethUsdcPrice.div((1e18).toString()),
+            );
+            const wethBorrowVal = usdcMintVal
+                .mul(74)
+                .div(100)
+                .div(__wethUsdcPrice.div((1e18).toString()));
+
+            await usdc.connect(eoa1).freeMint(usdcMintVal);
+            await usdc
+                .connect(eoa1)
+                .approve(yieldBox.address, ethers.constants.MaxUint256);
+            await yieldBox
+                .connect(eoa1)
+                .setApprovalForAll(singularityDst.address, true);
+            await singularityDst
+                .connect(eoa1)
+                .approve(proxyDst.address, ethers.constants.MaxUint256);
+
+            const usdcMintValShare = await yieldBox.toShare(
+                usdcAssetId,
+                usdcMintVal,
+                false,
+            );
+            await yieldBox
+                .connect(eoa1)
+                .depositAsset(
+                    usdcAssetId,
+                    eoa1.address,
+                    eoa1.address,
+                    usdcMintVal,
+                    0,
+                );
+            const addCollateralFn = singularityDst.interface.encodeFunctionData(
+                'addCollateral',
+                [eoa1.address, eoa1.address, false, usdcMintValShare],
+            );
+            await proxySrc
+                .connect(eoa1)
+                .executeOnChain(
+                    await lzEndpointDst.getChainId(),
+                    singularityDst.address,
+                    [addCollateralFn],
+                    adapterParam,
+                    {
+                        value: ethers.utils.parseEther('10'),
+                    },
+                );
+
+            const userCollateralShare =
+                await singularityDst.userCollateralShare(eoa1.address);
+            const userCollateralAmount = await yieldBox.toAmount(
+                usdcAssetId,
+                userCollateralShare,
+                false,
+            );
+            expect(userCollateralShare.eq(usdcMintValShare)).to.be.true;
+            expect(userCollateralAmount.eq(usdcMintVal)).to.be.true;
+
+            const borrowFn = singularityDst.interface.encodeFunctionData(
+                'borrow',
+                [eoa1.address, eoa1.address, wethBorrowVal],
+            );
+            await singularityDst
+                .connect(eoa1)
+                .approveBorrow(proxyDst.address, ethers.constants.MaxUint256);
+            await proxySrc
+                .connect(eoa1)
+                .executeOnChain(
+                    await lzEndpointDst.getChainId(),
+                    ethers.utils.solidityPack(
+                        ['address'],
+                        [singularityDst.address],
+                    ),
+                    [borrowFn],
+                    adapterParam,
+                    { value: ethers.utils.parseEther('10') },
+                );
+            let borrowPart = await singularityDst.userBorrowPart(eoa1.address);
+            expect(borrowPart.gt(wethBorrowVal)).to.be.true;
+
+            await weth.connect(eoa1).freeMint(borrowPart);
+            await weth
+                .connect(eoa1)
+                .approve(yieldBox.address, ethers.constants.MaxUint256);
+            await yieldBox
+                .connect(eoa1)
+                .depositAsset(
+                    wethAssetId,
+                    eoa1.address,
+                    eoa1.address,
+                    borrowPart,
+                    0,
+                );
+            const repayFn = singularityDst.interface.encodeFunctionData(
+                'repay',
+                [eoa1.address, eoa1.address, false, borrowPart],
+            );
+            await proxySrc
+                .connect(eoa1)
+                .executeOnChain(
+                    await lzEndpointDst.getChainId(),
+                    singularityDst.address,
+                    [repayFn],
+                    adapterParam,
+                    {
+                        value: ethers.utils.parseEther('10'),
+                    },
+                );
+            borrowPart = await singularityDst.userBorrowPart(eoa1.address);
+            expect(borrowPart.eq(0)).to.be.true;
+
+            // Withdraw fees from Penrose
+            const markets = await bar.singularityMarkets();
+            const swappers = [];
+            const swapData = [];
+            for (let i = 0; i < markets.length; i++) {
+                swappers.push(multiSwapper.address);
+                swapData.push({ minAssetAmount: 1 });
+            }
+            await expect(
+                bar.withdrawAllSingularityFees(markets, swappers, swapData),
+            ).to.emit(bar, 'LogYieldBoxFeesDeposit');
+
+            const mixologistFeeVeTap = await bar.feeTo();
+            const tapAmountHarvested = await yieldBox.toAmount(
                 await bar.tapAssetId(),
-            ),
-            false,
-        );
-        const feesAmountInAsset = await magnetar.getAmountForAssetFraction(
-            singularityDst.address,
+                await yieldBox.balanceOf(
+                    mixologistFeeVeTap,
+                    await bar.tapAssetId(),
+                ),
+                false,
+            );
+            const feesAmountInAsset = await magnetar.getAmountForAssetFraction(
+                singularityDst.address,
 
-            (
-                await singularityDst.accrueInfo()
-            ).feesEarnedFraction,
-        );
-        // 0.31%
-        const acceptableHarvestMargin = feesAmountInAsset.sub(
-            feesAmountInAsset.mul(31).div(10000),
-        );
-        expect(tapAmountHarvested.gte(acceptableHarvestMargin)).to.be.true;
+                (
+                    await singularityDst.accrueInfo()
+                ).feesEarnedFraction,
+            );
+            // 0.31%
+            const acceptableHarvestMargin = feesAmountInAsset.sub(
+                feesAmountInAsset.mul(31).div(10000),
+            );
+            expect(tapAmountHarvested.gte(acceptableHarvestMargin)).to.be.true;
+        });
     });
 });
 
@@ -1572,16 +1649,14 @@ async function setupUsd0Environment(
     const saltSrc = ethers.utils.formatBytes32String('ProxySrc');
     const saltDst = ethers.utils.formatBytes32String('ProxyDst');
 
-    await proxyDeployer.deployWithCreate2(lzEndpointSrc.address, saltSrc);
-    await proxyDeployer.deployWithCreate2(lzEndpointDst.address, saltDst);
-
-    const proxySrc = await ethers.getContractAt(
-        'MarketsProxy',
-        await proxyDeployer.proxies(0),
+    const proxyFactory = await ethers.getContractFactory('MarketsProxy');
+    const proxySrc = await proxyFactory.deploy(
+        lzEndpointSrc.address,
+        deployer.address,
     );
-    const proxyDst = await ethers.getContractAt(
-        'MarketsProxy',
-        await proxyDeployer.proxies(1),
+    const proxyDst = await proxyFactory.deploy(
+        lzEndpointDst.address,
+        deployer.address,
     );
 
     lzEndpointSrc.setDestLzEndpoint(proxyDst.address, lzEndpointDst.address);
@@ -1750,7 +1825,6 @@ async function setupUsd0Environment(
     };
 }
 async function setupEnvironment(
-    proxyDeployer: any,
     mediumRiskMC: any,
     yieldBox: any,
     bar: any,
@@ -1760,6 +1834,7 @@ async function setupEnvironment(
     usdcAssetId: any,
     wethUsdcOracle: any,
     registerSingularity: any,
+    deployer: any,
 ) {
     //omnichain configuration
     const chainIdSrc = 1;
@@ -1774,16 +1849,14 @@ async function setupEnvironment(
     const saltSrc = ethers.utils.formatBytes32String('ProxySrc');
     const saltDst = ethers.utils.formatBytes32String('ProxyDst');
 
-    await proxyDeployer.deployWithCreate2(lzEndpointSrc.address, saltSrc);
-    await proxyDeployer.deployWithCreate2(lzEndpointDst.address, saltDst);
-
-    const proxySrc = await ethers.getContractAt(
-        'MarketsProxy',
-        await proxyDeployer.proxies(0),
+    const proxyFactory = await ethers.getContractFactory('MarketsProxy');
+    const proxySrc = await proxyFactory.deploy(
+        lzEndpointSrc.address,
+        deployer.address,
     );
-    const proxyDst = await ethers.getContractAt(
-        'MarketsProxy',
-        await proxyDeployer.proxies(1),
+    const proxyDst = await proxyFactory.deploy(
+        lzEndpointDst.address,
+        deployer.address,
     );
 
     lzEndpointSrc.setDestLzEndpoint(proxyDst.address, lzEndpointDst.address);

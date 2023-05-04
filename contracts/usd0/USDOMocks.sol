@@ -3,13 +3,14 @@ pragma solidity ^0.8.18;
 
 import "./BaseOFT.sol";
 
+//TODO: to be removed after beta phase
 abstract contract USDOMocks is BaseOFT {
     mapping(address => uint256) public mintedAt;
     uint256 public constant MINT_WINDOW = 24 hours;
     uint256 public mintLimit;
     address public _owner;
 
-    constructor(IYieldBox _yieldBox) BaseOFT(_yieldBox) {}
+    constructor(IYieldBoxBase _yieldBox) BaseOFT(_yieldBox) {}
 
     function setMintLimit(uint256 _val) external onlyOwner {
         mintLimit = _val;
