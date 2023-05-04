@@ -318,17 +318,6 @@ async function setPenroseAssets(
     };
 }
 
-async function deployProxyDeployer() {
-    const proxyDeployer = await (
-        await ethers.getContractFactory('ProxyDeployer')
-    ).deploy({
-        gasPrice: gasPrice,
-    });
-    await proxyDeployer.deployed();
-
-    return { proxyDeployer };
-}
-
 async function addUniV2Liquidity(
     deployerAddress: string,
     token1: any,
@@ -1636,8 +1625,6 @@ export async function register(staging?: boolean) {
         );
     }
 
-    // ------------------- 19 Create ProxyDeployer -------------------
-    const { proxyDeployer } = await deployProxyDeployer();
     /**
      * OTHERS
      */
@@ -1695,7 +1682,6 @@ export async function register(staging?: boolean) {
         usdoToWethBidder,
         mediumRiskMC,
         mediumRiskBigBangMC,
-        proxyDeployer,
         magnetar,
         registerSingularity,
         __uniFactory,
