@@ -81,7 +81,7 @@ abstract contract Market is MarketERC20, BoringOwnable {
     // ************** //
     // *** EVENTS *** //
     // ************** //
-    /// @notive event emitted when conservator is updated
+    /// @notice event emitted when conservator is updated
     event ConservatorUpdated(address indexed old, address indexed _new);
     /// @notice event emitted when pause state is changed
     event PausedUpdated(bool oldState, bool newState);
