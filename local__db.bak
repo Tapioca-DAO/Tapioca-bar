@@ -395,6 +395,15 @@
         ],
         "421613": [
             {
+                "name": "MarketsHelper",
+                "address": "0xAF1AE196E943B1F7695755A161361b0FEA6cc52D",
+                "meta": {
+                    "args": [],
+                    "salt": "0x0c45d88fbfe9f14fc09e309da4036a294f9afe4c4ecd8bffc0ddd4389de5969e",
+                    "create2": true
+                }
+            },
+            {
                 "name": "Tapioca Singularity TapiocaOFT-WETHMock/USDO-OracleMock-TapiocaOFT-WETHMock",
                 "address": "0xf3Ce691ba64e30e006c74fd28fC43dB00e8F26D0",
                 "meta": {
@@ -620,15 +629,6 @@
                 "meta": {
                     "args": [],
                     "salt": "0xa132efedc5e8474fa56bb2e41e54f190b8af28a73b2aacf06f09d0b8f1ab45cc",
-                    "create2": true
-                }
-            },
-            {
-                "name": "MarketsHelper",
-                "address": "0xdf80929B187E7108451bAEBAED4E4b43e0aB6BB2",
-                "meta": {
-                    "args": [],
-                    "salt": "0xef89940d5a8846817b0887c150c0182642b98fee9ce8223b7c7075dd050a59b0",
                     "create2": true
                 }
             },

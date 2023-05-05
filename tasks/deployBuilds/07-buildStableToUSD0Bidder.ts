@@ -1,6 +1,7 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { IDeployerVMAdd } from 'tapioca-sdk/dist/ethers/hardhat/DeployerVM';
 import { CurveSwapper__factory } from 'tapioca-sdk/dist/typechain/tapioca-periphery';
+import CurveSwapperArtifact from 'tapioca-sdk/dist/artifacts/tapioca-periphery/CurveSwapper.json';
 import { CurveStableToUsdoBidder__factory } from '../../typechain';
 
 // TODO - @Rektora, didn't had time to check if this is relevant/needed, coming back to it later
@@ -14,16 +15,20 @@ export const buildStableToUSD0Bidder = async (
         IDeployerVMAdd<CurveStableToUsdoBidder__factory>,
     ]
 > => {
+    const CurveSwapper = (await hre.ethers.getContractFactoryFromArtifact(
+        CurveSwapperArtifact,
+    )) as CurveSwapper__factory;
+
     return [
         {
-            contract: await hre.ethers.getContractFactory('CurveSwapper'),
+            contract: CurveSwapper,
             deploymentName: 'CurveSwapper',
             args: [
                 crvStablePoolAddr,
-                // Penrose, to be replaced by VM
+                // YieldBox, to be replaced by VM
                 hre.ethers.constants.AddressZero,
             ],
-            dependsOn: [{ argPosition: 1, deploymentName: 'Penrose' }],
+            dependsOn: [{ argPosition: 1, deploymentName: 'YieldBox' }],
             runStaticSimulation: false,
         },
         {
