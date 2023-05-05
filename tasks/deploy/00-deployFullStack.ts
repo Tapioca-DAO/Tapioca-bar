@@ -1,6 +1,6 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import inquirer from 'inquirer';
-import { Multicall3 } from 'tapioca-sdk/dist/typechain/utils/MultiCall';
+import { Multicall3 } from 'tapioca-sdk/dist/typechain/tapioca-periphery';
 import { buildYieldBox } from '../deployBuilds/00-buildYieldBox';
 import { buildPenrose } from '../deployBuilds/01-buildPenrose';
 import { buildMasterContracts } from '../deployBuilds/02-buildMasterContracts';
@@ -55,45 +55,48 @@ export const deployFullStack__task = async (
         throw new Error(`[-] Token not found: ${tapToken}, ${weth}`);
     }
 
-    // // 00 - Deploy YieldBox
-    // const [ybURI, yieldBox] = await buildYieldBox(hre, weth.address);
-    // VM.add(ybURI).add(yieldBox);
+    // const test = await buildTest(hre);
+    // VM.add(test);
 
-    // // 01 - Penrose
-    // const penrose = await buildPenrose(
-    //     hre,
-    //     tapToken.address,
-    //     weth.address,
-    //     signer.address,
-    // );
-    // VM.add(penrose);
+    // 00 - Deploy YieldBox
+    const [ybURI, yieldBox] = await buildYieldBox(hre, weth.address);
+    VM.add(ybURI).add(yieldBox);
 
-    // // 02 - Master contracts
-    // const [sgl, bb] = await buildMasterContracts(hre);
-    // VM.add(sgl).add(bb);
+    // 01 - Penrose
+    const penrose = await buildPenrose(
+        hre,
+        tapToken.address,
+        weth.address,
+        signer.address,
+    );
+    VM.add(penrose);
 
-    // // 04 - MultiSwapper
-    // const multiSwapper = await buildMultiSwapper(
-    //     hre,
-    //     constants[chainInfo.chainId].uniV2Router,
-    //     constants[chainInfo.chainId].uniV2Factory,
-    // );
-    // VM.add(multiSwapper);
+    // 02 - Master contracts
+    const [sgl, bb] = await buildMasterContracts(hre);
+    VM.add(sgl).add(bb);
 
-    // // 05 - SingularityModules
-    // const [liq, lendBorrow] = await buildSingularityModules(hre);
-    // VM.add(liq).add(lendBorrow);
+    // 04 - MultiSwapper
+    const multiSwapper = await buildMultiSwapper(
+        hre,
+        constants[chainInfo.chainId].uniV2Router,
+        constants[chainInfo.chainId].uniV2Factory,
+    );
+    VM.add(multiSwapper);
 
-    // // 06 USDO
-    // const usdo = await buildUSD0(hre, chainInfo.address, signer.address);
-    // VM.add(usdo);
+    // 05 - SingularityModules
+    const [liq, lendBorrow] = await buildSingularityModules(hre);
+    VM.add(liq).add(lendBorrow);
 
-    // // 07 - CurveSwapper-buildStableToUSD0Bidder
-    // const [curveSwapper, curveStableToUsd0] = await buildStableToUSD0Bidder(
-    //     hre,
-    //     constants[chainInfo.chainId].crvStablePool,
-    // );
-    // VM.add(curveSwapper).add(curveStableToUsd0);
+    // 06 USDO
+    const usdo = await buildUSD0(hre, chainInfo.address, signer.address);
+    VM.add(usdo);
+
+    // 07 - CurveSwapper-buildStableToUSD0Bidder
+    const [curveSwapper, curveStableToUsd0] = await buildStableToUSD0Bidder(
+        hre,
+        constants[chainInfo.chainId].crvStablePool,
+    );
+    VM.add(curveSwapper).add(curveStableToUsd0);
 
     // Add and execute
     await VM.execute(3, false);
@@ -116,7 +119,7 @@ export const deployFullStack__task = async (
 
     const multiCall = await VM.getMulticall();
 
-    const calls: Multicall3.Call3Struct[] = [
+    const calls: Multicall3.CallStruct[] = [
         ...(await buildPenroseSetup(hre, vmList, signer.address)),
         ...(await buildMasterContractsSetup(hre, vmList)),
     ];

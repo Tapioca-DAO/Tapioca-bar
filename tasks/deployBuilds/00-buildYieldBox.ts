@@ -17,13 +17,19 @@ export const buildYieldBox = async (
         IDeployerVMAdd<YieldBox__factory>,
     ]
 > => {
-    const YieldBoxURIBuilder = (await hre.ethers.getContractFactoryFromArtifact(
-        YieldBoxURIBuilderArtifact,
-    )) as YieldBoxURIBuilder__factory;
+    const signer = (await hre.ethers.getSigners())[0];
 
-    const YieldBox = (await hre.ethers.getContractFactoryFromArtifact(
-        YieldBoxArtifact,
-    )) as YieldBox__factory;
+    const YieldBoxURIBuilder = (
+        (await hre.ethers.getContractFactoryFromArtifact(
+            YieldBoxURIBuilderArtifact,
+        )) as YieldBoxURIBuilder__factory
+    ).connect(signer);
+
+    const YieldBox = (
+        (await hre.ethers.getContractFactoryFromArtifact(
+            YieldBoxArtifact,
+        )) as YieldBox__factory
+    ).connect(signer);
 
     return [
         {

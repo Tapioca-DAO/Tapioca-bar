@@ -1,9 +1,267 @@
 {
     "default": {
-        "421613": [
+        "43113": [
+            {
+                "name": "YieldBoxURIBuilder",
+                "address": "0x3AF3328514eC8caFdA0dDC190B64BAB8fC1f6843",
+                "meta": {
+                    "args": [],
+                    "salt": "0x4daebf189f8b2590295808412e376112d53230cc8b5cd78b1451c657fab90cf9",
+                    "create2": true
+                }
+            },
+            {
+                "name": "YieldBox",
+                "address": "0xbDd70F505Dcda00e13AEc469dB78073B034aDAA6",
+                "meta": {
+                    "args": [
+                        "0x7f95BD22832D236a9334f9958ceab28f6e132AAC",
+                        "0x3AF3328514eC8caFdA0dDC190B64BAB8fC1f6843"
+                    ],
+                    "salt": "0x77c912a7dee1dc71ed89eafdb066d01b39a7eb42cbf94fe61244800ff4487cfa",
+                    "create2": true
+                }
+            },
+            {
+                "name": "Penrose",
+                "address": "0xb5e3397d8B0610d45F0F7859A5A76Ec5ff2dCcC5",
+                "meta": {
+                    "args": [
+                        "0xbDd70F505Dcda00e13AEc469dB78073B034aDAA6",
+                        "0xF122A0D185fc2027958Deea0D5209aBa5359BEE4",
+                        "0x7f95BD22832D236a9334f9958ceab28f6e132AAC",
+                        "0x40282d3Cf4890D9806BC1853e97a59C93D813653"
+                    ],
+                    "salt": "0xad46b025f662271ce532d78ea41e3aefa2916074a6364a7babb5f18ece3b08d6",
+                    "create2": true
+                }
+            },
+            {
+                "name": "MediumRiskMC",
+                "address": "0x97f8E99F4E550E7f5da27ea5B37EA1bccD55d4e0",
+                "meta": {
+                    "args": [],
+                    "salt": "0x085c2443261b4bdaa53cde716d39aae4a8a07f6388e61676715afd0cedf464e8",
+                    "create2": true
+                }
+            },
+            {
+                "name": "BigBangMediumRiskMC",
+                "address": "0x5c3769D20f5ECfdF376041805F79759F81363688",
+                "meta": {
+                    "args": [],
+                    "salt": "0x92926f08a25d880f7daf6556a5271e5a20de8054ae75e4bef94e3b51d6b3c847",
+                    "create2": true
+                }
+            },
+            {
+                "name": "MultiSwapper",
+                "address": "0xEd04B941EACF28c217fdDb99c8c2248d8BA426F6",
+                "meta": {
+                    "args": [
+                        "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D",
+                        "0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f",
+                        "0xbDd70F505Dcda00e13AEc469dB78073B034aDAA6"
+                    ],
+                    "salt": "0x9348fc4387f7d695967aad3230b74b6363f6716c0a79e054d0026aa69a5e08d2",
+                    "create2": true
+                }
+            },
+            {
+                "name": "SGLLiquidation",
+                "address": "0x83069154208aa61C01523d857B0A78D486eea7fA",
+                "meta": {
+                    "args": [],
+                    "salt": "0x15584e61b84681fb6553cafb9a30c0997b6f1b7c07a44c467edb87768b9a95fe",
+                    "create2": true
+                }
+            },
+            {
+                "name": "SGLLendingBorrowing",
+                "address": "0xed8674103884788302f65Aa473645Dd3cEA1C6df",
+                "meta": {
+                    "args": [],
+                    "salt": "0x2bd8ab39dd0de565dab8336a466bc9459c9267eda4a71a0ad18c185725018b90",
+                    "create2": true
+                }
+            },
+            {
+                "name": "USDO",
+                "address": "0x5686FCDDa3C98C3d70738F4A3789ef497DfAEc11",
+                "meta": {
+                    "args": [
+                        "0x93f54D755A063cE7bB9e6Ac47Eccc8e33411d706",
+                        "0xbDd70F505Dcda00e13AEc469dB78073B034aDAA6",
+                        "0x40282d3Cf4890D9806BC1853e97a59C93D813653"
+                    ],
+                    "salt": "0x45f89d1f25b6a83aa316c5c45837ba91730404804197d2930919d5d42eed844b",
+                    "create2": true
+                }
+            },
+            {
+                "name": "CurveSwapper",
+                "address": "0xf13CCa88Bd7B377cDD9b5157F5187A113854731B",
+                "meta": {
+                    "args": [
+                        "0x803147a1f65f9b838e7be39bac1a4f51e6d29a18",
+                        "0xbDd70F505Dcda00e13AEc469dB78073B034aDAA6"
+                    ],
+                    "salt": "0xfde00aab3b20521f7bad8365407c271db8352af0d22b56cd9c1bbaf2fcbb5e39",
+                    "create2": true
+                }
+            },
+            {
+                "name": "CurveStableToUsdoBidder",
+                "address": "0xBb53A7542937300B20B8932Bc76Fb97670A35Ab0",
+                "meta": {
+                    "args": [
+                        "0xf13CCa88Bd7B377cDD9b5157F5187A113854731B",
+                        "0xb5e3397d8B0610d45F0F7859A5A76Ec5ff2dCcC5"
+                    ],
+                    "salt": "0x8a2ef77dfbab6c7d594db576ebf264e474b38aba167c1a6a0fbb8692d0b7f267",
+                    "create2": true
+                }
+            },
+            {
+                "name": "Test",
+                "address": "0x9471a7Ae9A1A3A9bcB3B435cdd9851E272Ba06Fa",
+                "meta": {
+                    "args": [],
+                    "salt": "0x680aa7b419f3356f3cdf027a30f554ee3ca3c1a8782e5f60cd954ce0d4313e63",
+                    "create2": true
+                }
+            },
             {
                 "name": "TapiocaDeployer",
-                "address": "0x2D8c7EB16211128086F398a4068fcD977A19fe2D",
+                "address": "0xEE8B0Cf7f9FB6F843ff9c97DD14B2EcEa034752d",
+                "meta": {}
+            }
+        ],
+        "421613": [
+            {
+                "name": "YieldBoxURIBuilder",
+                "address": "0xB3BC7c44Cbc1BD23727b2b6d4aF5dbF082256552",
+                "meta": {
+                    "args": [],
+                    "salt": "0x0eb9d13ef636fed723bf6324b1ae2126eaff2fe43c375da0579435fc5243472b",
+                    "create2": true
+                }
+            },
+            {
+                "name": "YieldBox",
+                "address": "0xa727a6891CDD5e665C4D5c6F783b6a5F2FF4166b",
+                "meta": {
+                    "args": [
+                        "0x0aA86d8a5B6B0ebDabe13b7953CFae2EDA964eB5",
+                        "0xB3BC7c44Cbc1BD23727b2b6d4aF5dbF082256552"
+                    ],
+                    "salt": "0x0a690d7317ec147dc17757ca4b9250c6f52b5f9c8d05d74e0efac92b75c2cfa8",
+                    "create2": true
+                }
+            },
+            {
+                "name": "Penrose",
+                "address": "0x1caE688F477407873BC3647f9079bd73ca3ecE0c",
+                "meta": {
+                    "args": [
+                        "0xa727a6891CDD5e665C4D5c6F783b6a5F2FF4166b",
+                        "0x1732722164F364dAF29839fb09Ea4F166702301d",
+                        "0x0aA86d8a5B6B0ebDabe13b7953CFae2EDA964eB5",
+                        "0x40282d3Cf4890D9806BC1853e97a59C93D813653"
+                    ],
+                    "salt": "0xb9f9e8434c0355d311857a9716f43302e72f268a2f85514958071074d73054fd",
+                    "create2": true
+                }
+            },
+            {
+                "name": "MediumRiskMC",
+                "address": "0x7b69De2fedbDB0AdF52C9ac70482c88e310554AF",
+                "meta": {
+                    "args": [],
+                    "salt": "0x21b4fa89fb1e5f00926cbef21d74b69da25b4a654196b4516057927f7600bf96",
+                    "create2": true
+                }
+            },
+            {
+                "name": "BigBangMediumRiskMC",
+                "address": "0xc9898F64866a3830C602da63fa6923e228E83D27",
+                "meta": {
+                    "args": [],
+                    "salt": "0x68b22a025e456e4c95557719d9c8154968d36a75d61b362169bd2108d60448d8",
+                    "create2": true
+                }
+            },
+            {
+                "name": "MultiSwapper",
+                "address": "0x95a6E866d6f3EC3CB1fBD7D7C5fe6fAB68975BC5",
+                "meta": {
+                    "args": [
+                        "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D",
+                        "0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f",
+                        "0xa727a6891CDD5e665C4D5c6F783b6a5F2FF4166b"
+                    ],
+                    "salt": "0xa851961a09351d9fcce49ca6b2b994cc8434657975c42ed281acb2639be4d3a5",
+                    "create2": true
+                }
+            },
+            {
+                "name": "SGLLiquidation",
+                "address": "0x382521004B54b71Ff06bBDFBe3875189Ce35e620",
+                "meta": {
+                    "args": [],
+                    "salt": "0x308977215f5745680311ec18bc7651e74eca25dcb1fb3c94780955d2a1f5158e",
+                    "create2": true
+                }
+            },
+            {
+                "name": "SGLLendingBorrowing",
+                "address": "0xc775d07Ab5e26ff5264AdDF322C5342E65401646",
+                "meta": {
+                    "args": [],
+                    "salt": "0xbf3af60261d9325dee4726785ac77c111bc0c9447a26e283c252dd2d61e40411",
+                    "create2": true
+                }
+            },
+            {
+                "name": "USDO",
+                "address": "0x457Ba8e99d357b01D1887F769e02d30202E16eCc",
+                "meta": {
+                    "args": [
+                        "0x6aB5Ae6822647046626e83ee6dB8187151E1d5ab",
+                        "0xa727a6891CDD5e665C4D5c6F783b6a5F2FF4166b",
+                        "0x40282d3Cf4890D9806BC1853e97a59C93D813653"
+                    ],
+                    "salt": "0xee20f587427681c4012c09ec9fa60f058bd0eb4338ab67d5afdf773ac74576ef",
+                    "create2": true
+                }
+            },
+            {
+                "name": "CurveSwapper",
+                "address": "0x94f7a6BBDdA6102e720ca5eCabc23b0Ca6f91994",
+                "meta": {
+                    "args": [
+                        "0x803147a1f65f9b838e7be39bac1a4f51e6d29a18",
+                        "0xa727a6891CDD5e665C4D5c6F783b6a5F2FF4166b"
+                    ],
+                    "salt": "0x6b987b98ebeeaba1798402d82f65b70605065ad1e4e5513a73c1be3b4f5a4b40",
+                    "create2": true
+                }
+            },
+            {
+                "name": "CurveStableToUsdoBidder",
+                "address": "0xe8b9A679149cC97EA1Ebb7e102670dBc299ea662",
+                "meta": {
+                    "args": [
+                        "0x94f7a6BBDdA6102e720ca5eCabc23b0Ca6f91994",
+                        "0x1caE688F477407873BC3647f9079bd73ca3ecE0c"
+                    ],
+                    "salt": "0x03d86df1856f7e7e9962534bdb8ed33a7d85a3a5d9934a98c8cdd60ef4fa8cc8",
+                    "create2": true
+                }
+            },
+            {
+                "name": "TapiocaDeployer",
+                "address": "0x4c3d62370A04Bf039F103C22585b69b862618C1e",
                 "meta": {}
             }
         ]
