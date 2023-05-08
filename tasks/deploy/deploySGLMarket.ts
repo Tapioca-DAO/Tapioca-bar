@@ -81,6 +81,7 @@ export const deploySGLMarket__task = async (
         mediumRiskMC.address,
         data,
         true,
+        hre.SDK.utils.getOverrideOptions(await hre.getChainId()),
     );
     await tx.wait(3);
 
