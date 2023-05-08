@@ -46,14 +46,6 @@ export const deployLinkedChainStack__task = async (
     const usdo = await buildUSD0(hre, chainInfo.address, signer.address);
     VM.add(usdo);
 
-    // 03 - MarketsProxy
-    const marketProxy = await buildMarketProxy(
-        hre,
-        chainInfo.address,
-        signer.address,
-    );
-    VM.add(marketProxy);
-
     // Add and execute
     await VM.execute(3, false);
     VM.save();

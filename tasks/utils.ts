@@ -12,7 +12,7 @@ import { getDeployments } from './views/getDeployments';
 export const loadVM = async (
     hre: HardhatRuntimeEnvironment,
     tag: string,
-    debugMode = false,
+    debugMode = true,
 ) => {
     const signer = (await hre.ethers.getSigners())[0];
     const chainInfo = hre.SDK.utils.getChainBy(

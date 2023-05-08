@@ -1117,15 +1117,6 @@ describe('Singularity test', () => {
                 false,
             );
 
-            const removeShareValueTest =
-                await wethUsdcSingularity.callStatic.removeAsset(
-                    deployer.address,
-                    deployer.address,
-                    mintValShare,
-                );
-            console.log(`removeShareValueTest ${removeShareValueTest}`);
-            console.log(`mintValShare ${mintValShare}`);
-
             await wethUsdcSingularity.removeAsset(
                 deployer.address,
                 deployer.address,
