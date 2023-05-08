@@ -6,8 +6,7 @@ import "@boringcrypto/boring-solidity/contracts/libraries/BoringRebase.sol";
 
 import "tapioca-sdk/dist/contracts/YieldBox/contracts/YieldBox.sol";
 import "tapioca-periph/contracts/interfaces/IOracle.sol";
-
-import "../interfaces/IPenrose.sol";
+import "tapioca-periph/contracts/interfaces/IPenrose.sol";
 import "./MarketERC20.sol";
 
 abstract contract Market is MarketERC20, BoringOwnable {
@@ -16,35 +15,59 @@ abstract contract Market is MarketERC20, BoringOwnable {
     // ************ //
     // *** VARS *** //
     // ************ //
+    /// @notice returns YieldBox address
     YieldBox public yieldBox;
+    /// @notice returns Penrose address
     IPenrose public penrose;
 
+    /// @notice collateral token address
     IERC20 public collateral;
+    /// @notice collateral token YieldBox id
     uint256 public collateralId;
+    /// @notice asset token address
     IERC20 public asset;
+    /// @notice asset token YieldBox id
     uint256 public assetId;
 
+    /// @notice contract's pause state
     bool public paused;
+    /// @notice conservator's addresss
+    /// @dev conservator can pause/unpause the contract
     address public conservator;
 
+    /// @notice oracle address
     IOracle public oracle;
+    /// @notice oracleData
     bytes public oracleData;
     /// @notice Exchange and interest rate tracking.
     /// This is 'cached' here because calls to Oracles can be very expensive.
     /// Asset -> collateral = assetAmount * exchangeRate.
     uint256 public exchangeRate;
 
-    Rebase public totalBorrow; // elastic = Total token amount to be repayed by borrowers, base = Total parts of the debt held by borrowers
-    uint256 public totalCollateralShare; // Total collateral supplied
+    /// @notice total amount borrowed
+    /// @dev elastic = Total token amount to be repayed by borrowers, base = Total parts of the debt held by borrowers
+    Rebase public totalBorrow;
+    /// @notice total collateral supplied
+    uint256 public totalCollateralShare;
+    /// @notice max borrow cap
     uint256 public totalBorrowCap;
+    /// @notice borrow amount per user
     mapping(address => uint256) public userBorrowPart;
+    /// @notice collateral share per user
     mapping(address => uint256) public userCollateralShare;
 
+    /// @notice liquidation caller rewards
     uint256 public callerFee; // 90%
+    /// @notice liquidation protocol rewards
     uint256 public protocolFee; // 10%
+    /// @notice min % a liquidator can receive in rewards
     uint256 public minLiquidatorReward = 1e3; //1%
+    /// @notice max % a liquidator can receive in rewards
     uint256 public maxLiquidatorReward = 1e4; //10%
+    /// @notice max liquidatable bonus amount
+    /// @dev max % added to the amount that can be liquidated
     uint256 public liquidationBonusAmount = 1e4; //10%
+    /// @notice collateralization rate
     uint256 public collateralizationRate; // 75%
 
     // ***************** //
@@ -58,10 +81,16 @@ abstract contract Market is MarketERC20, BoringOwnable {
     // ************** //
     // *** EVENTS *** //
     // ************** //
+    /// @notice event emitted when conservator is updated
     event ConservatorUpdated(address indexed old, address indexed _new);
+    /// @notice event emitted when pause state is changed
     event PausedUpdated(bool oldState, bool newState);
+    /// @notice event emitted when cached exchange rate is updated
     event LogExchangeRate(uint256 rate);
+    /// @notice event emitted when borrow cap is updated
     event LogBorrowCapUpdated(uint256 _oldVal, uint256 _newVal);
+    /// @notice event emitted when oracle data is updated
+    event OracleDataUpdated();
 
     modifier notPaused() {
         require(!paused, "Market: paused");
@@ -83,8 +112,17 @@ abstract contract Market is MarketERC20, BoringOwnable {
     // *********************** //
     // *** OWNER FUNCTIONS *** //
     // *********************** //
+    /// @notice updates oracle data
+    /// @dev can only be called by the owner
+    /// @param _oracleData new oracle data
+    function setOracleData(bytes calldata _oracleData) external onlyOwner {
+        oracleData = _oracleData;
+        emit OracleDataUpdated();
+    }
+
     /// @notice Set the Conservator address
-    /// @dev Conservator can pause the contract
+    /// @dev conservator can pause the contract
+    ///      can only be called by the owner
     /// @param _conservator The new address
     function setConservator(address _conservator) external onlyOwner {
         require(_conservator != address(0), "Market: address not valid");
@@ -109,6 +147,7 @@ abstract contract Market is MarketERC20, BoringOwnable {
     }
 
     /// @notice updates the pause state of the contract
+    /// @dev can only be called by the conservator
     /// @param val the new value
     function updatePause(bool val) external {
         require(msg.sender == conservator, "Market: unauthorized");
@@ -118,6 +157,7 @@ abstract contract Market is MarketERC20, BoringOwnable {
     }
 
     /// @notice Set the bonus amount a liquidator can make use of, on top of the amount needed to make the user solvent
+    /// @dev can only be called by the owner
     /// @param _val the new value
     function setLiquidationBonusAmount(uint256 _val) external onlyOwner {
         require(_val < FEE_PRECISION, "Market: not valid");
@@ -125,6 +165,7 @@ abstract contract Market is MarketERC20, BoringOwnable {
     }
 
     /// @notice Set the liquidator min reward
+    /// @dev can only be called by the owner
     /// @param _val the new value
     function setMinLiquidatorReward(uint256 _val) external onlyOwner {
         require(_val < FEE_PRECISION, "Market: not valid");
@@ -133,6 +174,7 @@ abstract contract Market is MarketERC20, BoringOwnable {
     }
 
     /// @notice Set the liquidator max reward
+    /// @dev can only be called by the owner
     /// @param _val the new value
     function setMaxLiquidatorReward(uint256 _val) external onlyOwner {
         require(_val < FEE_PRECISION, "Market: not valid");
@@ -141,6 +183,8 @@ abstract contract Market is MarketERC20, BoringOwnable {
     }
 
     /// @notice sets max borrowable amount
+    /// @dev can only be called by the owner
+    /// @param _cap the new value
     function setBorrowCap(uint256 _cap) external notPaused onlyOwner {
         emit LogBorrowCapUpdated(totalBorrowCap, _cap);
         totalBorrowCap = _cap;
@@ -157,7 +201,9 @@ abstract contract Market is MarketERC20, BoringOwnable {
     // ********************** //
     // *** VIEW FUNCTIONS *** //
     // ********************** //
-    /// @notice Return the maximum liquidatable amount for user
+    /// @notice returns the maximum liquidatable amount for user
+    /// @param user the user address
+    /// @param _exchangeRate the exchange rate asset/collateral to use for internal computations
     function computeClosingFactor(
         address user,
         uint256 _exchangeRate
@@ -176,12 +222,12 @@ abstract contract Market is MarketERC20, BoringOwnable {
             ((liquidationBonusAmount * borrowed) / FEE_PRECISION);
     }
 
-    /// @notice Return the amount of collateral for a `user` to be solvent, min TVL and max TVL. Returns 0 if user already solvent.
-    /// @dev We use a `CLOSED_COLLATERIZATION_RATE` that is a safety buffer when making the user solvent again,
-    ///      To prevent from being liquidated. This function is valid only if user is not solvent by `_isSolvent()`.
+    /// @notice return the amount of collateral for a `user` to be solvent, min TVL and max TVL. Returns 0 if user already solvent.
+    /// @dev we use a `CLOSED_COLLATERIZATION_RATE` that is a safety buffer when making the user solvent again,
+    ///      to prevent from being liquidated. This function is valid only if user is not solvent by `_isSolvent()`.
     /// @param user The user to check solvency.
-    /// @param _exchangeRate The exchange rate asset/collateral.
-    /// @return amountToSolvency The amount of collateral to be solvent.
+    /// @param _exchangeRate the exchange rate asset/collateral.
+    /// @return amountToSolvency the amount of collateral to be solvent.
     function computeTVLInfo(
         address user,
         uint256 _exchangeRate
@@ -232,6 +278,9 @@ abstract contract Market is MarketERC20, BoringOwnable {
         }
     }
 
+    /// @notice computes the possible liquidator reward
+    /// @notice user the user for which a liquidation operation should be performed
+    /// @param _exchangeRate the exchange rate asset/collateral to use for internal computations
     function computeLiquidatorReward(
         address user,
         uint256 _exchangeRate

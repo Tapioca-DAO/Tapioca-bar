@@ -4,10 +4,10 @@ pragma solidity ^0.8.18;
 import {BaseBoringBatchable} from "@boringcrypto/boring-solidity/contracts/BoringBatchable.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/draft-ERC20Permit.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "tapioca-periph/contracts/interfaces/IMagnetar.sol";
+import "tapioca-periph/contracts/interfaces/IYieldBoxBase.sol";
 import "tapioca-sdk/dist/contracts/libraries/LzLib.sol";
 import "tapioca-sdk/dist/contracts/token/oft/v2/OFTV2.sol";
-import "./interfaces/IYieldBox.sol";
-import "./interfaces/IMarketHelper.sol";
 
 //
 //                 .(%%%%%%%%%%%%*       *
@@ -34,9 +34,11 @@ import "./interfaces/IMarketHelper.sol";
 abstract contract BaseOFT is OFTV2, ERC20Permit, BaseBoringBatchable {
     using SafeERC20 for IERC20;
     using BytesLib for bytes;
-
-    /// @notice The YieldBox address.
-    IYieldBox public immutable yieldBox;
+    // ************ //
+    // *** VARS *** //
+    // ************ //
+    /// @notice the YieldBox address.
+    IYieldBoxBase public immutable yieldBox;
 
     uint16 public constant PT_YB_SEND_SGL_LEND = 774;
 
@@ -63,10 +65,12 @@ abstract contract BaseOFT is OFTV2, ERC20Permit, BaseBoringBatchable {
         address market;
     }
 
-    /// ==========================
-    /// ========== Events ========
-    /// ==========================
+    // ************** //
+    // *** EVENTS *** //
+    // ************** //
+    /// @notice event emitted when a lend operation is performed
     event Lend(address indexed _from, uint256 _amount);
+    /// @notice event emitted when apporval is sent
     event SendApproval(
         address _target,
         address _owner,
@@ -74,7 +78,9 @@ abstract contract BaseOFT is OFTV2, ERC20Permit, BaseBoringBatchable {
         uint256 _amount
     );
 
-    constructor(IYieldBox _yieldBox) {
+    /// @notice creates a new BaseOFT contract
+    /// @param _yieldBox the YieldBox address
+    constructor(IYieldBoxBase _yieldBox) {
         yieldBox = _yieldBox;
     }
 
@@ -83,6 +89,13 @@ abstract contract BaseOFT is OFTV2, ERC20Permit, BaseBoringBatchable {
     // ************************ //
     // *** PUBLIC FUNCTIONS *** //
     // ************************ //
+    /// @notice sends to YieldBox over layer and lends asset to market
+    /// @param _from sending address
+    /// @param _to receiver address
+    /// @param lzDstChainId LayerZero destination chain id
+    /// @param lendParams lend specific params
+    /// @param options send specific params
+    /// @param approvals approvals specific params
     function sendToYBAndLend(
         address _from,
         address _to,
@@ -151,7 +164,7 @@ abstract contract BaseOFT is OFTV2, ERC20Permit, BaseBoringBatchable {
 
         // Use market helper to deposit and add asset to market
         approve(address(lendParams.marketHelper), lendParams.amount);
-        IMarketHelper(lendParams.marketHelper).depositAndAddAsset(
+        IMagnetar(lendParams.marketHelper).depositAndAddAsset(
             lendParams.market,
             from,
             lendParams.amount,

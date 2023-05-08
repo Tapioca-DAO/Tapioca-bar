@@ -5,10 +5,10 @@ import "@boringcrypto/boring-solidity/contracts/BoringOwnable.sol";
 import "@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol";
 import "@boringcrypto/boring-solidity/contracts/libraries/BoringRebase.sol";
 
-import "../../liquidationQueue/ILiquidationQueue.sol";
-import "../../interfaces/IPenrose.sol";
 import "tapioca-periph/contracts/interfaces/ISwapper.sol";
+import "tapioca-periph/contracts/interfaces/IPenrose.sol";
 import "tapioca-periph/contracts/interfaces/ISingularity.sol";
+import "tapioca-periph/contracts/interfaces/ILiquidationQueue.sol";
 import "tapioca-sdk/dist/contracts/YieldBox/contracts/YieldBox.sol";
 
 import "../Market.sol";
@@ -36,9 +36,11 @@ contract SGLStorage is BoringOwnable, Market {
     // ************ //
     // *** VARS *** //
     // ************ //
+    /// @notice information about the accrual info
     ISingularity.AccrueInfo public accrueInfo;
+    /// @notice total assets share & amount
     Rebase public totalAsset; // elastic = yieldBox shares held by the Singularity, base = Total fractions held by asset suppliers
-
+    /// @notice liquidation queue address
     ILiquidationQueue public liquidationQueue;
 
     // YieldBox shares, from -> Yb asset type -> shares
@@ -48,42 +50,52 @@ contract SGLStorage is BoringOwnable, Market {
     bytes32 internal COLLATERAL_SIG =
         0x7d1dc38e60930664f8cbf495da6556ca091d2f92d6550877750c049864b18230; // keccak256("collateral")
 
+    /// @notice borrowing opening fee
     uint256 public borrowOpeningFee = 50; //0.05%
+    /// @notice liquidation multiplier used to compute liquidator rewards
     uint256 public liquidationMultiplier = 112000; //12%
+    /// @notice order book liquidation multiplier used to compute liquidator rewards
     uint256 public orderBookLiquidationMultiplier = 127000; //27%
+    /// @notice collateralization rate
     uint256 public lqCollateralizationRate = 25000; // 25%
 
     // ************** //
     // *** EVENTS *** //
     // ************** //
+    /// @notice event emitted when accrual happens
     event LogAccrue(
         uint256 accruedAmount,
         uint256 feeFraction,
         uint64 rate,
         uint256 utilization
     );
+    /// @notice event emitted when collateral is added
     event LogAddCollateral(
         address indexed from,
         address indexed to,
         uint256 share
     );
+    /// @notice event emitted when asset is added
     event LogAddAsset(
         address indexed from,
         address indexed to,
         uint256 share,
         uint256 fraction
     );
+    /// @notice event emitted when collateral is removed
     event LogRemoveCollateral(
         address indexed from,
         address indexed to,
         uint256 share
     );
+    /// @notice event emitted when asset is removed
     event LogRemoveAsset(
         address indexed from,
         address indexed to,
         uint256 share,
         uint256 fraction
     );
+    /// @notice event emitted when asset is borrowed
     event LogBorrow(
         address indexed from,
         address indexed to,
@@ -91,13 +103,16 @@ contract SGLStorage is BoringOwnable, Market {
         uint256 feeAmount,
         uint256 part
     );
+    /// @notice event emitted when asset is repayed
     event LogRepay(
         address indexed from,
         address indexed to,
         uint256 amount,
         uint256 part
     );
+    /// @notice event emitted when fees are extracted
     event LogWithdrawFees(address indexed feeTo, uint256 feesEarnedFraction);
+    /// @notice event emitted when fees are deposited to YieldBox
     event LogYieldBoxFeesDeposit(uint256 feeShares, uint256 ethAmount);
 
     // ***************** //
@@ -121,6 +136,7 @@ contract SGLStorage is BoringOwnable, Market {
     // ********************** //
     // *** VIEW FUNCTIONS *** //
     // ********************** //
+    /// @notice returns market's ERC20 symbol
     function symbol() public view returns (string memory) {
         return
             string(
@@ -135,6 +151,7 @@ contract SGLStorage is BoringOwnable, Market {
             );
     }
 
+    /// @notice returns market's ERC20 name
     function name() external view returns (string memory) {
         return
             string(
@@ -149,12 +166,14 @@ contract SGLStorage is BoringOwnable, Market {
             );
     }
 
+    /// @notice returns market's ERC20 decimals
     function decimals() external view returns (uint8) {
         return asset.safeDecimals();
     }
 
-    // totalSupply for ERC20 compatibility
-    // BalanceOf[user] represent a fraction
+    /// @notice returns market's ERC20 totalSupply
+    /// @dev totalSupply for ERC20 compatibility
+    ///      BalanceOf[user] represent a fraction
     function totalSupply() public view override returns (uint256) {
         return totalAsset.base;
     }
