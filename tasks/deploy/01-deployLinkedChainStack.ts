@@ -2,7 +2,6 @@ import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import inquirer from 'inquirer';
 import { buildYieldBox } from '../deployBuilds/00-buildYieldBox';
 import { buildUSD0 } from '../deployBuilds/06-buildUSDO';
-import { buildMarketProxy } from '../deployBuilds/09-buildMarketProxy';
 import { loadVM } from '../utils';
 
 // hh deployLinkedChainStack --network bsc_testnet
