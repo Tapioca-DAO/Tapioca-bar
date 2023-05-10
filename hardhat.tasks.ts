@@ -23,7 +23,6 @@ import { getParticipantSingularityInfo__task } from './tasks/views/getParticipan
 import { getSingularityMarkets__task } from './tasks/views/getSingularityMarkets';
 import { getSingularityTotals__task } from './tasks/views/getSingularityTotals';
 import { whitelistSingularity__task } from './tasks/whitelistSingularity';
-import { deployMarketHelper__task } from './tasks/deploy/05-deployMarketHelper';
 import {
     getLocalDeployments__task,
     getSDKDeployments__task,
@@ -143,12 +142,6 @@ task(
 )
     .addParam('singularity', 'Singularity address')
     .addParam('swapper', 'Swapper address');
-
-task(
-    'deployMarketHelper',
-    'Deploys MarketHelper contract',
-    deployMarketHelper__task,
-);
 
 task(
     'setLiquidationQueueExecutionSwapper',

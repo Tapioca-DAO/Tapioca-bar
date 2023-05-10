@@ -1,15 +1,13 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import inquirer from 'inquirer';
-import { Multicall3 } from 'tapioca-sdk/dist/typechain/utils/MultiCall';
+import { Multicall3 } from 'tapioca-sdk/dist/typechain/tapioca-periphery';
 import { buildYieldBox } from '../deployBuilds/00-buildYieldBox';
 import { buildPenrose } from '../deployBuilds/01-buildPenrose';
 import { buildMasterContracts } from '../deployBuilds/02-buildMasterContracts';
-import { buildMarketHelpers } from '../deployBuilds/03-buildMarketHelpers';
 import { buildMultiSwapper } from '../deployBuilds/04-buildMultiSwapper';
 import { buildUSD0 } from '../deployBuilds/06-buildUSDO';
 import { buildStableToUSD0Bidder } from '../deployBuilds/07-buildStableToUSD0Bidder';
 import { buildSingularityModules } from '../deployBuilds/08-buildSingularityModules';
-import { buildMarketProxy } from '../deployBuilds/09-buildMarketProxy';
 import { buildPenroseSetup } from '../setups/01-buildPenroseSetup';
 import { buildMasterContractsSetup } from '../setups/02-buildMasterContractsSetup';
 import { loadVM } from '../utils';
@@ -57,22 +55,8 @@ export const deployFullStack__task = async (
         throw new Error(`[-] Token not found: ${tapToken}, ${weth}`);
     }
 
-    const { deployments, getNamedAccounts } = hre;
-    const { deploy } = deployments;
-    const { deployer } = await getNamedAccounts();
-    await deploy('PenroseMock', {
-        from: deployer,
-        log: true,
-        args: [
-            hre.ethers.constants.AddressZero,
-            hre.ethers.constants.AddressZero,
-            hre.ethers.constants.AddressZero,
-            hre.ethers.constants.AddressZero,
-        ],
-    });
-    const penroseMock = await deployments.get('PenroseMock');
-
-    const multisig = await VM.getMultisig();
+    // const test = await buildTest(hre);
+    // VM.add(test);
 
     // 00 - Deploy YieldBox
     const [ybURI, yieldBox] = await buildYieldBox(hre, weth.address);
@@ -91,15 +75,11 @@ export const deployFullStack__task = async (
     const [sgl, bb] = await buildMasterContracts(hre);
     VM.add(sgl).add(bb);
 
-    // 03 - MarketHelper
-    const marketHelper = await buildMarketHelpers(hre);
-    VM.add(marketHelper);
-
     // 04 - MultiSwapper
     const multiSwapper = await buildMultiSwapper(
         hre,
+        constants[chainInfo.chainId].uniV2Router,
         constants[chainInfo.chainId].uniV2Factory,
-        constants[chainInfo.chainId].uniV2PairHash,
     );
     VM.add(multiSwapper);
 
@@ -115,17 +95,8 @@ export const deployFullStack__task = async (
     const [curveSwapper, curveStableToUsd0] = await buildStableToUSD0Bidder(
         hre,
         constants[chainInfo.chainId].crvStablePool,
-        penroseMock.address,
     );
     VM.add(curveSwapper).add(curveStableToUsd0);
-
-    // 08 MarketsProxy
-    const marketProxy = await buildMarketProxy(
-        hre,
-        chainInfo.address,
-        signer.address,
-    );
-    VM.add(marketProxy);
 
     // Add and execute
     await VM.execute(3, false);
@@ -148,7 +119,7 @@ export const deployFullStack__task = async (
 
     const multiCall = await VM.getMulticall();
 
-    const calls: Multicall3.Call3Struct[] = [
+    const calls: Multicall3.CallStruct[] = [
         ...(await buildPenroseSetup(hre, vmList, signer.address)),
         ...(await buildMasterContractsSetup(hre, vmList)),
     ];
@@ -157,7 +128,7 @@ export const deployFullStack__task = async (
     console.log('[+] After deployment setup calls number: ', calls.length);
     if (calls.length > 0) {
         try {
-            const tx = await (await multiCall.aggregate3(calls)).wait(1);
+            const tx = await (await multiCall.multicall(calls)).wait(1);
             console.log(
                 '[+] After deployment setup multicall Tx: ',
                 tx.transactionHash,
@@ -245,7 +216,7 @@ const constants: { [key: string]: any } = {
         feeTo: '0x40282d3Cf4890D9806BC1853e97a59C93D813653',
         feeCollector: '0x40282d3Cf4890D9806BC1853e97a59C93D813653', //for liquidation queue
         uniV2Factory: '0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f',
-        uniV2Router: '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D ',
+        uniV2Router: '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D',
         uniV2PairHash:
             '0x68ddfd89d43db94fbd68a4abd2861ebcbfea56c0fd36334bbb95f0661c3171a2',
         crvStablePool: '0x803147a1f65f9b838e7be39bac1a4f51e6d29a18', //random address
@@ -325,7 +296,7 @@ const constants: { [key: string]: any } = {
         feeTo: '0x40282d3Cf4890D9806BC1853e97a59C93D813653',
         feeCollector: '0x40282d3Cf4890D9806BC1853e97a59C93D813653', //for liquidation queue
         uniV2Factory: '0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f',
-        uniV2Router: '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D ',
+        uniV2Router: '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D',
         uniV2PairHash:
             '0x68ddfd89d43db94fbd68a4abd2861ebcbfea56c0fd36334bbb95f0661c3171a2',
         crvStablePool: '0x803147a1f65f9b838e7be39bac1a4f51e6d29a18', //random address
@@ -368,7 +339,7 @@ const constants: { [key: string]: any } = {
         feeTo: '0x40282d3Cf4890D9806BC1853e97a59C93D813653',
         feeCollector: '0x40282d3Cf4890D9806BC1853e97a59C93D813653', //for liquidation queue
         uniV2Factory: '0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f',
-        uniV2Router: '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D ',
+        uniV2Router: '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D',
         uniV2PairHash:
             '0x68ddfd89d43db94fbd68a4abd2861ebcbfea56c0fd36334bbb95f0661c3171a2',
         crvStablePool: '0x803147a1f65f9b838e7be39bac1a4f51e6d29a18', //random address
@@ -410,7 +381,7 @@ const constants: { [key: string]: any } = {
         feeTo: '0x40282d3Cf4890D9806BC1853e97a59C93D813653',
         feeCollector: '0x40282d3Cf4890D9806BC1853e97a59C93D813653', //for liquidation queue
         uniV2Factory: '0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f',
-        uniV2Router: '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D ',
+        uniV2Router: '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D',
         uniV2PairHash:
             '0x68ddfd89d43db94fbd68a4abd2861ebcbfea56c0fd36334bbb95f0661c3171a2',
         crvStablePool: '0x803147a1f65f9b838e7be39bac1a4f51e6d29a18', //random address
@@ -453,7 +424,7 @@ const constants: { [key: string]: any } = {
         feeTo: '0x40282d3Cf4890D9806BC1853e97a59C93D813653',
         feeCollector: '0x40282d3Cf4890D9806BC1853e97a59C93D813653', //for liquidation queue
         uniV2Factory: '0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f',
-        uniV2Router: '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D ',
+        uniV2Router: '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D',
         uniV2PairHash:
             '0x68ddfd89d43db94fbd68a4abd2861ebcbfea56c0fd36334bbb95f0661c3171a2',
         crvStablePool: '0x803147a1f65f9b838e7be39bac1a4f51e6d29a18', //random address

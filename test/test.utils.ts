@@ -4,20 +4,44 @@ import { BigNumber, BigNumberish, Signature, Wallet } from 'ethers';
 import { splitSignature } from 'ethers/lib/utils';
 import hre, { ethers } from 'hardhat';
 import {
-    CurveStableToUsdoBidder,
+    OracleMock__factory,
+    OracleMock,
     ERC20Mock,
+    ERC20Mock__factory,
+    UniswapV2Factory__factory,
+    UniswapV2Router02__factory,
+    LZEndpointMock__factory,
+    CurvePoolMock__factory,
+} from '../gitsub_tapioca-sdk/src/typechain/tapioca-mocks';
+
+import {
+    YieldBox__factory,
+    YieldBoxURIBuilder__factory,
+    ERC20WithoutStrategy__factory,
+    YieldBox,
+} from '../gitsub_tapioca-sdk/src/typechain/YieldBox';
+
+import {
+    CurveSwapper__factory,
+    CurveSwapper,
+    UniswapV2Swapper__factory,
+} from '../gitsub_tapioca-sdk/src/typechain/tapioca-periphery';
+import { MagnetarV2__factory } from '../gitsub_tapioca-sdk/src/typechain/tapioca-periphery/factories/Magnetar';
+
+import {
+    UniswapV2Factory,
+    UniswapV2Router02,
+} from '../gitsub_tapioca-sdk/src/typechain/tapioca-mocks/uniswapv2';
+import {
+    CurveStableToUsdoBidder,
     ERC20Permit,
     MultiSwapper,
-    OracleMock,
     Penrose,
     SGLERC20,
     Singularity,
-    UniswapV2Factory,
-    UniswapV2Router02,
     USDO,
-    WETH9Mock,
-    YieldBox,
 } from '../typechain';
+import { TapiocaOFT } from 'tapioca-sdk/dist/typechain/TapiocaZ';
 
 ethers.utils.Logger.setLogLevel(ethers.utils.Logger.levels.ERROR);
 
@@ -46,9 +70,11 @@ async function registerUsd0Contract(
     owner: string,
     staging?: boolean,
 ) {
-    const lzEndpointContract = await (
-        await ethers.getContractFactory('LZEndpointMock')
-    ).deploy(chainId, { gasPrice: gasPrice });
+    const deployer = (await ethers.getSigners())[0];
+    const LZEndpointMock = new LZEndpointMock__factory(deployer);
+    const lzEndpointContract = await LZEndpointMock.deploy(chainId, {
+        gasPrice: gasPrice,
+    });
     await lzEndpointContract.deployed();
     log(
         `Deployed LZEndpointMock ${lzEndpointContract.address} with args [${chainId}]`,
@@ -75,22 +101,21 @@ async function registerUsd0Contract(
     return { usd0, lzEndpointContract };
 }
 async function registerUniswapV2(staging?: boolean) {
+    const deployer = (await ethers.getSigners())[0];
+    const UniswapV2Factory = new UniswapV2Factory__factory(deployer);
+
     const __uniFactoryFee = ethers.Wallet.createRandom();
-    const __uniFactory = await (
-        await ethers.getContractFactory('UniswapV2Factory')
-    ).deploy(__uniFactoryFee.address, { gasPrice: gasPrice });
-    await __uniFactory.deployed();
+    const __uniFactory = await UniswapV2Factory.deploy(__uniFactoryFee.address);
     log(
         `Deployed UniswapV2Factory ${__uniFactory.address} with args [${__uniFactoryFee.address}]`,
         staging,
     );
 
-    const __uniRouter = await (
-        await ethers.getContractFactory('UniswapV2Router02')
-    ).deploy(__uniFactory.address, ethers.constants.AddressZero, {
-        gasPrice: gasPrice,
-    });
-    await __uniRouter.deployed();
+    const UniswapV2Router02 = new UniswapV2Router02__factory(deployer);
+    const __uniRouter = await UniswapV2Router02.deploy(
+        __uniFactory.address,
+        ethers.constants.AddressZero,
+    );
     log(
         `Deployed UniswapV2Router02 ${__uniRouter.address} with args [${__uniFactory.address}, ${ethers.constants.AddressZero}]`,
         staging,
@@ -105,61 +130,57 @@ async function registerERC20Tokens(staging?: boolean) {
     const mintLimitWbtc = ethers.BigNumber.from((1e8).toString()).mul(1e15);
     const supplyStartWbtc = ethers.BigNumber.from((1e8).toString()).mul(1e9);
 
-    // Deploy ERC20FactoryMock
-    const erc20Factory = await (
-        await ethers.getContractFactory('ERC20FactoryMock')
-    ).deploy({ gasPrice: gasPrice });
-    await erc20Factory.deployed();
-    log(
-        `Deployed ERC20FactoryMock ${erc20Factory.address} with no arguments`,
-        staging,
-    );
+    const deployer = (await ethers.getSigners())[0];
+    const ERC20Mock = new ERC20Mock__factory(deployer);
 
     //Deploy USDC
-    await erc20Factory.deployToken(supplyStart, 18, mintLimitERC20, {
-        gasPrice: gasPrice,
-    });
-    const usdc = await ethers.getContractAt(
-        'ERC20Mock',
-        await erc20Factory.last(),
+    const usdc = await ERC20Mock.deploy(
+        'USDC Mock',
+        'USDCM',
+        supplyStart,
+        18,
+        deployer.address,
     );
     log(
         `Deployed USDC ${usdc.address} with args [${supplyStart},18, ${mintLimitERC20}]`,
         staging,
     );
+    await usdc.updateMintLimit(supplyStart.mul(10));
 
     //Deploy WBTC
-    await erc20Factory.deployToken(supplyStartWbtc, 8, mintLimitWbtc, {
-        gasPrice: gasPrice,
-    });
-    const wbtc = await ethers.getContractAt(
-        'ERC20Mock',
-        await erc20Factory.last(),
+    const wbtc = await ERC20Mock.deploy(
+        'WBTC Mock',
+        'WBTCM',
+        supplyStartWbtc,
+        8,
+        deployer.address,
     );
-    log(
-        `Deployed WBTC ${wbtc.address} with args [${supplyStartWbtc},8,${mintLimitWbtc}]`,
-        staging,
-    );
+    await wbtc.updateMintLimit(supplyStartWbtc.mul(10));
 
     //Deploy TAP
-    await erc20Factory.deployToken(supplyStart, 18, mintLimitERC20, {
-        gasPrice: gasPrice,
-    });
-    const tap = await ethers.getContractAt(
-        'ERC20Mock',
-        await erc20Factory.last(),
+    const tap = await ERC20Mock.deploy(
+        'TAP Mock',
+        'TAPM',
+        supplyStart,
+        18,
+        deployer.address,
     );
     log(
         `Deployed TAP ${tap.address} with args [${supplyStart},18,${mintLimitERC20}]`,
         staging,
     );
+    await tap.updateMintLimit(supplyStart.mul(10));
 
     // Deploy WETH
-    const weth = await (
-        await ethers.getContractFactory('WETH9Mock')
-    ).deploy(mintLimitERC20, { gasPrice: gasPrice });
-    await weth.deployed();
+    const weth = await ERC20Mock.deploy(
+        'WETH Mock',
+        'WETHM',
+        supplyStart,
+        18,
+        deployer.address,
+    );
     log(`Deployed WETH ${weth.address} with no arguments`, staging);
+    await weth.updateMintLimit(supplyStart.mul(10));
 
     await verifyEtherscan(
         usdc.address,
@@ -178,27 +199,27 @@ async function registerERC20Tokens(staging?: boolean) {
     );
     await verifyEtherscan(weth.address, [mintLimitERC20], staging);
 
-    return { usdc, weth, tap, wbtc, erc20Factory };
+    return { usdc, weth, tap, wbtc };
 }
 
 async function registerYieldBox(wethAddress: string, staging?: boolean) {
+    const deployer = (await ethers.getSigners())[0];
+
+    const YieldBoxURIBuilder = new YieldBoxURIBuilder__factory(deployer);
+    const YieldBox = new YieldBox__factory(deployer);
+
     // Deploy URIBuilder
-    const uriBuilder = await (
-        await ethers.getContractFactory('YieldBoxURIBuilder')
-    ).deploy({ gasPrice: gasPrice });
-    await uriBuilder.deployed();
+    const uriBuilder = await YieldBoxURIBuilder.deploy();
     log(
         `Deployed YieldBoxURIBuilder ${uriBuilder.address} with no arguments`,
         staging,
     );
 
     // Deploy yieldBox
-    const yieldBox = await (
-        await ethers.getContractFactory('YieldBox')
-    ).deploy(ethers.constants.AddressZero, uriBuilder.address, {
-        gasPrice: gasPrice,
-    });
-    await yieldBox.deployed();
+    const yieldBox = await YieldBox.deploy(
+        ethers.constants.AddressZero,
+        uriBuilder.address,
+    );
     log(
         `Deployed YieldBox ${yieldBox.address} with args [${ethers.constants.AddressZero}, ${uriBuilder.address}] `,
         staging,
@@ -297,17 +318,6 @@ async function setPenroseAssets(
     };
 }
 
-async function deployProxyDeployer() {
-    const proxyDeployer = await (
-        await ethers.getContractFactory('ProxyDeployer')
-    ).deploy({
-        gasPrice: gasPrice,
-    });
-    await proxyDeployer.deployed();
-
-    return { proxyDeployer };
-}
-
 async function addUniV2Liquidity(
     deployerAddress: string,
     token1: any,
@@ -363,7 +373,7 @@ async function addUniV2Liquidity(
 async function addUniV2UsdoWethLiquidity(
     deployerAddress: string,
     usdo: ERC20Mock,
-    weth: WETH9Mock,
+    weth: ERC20Mock,
     __uniFactory: UniswapV2Factory,
     __uniRouter: UniswapV2Router02,
 ) {
@@ -386,7 +396,7 @@ async function createUniV2Usd0Pairs(
     deployerAddress: string,
     uniFactory: UniswapV2Factory,
     uniRouter: UniswapV2Router02,
-    weth: WETH9Mock,
+    weth: ERC20Mock,
     tap: ERC20Mock,
     usdo: USDO,
 ) {
@@ -436,7 +446,7 @@ async function createUniV2Usd0Pairs(
 
 async function uniV2EnvironnementSetup(
     deployerAddress: string,
-    weth: WETH9Mock,
+    weth: ERC20Mock,
     usdc: ERC20Mock,
     tap: ERC20Mock,
     wbtc: ERC20Mock,
@@ -565,20 +575,32 @@ async function uniV2EnvironnementSetup(
     };
 }
 
+async function registerMagnetar(deployer: any) {
+    const MagnetarV2 = new MagnetarV2__factory(deployer);
+    const magnetar = await MagnetarV2.deploy(deployer.address);
+    return { magnetar };
+}
+
 async function registerMultiSwapper(
+    deployer: any,
+    yieldBox: YieldBox,
     bar: Penrose,
     __uniFactoryAddress: string,
-    __uniFactoryPairCodeHash: string,
+    __uniRouterAddress: string,
     staging?: boolean,
 ) {
-    const multiSwapper = await (
-        await ethers.getContractFactory('MultiSwapper')
-    ).deploy(__uniFactoryAddress, bar.address, __uniFactoryPairCodeHash, {
-        gasPrice: gasPrice,
-    });
-    await multiSwapper.deployed();
+    const MultiSwapper = new UniswapV2Swapper__factory(deployer);
+    const multiSwapper = await MultiSwapper.deploy(
+        __uniRouterAddress,
+        __uniFactoryAddress,
+        yieldBox.address,
+        {
+            gasPrice: gasPrice,
+        },
+    );
+
     log(
-        `Deployed MultiSwapper ${multiSwapper.address} with args [${__uniFactoryAddress}, ${bar.address}, ${__uniFactoryPairCodeHash}]`,
+        `Deployed MultiSwapper ${multiSwapper.address} with args [${__uniRouterAddress}, ${__uniFactoryAddress}, ${yieldBox.address}]`,
         staging,
     );
 
@@ -589,7 +611,7 @@ async function registerMultiSwapper(
 
     await verifyEtherscan(
         multiSwapper.address,
-        [__uniFactoryAddress, bar.address, __uniFactoryPairCodeHash],
+        [__uniRouterAddress, __uniFactoryAddress, yieldBox.address],
         staging,
     );
 
@@ -648,9 +670,9 @@ async function registerSingularity(
     mediumRiskMC: string,
     yieldBox: YieldBox,
     bar: Penrose,
-    weth: WETH9Mock | ERC20Mock,
+    weth: ERC20Mock | USDO,
     wethAssetId: BigNumberish,
-    usdc: ERC20Mock,
+    usdc: ERC20Mock | TapiocaOFTMock,
     usdcAssetId: BigNumberish,
     wethUsdcOracle: OracleMock,
     exchangeRatePrecision?: BigNumberish,
@@ -745,14 +767,18 @@ async function registerUniUsdoToWethBidder(
     return { usdoToWethBidder };
 }
 async function deployCurveStableToUsdoBidder(
-    bar: Penrose,
+    yieldBox: YieldBox,
     usdc: ERC20Mock,
     usdo: USDO,
     staging?: boolean,
 ) {
-    const curvePoolMock = await (
-        await ethers.getContractFactory('CurvePoolMock')
-    ).deploy(usdo.address, usdc.address, { gasPrice: gasPrice });
+    const deployer = (await ethers.getSigners())[0];
+    const CurvePoolMock = new CurvePoolMock__factory(deployer);
+    const curvePoolMock = await CurvePoolMock.deploy(
+        usdo.address,
+        usdc.address,
+        { gasPrice: gasPrice },
+    );
 
     await usdo.setMinterStatus(curvePoolMock.address, true);
     log(
@@ -760,11 +786,14 @@ async function deployCurveStableToUsdoBidder(
         staging,
     );
 
-    const curveSwapper = await (
-        await ethers.getContractFactory('CurveSwapper')
-    ).deploy(curvePoolMock.address, bar.address, { gasPrice: gasPrice });
+    const CurveSwapper = new CurveSwapper__factory(deployer);
+    const curveSwapper = await CurveSwapper.deploy(
+        curvePoolMock.address,
+        yieldBox.address,
+        { gasPrice: gasPrice },
+    );
     log(
-        `Deployed CurveSwapper ${curveSwapper.address} with args [${curvePoolMock.address},${bar.address}]`,
+        `Deployed CurveSwapper ${curveSwapper.address} with args [${curvePoolMock.address}, ${yieldBox.address}]`,
         staging,
     );
 
@@ -784,7 +813,7 @@ async function deployCurveStableToUsdoBidder(
     );
     await verifyEtherscan(
         curveSwapper.address,
-        [curvePoolMock.address, bar.address],
+        [curvePoolMock.address, yieldBox.address],
         staging,
     );
     await verifyEtherscan(
@@ -798,7 +827,7 @@ async function deployCurveStableToUsdoBidder(
 
 async function createWethUsd0Singularity(
     usd0: USDO,
-    weth: WETH9Mock,
+    weth: ERC20Mock,
     bar: Penrose,
     usdoAssetId: any,
     wethAssetId: any,
@@ -829,9 +858,13 @@ async function createWethUsd0Singularity(
     const collateralSwapPath = [usd0.address, weth.address];
 
     // Deploy WethUSD0 mock oracle
-    const wethUsd0Oracle = await (
-        await ethers.getContractFactory('OracleMock')
-    ).deploy('WETHUSD0Mock', 'WSM', (1e18).toString(), { gasPrice: gasPrice });
+    const OracleMock = new OracleMock__factory((await ethers.getSigners())[0]);
+    const wethUsd0Oracle = await OracleMock.deploy(
+        'WETHUSD0Mock',
+        'WSM',
+        (1e18).toString(),
+        { gasPrice: gasPrice },
+    );
     await wethUsd0Oracle.deployed();
     log(
         `Deployed WethUsd0 mock oracle at ${wethUsd0Oracle.address} with no arguments`,
@@ -999,7 +1032,7 @@ async function registerBigBangMarket(
     mediumRiskBigBangMC: string,
     yieldBox: YieldBox,
     bar: Penrose,
-    collateral: WETH9Mock | ERC20Mock,
+    collateral: ERC20Mock,
     collateralId: BigNumberish,
     oracle: OracleMock,
     exchangeRatePrecision?: BigNumberish,
@@ -1066,11 +1099,10 @@ export async function createTokenEmptyStrategy(
     yieldBox: string,
     token: string,
 ) {
-    const noStrategy = await (
-        await ethers.getContractFactory('ERC20WithoutStrategy')
-    ).deploy(yieldBox, token, {
-        gasPrice: gasPrice,
-    });
+    const ERC20WithoutStrategy = new ERC20WithoutStrategy__factory(
+        (await ethers.getSigners())[0],
+    );
+    const noStrategy = await ERC20WithoutStrategy.deploy(yieldBox, token);
     await noStrategy.deployed();
     return noStrategy;
 }
@@ -1218,12 +1250,16 @@ export async function register(staging?: boolean) {
     eoas.shift(); //remove deployer
 
     // ------------------- Deploy WethUSDC mock oracle -------------------
+    const OracleMock = new OracleMock__factory(deployer);
     log('Deploying WethUSDC mock oracle', staging);
-    const wethUsdcOracle = await (
-        await ethers.getContractFactory('OracleMock')
-    ).deploy('WETHMOracle', 'WETHMOracle', (1e18).toString(), {
-        gasPrice: gasPrice,
-    });
+    const wethUsdcOracle = await OracleMock.deploy(
+        'WETHMOracle',
+        'WETHMOracle',
+        (1e18).toString(),
+        {
+            gasPrice: gasPrice,
+        },
+    );
     await wethUsdcOracle.deployed();
     log(
         `Deployed WethUSDC mock oracle ${wethUsdcOracle.address} with no arguments `,
@@ -1236,11 +1272,14 @@ export async function register(staging?: boolean) {
     log('Price was set for WethUSDC mock oracle ', staging);
 
     // ------------------- Deploy WbtcUSDC mock oracle -------------------
-    const wbtcUsdcOracle = await (
-        await ethers.getContractFactory('OracleMock')
-    ).deploy('OracleMock', 'OracleMock', (1e18).toString(), {
-        gasPrice: gasPrice,
-    });
+    const wbtcUsdcOracle = await OracleMock.deploy(
+        'OracleMock',
+        'OracleMock',
+        (1e18).toString(),
+        {
+            gasPrice: gasPrice,
+        },
+    );
     await wbtcUsdcOracle.deployed();
     log(
         `Deployed WbtcUDSC mock oracle ${wbtcUsdcOracle.address} with no arguments `,
@@ -1254,11 +1293,14 @@ export async function register(staging?: boolean) {
 
     // -------------------  Deploy WethUSD0 mock oracle -------------------
     log('Deploying USD0WETH mock oracle', staging);
-    const usd0WethOracle = await (
-        await ethers.getContractFactory('OracleMock')
-    ).deploy('USD0Oracle', 'USD0Oracle', (1e18).toString(), {
-        gasPrice: gasPrice,
-    });
+    const usd0WethOracle = await OracleMock.deploy(
+        'USD0Oracle',
+        'USD0Oracle',
+        (1e18).toString(),
+        {
+            gasPrice: gasPrice,
+        },
+    );
     await usd0WethOracle.deployed();
     log(
         `Deployed USD0WETH mock oracle ${usd0WethOracle.address} with no arguments`,
@@ -1273,11 +1315,9 @@ export async function register(staging?: boolean) {
 
     // ------------------- 1  Deploy tokens -------------------
     log('Deploying Tokens', staging);
-    const { usdc, weth, tap, wbtc, erc20Factory } = await registerERC20Tokens(
-        staging,
-    );
+    const { usdc, weth, tap, wbtc } = await registerERC20Tokens(staging);
     log(
-        `Deployed Tokens ${tap.address}, ${usdc.address}, ${weth.address}, ${wbtc.address} & Factory ${erc20Factory.address}`,
+        `Deployed Tokens ${tap.address}, ${usdc.address}, ${weth.address}, ${wbtc.address}`,
         staging,
     );
 
@@ -1343,9 +1383,11 @@ export async function register(staging?: boolean) {
     // ------------------- 5 Deploy MultiSwapper -------------------
     log('Registering MultiSwapper', staging);
     const { multiSwapper } = await registerMultiSwapper(
+        deployer,
+        yieldBox,
         bar,
         __uniFactory.address,
-        await __uniFactory.pairCodeHash(),
+        __uniRouter.address,
         staging,
     );
     log(`Deployed MultiSwapper ${multiSwapper.address}`, staging);
@@ -1404,6 +1446,10 @@ export async function register(staging?: boolean) {
         wbtcUsdcSingularityData._sglLiquidationModule;
 
     log(`Deployed WbtcUsdcSingularity ${wbtcUsdcSingularity.address}`, staging);
+
+    log('Deploying Magnetar', staging);
+    const { magnetar } = await registerMagnetar(deployer);
+    log(`Deployed Magnetar ${magnetar.address}`, staging);
 
     // ------------------- 8 Set feeTo -------------------
     log('Setting feeTo and feeVeTap', staging);
@@ -1528,17 +1574,6 @@ export async function register(staging?: boolean) {
         staging,
     );
 
-    // ------------------- 15 Create MarketsHelper -------------------
-    log('Deploying MarketsHelper', staging);
-    const marketsHelper = await (
-        await ethers.getContractFactory('MarketsHelper')
-    ).deploy({ gasPrice: gasPrice });
-    await marketsHelper.deployed();
-    log(
-        `Deployed MarketsHelper ${marketsHelper.address} with no args`,
-        staging,
-    );
-
     // ------------------- 16 Create UniswapUsdoToWethBidder -------------------
     log('Deploying UniswapUsdoToWethBidder', staging);
     const { usdoToWethBidder } = await registerUniUsdoToWethBidder(
@@ -1555,7 +1590,7 @@ export async function register(staging?: boolean) {
         //------------------- 17 Create CurveStableToUsdoBidder -------------------
         log('Deploying CurveStableToUsdoBidder', staging);
         const { stableToUsdoBidder } = await deployCurveStableToUsdoBidder(
-            bar,
+            yieldBox,
             usdc,
             usd0,
             staging,
@@ -1590,8 +1625,6 @@ export async function register(staging?: boolean) {
         );
     }
 
-    // ------------------- 19 Create ProxyDeployer -------------------
-    const { proxyDeployer } = await deployProxyDeployer();
     /**
      * OTHERS
      */
@@ -1623,7 +1656,6 @@ export async function register(staging?: boolean) {
         wbtcAssetId,
         usdcStrategy,
         wbtcStrategy,
-        erc20Factory,
         tap,
         collateralWbtcSwapPath,
         wethUsdcOracle,
@@ -1639,7 +1671,6 @@ export async function register(staging?: boolean) {
         wbtcUsdcSingularity,
         _sglWbtcUsdcLendingBorrowingModule,
         _sglWbtcUsdcLiquidationModule,
-        marketsHelper,
         eoa1,
         multiSwapper,
         singularityFeeTo,
@@ -1651,7 +1682,7 @@ export async function register(staging?: boolean) {
         usdoToWethBidder,
         mediumRiskMC,
         mediumRiskBigBangMC,
-        proxyDeployer,
+        magnetar,
         registerSingularity,
         __uniFactory,
         __uniRouter,
@@ -1659,6 +1690,7 @@ export async function register(staging?: boolean) {
         __wethTapMockPair,
         __wethUsdoMockPair,
         __tapUsdoMockPair,
+        createSimpleSwapData,
     };
 
     /**
@@ -1871,3 +1903,31 @@ export async function register(staging?: boolean) {
 
     return { ...initialSetup, ...utilFuncs, verifyEtherscanQueue };
 }
+
+const createSimpleSwapData = (
+    token1: string,
+    token2: string,
+    amountIn: BigNumberish,
+    amountOut: BigNumberish,
+) => {
+    const swapData = {
+        tokensData: {
+            tokenIn: token1,
+            tokenInId: 0,
+            tokenOut: token2,
+            tokenOutId: 0,
+        },
+        amountData: {
+            amountIn: amountIn,
+            amountOut: amountOut,
+            shareIn: 0,
+            shareOut: 0,
+        },
+        yieldBoxData: {
+            withdrawFromYb: false,
+            depositToYb: false,
+        },
+    };
+
+    return swapData;
+};

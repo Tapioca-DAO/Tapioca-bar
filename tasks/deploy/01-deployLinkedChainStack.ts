@@ -2,7 +2,6 @@ import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import inquirer from 'inquirer';
 import { buildYieldBox } from '../deployBuilds/00-buildYieldBox';
 import { buildUSD0 } from '../deployBuilds/06-buildUSDO';
-import { buildMarketProxy } from '../deployBuilds/09-buildMarketProxy';
 import { loadVM } from '../utils';
 
 // hh deployLinkedChainStack --network bsc_testnet
@@ -45,14 +44,6 @@ export const deployLinkedChainStack__task = async (
     // 02 USDO
     const usdo = await buildUSD0(hre, chainInfo.address, signer.address);
     VM.add(usdo);
-
-    // 03 - MarketsProxy
-    const marketProxy = await buildMarketProxy(
-        hre,
-        chainInfo.address,
-        signer.address,
-    );
-    VM.add(marketProxy);
 
     // Add and execute
     await VM.execute(3, false);

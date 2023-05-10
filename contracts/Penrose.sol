@@ -7,8 +7,8 @@ import "@boringcrypto/boring-solidity/contracts/BoringFactory.sol";
 import "tapioca-sdk/dist/contracts/YieldBox/contracts/YieldBox.sol";
 import "tapioca-sdk/dist/contracts/YieldBox/contracts/interfaces/IYieldBox.sol";
 import "tapioca-sdk/dist/contracts/YieldBox/contracts/strategies/ERC20WithoutStrategy.sol";
-import "./singularity/interfaces/ISingularity.sol";
-import "./interfaces/IPenrose.sol";
+import "tapioca-periph/contracts/interfaces/ISingularity.sol";
+import "tapioca-periph/contracts/interfaces/IPenrose.sol";
 
 // TODO: Permissionless market deployment
 ///     + asset registration? (toggle to renounce ownership so users can call)
@@ -22,33 +22,29 @@ contract Penrose is BoringOwnable, BoringFactory {
     address public conservator;
     /// @notice returns the pause state of the contract
     bool public paused;
-
     /// @notice returns the YieldBox contract
     YieldBox public immutable yieldBox;
-
     /// @notice returns the TAP contract
     IERC20 public immutable tapToken;
     /// @notice returns TAP asset id registered in the YieldBox contract
     uint256 public immutable tapAssetId;
-
     /// @notice returns USDO contract
-    IUSDO public usdoToken;
-
+    IERC20 public usdoToken;
     /// @notice returns USDO asset id registered in the YieldBox contract
     uint256 public usdoAssetId;
-
     /// @notice returns the WETH contract
     IERC20 public immutable wethToken;
-
     /// @notice returns WETH asset id registered in the YieldBox contract
     uint256 public immutable wethAssetId;
 
-    /// @notice master contracts registered
+    /// @notice Singularity master contracts
     IPenrose.MasterContract[] public singularityMasterContracts;
+    /// @notice BigBang master contracts
     IPenrose.MasterContract[] public bigbangMasterContracts;
 
-    // Used to check if a master contract is registered
+    // Used to check if a Singularity master contract is registered
     mapping(address => bool) isSingularityMasterContractRegistered;
+    // Used to check if a BigBang master contract is registered
     mapping(address => bool) isBigBangMasterContractRegistered;
 
     /// @notice protocol fees
@@ -57,9 +53,12 @@ contract Penrose is BoringOwnable, BoringFactory {
     /// @notice whitelisted swappers
     mapping(ISwapper => bool) public swappers;
 
+    /// @notice BigBang ETH market address
     address public bigBangEthMarket;
+    /// @notice BigBang ETH market debt rate
     uint256 public bigBangEthDebtRate;
 
+    /// @notice registered empty strategies
     mapping(address => IStrategy) public emptyStrategies;
 
     /// @notice creates a Penrose contract
@@ -118,25 +117,38 @@ contract Penrose is BoringOwnable, BoringFactory {
     // **************//
     // *** EVENTS *** //
     // ************** //
-    event ProtocolWithdrawal(IFee[] markets, uint256 timestamp);
+    /// @notice event emitted when fees are extracted
+    event ProtocolWithdrawal(IMarket[] markets, uint256 timestamp);
+    /// @notice event emitted when Singularity master contract is registered
     event RegisterSingularityMasterContract(
         address location,
         IPenrose.ContractType risk
     );
+    /// @notice event emitted when BigBang master contract is registered
     event RegisterBigBangMasterContract(
         address location,
         IPenrose.ContractType risk
     );
+    /// @notice event emitted when Singularity is registered
     event RegisterSingularity(address location, address masterContract);
+    /// @notice event emitted when BigBang is registered
     event RegisterBigBang(address location, address masterContract);
+    /// @notice event emitted when feeTo address is updated
     event FeeToUpdate(address newFeeTo);
-    event FeeVeTapUpdate(address newFeeVeTap);
+    /// @notice event emitted when ISwapper address is updated
     event SwapperUpdate(address swapper, bool isRegistered);
+    /// @notice event emitted when USDO address is updated
     event UsdoTokenUpdated(address indexed usdoToken, uint256 assetId);
+    /// @notice event emitted when conservator is updated
     event ConservatorUpdated(address indexed old, address indexed _new);
+    /// @notice event emitted when pause state is updated
     event PausedUpdated(bool oldState, bool newState);
+    /// @notice event emitted when BigBang ETH market address is updated
     event BigBangEthMarketSet(address indexed _newAddress);
+    /// @notice event emitted when BigBang ETH market debt rate is updated
     event BigBangEthMarketDebtRate(uint256 _rate);
+    /// @notice event emitted when fees are deposited to YieldBox
+    event LogYieldBoxFeesDeposit(uint256 feeShares, uint256 ethAmount);
 
     // ******************//
     // *** MODIFIERS *** //
@@ -165,7 +177,6 @@ contract Penrose is BoringOwnable, BoringFactory {
     // ********************** //
     // *** VIEW FUNCTIONS *** //
     // ********************** //
-
     /// @notice Get all the Singularity contract addresses
     /// @return markets list of available markets
     function singularityMarkets()
@@ -195,13 +206,14 @@ contract Penrose is BoringOwnable, BoringFactory {
     // ************************ //
     // *** PUBLIC FUNCTIONS *** //
     // ************************ //
-
-    /// @notice Loop through the master contracts and call `depositFeesToYieldBox()` to each one of their clones.
+    /// @notice Loop through the master contracts and call `_depositFeesToYieldBox()` to each one of their clones.
     /// @dev `swappers_` can have one element that'll be used for all clones. Or one swapper per MasterContract.
     /// @dev Fees are withdrawn in TAP and sent to the FeeDistributor contract
-    /// @param swappers_ One or more swappers to convert the asset to TAP.
+    /// @param markets_ Singularity &/ BigBang markets array
+    /// @param swappers_ one or more swappers to convert the asset to TAP.
+    /// @param swapData_ swap data for each swapper
     function withdrawAllSingularityFees(
-        IFee[] calldata markets_,
+        IMarket[] calldata markets_,
         ISwapper[] calldata swappers_,
         IPenrose.SwapData[] calldata swapData_
     ) public notPaused {
@@ -217,12 +229,14 @@ contract Penrose is BoringOwnable, BoringFactory {
         emit ProtocolWithdrawal(markets_, block.timestamp);
     }
 
-    /// @notice Loop through the master contracts and call `depositFeesToYieldBox()` to each one of their clones.
+    /// @notice Loop through the master contracts and call `_depositFeesToYieldBox()` to each one of their clones.
     /// @dev `swappers_` can have one element that'll be used for all clones. Or one swapper per MasterContract.
     /// @dev Fees are withdrawn in TAP and sent to the FeeDistributor contract
+    /// @param markets_ Singularity &/ BigBang markets array
     /// @param swappers_ One or more swappers to convert the asset to TAP.
+    /// @param swapData_ swap data for each swapper
     function withdrawAllBigBangFees(
-        IFee[] calldata markets_,
+        IMarket[] calldata markets_,
         ISwapper[] calldata swappers_,
         IPenrose.SwapData[] calldata swapData_
     ) public notPaused {
@@ -241,6 +255,7 @@ contract Penrose is BoringOwnable, BoringFactory {
     // *** OWNER FUNCTIONS *** //
     // *********************** //
     /// @notice sets the main BigBang market debt rate
+    /// @dev can only be called by the owner
     /// @param _rate the new rate
     function setBigBangEthMarketDebtRate(uint256 _rate) external onlyOwner {
         bigBangEthDebtRate = _rate;
@@ -255,6 +270,7 @@ contract Penrose is BoringOwnable, BoringFactory {
     }
 
     /// @notice updates the pause state of the contract
+    /// @dev can only be called by the conservator
     /// @param val the new value
     function updatePause(bool val) external {
         require(msg.sender == conservator, "Penrose: unauthorized");
@@ -274,9 +290,10 @@ contract Penrose is BoringOwnable, BoringFactory {
 
     /// @notice Set the USDO token
     /// @dev sets usdoToken and usdoAssetId
+    ///      can only by called by the owner
     /// @param _usdoToken the USDO token address
     function setUsdoToken(address _usdoToken) external onlyOwner {
-        usdoToken = IUSDO(_usdoToken);
+        usdoToken = IERC20(_usdoToken);
 
         emptyStrategies[_usdoToken] = IStrategy(
             address(
@@ -298,6 +315,7 @@ contract Penrose is BoringOwnable, BoringFactory {
     }
 
     /// @notice Register a Singularity master contract
+    /// @dev can only be called by the owner
     /// @param mcAddress The address of the contract
     /// @param contractType_ The risk type of the contract
     function registerSingularityMasterContract(
@@ -319,6 +337,7 @@ contract Penrose is BoringOwnable, BoringFactory {
     }
 
     /// @notice Register a BigBang master contract
+    /// @dev can only be called by the owner
     /// @param mcAddress The address of the contract
     /// @param contractType_ The risk type of the contract
     function registerBigBangMasterContract(
@@ -340,6 +359,7 @@ contract Penrose is BoringOwnable, BoringFactory {
     }
 
     /// @notice Registers a Singularity market
+    /// @dev can only be called by the owner
     /// @param mc The address of the master contract which must be already registered
     /// @param data The init data of the Singularity
     /// @param useCreate2 Whether to use create2 or not
@@ -359,6 +379,7 @@ contract Penrose is BoringOwnable, BoringFactory {
     }
 
     /// @notice Registers a BigBang market
+    /// @dev can only be called by the owner
     /// @param mc The address of the master contract which must be already registered
     /// @param data The init data of the BigBang contract
     /// @param useCreate2 Whether to use create2 or not
@@ -407,13 +428,15 @@ contract Penrose is BoringOwnable, BoringFactory {
     }
 
     /// @notice Set protocol fees address
+    /// @dev can only be called by the owner
+    /// @param feeTo_ the new feeTo address
     function setFeeTo(address feeTo_) external onlyOwner {
         feeTo = feeTo_;
         emit FeeToUpdate(feeTo_);
     }
 
     /// @notice Used to register and enable or disable swapper contracts used in closed liquidations.
-    /// MasterContract Only Admin function.
+    /// @dev can only be called by the owner
     /// @param swapper The address of the swapper contract that conforms to `ISwapper`.
     /// @param enable True to enable the swapper. To disable use False.
     function setSwapper(ISwapper swapper, bool enable) external onlyOwner {
@@ -440,15 +463,61 @@ contract Penrose is BoringOwnable, BoringFactory {
     function _withdrawAllProtocolFees(
         ISwapper[] calldata swappers_,
         IPenrose.SwapData[] calldata swapData_,
-        IFee[] memory markets_
+        IMarket[] memory markets_
     ) private {
         uint256 length = markets_.length;
         unchecked {
             for (uint256 i = 0; i < length; ) {
-                markets_[i].depositFeesToYieldBox(swappers_[i], swapData_[i]);
+                _depositFeesToYieldBox(markets_[i], swappers_[i], swapData_[i]);
                 ++i;
             }
         }
+    }
+
+    /// @notice Withdraw the balance of `feeTo`, swap asset into TAP and deposit it to yieldBox of `feeTo`
+    function _depositFeesToYieldBox(
+        IMarket market,
+        ISwapper swapper,
+        IPenrose.SwapData calldata dexData
+    ) public {
+        require(swappers[swapper], "Penrose: Invalid swapper");
+
+        uint256 feeShares = market.refreshPenroseFees(feeTo);
+        if (feeShares == 0) return;
+
+        uint256 assetId = market.assetId();
+        uint256 amount = 0;
+        if (assetId != wethAssetId) {
+            yieldBox.transfer(
+                address(this),
+                address(swapper),
+                assetId,
+                feeShares
+            );
+
+            address[] memory path = new address[](2);
+            path[0] = market.asset();
+            path[1] = address(wethToken);
+
+            ISwapper.SwapData memory swapData = swapper.buildSwapData(
+                assetId,
+                wethAssetId,
+                0,
+                feeShares,
+                true,
+                true
+            );
+            (amount, ) = swapper.swap(
+                swapData,
+                dexData.minAssetAmount,
+                feeTo,
+                ""
+            );
+        } else {
+            yieldBox.transfer(address(this), feeTo, assetId, feeShares);
+        }
+
+        emit LogYieldBoxFeesDeposit(feeShares, amount);
     }
 
     function _getMasterContractLength(

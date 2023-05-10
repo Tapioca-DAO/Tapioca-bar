@@ -1,9 +1,11 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { IDeployerVMAdd } from 'tapioca-sdk/dist/ethers/hardhat/DeployerVM';
 import {
-    YieldBoxURIBuilder__factory,
     YieldBox__factory,
-} from '../../typechain';
+    YieldBoxURIBuilder__factory,
+} from 'tapioca-sdk/dist/typechain/YieldBox';
+import YieldBoxArtifact from 'tapioca-sdk/dist/artifacts/YieldBox/contracts/YieldBox.sol/YieldBox.json';
+import YieldBoxURIBuilderArtifact from 'tapioca-sdk/dist/artifacts/YieldBox/contracts/YieldBoxURIBuilder.sol/YieldBoxURIBuilder.json';
 
 // TODO - Put WETH9 in params for prod
 export const buildYieldBox = async (
@@ -15,19 +17,28 @@ export const buildYieldBox = async (
         IDeployerVMAdd<YieldBox__factory>,
     ]
 > => {
-    const ybURIBuilder = await hre.ethers.getContractFactory(
-        'YieldBoxURIBuilder',
-    );
-    const yb = await hre.ethers.getContractFactory('YieldBox');
+    const signer = (await hre.ethers.getSigners())[0];
+
+    const YieldBoxURIBuilder = (
+        (await hre.ethers.getContractFactoryFromArtifact(
+            YieldBoxURIBuilderArtifact,
+        )) as YieldBoxURIBuilder__factory
+    ).connect(signer);
+
+    const YieldBox = (
+        (await hre.ethers.getContractFactoryFromArtifact(
+            YieldBoxArtifact,
+        )) as YieldBox__factory
+    ).connect(signer);
 
     return [
         {
-            contract: ybURIBuilder,
+            contract: YieldBoxURIBuilder,
             deploymentName: 'YieldBoxURIBuilder',
             args: [],
         },
         {
-            contract: yb,
+            contract: YieldBox,
             deploymentName: 'YieldBox',
             args: [
                 weth,

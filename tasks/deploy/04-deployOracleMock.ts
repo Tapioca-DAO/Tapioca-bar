@@ -24,6 +24,7 @@ export const deployOracleMock__task = async (
             'Which token do you want the oracle for? (List loaded from tapiocaz repo)',
         choices: tokens.map((e) => e.name),
     });
+
     const { rate } = await inquirer.prompt({
         type: 'input',
         name: 'rate',
