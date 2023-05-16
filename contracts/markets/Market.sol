@@ -98,7 +98,11 @@ abstract contract Market is MarketERC20, BoringOwnable {
     }
     /// @dev Checks if the user is solvent in the closed liquidation case at the end of the function body.
     modifier solvent(address from) {
+        updateExchangeRate();
+        _accrue();
+
         _;
+
         require(_isSolvent(from, exchangeRate), "Market: insolvent");
     }
 
@@ -270,6 +274,7 @@ abstract contract Market is MarketERC20, BoringOwnable {
         (updated, rate) = oracle.get("");
 
         if (updated) {
+            require(rate > 0, "Market: invalid rate");
             exchangeRate = rate;
             emit LogExchangeRate(rate);
         } else {
@@ -295,6 +300,8 @@ abstract contract Market is MarketERC20, BoringOwnable {
     // ************************** //
     // *** INTERNAL FUNCTIONS *** //
     // ************************** //
+    function _accrue() internal virtual;
+
     function _getRevertMsg(
         bytes memory _returnData
     ) internal pure returns (string memory) {

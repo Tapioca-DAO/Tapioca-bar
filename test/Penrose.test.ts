@@ -25,6 +25,14 @@ describe('Penrose test', () => {
             const { bar } = await loadFixture(register);
             const markets = await bar.singularityMarkets();
             expect(markets[0]).to.not.eq(ethers.constants.AddressZero);
+
+            const isMarketRegistered = await bar.isMarketRegistered(markets[0]);
+            expect(isMarketRegistered).to.be.true;
+
+            const nonRegisteredMarket = await bar.isMarketRegistered(
+                bar.address,
+            );
+            expect(nonRegisteredMarket).to.be.false;
         });
     });
 
@@ -65,7 +73,7 @@ describe('Penrose test', () => {
             const { bar } = await loadFixture(register);
 
             await expect(
-                bar.withdrawAllSingularityFees(
+                bar.withdrawAllMarketFees(
                     [ethers.constants.AddressZero],
                     [ethers.constants.AddressZero],
                     [
@@ -82,7 +90,7 @@ describe('Penrose test', () => {
             await bar.setConservator(deployer.address);
             await bar.updatePause(true);
             await expect(
-                bar.withdrawAllSingularityFees(
+                bar.withdrawAllMarketFees(
                     [ethers.constants.AddressZero],
                     [ethers.constants.AddressZero],
                     [
@@ -94,7 +102,7 @@ describe('Penrose test', () => {
             ).to.be.revertedWith('Penrose: paused');
 
             await expect(
-                bar.withdrawAllBigBangFees(
+                bar.withdrawAllMarketFees(
                     [ethers.constants.AddressZero],
                     [ethers.constants.AddressZero],
                     [

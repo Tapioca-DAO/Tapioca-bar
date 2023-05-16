@@ -10,6 +10,7 @@ import "tapioca-sdk/dist/contracts/YieldBox/contracts/strategies/ERC20WithoutStr
 import "tapioca-periph/contracts/interfaces/ISingularity.sol";
 import "tapioca-periph/contracts/interfaces/IPenrose.sol";
 
+
 // TODO: Permissionless market deployment
 ///     + asset registration? (toggle to renounce ownership so users can call)
 /// @title Global market registry
@@ -43,9 +44,11 @@ contract Penrose is BoringOwnable, BoringFactory {
     IPenrose.MasterContract[] public bigbangMasterContracts;
 
     // Used to check if a Singularity master contract is registered
-    mapping(address => bool) isSingularityMasterContractRegistered;
+    mapping(address => bool) public isSingularityMasterContractRegistered;
     // Used to check if a BigBang master contract is registered
-    mapping(address => bool) isBigBangMasterContractRegistered;
+    mapping(address => bool) public isBigBangMasterContractRegistered;
+    // Used to check if a SGL/BB is a real market
+    mapping(address => bool) public isMarketRegistered;
 
     /// @notice protocol fees
     address public feeTo;
@@ -212,7 +215,7 @@ contract Penrose is BoringOwnable, BoringFactory {
     /// @param markets_ Singularity &/ BigBang markets array
     /// @param swappers_ one or more swappers to convert the asset to TAP.
     /// @param swapData_ swap data for each swapper
-    function withdrawAllSingularityFees(
+    function withdrawAllMarketFees(
         IMarket[] calldata markets_,
         ISwapper[] calldata swappers_,
         IPenrose.SwapData[] calldata swapData_
@@ -226,28 +229,7 @@ contract Penrose is BoringOwnable, BoringFactory {
         require(address(markets_[0]) != address(0), "Penrose: zero address");
 
         _withdrawAllProtocolFees(swappers_, swapData_, markets_);
-        emit ProtocolWithdrawal(markets_, block.timestamp);
-    }
 
-    /// @notice Loop through the master contracts and call `_depositFeesToYieldBox()` to each one of their clones.
-    /// @dev `swappers_` can have one element that'll be used for all clones. Or one swapper per MasterContract.
-    /// @dev Fees are withdrawn in TAP and sent to the FeeDistributor contract
-    /// @param markets_ Singularity &/ BigBang markets array
-    /// @param swappers_ One or more swappers to convert the asset to TAP.
-    /// @param swapData_ swap data for each swapper
-    function withdrawAllBigBangFees(
-        IMarket[] calldata markets_,
-        ISwapper[] calldata swappers_,
-        IPenrose.SwapData[] calldata swapData_
-    ) public notPaused {
-        require(
-            markets_.length == swappers_.length &&
-                swappers_.length == swapData_.length,
-            "Penrose: length mismatch"
-        );
-        require(address(swappers_[0]) != address(0), "Penrose: zero address");
-
-        _withdrawAllProtocolFees(swappers_, swapData_, markets_);
         emit ProtocolWithdrawal(markets_, block.timestamp);
     }
 
@@ -375,6 +357,7 @@ contract Penrose is BoringOwnable, BoringFactory {
         returns (address _contract)
     {
         _contract = deploy(mc, data, useCreate2);
+        isMarketRegistered[_contract] = true;
         emit RegisterSingularity(_contract, mc);
     }
 
@@ -395,6 +378,7 @@ contract Penrose is BoringOwnable, BoringFactory {
         returns (address _contract)
     {
         _contract = deploy(mc, data, useCreate2);
+        isMarketRegistered[_contract] = true;
         emit RegisterBigBang(_contract, mc);
     }
 
@@ -479,8 +463,9 @@ contract Penrose is BoringOwnable, BoringFactory {
         IMarket market,
         ISwapper swapper,
         IPenrose.SwapData calldata dexData
-    ) public {
+    ) private {
         require(swappers[swapper], "Penrose: Invalid swapper");
+        require(isMarketRegistered[address(market)], "Penrose: Invalid market");
 
         uint256 feeShares = market.refreshPenroseFees(feeTo);
         if (feeShares == 0) return;
@@ -494,10 +479,6 @@ contract Penrose is BoringOwnable, BoringFactory {
                 assetId,
                 feeShares
             );
-
-            address[] memory path = new address[](2);
-            path[0] = market.asset();
-            path[1] = address(wethToken);
 
             ISwapper.SwapData memory swapData = swapper.buildSwapData(
                 assetId,

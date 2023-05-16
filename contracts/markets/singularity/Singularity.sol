@@ -346,7 +346,7 @@ contract Singularity is SGLCommon {
 
     /// @notice Withdraw the fees accumulated in `accrueInfo.feesEarnedFraction` to the balance of `feeTo`.
     function withdrawFeesEarned() public {
-        accrue();
+        _accrue();
         address _feeTo = penrose.feeTo();
         uint256 _feesEarnedFraction = accrueInfo.feesEarnedFraction;
         balanceOf[_feeTo] += _feesEarnedFraction;

@@ -652,7 +652,7 @@ describe('BigBang test', () => {
             expect(userBorrowedAmount.gt(0)).to.be.true;
 
             await expect(
-                bar.withdrawAllBigBangFees(
+                bar.withdrawAllMarketFees(
                     [wethBigBangMarket.address],
                     [multiSwapper.address],
                     [
@@ -842,7 +842,7 @@ describe('BigBang test', () => {
                 '0x00',
             );
             await expect(
-                bar.withdrawAllBigBangFees(
+                bar.withdrawAllMarketFees(
                     [wethBigBangMarket.address],
                     [multiSwapper.address],
                     [
@@ -1020,7 +1020,7 @@ describe('BigBang test', () => {
 
             //deposit fees to yieldBox
             await expect(
-                bar.withdrawAllBigBangFees(
+                bar.withdrawAllMarketFees(
                     [wethBigBangMarket.address],
                     [multiSwapper.address],
                     [
@@ -1183,7 +1183,7 @@ describe('BigBang test', () => {
 
             //deposit fees to yieldBox
             await expect(
-                bar.withdrawAllBigBangFees(
+                bar.withdrawAllMarketFees(
                     [wethBigBangMarket.address],
                     [multiSwapper.address],
                     [
@@ -1230,7 +1230,7 @@ describe('BigBang test', () => {
 
             const balance = await usd0.balanceOf(wethBigBangMarket.address);
             await expect(
-                bar.withdrawAllBigBangFees(
+                bar.withdrawAllMarketFees(
                     [wethBigBangMarket.address],
                     [multiSwapper.address],
                     [
@@ -1364,7 +1364,7 @@ describe('BigBang test', () => {
             );
             expect(userBorrowPart.eq(0)).to.be.true;
 
-            await bar.withdrawAllBigBangFees(
+            await bar.withdrawAllMarketFees(
                 [wethBigBangMarket.address],
                 [multiSwapper.address],
                 [
@@ -1394,7 +1394,7 @@ describe('BigBang test', () => {
             );
 
             await expect(
-                bar.withdrawAllBigBangFees(
+                bar.withdrawAllMarketFees(
                     [wethBigBangMarket.address],
                     [wethBigBangMarket.address],
                     [
@@ -1406,7 +1406,7 @@ describe('BigBang test', () => {
             ).to.be.revertedWith('Penrose: Invalid swapper');
 
             await expect(
-                bar.withdrawAllBigBangFees(
+                bar.withdrawAllMarketFees(
                     [wethBigBangMarket.address],
                     [multiSwapper.address],
                     [
