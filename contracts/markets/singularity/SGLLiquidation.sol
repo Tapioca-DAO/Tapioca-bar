@@ -33,7 +33,7 @@ contract SGLLiquidation is SGLCommon {
     ) external notPaused {
         // Oracle can fail but we still need to allow liquidations
         (, uint256 _exchangeRate) = updateExchangeRate();
-        accrue();
+        _accrue();
 
         if (address(liquidationQueue) != address(0)) {
             (, bool bidAvail, uint256 bidAmount) = liquidationQueue

@@ -177,4 +177,6 @@ contract SGLStorage is BoringOwnable, Market {
     function totalSupply() public view override returns (uint256) {
         return totalAsset.base;
     }
+
+    function _accrue() internal virtual override {}
 }

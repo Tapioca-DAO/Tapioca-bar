@@ -131,9 +131,11 @@ contract UniUsdoToWethBidder is BoringOwnable {
         uint256 amountIn,
         bytes calldata data
     ) external returns (uint256) {
+        IPenrose penrose = IPenrose(singularity.penrose());
+        require(penrose.usdoToken() != address(0), "USDO not set");
         require(
-            IPenrose(singularity.penrose()).usdoToken() != address(0),
-            "USDO not set"
+            penrose.isMarketRegistered(address(singularity)),
+            "Market not valid"
         );
         IYieldBox yieldBox = IYieldBox(singularity.yieldBox());
         ILiquidationQueue liquidationQueue = ILiquidationQueue(

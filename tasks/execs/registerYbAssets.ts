@@ -54,10 +54,11 @@ export const registerYbAssets__task = async (
     const calls = await buildYieldBoxAssets(hre, tag, deps);
 
     const signer = (await hre.ethers.getSigners())[0];
-    const multiCall = typechain.TapiocaPeriphery.multicall.Multicall3__factory.connect(
-        hre.SDK.config.MULTICALL_ADDRESSES[chainInfo?.chainId],
-        signer,
-    );
+    const multiCall =
+        typechain.TapiocaPeriphery.multicall.Multicall3__factory.connect(
+            hre.SDK.config.MULTICALL_ADDRESSES[chainInfo?.chainId],
+            signer,
+        );
 
     // Execute
     console.log('[+] Aggregating: ', calls.length, 'calls');

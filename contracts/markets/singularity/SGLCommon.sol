@@ -9,8 +9,48 @@ contract SGLCommon is SGLStorage {
     // ************************ //
     // *** PUBLIC FUNCTIONS *** //
     // ************************ //
+
     /// @notice Accrues the interest on the borrowed tokens and handles the accumulation of fees.
     function accrue() public {
+        _accrue();
+    }
+
+    /// @notice Removes an asset from msg.sender and transfers it to `to`.
+    /// @param from Account to debit Assets from.
+    /// @param to The user that receives the removed assets.
+    /// @param fraction The amount/fraction of assets held to remove.
+    /// @return share The amount of shares transferred to `to`.
+    function removeAsset(
+        address from,
+        address to,
+        uint256 fraction
+    ) public notPaused returns (uint256 share) {
+        _accrue();
+        share = _removeAsset(from, to, fraction, true);
+        _allowedLend(from, share);
+    }
+
+    /// @notice Adds assets to the lending pair.
+    /// @param from Address to add asset from.
+    /// @param to The address of the user to receive the assets.
+    /// @param skim True if the amount should be skimmed from the deposit balance of msg.sender.
+    /// False if tokens from msg.sender in `yieldBox` should be transferred.
+    /// @param share The amount of shares to add.
+    /// @return fraction Total fractions added.
+    function addAsset(
+        address from,
+        address to,
+        bool skim,
+        uint256 share
+    ) public notPaused allowedLend(from, share) returns (uint256 fraction) {
+        _accrue();
+        fraction = _addAsset(from, to, skim, share);
+    }
+
+    // ************************** //
+    // *** PRIVATE FUNCTIONS *** //
+    // ************************* //
+    function _accrue() internal override {
         ISingularity.AccrueInfo memory _accrueInfo = accrueInfo;
         // Number of seconds since accrue was called
         uint256 elapsedTime = block.timestamp - _accrueInfo.lastAccrued;
@@ -92,41 +132,6 @@ contract SGLCommon is SGLStorage {
         accrueInfo = _accrueInfo;
     }
 
-    /// @notice Removes an asset from msg.sender and transfers it to `to`.
-    /// @param from Account to debit Assets from.
-    /// @param to The user that receives the removed assets.
-    /// @param fraction The amount/fraction of assets held to remove.
-    /// @return share The amount of shares transferred to `to`.
-    function removeAsset(
-        address from,
-        address to,
-        uint256 fraction
-    ) public notPaused returns (uint256 share) {
-        accrue();
-        share = _removeAsset(from, to, fraction, true);
-        _allowedLend(from, share);
-    }
-
-    /// @notice Adds assets to the lending pair.
-    /// @param from Address to add asset from.
-    /// @param to The address of the user to receive the assets.
-    /// @param skim True if the amount should be skimmed from the deposit balance of msg.sender.
-    /// False if tokens from msg.sender in `yieldBox` should be transferred.
-    /// @param share The amount of shares to add.
-    /// @return fraction Total fractions added.
-    function addAsset(
-        address from,
-        address to,
-        bool skim,
-        uint256 share
-    ) public notPaused returns (uint256 fraction) {
-        accrue();
-        fraction = _addAsset(from, to, skim, share);
-    }
-
-    // ************************** //
-    // *** PRIVATE FUNCTIONS *** //
-    // ************************* //
     /// @dev Helper function to move tokens.
     /// @param from Account to debit tokens from, in `yieldBox`.
     /// @param to The user that receives the tokens.

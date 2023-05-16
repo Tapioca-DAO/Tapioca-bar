@@ -1457,7 +1457,7 @@ describe('Singularity test', () => {
             const dexData = [{ minAssetAmount: feeMinAmount }];
 
             await expect(
-                bar.withdrawAllSingularityFees(markets, swappers, dexData),
+                bar.withdrawAllMarketFees(markets, swappers, dexData),
             ).to.emit(bar, 'LogYieldBoxFeesDeposit');
 
             const amountHarvested = await yieldBox.toAmount(
@@ -2125,7 +2125,7 @@ describe('Singularity test', () => {
                 swapData.push({ minAssetAmount: 1 });
             }
             await expect(
-                bar.withdrawAllSingularityFees(markets, swappers, swapData),
+                bar.withdrawAllMarketFees(markets, swappers, swapData),
             ).to.emit(bar, 'LogYieldBoxFeesDeposit');
 
             const amountHarvested = await yieldBox.toAmount(
@@ -2146,7 +2146,7 @@ describe('Singularity test', () => {
         it('deposit fees to yieldbox should not work for inexistent swapper', async () => {
             const { wethUsdcSingularity, bar } = await loadFixture(register);
             await expect(
-                bar.withdrawAllSingularityFees(
+                bar.withdrawAllMarketFees(
                     [wethUsdcSingularity.address],
                     [ethers.constants.AddressZero],
                     [{ minAssetAmount: 1 }],
@@ -2154,7 +2154,7 @@ describe('Singularity test', () => {
             ).to.be.revertedWith('Penrose: zero address');
 
             await expect(
-                bar.withdrawAllSingularityFees(
+                bar.withdrawAllMarketFees(
                     [wethUsdcSingularity.address],
                     [wethUsdcSingularity.address],
                     [{ minAssetAmount: 1 }],
@@ -2241,7 +2241,7 @@ describe('Singularity test', () => {
             }
 
             timeTravel(10 * 86400);
-            await bar.withdrawAllSingularityFees(
+            await bar.withdrawAllMarketFees(
                 [wethUsdcSingularity.address],
                 [multiSwapper.address],
                 [

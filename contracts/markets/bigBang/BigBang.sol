@@ -214,34 +214,7 @@ contract BigBang is BoringOwnable, Market {
 
     /// @notice Accrues the interest on the borrowed tokens and handles the accumulation of fees.
     function accrue() public {
-        IBigBang.AccrueInfo memory _accrueInfo = accrueInfo;
-        // Number of seconds since accrue was called
-        uint256 elapsedTime = block.timestamp - _accrueInfo.lastAccrued;
-        if (elapsedTime == 0) {
-            return;
-        }
-        //update debt rate
-        uint256 annumDebtRate = getDebtRate();
-        _accrueInfo.debtRate = uint64(annumDebtRate / 31536000); //per second
-
-        _accrueInfo.lastAccrued = uint64(block.timestamp);
-
-        Rebase memory _totalBorrow = totalBorrow;
-
-        uint256 extraAmount = 0;
-
-        // Calculate fees
-        extraAmount =
-            (uint256(_totalBorrow.elastic) *
-                _accrueInfo.debtRate *
-                elapsedTime) /
-            1e18;
-        _totalBorrow.elastic += uint128(extraAmount);
-
-        totalBorrow = _totalBorrow;
-        accrueInfo = _accrueInfo;
-
-        emit LogAccrue(extraAmount, _accrueInfo.debtRate);
+        _accrue();
     }
 
     /// @notice Sender borrows `amount` and transfers it to `to`.
@@ -254,12 +227,13 @@ contract BigBang is BoringOwnable, Market {
         address from,
         address to,
         uint256 amount
-    ) public notPaused solvent(from) returns (uint256 part, uint256 share) {
-        _allowedBorrow(from, userCollateralShare[from]);
-        updateExchangeRate();
-
-        accrue();
-
+    )
+        public
+        notPaused
+        solvent(from)
+        allowedBorrow(from, userCollateralShare[from])
+        returns (uint256 part, uint256 share)
+    {
         (part, share) = _borrow(from, to, amount);
     }
 
@@ -274,11 +248,16 @@ contract BigBang is BoringOwnable, Market {
         address to,
         bool,
         uint256 part
-    ) public notPaused returns (uint256 amount) {
+    )
+        public
+        notPaused
+        allowedBorrow(from, part) //todo: check amount argumenet
+        returns (uint256 amount)
+    {
         updateExchangeRate();
 
         accrue();
-
+        
         amount = _repay(from, to, part);
     }
 
@@ -293,7 +272,7 @@ contract BigBang is BoringOwnable, Market {
         address to,
         bool skim,
         uint256 share
-    ) public notPaused {
+    ) public allowedBorrow(from, share) notPaused {
         userCollateralShare[to] += share;
         uint256 oldTotalCollateralShare = totalCollateralShare;
         totalCollateralShare = oldTotalCollateralShare + share;
@@ -310,11 +289,6 @@ contract BigBang is BoringOwnable, Market {
         address to,
         uint256 share
     ) public notPaused solvent(from) allowedBorrow(from, share) {
-        updateExchangeRate();
-
-        // accrue must be called because we check solvency
-        accrue();
-
         _removeCollateral(from, to, share);
     }
 
@@ -354,7 +328,7 @@ contract BigBang is BoringOwnable, Market {
     ) external notPaused {
         // Oracle can fail but we still need to allow liquidations
         (, uint256 _exchangeRate) = updateExchangeRate();
-        accrue();
+        _accrue();
 
         _closedLiquidation(
             users,
@@ -390,6 +364,37 @@ contract BigBang is BoringOwnable, Market {
     // ************************* //
     // *** PRIVATE FUNCTIONS *** //
     // ************************* //
+    function _accrue() internal override {
+        IBigBang.AccrueInfo memory _accrueInfo = accrueInfo;
+        // Number of seconds since accrue was called
+        uint256 elapsedTime = block.timestamp - _accrueInfo.lastAccrued;
+        if (elapsedTime == 0) {
+            return;
+        }
+        //update debt rate
+        uint256 annumDebtRate = getDebtRate();
+        _accrueInfo.debtRate = uint64(annumDebtRate / 31536000); //per second
+
+        _accrueInfo.lastAccrued = uint64(block.timestamp);
+
+        Rebase memory _totalBorrow = totalBorrow;
+
+        uint256 extraAmount = 0;
+
+        // Calculate fees
+        extraAmount =
+            (uint256(_totalBorrow.elastic) *
+                _accrueInfo.debtRate *
+                elapsedTime) /
+            1e18;
+        _totalBorrow.elastic += uint128(extraAmount);
+
+        totalBorrow = _totalBorrow;
+        accrueInfo = _accrueInfo;
+
+        emit LogAccrue(extraAmount, _accrueInfo.debtRate);
+    }
+
     function _liquidateUser(
         address user,
         uint256 maxBorrowPart,
