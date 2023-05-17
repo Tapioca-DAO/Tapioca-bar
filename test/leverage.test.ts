@@ -14,7 +14,7 @@ function E(n: number | bigint, p: number | bigint = 18) {
     return BN(BigInt(n) * 10n ** BigInt(p));
 }
 
-describe.only('Singularity Leverage', () => {
+describe('Singularity Leverage', () => {
     // Debugging only
     let g: (a: string, t: number, r: boolean) => Promise<any>;
 
