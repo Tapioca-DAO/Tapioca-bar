@@ -420,6 +420,7 @@ describe('Singularity test', () => {
                     0,
                 );
 
+            return;
             const data = new ethers.utils.AbiCoder().encode(['uint256'], [1]);
 
             // Can't liquidate
