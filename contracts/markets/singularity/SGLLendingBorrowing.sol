@@ -21,7 +21,13 @@ contract SGLLendingBorrowing is SGLCommon {
         address to,
         uint256 amount
     ) public notPaused solvent(from) returns (uint256 part, uint256 share) {
-        _allowedBorrow(from, userCollateralShare[from]);
+        uint256 allowanceShare = _computeAllowanceAmountInAsset(
+            from,
+            exchangeRate,
+            amount,
+            asset.safeDecimals()
+        );
+        _allowedBorrow(from, allowanceShare);
 
         (part, share) = _borrow(from, to, amount);
     }
@@ -86,14 +92,9 @@ contract SGLLendingBorrowing is SGLCommon {
         uint256 minAmountOut,
         ISwapper swapper,
         bytes calldata dexData
-    )
-        external
-        notPaused
-        solvent(from)
-        allowedBorrow(from, share)
-        returns (uint256 amountOut)
-    {
+    ) external notPaused solvent(from) returns (uint256 amountOut) {
         require(penrose.swappers(swapper), "SGL: Invalid swapper");
+
         _allowedBorrow(from, share);
         _removeCollateral(from, address(swapper), share);
         ISwapper.SwapData memory swapData = swapper.buildSwapData(
@@ -155,7 +156,6 @@ contract SGLLendingBorrowing is SGLCommon {
 
         // Let this fail first to save gas:
         uint256 supplyShare = yieldBox.toShare(assetId, supplyAmount, true);
-        _allowedLend(from, supplyShare);
         if (supplyShare > 0) {
             yieldBox.transfer(from, address(swapper), assetId, supplyShare);
         }
@@ -181,6 +181,7 @@ contract SGLLendingBorrowing is SGLCommon {
         );
         require(amountOut >= minAmountOut, "SGL: not enough");
 
+        _allowedBorrow(from, collateralShare);
         _addCollateral(from, from, true, collateralShare);
     }
 
