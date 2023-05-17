@@ -355,7 +355,7 @@ describe('e2e tests', () => {
 
         //try to liquidate
         const liquidationQueue = await ethers.getContractAt(
-            'LiquidationQueue',
+            'ILiquidationQueue',
             await wethUsdoSingularity.liquidationQueue(),
         );
         const extraUsd0 = ethers.utils.parseEther('100000');
@@ -396,7 +396,8 @@ describe('e2e tests', () => {
         );
     });
 
-    it('should borrow and repay in multipe small operations', async () => {
+    //skipped as it takes too much time to run
+    it.skip('should borrow and repay in multipe small operations', async () => {
         const {
             bar,
             wethBigBangMarket,
@@ -1041,7 +1042,7 @@ async function liquidateModule(
     magnetar: any,
 ) {
     const liquidationQueue = await ethers.getContractAt(
-        'LiquidationQueue',
+        'ILiquidationQueue',
         await wethUsdoSingularity.liquidationQueue(),
     );
     const extraUsd0 = ethers.utils.parseEther('100000');

@@ -3,6 +3,7 @@ import { expect } from 'chai';
 import { register } from './test.utils';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
+import { LiquidationQueue__factory } from '../gitsub_tapioca-sdk/src/typechain/tapioca-periphery';
 
 //todo: remove skip when swappers references are updated
 describe('LiquidationQueue test', () => {
@@ -22,10 +23,8 @@ describe('LiquidationQueue test', () => {
         it('should now allow bid on uninitialized contract', async () => {
             const { deployer, LQ_META } = await loadFixture(register);
 
-            const liquidationQueueTest = await (
-                await ethers.getContractFactory('LiquidationQueue')
-            ).deploy();
-            await liquidationQueueTest.deployed();
+            const LiquidationQueue = new LiquidationQueue__factory(deployer);
+            const liquidationQueueTest = await LiquidationQueue.deploy();
 
             await expect(
                 liquidationQueueTest.bid(
