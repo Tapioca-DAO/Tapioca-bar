@@ -25,6 +25,9 @@ import {
     CurveSwapper__factory,
     CurveSwapper,
     UniswapV2Swapper__factory,
+    LiquidationQueue__factory,
+    UniUsdoToWethBidder__factory,
+    CurveStableToUsdoBidder__factory,
 } from '../gitsub_tapioca-sdk/src/typechain/tapioca-periphery';
 import { MagnetarV2__factory } from '../gitsub_tapioca-sdk/src/typechain/tapioca-periphery/factories/Magnetar';
 
@@ -749,10 +752,12 @@ async function registerUniUsdoToWethBidder(
     wethAssetId: BigNumber,
     staging?: boolean,
 ) {
-    const usdoToWethBidder = await (
-        await ethers.getContractFactory('UniUsdoToWethBidder')
-    ).deploy(uniSwapper.address, wethAssetId, { gasPrice: gasPrice });
-    await usdoToWethBidder.deployed();
+    const deployer = (await ethers.getSigners())[0];
+    const UniUsdoToWethBidder = new UniUsdoToWethBidder__factory(deployer);
+    const usdoToWethBidder = await UniUsdoToWethBidder.deploy(
+        uniSwapper.address,
+        wethAssetId,
+    );
     log(
         `Deployed UniUsdoToWethBidder ${usdoToWethBidder.address} with args [${uniSwapper.address},${wethAssetId}]`,
         staging,
@@ -797,10 +802,13 @@ async function deployCurveStableToUsdoBidder(
         staging,
     );
 
-    const stableToUsdoBidder = await (
-        await ethers.getContractFactory('CurveStableToUsdoBidder')
-    ).deploy(curveSwapper.address, 2, { gasPrice: gasPrice });
-    await stableToUsdoBidder.deployed();
+    const CurveStableToUsdoBidder = new CurveStableToUsdoBidder__factory(
+        deployer,
+    );
+    const stableToUsdoBidder = await CurveStableToUsdoBidder.deploy(
+        curveSwapper.address,
+        2,
+    );
     log(
         `Deployed CurveStableToUsdoBidder ${stableToUsdoBidder.address} with args [${curveSwapper.address},2]`,
         staging,
@@ -930,10 +938,9 @@ async function createWethUsd0Singularity(
         staging,
     );
 
-    const liquidationQueue = await (
-        await ethers.getContractFactory('LiquidationQueue')
-    ).deploy({ gasPrice: gasPrice });
-    await liquidationQueue.deployed();
+    const deployer = (await ethers.getSigners())[0];
+    const LiquidationQueue = new LiquidationQueue__factory(deployer);
+    const liquidationQueue = await LiquidationQueue.deploy();
     log(
         `Deployed WethUsd0LiquidationQueue at ${liquidationQueue.address} with no arguments`,
         staging,
@@ -986,10 +993,9 @@ async function registerLiquidationQueue(
     feeCollector: string,
     staging?: boolean,
 ) {
-    const liquidationQueue = await (
-        await ethers.getContractFactory('LiquidationQueue')
-    ).deploy({ gasPrice: gasPrice });
-    await liquidationQueue.deployed();
+    const deployer = (await ethers.getSigners())[0];
+    const LiquidationQueue = new LiquidationQueue__factory(deployer);
+    const liquidationQueue = await LiquidationQueue.deploy();
     log(
         `Deployed LiquidationQueue ${liquidationQueue.address} with no arguments`,
         staging,

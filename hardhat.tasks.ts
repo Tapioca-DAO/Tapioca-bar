@@ -1,32 +1,32 @@
 import '@nomiclabs/hardhat-ethers';
 import { task } from 'hardhat/config';
 
-import { setBorrowCap__task } from './tasks/execs/setBorrowCap';
+import { setBorrowCap__task } from './tasks/exec/setBorrowCap';
 
 import { airdropGas__task } from './tasks/airdropGas';
 import { deployEmptyStrats__task } from './tasks/deploy/02-deployEmptyStrats';
 import { deployOracleMock__task } from './tasks/deploy/04-deployOracleMock';
-import { setLiquidationQueue__task } from './tasks/execs/setLiquidationQueue';
-import { setLiquidationQueueBidSwapper__task } from './tasks/execs/setLiquidationQueueBidSwapper';
-import { setLiquidationQueueExecutionSwapper__task } from './tasks/execs/setLiquidationQueueExecutionSwapper';
-import { setProxyAdapterParams__task } from './tasks/execs/setProxyAdapterParams';
-import { setProxyTrustedRemote__task } from './tasks/execs/setProxyTrustedRemote';
-import { registerYbAssets__task } from './tasks/execs/registerYbAssets';
+import { setLiquidationQueue__task } from './tasks/exec/setLiquidationQueue';
+import { setLiquidationQueueBidSwapper__task } from './tasks/exec/setLiquidationQueueBidSwapper';
+import { setLiquidationQueueExecutionSwapper__task } from './tasks/exec/setLiquidationQueueExecutionSwapper';
+import { setProxyAdapterParams__task } from './tasks/exec/setProxyAdapterParams';
+import { setProxyTrustedRemote__task } from './tasks/exec/setProxyTrustedRemote';
+import { registerYbAssets__task } from './tasks/exec/registerYbAssets';
 import { hasStoredPayload__task } from './tasks/test-hasStoredPayload';
 import { otherChainBorrow__task } from './tasks/test-otherChainBorrow';
 import { retryPayload__task } from './tasks/test-retryPayload';
 import { sameChainBorrow__task } from './tasks/test-sameChainBorrow';
-import { getBigBangMarkets__task } from './tasks/views/getBigBangMarkets';
-import { getBigBangTotals__task } from './tasks/views/getBigBangTotals';
-import { getParticipantBigBangInfo__task } from './tasks/views/getParticipantBigBangInfo';
-import { getParticipantSingularityInfo__task } from './tasks/views/getParticipantSingularityInfo';
-import { getSingularityMarkets__task } from './tasks/views/getSingularityMarkets';
-import { getSingularityTotals__task } from './tasks/views/getSingularityTotals';
+import { getBigBangMarkets__task } from './tasks/view/getBigBangMarkets';
+import { getBigBangTotals__task } from './tasks/view/getBigBangTotals';
+import { getParticipantBigBangInfo__task } from './tasks/view/getParticipantBigBangInfo';
+import { getParticipantSingularityInfo__task } from './tasks/view/getParticipantSingularityInfo';
+import { getSingularityMarkets__task } from './tasks/view/getSingularityMarkets';
+import { getSingularityTotals__task } from './tasks/view/getSingularityTotals';
 import { whitelistSingularity__task } from './tasks/whitelistSingularity';
 import {
     getLocalDeployments__task,
     getSDKDeployments__task,
-} from './tasks/views/getDeployments';
+} from './tasks/view/getDeployments';
 import { deployFullStack__task } from './tasks/deploy/00-deployFullStack';
 import { deployLinkedChainStack__task } from './tasks/deploy/01-deployLinkedChainStack';
 import { deploySGLMarket__task } from './tasks/deploy/deploySGLMarket';

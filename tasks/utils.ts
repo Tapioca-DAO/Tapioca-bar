@@ -7,7 +7,7 @@ import {
     TDeploymentVMContract,
 } from 'tapioca-sdk/dist/ethers/hardhat/DeployerVM';
 import { TContract } from 'tapioca-sdk/dist/shared';
-import { getDeployments } from './views/getDeployments';
+import { getDeployments } from './view/getDeployments';
 
 export const loadVM = async (
     hre: HardhatRuntimeEnvironment,
