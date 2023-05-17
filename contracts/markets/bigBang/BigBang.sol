@@ -257,7 +257,7 @@ contract BigBang is BoringOwnable, Market {
         updateExchangeRate();
 
         accrue();
-        
+
         amount = _repay(from, to, part);
     }
 
