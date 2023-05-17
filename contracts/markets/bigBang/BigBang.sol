@@ -227,13 +227,14 @@ contract BigBang is BoringOwnable, Market {
         address from,
         address to,
         uint256 amount
-    )
-        public
-        notPaused
-        solvent(from)
-        allowedBorrow(from, userCollateralShare[from])
-        returns (uint256 part, uint256 share)
-    {
+    ) public notPaused solvent(from) returns (uint256 part, uint256 share) {
+        uint256 allowanceShare = _computeAllowanceAmountInAsset(
+            from,
+            exchangeRate,
+            amount,
+            asset.safeDecimals()
+        );
+        _allowedBorrow(from, allowanceShare);
         (part, share) = _borrow(from, to, amount);
     }
 

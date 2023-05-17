@@ -242,17 +242,14 @@ abstract contract Market is MarketERC20, BoringOwnable {
     {
         uint256 borrowPart = userBorrowPart[user];
         if (borrowPart == 0) return (0, 0, 0);
-        uint256 collateralShare = userCollateralShare[user];
 
         Rebase memory _totalBorrow = totalBorrow;
 
-        uint256 collateralAmountInAsset = yieldBox.toAmount(
-            collateralId,
-            (collateralShare *
-                (EXCHANGE_RATE_PRECISION / COLLATERALIZATION_RATE_PRECISION) *
-                collateralizationRate),
-            false
-        ) / _exchangeRate;
+        uint256 collateralAmountInAsset = _computeMaxBorrowableAmount(
+            user,
+            _exchangeRate
+        );
+
         borrowPart = (borrowPart * _totalBorrow.elastic) / _totalBorrow.base;
 
         amountToSolvency = borrowPart >= collateralAmountInAsset
@@ -260,7 +257,7 @@ abstract contract Market is MarketERC20, BoringOwnable {
             : 0;
 
         (minTVL, maxTVL) = _computeMaxAndMinLTVInAsset(
-            collateralShare,
+            userCollateralShare[user],
             _exchangeRate
         );
     }
@@ -313,6 +310,22 @@ abstract contract Market is MarketERC20, BoringOwnable {
             _returnData := add(_returnData, 0x04)
         }
         return abi.decode(_returnData, (string)); // All that remains is the revert string
+    }
+
+    function _computeMaxBorrowableAmount(
+        address user,
+        uint256 _exchangeRate
+    ) internal view returns (uint256 collateralAmountInAsset) {
+        collateralAmountInAsset =
+            yieldBox.toAmount(
+                collateralId,
+                (userCollateralShare[user] *
+                    (EXCHANGE_RATE_PRECISION /
+                        COLLATERALIZATION_RATE_PRECISION) *
+                    collateralizationRate),
+                false
+            ) /
+            _exchangeRate;
     }
 
     /// @notice Concrete implementation of `isSolvent`. Includes a parameter to allow caching `exchangeRate`.
@@ -378,5 +391,34 @@ abstract contract Market is MarketERC20, BoringOwnable {
             int256(maxLiquidatorReward);
 
         return uint256(reward);
+    }
+
+    function _computeAllowanceAmountInAsset(
+        address user,
+        uint256 _exchangeRate,
+        uint256 borrowAmount,
+        uint256 assetDecimals
+    ) internal view returns (uint256) {
+        uint256 maxBorrowabe = _computeMaxBorrowableAmount(user, _exchangeRate);
+
+        uint256 shareRatio = _getRatio(
+            borrowAmount,
+            maxBorrowabe,
+            assetDecimals
+        );
+        return (shareRatio * userCollateralShare[user]) / (10 ** assetDecimals);
+    }
+
+    function _getRatio(
+        uint256 numerator,
+        uint256 denominator,
+        uint256 precision
+    ) private pure returns (uint256) {
+        if (numerator == 0 || denominator == 0) {
+            return 0;
+        }
+        uint256 _numerator = numerator * 10 ** (precision + 1);
+        uint256 _quotient = ((_numerator / denominator) + 5) / 10;
+        return (_quotient);
     }
 }
