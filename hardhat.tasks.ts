@@ -16,17 +16,17 @@ import { hasStoredPayload__task } from './tasks/test-hasStoredPayload';
 import { otherChainBorrow__task } from './tasks/test-otherChainBorrow';
 import { retryPayload__task } from './tasks/test-retryPayload';
 import { sameChainBorrow__task } from './tasks/test-sameChainBorrow';
-import { getBigBangMarkets__task } from './tasks/views/getBigBangMarkets';
-import { getBigBangTotals__task } from './tasks/views/getBigBangTotals';
-import { getParticipantBigBangInfo__task } from './tasks/views/getParticipantBigBangInfo';
-import { getParticipantSingularityInfo__task } from './tasks/views/getParticipantSingularityInfo';
-import { getSingularityMarkets__task } from './tasks/views/getSingularityMarkets';
-import { getSingularityTotals__task } from './tasks/views/getSingularityTotals';
+import { getBigBangMarkets__task } from './tasks/view/getBigBangMarkets';
+import { getBigBangTotals__task } from './tasks/view/getBigBangTotals';
+import { getParticipantBigBangInfo__task } from './tasks/view/getParticipantBigBangInfo';
+import { getParticipantSingularityInfo__task } from './tasks/view/getParticipantSingularityInfo';
+import { getSingularityMarkets__task } from './tasks/view/getSingularityMarkets';
+import { getSingularityTotals__task } from './tasks/view/getSingularityTotals';
 import { whitelistSingularity__task } from './tasks/whitelistSingularity';
 import {
     getLocalDeployments__task,
     getSDKDeployments__task,
-} from './tasks/views/getDeployments';
+} from './tasks/view/getDeployments';
 import { deployFullStack__task } from './tasks/deploy/00-deployFullStack';
 import { deployLinkedChainStack__task } from './tasks/deploy/01-deployLinkedChainStack';
 import { deploySGLMarket__task } from './tasks/deploy/deploySGLMarket';
