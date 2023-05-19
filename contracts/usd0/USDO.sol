@@ -2,8 +2,8 @@
 pragma solidity ^0.8.18;
 
 import "tapioca-sdk/dist/contracts/interfaces/ILayerZeroEndpoint.sol";
-import "./USDOMocks.sol";
 import "tapioca-periph/contracts/interfaces/IERC3156FlashLender.sol";
+import "./BaseOFT.sol";
 
 /*
 
@@ -20,7 +20,7 @@ __/\\\\\\\\\\\\\\\_____/\\\\\\\\\_____/\\\\\\\\\\\\\____/\\\\\\\\\\\_______/\\\\
 */
 
 /// @title USDO OFT contract
-contract USDO is USDOMocks, IERC3156FlashLender {
+contract USDO is BaseOFT, IERC3156FlashLender {
     // ************ //
     // *** VARS *** //
     // ************ //
@@ -79,7 +79,7 @@ contract USDO is USDOMocks, IERC3156FlashLender {
         address _owner
     )
         OFTV2("USDO", "USDO", 8, _lzEndpoint)
-        USDOMocks(_yieldBox)
+        BaseOFT(_yieldBox)
         ERC20Permit("USDO")
     {
         uint256 chain = _getChainId();
@@ -87,8 +87,6 @@ contract USDO is USDOMocks, IERC3156FlashLender {
         allowedBurner[chain][msg.sender] = true;
         flashMintFee = 10; // 0.001%
         maxFlashMint = 100_000 * 1e18; // 100k USDO
-
-        mintLimit = 1_000_000_000 * 1e18;
 
         transferOwnership(_owner);
     }
