@@ -5,7 +5,6 @@ import { Penrose, YieldBox } from '../../typechain';
 import { buildOracleMock } from '../deployBuilds/05-buildOracleMock';
 import { loadVM } from '../utils';
 
-
 export const deployBigBangMarket__task = async (
     {},
     hre: HardhatRuntimeEnvironment,
@@ -34,7 +33,6 @@ export const deployBigBangMarket__task = async (
     );
 
     if (!mediumRiskMC) throw new Error('[-] BigBangMediumRiskMC not found');
-
 
     const { projectName } = await inquirer.prompt({
         type: 'input',
@@ -76,7 +74,6 @@ export const deployBigBangMarket__task = async (
         collateral.collateralStrategyAddress,
         0,
     );
-
 
     let oracle = hre.SDK.db
         .loadLocalDeployment(tag, chainInfo.chainId)
