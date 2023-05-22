@@ -22,9 +22,10 @@ export const buildStableToUSD0Bidder = async (
         CurveSwapperArtifact,
     )) as CurveSwapper__factory;
 
-    const CurveStableToUsdoBidder = (await hre.ethers.getContractFactoryFromArtifact(
-        CurveStableToUsdoBidderArtifact,
-    )) as CurveStableToUsdoBidder__factory;
+    const CurveStableToUsdoBidder =
+        (await hre.ethers.getContractFactoryFromArtifact(
+            CurveStableToUsdoBidderArtifact,
+        )) as CurveStableToUsdoBidder__factory;
 
     return [
         {

@@ -51,6 +51,13 @@ export const deploySGLMarket__task = async (
         collateral,
     );
 
+    const { exchangeRatePrecision } = await inquirer.prompt({
+        type: 'input',
+        name: 'exchangeRatePrecision',
+        message: 'Exchange Rate precision (decimals)',
+        default: '0',
+    });
+
     const data = new hre.ethers.utils.AbiCoder().encode(
         [
             'address',
@@ -72,7 +79,8 @@ export const deploySGLMarket__task = async (
             collateral.collateralAddress,
             collateralId,
             oracleAddress.address,
-            hre.ethers.BigNumber.from((1e18).toString()),
+            exchangeRatePrecision ??
+                hre.ethers.BigNumber.from((1e18).toString()),
         ],
     );
 
@@ -179,31 +187,37 @@ async function loadStrats(
         throw new Error('[-] USDO strategy not found');
     }
 
-    const { oracleRate } = await inquirer.prompt({
-        type: 'input',
-        name: 'oracleRate',
-        message: 'Oracle rate (can be changed later)',
-        default: '1',
-    });
-    VM.add(
-        await buildOracleMock(
-            hre,
-            'OracleMock-' + token.name,
-            'OCM-' + token.name,
-            hre.ethers.utils.parseEther(oracleRate),
-        ),
-    );
-    await VM.execute(3);
-    VM.save();
-    try {
-        await VM.verify();
-    } catch {
-        console.log('[-] Verification failed');
+    const oracle = hre.SDK.db
+        .loadLocalDeployment(tag, chainInfo.chainId)
+        .find((e) => e.name.startsWith('OracleMock-' + token.name));
+
+    if (!oracle) {
+        const { oracleRate } = await inquirer.prompt({
+            type: 'input',
+            name: 'oracleRate',
+            message: 'Oracle rate (can be changed later)',
+            default: '1',
+        });
+        VM.add(
+            await buildOracleMock(
+                hre,
+                'OracleMock-' + token.name,
+                'OCM-' + token.name,
+                hre.ethers.utils.parseEther(oracleRate),
+            ),
+        );
+        await VM.execute(3);
+        VM.save();
+        try {
+            await VM.verify();
+        } catch {
+            console.log('[-] Verification failed');
+        }
     }
 
     return {
         usd0Strategy,
-        oracleAddress: VM.list()[0],
+        oracleAddress: oracle?.address ?? VM.list()[0],
     };
 }
 

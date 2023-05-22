@@ -8,6 +8,7 @@ enum StratType {
     TOFT = 0,
     USDO = 1,
     TAP = 2,
+    Token = 3,
 }
 // hh 01-deployEmptyStrats --network arbitrum_goerli --type 0/1/2
 export const deployEmptyStrats__task = async (
@@ -44,6 +45,22 @@ export const deployEmptyStrats__task = async (
         case StratType.TAP:
             project = SDK.API.config.TAPIOCA_PROJECTS_NAME.TapToken;
             name = 'TapOFT';
+            break;
+        case StratType.Token:
+            const { projectName } = await inquirer.prompt({
+                type: 'input',
+                name: 'projectName',
+                message: 'In which project is the token registerd?',
+            });
+            project = projectName;
+
+            const { tokenName } = await inquirer.prompt({
+                type: 'input',
+                name: 'tokenName',
+                message:
+                    'What is the token you want to register the strategy for?',
+            });
+            name = tokenName;
             break;
         default:
             console.log('Specific deployment:');
