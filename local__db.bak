@@ -214,6 +214,17 @@
         ],
         "421613": [
             {
+                "name": "BigBang-WETHMock",
+                "address": "0x757fB3698f765fd425D0a65912B087baC3EDB97E",
+                "meta": {
+                    "isBigBangMarket": true,
+                    "collateral": {
+                        "collateralAddress": "0x5957aC1384bfa85b2d35C0B1B2401325082DbE63",
+                        "collateralStrategyAddress": "0x640cb9704051aB106e5636Ff14ed74F9F7d5dD54"
+                    }
+                }
+            },
+            {
                 "name": "OracleMock-WETHMock",
                 "address": "0xc76611571dc19963462097beF71F7885b287e2bc",
                 "meta": {

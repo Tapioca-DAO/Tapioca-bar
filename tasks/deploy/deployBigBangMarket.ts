@@ -1,12 +1,15 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import inquirer from 'inquirer';
+import { getOverrideOptions } from 'tapioca-sdk/dist/api/utils';
 import { TContract } from 'tapioca-sdk/dist/shared';
 import { Penrose, YieldBox } from '../../typechain';
 import { buildOracleMock } from '../deployBuilds/05-buildOracleMock';
 import { loadVM } from '../utils';
 
 export const deployBigBangMarket__task = async (
-    {},
+    taskArgs: {
+        overrideOptions?: boolean;
+    },
     hre: HardhatRuntimeEnvironment,
 ) => {
     console.log('[+] Deploying: BigBang market');
@@ -183,7 +186,9 @@ export const deployBigBangMarket__task = async (
         mediumRiskMC.address,
         data,
         true,
-        // hre.SDK.utils.getOverrideOptions(await hre.getChainId()),
+        taskArgs.overrideOptions
+            ? getOverrideOptions(String(hre.network.config.chainId))
+            : {},
     );
     await tx.wait(3);
 

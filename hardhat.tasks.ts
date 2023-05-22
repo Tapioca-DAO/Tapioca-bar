@@ -103,12 +103,16 @@ task(
  * Deploy
  */
 
-task('deploySGLMarket', 'Deploy a Singularity market', deploySGLMarket__task);
+task(
+    'deploySGLMarket',
+    'Deploy a Singularity market',
+    deploySGLMarket__task,
+).addOptionalParam('overrideOptions', 'Override options');
 task(
     'deployBigBangMarket',
     'Deploy a BigBang market',
     deployBigBangMarket__task,
-);
+).addOptionalParam('overrideOptions', 'Override options');
 
 task(
     'deployFullStack',
