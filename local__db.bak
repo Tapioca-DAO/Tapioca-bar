@@ -214,6 +214,50 @@
         ],
         "421613": [
             {
+                "name": "OracleMock-WETHMock",
+                "address": "0xc76611571dc19963462097beF71F7885b287e2bc",
+                "meta": {
+                    "args": [
+                        "OracleMock-WETHMock",
+                        "OCM-WETHMock",
+                        {
+                            "type": "BigNumber",
+                            "hex": "0x0de0b6b3a7640000"
+                        }
+                    ],
+                    "salt": "0x594b5bcaaae9fad2ecb4204daa142a9628a869ed77e27f7b3b8446ff9a662466",
+                    "create2": true
+                }
+            },
+            {
+                "name": "ERC20WithoutStrategy-WETHMock",
+                "address": "0x640cb9704051aB106e5636Ff14ed74F9F7d5dD54",
+                "meta": {
+                    "stratFor": "WETHMock",
+                    "args": [
+                        "0x0C07406CD6C651e387bA379945AE38558688573d",
+                        "0x5957aC1384bfa85b2d35C0B1B2401325082DbE63"
+                    ],
+                    "salt": "0x2b47d36ba452e746376d7653d3e3b82741d4566a24bc6dbc00ea94a250fbf1bb",
+                    "create2": true
+                }
+            },
+            {
+                "name": "Tapioca Singularity TapiocaOFT-MATICMock/USDO-OracleMock-TapiocaOFT-MATICMock",
+                "address": "0x94e24C8FEbe2924bFdc2e3B2208a12B18D664091",
+                "meta": {
+                    "isSGLMarket": true,
+                    "collateral": {
+                        "collateralAddress": "0x1201B81Dd25c734200c3974fD8e55Cc0dc332A4c",
+                        "collateralStrategyAddress": "0x51f07C3A26772c66107BfD4dcC07f90214F72Edb"
+                    },
+                    "asset": {
+                        "assetAddress": "0x9E77D3049Fc62c7e9931f0395cBA034d9F787163",
+                        "assetStrategyAddress": "0x4DFC808F8dC407923b90feA415624Af9ac4cB1DC"
+                    }
+                }
+            },
+            {
                 "name": "OracleMock-TapiocaOFT-MATICMock",
                 "address": "0x91B2E119F2FfD4Fe19dDf1d51938C283a38381BB",
                 "meta": {

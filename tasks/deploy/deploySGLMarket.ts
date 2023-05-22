@@ -187,6 +187,13 @@ async function loadStrats(
         throw new Error('[-] USDO strategy not found');
     }
 
+    const chainInfo = hre.SDK.utils.getChainBy(
+        'chainId',
+        await hre.getChainId(),
+    );
+    if (!chainInfo) {
+        throw new Error('Chain not found');
+    }
     const oracle = hre.SDK.db
         .loadLocalDeployment(tag, chainInfo.chainId)
         .find((e) => e.name.startsWith('OracleMock-' + token.name));

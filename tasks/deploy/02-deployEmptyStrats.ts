@@ -89,7 +89,7 @@ export const deployEmptyStrats__task = async (
     }
 
     console.log('[+] Found', tokens.length, 'tokens');
-    console.log(tokens.map((e) => `\t${e.name}`));
+    console.log(tokens.map((e) => `${e.name}`));
     const { isOk } = await inquirer.prompt({
         type: 'confirm',
         name: 'isOk',

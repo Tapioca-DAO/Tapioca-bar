@@ -37,7 +37,7 @@ export const deployBigBangMarket__task = async (
     const { projectName } = await inquirer.prompt({
         type: 'input',
         name: 'projectName',
-        message: 'In which project is the token registerd?',
+        message: 'In which project is the token registered?',
     });
     const tokens = hre.SDK.db.loadGlobalDeployment(
         tag,
@@ -75,6 +75,13 @@ export const deployBigBangMarket__task = async (
         0,
     );
 
+    const chainInfo = hre.SDK.utils.getChainBy(
+        'chainId',
+        await hre.getChainId(),
+    );
+    if (!chainInfo) {
+        throw new Error('Chain not found');
+    }
     let oracle = hre.SDK.db
         .loadLocalDeployment(tag, chainInfo.chainId)
         .find((e) => e.name.startsWith('OracleMock-' + token.name));
@@ -161,7 +168,7 @@ export const deployBigBangMarket__task = async (
             penrose.address,
             collateral.collateralAddress,
             collateralId,
-            oracle?.address ?? VM.list()[0],
+            oracle?.address ?? VM.list()[0].address,
             exchangeRatePrecision ??
                 hre.ethers.BigNumber.from((1e18).toString()),
             debtRateAgainstEth,
@@ -176,7 +183,7 @@ export const deployBigBangMarket__task = async (
         mediumRiskMC.address,
         data,
         true,
-        hre.SDK.utils.getOverrideOptions(await hre.getChainId()),
+        // hre.SDK.utils.getOverrideOptions(await hre.getChainId()),
     );
     await tx.wait(3);
 
