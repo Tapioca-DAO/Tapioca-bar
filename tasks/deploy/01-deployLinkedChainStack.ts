@@ -23,7 +23,7 @@ export const deployLinkedChainStack__task = async (
     }
 
     let weth = hre.SDK.db
-        .loadGlobalDeployment(tag, 'tap-token', chainInfo.chainId)
+        .loadGlobalDeployment(tag, 'tapioca-mocks', chainInfo.chainId)
         .find((e) => e.name.startsWith('WETHMock'));
 
     if (!weth) {

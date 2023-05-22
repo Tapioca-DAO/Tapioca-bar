@@ -1,12 +1,15 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import inquirer from 'inquirer';
+import { getOverrideOptions } from 'tapioca-sdk/dist/api/utils';
 import { TContract } from 'tapioca-sdk/dist/shared';
 import { Penrose, YieldBox } from '../../typechain';
 import { buildOracleMock } from '../deployBuilds/05-buildOracleMock';
 import { loadVM } from '../utils';
 
 export const deploySGLMarket__task = async (
-    {},
+    taskArgs: {
+        overrideOptions?: boolean;
+    },
     hre: HardhatRuntimeEnvironment,
 ) => {
     console.log('[+] Deploying: SGL market');
@@ -51,6 +54,13 @@ export const deploySGLMarket__task = async (
         collateral,
     );
 
+    const { exchangeRatePrecision } = await inquirer.prompt({
+        type: 'input',
+        name: 'exchangeRatePrecision',
+        message: 'Exchange Rate precision (decimals)',
+        default: '0',
+    });
+
     const data = new hre.ethers.utils.AbiCoder().encode(
         [
             'address',
@@ -72,7 +82,8 @@ export const deploySGLMarket__task = async (
             collateral.collateralAddress,
             collateralId,
             oracleAddress.address,
-            hre.ethers.BigNumber.from((1e18).toString()),
+            exchangeRatePrecision ??
+                hre.ethers.BigNumber.from((1e18).toString()),
         ],
     );
 
@@ -81,7 +92,9 @@ export const deploySGLMarket__task = async (
         mediumRiskMC.address,
         data,
         true,
-        hre.SDK.utils.getOverrideOptions(await hre.getChainId()),
+        taskArgs.overrideOptions
+            ? getOverrideOptions(String(hre.network.config.chainId))
+            : {},
     );
     await tx.wait(3);
 
@@ -179,31 +192,44 @@ async function loadStrats(
         throw new Error('[-] USDO strategy not found');
     }
 
-    const { oracleRate } = await inquirer.prompt({
-        type: 'input',
-        name: 'oracleRate',
-        message: 'Oracle rate (can be changed later)',
-        default: '1',
-    });
-    VM.add(
-        await buildOracleMock(
-            hre,
-            'OracleMock-' + token.name,
-            'OCM-' + token.name,
-            hre.ethers.utils.parseEther(oracleRate),
-        ),
+    const chainInfo = hre.SDK.utils.getChainBy(
+        'chainId',
+        await hre.getChainId(),
     );
-    await VM.execute(3);
-    VM.save();
-    try {
-        await VM.verify();
-    } catch {
-        console.log('[-] Verification failed');
+    if (!chainInfo) {
+        throw new Error('Chain not found');
+    }
+    const oracle = hre.SDK.db
+        .loadLocalDeployment(tag, chainInfo.chainId)
+        .find((e) => e.name.startsWith('OracleMock-' + token.name));
+
+    if (!oracle) {
+        const { oracleRate } = await inquirer.prompt({
+            type: 'input',
+            name: 'oracleRate',
+            message: 'Oracle rate (can be changed later)',
+            default: '1',
+        });
+        VM.add(
+            await buildOracleMock(
+                hre,
+                'OracleMock-' + token.name,
+                'OCM-' + token.name,
+                hre.ethers.utils.parseEther(oracleRate),
+            ),
+        );
+        await VM.execute(3);
+        VM.save();
+        try {
+            await VM.verify();
+        } catch {
+            console.log('[-] Verification failed');
+        }
     }
 
     return {
         usd0Strategy,
-        oracleAddress: VM.list()[0],
+        oracleAddress: oracle?.address ?? VM.list()[0],
     };
 }
 

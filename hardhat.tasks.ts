@@ -30,6 +30,7 @@ import {
 import { deployFullStack__task } from './tasks/deploy/00-deployFullStack';
 import { deployLinkedChainStack__task } from './tasks/deploy/01-deployLinkedChainStack';
 import { deploySGLMarket__task } from './tasks/deploy/deploySGLMarket';
+import { deployBigBangMarket__task } from './tasks/deploy/deployBigBangMarket';
 import { testCrossChainBorrow__task } from './tasks/test-borrow';
 import { testCrossChainLend__task } from './tasks/test-lend';
 
@@ -102,7 +103,16 @@ task(
  * Deploy
  */
 
-task('deploySGLMarket', 'Deploy a Singularity market', deploySGLMarket__task);
+task(
+    'deploySGLMarket',
+    'Deploy a Singularity market',
+    deploySGLMarket__task,
+).addOptionalParam('overrideOptions', 'Override options');
+task(
+    'deployBigBangMarket',
+    'Deploy a BigBang market',
+    deployBigBangMarket__task,
+).addOptionalParam('overrideOptions', 'Override options');
 
 task(
     'deployFullStack',
