@@ -91,6 +91,15 @@ abstract contract Market is MarketERC20, BoringOwnable {
     event LogBorrowCapUpdated(uint256 _oldVal, uint256 _newVal);
     /// @notice event emitted when oracle data is updated
     event OracleDataUpdated();
+    /// @notice event emitted when a position is liquidated
+    event Liquidated(
+        address liquidator,
+        address[] users,
+        uint256 liquidatorReward,
+        uint256 protocolReward,
+        uint256 repayedAmount,
+        uint256 collateralShareRemoved
+    );
 
     modifier notPaused() {
         require(!paused, "Market: paused");
