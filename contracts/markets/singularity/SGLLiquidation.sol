@@ -178,6 +178,15 @@ contract SGLLiquidation is SGLCommon {
         uint256 extraShare = returnedShare - allBorrowShare;
         uint256 callerShare = (extraShare * callerFee) / FEE_PRECISION; // 1% goes to caller
 
+        emit Liquidated(
+            msg.sender,
+            users,
+            callerShare,
+            returnedShare - callerShare,
+            allBorrowAmount,
+            allCollateralShare
+        );
+
         yieldBox.transfer(address(this), msg.sender, assetId, callerShare);
 
         totalAsset.elastic += uint128(returnedShare - callerShare);
@@ -226,12 +235,12 @@ contract SGLLiquidation is SGLCommon {
         uint256 borrowShare,
         uint256 callerReward,
         address swapper
-    ) private {
+    ) private returns (uint256 feeShare, uint256 callerShare) {
         uint256 returnedShare = yieldBox.balanceOf(address(this), assetId) -
             uint256(totalAsset.elastic);
         uint256 extraShare = returnedShare - borrowShare;
-        uint256 feeShare = (extraShare * protocolFee) / FEE_PRECISION; // x% of profit goes to fee.
-        uint256 callerShare = (extraShare * callerReward) / FEE_PRECISION; //  y%  of profit goes to caller.
+        feeShare = (extraShare * protocolFee) / FEE_PRECISION; // x% of profit goes to fee.
+        callerShare = (extraShare * callerReward) / FEE_PRECISION; //  y%  of profit goes to caller.
 
         yieldBox.transfer(address(this), penrose.feeTo(), assetId, feeShare);
         yieldBox.transfer(address(this), msg.sender, assetId, callerShare);
@@ -304,7 +313,22 @@ contract SGLLiquidation is SGLCommon {
         );
         swapper.swap(swapData, minAssetAmount, address(this), "");
 
-        _extractLiquidationFees(borrowShare, callerReward, address(swapper));
+        (uint256 feeShare, uint256 callerShare) = _extractLiquidationFees(
+            borrowShare,
+            callerReward,
+            address(swapper)
+        );
+
+        address[] memory _users = new address[](1);
+        _users[0] = user;
+        emit Liquidated(
+            msg.sender,
+            _users,
+            callerShare,
+            feeShare,
+            borrowAmount,
+            collateralShare
+        );
     }
 
     /// @notice Handles the liquidation of users' balances, once the users' amount of collateral is too low.

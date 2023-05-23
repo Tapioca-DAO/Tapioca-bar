@@ -458,17 +458,31 @@ contract BigBang is BoringOwnable, Market {
         uint256 balanceAfter = yieldBox.balanceOf(address(this), assetId);
 
         uint256 returnedShare = balanceAfter - balanceBefore;
-        _extractLiquidationFees(returnedShare, borrowShare, callerReward);
+        (uint256 feeShare, uint256 callerShare) = _extractLiquidationFees(
+            returnedShare,
+            borrowShare,
+            callerReward
+        );
+        address[] memory _users = new address[](1);
+        _users[0] = user;
+        emit Liquidated(
+            msg.sender,
+            _users,
+            callerShare,
+            feeShare,
+            borrowAmount,
+            collateralShare
+        );
     }
 
     function _extractLiquidationFees(
         uint256 returnedShare,
         uint256 borrowShare,
         uint256 callerReward
-    ) private {
+    ) private returns (uint256 feeShare, uint256 callerShare) {
         uint256 extraShare = returnedShare - borrowShare;
-        uint256 feeShare = (extraShare * protocolFee) / FEE_PRECISION; // x% of profit goes to fee.
-        uint256 callerShare = (extraShare * callerReward) / FEE_PRECISION; //  y%  of profit goes to caller.
+        feeShare = (extraShare * protocolFee) / FEE_PRECISION; // x% of profit goes to fee.
+        callerShare = (extraShare * callerReward) / FEE_PRECISION; //  y%  of profit goes to caller.
 
         yieldBox.transfer(address(this), penrose.feeTo(), assetId, feeShare);
         yieldBox.transfer(address(this), msg.sender, assetId, callerShare);
