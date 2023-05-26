@@ -62,6 +62,7 @@ describe('BigBang test', () => {
                 deployer.address,
                 deployer.address,
                 false,
+                0,
                 valShare,
             );
 
@@ -121,6 +122,7 @@ describe('BigBang test', () => {
                 deployer.address,
                 deployer.address,
                 false,
+                0,
                 valShare,
             );
 
@@ -245,7 +247,7 @@ describe('BigBang test', () => {
                 );
             await wethBigBangMarket
                 .connect(eoa1)
-                .addCollateral(eoa1.address, eoa1.address, false, valShare);
+                .addCollateral(eoa1.address, eoa1.address, false, 0, valShare);
 
             //borrow
             const usdoBorrowVal = wethMintVal
@@ -393,7 +395,7 @@ describe('BigBang test', () => {
                 );
             await wethBigBangMarket
                 .connect(eoa1)
-                .addCollateral(eoa1.address, eoa1.address, false, valShare);
+                .addCollateral(eoa1.address, eoa1.address, false, 0, valShare);
 
             //borrow
             const usdoBorrowVal = wethMintVal
@@ -561,7 +563,7 @@ describe('BigBang test', () => {
                 );
             await wethBigBangMarket
                 .connect(eoa1)
-                .addCollateral(eoa1.address, eoa1.address, false, valShare);
+                .addCollateral(eoa1.address, eoa1.address, false, 0, valShare);
 
             //borrow
             let usdoBorrowVal = wethMintVal
@@ -738,7 +740,7 @@ describe('BigBang test', () => {
                 );
             await wethBigBangMarket
                 .connect(eoa1)
-                .addCollateral(eoa1.address, eoa1.address, false, valShare);
+                .addCollateral(eoa1.address, eoa1.address, false, 0, valShare);
 
             //borrow
             let usdoBorrowVal = wethMintVal
@@ -927,7 +929,13 @@ describe('BigBang test', () => {
                     );
                 await wethBigBangMarket
                     .connect(eoa)
-                    .addCollateral(eoa.address, eoa.address, false, valShare);
+                    .addCollateral(
+                        eoa.address,
+                        eoa.address,
+                        false,
+                        0,
+                        valShare,
+                    );
             }
 
             timeTravel(86400 * 5);
@@ -1104,7 +1112,13 @@ describe('BigBang test', () => {
                     );
                 await wethBigBangMarket
                     .connect(eoa)
-                    .addCollateral(eoa.address, eoa.address, false, valShare);
+                    .addCollateral(
+                        eoa.address,
+                        eoa.address,
+                        false,
+                        0,
+                        valShare,
+                    );
             }
 
             timeTravel(86400 * 5);
@@ -1308,7 +1322,7 @@ describe('BigBang test', () => {
                 );
             await wethBigBangMarket
                 .connect(eoa1)
-                .addCollateral(eoa1.address, eoa1.address, false, valShare);
+                .addCollateral(eoa1.address, eoa1.address, false, 0, valShare);
 
             //borrow
             const usdoBorrowVal = wethMintVal
@@ -1501,6 +1515,7 @@ describe('BigBang test', () => {
                 deployer.address,
                 deployer.address,
                 false,
+                0,
                 valShare,
             );
 
@@ -1583,6 +1598,7 @@ describe('BigBang test', () => {
                     deployer.address,
                     deployer.address,
                     false,
+                    0,
                     valShare,
                 ),
             ).to.be.revertedWith('Market: paused');
@@ -1593,6 +1609,7 @@ describe('BigBang test', () => {
                 deployer.address,
                 deployer.address,
                 false,
+                0,
                 valShare,
             );
 
@@ -1730,6 +1747,7 @@ describe('BigBang test', () => {
                 deployer.address,
                 deployer.address,
                 false,
+                0,
                 valShare,
             );
 
@@ -1782,6 +1800,7 @@ describe('BigBang test', () => {
                 deployer.address,
                 deployer.address,
                 false,
+                0,
                 wbtcValShare,
             );
 
@@ -1871,7 +1890,7 @@ describe('BigBang test', () => {
                 );
             await wethBigBangMarket
                 .connect(eoa1)
-                .addCollateral(eoa1.address, eoa1.address, false, valShare);
+                .addCollateral(eoa1.address, eoa1.address, false, 0, valShare);
 
             //borrow
             const usdoBorrowVal = ethers.utils.parseEther('10000');
@@ -1946,7 +1965,7 @@ describe('BigBang test', () => {
             const addCollateralEncoded =
                 wethBigBangMarket.interface.encodeFunctionData(
                     'addCollateral',
-                    [deployer.address, deployer.address, false, valShare],
+                    [deployer.address, deployer.address, false, 0, valShare],
                 );
             const borrowEncoded =
                 wethBigBangMarket.interface.encodeFunctionData('borrow', [

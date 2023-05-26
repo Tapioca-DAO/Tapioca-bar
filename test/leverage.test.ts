@@ -108,6 +108,7 @@ describe('Singularity Leverage', () => {
                 alice.address,
                 alice.address,
                 false,
+                0,
                 E(2000).mul(1e8),
             );
         await wethUsdcSingularity
@@ -170,7 +171,6 @@ describe('Singularity Leverage', () => {
                 0,
             );
 
-            hre.tracer.enabled = true;
             // Sell some collateral
             await wethUsdcSingularity.connect(alice).sellCollateral(
                 alice.address,
@@ -179,7 +179,6 @@ describe('Singularity Leverage', () => {
                 mockSwapper.address,
                 [],
             );
-            hre.tracer.enabled = false;
 
             // Some interest will have accrued.. but otherwise we expect to have
             // 0.334 ETH of the original loan + 0.0005 ETH of the open fee left:

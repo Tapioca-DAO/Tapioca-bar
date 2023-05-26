@@ -3,7 +3,9 @@ pragma solidity ^0.8.18;
 
 import "./SGLCommon.sol";
 import "./SGLLiquidation.sol";
-import "./SGLLendingBorrowing.sol";
+import "./SGLCollateral.sol";
+import "./SGLBorrow.sol";
+import "./SGLLeverage.sol";
 
 import "tapioca-periph/contracts/interfaces/ISendFrom.sol";
 import "tapioca-sdk/dist/contracts/libraries/LzLib.sol";
@@ -35,19 +37,28 @@ contract Singularity is SGLCommon {
     /// @dev modules are contracts that holds a portion of the market's logic
     enum Module {
         Base,
-        LendingBorrowing,
-        Liquidation
+        Borrow,
+        Collateral,
+        Liquidation,
+        Leverage
     }
     /// @notice returns the liquidation module
     SGLLiquidation public liquidationModule;
-    /// @notice returns the lending module
-    SGLLendingBorrowing public lendingBorrowingModule;
+    /// @notice returns the borrow module
+    SGLBorrow public borrowModule;
+    /// @notice returns the collateral module
+    SGLCollateral public collateralModule;
+    /// @notice returns the leverage module
+    SGLLeverage public leverageModule;
 
     /// @notice The init function that acts as a constructor
     function init(bytes calldata data) external onlyOnce {
         (
+            //TODO: update leverage
             address _liquidationModule,
-            address _lendingBorrowingModule,
+            address _borrowModule,
+            address _collateralModule,
+            address _leverageModule,
             IPenrose tapiocaBar_,
             IERC20 _asset,
             uint256 _assetId,
@@ -58,6 +69,8 @@ contract Singularity is SGLCommon {
         ) = abi.decode(
                 data,
                 (
+                    address,
+                    address,
                     address,
                     address,
                     IPenrose,
@@ -71,7 +84,9 @@ contract Singularity is SGLCommon {
             );
 
         liquidationModule = SGLLiquidation(_liquidationModule);
-        lendingBorrowingModule = SGLLendingBorrowing(_lendingBorrowingModule);
+        collateralModule = SGLCollateral(_collateralModule);
+        borrowModule = SGLBorrow(_borrowModule);
+        leverageModule = SGLLeverage(_leverageModule);
         penrose = tapiocaBar_;
         yieldBox = YieldBox(tapiocaBar_.yieldBox());
         owner = address(penrose);
@@ -165,6 +180,38 @@ contract Singularity is SGLCommon {
         }
     }
 
+    /// @notice Adds assets to the lending pair.
+    /// @param from Address to add asset from.
+    /// @param to The address of the user to receive the assets.
+    /// @param skim True if the amount should be skimmed from the deposit balance of msg.sender.
+    /// False if tokens from msg.sender in `yieldBox` should be transferred.
+    /// @param share The amount of shares to add.
+    /// @return fraction Total fractions added.
+    function addAsset(
+        address from,
+        address to,
+        bool skim,
+        uint256 share
+    ) public notPaused allowedLend(from, share) returns (uint256 fraction) {
+        _accrue();
+        fraction = _addAsset(from, to, skim, share);
+    }
+
+    /// @notice Removes an asset from msg.sender and transfers it to `to`.
+    /// @param from Account to debit Assets from.
+    /// @param to The user that receives the removed assets.
+    /// @param fraction The amount/fraction of assets held to remove.
+    /// @return share The amount of shares transferred to `to`.
+    function removeAsset(
+        address from,
+        address to,
+        uint256 fraction
+    ) public notPaused returns (uint256 share) {
+        _accrue();
+        share = _removeAsset(from, to, fraction, true);
+        _allowedLend(from, share);
+    }
+
     /// @notice Adds `collateral` from msg.sender to the account `to`.
     /// @param from Account to transfer shares from.
     /// @param to The receiver of the tokens.
@@ -175,15 +222,17 @@ contract Singularity is SGLCommon {
         address from,
         address to,
         bool skim,
+        uint256 amount,
         uint256 share
     ) public {
         _executeModule(
-            Module.LendingBorrowing,
+            Module.Collateral,
             abi.encodeWithSelector(
-                SGLLendingBorrowing.addCollateral.selector,
+                SGLCollateral.addCollateral.selector,
                 from,
                 to,
                 skim,
+                amount,
                 share
             )
         );
@@ -195,9 +244,9 @@ contract Singularity is SGLCommon {
     /// @param share Amount of shares to remove.
     function removeCollateral(address from, address to, uint256 share) public {
         _executeModule(
-            Module.LendingBorrowing,
+            Module.Collateral,
             abi.encodeWithSelector(
-                SGLLendingBorrowing.removeCollateral.selector,
+                SGLCollateral.removeCollateral.selector,
                 from,
                 to,
                 share
@@ -217,13 +266,8 @@ contract Singularity is SGLCommon {
         uint256 amount
     ) public returns (uint256 part, uint256 share) {
         bytes memory result = _executeModule(
-            Module.LendingBorrowing,
-            abi.encodeWithSelector(
-                SGLLendingBorrowing.borrow.selector,
-                from,
-                to,
-                amount
-            )
+            Module.Borrow,
+            abi.encodeWithSelector(SGLBorrow.borrow.selector, from, to, amount)
         );
         (part, share) = abi.decode(result, (uint256, uint256));
     }
@@ -242,9 +286,9 @@ contract Singularity is SGLCommon {
         uint256 part
     ) public returns (uint256 amount) {
         bytes memory result = _executeModule(
-            Module.LendingBorrowing,
+            Module.Borrow,
             abi.encodeWithSelector(
-                SGLLendingBorrowing.repay.selector,
+                SGLBorrow.repay.selector,
                 from,
                 to,
                 skim,
@@ -269,9 +313,9 @@ contract Singularity is SGLCommon {
         bytes calldata dexData
     ) external returns (uint256 amountOut) {
         bytes memory result = _executeModule(
-            Module.LendingBorrowing,
+            Module.Leverage,
             abi.encodeWithSelector(
-                SGLLendingBorrowing.sellCollateral.selector,
+                SGLLeverage.sellCollateral.selector,
                 from,
                 share,
                 minAmountOut,
@@ -299,9 +343,9 @@ contract Singularity is SGLCommon {
         bytes calldata dexData
     ) external returns (uint256 amountOut) {
         bytes memory result = _executeModule(
-            Module.LendingBorrowing,
+            Module.Leverage,
             abi.encodeWithSelector(
-                SGLLendingBorrowing.buyCollateral.selector,
+                SGLLeverage.buyCollateral.selector,
                 from,
                 borrowAmount,
                 supplyAmount,
@@ -429,10 +473,14 @@ contract Singularity is SGLCommon {
     // ************************* //
     function _extractModule(Module _module) private view returns (address) {
         address module;
-        if (_module == Module.LendingBorrowing) {
-            module = address(lendingBorrowingModule);
+        if (_module == Module.Borrow) {
+            module = address(borrowModule);
+        } else if (_module == Module.Collateral) {
+            module = address(collateralModule);
         } else if (_module == Module.Liquidation) {
             module = address(liquidationModule);
+        } else if (_module == Module.Leverage) {
+            module = address(leverageModule);
         }
         if (module == address(0)) {
             revert("SGL: module not set");

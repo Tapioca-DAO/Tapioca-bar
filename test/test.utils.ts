@@ -690,17 +690,34 @@ async function registerSingularity(
         staging,
     );
 
-    const _sglLendingBorrowingModule = await (
-        await ethers.getContractFactory('SGLLendingBorrowing')
+    const _sglCollateral = await (
+        await ethers.getContractFactory('SGLCollateral')
     ).deploy({ gasPrice: gasPrice });
-    await _sglLendingBorrowingModule.deployed();
+    await _sglCollateral.deployed();
     log(
-        `Deployed WethUsdcSGLLendingBorrowing ${_sglLendingBorrowingModule.address} with no arguments`,
+        `Deployed SGLCollateral ${_sglCollateral.address} with no arguments`,
+        staging,
+    );
+
+    const _sglBorrow = await (
+        await ethers.getContractFactory('SGLBorrow')
+    ).deploy({ gasPrice: gasPrice });
+    await _sglBorrow.deployed();
+    log(`Deployed SGLBorrow ${_sglBorrow.address} with no arguments`, staging);
+
+    const _sglLeverage = await (
+        await ethers.getContractFactory('SGLLeverage')
+    ).deploy({ gasPrice: gasPrice });
+    await _sglLeverage.deployed();
+    log(
+        `Deployed SGLLeverage ${_sglLeverage.address} with no arguments`,
         staging,
     );
 
     const data = new ethers.utils.AbiCoder().encode(
         [
+            'address',
+            'address',
             'address',
             'address',
             'address',
@@ -713,7 +730,9 @@ async function registerSingularity(
         ],
         [
             _sglLiquidationModule.address,
-            _sglLendingBorrowingModule.address,
+            _sglBorrow.address,
+            _sglCollateral.address,
+            _sglLeverage.address,
             bar.address,
             weth.address,
             wethAssetId,
@@ -743,7 +762,9 @@ async function registerSingularity(
     return {
         singularityMarket,
         _sglLiquidationModule,
-        _sglLendingBorrowingModule,
+        _sglBorrow,
+        _sglCollateral,
+        _sglLeverage,
     };
 }
 
@@ -854,12 +875,30 @@ async function createWethUsd0Singularity(
         staging,
     );
 
-    const _sglLendingBorrowingModule = await (
-        await ethers.getContractFactory('SGLLendingBorrowing')
+    const _sglCollateral = await (
+        await ethers.getContractFactory('SGLCollateral')
     ).deploy({ gasPrice: gasPrice });
-    await _sglLendingBorrowingModule.deployed();
+    await _sglCollateral.deployed();
     log(
-        `Deployed WethUsd0SGLLendingBorrowingModule ${_sglLendingBorrowingModule.address} with no arguments`,
+        `Deployed WethUsd0SGLCollateralModule ${_sglCollateral.address} with no arguments`,
+        staging,
+    );
+
+    const _sglBorrow = await (
+        await ethers.getContractFactory('SGLBorrow')
+    ).deploy({ gasPrice: gasPrice });
+    await _sglBorrow.deployed();
+    log(
+        `Deployed WethUsd0SGLBorrowModule ${_sglBorrow.address} with no arguments`,
+        staging,
+    );
+
+    const _sglLeverage = await (
+        await ethers.getContractFactory('SGLLeverage')
+    ).deploy({ gasPrice: gasPrice });
+    await _sglLeverage.deployed();
+    log(
+        `Deployed WethUsd0SGLLeverageModule ${_sglLeverage.address} with no arguments`,
         staging,
     );
 
@@ -889,6 +928,8 @@ async function createWethUsd0Singularity(
             'address',
             'address',
             'address',
+            'address',
+            'address',
             'uint256',
             'address',
             'uint256',
@@ -897,7 +938,9 @@ async function createWethUsd0Singularity(
         ],
         [
             _sglLiquidationModule.address,
-            _sglLendingBorrowingModule.address,
+            _sglBorrow.address,
+            _sglCollateral.address,
+            _sglLeverage.address,
             bar.address,
             usd0.address,
             usdoAssetId,
@@ -1426,9 +1469,10 @@ export async function register(staging?: boolean) {
         staging,
     );
     const wethUsdcSingularity = wethUsdcSingularityData.singularityMarket;
-    const _sglLendingBorrowingModule =
-        wethUsdcSingularityData._sglLendingBorrowingModule;
+    const _sglCollateralModule = wethUsdcSingularityData._sglCollateral;
+    const _sglBorrowModule = wethUsdcSingularityData._sglBorrow;
     const _sglLiquidationModule = wethUsdcSingularityData._sglLiquidationModule;
+    const _sglLeverageModule = wethUsdcSingularityData._sglLeverage;
     log(`Deployed WethUsdcSingularity ${wethUsdcSingularity.address}`, staging);
 
     log('Deploying WbtcUsdcSingularity', staging);
@@ -1446,10 +1490,11 @@ export async function register(staging?: boolean) {
         staging,
     );
     const wbtcUsdcSingularity = wbtcUsdcSingularityData.singularityMarket;
-    const _sglWbtcUsdcLendingBorrowingModule =
-        wbtcUsdcSingularityData._sglLendingBorrowingModule;
+    const _sglWbtcUsdcCollateralModule = wbtcUsdcSingularityData._sglCollateral;
+    const _sglWbtcUsdcBorrowModule = wbtcUsdcSingularityData._sglBorrow;
     const _sglWbtcUsdcLiquidationModule =
         wbtcUsdcSingularityData._sglLiquidationModule;
+    const _sglWbtcUsdcLeverageModule = wbtcUsdcSingularityData._sglLeverage;
 
     log(`Deployed WbtcUsdcSingularity ${wbtcUsdcSingularity.address}`, staging);
 
@@ -1673,10 +1718,14 @@ export async function register(staging?: boolean) {
         wbtcBigBangMarket,
         wethUsdcSingularity,
         _sglLiquidationModule,
-        _sglLendingBorrowingModule,
+        _sglCollateralModule,
+        _sglBorrowModule,
+        _sglLeverageModule,
         wbtcUsdcSingularity,
-        _sglWbtcUsdcLendingBorrowingModule,
+        _sglWbtcUsdcCollateralModule,
+        _sglWbtcUsdcBorrowModule,
         _sglWbtcUsdcLiquidationModule,
+        _sglWbtcUsdcLeverageModule,
         eoa1,
         multiSwapper,
         singularityFeeTo,
@@ -1820,6 +1869,7 @@ export async function register(staging?: boolean) {
                 _account.address,
                 _account.address,
                 false,
+                0,
                 _wethUsdcValShare,
             )
         ).wait();
@@ -1855,6 +1905,7 @@ export async function register(staging?: boolean) {
                 _account.address,
                 _account.address,
                 false,
+                0,
                 _wbtcUsdcValShare,
             )
         ).wait();
