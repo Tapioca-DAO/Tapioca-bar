@@ -5,6 +5,7 @@ import {
     loadFixture,
     takeSnapshot,
 } from '@nomicfoundation/hardhat-network-helpers';
+import { LiquidationQueue__factory } from '../gitsub_tapioca-sdk/src/typechain/tapioca-periphery';
 
 describe('Singularity test', () => {
     describe('reverts', () => {
@@ -131,6 +132,8 @@ describe('Singularity test', () => {
                     'address',
                     'address',
                     'address',
+                    'address',
+                    'address',
                     'uint256',
                     'address',
                     'uint256',
@@ -138,6 +141,8 @@ describe('Singularity test', () => {
                     'uint256',
                 ],
                 [
+                    ethers.constants.AddressZero,
+                    ethers.constants.AddressZero,
                     ethers.constants.AddressZero,
                     ethers.constants.AddressZero,
                     bar.address,
@@ -176,12 +181,16 @@ describe('Singularity test', () => {
                 bar,
                 mediumRiskMC,
                 wethUsdcOracle,
-                _sglLendingBorrowingModule,
+                _sglCollateralModule,
+                _sglBorrowModule,
                 _sglLiquidationModule,
+                _sglLeverageModule,
             } = await loadFixture(register);
 
             const data = new ethers.utils.AbiCoder().encode(
                 [
+                    'address',
+                    'address',
                     'address',
                     'address',
                     'address',
@@ -196,7 +205,9 @@ describe('Singularity test', () => {
                 ],
                 [
                     _sglLiquidationModule.address,
-                    _sglLendingBorrowingModule.address,
+                    _sglBorrowModule.address,
+                    _sglCollateralModule.address,
+                    _sglLeverageModule.address,
                     bar.address,
                     ethers.constants.AddressZero,
                     0,
@@ -264,7 +275,7 @@ describe('Singularity test', () => {
             const addCollateralFn =
                 wethUsdcSingularity.interface.encodeFunctionData(
                     'addCollateral',
-                    [eoa1.address, eoa1.address, false, usdcMintValShare],
+                    [eoa1.address, eoa1.address, false, 0, usdcMintValShare],
                 );
             const borrowFn = wethUsdcSingularity.interface.encodeFunctionData(
                 'borrow',
@@ -330,7 +341,7 @@ describe('Singularity test', () => {
             const addCollateralFn =
                 wethUsdcSingularity.interface.encodeFunctionData(
                     'addCollateral',
-                    [eoa1.address, eoa1.address, false, usdcMintValShare],
+                    [eoa1.address, eoa1.address, false, 0, usdcMintValShare],
                 );
             const borrowFn = wethUsdcSingularity.interface.encodeFunctionData(
                 'borrow',
@@ -728,7 +739,7 @@ describe('Singularity test', () => {
             const addCollateralFn =
                 wethUsdcSingularity.interface.encodeFunctionData(
                     'addCollateral',
-                    [eoa1.address, eoa1.address, false, usdcMintValShare],
+                    [eoa1.address, eoa1.address, false, 0, usdcMintValShare],
                 );
             const borrowFn = wethUsdcSingularity.interface.encodeFunctionData(
                 'borrow',
@@ -923,7 +934,7 @@ describe('Singularity test', () => {
             const addCollateralFn =
                 wethUsdcSingularity.interface.encodeFunctionData(
                     'addCollateral',
-                    [eoa1.address, eoa1.address, false, usdcMintValShare],
+                    [eoa1.address, eoa1.address, false, 0, usdcMintValShare],
                 );
             const borrowFn = wethUsdcSingularity.interface.encodeFunctionData(
                 'borrow',
@@ -1473,39 +1484,6 @@ describe('Singularity test', () => {
             expect(amountHarvested.gte(acceptableHarvestMargin)).to.be.true;
         });
 
-        it('should get correct collateral amount from collateral shares', async () => {
-            const {
-                deployer,
-                usdc,
-                BN,
-                approveTokensAndSetBarApproval,
-                usdcDepositAndAddCollateral,
-                wethUsdcSingularity,
-                __wethUsdcPrice,
-                eoa1,
-                magnetar,
-            } = await loadFixture(register);
-
-            const wethAmount = BN(1e18).mul(1);
-            const usdcAmount = wethAmount
-                .mul(__wethUsdcPrice.mul(2))
-                .div((1e18).toString());
-
-            await usdc.freeMint(usdcAmount);
-            await approveTokensAndSetBarApproval();
-            await usdcDepositAndAddCollateral(usdcAmount);
-
-            await usdc.connect(eoa1).freeMint(usdcAmount.mul(2));
-            await approveTokensAndSetBarApproval(eoa1);
-            await usdcDepositAndAddCollateral(usdcAmount.mul(2), eoa1);
-
-            const collateralAmount = await magnetar.getCollateralAmountForShare(
-                wethUsdcSingularity.address,
-                await wethUsdcSingularity.userCollateralShare(deployer.address),
-            );
-
-            expect(collateralAmount).to.be.equal(usdcAmount);
-        });
         it('should compute amount to solvency for nothing borrowed', async () => {
             const { wethUsdcSingularity } = await loadFixture(register);
             const amountForNothingBorrowed =
@@ -2335,7 +2313,7 @@ describe('Singularity test', () => {
     });
 
     //todo: remove skip when swappers references are updated
-    it.skip('should create and test wethUsd0 singularity', async () => {
+    it('should create and test wethUsd0 singularity', async () => {
         const {
             deployer,
             bar,
@@ -2369,10 +2347,18 @@ describe('Singularity test', () => {
             await ethers.getContractFactory('SGLLiquidation')
         ).deploy();
         await _sglLiquidationModule.deployed();
-        const _sglLendingBorrowingModule = await (
-            await ethers.getContractFactory('SGLLendingBorrowing')
+        const _sglBorrow = await (
+            await ethers.getContractFactory('SGLBorrow')
         ).deploy();
-        await _sglLendingBorrowingModule.deployed();
+        await _sglBorrow.deployed();
+        const _sglCollateral = await (
+            await ethers.getContractFactory('SGLCollateral')
+        ).deploy();
+        await _sglCollateral.deployed();
+        const _sglLeverage = await (
+            await ethers.getContractFactory('SGLLeverage')
+        ).deploy();
+        await _sglLeverage.deployed();
 
         const collateralSwapPath = [usd0.address, weth.address];
 
@@ -2385,6 +2371,8 @@ describe('Singularity test', () => {
                 'address',
                 'address',
                 'address',
+                'address',
+                'address',
                 'uint256',
                 'address',
                 'uint256',
@@ -2393,7 +2381,9 @@ describe('Singularity test', () => {
             ],
             [
                 _sglLiquidationModule.address,
-                _sglLendingBorrowingModule.address,
+                _sglBorrow.address,
+                _sglCollateral.address,
+                _sglLeverage.address,
                 bar.address,
                 usd0.address,
                 usdoAssetId,
@@ -2416,10 +2406,8 @@ describe('Singularity test', () => {
         await usd0.setMinterStatus(wethUsdoSingularity.address, true);
         await usd0.setBurnerStatus(wethUsdoSingularity.address, true);
 
-        const liquidationQueue = await (
-            await ethers.getContractFactory('LiquidationQueue')
-        ).deploy();
-        await liquidationQueue.deployed();
+        const LiquidationQueue = new LiquidationQueue__factory(deployer);
+        const liquidationQueue = await LiquidationQueue.deploy();
 
         const feeCollector = new ethers.Wallet(
             ethers.Wallet.createRandom().privateKey,
@@ -2529,7 +2517,7 @@ describe('Singularity test', () => {
             .balanceOf(eoa1.address, wethAssetId);
         await wethUsdoSingularity
             .connect(eoa1)
-            .addCollateral(eoa1.address, eoa1.address, false, _wethValShare);
+            .addCollateral(eoa1.address, eoa1.address, false, 0, _wethValShare);
         expect(
             await wethUsdoSingularity.userCollateralShare(eoa1.address),
         ).equal(await yieldBox.toShare(wethAssetId, wethDepositAmount, false));

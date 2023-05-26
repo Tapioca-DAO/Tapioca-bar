@@ -272,8 +272,12 @@ contract BigBang is BoringOwnable, Market {
         address from,
         address to,
         bool skim,
+        uint256 amount,
         uint256 share
     ) public allowedBorrow(from, share) notPaused {
+        if (share == 0) {
+            share = yieldBox.toShare(collateralId, amount, false);
+        }
         userCollateralShare[to] += share;
         uint256 oldTotalCollateralShare = totalCollateralShare;
         totalCollateralShare = oldTotalCollateralShare + share;

@@ -15,38 +15,6 @@ contract SGLCommon is SGLStorage {
         _accrue();
     }
 
-    /// @notice Removes an asset from msg.sender and transfers it to `to`.
-    /// @param from Account to debit Assets from.
-    /// @param to The user that receives the removed assets.
-    /// @param fraction The amount/fraction of assets held to remove.
-    /// @return share The amount of shares transferred to `to`.
-    function removeAsset(
-        address from,
-        address to,
-        uint256 fraction
-    ) public notPaused returns (uint256 share) {
-        _accrue();
-        share = _removeAsset(from, to, fraction, true);
-        _allowedLend(from, share);
-    }
-
-    /// @notice Adds assets to the lending pair.
-    /// @param from Address to add asset from.
-    /// @param to The address of the user to receive the assets.
-    /// @param skim True if the amount should be skimmed from the deposit balance of msg.sender.
-    /// False if tokens from msg.sender in `yieldBox` should be transferred.
-    /// @param share The amount of shares to add.
-    /// @return fraction Total fractions added.
-    function addAsset(
-        address from,
-        address to,
-        bool skim,
-        uint256 share
-    ) public notPaused allowedLend(from, share) returns (uint256 fraction) {
-        _accrue();
-        fraction = _addAsset(from, to, skim, share);
-    }
-
     // ************************** //
     // *** PRIVATE FUNCTIONS *** //
     // ************************* //
