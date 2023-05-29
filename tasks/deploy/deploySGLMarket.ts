@@ -19,7 +19,9 @@ export const deploySGLMarket__task = async (
         yieldBox,
         penrose,
         usd0,
-        sglLendingBorrowing,
+        sglCollateral,
+        sglBorrow,
+        sglLeverage,
         sglLiquidation,
         mediumRiskMC,
         token,
@@ -67,6 +69,8 @@ export const deploySGLMarket__task = async (
             'address',
             'address',
             'address',
+            'address',
+            'address',
             'uint256',
             'address',
             'uint256',
@@ -75,13 +79,15 @@ export const deploySGLMarket__task = async (
         ],
         [
             sglLiquidation.address,
-            sglLendingBorrowing.address,
+            sglBorrow.address,
+            sglCollateral.address,
+            sglLeverage.address,
             penrose.address,
             asset.assetAddress,
             assetId,
             collateral.collateralAddress,
             collateralId,
-            oracleAddress.address,
+            oracleAddress,
             exchangeRatePrecision ??
                 hre.ethers.BigNumber.from((1e18).toString()),
         ],
@@ -229,7 +235,7 @@ async function loadStrats(
 
     return {
         usd0Strategy,
-        oracleAddress: oracle?.address ?? VM.list()[0],
+        oracleAddress: oracle?.address ?? VM.list()[0].address,
     };
 }
 
@@ -257,10 +263,24 @@ async function loadContracts(hre: HardhatRuntimeEnvironment, tag: string) {
     const { contract: sglLiquidation } =
         await hre.SDK.hardhatUtils.getLocalContract(hre, 'SGLLiquidation', tag);
 
-    const { contract: sglLendingBorrowing } =
+    const { contract: sglCollateral } =
         await hre.SDK.hardhatUtils.getLocalContract(
             hre,
-            'SGLLendingBorrowing',
+            'SGLCollateral',
+            tag,
+        );
+
+    const { contract: sglBorrow } =
+        await hre.SDK.hardhatUtils.getLocalContract(
+            hre,
+            'SGLBorrow',
+            tag,
+        );
+
+    const { contract: sglLeverage } =
+        await hre.SDK.hardhatUtils.getLocalContract(
+            hre,
+            'SGLLeverage',
             tag,
         );
 
@@ -293,7 +313,9 @@ async function loadContracts(hre: HardhatRuntimeEnvironment, tag: string) {
         penrose,
         usd0,
         sglLiquidation,
-        sglLendingBorrowing,
+        sglCollateral,
+        sglBorrow,
+        sglLeverage,
         mediumRiskMC,
         token,
     };

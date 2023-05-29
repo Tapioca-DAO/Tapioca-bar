@@ -7,6 +7,43 @@ contract SGLLeverage is SGLLendingCommon {
     using RebaseLibrary for Rebase;
     using BoringERC20 for IERC20;
 
+    struct LeverageLZData {
+        uint16 lzDstChainId;
+        address zroPaymentAddress;
+        bytes airdropAdapterParam;
+        address refundAddress;
+    }
+
+    struct LeverageSwapData {
+        address tokenOut;
+        uint256 amountOutMin;
+        bytes data;
+    }
+    struct LeverageExternalContractsData {
+        address swapper;
+        address tOft;
+        address srcMarket;
+        uint16 srcLzChainId;
+        uint256 sendToYBExtraGasLimit;
+        uint256 executeOnChainGasLimit;
+        uint256 dstAssetId;
+    }
+
+
+    function multiHopBuyCollateral(
+         address from,
+         uint256 collateralAmount,
+         uint256 borrowAmount
+     ) external payable notPaused solvent(from) allowed(from) {
+        //add collateral
+        uint256 collateralShare = yieldBox.toShare(
+            collateralId,
+            collateralAmount,
+            false
+        );
+        _addCollateral(from, from, false, 0, collateralShare);
+     }
+
     /// @notice Lever down: Sell collateral to repay debt; excess goes to YB
     /// @param from The user who sells
     /// @param share Collateral YieldBox-shares to sell

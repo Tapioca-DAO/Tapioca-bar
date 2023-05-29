@@ -1,7 +1,9 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { IDeployerVMAdd } from 'tapioca-sdk/dist/ethers/hardhat/DeployerVM';
 import {
-    SGLLendingBorrowing__factory,
+    SGLCollateral__factory,
+    SGLBorrow__factory,
+    SGLLeverage__factory,
     SGLLiquidation__factory,
 } from '../../typechain';
 
@@ -10,7 +12,9 @@ export const buildSingularityModules = async (
 ): Promise<
     [
         IDeployerVMAdd<SGLLiquidation__factory>,
-        IDeployerVMAdd<SGLLendingBorrowing__factory>,
+        IDeployerVMAdd<SGLBorrow__factory>,
+        IDeployerVMAdd<SGLCollateral__factory>,
+        IDeployerVMAdd<SGLLeverage__factory>,
     ]
 > => {
     return [
@@ -21,9 +25,23 @@ export const buildSingularityModules = async (
         },
         {
             contract: await hre.ethers.getContractFactory(
-                'SGLLendingBorrowing',
+                'SGLBorrow',
             ),
-            deploymentName: 'SGLLendingBorrowing',
+            deploymentName: 'SGLBorrow',
+            args: [],
+        },
+        {
+            contract: await hre.ethers.getContractFactory(
+                'SGLCollateral',
+            ),
+            deploymentName: 'SGLCollateral',
+            args: [],
+        },
+        {
+            contract: await hre.ethers.getContractFactory(
+                'SGLLeverage',
+            ),
+            deploymentName: 'SGLLeverage',
             args: [],
         },
     ];
