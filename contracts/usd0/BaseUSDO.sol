@@ -43,7 +43,7 @@ abstract contract BaseUSDO is OFTV2, ERC20Permit {
     IYieldBoxBase public immutable yieldBox;
 
     uint16 public constant PT_YB_SEND_SGL_LEND = 774;
-    uint16 public constant PT_LEVERAGE_MARKET = 775;
+    uint16 public constant PT_LEVERAGE_MARKET_UP = 775;
 
     struct SendOptions {
         uint256 extraGasLimit;
@@ -103,7 +103,7 @@ abstract contract BaseUSDO is OFTV2, ERC20Permit {
         _debitFrom(msg.sender, lzEndpoint.getChainId(), senderBytes, amount);
 
         bytes memory lzPayload = abi.encode(
-            PT_LEVERAGE_MARKET,
+            PT_LEVERAGE_MARKET_UP,
             senderBytes,
             amount,
             swapData,
@@ -172,8 +172,7 @@ abstract contract BaseUSDO is OFTV2, ERC20Permit {
     // ************************* //
     // *** PRIVATE FUNCTIONS *** //
     // ************************* //
-
-    function _leverage(
+    function _leverageUp(
         uint16 _srcChainId,
         bytes memory _payload
     ) internal virtual {
@@ -198,8 +197,8 @@ abstract contract BaseUSDO is OFTV2, ERC20Permit {
 
         _creditTo(_srcChainId, address(this), amount);
 
-        //swap
-        approve(externalData.swapper, amount);
+        //swap from USDO
+        _safeApprove(address(this), externalData.swapper, amount);
         ISwapper.SwapData memory _swapperData = ISwapper(externalData.swapper)
             .buildSwapData(
                 address(this),
@@ -216,7 +215,7 @@ abstract contract BaseUSDO is OFTV2, ERC20Permit {
             swapData.data
         );
 
-        //wrap
+        //wrap into tOFT
         bool isNative = ITapiocaOFTBase(externalData.tOft).isNative();
         if (isNative) {
             ITapiocaOFTBase(externalData.tOft).wrapNative{value: amountOut}(
@@ -340,8 +339,8 @@ abstract contract BaseUSDO is OFTV2, ERC20Permit {
 
         if (packetType == PT_YB_SEND_SGL_LEND) {
             _lend(_srcChainId, _payload);
-        } else if (packetType == PT_LEVERAGE_MARKET) {
-            _leverage(_srcChainId, _payload);
+        } else if (packetType == PT_LEVERAGE_MARKET_UP) {
+            _leverageUp(_srcChainId, _payload);
         } else {
             packetType = _payload.toUint8(0);
             if (packetType == PT_SEND) {
