@@ -37,8 +37,6 @@ contract BigBang is BoringOwnable, Market {
 
     IBigBang.AccrueInfo public accrueInfo;
 
-    uint256 public borrowingFee;
-
     uint256 public totalFees;
 
     bool private _isEthMarket;
@@ -76,14 +74,10 @@ contract BigBang is BoringOwnable, Market {
         uint256 part
     );
 
-    event LogBorrowingFee(uint256 _oldVal, uint256 _newVal);
-
     // ***************** //
     // *** CONSTANTS *** //
     // ***************** //
     uint256 private constant LIQUIDATION_MULTIPLIER = 112000; // add 12%
-    uint256 private constant MAX_BORROWING_FEE = 8e4; //at 80% for testing; TODO
-    uint256 private constant MAX_STABILITY_FEE = 8e17; //at 80% for testing; TODO
 
     constructor() MarketERC20("Tapioca BigBang") {}
 
@@ -139,7 +133,9 @@ contract BigBang is BoringOwnable, Market {
         protocolFee = 10000; // 10%
         collateralizationRate = 75000; // 75%
 
-        EXCHANGE_RATE_PRECISION = _exchangeRatePrecision;
+        EXCHANGE_RATE_PRECISION = _exchangeRatePrecision > 0
+            ? _exchangeRatePrecision
+            : 1e18;
 
         _isEthMarket = collateralId == penrose.wethAssetId();
         if (!_isEthMarket) {
@@ -152,6 +148,7 @@ contract BigBang is BoringOwnable, Market {
         minLiquidatorReward = 1e3;
         maxLiquidatorReward = 1e4;
         liquidationBonusAmount = 1e4;
+        borrowOpeningFee = 50; // 0.05%
     }
 
     // ********************** //
@@ -249,12 +246,7 @@ contract BigBang is BoringOwnable, Market {
         address to,
         bool,
         uint256 part
-    )
-        public
-        notPaused
-        allowedBorrow(from, part) //todo: check amount argumenet
-        returns (uint256 amount)
-    {
+    ) public notPaused allowedBorrow(from, part) returns (uint256 amount) {
         updateExchangeRate();
 
         accrue();
@@ -275,14 +267,7 @@ contract BigBang is BoringOwnable, Market {
         uint256 amount,
         uint256 share
     ) public allowedBorrow(from, share) notPaused {
-        if (share == 0) {
-            share = yieldBox.toShare(collateralId, amount, false);
-        }
-        userCollateralShare[to] += share;
-        uint256 oldTotalCollateralShare = totalCollateralShare;
-        totalCollateralShare = oldTotalCollateralShare + share;
-        _addTokens(from, collateralId, share, oldTotalCollateralShare, skim);
-        emit LogAddCollateral(skim ? address(yieldBox) : from, to, share);
+        _addCollateral(from, to, skim, amount, share);
     }
 
     /// @notice Removes `share` amount of collateral and transfers it to `to`.
@@ -344,6 +329,104 @@ contract BigBang is BoringOwnable, Market {
         );
     }
 
+    /// @notice Lever up: Borrow more and buy collateral with it.
+    /// @param from The user who buys
+    /// @param borrowAmount Amount of extra asset borrowed
+    /// @param supplyAmount Amount of asset supplied (down payment)
+    /// @param minAmountOut Mininal collateral amount to receive
+    /// @param swapper Swapper to execute the purchase
+    /// @param dexData Additional data to pass to the swapper
+    /// @return amountOut Actual collateral amount purchased
+    function buyCollateral(
+        address from,
+        uint256 borrowAmount,
+        uint256 supplyAmount,
+        uint256 minAmountOut,
+        ISwapper swapper,
+        bytes calldata dexData
+    ) external notPaused solvent(from) returns (uint256 amountOut) {
+        require(penrose.swappers(swapper), "SGL: Invalid swapper");
+
+        // Let this fail first to save gas:
+        uint256 supplyShare = yieldBox.toShare(assetId, supplyAmount, true);
+        if (supplyShare > 0) {
+            yieldBox.transfer(from, address(swapper), assetId, supplyShare);
+        }
+
+        uint256 borrowShare;
+        (, borrowShare) = _borrow(from, address(swapper), borrowAmount);
+
+        ISwapper.SwapData memory swapData = swapper.buildSwapData(
+            assetId,
+            collateralId,
+            0,
+            supplyShare + borrowShare,
+            true,
+            true
+        );
+
+        uint256 collateralShare;
+        (amountOut, collateralShare) = swapper.swap(
+            swapData,
+            minAmountOut,
+            from,
+            dexData
+        );
+        require(amountOut >= minAmountOut, "SGL: not enough");
+
+        _allowedBorrow(from, collateralShare);
+        _addCollateral(from, from, false, 0, collateralShare);
+    }
+
+    /// @notice Lever down: Sell collateral to repay debt; excess goes to YB
+    /// @param from The user who sells
+    /// @param share Collateral YieldBox-shares to sell
+    /// @param minAmountOut Mininal proceeds required for the sale
+    /// @param swapper Swapper to execute the sale
+    /// @param dexData Additional data to pass to the swapper
+    /// @return amountOut Actual asset amount received in the sale
+    function sellCollateral(
+        address from,
+        uint256 share,
+        uint256 minAmountOut,
+        ISwapper swapper,
+        bytes calldata dexData
+    ) external notPaused solvent(from) returns (uint256 amountOut) {
+        require(penrose.swappers(swapper), "SGL: Invalid swapper");
+
+        _allowedBorrow(from, share);
+        _removeCollateral(from, address(swapper), share);
+        ISwapper.SwapData memory swapData = swapper.buildSwapData(
+            collateralId,
+            assetId,
+            0,
+            share,
+            true,
+            true
+        );
+        uint256 shareOut;
+        (amountOut, shareOut) = swapper.swap(
+            swapData,
+            minAmountOut,
+            from,
+            dexData
+        );
+        // As long as the ratio is correct, we trust `amountOut` resp.
+        // `shareOut`, because all money received by the swapper gets used up
+        // one way or another, or the transaction will revert.
+        require(amountOut >= minAmountOut, "SGL: not enough");
+        uint256 partOwed = userBorrowPart[from];
+        uint256 amountOwed = totalBorrow.toElastic(partOwed, true);
+        uint256 shareOwed = yieldBox.toShare(assetId, amountOwed, true);
+        if (shareOwed <= shareOut) {
+            _repay(from, from, partOwed);
+        } else {
+            //repay as much as we can
+            uint256 partOut = totalBorrow.toBase(amountOut, false);
+            _repay(from, from, partOut);
+        }
+    }
+
     function transfer(
         address to,
         uint256 amount
@@ -354,17 +437,6 @@ contract BigBang is BoringOwnable, Market {
         address to,
         uint256 amount
     ) public override returns (bool) {}
-
-    // *********************** //
-    // *** OWNER FUNCTIONS *** //
-    // *********************** //
-    /// @notice Updates the borrowing fee
-    /// @param _borrowingFee the new value
-    function updateBorrowingFee(uint256 _borrowingFee) external onlyOwner {
-        require(_borrowingFee <= MAX_BORROWING_FEE, "BigBang: value not valid");
-        emit LogBorrowingFee(borrowingFee, _borrowingFee);
-        borrowingFee = _borrowingFee;
-    }
 
     // ************************* //
     // *** PRIVATE FUNCTIONS *** //
@@ -398,6 +470,23 @@ contract BigBang is BoringOwnable, Market {
         accrueInfo = _accrueInfo;
 
         emit LogAccrue(extraAmount, _accrueInfo.debtRate);
+    }
+
+    function _addCollateral(
+        address from,
+        address to,
+        bool skim,
+        uint256 amount,
+        uint256 share
+    ) internal {
+        if (share == 0) {
+            share = yieldBox.toShare(collateralId, amount, false);
+        }
+        userCollateralShare[to] += share;
+        uint256 oldTotalCollateralShare = totalCollateralShare;
+        totalCollateralShare = oldTotalCollateralShare + share;
+        _addTokens(from, collateralId, share, oldTotalCollateralShare, skim);
+        emit LogAddCollateral(skim ? address(yieldBox) : from, to, share);
     }
 
     function _liquidateUser(
@@ -581,14 +670,13 @@ contract BigBang is BoringOwnable, Market {
         emit LogRepay(from, to, amount, part);
     }
 
-    //TODO: accrue fees when re-borrowing
     /// @dev Concrete implementation of `borrow`.
     function _borrow(
         address from,
         address to,
         uint256 amount
     ) internal returns (uint256 part, uint256 share) {
-        uint256 feeAmount = (amount * borrowingFee) / FEE_PRECISION; // A flat % fee is charged for any borrow
+        uint256 feeAmount = (amount * borrowOpeningFee) / FEE_PRECISION; // A flat % fee is charged for any borrow
 
         (totalBorrow, part) = totalBorrow.add(amount + feeAmount, true);
         require(

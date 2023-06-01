@@ -16,6 +16,7 @@ function E(n: number | bigint, p: number | bigint = 18) {
 
 describe('Singularity Leverage', () => {
     // Debugging only
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     let g: (a: string, t: number, r: boolean) => Promise<any>;
 
     let getDebtAmount: (a: string) => Promise<any>;

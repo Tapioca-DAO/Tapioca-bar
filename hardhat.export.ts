@@ -77,7 +77,7 @@ const config: HardhatUserConfig & { dodoc?: any; vyper: any } = {
                     viaIR: true,
                     optimizer: {
                         enabled: true,
-                        runs: 300,
+                        runs: 200,
                     },
                 },
             },
@@ -130,7 +130,7 @@ const config: HardhatUserConfig & { dodoc?: any; vyper: any } = {
         timeout: 4000000,
     },
     dodoc: {
-        runOnCompile: true,
+        runOnCompile: false,
         freshOutput: true,
     },
 };

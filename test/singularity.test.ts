@@ -1,11 +1,28 @@
 import hre, { ethers } from 'hardhat';
+import { BigNumberish, BytesLike, Wallet } from 'ethers';
 import { expect } from 'chai';
-import { getSGLPermitSignature, register } from './test.utils';
+import { BN, getSGLPermitSignature, register } from './test.utils';
 import {
     loadFixture,
     takeSnapshot,
 } from '@nomicfoundation/hardhat-network-helpers';
 import { LiquidationQueue__factory } from '../gitsub_tapioca-sdk/src/typechain/tapioca-periphery';
+import {
+    ERC20Mock,
+    ERC20Mock__factory,
+    LZEndpointMock__factory,
+    OracleMock__factory,
+    UniswapV3SwapperMock__factory,
+} from '../gitsub_tapioca-sdk/src/typechain/tapioca-mocks';
+import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
+import {
+    BaseTOFT,
+    TapiocaOFT,
+    TapiocaOFT__factory,
+    TapiocaWrapper__factory,
+} from '../gitsub_tapioca-sdk/src/typechain/tapiocaz';
+import TapiocaOFTArtifact from '../gitsub_tapioca-sdk/src/artifacts/tapiocaz/TapiocaOFT.json';
+import { OracleMock } from 'tapioca-sdk/dist/typechain/tapioca-mocks';
 
 describe('Singularity test', () => {
     describe('reverts', () => {
@@ -2312,290 +2329,978 @@ describe('Singularity test', () => {
         });
     });
 
-    //todo: remove skip when swappers references are updated
-    it('should create and test wethUsd0 singularity', async () => {
-        const {
-            deployer,
-            bar,
-            eoa1,
-            yieldBox,
-            weth,
-            wethAssetId,
-            usdcAssetId,
-            mediumRiskMC,
-            wethUsdcOracle,
-            usdc,
-            usd0,
-            __wethUsdcPrice,
-            deployCurveStableToUsdoBidder,
-            multiSwapper,
-            BN,
-            timeTravel,
-        } = await loadFixture(register);
-        //deploy and register USDO
-
-        const usdoStratregy = await bar.emptyStrategies(usd0.address);
-        const usdoAssetId = await yieldBox.ids(
-            1,
-            usd0.address,
-            usdoStratregy,
-            0,
-        );
-
-        //Deploy & set Singularity
-        const _sglLiquidationModule = await (
-            await ethers.getContractFactory('SGLLiquidation')
-        ).deploy();
-        await _sglLiquidationModule.deployed();
-        const _sglBorrow = await (
-            await ethers.getContractFactory('SGLBorrow')
-        ).deploy();
-        await _sglBorrow.deployed();
-        const _sglCollateral = await (
-            await ethers.getContractFactory('SGLCollateral')
-        ).deploy();
-        await _sglCollateral.deployed();
-        const _sglLeverage = await (
-            await ethers.getContractFactory('SGLLeverage')
-        ).deploy();
-        await _sglLeverage.deployed();
-
-        const collateralSwapPath = [usd0.address, weth.address];
-
-        const newPrice = __wethUsdcPrice.div(1000000);
-        await wethUsdcOracle.set(newPrice);
-
-        const data = new ethers.utils.AbiCoder().encode(
-            [
-                'address',
-                'address',
-                'address',
-                'address',
-                'address',
-                'address',
-                'uint256',
-                'address',
-                'uint256',
-                'address',
-                'uint256',
-            ],
-            [
-                _sglLiquidationModule.address,
-                _sglBorrow.address,
-                _sglCollateral.address,
-                _sglLeverage.address,
-                bar.address,
-                usd0.address,
-                usdoAssetId,
-                weth.address,
+    describe('usdo SGL', async () =>{
+         it('should create and test wethUsd0 singularity', async () => {
+            const {
+                deployer,
+                bar,
+                eoa1,
+                yieldBox,
+                weth,
                 wethAssetId,
-                wethUsdcOracle.address,
-                ethers.utils.parseEther('1'),
-            ],
-        );
-        await bar.registerSingularity(mediumRiskMC.address, data, true);
-        const wethUsdoSingularity = await ethers.getContractAt(
-            'Singularity',
-            await bar.clonesOf(
-                mediumRiskMC.address,
-                (await bar.clonesOfCount(mediumRiskMC.address)).sub(1),
-            ),
-        );
-
-        //Deploy & set LiquidationQueue
-        await usd0.setMinterStatus(wethUsdoSingularity.address, true);
-        await usd0.setBurnerStatus(wethUsdoSingularity.address, true);
-
-        const LiquidationQueue = new LiquidationQueue__factory(deployer);
-        const liquidationQueue = await LiquidationQueue.deploy();
-
-        const feeCollector = new ethers.Wallet(
-            ethers.Wallet.createRandom().privateKey,
-            ethers.provider,
-        );
-
-        const { stableToUsdoBidder } = await deployCurveStableToUsdoBidder(
-            yieldBox,
-            usdc,
-            usd0,
-        );
-
-        const LQ_META = {
-            activationTime: 600, // 10min
-            minBidAmount: ethers.BigNumber.from((1e18).toString()).mul(200), // 200 USDC
-            closeToMinBidAmount: ethers.BigNumber.from((1e18).toString()).mul(
-                202,
-            ),
-            defaultBidAmount: ethers.BigNumber.from((1e18).toString()).mul(400), // 400 USDC
-            feeCollector: feeCollector.address,
-            bidExecutionSwapper: ethers.constants.AddressZero,
-            usdoSwapper: stableToUsdoBidder.address,
-        };
-        await liquidationQueue.init(LQ_META, wethUsdoSingularity.address);
-
-        const payload = wethUsdoSingularity.interface.encodeFunctionData(
-            'setLiquidationQueue',
-            [liquidationQueue.address],
-        );
-
-        await (
-            await bar.executeMarketFn(
-                [wethUsdoSingularity.address],
-                [payload],
-                true,
-            )
-        ).wait();
-
-        //get tokens
-        const wethAmount = ethers.BigNumber.from((1e18).toString()).mul(100);
-        const usdoAmount = ethers.BigNumber.from((1e18).toString()).mul(20000);
-        await usd0.mint(deployer.address, usdoAmount);
-        await weth.connect(eoa1).freeMint(wethAmount);
-
-        //aprove external operators
-        await usd0
-            .connect(deployer)
-            .approve(yieldBox.address, ethers.constants.MaxUint256);
-        await weth
-            .connect(deployer)
-            .approve(yieldBox.address, ethers.constants.MaxUint256);
-        await yieldBox
-            .connect(deployer)
-            .setApprovalForAll(wethUsdoSingularity.address, true);
-
-        await usd0
-            .connect(eoa1)
-            .approve(yieldBox.address, ethers.constants.MaxUint256);
-        await weth
-            .connect(eoa1)
-            .approve(yieldBox.address, ethers.constants.MaxUint256);
-        await yieldBox
-            .connect(eoa1)
-            .setApprovalForAll(wethUsdoSingularity.address, true);
-
-        // We lend Usdo as deployer
-        const usdoLendValue = usdoAmount.div(2);
-        const _valShare = await yieldBox.toShare(
-            usdoAssetId,
-            usdoLendValue,
-            false,
-        );
-        await yieldBox.depositAsset(
-            usdoAssetId,
-            deployer.address,
-            deployer.address,
-            0,
-            _valShare,
-        );
-        await wethUsdoSingularity.addAsset(
-            deployer.address,
-            deployer.address,
-            false,
-            _valShare,
-        );
-        expect(
-            await wethUsdoSingularity.balanceOf(deployer.address),
-        ).to.be.equal(
-            await yieldBox.toShare(usdoAssetId, usdoLendValue, false),
-        );
-
-        //we lend weth collateral
-        const wethDepositAmount = ethers.BigNumber.from((1e18).toString()).mul(
-            1,
-        );
-        await yieldBox
-            .connect(eoa1)
-            .depositAsset(
-                wethAssetId,
-                eoa1.address,
-                eoa1.address,
-                wethDepositAmount,
-                0,
-            );
-        const _wethValShare = await yieldBox
-            .connect(eoa1)
-            .balanceOf(eoa1.address, wethAssetId);
-        await wethUsdoSingularity
-            .connect(eoa1)
-            .addCollateral(eoa1.address, eoa1.address, false, 0, _wethValShare);
-        expect(
-            await wethUsdoSingularity.userCollateralShare(eoa1.address),
-        ).equal(await yieldBox.toShare(wethAssetId, wethDepositAmount, false));
-
-        //borrow
-        const usdoBorrowVal = wethDepositAmount
-            .mul(74)
-            .div(100)
-            .mul(__wethUsdcPrice.div((1e18).toString()));
-
-        await wethUsdoSingularity
-            .connect(eoa1)
-            .borrow(eoa1.address, eoa1.address, usdoBorrowVal);
-        await yieldBox
-            .connect(eoa1)
-            .withdraw(
-                usdoAssetId,
-                eoa1.address,
-                eoa1.address,
-                usdoBorrowVal,
-                0,
-            );
-        const usdoBalanceOfEoa = await usd0.balanceOf(eoa1.address);
-
-        // Can't liquidate
-        const swapData = new ethers.utils.AbiCoder().encode(['uint256'], [1]);
-        await expect(
-            wethUsdoSingularity.liquidate(
-                [eoa1.address],
-                [usdoBorrowVal],
-                multiSwapper.address,
-                swapData,
-                swapData,
-            ),
-        ).to.be.reverted;
-
-        const priceDrop = newPrice.mul(2).div(100);
-        await wethUsdcOracle.set(newPrice.add(priceDrop));
-
-        const lqAssetId = await liquidationQueue.lqAssetId();
-        expect(lqAssetId.eq(usdoAssetId)).to.be.true;
-
-        await usdc.freeMint(ethers.BigNumber.from((1e18).toString()).mul(1000));
-        await usdc.approve(
-            yieldBox.address,
-            ethers.BigNumber.from((1e18).toString()).mul(1000),
-        );
-        await yieldBox.depositAsset(
-            usdcAssetId,
-            deployer.address,
-            deployer.address,
-            ethers.BigNumber.from((1e18).toString()).mul(1000),
-            0,
-        );
-        await yieldBox.setApprovalForAll(liquidationQueue.address, true);
-        await expect(
-            liquidationQueue.bidWithStable(
-                deployer.address,
-                1,
                 usdcAssetId,
-                ethers.BigNumber.from((1e18).toString()).mul(1000),
-                swapData,
-            ),
-        ).to.emit(liquidationQueue, 'Bid');
-        await timeTravel(10_000);
-        await expect(liquidationQueue.activateBid(deployer.address, 1)).to.emit(
-            liquidationQueue,
-            'ActivateBid',
-        );
+                mediumRiskMC,
+                wethUsdcOracle,
+                usdc,
+                usd0,
+                __wethUsdcPrice,
+                deployCurveStableToUsdoBidder,
+                multiSwapper,
+                BN,
+                timeTravel,
+            } = await loadFixture(register);
+            //deploy and register USDO
 
-        await expect(
-            wethUsdoSingularity.liquidate(
-                [eoa1.address],
-                [usdoBorrowVal],
-                multiSwapper.address,
-                swapData,
-                swapData,
-            ),
-        ).to.not.be.reverted;
+            const usdoStratregy = await bar.emptyStrategies(usd0.address);
+            const usdoAssetId = await yieldBox.ids(
+                1,
+                usd0.address,
+                usdoStratregy,
+                0,
+            );
+
+            //Deploy & set Singularity
+            const _sglLiquidationModule = await (
+                await ethers.getContractFactory('SGLLiquidation')
+            ).deploy();
+            await _sglLiquidationModule.deployed();
+            const _sglBorrow = await (
+                await ethers.getContractFactory('SGLBorrow')
+            ).deploy();
+            await _sglBorrow.deployed();
+            const _sglCollateral = await (
+                await ethers.getContractFactory('SGLCollateral')
+            ).deploy();
+            await _sglCollateral.deployed();
+            const _sglLeverage = await (
+                await ethers.getContractFactory('SGLLeverage')
+            ).deploy();
+            await _sglLeverage.deployed();
+
+            const collateralSwapPath = [usd0.address, weth.address];
+
+            const newPrice = __wethUsdcPrice.div(1000000);
+            await wethUsdcOracle.set(newPrice);
+
+            const data = new ethers.utils.AbiCoder().encode(
+                [
+                    'address',
+                    'address',
+                    'address',
+                    'address',
+                    'address',
+                    'address',
+                    'uint256',
+                    'address',
+                    'uint256',
+                    'address',
+                    'uint256',
+                ],
+                [
+                    _sglLiquidationModule.address,
+                    _sglBorrow.address,
+                    _sglCollateral.address,
+                    _sglLeverage.address,
+                    bar.address,
+                    usd0.address,
+                    usdoAssetId,
+                    weth.address,
+                    wethAssetId,
+                    wethUsdcOracle.address,
+                    ethers.utils.parseEther('1'),
+                ],
+            );
+            await bar.registerSingularity(mediumRiskMC.address, data, true);
+            const wethUsdoSingularity = await ethers.getContractAt(
+                'Singularity',
+                await bar.clonesOf(
+                    mediumRiskMC.address,
+                    (await bar.clonesOfCount(mediumRiskMC.address)).sub(1),
+                ),
+            );
+
+            //Deploy & set LiquidationQueue
+            await usd0.setMinterStatus(wethUsdoSingularity.address, true);
+            await usd0.setBurnerStatus(wethUsdoSingularity.address, true);
+
+            const LiquidationQueue = new LiquidationQueue__factory(deployer);
+            const liquidationQueue = await LiquidationQueue.deploy();
+
+            const feeCollector = new ethers.Wallet(
+                ethers.Wallet.createRandom().privateKey,
+                ethers.provider,
+            );
+
+            const { stableToUsdoBidder } = await deployCurveStableToUsdoBidder(
+                yieldBox,
+                usdc,
+                usd0,
+            );
+
+            const LQ_META = {
+                activationTime: 600, // 10min
+                minBidAmount: ethers.BigNumber.from((1e18).toString()).mul(200), // 200 USDC
+                closeToMinBidAmount: ethers.BigNumber.from((1e18).toString()).mul(
+                    202,
+                ),
+                defaultBidAmount: ethers.BigNumber.from((1e18).toString()).mul(400), // 400 USDC
+                feeCollector: feeCollector.address,
+                bidExecutionSwapper: ethers.constants.AddressZero,
+                usdoSwapper: stableToUsdoBidder.address,
+            };
+            await liquidationQueue.init(LQ_META, wethUsdoSingularity.address);
+
+            const payload = wethUsdoSingularity.interface.encodeFunctionData(
+                'setLiquidationQueue',
+                [liquidationQueue.address],
+            );
+
+            await (
+                await bar.executeMarketFn(
+                    [wethUsdoSingularity.address],
+                    [payload],
+                    true,
+                )
+            ).wait();
+
+            //get tokens
+            const wethAmount = ethers.BigNumber.from((1e18).toString()).mul(100);
+            const usdoAmount = ethers.BigNumber.from((1e18).toString()).mul(20000);
+            await usd0.mint(deployer.address, usdoAmount);
+            await weth.connect(eoa1).freeMint(wethAmount);
+
+            //aprove external operators
+            await usd0
+                .connect(deployer)
+                .approve(yieldBox.address, ethers.constants.MaxUint256);
+            await weth
+                .connect(deployer)
+                .approve(yieldBox.address, ethers.constants.MaxUint256);
+            await yieldBox
+                .connect(deployer)
+                .setApprovalForAll(wethUsdoSingularity.address, true);
+
+            await usd0
+                .connect(eoa1)
+                .approve(yieldBox.address, ethers.constants.MaxUint256);
+            await weth
+                .connect(eoa1)
+                .approve(yieldBox.address, ethers.constants.MaxUint256);
+            await yieldBox
+                .connect(eoa1)
+                .setApprovalForAll(wethUsdoSingularity.address, true);
+
+            // We lend Usdo as deployer
+            const usdoLendValue = usdoAmount.div(2);
+            const _valShare = await yieldBox.toShare(
+                usdoAssetId,
+                usdoLendValue,
+                false,
+            );
+            await yieldBox.depositAsset(
+                usdoAssetId,
+                deployer.address,
+                deployer.address,
+                0,
+                _valShare,
+            );
+            await wethUsdoSingularity.addAsset(
+                deployer.address,
+                deployer.address,
+                false,
+                _valShare,
+            );
+            expect(
+                await wethUsdoSingularity.balanceOf(deployer.address),
+            ).to.be.equal(
+                await yieldBox.toShare(usdoAssetId, usdoLendValue, false),
+            );
+
+            //we lend weth collateral
+            const wethDepositAmount = ethers.BigNumber.from((1e18).toString()).mul(
+                1,
+            );
+            await yieldBox
+                .connect(eoa1)
+                .depositAsset(
+                    wethAssetId,
+                    eoa1.address,
+                    eoa1.address,
+                    wethDepositAmount,
+                    0,
+                );
+            const _wethValShare = await yieldBox
+                .connect(eoa1)
+                .balanceOf(eoa1.address, wethAssetId);
+            await wethUsdoSingularity
+                .connect(eoa1)
+                .addCollateral(eoa1.address, eoa1.address, false, 0, _wethValShare);
+            expect(
+                await wethUsdoSingularity.userCollateralShare(eoa1.address),
+            ).equal(await yieldBox.toShare(wethAssetId, wethDepositAmount, false));
+
+            //borrow
+            const usdoBorrowVal = wethDepositAmount
+                .mul(74)
+                .div(100)
+                .mul(__wethUsdcPrice.div((1e18).toString()));
+
+            await wethUsdoSingularity
+                .connect(eoa1)
+                .borrow(eoa1.address, eoa1.address, usdoBorrowVal);
+            await yieldBox
+                .connect(eoa1)
+                .withdraw(
+                    usdoAssetId,
+                    eoa1.address,
+                    eoa1.address,
+                    usdoBorrowVal,
+                    0,
+                );
+            const usdoBalanceOfEoa = await usd0.balanceOf(eoa1.address);
+
+            // Can't liquidate
+            const swapData = new ethers.utils.AbiCoder().encode(['uint256'], [1]);
+            await expect(
+                wethUsdoSingularity.liquidate(
+                    [eoa1.address],
+                    [usdoBorrowVal],
+                    multiSwapper.address,
+                    swapData,
+                    swapData,
+                ),
+            ).to.be.reverted;
+
+            const priceDrop = newPrice.mul(2).div(100);
+            await wethUsdcOracle.set(newPrice.add(priceDrop));
+
+            const lqAssetId = await liquidationQueue.lqAssetId();
+            expect(lqAssetId.eq(usdoAssetId)).to.be.true;
+
+            await usdc.freeMint(ethers.BigNumber.from((1e18).toString()).mul(1000));
+            await usdc.approve(
+                yieldBox.address,
+                ethers.BigNumber.from((1e18).toString()).mul(1000),
+            );
+            await yieldBox.depositAsset(
+                usdcAssetId,
+                deployer.address,
+                deployer.address,
+                ethers.BigNumber.from((1e18).toString()).mul(1000),
+                0,
+            );
+            await yieldBox.setApprovalForAll(liquidationQueue.address, true);
+            await expect(
+                liquidationQueue.bidWithStable(
+                    deployer.address,
+                    1,
+                    usdcAssetId,
+                    ethers.BigNumber.from((1e18).toString()).mul(1000),
+                    swapData,
+                ),
+            ).to.emit(liquidationQueue, 'Bid');
+            await timeTravel(10_000);
+            await expect(liquidationQueue.activateBid(deployer.address, 1)).to.emit(
+                liquidationQueue,
+                'ActivateBid',
+            );
+
+            await expect(
+                wethUsdoSingularity.liquidate(
+                    [eoa1.address],
+                    [usdoBorrowVal],
+                    multiSwapper.address,
+                    swapData,
+                    swapData,
+                ),
+            ).to.not.be.reverted;
+        });
+    });
+
+    describe('multiHopBuyCollateral()', async () => {
+        const deployYieldBox = async (signer: SignerWithAddress) => {
+            const uriBuilder = await (
+                await ethers.getContractFactory('YieldBoxURIBuilder')
+            ).deploy();
+
+            const yieldBox = await (
+                await ethers.getContractFactory('YieldBox')
+            ).deploy(ethers.constants.AddressZero, uriBuilder.address);
+            return { uriBuilder, yieldBox };
+        };
+
+        const deployLZEndpointMock = async (
+            chainId: number,
+            signer: SignerWithAddress,
+        ) => {
+            const LZEndpointMock = new LZEndpointMock__factory(signer);
+            return await LZEndpointMock.deploy(chainId);
+        };
+
+        const deployTapiocaWrapper = async (signer: SignerWithAddress) => {
+            const TapiocaWrapper = new TapiocaWrapper__factory(signer);
+            return await TapiocaWrapper.deploy(signer.address);
+        };
+
+        const Tx_deployTapiocaOFT = async (
+            lzEndpoint: string,
+            isNative: boolean,
+            erc20Address: string,
+            yieldBoxAddress: string,
+            hostChainID: number,
+            hostChainNetworkSigner: SignerWithAddress,
+        ) => {
+            const erc20 = (
+                await ethers.getContractAt('IERC20Metadata', erc20Address)
+            ).connect(hostChainNetworkSigner);
+
+            const erc20name = await erc20.name();
+            const erc20symbol = await erc20.symbol();
+            const erc20decimal = await erc20.decimals();
+
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-ignore
+
+            const args: Parameters<TapiocaOFT__factory['deploy']> = [
+                lzEndpoint,
+                isNative,
+                erc20Address,
+                yieldBoxAddress,
+                erc20name,
+                erc20symbol,
+                erc20decimal,
+                hostChainID,
+            ];
+
+            const TapiocaOFT = new TapiocaOFT__factory(hostChainNetworkSigner);
+            const txData = TapiocaOFT.getDeployTransaction(...args)
+                .data as BytesLike;
+
+            return { txData, args };
+        };
+
+        const attachTapiocaOFT = async (
+            address: string,
+            signer: SignerWithAddress,
+        ) => {
+            const tapiocaOFT = new ethers.Contract(
+                address,
+                TapiocaOFTArtifact.abi,
+                signer,
+            );
+            return tapiocaOFT.connect(signer);
+        };
+
+        const mintAndApprove = async (
+            erc20Mock: ERC20Mock,
+            toft: BaseTOFT,
+            signer: SignerWithAddress,
+            amount: BigNumberish,
+        ) => {
+            await erc20Mock.freeMint(amount);
+            await erc20Mock.approve(toft.address, amount);
+        };
+
+        it('should bounce between 2 chains', async () => {
+            const {
+                deployer,
+                tap,
+                weth,
+                createTokenEmptyStrategy,
+                deployCurveStableToUsdoBidder,
+                magnetar,
+                createWethUsd0Singularity,
+                registerBigBangMarket,
+                wethUsdcOracle,
+            } = await loadFixture(register);
+
+            //Deploy LZEndpointMock
+            const LZEndpointMock_chainID_0 = await deployLZEndpointMock(
+                0,
+                deployer,
+            );
+            const LZEndpointMock_chainID_10 = await deployLZEndpointMock(
+                10,
+                deployer,
+            );
+
+            //Deploy TapiocaWrapper
+            const tapiocaWrapper_0 = await deployTapiocaWrapper(deployer);
+            const tapiocaWrapper_10 = await deployTapiocaWrapper(deployer);
+
+            //Deploy YB and Strategies
+            const yieldBox0Data = await deployYieldBox(deployer);
+            const YieldBox_0 = yieldBox0Data.yieldBox;
+
+            const USDO_0 = await (
+                await ethers.getContractFactory('USDO')
+            ).deploy(
+                LZEndpointMock_chainID_0.address,
+                YieldBox_0.address,
+                deployer.address,
+            );
+            await USDO_0.deployed();
+
+            const USDO_10 = await (
+                await ethers.getContractFactory('USDO')
+            ).deploy(
+                LZEndpointMock_chainID_10.address,
+                YieldBox_0.address,
+                deployer.address,
+            );
+            await USDO_10.deployed();
+
+            //Deploy Penrose
+            const BAR_0 = await (
+                await ethers.getContractFactory('Penrose')
+            ).deploy(
+                YieldBox_0.address,
+                tap.address,
+                weth.address,
+                deployer.address,
+            );
+            await BAR_0.deployed();
+            await BAR_0.setUsdoToken(USDO_0.address);
+
+            //Deploy ERC20Mock
+            const ERC20Mock = new ERC20Mock__factory(deployer);
+            const erc20Mock = await ERC20Mock.deploy(
+                'erc20Mock',
+                'MOCK',
+                0,
+                18,
+                deployer.address,
+            );
+            await erc20Mock.toggleRestrictions();
+
+            // master contract
+            const mediumRiskMC_0 = await (
+                await ethers.getContractFactory('Singularity')
+            ).deploy();
+            await mediumRiskMC_0.deployed();
+            await BAR_0.registerSingularityMasterContract(
+                mediumRiskMC_0.address,
+                1,
+            );
+
+            const mediumRiskMCBigBang_0 = await (
+                await ethers.getContractFactory('BigBang')
+            ).deploy();
+            await mediumRiskMCBigBang_0.deployed();
+            await BAR_0.registerBigBangMasterContract(
+                mediumRiskMCBigBang_0.address,
+                1,
+            );
+
+            //Deploy TapiocaOFT
+            {
+                const txData =
+                    await tapiocaWrapper_0.populateTransaction.createTOFT(
+                        erc20Mock.address,
+                        (
+                            await Tx_deployTapiocaOFT(
+                                LZEndpointMock_chainID_0.address,
+                                false,
+                                erc20Mock.address,
+                                YieldBox_0.address,
+                                31337,
+                                deployer,
+                            )
+                        ).txData,
+                        ethers.utils.randomBytes(32),
+                        false,
+                    );
+                txData.gasLimit = await hre.ethers.provider.estimateGas(txData);
+                await deployer.sendTransaction(txData);
+            }
+            const tapiocaOFT0 = (await attachTapiocaOFT(
+                await tapiocaWrapper_0.tapiocaOFTs(
+                    (await tapiocaWrapper_0.tapiocaOFTLength()).sub(1),
+                ),
+                deployer,
+            )) as TapiocaOFT;
+
+            {
+                const txData =
+                    await tapiocaWrapper_10.populateTransaction.createTOFT(
+                        erc20Mock.address,
+                        (
+                            await Tx_deployTapiocaOFT(
+                                LZEndpointMock_chainID_10.address,
+                                false,
+                                erc20Mock.address,
+                                YieldBox_0.address,
+                                31337,
+                                deployer,
+                            )
+                        ).txData,
+                        ethers.utils.randomBytes(32),
+                        false,
+                    );
+                txData.gasLimit = await hre.ethers.provider.estimateGas(txData);
+                await deployer.sendTransaction(txData);
+            }
+            const tapiocaOFT10 = (await attachTapiocaOFT(
+                await tapiocaWrapper_10.tapiocaOFTs(
+                    (await tapiocaWrapper_10.tapiocaOFTLength()).sub(1),
+                ),
+                deployer,
+            )) as TapiocaOFT;
+
+            //Deploy strategies
+            const Strategy_0 = await createTokenEmptyStrategy(
+                YieldBox_0.address,
+                tapiocaOFT0.address,
+            );
+            const Strategy_10 = await createTokenEmptyStrategy(
+                YieldBox_0.address,
+                tapiocaOFT10.address,
+            );
+
+            // Set trusted remotes
+            const dstChainId0 = await tapiocaOFT0.getLzChainId();
+            const dstChainId10 = await tapiocaOFT10.getLzChainId();
+
+            await USDO_0.setTrustedRemote(
+                dstChainId10,
+                ethers.utils.solidityPack(
+                    ['address', 'address'],
+                    [USDO_10.address, USDO_0.address],
+                ),
+            );
+            await USDO_0.setTrustedRemote(
+                31337,
+                ethers.utils.solidityPack(
+                    ['address', 'address'],
+                    [USDO_10.address, USDO_0.address],
+                ),
+            );
+
+            await USDO_10.setTrustedRemote(
+                dstChainId0,
+                ethers.utils.solidityPack(
+                    ['address', 'address'],
+                    [USDO_0.address, USDO_10.address],
+                ),
+            );
+            await USDO_10.setTrustedRemote(
+                31337,
+                ethers.utils.solidityPack(
+                    ['address', 'address'],
+                    [USDO_0.address, USDO_10.address],
+                ),
+            );
+
+            await tapiocaWrapper_0.executeTOFT(
+                tapiocaOFT0.address,
+                tapiocaOFT0.interface.encodeFunctionData('setTrustedRemote', [
+                    dstChainId10,
+                    ethers.utils.solidityPack(
+                        ['address', 'address'],
+                        [tapiocaOFT10.address, tapiocaOFT0.address],
+                    ),
+                ]),
+                true,
+            );
+
+            await tapiocaWrapper_0.executeTOFT(
+                tapiocaOFT0.address,
+                tapiocaOFT0.interface.encodeFunctionData('setTrustedRemote', [
+                    31337,
+                    ethers.utils.solidityPack(
+                        ['address', 'address'],
+                        [tapiocaOFT10.address, tapiocaOFT0.address],
+                    ),
+                ]),
+                true,
+            );
+
+            await tapiocaWrapper_10.executeTOFT(
+                tapiocaOFT10.address,
+                tapiocaOFT10.interface.encodeFunctionData('setTrustedRemote', [
+                    dstChainId0,
+                    ethers.utils.solidityPack(
+                        ['address', 'address'],
+                        [tapiocaOFT0.address, tapiocaOFT10.address],
+                    ),
+                ]),
+                true,
+            );
+
+            await tapiocaWrapper_10.executeTOFT(
+                tapiocaOFT10.address,
+                tapiocaOFT10.interface.encodeFunctionData('setTrustedRemote', [
+                    31337,
+                    ethers.utils.solidityPack(
+                        ['address', 'address'],
+                        [tapiocaOFT0.address, tapiocaOFT10.address],
+                    ),
+                ]),
+                true,
+            );
+
+            // Link endpoints with addresses
+            await LZEndpointMock_chainID_0.setDestLzEndpoint(
+                tapiocaOFT10.address,
+                LZEndpointMock_chainID_10.address,
+            );
+            await LZEndpointMock_chainID_10.setDestLzEndpoint(
+                tapiocaOFT0.address,
+                LZEndpointMock_chainID_0.address,
+            );
+
+            await LZEndpointMock_chainID_0.setDestLzEndpoint(
+                USDO_10.address,
+                LZEndpointMock_chainID_10.address,
+            );
+            await LZEndpointMock_chainID_10.setDestLzEndpoint(
+                USDO_0.address,
+                LZEndpointMock_chainID_0.address,
+            );
+
+            //Register tokens on YB
+            await YieldBox_0.registerAsset(
+                1,
+                tapiocaOFT0.address,
+                Strategy_0.address,
+                0,
+            );
+            await YieldBox_0.registerAsset(
+                1,
+                tapiocaOFT10.address,
+                Strategy_10.address,
+                0,
+            );
+
+            const tapiocaOFT0Id = await YieldBox_0.ids(
+                1,
+                tapiocaOFT0.address,
+                Strategy_0.address,
+                0,
+            );
+            const tapiocaOFT10Id = await YieldBox_0.ids(
+                1,
+                tapiocaOFT10.address,
+                Strategy_10.address,
+                0,
+            );
+            expect(tapiocaOFT0Id.gt(0)).to.be.true;
+            expect(tapiocaOFT10Id.gt(0)).to.be.true;
+            expect(tapiocaOFT10Id.gt(tapiocaOFT0Id)).to.be.true;
+
+            const bigDummyAmount = ethers.utils.parseEther('10');
+            await mintAndApprove(
+                erc20Mock,
+                tapiocaOFT0,
+                deployer,
+                bigDummyAmount,
+            );
+            await tapiocaOFT0.wrap(
+                deployer.address,
+                deployer.address,
+                bigDummyAmount,
+            );
+
+            await tapiocaOFT0.approve(
+                YieldBox_0.address,
+                ethers.constants.MaxUint256,
+            );
+            const toDepositShare = await YieldBox_0.toShare(
+                tapiocaOFT0Id,
+                bigDummyAmount,
+                false,
+            );
+            await YieldBox_0.depositAsset(
+                tapiocaOFT0Id,
+                deployer.address,
+                deployer.address,
+                0,
+                toDepositShare,
+            );
+
+            let yb0Balance = await YieldBox_0.amountOf(
+                deployer.address,
+                tapiocaOFT0Id,
+            );
+            expect(yb0Balance.eq(bigDummyAmount)).to.be.true; //bc of the yield
+            const { stableToUsdoBidder, curveSwapper } =
+                await deployCurveStableToUsdoBidder(
+                    YieldBox_0,
+                    tapiocaOFT0,
+                    USDO_0,
+                    false,
+                );
+            let sglMarketData = await createWethUsd0Singularity(
+                USDO_0,
+                tapiocaOFT0,
+                BAR_0,
+                await BAR_0.usdoAssetId(),
+                tapiocaOFT0Id,
+                mediumRiskMC_0,
+                YieldBox_0,
+                stableToUsdoBidder,
+                0,
+            );
+            const SGL_0 = sglMarketData.wethUsdoSingularity;
+
+            sglMarketData = await createWethUsd0Singularity(
+                USDO_0,
+                tapiocaOFT10,
+                BAR_0,
+                await BAR_0.usdoAssetId(),
+                tapiocaOFT10Id,
+                mediumRiskMC_0,
+                YieldBox_0,
+                stableToUsdoBidder,
+                0,
+            );
+            const SGL_10 = sglMarketData.wethUsdoSingularity;
+
+            await tapiocaOFT0.approve(
+                SGL_0.address,
+                ethers.constants.MaxUint256,
+            );
+            await YieldBox_0.setApprovalForAll(SGL_0.address, true);
+            await SGL_0.addCollateral(
+                deployer.address,
+                deployer.address,
+                false,
+                bigDummyAmount,
+                0,
+            );
+            const collateralShare = await SGL_0.userCollateralShare(
+                deployer.address,
+            );
+            expect(collateralShare.gt(0)).to.be.true;
+
+            const collateralAmount = await YieldBox_0.toAmount(
+                tapiocaOFT0Id,
+                collateralShare,
+                false,
+            );
+            expect(collateralAmount.eq(bigDummyAmount)).to.be.true;
+
+            //test wrap
+            await mintAndApprove(
+                erc20Mock,
+                tapiocaOFT10,
+                deployer,
+                bigDummyAmount,
+            );
+            await tapiocaOFT10.wrap(
+                deployer.address,
+                deployer.address,
+                bigDummyAmount,
+            );
+            const tapioca10Balance = await tapiocaOFT10.balanceOf(
+                deployer.address,
+            );
+            expect(tapioca10Balance.eq(bigDummyAmount)).to.be.true;
+
+            await tapiocaOFT10.approve(
+                YieldBox_0.address,
+                ethers.constants.MaxUint256,
+            );
+            await YieldBox_0.depositAsset(
+                tapiocaOFT10Id,
+                deployer.address,
+                deployer.address,
+                0,
+                toDepositShare,
+            );
+
+            yb0Balance = await YieldBox_0.amountOf(
+                deployer.address,
+                tapiocaOFT10Id,
+            );
+            expect(yb0Balance.eq(bigDummyAmount)).to.be.true; //bc of the yield
+
+            await tapiocaOFT10.approve(
+                SGL_10.address,
+                ethers.constants.MaxUint256,
+            );
+            await YieldBox_0.setApprovalForAll(SGL_10.address, true);
+            await SGL_10.addCollateral(
+                deployer.address,
+                deployer.address,
+                false,
+                bigDummyAmount,
+                0,
+            );
+
+            const sgl10CollateralShare = await SGL_10.userCollateralShare(
+                deployer.address,
+            );
+            expect(sgl10CollateralShare.eq(collateralShare)).to.be.true;
+            const UniswapV3SwapperMock = new UniswapV3SwapperMock__factory(
+                deployer,
+            );
+            const uniV3SwapperMock = await UniswapV3SwapperMock.deploy(
+                ethers.constants.AddressZero,
+            );
+
+            //lend some USD0 to SGL_10
+            const oraclePrice = BN(1).mul((1e18).toString());
+            const OracleMock = new OracleMock__factory(deployer);
+            const oracleMock = await OracleMock.deploy(
+                'WETHMOracle',
+                'WETHMOracle',
+                (1e18).toString(),
+            );
+            await wethUsdcOracle.deployed();
+            await wethUsdcOracle.set(oraclePrice);
+
+            const { bigBangMarket } = await registerBigBangMarket(
+                mediumRiskMCBigBang_0.address,
+                YieldBox_0,
+                BAR_0,
+                weth,
+                await BAR_0.wethAssetId(),
+                oracleMock,
+                0,
+                0,
+                0,
+                0,
+                0,
+            );
+            await weth.freeMint(bigDummyAmount.mul(2));
+            await weth.approve(
+                bigBangMarket.address,
+                ethers.constants.MaxUint256,
+            );
+            await weth.approve(YieldBox_0.address, ethers.constants.MaxUint256);
+            await YieldBox_0.setApprovalForAll(bigBangMarket.address, true);
+            await YieldBox_0.depositAsset(
+                await BAR_0.wethAssetId(),
+                deployer.address,
+                deployer.address,
+                bigDummyAmount.mul(2),
+                0,
+            );
+            await bigBangMarket.addCollateral(
+                deployer.address,
+                deployer.address,
+                false,
+                bigDummyAmount.mul(2),
+                0,
+            );
+            const bigBangCollateralShare = await bigBangMarket.userCollateralShare(deployer.address);
+            expect(bigBangCollateralShare.gt(0)).to.be.true;
+
+            const collateralIdSaved = await bigBangMarket.collateralId();
+            const wethId = await BAR_0.wethAssetId();
+            expect(collateralIdSaved.eq(wethId)).to.be.true;
+
+            await USDO_0.setMinterStatus(bigBangMarket.address, true);
+            await bigBangMarket.borrow(
+                deployer.address,
+                deployer.address,
+                bigDummyAmount,
+            );
+
+            const usdoBorrowPart = await bigBangMarket.userBorrowPart(
+                deployer.address,
+            );
+            expect(usdoBorrowPart.gt(0)).to.be.true;
+
+            await YieldBox_0.withdraw(
+                await bigBangMarket.assetId(),
+                deployer.address,
+                deployer.address,
+                bigDummyAmount,
+                0,
+            );
+            const usdoBalance = await USDO_0.balanceOf(deployer.address);
+            expect(usdoBalance.gt(0)).to.be.true;
+
+            const usdoBalanceShare = await YieldBox_0.toShare(
+                await bigBangMarket.assetId(),
+                usdoBalance,
+                false,
+            );
+            await USDO_0.approve(
+                YieldBox_0.address,
+                ethers.constants.MaxUint256,
+            );
+            await YieldBox_0.depositAsset(
+                await bigBangMarket.assetId(),
+                deployer.address,
+                deployer.address,
+                usdoBalance,
+                0,
+            );
+            await SGL_10.addAsset(
+                deployer.address,
+                deployer.address,
+                false,
+                usdoBalanceShare,
+            );
+            const totalSGL10Asset = await SGL_10.totalAsset();
+            expect(totalSGL10Asset[0].gt(0)).to.be.true;
+
+            const airdropAdapterParams = hre.ethers.utils.solidityPack(
+                ['uint16', 'uint', 'uint', 'address'],
+                [
+                    2,
+                    1_000_000, //extra gas limit; min 200k
+                    ethers.utils.parseEther('2'), //amount of eth to airdrop
+                    magnetar.address,
+                ],
+            );
+
+            const sgl10Asset = await SGL_10.asset();
+            expect(sgl10Asset).to.eq(USDO_0.address);
+
+            const borrowPartBefore = await SGL_10.userBorrowPart(
+                deployer.address,
+            );
+            expect(borrowPartBefore.eq(0)).to.be.true;
+            const userCollateralShareBefore = await SGL_10.userCollateralShare(
+                deployer.address,
+            );
+
+            await BAR_0.setSwapper(uniV3SwapperMock.address, true);
+            await SGL_10.multiHopBuyCollateral(
+                deployer.address,
+                0,
+                bigDummyAmount,
+                {
+                    tokenOut: erc20Mock.address,
+                    amountOutMin: 0,
+                    data: ethers.utils.toUtf8Bytes(''),
+                },
+                {
+                    lzDstChainId: 10,
+                    zroPaymentAddress: ethers.constants.AddressZero,
+                    airdropAdapterParam: airdropAdapterParams,
+                    refundAddress: deployer.address,
+                },
+                {
+                    swapper: uniV3SwapperMock.address,
+                    magnetar: magnetar.address,
+                    tOft: tapiocaOFT10.address,
+                    srcMarket: SGL_10.address,
+                },
+                {
+                    value: ethers.utils.parseEther('10'),
+                },
+            );
+            const borrowPartAfter = await SGL_10.userBorrowPart(
+                deployer.address,
+            );
+            const userCollateralShareAfter = await SGL_10.userCollateralShare(
+                deployer.address,
+            );
+
+            expect(userCollateralShareAfter.gt(userCollateralShareBefore)).to.be
+                .true;
+            const userCollateralAmount = await YieldBox_0.toAmount(
+                tapiocaOFT10Id,
+                userCollateralShareAfter,
+                false,
+            );
+            expect(userCollateralAmount.eq(bigDummyAmount.mul(2))).to.be.true;
+            expect(borrowPartAfter.gt(0)).to.be.true;
+        });
     });
 });

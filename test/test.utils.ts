@@ -902,8 +902,6 @@ async function createWethUsd0Singularity(
         staging,
     );
 
-    const collateralSwapPath = [usd0.address, weth.address];
-
     // Deploy WethUSD0 mock oracle
     const OracleMock = new OracleMock__factory((await ethers.getSigners())[0]);
     const wethUsd0Oracle = await OracleMock.deploy(
@@ -1956,6 +1954,7 @@ export async function register(staging?: boolean) {
         addUniV2UsdoWethLiquidity,
         createWethUsd0Singularity,
         createTokenEmptyStrategy,
+        registerBigBangMarket,
     };
 
     return { ...initialSetup, ...utilFuncs, verifyEtherscanQueue };

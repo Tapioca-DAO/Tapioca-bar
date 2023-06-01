@@ -50,8 +50,6 @@ contract SGLStorage is BoringOwnable, Market {
     bytes32 internal COLLATERAL_SIG =
         0x7d1dc38e60930664f8cbf495da6556ca091d2f92d6550877750c049864b18230; // keccak256("collateral")
 
-    /// @notice borrowing opening fee
-    uint256 public borrowOpeningFee = 50; //0.05%
     /// @notice liquidation multiplier used to compute liquidator rewards
     uint256 public liquidationMultiplier = 112000; //12%
     /// @notice order book liquidation multiplier used to compute liquidator rewards
