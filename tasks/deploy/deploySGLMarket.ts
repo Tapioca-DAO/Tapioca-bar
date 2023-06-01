@@ -264,25 +264,16 @@ async function loadContracts(hre: HardhatRuntimeEnvironment, tag: string) {
         await hre.SDK.hardhatUtils.getLocalContract(hre, 'SGLLiquidation', tag);
 
     const { contract: sglCollateral } =
-        await hre.SDK.hardhatUtils.getLocalContract(
-            hre,
-            'SGLCollateral',
-            tag,
-        );
+        await hre.SDK.hardhatUtils.getLocalContract(hre, 'SGLCollateral', tag);
 
-    const { contract: sglBorrow } =
-        await hre.SDK.hardhatUtils.getLocalContract(
-            hre,
-            'SGLBorrow',
-            tag,
-        );
+    const { contract: sglBorrow } = await hre.SDK.hardhatUtils.getLocalContract(
+        hre,
+        'SGLBorrow',
+        tag,
+    );
 
     const { contract: sglLeverage } =
-        await hre.SDK.hardhatUtils.getLocalContract(
-            hre,
-            'SGLLeverage',
-            tag,
-        );
+        await hre.SDK.hardhatUtils.getLocalContract(hre, 'SGLLeverage', tag);
 
     const mediumRiskMC = hre.SDK.db.getLocalDeployment(
         await hre.getChainId(),

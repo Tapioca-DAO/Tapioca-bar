@@ -24,23 +24,17 @@ export const buildSingularityModules = async (
             args: [],
         },
         {
-            contract: await hre.ethers.getContractFactory(
-                'SGLBorrow',
-            ),
+            contract: await hre.ethers.getContractFactory('SGLBorrow'),
             deploymentName: 'SGLBorrow',
             args: [],
         },
         {
-            contract: await hre.ethers.getContractFactory(
-                'SGLCollateral',
-            ),
+            contract: await hre.ethers.getContractFactory('SGLCollateral'),
             deploymentName: 'SGLCollateral',
             args: [],
         },
         {
-            contract: await hre.ethers.getContractFactory(
-                'SGLLeverage',
-            ),
+            contract: await hre.ethers.getContractFactory('SGLLeverage'),
             deploymentName: 'SGLLeverage',
             args: [],
         },

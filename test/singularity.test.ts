@@ -2329,8 +2329,8 @@ describe('Singularity test', () => {
         });
     });
 
-    describe('usdo SGL', async () =>{
-         it('should create and test wethUsd0 singularity', async () => {
+    describe('usdo SGL', async () => {
+        it('should create and test wethUsd0 singularity', async () => {
             const {
                 deployer,
                 bar,
@@ -2440,10 +2440,12 @@ describe('Singularity test', () => {
             const LQ_META = {
                 activationTime: 600, // 10min
                 minBidAmount: ethers.BigNumber.from((1e18).toString()).mul(200), // 200 USDC
-                closeToMinBidAmount: ethers.BigNumber.from((1e18).toString()).mul(
-                    202,
-                ),
-                defaultBidAmount: ethers.BigNumber.from((1e18).toString()).mul(400), // 400 USDC
+                closeToMinBidAmount: ethers.BigNumber.from(
+                    (1e18).toString(),
+                ).mul(202),
+                defaultBidAmount: ethers.BigNumber.from((1e18).toString()).mul(
+                    400,
+                ), // 400 USDC
                 feeCollector: feeCollector.address,
                 bidExecutionSwapper: ethers.constants.AddressZero,
                 usdoSwapper: stableToUsdoBidder.address,
@@ -2464,8 +2466,12 @@ describe('Singularity test', () => {
             ).wait();
 
             //get tokens
-            const wethAmount = ethers.BigNumber.from((1e18).toString()).mul(100);
-            const usdoAmount = ethers.BigNumber.from((1e18).toString()).mul(20000);
+            const wethAmount = ethers.BigNumber.from((1e18).toString()).mul(
+                100,
+            );
+            const usdoAmount = ethers.BigNumber.from((1e18).toString()).mul(
+                20000,
+            );
             await usd0.mint(deployer.address, usdoAmount);
             await weth.connect(eoa1).freeMint(wethAmount);
 
@@ -2517,9 +2523,9 @@ describe('Singularity test', () => {
             );
 
             //we lend weth collateral
-            const wethDepositAmount = ethers.BigNumber.from((1e18).toString()).mul(
-                1,
-            );
+            const wethDepositAmount = ethers.BigNumber.from(
+                (1e18).toString(),
+            ).mul(1);
             await yieldBox
                 .connect(eoa1)
                 .depositAsset(
@@ -2534,10 +2540,18 @@ describe('Singularity test', () => {
                 .balanceOf(eoa1.address, wethAssetId);
             await wethUsdoSingularity
                 .connect(eoa1)
-                .addCollateral(eoa1.address, eoa1.address, false, 0, _wethValShare);
+                .addCollateral(
+                    eoa1.address,
+                    eoa1.address,
+                    false,
+                    0,
+                    _wethValShare,
+                );
             expect(
                 await wethUsdoSingularity.userCollateralShare(eoa1.address),
-            ).equal(await yieldBox.toShare(wethAssetId, wethDepositAmount, false));
+            ).equal(
+                await yieldBox.toShare(wethAssetId, wethDepositAmount, false),
+            );
 
             //borrow
             const usdoBorrowVal = wethDepositAmount
@@ -2560,7 +2574,10 @@ describe('Singularity test', () => {
             const usdoBalanceOfEoa = await usd0.balanceOf(eoa1.address);
 
             // Can't liquidate
-            const swapData = new ethers.utils.AbiCoder().encode(['uint256'], [1]);
+            const swapData = new ethers.utils.AbiCoder().encode(
+                ['uint256'],
+                [1],
+            );
             await expect(
                 wethUsdoSingularity.liquidate(
                     [eoa1.address],
@@ -2577,7 +2594,9 @@ describe('Singularity test', () => {
             const lqAssetId = await liquidationQueue.lqAssetId();
             expect(lqAssetId.eq(usdoAssetId)).to.be.true;
 
-            await usdc.freeMint(ethers.BigNumber.from((1e18).toString()).mul(1000));
+            await usdc.freeMint(
+                ethers.BigNumber.from((1e18).toString()).mul(1000),
+            );
             await usdc.approve(
                 yieldBox.address,
                 ethers.BigNumber.from((1e18).toString()).mul(1000),
@@ -2600,10 +2619,9 @@ describe('Singularity test', () => {
                 ),
             ).to.emit(liquidationQueue, 'Bid');
             await timeTravel(10_000);
-            await expect(liquidationQueue.activateBid(deployer.address, 1)).to.emit(
-                liquidationQueue,
-                'ActivateBid',
-            );
+            await expect(
+                liquidationQueue.activateBid(deployer.address, 1),
+            ).to.emit(liquidationQueue, 'ActivateBid');
 
             await expect(
                 wethUsdoSingularity.liquidate(
@@ -3184,7 +3202,8 @@ describe('Singularity test', () => {
                 bigDummyAmount.mul(2),
                 0,
             );
-            const bigBangCollateralShare = await bigBangMarket.userCollateralShare(deployer.address);
+            const bigBangCollateralShare =
+                await bigBangMarket.userCollateralShare(deployer.address);
             expect(bigBangCollateralShare.gt(0)).to.be.true;
 
             const collateralIdSaved = await bigBangMarket.collateralId();

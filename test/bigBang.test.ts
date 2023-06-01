@@ -8,7 +8,10 @@ import {
 import _ from 'lodash';
 import { bigBang } from '../typechain/contracts/markets';
 import { formatUnits } from 'ethers/lib/utils';
-import { ERC20Mock, MockSwapper__factory } from '../gitsub_tapioca-sdk/src/typechain/tapioca-mocks';
+import {
+    ERC20Mock,
+    MockSwapper__factory,
+} from '../gitsub_tapioca-sdk/src/typechain/tapioca-mocks';
 import { YieldBox } from '../gitsub_tapioca-sdk/src/typechain/YieldBox';
 import { BigBang } from '../typechain';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
@@ -2331,7 +2334,7 @@ describe('BigBang test', () => {
             const userBorrowAfter = await wethBigBangMarket.userBorrowPart(
                 deployer.address,
             );
-          
+
             const ybBalanceOfDeployerCollateralAfter = await yieldBox.balanceOf(
                 deployer.address,
                 wethId,
