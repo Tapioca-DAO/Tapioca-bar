@@ -54,7 +54,6 @@ contract Singularity is SGLCommon {
     /// @notice The init function that acts as a constructor
     function init(bytes calldata data) external onlyOnce {
         (
-            //TODO: update leverage
             address _liquidationModule,
             address _borrowModule,
             address _collateralModule,
@@ -357,6 +356,35 @@ contract Singularity is SGLCommon {
         amountOut = abi.decode(result, (uint256));
     }
 
+    /// @notice Level up cross-chain: Borrow more and buy collateral with it.
+    /// @param from The user who sells
+    /// @param collateralAmount Extra collateral to be added
+    /// @param borrowAmount Borrowed amount that will be swapped into collateral
+    /// @param swapData Swap data used on destination chain for swapping USDO to the underlying TOFT token
+    /// @param lzData LayerZero specific data
+    /// @param externalData External contracts used for the cross chain operation
+    function multiHopBuyCollateral(
+        address from,
+        uint256 collateralAmount,
+        uint256 borrowAmount,
+        IUSDOBase.ILeverageSwapData calldata swapData,
+        IUSDOBase.ILeverageLZData calldata lzData,
+        IUSDOBase.ILeverageExternalContractsData calldata externalData
+    ) external payable {
+        _executeModule(
+            Module.Leverage,
+            abi.encodeWithSelector(
+                SGLLeverage.multiHopBuyCollateral.selector,
+                from,
+                collateralAmount,
+                borrowAmount,
+                swapData,
+                lzData,
+                externalData
+            )
+        );
+    }
+
     /// @notice Entry point for liquidations.
     /// @dev Will call `closedLiquidation()` if not LQ exists or no LQ bid avail exists. Otherwise use LQ.
     /// @param users An array of user addresses.
@@ -437,14 +465,6 @@ contract Singularity is SGLCommon {
         uint256 _val
     ) external onlyOwner {
         orderBookLiquidationMultiplier = _val;
-    }
-
-    /// @notice sets the borrowing opening fee
-    /// @dev can only be called by the owner
-    /// @param _val the new value
-    function setBorrowOpeningFee(uint256 _val) external onlyOwner {
-        require(_val <= FEE_PRECISION, "SGL: not valid");
-        borrowOpeningFee = _val;
     }
 
     /// @notice Set a new LiquidationQueue.

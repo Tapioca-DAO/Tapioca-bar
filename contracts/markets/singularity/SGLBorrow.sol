@@ -21,6 +21,7 @@ contract SGLBorrow is SGLLendingCommon {
         address to,
         uint256 amount
     ) public notPaused solvent(from) returns (uint256 part, uint256 share) {
+        if (amount == 0) return (0, 0);
         uint256 allowanceShare = _computeAllowanceAmountInAsset(
             from,
             exchangeRate,

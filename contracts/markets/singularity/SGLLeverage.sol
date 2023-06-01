@@ -2,10 +2,55 @@
 pragma solidity ^0.8.18;
 
 import "./SGLLendingCommon.sol";
+import {IUSDOBase} from "tapioca-periph/contracts/interfaces/IUSDO.sol";
 
 contract SGLLeverage is SGLLendingCommon {
     using RebaseLibrary for Rebase;
     using BoringERC20 for IERC20;
+
+    /// @notice Level up cross-chain: Borrow more and buy collateral with it.
+    /// @param from The user who sells
+    /// @param collateralAmount Extra collateral to be added
+    /// @param borrowAmount Borrowed amount that will be swapped into collateral
+    /// @param swapData Swap data used on destination chain for swapping USDO to the underlying TOFT token
+    /// @param lzData LayerZero specific data
+    /// @param externalData External contracts used for the cross chain operation
+    function multiHopBuyCollateral(
+        address from,
+        uint256 collateralAmount,
+        uint256 borrowAmount,
+        IUSDOBase.ILeverageSwapData calldata swapData,
+        IUSDOBase.ILeverageLZData calldata lzData,
+        IUSDOBase.ILeverageExternalContractsData calldata externalData
+    ) external payable notPaused solvent(from) {
+        require(
+            penrose.swappers(ISwapper(externalData.swapper)),
+            "SGL: Invalid swapper"
+        );
+
+        //add collateral
+        uint256 collateralShare = yieldBox.toShare(
+            collateralId,
+            collateralAmount,
+            false
+        );
+        _allowedBorrow(from, collateralShare);
+        _addCollateral(from, from, false, 0, collateralShare);
+
+        //borrow
+        (, uint256 borrowShare) = _borrow(from, from, borrowAmount);
+
+        //withdraw
+        yieldBox.withdraw(assetId, from, address(this), 0, borrowShare);
+
+        IUSDOBase(address(asset)).sendForLeverage{value: msg.value}(
+            borrowAmount,
+            from,
+            lzData,
+            swapData,
+            externalData
+        );
+    }
 
     /// @notice Lever down: Sell collateral to repay debt; excess goes to YB
     /// @param from The user who sells
@@ -37,7 +82,7 @@ contract SGLLeverage is SGLLendingCommon {
         (amountOut, shareOut) = swapper.swap(
             swapData,
             minAmountOut,
-            address(this),
+            from,
             dexData
         );
         // As long as the ratio is correct, we trust `amountOut` resp.
@@ -48,19 +93,11 @@ contract SGLLeverage is SGLLendingCommon {
         uint256 amountOwed = totalBorrow.toElastic(partOwed, true);
         uint256 shareOwed = yieldBox.toShare(assetId, amountOwed, true);
         if (shareOwed <= shareOut) {
-            // Skim the repayment; the swapper left it in the YB
-            _repay(from, from, true, partOwed);
-            yieldBox.transfer(
-                address(this),
-                from,
-                assetId,
-                shareOut - shareOwed
-            );
+            _repay(from, from, false, partOwed);
         } else {
-            // Repay as much as we can.
-            // TODO: Is this guaranteed to succeed? Fair amount of conversions..
+            //repay as much as we can
             uint256 partOut = totalBorrow.toBase(amountOut, false);
-            _repay(from, from, true, partOut);
+            _repay(from, from, false, partOut);
         }
     }
 
@@ -104,12 +141,12 @@ contract SGLLeverage is SGLLendingCommon {
         (amountOut, collateralShare) = swapper.swap(
             swapData,
             minAmountOut,
-            address(this),
+            from,
             dexData
         );
         require(amountOut >= minAmountOut, "SGL: not enough");
 
         _allowedBorrow(from, collateralShare);
-        _addCollateral(from, from, true, 0, collateralShare);
+        _addCollateral(from, from, false, 0, collateralShare);
     }
 }

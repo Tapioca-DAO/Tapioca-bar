@@ -69,6 +69,8 @@ abstract contract Market is MarketERC20, BoringOwnable {
     uint256 public liquidationBonusAmount = 1e4; //10%
     /// @notice collateralization rate
     uint256 public collateralizationRate; // 75%
+    /// @notice borrowing opening fee
+    uint256 public borrowOpeningFee = 50; //0.05%
 
     // ***************** //
     // *** CONSTANTS *** //
@@ -100,6 +102,8 @@ abstract contract Market is MarketERC20, BoringOwnable {
         uint256 repayedAmount,
         uint256 collateralShareRemoved
     );
+    /// @notice event emitted when borrow opening fee is updated
+    event LogBorrowingFee(uint256 _oldVal, uint256 _newVal);
 
     modifier notPaused() {
         require(!paused, "Market: paused");
@@ -125,6 +129,15 @@ abstract contract Market is MarketERC20, BoringOwnable {
     // *********************** //
     // *** OWNER FUNCTIONS *** //
     // *********************** //
+    /// @notice sets the borrowing opening fee
+    /// @dev can only be called by the owner
+    /// @param _val the new value
+    function setBorrowOpeningFee(uint256 _val) external onlyOwner {
+        require(_val <= FEE_PRECISION, "Market: not valid");
+        emit LogBorrowingFee(borrowOpeningFee, _val);
+        borrowOpeningFee = _val;
+    }
+
     /// @notice updates oracle data
     /// @dev can only be called by the owner
     /// @param _oracleData new oracle data
