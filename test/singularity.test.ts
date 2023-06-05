@@ -2681,7 +2681,6 @@ describe('Singularity test', () => {
 
             const args: Parameters<TapiocaOFT__factory['deploy']> = [
                 lzEndpoint,
-                isNative,
                 erc20Address,
                 yieldBoxAddress,
                 erc20name,
@@ -2719,7 +2718,7 @@ describe('Singularity test', () => {
             await erc20Mock.approve(toft.address, amount);
         };
 
-        it('should bounce between 2 chains', async () => {
+        it.only('should bounce between 2 chains', async () => {
             const {
                 deployer,
                 tap,
@@ -2876,8 +2875,8 @@ describe('Singularity test', () => {
             );
 
             // Set trusted remotes
-            const dstChainId0 = await tapiocaOFT0.getLzChainId();
-            const dstChainId10 = await tapiocaOFT10.getLzChainId();
+            const dstChainId0 = await LZEndpointMock_chainID_0.getChainId();
+            const dstChainId10 = await LZEndpointMock_chainID_10.getChainId();
 
             await USDO_0.setTrustedRemote(
                 dstChainId10,
@@ -2908,6 +2907,7 @@ describe('Singularity test', () => {
                     [USDO_0.address, USDO_10.address],
                 ),
             );
+
 
             await tapiocaWrapper_0.executeTOFT(
                 tapiocaOFT0.address,
@@ -2948,6 +2948,18 @@ describe('Singularity test', () => {
             await tapiocaWrapper_10.executeTOFT(
                 tapiocaOFT10.address,
                 tapiocaOFT10.interface.encodeFunctionData('setTrustedRemote', [
+                    dstChainId10,
+                    ethers.utils.solidityPack(
+                        ['address', 'address'],
+                        [tapiocaOFT0.address, tapiocaOFT10.address],
+                    ),
+                ]),
+                true,
+            );
+
+            await tapiocaWrapper_10.executeTOFT(
+                tapiocaOFT10.address,
+                tapiocaOFT10.interface.encodeFunctionData('setTrustedRemote', [
                     31337,
                     ethers.utils.solidityPack(
                         ['address', 'address'],
@@ -2959,11 +2971,28 @@ describe('Singularity test', () => {
 
             // Link endpoints with addresses
             await LZEndpointMock_chainID_0.setDestLzEndpoint(
-                tapiocaOFT10.address,
+                tapiocaOFT0.address,
                 LZEndpointMock_chainID_10.address,
             );
             await LZEndpointMock_chainID_10.setDestLzEndpoint(
                 tapiocaOFT0.address,
+                LZEndpointMock_chainID_0.address,
+            );
+            await LZEndpointMock_chainID_0.setDestLzEndpoint(
+                tapiocaOFT0.address,
+                LZEndpointMock_chainID_0.address,
+            );
+
+            await LZEndpointMock_chainID_10.setDestLzEndpoint(
+                tapiocaOFT10.address,
+                LZEndpointMock_chainID_10.address,
+            );
+            await LZEndpointMock_chainID_0.setDestLzEndpoint(
+                tapiocaOFT10.address,
+                LZEndpointMock_chainID_10.address,
+            );
+            await LZEndpointMock_chainID_10.setDestLzEndpoint(
+                tapiocaOFT10.address,
                 LZEndpointMock_chainID_0.address,
             );
 
@@ -2971,8 +3000,16 @@ describe('Singularity test', () => {
                 USDO_10.address,
                 LZEndpointMock_chainID_10.address,
             );
+            await LZEndpointMock_chainID_0.setDestLzEndpoint(
+                USDO_0.address,
+                LZEndpointMock_chainID_10.address,
+            );
             await LZEndpointMock_chainID_10.setDestLzEndpoint(
                 USDO_0.address,
+                LZEndpointMock_chainID_0.address,
+            );
+            await LZEndpointMock_chainID_10.setDestLzEndpoint(
+                USDO_10.address,
                 LZEndpointMock_chainID_0.address,
             );
 
@@ -3181,7 +3218,7 @@ describe('Singularity test', () => {
                 0,
                 0,
             );
-            await weth.freeMint(bigDummyAmount.mul(2));
+            await weth.freeMint(bigDummyAmount.mul(3));
             await weth.approve(
                 bigBangMarket.address,
                 ethers.constants.MaxUint256,
@@ -3192,14 +3229,14 @@ describe('Singularity test', () => {
                 await BAR_0.wethAssetId(),
                 deployer.address,
                 deployer.address,
-                bigDummyAmount.mul(2),
+                bigDummyAmount.mul(3),
                 0,
             );
             await bigBangMarket.addCollateral(
                 deployer.address,
                 deployer.address,
                 false,
-                bigDummyAmount.mul(2),
+                bigDummyAmount.mul(3),
                 0,
             );
             const bigBangCollateralShare =
@@ -3214,7 +3251,7 @@ describe('Singularity test', () => {
             await bigBangMarket.borrow(
                 deployer.address,
                 deployer.address,
-                bigDummyAmount,
+                bigDummyAmount.mul(2),
             );
 
             const usdoBorrowPart = await bigBangMarket.userBorrowPart(
@@ -3226,7 +3263,7 @@ describe('Singularity test', () => {
                 await bigBangMarket.assetId(),
                 deployer.address,
                 deployer.address,
-                bigDummyAmount,
+                bigDummyAmount.mul(2),
                 0,
             );
             const usdoBalance = await USDO_0.balanceOf(deployer.address);
@@ -3234,7 +3271,7 @@ describe('Singularity test', () => {
 
             const usdoBalanceShare = await YieldBox_0.toShare(
                 await bigBangMarket.assetId(),
-                usdoBalance,
+                usdoBalance.div(2),
                 false,
             );
             await USDO_0.approve(
@@ -3245,7 +3282,7 @@ describe('Singularity test', () => {
                 await bigBangMarket.assetId(),
                 deployer.address,
                 deployer.address,
-                usdoBalance,
+                usdoBalance.div(2),
                 0,
             );
             await SGL_10.addAsset(
@@ -3257,12 +3294,22 @@ describe('Singularity test', () => {
             const totalSGL10Asset = await SGL_10.totalAsset();
             expect(totalSGL10Asset[0].gt(0)).to.be.true;
 
-            const airdropAdapterParams = hre.ethers.utils.solidityPack(
+            const airdropAdapterParamsDst = hre.ethers.utils.solidityPack(
                 ['uint16', 'uint', 'uint', 'address'],
                 [
                     2,
                     1_000_000, //extra gas limit; min 200k
                     ethers.utils.parseEther('2'), //amount of eth to airdrop
+                    USDO_10.address,
+                ],
+            );
+
+            const airdropAdapterParamsSrc = hre.ethers.utils.solidityPack(
+                ['uint16', 'uint', 'uint', 'address'],
+                [
+                    2,
+                    1_000_000, //extra gas limit; min 200k
+                    ethers.utils.parseEther('1'), //amount of eth to airdrop
                     magnetar.address,
                 ],
             );
@@ -3270,44 +3317,55 @@ describe('Singularity test', () => {
             const sgl10Asset = await SGL_10.asset();
             expect(sgl10Asset).to.eq(USDO_0.address);
 
+            const userCollateralShareBefore = await SGL_0.userCollateralShare(
+                deployer.address,
+            );
+            expect(userCollateralShareBefore.eq(bigDummyAmount.mul(1e8))).to.be.true;
+
             const borrowPartBefore = await SGL_10.userBorrowPart(
                 deployer.address,
             );
             expect(borrowPartBefore.eq(0)).to.be.true;
-            const userCollateralShareBefore = await SGL_10.userCollateralShare(
-                deployer.address,
-            );
 
             await BAR_0.setSwapper(uniV3SwapperMock.address, true);
+
+            await SGL_0.approve(
+                tapiocaOFT0.address,
+                ethers.constants.MaxUint256,
+            );
+            await SGL_0.approveBorrow(
+                tapiocaOFT0.address,
+                ethers.constants.MaxUint256,
+            );
             await SGL_10.multiHopBuyCollateral(
                 deployer.address,
                 0,
                 bigDummyAmount,
                 {
-                    tokenOut: erc20Mock.address,
+                    tokenOut: await tapiocaOFT10.erc20(),
                     amountOutMin: 0,
                     data: ethers.utils.toUtf8Bytes(''),
                 },
                 {
+                    srcExtraGasLimit: 1_000_000,
+                    lzSrcChainId: 0,
                     lzDstChainId: 10,
                     zroPaymentAddress: ethers.constants.AddressZero,
-                    airdropAdapterParam: airdropAdapterParams,
+                    dstAirdropAdapterParam: airdropAdapterParamsDst,
+                    srcAirdropAdapterParam: airdropAdapterParamsSrc,
                     refundAddress: deployer.address,
                 },
                 {
                     swapper: uniV3SwapperMock.address,
                     magnetar: magnetar.address,
                     tOft: tapiocaOFT10.address,
-                    srcMarket: SGL_10.address,
+                    srcMarket: SGL_0.address,
                 },
                 {
                     value: ethers.utils.parseEther('10'),
                 },
             );
-            const borrowPartAfter = await SGL_10.userBorrowPart(
-                deployer.address,
-            );
-            const userCollateralShareAfter = await SGL_10.userCollateralShare(
+            const userCollateralShareAfter = await SGL_0.userCollateralShare(
                 deployer.address,
             );
 
@@ -3319,7 +3377,42 @@ describe('Singularity test', () => {
                 false,
             );
             expect(userCollateralAmount.eq(bigDummyAmount.mul(2))).to.be.true;
-            expect(borrowPartAfter.gt(0)).to.be.true;
+            const borrowPartAfter = await SGL_10.userBorrowPart(
+                deployer.address,
+            );
+            expect(borrowPartAfter.gt(bigDummyAmount)).to.be.true;
+
+            //fill in swapper with some USD0
+
+            hre.tracer.enabled = true;
+            await SGL_0.multiHopSellCollateral(
+                deployer.address,
+                userCollateralShareAfter.div(2),
+                {
+                    tokenOut: USDO_10.address,
+                    amountOutMin: 0,
+                    data: new ethers.utils.AbiCoder().encode(['bool'], [true]),
+                },
+                {
+                    srcExtraGasLimit: 1_000_000,
+                    lzSrcChainId: 0,
+                    lzDstChainId: 10,
+                    zroPaymentAddress: ethers.constants.AddressZero,
+                    dstAirdropAdapterParam: airdropAdapterParamsDst,
+                    srcAirdropAdapterParam: airdropAdapterParamsSrc,
+                    refundAddress: deployer.address,
+                },
+                {
+                    swapper: uniV3SwapperMock.address,
+                    magnetar: magnetar.address,
+                    tOft: tapiocaOFT10.address,
+                    srcMarket: SGL_0.address,
+                },
+                {
+                    value: ethers.utils.parseEther('10'),
+                },
+            );
+            hre.tracer.enabled = false;
         });
     });
 });

@@ -299,6 +299,7 @@ export const testCrossChainBorrow__task = async (
                 market: singularity.address,
             },
             {
+                withdraw: true,
                 withdrawAdapterParams: hre.ethers.utils.solidityPack(
                     ['uint16', 'uint256'],
                     [1, 200000],
@@ -309,8 +310,6 @@ export const testCrossChainBorrow__task = async (
             },
             {
                 extraGasLimit: 1_000_000,
-                strategyDeposit: false,
-                wrap: true,
                 zroPaymentAddress: deployer.address,
             },
             [permitBorrowStruct, permitLendStruct],

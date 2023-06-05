@@ -8,7 +8,7 @@ import "tapioca-periph/contracts/interfaces/IYieldBoxBase.sol";
 import "tapioca-sdk/dist/contracts/libraries/LzLib.sol";
 import "tapioca-sdk/dist/contracts/token/oft/v2/OFTV2.sol";
 import {IUSDOBase} from "tapioca-periph/contracts/interfaces/IUSDO.sol";
-import {ITapiocaOFTBase} from "tapioca-periph/contracts/interfaces/ITapiocaOFT.sol";
+import "tapioca-periph/contracts/interfaces/ITapiocaOFT.sol";
 import "tapioca-periph/contracts/interfaces/ISwapper.sol";
 
 //
@@ -42,7 +42,7 @@ abstract contract BaseUSDO is OFTV2, ERC20Permit {
     /// @notice the YieldBox address.
     IYieldBoxBase public immutable yieldBox;
 
-    uint16 public constant PT_YB_SEND_SGL_LEND = 774;
+    uint16 public constant PT_YB_SEND_SGL_LEND_OR_REPAY = 774;
     uint16 public constant PT_LEVERAGE_MARKET_UP = 775;
 
     struct SendOptions {
@@ -62,23 +62,11 @@ abstract contract BaseUSDO is OFTV2, ERC20Permit {
     }
 
     struct ILendParams {
+        bool repay;
         uint256 amount;
         address marketHelper;
         address market;
     }
-
-    // ************** //
-    // *** EVENTS *** //
-    // ************** //
-    /// @notice event emitted when a lend operation is performed
-    event Lend(address indexed _from, uint256 _amount);
-    /// @notice event emitted when apporval is sent
-    event SendApproval(
-        address _target,
-        address _owner,
-        address _spender,
-        uint256 _amount
-    );
 
     /// @notice creates a new BaseOFT contract
     /// @param _yieldBox the YieldBox address
@@ -108,6 +96,7 @@ abstract contract BaseUSDO is OFTV2, ERC20Permit {
             amount,
             swapData,
             externalData,
+            lzData,
             leverageFor
         );
 
@@ -116,7 +105,7 @@ abstract contract BaseUSDO is OFTV2, ERC20Permit {
             lzPayload,
             payable(lzData.refundAddress),
             lzData.zroPaymentAddress,
-            lzData.airdropAdapterParam,
+            lzData.dstAirdropAdapterParam,
             msg.value
         );
         emit SendToChain(lzData.lzDstChainId, msg.sender, senderBytes, amount);
@@ -129,7 +118,7 @@ abstract contract BaseUSDO is OFTV2, ERC20Permit {
     /// @param lendParams lend specific params
     /// @param options send specific params
     /// @param approvals approvals specific params
-    function sendToYBAndLend(
+    function sendAndLendOrRepay(
         address _from,
         address _to,
         uint16 lzDstChainId,
@@ -146,7 +135,7 @@ abstract contract BaseUSDO is OFTV2, ERC20Permit {
         );
 
         bytes memory lzPayload = abi.encode(
-            PT_YB_SEND_SGL_LEND,
+            PT_YB_SEND_SGL_LEND_OR_REPAY,
             _from,
             toAddress,
             lendParams,
@@ -182,6 +171,7 @@ abstract contract BaseUSDO is OFTV2, ERC20Permit {
             uint256 amount,
             IUSDOBase.ILeverageSwapData memory swapData,
             IUSDOBase.ILeverageExternalContractsData memory externalData,
+            IUSDOBase.ILeverageLZData memory lzData,
             address leverageFor
         ) = abi.decode(
                 _payload,
@@ -191,6 +181,7 @@ abstract contract BaseUSDO is OFTV2, ERC20Permit {
                     uint256,
                     IUSDOBase.ILeverageSwapData,
                     IUSDOBase.ILeverageExternalContractsData,
+                    IUSDOBase.ILeverageLZData,
                     address
                 )
             );
@@ -198,7 +189,7 @@ abstract contract BaseUSDO is OFTV2, ERC20Permit {
         _creditTo(_srcChainId, address(this), amount);
 
         //swap from USDO
-        _safeApprove(address(this), externalData.swapper, amount);
+        _approve(address(this), externalData.swapper, amount);
         ISwapper.SwapData memory _swapperData = ISwapper(externalData.swapper)
             .buildSwapData(
                 address(this),
@@ -208,6 +199,7 @@ abstract contract BaseUSDO is OFTV2, ERC20Permit {
                 false,
                 false
             );
+
         (uint256 amountOut, ) = ISwapper(externalData.swapper).swap(
             _swapperData,
             swapData.amountOutMin,
@@ -216,31 +208,40 @@ abstract contract BaseUSDO is OFTV2, ERC20Permit {
         );
 
         //wrap into tOFT
-        bool isNative = ITapiocaOFTBase(externalData.tOft).isNative();
-        if (isNative) {
-            ITapiocaOFTBase(externalData.tOft).wrapNative{value: amountOut}(
-                address(this)
-            );
-        } else {
-            _safeApprove(swapData.tokenOut, externalData.tOft, amountOut);
-            ITapiocaOFTBase(externalData.tOft).wrap(
-                address(this),
-                address(this),
-                amountOut
-            );
-        }
+        IERC20(swapData.tokenOut).approve(externalData.tOft, amountOut);
+        ITapiocaOFTBase(externalData.tOft).wrap(
+            address(this),
+            address(this),
+            amountOut
+        );
 
         //send to YB & deposit
-        _safeApprove(externalData.tOft, externalData.magnetar, amountOut);
-        IMagnetar(externalData.magnetar).depositAddCollateralAndBorrow(
-            externalData.srcMarket,
+        ITapiocaOFT.IApproval[] memory approvals;
+        ITapiocaOFT(externalData.tOft).sendToYBAndBorrow{
+            value: address(this).balance
+        }(
+            address(this),
             leverageFor,
-            amountOut,
-            0, //borrow amount
-            true, //extractFromSender
-            true, //deposit
-            false,
-            ""
+            lzData.lzSrcChainId,
+            lzData.srcAirdropAdapterParam,
+            ITapiocaOFT.IBorrowParams({
+                amount: amountOut,
+                borrowAmount: 0,
+                marketHelper: externalData.magnetar,
+                market: externalData.srcMarket
+            }),
+            ITapiocaOFT.IWithdrawParams({
+                withdraw: false,
+                withdrawLzFeeAmount: 0,
+                withdrawOnOtherChain: false,
+                withdrawLzChainId: 0,
+                withdrawAdapterParams: "0x"
+            }),
+            ITapiocaOFT.ISendOptions({
+                extraGasLimit: lzData.srcExtraGasLimit,
+                zroPaymentAddress: lzData.zroPaymentAddress
+            }),
+            approvals
         );
     }
 
@@ -268,15 +269,24 @@ abstract contract BaseUSDO is OFTV2, ERC20Permit {
 
         // Use market helper to deposit and add asset to market
         approve(address(lendParams.marketHelper), lendParams.amount);
-        IMagnetar(lendParams.marketHelper).depositAndAddAsset(
-            lendParams.market,
-            from,
-            lendParams.amount,
-            true,
-            true
-        );
-
-        emit Lend(from, lendParams.amount);
+        if (lendParams.repay) {
+            IMagnetar(lendParams.marketHelper).depositAndRepay(
+                lendParams.market,
+                from,
+                lendParams.amount,
+                lendParams.amount,
+                true,
+                true
+            );
+        } else {
+            IMagnetar(lendParams.marketHelper).depositAndAddAsset(
+                lendParams.market,
+                from,
+                lendParams.amount,
+                true,
+                true
+            );
+        }
     }
 
     function _callApproval(IApproval[] memory approvals) internal virtual {
@@ -303,32 +313,6 @@ abstract contract BaseUSDO is OFTV2, ERC20Permit {
         }
     }
 
-    /// @notice approves token for spending
-    function _safeApprove(address token, address to, uint256 value) private {
-        // solhint-disable-next-line avoid-low-level-calls
-        (bool successEmtptyApproval, ) = token.call(
-            abi.encodeWithSelector(
-                bytes4(keccak256("approve(address,uint256)")),
-                to,
-                0
-            )
-        );
-        require(successEmtptyApproval, "safeApprove: approval reset failed");
-
-        // solhint-disable-next-line avoid-low-level-calls
-        (bool success, bytes memory data) = token.call(
-            abi.encodeWithSelector(
-                bytes4(keccak256("approve(address,uint256)")),
-                to,
-                value
-            )
-        );
-        require(
-            success && (data.length == 0 || abi.decode(data, (bool))),
-            "safeApprove: approve failed"
-        );
-    }
-
     function _nonblockingLzReceive(
         uint16 _srcChainId,
         bytes memory _srcAddress,
@@ -337,7 +321,7 @@ abstract contract BaseUSDO is OFTV2, ERC20Permit {
     ) internal virtual override {
         uint256 packetType = _payload.toUint256(0);
 
-        if (packetType == PT_YB_SEND_SGL_LEND) {
+        if (packetType == PT_YB_SEND_SGL_LEND_OR_REPAY) {
             _lend(_srcChainId, _payload);
         } else if (packetType == PT_LEVERAGE_MARKET_UP) {
             _leverageUp(_srcChainId, _payload);
