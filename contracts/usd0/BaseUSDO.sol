@@ -204,7 +204,7 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
         }
 
         if (module == address(0)) {
-            revert("TOFT_module");
+            revert("USDO: module not found");
         }
 
         return module;
@@ -227,7 +227,7 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
         bytes memory _returnData
     ) internal pure returns (string memory) {
         // If the _res length is less than 68, then the transaction failed silently (without a revert message)
-        if (_returnData.length < 68) return "TOFT_data";
+        if (_returnData.length < 68) return "USDO: no return data";
         // solhint-disable-next-line no-inline-assembly
         assembly {
             // Slice the sighash.
