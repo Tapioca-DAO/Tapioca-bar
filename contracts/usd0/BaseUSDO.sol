@@ -1,15 +1,20 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-import "@openzeppelin/contracts/token/ERC20/extensions/draft-ERC20Permit.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "tapioca-periph/contracts/interfaces/IMagnetar.sol";
-import "tapioca-periph/contracts/interfaces/IYieldBoxBase.sol";
-import "tapioca-sdk/dist/contracts/libraries/LzLib.sol";
+//LZ
 import "tapioca-sdk/dist/contracts/token/oft/v2/OFTV2.sol";
+
+//OZ
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/draft-ERC20Permit.sol";
+
+//TAPIOCA
+import "tapioca-periph/contracts/interfaces/IYieldBoxBase.sol";
 import {IUSDOBase} from "tapioca-periph/contracts/interfaces/IUSDO.sol";
-import "tapioca-periph/contracts/interfaces/ITapiocaOFT.sol";
-import "tapioca-periph/contracts/interfaces/ISwapper.sol";
+
+import "./BaseUSDOStorage.sol";
+import "./modules/USDOLeverageModule.sol";
+import "./modules/USDOMarketModule.sol";
 
 //
 //                 .(%%%%%%%%%%%%*       *
@@ -33,53 +38,110 @@ import "tapioca-periph/contracts/interfaces/ISwapper.sol";
 //         ####*  (((((((((((((((((((
 //                     ,**//*,.
 
-abstract contract BaseUSDO is OFTV2, ERC20Permit {
+contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
     using SafeERC20 for IERC20;
     using BytesLib for bytes;
     // ************ //
     // *** VARS *** //
     // ************ //
-    /// @notice the YieldBox address.
-    IYieldBoxBase public immutable yieldBox;
-
-    uint16 public constant PT_YB_SEND_SGL_LEND_OR_REPAY = 774;
-    uint16 public constant PT_LEVERAGE_MARKET_UP = 775;
-
-    struct SendOptions {
-        uint256 extraGasLimit;
-        address zroPaymentAddress;
-    }
-    struct IApproval {
-        bool allowFailure;
-        address target;
-        address owner;
-        address spender;
-        uint256 value;
-        uint256 deadline;
-        uint8 v;
-        bytes32 r;
-        bytes32 s;
+    enum Module {
+        Leverage,
+        Market
     }
 
-    struct ILendParams {
-        bool repay;
-        uint256 amount;
-        address marketHelper;
-        address market;
+    /// @notice returns the leverage module
+    USDOLeverageModule public leverageModule;
+
+    /// @notice returns the market module
+    USDOMarketModule public marketModule;
+
+    constructor(
+        address _lzEndpoint,
+        IYieldBoxBase _yieldBox,
+        address _owner,
+        address payable _leverageModule,
+        address payable _marketModule
+    ) BaseUSDOStorage(_lzEndpoint, _yieldBox) ERC20Permit("USDO") {
+        leverageModule = USDOLeverageModule(_leverageModule);
+        marketModule = USDOMarketModule(_marketModule);
+
+        transferOwnership(_owner);
     }
 
-    /// @notice creates a new BaseOFT contract
-    /// @param _yieldBox the YieldBox address
-    constructor(IYieldBoxBase _yieldBox) {
-        yieldBox = _yieldBox;
+    // *********************** //
+    // *** OWNER FUNCTIONS *** //
+    // *********************** //
+    /// @notice set the max allowed USDO mintable through flashloan
+    /// @dev can only be called by the owner
+    /// @param _val the new amount
+    function setMaxFlashMintable(uint256 _val) external onlyOwner {
+        emit MaxFlashMintUpdated(maxFlashMint, _val);
+        maxFlashMint = _val;
     }
 
-    receive() external payable {}
+    /// @notice set the flashloan fee
+    /// @dev can only be called by the owner
+    /// @param _val the new fee
+    function setFlashMintFee(uint256 _val) external onlyOwner {
+        require(_val < FLASH_MINT_FEE_PRECISION, "USDO: fee too big");
+        emit FlashMintFeeUpdated(flashMintFee, _val);
+        flashMintFee = _val;
+    }
+
+    /// @notice set the Conservator address
+    /// @dev conservator can pause the contract
+    /// @param _conservator the new address
+    function setConservator(address _conservator) external onlyOwner {
+        require(_conservator != address(0), "USDO: address not valid");
+        emit ConservatorUpdated(conservator, _conservator);
+        conservator = _conservator;
+    }
+
+    /// @notice updates the pause state of the contract
+    /// @dev can only be called by the conservator
+    /// @param val the new value
+    function updatePause(bool val) external {
+        require(msg.sender == conservator, "USDO: unauthorized");
+        require(val != paused, "USDO: same state");
+        emit PausedUpdated(paused, val);
+        paused = val;
+    }
+
+    /// @notice sets/unsets address as minter
+    /// @dev can only be called by the owner
+    /// @param _for role receiver
+    /// @param _status true/false
+    function setMinterStatus(address _for, bool _status) external onlyOwner {
+        allowedMinter[_getChainId()][_for] = _status;
+        emit SetMinterStatus(_for, _status);
+    }
+
+    /// @notice sets/unsets address as burner
+    /// @dev can only be called by the owner
+    /// @param _for role receiver
+    /// @param _status true/false
+    function setBurnerStatus(address _for, bool _status) external onlyOwner {
+        allowedBurner[_getChainId()][_for] = _status;
+        emit SetBurnerStatus(_for, _status);
+    }
+
+    // ************************ //
+    // *** VIEW FUNCTIONS *** //
+    // ************************ //
+    /// @notice returns token's decimals
+    function decimals() public pure override returns (uint8) {
+        return 18;
+    }
 
     // ************************ //
     // *** PUBLIC FUNCTIONS *** //
     // ************************ //
-
+    /// @notice sends USDO to a specific chain and performs a leverage up operation
+    /// @param amount the amount to use
+    /// @param leverageFor the receiver address
+    /// @param lzData LZ specific data
+    /// @param swapData ISwapper specific data
+    /// @param externalData external contracts used for the flow
     function sendForLeverage(
         uint256 amount,
         address leverageFor,
@@ -87,230 +149,91 @@ abstract contract BaseUSDO is OFTV2, ERC20Permit {
         IUSDOBase.ILeverageSwapData calldata swapData,
         IUSDOBase.ILeverageExternalContractsData calldata externalData
     ) external payable {
-        bytes32 senderBytes = LzLib.addressToBytes32(msg.sender);
-        _debitFrom(msg.sender, lzEndpoint.getChainId(), senderBytes, amount);
-
-        bytes memory lzPayload = abi.encode(
-            PT_LEVERAGE_MARKET_UP,
-            senderBytes,
-            amount,
-            swapData,
-            externalData,
-            lzData,
-            leverageFor
+        _executeModule(
+            Module.Leverage,
+            abi.encodeWithSelector(
+                USDOLeverageModule.sendForLeverage.selector,
+                amount,
+                leverageFor,
+                lzData,
+                swapData,
+                externalData
+            )
         );
-
-        _lzSend(
-            lzData.lzDstChainId,
-            lzPayload,
-            payable(lzData.refundAddress),
-            lzData.zroPaymentAddress,
-            lzData.dstAirdropAdapterParam,
-            msg.value
-        );
-        emit SendToChain(lzData.lzDstChainId, msg.sender, senderBytes, amount);
     }
 
     /// @notice sends to YieldBox over layer and lends asset to market
-    /// @param _from sending address
-    /// @param _to receiver address
+    /// @param from sending address
+    /// @param to receiver address
     /// @param lzDstChainId LayerZero destination chain id
     /// @param lendParams lend specific params
     /// @param options send specific params
     /// @param approvals approvals specific params
     function sendAndLendOrRepay(
-        address _from,
-        address _to,
+        address from,
+        address to,
         uint16 lzDstChainId,
-        ILendParams calldata lendParams,
-        SendOptions calldata options,
-        IApproval[] calldata approvals
+        IUSDOBase.ILendParams calldata lendParams,
+        IUSDOBase.ISendOptions calldata options,
+        IUSDOBase.IApproval[] calldata approvals
     ) external payable {
-        bytes32 toAddress = LzLib.addressToBytes32(_to);
-        _debitFrom(
-            _from,
-            lzEndpoint.getChainId(),
-            toAddress,
-            lendParams.amount
+        _executeModule(
+            Module.Market,
+            abi.encodeWithSelector(
+                USDOMarketModule.sendAndLendOrRepay.selector,
+                from,
+                to,
+                lzDstChainId,
+                lendParams,
+                options,
+                approvals
+            )
         );
-
-        bytes memory lzPayload = abi.encode(
-            PT_YB_SEND_SGL_LEND_OR_REPAY,
-            _from,
-            toAddress,
-            lendParams,
-            approvals
-        );
-
-        bytes memory adapterParam = LzLib.buildDefaultAdapterParams(
-            options.extraGasLimit
-        );
-
-        _lzSend(
-            lzDstChainId,
-            lzPayload,
-            payable(_from),
-            options.zroPaymentAddress,
-            adapterParam,
-            msg.value
-        );
-
-        emit SendToChain(lzDstChainId, _from, toAddress, lendParams.amount);
     }
 
     // ************************* //
     // *** PRIVATE FUNCTIONS *** //
     // ************************* //
-    function _leverageUp(
-        uint16 _srcChainId,
-        bytes memory _payload
-    ) internal virtual {
-        (
-            ,
-            ,
-            uint256 amount,
-            IUSDOBase.ILeverageSwapData memory swapData,
-            IUSDOBase.ILeverageExternalContractsData memory externalData,
-            IUSDOBase.ILeverageLZData memory lzData,
-            address leverageFor
-        ) = abi.decode(
-                _payload,
-                (
-                    uint16,
-                    bytes32,
-                    uint256,
-                    IUSDOBase.ILeverageSwapData,
-                    IUSDOBase.ILeverageExternalContractsData,
-                    IUSDOBase.ILeverageLZData,
-                    address
-                )
-            );
 
-        _creditTo(_srcChainId, address(this), amount);
-
-        //swap from USDO
-        _approve(address(this), externalData.swapper, amount);
-        ISwapper.SwapData memory _swapperData = ISwapper(externalData.swapper)
-            .buildSwapData(
-                address(this),
-                swapData.tokenOut,
-                amount,
-                0,
-                false,
-                false
-            );
-
-        (uint256 amountOut, ) = ISwapper(externalData.swapper).swap(
-            _swapperData,
-            swapData.amountOutMin,
-            address(this),
-            swapData.data
-        );
-
-        //wrap into tOFT
-        IERC20(swapData.tokenOut).approve(externalData.tOft, amountOut);
-        ITapiocaOFTBase(externalData.tOft).wrap(
-            address(this),
-            address(this),
-            amountOut
-        );
-
-        //send to YB & deposit
-        ITapiocaOFT.IApproval[] memory approvals;
-        ITapiocaOFT(externalData.tOft).sendToYBAndBorrow{
-            value: address(this).balance
-        }(
-            address(this),
-            leverageFor,
-            lzData.lzSrcChainId,
-            lzData.srcAirdropAdapterParam,
-            ITapiocaOFT.IBorrowParams({
-                amount: amountOut,
-                borrowAmount: 0,
-                marketHelper: externalData.magnetar,
-                market: externalData.srcMarket
-            }),
-            ITapiocaOFT.IWithdrawParams({
-                withdraw: false,
-                withdrawLzFeeAmount: 0,
-                withdrawOnOtherChain: false,
-                withdrawLzChainId: 0,
-                withdrawAdapterParams: "0x"
-            }),
-            ITapiocaOFT.ISendOptions({
-                extraGasLimit: lzData.srcExtraGasLimit,
-                zroPaymentAddress: lzData.zroPaymentAddress
-            }),
-            approvals
-        );
-    }
-
-    /// @notice Deposit to this address, then use Magnetar to deposit and add asset to market
-    /// @dev Payload format: (uint16 packetType, bytes32 fromAddressBytes, bytes32 nonces, uint256 amount, address Magnetar, address Market)
-    /// @param _srcChainId The chain id of the source chain
-    /// @param _payload The payload of the packet
-    function _lend(uint16 _srcChainId, bytes memory _payload) internal virtual {
-        (
-            ,
-            address from,
-            ,
-            ILendParams memory lendParams,
-            IApproval[] memory approvals
-        ) = abi.decode(
-                _payload,
-                (uint16, address, bytes32, ILendParams, IApproval[])
-            );
-
-        if (approvals.length > 0) {
-            _callApproval(approvals);
+    function _extractModule(Module _module) private view returns (address) {
+        address module;
+        if (_module == Module.Leverage) {
+            module = address(leverageModule);
+        } else if (_module == Module.Market) {
+            module = address(marketModule);
         }
 
-        _creditTo(_srcChainId, address(this), lendParams.amount);
+        if (module == address(0)) {
+            revert("TOFT_module");
+        }
 
-        // Use market helper to deposit and add asset to market
-        approve(address(lendParams.marketHelper), lendParams.amount);
-        if (lendParams.repay) {
-            IMagnetar(lendParams.marketHelper).depositAndRepay(
-                lendParams.market,
-                from,
-                lendParams.amount,
-                lendParams.amount,
-                true,
-                true
-            );
-        } else {
-            IMagnetar(lendParams.marketHelper).depositAndAddAsset(
-                lendParams.market,
-                from,
-                lendParams.amount,
-                true,
-                true
-            );
+        return module;
+    }
+
+    function _executeModule(
+        Module _module,
+        bytes memory _data
+    ) private returns (bytes memory returnData) {
+        bool success = true;
+        address module = _extractModule(_module);
+
+        (success, returnData) = module.delegatecall(_data);
+        if (!success) {
+            revert(_getRevertMsg(returnData));
         }
     }
 
-    function _callApproval(IApproval[] memory approvals) internal virtual {
-        for (uint256 i = 0; i < approvals.length; ) {
-            try
-                IERC20Permit(approvals[i].target).permit(
-                    approvals[i].owner,
-                    approvals[i].spender,
-                    approvals[i].value,
-                    approvals[i].deadline,
-                    approvals[i].v,
-                    approvals[i].r,
-                    approvals[i].s
-                )
-            {} catch Error(string memory reason) {
-                if (!approvals[i].allowFailure) {
-                    revert(reason);
-                }
-            }
-
-            unchecked {
-                ++i;
-            }
+    function _getRevertMsg(
+        bytes memory _returnData
+    ) internal pure returns (string memory) {
+        // If the _res length is less than 68, then the transaction failed silently (without a revert message)
+        if (_returnData.length < 68) return "TOFT_data";
+        // solhint-disable-next-line no-inline-assembly
+        assembly {
+            // Slice the sighash.
+            _returnData := add(_returnData, 0x04)
         }
+        return abi.decode(_returnData, (string)); // All that remains is the revert string
     }
 
     function _nonblockingLzReceive(
@@ -322,9 +245,23 @@ abstract contract BaseUSDO is OFTV2, ERC20Permit {
         uint256 packetType = _payload.toUint256(0);
 
         if (packetType == PT_YB_SEND_SGL_LEND_OR_REPAY) {
-            _lend(_srcChainId, _payload);
+            _executeModule(
+                Module.Market,
+                abi.encodeWithSelector(
+                    USDOMarketModule.lend.selector,
+                    _srcChainId,
+                    _payload
+                )
+            );
         } else if (packetType == PT_LEVERAGE_MARKET_UP) {
-            _leverageUp(_srcChainId, _payload);
+            _executeModule(
+                Module.Leverage,
+                abi.encodeWithSelector(
+                    USDOLeverageModule.leverageUp.selector,
+                    _srcChainId,
+                    _payload
+                )
+            );
         } else {
             packetType = _payload.toUint8(0);
             if (packetType == PT_SEND) {
