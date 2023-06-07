@@ -184,7 +184,6 @@ export const testCrossChainLend__task = async (
             },
             {
                 extraGasLimit: 1_000_000,
-                strategyDeposit: false,
                 zroPaymentAddress: deployer.address,
             },
             [permitLendStruct],

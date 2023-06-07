@@ -85,11 +85,25 @@ async function registerUsd0Contract(
     );
     await verifyEtherscan(lzEndpointContract.address, [chainId], staging);
 
+    const usdo_leverage = await (
+        await ethers.getContractFactory('USDOLeverageModule')
+    ).deploy(lzEndpointContract.address, yieldBox);
+    const usdo_market = await (
+        await ethers.getContractFactory('USDOMarketModule')
+    ).deploy(lzEndpointContract.address, yieldBox);
+
     const usd0 = await (
         await ethers.getContractFactory('USDO')
-    ).deploy(lzEndpointContract.address, yieldBox, owner, {
-        gasPrice: gasPrice,
-    });
+    ).deploy(
+        lzEndpointContract.address,
+        yieldBox,
+        owner,
+        usdo_leverage.address,
+        usdo_market.address,
+        {
+            gasPrice: gasPrice,
+        },
+    );
     await usd0.deployed();
     log(
         `Deployed UDS0 ${usd0.address} with args [${lzEndpointContract.address},${yieldBox}]`,

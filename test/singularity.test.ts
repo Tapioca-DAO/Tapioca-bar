@@ -17,6 +17,9 @@ import {
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import {
     BaseTOFT,
+    BaseTOFTLeverageModule__factory,
+    BaseTOFTMarketModule__factory,
+    BaseTOFTStrategyModule__factory,
     TapiocaOFT,
     TapiocaOFT__factory,
     TapiocaWrapper__factory,
@@ -2679,15 +2682,56 @@ describe('Singularity test', () => {
             // eslint-disable-next-line @typescript-eslint/ban-ts-comment
             // @ts-ignore
 
-            const args: Parameters<TapiocaOFT__factory['deploy']> = [
+            const BaseTOFTLeverageModule = new BaseTOFTLeverageModule__factory(
+                hostChainNetworkSigner,
+            );
+            const leverageModule = await BaseTOFTLeverageModule.deploy(
                 lzEndpoint,
-                isNative,
                 erc20Address,
                 yieldBoxAddress,
                 erc20name,
                 erc20symbol,
                 erc20decimal,
                 hostChainID,
+            );
+
+            const BaseTOFTStrategyModule = new BaseTOFTStrategyModule__factory(
+                hostChainNetworkSigner,
+            );
+            const strategyModule = await BaseTOFTStrategyModule.deploy(
+                lzEndpoint,
+                erc20Address,
+                yieldBoxAddress,
+                erc20name,
+                erc20symbol,
+                erc20decimal,
+                hostChainID,
+            );
+
+            const BaseTOFTMarketModule = new BaseTOFTMarketModule__factory(
+                hostChainNetworkSigner,
+            );
+            const marketModule = await BaseTOFTMarketModule.deploy(
+                lzEndpoint,
+                erc20Address,
+                yieldBoxAddress,
+                erc20name,
+                erc20symbol,
+                erc20decimal,
+                hostChainID,
+            );
+
+            const args: Parameters<TapiocaOFT__factory['deploy']> = [
+                lzEndpoint,
+                erc20Address,
+                yieldBoxAddress,
+                erc20name,
+                erc20symbol,
+                erc20decimal,
+                hostChainID,
+                leverageModule.address,
+                strategyModule.address,
+                marketModule.address,
             ];
 
             const TapiocaOFT = new TapiocaOFT__factory(hostChainNetworkSigner);
@@ -2750,21 +2794,38 @@ describe('Singularity test', () => {
             const yieldBox0Data = await deployYieldBox(deployer);
             const YieldBox_0 = yieldBox0Data.yieldBox;
 
+            const usdo_0_leverage = await (
+                await ethers.getContractFactory('USDOLeverageModule')
+            ).deploy(LZEndpointMock_chainID_0.address, YieldBox_0.address);
+            const usdo_0_market = await (
+                await ethers.getContractFactory('USDOMarketModule')
+            ).deploy(LZEndpointMock_chainID_0.address, YieldBox_0.address);
+
             const USDO_0 = await (
                 await ethers.getContractFactory('USDO')
             ).deploy(
                 LZEndpointMock_chainID_0.address,
                 YieldBox_0.address,
                 deployer.address,
+                usdo_0_leverage.address,
+                usdo_0_market.address,
             );
             await USDO_0.deployed();
 
+            const usdo_10_leverage = await (
+                await ethers.getContractFactory('USDOLeverageModule')
+            ).deploy(LZEndpointMock_chainID_10.address, YieldBox_0.address);
+            const usdo_10_market = await (
+                await ethers.getContractFactory('USDOMarketModule')
+            ).deploy(LZEndpointMock_chainID_10.address, YieldBox_0.address);
             const USDO_10 = await (
                 await ethers.getContractFactory('USDO')
             ).deploy(
                 LZEndpointMock_chainID_10.address,
                 YieldBox_0.address,
                 deployer.address,
+                usdo_10_leverage.address,
+                usdo_10_market.address,
             );
             await USDO_10.deployed();
 
@@ -2876,8 +2937,8 @@ describe('Singularity test', () => {
             );
 
             // Set trusted remotes
-            const dstChainId0 = await tapiocaOFT0.getLzChainId();
-            const dstChainId10 = await tapiocaOFT10.getLzChainId();
+            const dstChainId0 = await LZEndpointMock_chainID_0.getChainId();
+            const dstChainId10 = await LZEndpointMock_chainID_10.getChainId();
 
             await USDO_0.setTrustedRemote(
                 dstChainId10,
@@ -2948,6 +3009,18 @@ describe('Singularity test', () => {
             await tapiocaWrapper_10.executeTOFT(
                 tapiocaOFT10.address,
                 tapiocaOFT10.interface.encodeFunctionData('setTrustedRemote', [
+                    dstChainId10,
+                    ethers.utils.solidityPack(
+                        ['address', 'address'],
+                        [tapiocaOFT0.address, tapiocaOFT10.address],
+                    ),
+                ]),
+                true,
+            );
+
+            await tapiocaWrapper_10.executeTOFT(
+                tapiocaOFT10.address,
+                tapiocaOFT10.interface.encodeFunctionData('setTrustedRemote', [
                     31337,
                     ethers.utils.solidityPack(
                         ['address', 'address'],
@@ -2959,11 +3032,28 @@ describe('Singularity test', () => {
 
             // Link endpoints with addresses
             await LZEndpointMock_chainID_0.setDestLzEndpoint(
-                tapiocaOFT10.address,
+                tapiocaOFT0.address,
                 LZEndpointMock_chainID_10.address,
             );
             await LZEndpointMock_chainID_10.setDestLzEndpoint(
                 tapiocaOFT0.address,
+                LZEndpointMock_chainID_0.address,
+            );
+            await LZEndpointMock_chainID_0.setDestLzEndpoint(
+                tapiocaOFT0.address,
+                LZEndpointMock_chainID_0.address,
+            );
+
+            await LZEndpointMock_chainID_10.setDestLzEndpoint(
+                tapiocaOFT10.address,
+                LZEndpointMock_chainID_10.address,
+            );
+            await LZEndpointMock_chainID_0.setDestLzEndpoint(
+                tapiocaOFT10.address,
+                LZEndpointMock_chainID_10.address,
+            );
+            await LZEndpointMock_chainID_10.setDestLzEndpoint(
+                tapiocaOFT10.address,
                 LZEndpointMock_chainID_0.address,
             );
 
@@ -2971,8 +3061,16 @@ describe('Singularity test', () => {
                 USDO_10.address,
                 LZEndpointMock_chainID_10.address,
             );
+            await LZEndpointMock_chainID_0.setDestLzEndpoint(
+                USDO_0.address,
+                LZEndpointMock_chainID_10.address,
+            );
             await LZEndpointMock_chainID_10.setDestLzEndpoint(
                 USDO_0.address,
+                LZEndpointMock_chainID_0.address,
+            );
+            await LZEndpointMock_chainID_10.setDestLzEndpoint(
+                USDO_10.address,
                 LZEndpointMock_chainID_0.address,
             );
 
@@ -3181,7 +3279,7 @@ describe('Singularity test', () => {
                 0,
                 0,
             );
-            await weth.freeMint(bigDummyAmount.mul(2));
+            await weth.freeMint(bigDummyAmount.mul(5));
             await weth.approve(
                 bigBangMarket.address,
                 ethers.constants.MaxUint256,
@@ -3192,14 +3290,14 @@ describe('Singularity test', () => {
                 await BAR_0.wethAssetId(),
                 deployer.address,
                 deployer.address,
-                bigDummyAmount.mul(2),
+                bigDummyAmount.mul(5),
                 0,
             );
             await bigBangMarket.addCollateral(
                 deployer.address,
                 deployer.address,
                 false,
-                bigDummyAmount.mul(2),
+                bigDummyAmount.mul(5),
                 0,
             );
             const bigBangCollateralShare =
@@ -3214,7 +3312,7 @@ describe('Singularity test', () => {
             await bigBangMarket.borrow(
                 deployer.address,
                 deployer.address,
-                bigDummyAmount,
+                bigDummyAmount.mul(3),
             );
 
             const usdoBorrowPart = await bigBangMarket.userBorrowPart(
@@ -3226,7 +3324,7 @@ describe('Singularity test', () => {
                 await bigBangMarket.assetId(),
                 deployer.address,
                 deployer.address,
-                bigDummyAmount,
+                bigDummyAmount.mul(3),
                 0,
             );
             const usdoBalance = await USDO_0.balanceOf(deployer.address);
@@ -3234,7 +3332,7 @@ describe('Singularity test', () => {
 
             const usdoBalanceShare = await YieldBox_0.toShare(
                 await bigBangMarket.assetId(),
-                usdoBalance,
+                usdoBalance.div(2),
                 false,
             );
             await USDO_0.approve(
@@ -3245,7 +3343,7 @@ describe('Singularity test', () => {
                 await bigBangMarket.assetId(),
                 deployer.address,
                 deployer.address,
-                usdoBalance,
+                usdoBalance.div(2),
                 0,
             );
             await SGL_10.addAsset(
@@ -3257,12 +3355,22 @@ describe('Singularity test', () => {
             const totalSGL10Asset = await SGL_10.totalAsset();
             expect(totalSGL10Asset[0].gt(0)).to.be.true;
 
-            const airdropAdapterParams = hre.ethers.utils.solidityPack(
+            let airdropAdapterParamsDst = hre.ethers.utils.solidityPack(
                 ['uint16', 'uint', 'uint', 'address'],
                 [
                     2,
                     1_000_000, //extra gas limit; min 200k
                     ethers.utils.parseEther('2'), //amount of eth to airdrop
+                    USDO_10.address,
+                ],
+            );
+
+            const airdropAdapterParamsSrc = hre.ethers.utils.solidityPack(
+                ['uint16', 'uint', 'uint', 'address'],
+                [
+                    2,
+                    1_000_000, //extra gas limit; min 200k
+                    ethers.utils.parseEther('1'), //amount of eth to airdrop
                     magnetar.address,
                 ],
             );
@@ -3270,44 +3378,56 @@ describe('Singularity test', () => {
             const sgl10Asset = await SGL_10.asset();
             expect(sgl10Asset).to.eq(USDO_0.address);
 
+            const userCollateralShareBefore = await SGL_0.userCollateralShare(
+                deployer.address,
+            );
+            expect(userCollateralShareBefore.eq(bigDummyAmount.mul(1e8))).to.be
+                .true;
+
             const borrowPartBefore = await SGL_10.userBorrowPart(
                 deployer.address,
             );
             expect(borrowPartBefore.eq(0)).to.be.true;
-            const userCollateralShareBefore = await SGL_10.userCollateralShare(
-                deployer.address,
-            );
 
             await BAR_0.setSwapper(uniV3SwapperMock.address, true);
+
+            await SGL_0.approve(
+                tapiocaOFT0.address,
+                ethers.constants.MaxUint256,
+            );
+            await SGL_0.approveBorrow(
+                tapiocaOFT0.address,
+                ethers.constants.MaxUint256,
+            );
             await SGL_10.multiHopBuyCollateral(
                 deployer.address,
                 0,
                 bigDummyAmount,
                 {
-                    tokenOut: erc20Mock.address,
+                    tokenOut: await tapiocaOFT10.erc20(),
                     amountOutMin: 0,
                     data: ethers.utils.toUtf8Bytes(''),
                 },
                 {
+                    srcExtraGasLimit: 1_000_000,
+                    lzSrcChainId: 0,
                     lzDstChainId: 10,
                     zroPaymentAddress: ethers.constants.AddressZero,
-                    airdropAdapterParam: airdropAdapterParams,
+                    dstAirdropAdapterParam: airdropAdapterParamsDst,
+                    srcAirdropAdapterParam: airdropAdapterParamsSrc,
                     refundAddress: deployer.address,
                 },
                 {
                     swapper: uniV3SwapperMock.address,
                     magnetar: magnetar.address,
                     tOft: tapiocaOFT10.address,
-                    srcMarket: SGL_10.address,
+                    srcMarket: SGL_0.address, //there should be SGL_10 here in a normal situation; however, due to the current setup and how tokens are linked together, it will point to SGL_0
                 },
                 {
                     value: ethers.utils.parseEther('10'),
                 },
             );
-            const borrowPartAfter = await SGL_10.userBorrowPart(
-                deployer.address,
-            );
-            const userCollateralShareAfter = await SGL_10.userCollateralShare(
+            const userCollateralShareAfter = await SGL_0.userCollateralShare(
                 deployer.address,
             );
 
@@ -3319,7 +3439,98 @@ describe('Singularity test', () => {
                 false,
             );
             expect(userCollateralAmount.eq(bigDummyAmount.mul(2))).to.be.true;
-            expect(borrowPartAfter.gt(0)).to.be.true;
+            const borrowPartAfter = await SGL_10.userBorrowPart(
+                deployer.address,
+            );
+            expect(borrowPartAfter.gt(bigDummyAmount)).to.be.true;
+
+            //fill in swapper with some USD0
+
+            airdropAdapterParamsDst = hre.ethers.utils.solidityPack(
+                ['uint16', 'uint', 'uint', 'address'],
+                [
+                    2,
+                    1_000_000, //extra gas limit; min 200k
+                    ethers.utils.parseEther('2'), //amount of eth to airdrop
+                    tapiocaOFT10.address,
+                ],
+            );
+
+            await magnetar.setApprovalForAll(USDO_0.address, true);
+            await SGL_0.approve(USDO_0.address, ethers.constants.MaxUint256);
+
+            const forDeposit = await USDO_0.balanceOf(deployer.address);
+            await YieldBox_0.depositAsset(
+                await SGL_0.assetId(),
+                deployer.address,
+                deployer.address,
+                forDeposit,
+                0,
+            );
+
+            await SGL_0.addAsset(
+                deployer.address,
+                deployer.address,
+                false,
+                await YieldBox_0.toShare(
+                    await SGL_0.assetId(),
+                    forDeposit,
+                    false,
+                ),
+            );
+
+            //bc of the actual setup we need to simulate an existing position
+            await SGL_0.borrow(
+                deployer.address,
+                deployer.address,
+                bigDummyAmount,
+            );
+
+            const borroPartBeforeLeverageDown = await SGL_0.userBorrowPart(
+                deployer.address,
+            );
+            const collateralShareBeforeLeverageDown =
+                await SGL_0.userCollateralShare(deployer.address);
+            await SGL_0.multiHopSellCollateral(
+                deployer.address,
+                userCollateralShareAfter.div(4),
+                {
+                    tokenOut: USDO_10.address,
+                    amountOutMin: 0,
+                    data: new ethers.utils.AbiCoder().encode(['bool'], [true]),
+                },
+                {
+                    srcExtraGasLimit: 1_000_000,
+                    lzSrcChainId: 0,
+                    lzDstChainId: 10,
+                    zroPaymentAddress: ethers.constants.AddressZero,
+                    dstAirdropAdapterParam: airdropAdapterParamsDst,
+                    srcAirdropAdapterParam: airdropAdapterParamsSrc,
+                    refundAddress: deployer.address,
+                },
+                {
+                    swapper: uniV3SwapperMock.address,
+                    magnetar: magnetar.address,
+                    tOft: tapiocaOFT10.address,
+                    srcMarket: SGL_0.address,
+                },
+                {
+                    value: ethers.utils.parseEther('10'),
+                },
+            );
+            const borroPartAfterLeverageDown = await SGL_0.userBorrowPart(
+                deployer.address,
+            );
+            const collateralShareAfterLeverageDown =
+                await SGL_0.userCollateralShare(deployer.address);
+
+            expect(borroPartAfterLeverageDown.lt(borroPartBeforeLeverageDown))
+                .to.be.true;
+            expect(
+                collateralShareAfterLeverageDown.lt(
+                    collateralShareBeforeLeverageDown,
+                ),
+            ).to.be.true;
         });
     });
 });

@@ -385,6 +385,32 @@ contract Singularity is SGLCommon {
         );
     }
 
+    /// @notice Level up cross-chain: Borrow more and buy collateral with it.
+    /// @param from The user who sells
+    /// @param share Collateral YieldBox-shares to sell
+    /// @param swapData Swap data used on destination chain for swapping USDO to the underlying TOFT token
+    /// @param lzData LayerZero specific data
+    /// @param externalData External contracts used for the cross chain operation
+    function multiHopSellCollateral(
+        address from,
+        uint256 share,
+        IUSDOBase.ILeverageSwapData calldata swapData,
+        IUSDOBase.ILeverageLZData calldata lzData,
+        IUSDOBase.ILeverageExternalContractsData calldata externalData
+    ) external payable {
+        _executeModule(
+            Module.Leverage,
+            abi.encodeWithSelector(
+                SGLLeverage.multiHopSellCollateral.selector,
+                from,
+                share,
+                swapData,
+                lzData,
+                externalData
+            )
+        );
+    }
+
     /// @notice Entry point for liquidations.
     /// @dev Will call `closedLiquidation()` if not LQ exists or no LQ bid avail exists. Otherwise use LQ.
     /// @param users An array of user addresses.

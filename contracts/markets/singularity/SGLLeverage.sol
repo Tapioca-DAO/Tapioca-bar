@@ -3,6 +3,7 @@ pragma solidity ^0.8.18;
 
 import "./SGLLendingCommon.sol";
 import {IUSDOBase} from "tapioca-periph/contracts/interfaces/IUSDO.sol";
+import {ITapiocaOFT} from "tapioca-periph/contracts/interfaces/ITapiocaOFT.sol";
 
 contract SGLLeverage is SGLLendingCommon {
     using RebaseLibrary for Rebase;
@@ -45,6 +46,38 @@ contract SGLLeverage is SGLLendingCommon {
 
         IUSDOBase(address(asset)).sendForLeverage{value: msg.value}(
             borrowAmount,
+            from,
+            lzData,
+            swapData,
+            externalData
+        );
+    }
+
+    function multiHopSellCollateral(
+        address from,
+        uint256 share,
+        IUSDOBase.ILeverageSwapData calldata swapData,
+        IUSDOBase.ILeverageLZData calldata lzData,
+        IUSDOBase.ILeverageExternalContractsData calldata externalData
+    ) external payable notPaused solvent(from) {
+        require(
+            penrose.swappers(ISwapper(externalData.swapper)),
+            "SGL: Invalid swapper"
+        );
+
+        _allowedBorrow(from, share);
+        _removeCollateral(from, address(this), share);
+        (uint256 amountOut, ) = yieldBox.withdraw(
+            collateralId,
+            address(this),
+            address(this),
+            0,
+            share
+        );
+
+        //send for unwrap
+        ITapiocaOFT(address(collateral)).sendForLeverage{value: msg.value}(
+            amountOut,
             from,
             lzData,
             swapData,
