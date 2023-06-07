@@ -28,6 +28,7 @@ import {
     LiquidationQueue__factory,
     UniUsdoToWethBidder__factory,
     CurveStableToUsdoBidder__factory,
+    MagnetarMarketModule__factory,
 } from '../gitsub_tapioca-sdk/src/typechain/tapioca-periphery';
 import { MagnetarV2__factory } from '../gitsub_tapioca-sdk/src/typechain/tapioca-periphery/factories/Magnetar';
 
@@ -594,7 +595,12 @@ async function uniV2EnvironnementSetup(
 
 async function registerMagnetar(deployer: any) {
     const MagnetarV2 = new MagnetarV2__factory(deployer);
-    const magnetar = await MagnetarV2.deploy(deployer.address);
+    const MagnetarMarketMoodule = new MagnetarMarketModule__factory(deployer);
+    const magnetarMarketModule = await MagnetarMarketMoodule.deploy();
+    const magnetar = await MagnetarV2.deploy(
+        deployer.address,
+        magnetarMarketModule.address,
+    );
     return { magnetar };
 }
 

@@ -2,6 +2,7 @@ import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import inquirer from 'inquirer';
 import { buildYieldBox } from '../deployBuilds/00-buildYieldBox';
 import { buildUSD0 } from '../deployBuilds/06-buildUSDO';
+import { buildUSDOModules } from '../deployBuilds/11-buildUSDOModules';
 import { loadVM } from '../utils';
 
 // hh deployLinkedChainStack --network bsc_testnet
@@ -42,6 +43,12 @@ export const deployLinkedChainStack__task = async (
     VM.add(ybURI).add(yieldBox);
 
     // 02 USDO
+    const [leverageModule, marketModule] = await buildUSDOModules(
+        chainInfo.address,
+        hre,
+    );
+    VM.add(leverageModule).add(marketModule);
+
     const usdo = await buildUSD0(hre, chainInfo.address, signer.address);
     VM.add(usdo);
 

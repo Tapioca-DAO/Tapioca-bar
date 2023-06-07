@@ -12,6 +12,7 @@ import { buildPenroseSetup } from '../setups/01-buildPenroseSetup';
 import { buildMasterContractsSetup } from '../setups/02-buildMasterContractsSetup';
 import { loadVM } from '../utils';
 import SDK from 'tapioca-sdk';
+import { buildUSDOModules } from '../deployBuilds/11-buildUSDOModules';
 
 // hh deployFullStack --network goerli
 export const deployFullStack__task = async (
@@ -88,6 +89,12 @@ export const deployFullStack__task = async (
     VM.add(liq).add(lendBorrow);
 
     // 06 USDO
+    const [leverageModule, marketModule] = await buildUSDOModules(
+        chainInfo.address,
+        hre,
+    );
+    VM.add(leverageModule).add(marketModule);
+
     const usdo = await buildUSD0(hre, chainInfo.address, signer.address);
     VM.add(usdo);
 
