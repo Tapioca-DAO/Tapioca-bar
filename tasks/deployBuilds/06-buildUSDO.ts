@@ -1,4 +1,3 @@
-import { ethers } from 'hardhat';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { IDeployerVMAdd } from 'tapioca-sdk/dist/ethers/hardhat/DeployerVM';
 import { USDO__factory } from '../../typechain';
@@ -16,8 +15,8 @@ export const buildUSD0 = async (
             // YieldBox, to be replaced by VM
             hre.ethers.constants.AddressZero,
             owner,
-            ethers.constants.AddressZero,
-            ethers.constants.AddressZero,
+            hre.ethers.constants.AddressZero,
+            hre.ethers.constants.AddressZero,
         ],
         dependsOn: [
             { argPosition: 1, deploymentName: 'YieldBox' },

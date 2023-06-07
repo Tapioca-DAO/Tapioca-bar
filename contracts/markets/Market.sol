@@ -140,11 +140,10 @@ abstract contract Market is MarketERC20, BoringOwnable {
         borrowOpeningFee = _val;
     }
 
-
     /// @notice updates oracle
     /// @dev can only be called by the owner
     /// @param _oracle the new oracle
-    function setOracle(IOracle _oracle) external {
+    function setOracle(IOracle _oracle) external onlyOwner {
         oracle = _oracle;
         emit OracleUpdated();
     }
