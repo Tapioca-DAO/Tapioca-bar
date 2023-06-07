@@ -93,6 +93,8 @@ abstract contract Market is MarketERC20, BoringOwnable {
     event LogBorrowCapUpdated(uint256 _oldVal, uint256 _newVal);
     /// @notice event emitted when oracle data is updated
     event OracleDataUpdated();
+    /// @notice event emitted when oracle is updated
+    event OracleUpdated();
     /// @notice event emitted when a position is liquidated
     event Liquidated(
         address liquidator,
@@ -136,6 +138,15 @@ abstract contract Market is MarketERC20, BoringOwnable {
         require(_val <= FEE_PRECISION, "Market: not valid");
         emit LogBorrowingFee(borrowOpeningFee, _val);
         borrowOpeningFee = _val;
+    }
+
+
+    /// @notice updates oracle
+    /// @dev can only be called by the owner
+    /// @param _oracle the new oracle
+    function setOracle(IOracle _oracle) external {
+        oracle = _oracle;
+        emit OracleUpdated();
     }
 
     /// @notice updates oracle data
