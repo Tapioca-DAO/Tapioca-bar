@@ -3398,7 +3398,7 @@ describe('Singularity test', () => {
                 tapiocaOFT0.address,
                 ethers.constants.MaxUint256,
             );
-            
+
             await magnetar.setApprovalForAll(tapiocaOFT0.address, true);
             await magnetar.setApprovalForAll(tapiocaOFT10.address, true);
 
