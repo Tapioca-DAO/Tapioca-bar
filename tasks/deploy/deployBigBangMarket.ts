@@ -51,8 +51,7 @@ export const deployBigBangMarket__task = async (
     const { tokenName } = await inquirer.prompt({
         type: 'list',
         name: 'tokenName',
-        message:
-            'Which token do you want to deploy a market for? (List loaded from tapiocaz repo)',
+        message: 'Which token do you want to deploy a market for?',
         choices: tokens.map((e) => e.name),
     });
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion

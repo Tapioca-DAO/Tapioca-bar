@@ -36,7 +36,6 @@ export const buildYieldBoxAssets = async (
         const stratForAddress = deps.find(
             (e) => e.name == strategy.meta.stratFor,
         )?.address;
-
         calls.push({
             target: yieldBoxAddr,
             callData: yieldBox.interface.encodeFunctionData('registerAsset', [

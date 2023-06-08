@@ -15,8 +15,14 @@ export const buildUSD0 = async (
             // YieldBox, to be replaced by VM
             hre.ethers.constants.AddressZero,
             owner,
+            hre.ethers.constants.AddressZero,
+            hre.ethers.constants.AddressZero,
         ],
-        dependsOn: [{ argPosition: 1, deploymentName: 'YieldBox' }],
+        dependsOn: [
+            { argPosition: 1, deploymentName: 'YieldBox' },
+            { argPosition: 3, deploymentName: 'USDOLeverageModule' },
+            { argPosition: 4, deploymentName: 'USDOMarketModule' },
+        ],
         runStaticSimulation: false,
     };
 };
