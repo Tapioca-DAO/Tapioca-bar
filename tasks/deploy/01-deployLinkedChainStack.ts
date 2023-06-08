@@ -63,8 +63,9 @@ export const deployLinkedChainStack__task = async (
     if (wantToVerify) {
         try {
             await VM.verify();
-        } catch {
+        } catch (e) {
             console.log('[-] Verification failed');
+            console.log(`error: ${JSON.stringify(e)}`);
         }
     }
 
