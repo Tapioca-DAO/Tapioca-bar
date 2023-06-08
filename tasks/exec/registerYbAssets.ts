@@ -41,6 +41,14 @@ export const registerYbAssets__task = async (
             await hre.getChainId(),
         )
         .filter((a) => stratForNames.find((e) => a.name.startsWith(e)));
+
+    const mockTokens = hre.SDK.db
+        .loadGlobalDeployment(
+            tag,
+            hre.SDK.config.TAPIOCA_PROJECTS_NAME.TapiocaMocks,
+            await hre.getChainId(),
+        )
+        .filter((a) => stratForNames.find((e) => a.name.startsWith(e)));
     const localTokens = hre.SDK.db
         .loadLocalDeployment(tag, await hre.getChainId())
         .filter((a) => stratForNames.find((e) => a.name.startsWith(e)));
@@ -49,6 +57,7 @@ export const registerYbAssets__task = async (
         ...toftTokens,
         ...localTokens,
         ...tapOFTTokens,
+        ...mockTokens,
         yieldBoxDep,
     ];
     const calls = await buildYieldBoxAssets(hre, tag, deps);

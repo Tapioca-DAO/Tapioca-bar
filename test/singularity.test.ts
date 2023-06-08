@@ -25,7 +25,6 @@ import {
     TapiocaWrapper__factory,
 } from '../gitsub_tapioca-sdk/src/typechain/tapiocaz';
 import TapiocaOFTArtifact from '../gitsub_tapioca-sdk/src/artifacts/tapiocaz/TapiocaOFT.json';
-import { OracleMock } from 'tapioca-sdk/dist/typechain/tapioca-mocks';
 
 describe('Singularity test', () => {
     describe('reverts', () => {
@@ -3399,6 +3398,10 @@ describe('Singularity test', () => {
                 tapiocaOFT0.address,
                 ethers.constants.MaxUint256,
             );
+
+            await magnetar.setApprovalForAll(tapiocaOFT0.address, true);
+            await magnetar.setApprovalForAll(tapiocaOFT10.address, true);
+
             await SGL_10.multiHopBuyCollateral(
                 deployer.address,
                 0,

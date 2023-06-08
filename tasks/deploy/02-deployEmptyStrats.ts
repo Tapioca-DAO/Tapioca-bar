@@ -50,7 +50,7 @@ export const deployEmptyStrats__task = async (
             const { projectName } = await inquirer.prompt({
                 type: 'input',
                 name: 'projectName',
-                message: 'In which project is the token registerd?',
+                message: 'In which project is the token registerd? (ex: tapioca-mocks)',
             });
             project = projectName;
 
@@ -58,7 +58,7 @@ export const deployEmptyStrats__task = async (
                 type: 'input',
                 name: 'tokenName',
                 message:
-                    'What is the token you want to register the strategy for?',
+                    'What is the token you want to register the strategy for? (ex: WETHMock)',
             });
             name = tokenName;
             break;
@@ -69,7 +69,7 @@ export const deployEmptyStrats__task = async (
                 type: 'input',
                 name: 'testTokenName',
                 message:
-                    'What is the token you want to register the strategy for?',
+                    'What is the token you want to register the strategy for? (ex: WETHMock)',
             });
             name = testTokenName;
             console.log(`Will deploy a strategy for: ${name} contract`);
@@ -80,12 +80,12 @@ export const deployEmptyStrats__task = async (
 
     let tokens = hre.SDK.db
         .loadGlobalDeployment(tag, project, await hre.getChainId())
-        .filter((e) => e.name.startsWith(name));
+        .filter((e) => e.name == name);
 
     if (tokens.length == 0) {
         tokens = hre.SDK.db
             .loadLocalDeployment(tag, await hre.getChainId())
-            .filter((e) => e.name.startsWith(name));
+            .filter((e) => e.name == name);
     }
 
     console.log('[+] Found', tokens.length, 'tokens');
