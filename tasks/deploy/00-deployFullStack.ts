@@ -85,7 +85,9 @@ export const deployFullStack__task = async (
     VM.add(multiSwapper);
 
     // 05 - SingularityModules
-    const [liq, borrow, collateral, leverage] = await buildSingularityModules(hre);
+    const [liq, borrow, collateral, leverage] = await buildSingularityModules(
+        hre,
+    );
     VM.add(liq).add(borrow).add(collateral).add(leverage);
 
     // 06 USDO
