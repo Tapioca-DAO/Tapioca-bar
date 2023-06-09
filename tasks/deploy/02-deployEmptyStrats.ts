@@ -50,7 +50,8 @@ export const deployEmptyStrats__task = async (
             const { projectName } = await inquirer.prompt({
                 type: 'input',
                 name: 'projectName',
-                message: 'In which project is the token registerd? (ex: tapioca-mocks)',
+                message:
+                    'In which project is the token registerd? (ex: tapioca-mocks)',
             });
             project = projectName;
 
