@@ -3,7 +3,7 @@
     "license": "MIT",
     "scripts": {
         "compile": "NODE_ENV=compile hardhat compile --quiet && npm run lint:sol",
-        "lint:ts": "eslint ./tasks ./test ./*.ts --fix",
+        "lint:ts": "eslint . --fix",
         "lint:sol": "prettier --write \"./contracts/**/*.sol\" && solhint \"./contracts/**/*.sol\" --fix",
         "lint": "npm run lint:ts && npm run lint:sol",
         "clean": "rm -rf ./cache && rm -rf ./artifacts && rm -rf ./.openzeppelin",
