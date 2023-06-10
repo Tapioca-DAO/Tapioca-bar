@@ -33,6 +33,7 @@ import { deploySGLMarket__task } from './tasks/deploy/deploySGLMarket';
 import { deployBigBangMarket__task } from './tasks/deploy/deployBigBangMarket';
 import { testCrossChainBorrow__task } from './tasks/test-borrow';
 import { testCrossChainLend__task } from './tasks/test-lend';
+import { setMinterStatus__task } from './tasks/exec/setMinterStatus';
 
 task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
     const accounts = await hre.ethers.getSigners();
@@ -99,6 +100,24 @@ task(
  * Execs
  */
 
+task(
+    'setMinterStatus',
+    'Set minter status on USDO for an operator',
+    setMinterStatus__task,
+)
+    .addParam('operator', 'Minter address')
+    .addParam('status', 'true/false');
+
+task(
+    'setBurnerStatus',
+    'Set burner status on USDO for an operator',
+    setMinterStatus__task,
+)
+    .addParam('operator', 'Burner address')
+    .addParam('status', 'true/false');
+
+/**
+ * 
 /**
  * Deploy
  */

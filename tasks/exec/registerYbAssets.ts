@@ -1,6 +1,7 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { buildYieldBoxAssets } from '../setups/900-buildYieldBoxAssets';
 import { typechain } from 'tapioca-sdk';
+import inquirer from 'inquirer';
 
 // hh registerYbAssets --network ...
 export const registerYbAssets__task = async (
@@ -20,11 +21,30 @@ export const registerYbAssets__task = async (
     const { deployment: yieldBoxDep } =
         await hre.SDK.hardhatUtils.getLocalContract(hre, 'YieldBox', tag);
 
-    const strats = hre.SDK.db
+    let strats = hre.SDK.db
         .loadLocalDeployment(tag, await hre.getChainId())
         .filter((a) => a.name.startsWith('ERC20WithoutStrategy'));
     console.log('[+] Found', strats.length, 'strategies.');
     console.log(strats.map((e) => e.name));
+
+    const { wantToFilter } = await inquirer.prompt({
+        type: 'confirm',
+        name: 'wantToFilter',
+        message: 'Do you want to filter strategies?',
+    });
+
+    if (wantToFilter) {
+        const { filterTerm } = await inquirer.prompt({
+            type: 'input',
+            name: 'filterTerm',
+            message: 'Filtering term',
+        });
+
+        strats = strats.filter((a) => a.name.includes(filterTerm));
+
+        console.log('[+] Found', strats.length, 'strategies.');
+        console.log(strats.map((e) => e.name));
+    }
 
     const stratForNames = strats.map((e) => e.meta.stratFor);
     const toftTokens = hre.SDK.db

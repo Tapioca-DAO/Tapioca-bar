@@ -2,6 +2,19 @@
     "default": {
         "4002": [
             {
+                "name": "ERC20WithoutStrategy-TapiocaOFT-BBMock",
+                "address": "0x925FD3001b3E5f1f714716Dd9BC3136756302aaA",
+                "meta": {
+                    "stratFor": "TapiocaOFT-BBMock",
+                    "args": [
+                        "0xd24E226136571f106E9EbA6C90d025cCde337Fd8",
+                        "0x19FC4f15D9ffa0c132b535537502102EbA9DdFD1"
+                    ],
+                    "salt": "0x07ab248b7d4cf099ce3282ff6564d81ab96f38049fa1f85d9473c8e4eec0a7a5",
+                    "create2": true
+                }
+            },
+            {
                 "name": "ERC20WithoutStrategy-TapOFT",
                 "address": "0x03b10b84f9d61f4658CaDF45c66f1b93512d87EF",
                 "meta": {
@@ -146,6 +159,19 @@
             }
         ],
         "43113": [
+            {
+                "name": "ERC20WithoutStrategy-TapiocaOFT-BBMock",
+                "address": "0xa3e3A99D7F7eba395C175ab6F64dF10D07252170",
+                "meta": {
+                    "stratFor": "TapiocaOFT-BBMock",
+                    "args": [
+                        "0x055529378A680Ddc666E57870A87034373A1A50f",
+                        "0xED610624cF797E76aFe8F78a9CeD31359F4bdF92"
+                    ],
+                    "salt": "0x338fbddb4a975bf2e6df8bbc3164687dfb6b702842396c17ff38a72604dbd18b",
+                    "create2": true
+                }
+            },
             {
                 "name": "ERC20WithoutStrategy-TapOFT",
                 "address": "0xaC8e8718f8212e972Fa1a67A6a797229CE5e2c99",
@@ -292,6 +318,19 @@
         ],
         "80001": [
             {
+                "name": "ERC20WithoutStrategy-TapiocaOFT-BBMock",
+                "address": "0x3BfC1fA0e5ddf21A4EC0893bacCE5aF85683EB1b",
+                "meta": {
+                    "stratFor": "TapiocaOFT-BBMock",
+                    "args": [
+                        "0x554CdDbd1CE66c5917CA71c8Fd90E11eD93bF726",
+                        "0xDcFB2765bdb5ced2D7D62847Bd62bDA923D4D9Af"
+                    ],
+                    "salt": "0xba8e45feb02d3177785ed875106c1c0534467078e27751b612234efcd1a834bc",
+                    "create2": true
+                }
+            },
+            {
                 "name": "ERC20WithoutStrategy-TapOFT",
                 "address": "0xA784Ed1371242792fF237A6Ee9B3175036f6200E",
                 "meta": {
@@ -436,6 +475,46 @@
             }
         ],
         "421613": [
+            {
+                "name": "BigBang-TapiocaOFT-BBMock",
+                "address": "0xD40Db48b4228703DF465eD5328a545bAF269913E",
+                "meta": {
+                    "isBigBangMarket": true,
+                    "collateral": {
+                        "collateralAddress": "0xCa67cd84A8164BCE83e417AB809cd7b9D8f90dE7",
+                        "collateralStrategyAddress": "0x3857BD7d35DA7970827f5307ad7cc7253A25132a"
+                    }
+                }
+            },
+            {
+                "name": "OracleMock-TapiocaOFT-BBMock",
+                "address": "0x6Ef4B736C1BB961aC85cD7b0b29714d97F3456E5",
+                "meta": {
+                    "args": [
+                        "OracleMock-TapiocaOFT-BBMock",
+                        "OCM-TapiocaOFT-BBMock",
+                        {
+                            "type": "BigNumber",
+                            "hex": "0x0853a0d2313c0000"
+                        }
+                    ],
+                    "salt": "0x9eeba9ff1c8fc63fa6dc29af1ae4ad9d26e5660fe1f95388032a6fa0a5dd03a4",
+                    "create2": true
+                }
+            },
+            {
+                "name": "ERC20WithoutStrategy-TapiocaOFT-BBMock",
+                "address": "0x3857BD7d35DA7970827f5307ad7cc7253A25132a",
+                "meta": {
+                    "stratFor": "TapiocaOFT-BBMock",
+                    "args": [
+                        "0xE56606EF6A2DEBBa0F4D3E4Ea0903d013e456E04",
+                        "0xCa67cd84A8164BCE83e417AB809cd7b9D8f90dE7"
+                    ],
+                    "salt": "0x5d17610f1ca3ecf9a4cf5c5d74966be10015de3c515eb71b12f9a1ab2737eda9",
+                    "create2": true
+                }
+            },
             {
                 "name": "BigBang-BB2Mock",
                 "address": "0xb77e31907Ffffd401411312F7651A520BdE50CEd",
