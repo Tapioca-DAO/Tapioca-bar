@@ -36,6 +36,7 @@ contract BaseUSDOStorage is OFTV2 {
     bytes32 internal constant FLASH_MINT_CALLBACK_SUCCESS =
         keccak256("ERC3156FlashBorrower.onFlashLoan");
 
+    uint16 internal constant PT_MARKET_REMOVE_ASSET = 773;
     uint16 internal constant PT_YB_SEND_SGL_LEND_OR_REPAY = 774;
     uint16 internal constant PT_LEVERAGE_MARKET_UP = 775;
 
