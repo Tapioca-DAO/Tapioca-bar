@@ -3,6 +3,7 @@ import inquirer from 'inquirer';
 import { buildEmptyStrat } from '../deployBuilds/10-buildEmptyStrat';
 import { loadVM } from '../utils';
 import SDK from 'tapioca-sdk';
+import { TContract } from 'tapioca-sdk/dist/shared';
 
 enum StratType {
     TOFT = 0,
@@ -33,10 +34,13 @@ export const deployEmptyStrats__task = async (
 
     let project: 'tapiocaz' | 'tap-token' | 'tapioca-bar';
     let name: string;
+    let tokens: TContract[];
+    let predicate = (e) => e.name == name;
     switch (type) {
         case StratType.TOFT:
             project = SDK.API.config.TAPIOCA_PROJECTS_NAME.TapiocaZ;
             name = 'TapiocaOFT';
+            predicate = (e) => e.name.startsWith(name);
             break;
         case StratType.USDO:
             project = SDK.API.config.TAPIOCA_PROJECTS_NAME.TapiocaBar;
@@ -79,14 +83,14 @@ export const deployEmptyStrats__task = async (
 
     const VM = await loadVM(hre, tag, true);
 
-    let tokens = hre.SDK.db
+    tokens = hre.SDK.db
         .loadGlobalDeployment(tag, project, await hre.getChainId())
-        .filter((e) => e.name == name);
+        .filter((e) => predicate(e));
 
     if (tokens.length == 0) {
         tokens = hre.SDK.db
             .loadLocalDeployment(tag, await hre.getChainId())
-            .filter((e) => e.name == name);
+            .filter((e) => predicate(e));
     }
 
     console.log('[+] Found', tokens.length, 'tokens');
