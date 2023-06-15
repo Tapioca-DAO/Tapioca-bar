@@ -34,6 +34,7 @@ import { deployBigBangMarket__task } from './tasks/deploy/deployBigBangMarket';
 import { testCrossChainBorrow__task } from './tasks/test-borrow';
 import { testCrossChainLend__task } from './tasks/test-lend';
 import { setMinterStatus__task } from './tasks/exec/setMinterStatus';
+import { sameChainFlowTest__task } from './tasks/tests/sameChainFlow';
 
 task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
     const accounts = await hre.ethers.getSigners();
@@ -285,3 +286,15 @@ task(
 );
 
 task('testCrossChainLend', 'Test crosschain lend', testCrossChainLend__task);
+
+/**
+ * Test
+ */
+task(
+    'sameChainFlowTest',
+    'Test complete flow on same chain',
+    sameChainFlowTest__task,
+)
+    .addParam('bbMarket', 'BigBang market address')
+    .addParam('sglMarket', 'SGL market address')
+    .addParam('magnetarAddress', 'Magnetar address');

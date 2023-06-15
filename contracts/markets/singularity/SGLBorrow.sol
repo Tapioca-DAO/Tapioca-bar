@@ -45,7 +45,7 @@ contract SGLBorrow is SGLLendingCommon {
         address to,
         bool skim,
         uint256 part
-    ) public notPaused returns (uint256 amount) {
+    ) public notPaused allowedBorrow(from, part) returns (uint256 amount) {
         updateExchangeRate();
 
         _accrue();

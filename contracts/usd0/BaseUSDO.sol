@@ -136,6 +136,40 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
     // ************************ //
     // *** PUBLIC FUNCTIONS *** //
     // ************************ //
+    /// @notice calls removeAsset on another layer
+    /// @param from sending address
+    /// @param to receiver address
+    /// @param lzDstChainId LayerZero destination chain id
+    /// @param withdrawParams withdrawTo specific params
+    /// @param options send specific params
+    /// @param removeParams removeAsset specific params
+    /// @param approvals approvals specific params
+    function removeAsset(
+        address from,
+        address to,
+        uint16 lzDstChainId,
+        ITapiocaOFT.IWithdrawParams calldata withdrawParams,
+        IUSDOBase.ISendOptions calldata options,
+        IUSDOBase.IRemoveParams calldata removeParams,
+        IUSDOBase.IApproval[] calldata approvals,
+        bytes calldata adapterParams
+    ) external payable {
+        _executeModule(
+            Module.Market,
+            abi.encodeWithSelector(
+                USDOMarketModule.removeAsset.selector,
+                from,
+                to,
+                lzDstChainId,
+                withdrawParams,
+                options,
+                removeParams,
+                approvals,
+                adapterParams
+            )
+        );
+    }
+
     /// @notice sends USDO to a specific chain and performs a leverage up operation
     /// @param amount the amount to use
     /// @param leverageFor the receiver address
@@ -259,6 +293,14 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
                 abi.encodeWithSelector(
                     USDOLeverageModule.leverageUp.selector,
                     _srcChainId,
+                    _payload
+                )
+            );
+        } else if (packetType == PT_MARKET_REMOVE_ASSET) {
+            _executeModule(
+                Module.Market,
+                abi.encodeWithSelector(
+                    USDOMarketModule.remove.selector,
                     _payload
                 )
             );

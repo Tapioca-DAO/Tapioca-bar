@@ -2762,7 +2762,7 @@ describe('Singularity test', () => {
             await erc20Mock.approve(toft.address, amount);
         };
 
-        it('should bounce between 2 chains', async () => {
+        it.only('should bounce between 2 chains', async () => {
             const {
                 deployer,
                 tap,
@@ -3481,6 +3481,52 @@ describe('Singularity test', () => {
                     false,
                 ),
             );
+
+            // const airdropAdapterParams = hre.ethers.utils.solidityPack(
+            //     ['uint16', 'uint', 'uint', 'address'],
+            //     [
+            //         2, //it needs to be 2
+            //         1_000_000, //extra gas limit; min 200k
+            //         ethers.utils.parseEther('1'), //amount of eth to airdrop
+            //         USDO_0.address,
+            //     ],
+            // );
+
+            // hre.tracer.enabled = true;
+            // await YieldBox_0.setApprovalForAll(magnetar.address, true);
+            // await magnetar.setApprovalForAll(USDO_0.address, true);
+            // const lent = await SGL_0.balanceOf(deployer.address);
+            // await USDO_10.removeAsset(
+            //     deployer.address,
+            //     deployer.address,
+            //     0,
+            //     {
+            //         withdraw: true,
+            //         withdrawLzFeeAmount: ethers.utils.parseEther('1'),
+            //         withdrawOnOtherChain: true,
+            //         withdrawLzChainId: 10,
+            //         withdrawAdapterParams: hre.ethers.utils.solidityPack(
+            //             ['uint16', 'uint256'],
+            //             [1, 200000],
+            //         ),
+            //     },
+            //     {
+            //         extraGasLimit: 1_000_000,
+            //         zroPaymentAddress: ethers.constants.AddressZero,
+            //     },
+            //     {
+            //         market: SGL_0.address,
+            //         marketHelper: magnetar.address,
+            //         share: bigDummyAmount.div(10).mul(1e8),
+            //     },
+            //     [],
+            //     airdropAdapterParams,
+            //     {
+            //         value: ethers.utils.parseEther('2'),
+            //     },
+            // );
+            // hre.tracer.enabled = false;
+            // return;
 
             //bc of the actual setup we need to simulate an existing position
             await SGL_0.borrow(
