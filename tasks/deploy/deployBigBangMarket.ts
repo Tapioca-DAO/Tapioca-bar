@@ -210,7 +210,6 @@ export const deployBigBangMarket__task = async (
     ]);
     VM.save();
 
-
     console.log('[+] Setting the market as a minter & burner for USDO');
     const usdoDeployment = hre.SDK.db
         .loadLocalDeployment(tag, chainInfo.chainId)
