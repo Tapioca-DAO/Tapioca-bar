@@ -6,10 +6,10 @@ import { ERC20Mock } from 'tapioca-sdk/dist/typechain/tapioca-mocks';
 import { MagnetarV2 } from 'tapioca-sdk/dist/typechain/tapioca-periphery';
 import { TapiocaOFT } from 'tapioca-sdk/dist/typechain/tapiocaz';
 import { YieldBox } from 'tapioca-sdk/dist/typechain/YieldBox';
-import ERC20MockArtifact from '../../gitsub_tapioca-sdk/src/artifacts/tapioca-mocks/ERC20Mock.json';
-import TapiocaOFTArtifact from '../../gitsub_tapioca-sdk/src/artifacts/tapiocaz/TapiocaOFT.json';
-import MagnetarArtifact from '../../gitsub_tapioca-sdk/src/artifacts/tapioca-periphery/MagnetarV2.json';
-import YieldBoxArtifact from '../../gitsub_tapioca-sdk/src/artifacts/YieldBox/contracts/YieldBox.sol/YieldBox.json';
+import ERC20MockArtifact from '../gitsub_tapioca-sdk/src/artifacts/tapioca-mocks/ERC20Mock.json';
+import TapiocaOFTArtifact from '../gitsub_tapioca-sdk/src/artifacts/tapiocaz/TapiocaOFT.json';
+import MagnetarArtifact from '../gitsub_tapioca-sdk/src/artifacts/tapioca-periphery/MagnetarV2.json';
+import YieldBoxArtifact from '../gitsub_tapioca-sdk/src/artifacts/YieldBox/contracts/YieldBox.sol/YieldBox.json';
 
 export const sameChainFlowTest__task = async (
     taskArgs: {

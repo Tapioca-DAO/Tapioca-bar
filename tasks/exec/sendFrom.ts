@@ -1,20 +1,20 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { TapiocaOFT } from '../../gitsub_tapioca-sdk/src/typechain/tapiocaz';
+import { TAPIOCA_PROJECTS_NAME } from '../../gitsub_tapioca-sdk/src/api/config';
 
 // TODO use the new task arg system
 // to fantom_testnet
-// npx hardhat sendFrom --contract-name USDO --src-chain goerli --dst arbitrum_goerli --value 1.34 --tag '1.0'
+// npx hardhat sendFrom --contract-name USDO --src goerli --dst arbitrum_goerli --value 1.34 --tag '1.0'
 export const sendFrom__task = async (
     taskArgs: {
         contractName: string;
         src: string;
         dst: string;
         value: string;
-        tag?: string;
     },
     hre: HardhatRuntimeEnvironment,
 ) => {
-    const { contractName, src, dst, value, tag } = taskArgs;
+    const { contractName, src, dst, value } = taskArgs;
 
     const srcChainConfig = hre.SDK.utils.getChainBy('name', src);
     const dstChainConfig = hre.SDK.utils.getChainBy('name', dst);
@@ -32,15 +32,22 @@ export const sendFrom__task = async (
             `Chain ${dst} not found. Available chains: ${availableChains}`,
         );
     }
+    const tag = await hre.SDK.hardhatUtils.askForTag(hre, 'global');
+    const srcUSDODeployment = hre.SDK.db
+        .loadGlobalDeployment(
+            tag,
+            TAPIOCA_PROJECTS_NAME.TapiocaBar,
+            srcChainConfig.chainId,
+        )
+        .filter((e) => e.name == 'USDO')[0];
 
+    console.log(`USDO FROM ${srcUSDODeployment.address}`);
     const srcContract = await hre.ethers.getContractAt(
         'USDO',
-        '0xAcbC06b9D3086C6D769F0CA8e7d887BE5111e15f',
+        srcUSDODeployment.address,
     );
 
-    const decimals = await srcContract.decimals();
-
-    const formattedEther = hre.ethers.utils.parseUnits(value, decimals);
+    const formattedEther = hre.ethers.utils.parseUnits(value, 18);
 
     console.log(
         `[+] Sending ${formattedEther} of ${contractName} from ${src} to ${dst}`,

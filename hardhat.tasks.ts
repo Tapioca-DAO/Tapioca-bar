@@ -34,7 +34,7 @@ import { deployBigBangMarket__task } from './tasks/deploy/deployBigBangMarket';
 import { testCrossChainBorrow__task } from './tasks/test-borrow';
 import { testCrossChainLend__task } from './tasks/test-lend';
 import { setMinterStatus__task } from './tasks/exec/setMinterStatus';
-import { sameChainFlowTest__task } from './tasks/tests/sameChainFlow';
+import { sameChainFlowTest__task } from './tasks/test-sameChainFlow';
 import { crossChainRepay__task } from './tasks/test-crossChainRepay';
 import { sendFrom__task } from './tasks/exec/sendFrom';
 

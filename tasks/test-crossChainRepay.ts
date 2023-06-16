@@ -48,17 +48,32 @@ export const crossChainRepay__task = async (
     ).connect(deployer) as TapiocaOFT__factory;
 
     // Load TOFT on fromChain
+    const globalTOFTs_from_deployments = hre.SDK.db.loadGlobalDeployment(
+        tag,
+        TAPIOCA_PROJECTS_NAME.TapiocaZ,
+        fromChain.chainId,
+    );
+    const tOFT_from_choices = globalTOFTs_from_deployments
+        .map((e) => e.name)
+        .filter((e) => e.startsWith('TapiocaOFT'));
+    const { toft_from_contract_name } = await inquirer.prompt({
+        type: 'list',
+        name: 'toft_from_contract_name',
+        message: 'Choose a TOFT contract:',
+        choices: tOFT_from_choices,
+    });
     const toft__dep = hre.SDK.db
         .loadGlobalDeployment(
             tag,
             TAPIOCA_PROJECTS_NAME.TapiocaZ,
             fromChain.chainId,
         )
-        .find((e) => e.meta.isToftHost === true);
+        .find((e) => e.name == toft_from_contract_name);
     if (!toft__dep)
         throw new Error(`[-] No TOFT found for chain ${fromChain.name}`);
 
     const toftFrom = TapiocaOFTMock__factory.attach(toft__dep.address);
+    console.log(`tOFT from ${toftFrom.address}`);
 
     // Load TOFT on toChain
     const toft__to__dep = hre.SDK.db
@@ -67,7 +82,7 @@ export const crossChainRepay__task = async (
             TAPIOCA_PROJECTS_NAME.TapiocaZ,
             toChain.chainId,
         )
-        .find((e) => e.name.toLowerCase() === 'usdo');
+        .find((e) => e.name == toft_from_contract_name);
 
     if (!toft__to__dep)
         throw new Error(`[-] No TOFT found for chain ${toChain.name}`);
@@ -77,6 +92,7 @@ export const crossChainRepay__task = async (
         toft__to__dep.address,
         toNetwork,
     );
+    console.log(`tOFT to ${toftTo.address}`);
 
     // Load USDO on fromChain
     const usdo__from__dep = hre.SDK.db
@@ -94,7 +110,7 @@ export const crossChainRepay__task = async (
         'USDO',
         usdo__from__dep.address,
     );
-    console.log(usdoFrom.address);
+    console.log(`USDO from ${usdoFrom.address}`);
 
     // Load USDO on toChain
     const usdo__to__dep = hre.SDK.db
@@ -113,6 +129,7 @@ export const crossChainRepay__task = async (
         usdo__to__dep.address,
         toNetwork,
     );
+    console.log(`USDO to ${usdoTo.address}`);
 
     // Load Singularity toChain
     const globalToDeployments = hre.SDK.db.loadGlobalDeployment(
@@ -300,11 +317,12 @@ export const crossChainRepay__task = async (
                     [1, 200000],
                 ),
             },
-            airdropAdapterParams,
-            { value: callFee.add(withdrawFees) },
+            hre.ethers.utils.solidityPack(['uint16', 'uint256'], [1, 200000]),
+            // airdropAdapterParams,
+            { value: callFee.add(withdrawFees), gasLimit: 2000000 },
         )
     ).wait();
-    console.log(`[+] Borrow Tx ${tx.transactionHash}`);
+    console.log(`[+] Repay Tx ${tx.transactionHash}`);
 
     console.log('\n[+] Done');
 };

@@ -220,4 +220,17 @@ export const deployBigBangMarket__task = async (
     );
     await usdo.setMinterStatus(market.address, true);
     await usdo.setBurnerStatus(market.address, true);
+
+    if (debtRateAgainstEth == '0') {
+        console.log('[+] Setting the main market on Penrose');
+        const penroseDeployment = hre.SDK.db
+            .loadLocalDeployment(tag, chainInfo.chainId)
+            .find((e) => e.name == 'Penrose');
+        const penrose = await hre.ethers.getContractAt(
+            'Penrose',
+            penroseDeployment?.address,
+        );
+
+        await penrose.setBigBangEthMarket(market.address);
+    }
 };
