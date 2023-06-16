@@ -35,7 +35,7 @@ import { testCrossChainBorrow__task } from './tasks/test-borrow';
 import { testCrossChainLend__task } from './tasks/test-lend';
 import { setMinterStatus__task } from './tasks/exec/setMinterStatus';
 import { sameChainFlowTest__task } from './tasks/tests/sameChainFlow';
-import { crossChainRepay__task } from './tasks/test-sendAndLendOrRepay';
+import { crossChainRepay__task } from './tasks/test-crossChainRepay';
 import { sendFrom__task } from './tasks/exec/sendFrom';
 
 task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
