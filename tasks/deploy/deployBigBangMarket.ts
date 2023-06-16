@@ -209,4 +209,16 @@ export const deployBigBangMarket__task = async (
         },
     ]);
     VM.save();
+
+
+    console.log('[+] Setting the market as a minter & burner for USDO');
+    const usdoDeployment = hre.SDK.db
+        .loadLocalDeployment(tag, chainInfo.chainId)
+        .find((e) => e.name == 'USDO');
+    const usdo = await hre.ethers.getContractAt(
+        'USDO',
+        usdoDeployment?.address,
+    );
+    await usdo.setMinterStatus(market.address, true);
+    await usdo.setBurnerStatus(market.address, true);
 };

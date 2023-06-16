@@ -209,7 +209,8 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
         uint16 lzDstChainId,
         IUSDOBase.ILendParams calldata lendParams,
         IUSDOBase.ISendOptions calldata options,
-        IUSDOBase.IApproval[] calldata approvals
+        IUSDOBase.IApproval[] calldata approvals,
+        bytes calldata adapterParams
     ) external payable {
         _executeModule(
             Module.Market,
@@ -220,7 +221,8 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
                 lzDstChainId,
                 lendParams,
                 options,
-                approvals
+                approvals,
+                adapterParams
             )
         );
     }
