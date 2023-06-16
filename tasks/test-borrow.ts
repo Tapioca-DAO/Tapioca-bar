@@ -93,11 +93,12 @@ export const testCrossChainBorrow__task = async (
     );
 
     // Load Singularity toChain
-    const localToDeployments = hre.SDK.db.loadLocalDeployment(
+    const globalToDeployments = hre.SDK.db.loadGlobalDeployment(
         tag,
+        TAPIOCA_PROJECTS_NAME.TapiocaBar,
         toChain.chainId,
     );
-    const choices = localToDeployments
+    const choices = globalToDeployments
         .map((e) => e.name)
         .filter(
             (e) =>
@@ -112,7 +113,7 @@ export const testCrossChainBorrow__task = async (
         choices,
     });
 
-    const sgl__dep = localToDeployments.find(
+    const sgl__dep = globalToDeployments.find(
         (e) => e.name === contractName,
     ) as TContract;
     if (!sgl__dep) throw new Error(`[-] No contract found for ${contractName}`);
