@@ -303,10 +303,10 @@ export const crossChainRepay__task = async (
                 removeCollateralShare: 0,
             },
             {
-                extraGasLimit: 1_000_000,
+                extraGasLimit: 2_000_000,
                 zroPaymentAddress: deployer.address,
             },
-            [permitBorrowStruct],
+            [],
             {
                 withdraw: false,
                 withdrawLzFeeAmount: withdrawFees,
@@ -314,12 +314,15 @@ export const crossChainRepay__task = async (
                 withdrawLzChainId: fromChain.lzChainId,
                 withdrawAdapterParams: hre.ethers.utils.solidityPack(
                     ['uint16', 'uint256'],
-                    [1, 200000],
+                    [1, 1_000_000],
                 ),
             },
-            hre.ethers.utils.solidityPack(['uint16', 'uint256'], [1, 200000]),
+            hre.ethers.utils.solidityPack(
+                ['uint16', 'uint256'],
+                [1, 1_000_000],
+            ),
             // airdropAdapterParams,
-            { value: callFee.add(withdrawFees), gasLimit: 2000000 },
+            { value: callFee.add(withdrawFees).mul(3)},
         )
     ).wait();
     console.log(`[+] Repay Tx ${tx.transactionHash}`);

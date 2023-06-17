@@ -62,8 +62,8 @@ contract USDOMarketModule is BaseUSDOStorage {
         address _from,
         address _to,
         uint16 lzDstChainId,
+        address zroPaymentAddress,
         IUSDOBase.ILendParams calldata lendParams,
-        IUSDOBase.ISendOptions calldata options,
         IUSDOBase.IApproval[] calldata approvals,
         ITapiocaOFT.IWithdrawParams calldata withdrawParams,
         bytes calldata adapterParams
@@ -73,7 +73,7 @@ contract USDOMarketModule is BaseUSDOStorage {
             _from,
             lzEndpoint.getChainId(),
             toAddress,
-            lendParams.amount
+            lendParams.depositAmount
         );
 
         bytes memory lzPayload = abi.encode(
@@ -90,12 +90,17 @@ contract USDOMarketModule is BaseUSDOStorage {
             lzDstChainId,
             lzPayload,
             payable(_from),
-            options.zroPaymentAddress,
+            zroPaymentAddress,
             adapterParams,
             msg.value
         );
 
-        emit SendToChain(lzDstChainId, _from, toAddress, lendParams.amount);
+        emit SendToChain(
+            lzDstChainId,
+            _from,
+            toAddress,
+            lendParams.depositAmount
+        );
     }
 
     function remove(bytes memory _payload) public {
@@ -180,20 +185,16 @@ contract USDOMarketModule is BaseUSDOStorage {
             _callApproval(approvals);
         }
 
-        _creditTo(_srcChainId, address(this), lendParams.amount);
+        _creditTo(_srcChainId, address(this), lendParams.depositAmount);
 
         // Use market helper to deposit and add asset to market
-        approve(address(lendParams.marketHelper), lendParams.amount);
+        approve(address(lendParams.marketHelper), lendParams.depositAmount);
         if (lendParams.repay) {
-            uint256 toRepayPart = _getRepayPart(
-                lendParams.market,
-                lendParams.amount
-            );
             IMagnetar(lendParams.marketHelper).depositAndRepay(
                 lendParams.market,
                 to,
-                lendParams.amount,
-                toRepayPart,
+                lendParams.depositAmount,
+                lendParams.repayAmount,
                 true,
                 true
             );
@@ -231,25 +232,11 @@ contract USDOMarketModule is BaseUSDOStorage {
             IMagnetar(lendParams.marketHelper).depositAndAddAsset(
                 lendParams.market,
                 to,
-                lendParams.amount,
+                lendParams.depositAmount,
                 true,
                 true
             );
         }
-    }
-
-    function _getRepayPart(
-        address market,
-        uint256 amount
-    ) private view returns (uint256) {
-        (uint128 totalBorrowElastic, uint128 totalBorrowBase) = IMarket(market)
-            .totalBorrow();
-        Rebase memory _totalBorrowed = Rebase(
-            totalBorrowElastic,
-            totalBorrowBase
-        );
-
-        return _totalBorrowed.toBase(amount, false);
     }
 
     function _callApproval(IUSDOBase.IApproval[] memory approvals) private {

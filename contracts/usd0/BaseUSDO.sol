@@ -201,7 +201,6 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
     /// @param _to receiver address
     /// @param lzDstChainId LayerZero destination chain id
     /// @param lendParams lend specific params
-    /// @param options send specific params
     /// @param approvals approvals specific params
     /// @param withdrawParams parameter to withdraw the SGL collateral
     /// @param adapterParams adapter params of the withdrawn collateral
@@ -209,8 +208,8 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
         address _from,
         address _to,
         uint16 lzDstChainId,
+        address zroPaymentAddress,
         IUSDOBase.ILendParams calldata lendParams,
-        IUSDOBase.ISendOptions calldata options,
         IUSDOBase.IApproval[] calldata approvals,
         ITapiocaOFT.IWithdrawParams calldata withdrawParams,
         bytes calldata adapterParams
@@ -222,8 +221,8 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
                 _from,
                 _to,
                 lzDstChainId,
+                zroPaymentAddress,
                 lendParams,
-                options,
                 approvals,
                 withdrawParams,
                 adapterParams
