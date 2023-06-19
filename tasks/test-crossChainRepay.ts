@@ -1,23 +1,26 @@
-import { BigNumberish, Signature, Wallet } from 'ethers';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
-import { getSingularityContract } from './utils';
 import inquirer from 'inquirer';
-
+import { MagnetarV2 } from 'tapioca-sdk/dist/typechain/tapioca-periphery';
 import TapiocaOFTArtifact from '../gitsub_tapioca-sdk/src/artifacts/tapiocaz/TapiocaOFT.json';
-import { TapiocaOFT__factory } from '../gitsub_tapioca-sdk/src/typechain/TapiocaZ/factories/tOFT/TapiocaOFT__factory';
-import { TContract } from 'tapioca-sdk/dist/shared';
-import { Singularity, USDO__factory } from '../typechain';
-import { BaseTOFT } from '../gitsub_tapioca-sdk/src/typechain/TapiocaZ/TapiocaOFT';
-import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { splitSignature } from 'ethers/lib/utils';
-import MagnetarV2Artifacts from '../gitsub_tapioca-sdk/src/artifacts/tapioca-periphery/MagnetarV2.json';
-import ERC20MockArtifacts from '../gitsub_tapioca-sdk/src/artifacts/tapioca-mocks/ERC20Mock.json';
-import { ERC20Mock } from '../gitsub_tapioca-sdk/src/typechain/tapioca-mocks/ERC20Mock';
-import { MagnetarV2 } from '../gitsub_tapioca-sdk/src/typechain/tapioca-periphery/Magnetar/MagnetarV2';
-import { TAPIOCA_PROJECTS_NAME } from '../gitsub_tapioca-sdk/src/api/config';
 
-export const testCrossChainBorrow__task = async (
-    {},
+import { TContract } from 'tapioca-sdk/dist/shared';
+import { TAPIOCA_PROJECTS_NAME } from '../gitsub_tapioca-sdk/src/api/config';
+import MagnetarV2Artifacts from '../gitsub_tapioca-sdk/src/artifacts/tapioca-periphery/MagnetarV2.json';
+import { TapiocaOFT__factory } from '../gitsub_tapioca-sdk/src/typechain/TapiocaZ/factories/tOFT/TapiocaOFT__factory';
+import { TapiocaOFT } from '../gitsub_tapioca-sdk/src/typechain/TapiocaZ/tOFT/TapiocaOFT';
+import TapiocaOFTArtifacts from '../gitsub_tapioca-sdk/src/artifacts/tapiocaz/TapiocaOFT.json';
+import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
+import { Wallet, BigNumberish, Signature } from 'ethers';
+import { splitSignature } from 'ethers/lib/utils';
+import { BaseTOFT } from '../gitsub_tapioca-sdk/src/typechain/TapiocaZ/TapiocaOFT';
+import { Singularity } from '../typechain';
+
+export const crossChainRepay__task = async (
+    taskArgs: {
+        bbMarket: string;
+        sglMarket: string;
+        magnetarAddress: string;
+    },
     hre: HardhatRuntimeEnvironment,
 ) => {
     const deployer = (await hre.ethers.getSigners())[0];
@@ -45,17 +48,51 @@ export const testCrossChainBorrow__task = async (
     ).connect(deployer) as TapiocaOFT__factory;
 
     // Load TOFT on fromChain
-    const toft__from__dep = hre.SDK.db
+    const globalTOFTs_from_deployments = hre.SDK.db.loadGlobalDeployment(
+        tag,
+        TAPIOCA_PROJECTS_NAME.TapiocaZ,
+        fromChain.chainId,
+    );
+    const tOFT_from_choices = globalTOFTs_from_deployments
+        .map((e) => e.name)
+        .filter((e) => e.startsWith('TapiocaOFT'));
+    const { toft_from_contract_name } = await inquirer.prompt({
+        type: 'list',
+        name: 'toft_from_contract_name',
+        message: 'Choose a TOFT contract:',
+        choices: tOFT_from_choices,
+    });
+    const toft__dep = hre.SDK.db
         .loadGlobalDeployment(
             tag,
             TAPIOCA_PROJECTS_NAME.TapiocaZ,
             fromChain.chainId,
         )
-        .find((e) => e.meta.isToftHost === true);
-    if (!toft__from__dep)
+        .find((e) => e.name == toft_from_contract_name);
+    if (!toft__dep)
         throw new Error(`[-] No TOFT found for chain ${fromChain.name}`);
 
-    const toftFrom = TapiocaOFTMock__factory.attach(toft__from__dep.address);
+    const toftFrom = TapiocaOFTMock__factory.attach(toft__dep.address);
+    console.log(`tOFT from ${toftFrom.address}`);
+
+    // Load TOFT on toChain
+    const toft__to__dep = hre.SDK.db
+        .loadGlobalDeployment(
+            tag,
+            TAPIOCA_PROJECTS_NAME.TapiocaZ,
+            toChain.chainId,
+        )
+        .find((e) => e.name == toft_from_contract_name);
+
+    if (!toft__to__dep)
+        throw new Error(`[-] No TOFT found for chain ${toChain.name}`);
+
+    const toftTo = await hre.ethers.getContractAtFromArtifact(
+        TapiocaOFTArtifacts,
+        toft__to__dep.address,
+        toNetwork,
+    );
+    console.log(`tOFT to ${toftTo.address}`);
 
     // Load USDO on fromChain
     const usdo__from__dep = hre.SDK.db
@@ -73,6 +110,7 @@ export const testCrossChainBorrow__task = async (
         'USDO',
         usdo__from__dep.address,
     );
+    console.log(`USDO from ${usdoFrom.address}`);
 
     // Load USDO on toChain
     const usdo__to__dep = hre.SDK.db
@@ -91,6 +129,7 @@ export const testCrossChainBorrow__task = async (
         usdo__to__dep.address,
         toNetwork,
     );
+    console.log(`USDO to ${usdoTo.address}`);
 
     // Load Singularity toChain
     const globalToDeployments = hre.SDK.db.loadGlobalDeployment(
@@ -103,7 +142,7 @@ export const testCrossChainBorrow__task = async (
         .filter(
             (e) =>
                 e.toLowerCase().includes('singularity') &&
-                e.toLowerCase().includes(toft__from__dep.name.toLowerCase()),
+                e.toLowerCase().includes(toft__dep.name.toLowerCase()),
         );
 
     const { contractName } = await inquirer.prompt({
@@ -135,23 +174,14 @@ export const testCrossChainBorrow__task = async (
     )) as MagnetarV2;
 
     // ---------------------------------- Ask for values ----------------------------------
-    const collateralToDeposit = hre.ethers.utils.parseEther(
+    const repayAmount = hre.ethers.utils.parseEther(
         (
             await inquirer.prompt({
                 type: 'input',
-                message: 'Collateral to deposit:',
-                name: 'collateralToDeposit',
+                message: 'Amount to repay:',
+                name: 'repayAmount',
             })
-        ).collateralToDeposit,
-    );
-    const borrowAmount = hre.ethers.utils.parseEther(
-        (
-            await inquirer.prompt({
-                type: 'input',
-                message: 'Amount to borrow:',
-                name: 'borrowAmount',
-            })
-        ).borrowAmount,
+        ).repayAmount,
     );
 
     // ------------------- Permit Setup -------------------
@@ -182,38 +212,12 @@ export const testCrossChainBorrow__task = async (
         target: singularity.address,
     };
 
-    const permitLendAmount = hre.ethers.constants.MaxUint256;
-    const permitLend = await getSGLPermitSignature(
-        hre,
-        'Permit',
-        toNetwork,
-        singularity,
-        magnetar.address,
-        permitLendAmount,
-        deadline,
-        {
-            nonce: (await singularity.nonces(deployer.address)).add(1),
-        },
-    );
-    const permitLendStruct: BaseTOFT.IApprovalStruct = {
-        deadline,
-        permitBorrow: false,
-        owner: deployer.address,
-        spender: magnetar.address,
-        value: permitLendAmount,
-        r: permitLend.r,
-        s: permitLend.s,
-        v: permitLend.v,
-        target: singularity.address,
-    };
-
-    // ---------------------------------- Prepare borrow OP ----------------------------------
-
+    const collateralToWithdraw = 10000000;
     const withdrawFees = (
-        await usdoTo.estimateSendFee(
+        await toftTo.estimateSendFee(
             fromChain.lzChainId,
             '0x'.concat(deployer.address.split('0x')[1].padStart(64, '0')),
-            borrowAmount,
+            collateralToWithdraw,
             false,
             hre.ethers.utils.solidityPack(['uint16', 'uint256'], [1, 200000]),
         )
@@ -233,70 +237,40 @@ export const testCrossChainBorrow__task = async (
         ],
     );
 
-    const erc20 = (await hre.ethers.getContractAtFromArtifact(
-        ERC20MockArtifacts,
-        await toftFrom.erc20(),
-    )) as ERC20Mock;
+    // ---------------------------------- Prepare repay OP ----------------------------------
 
-    // check allowance
-    if (
-        (await erc20.allowance(deployer.address, toftFrom.address)).lt(
-            collateralToDeposit,
-        )
-    ) {
-        console.log('[+] Free minting');
-        await (
-            await erc20.freeMint(
-                hre.ethers.BigNumber.from(100).mul((10e18).toString()),
-            )
-        ).wait(3);
-        console.log('[+] Approving ERC20 wrap');
-        (
-            await erc20.approve(
-                toftFrom.address,
-                hre.ethers.constants.MaxUint256,
-            )
-        ).wait(3);
-    }
-
-    // Wrap
-    console.log('[+] Wrapping');
-    await (
-        await toftFrom.wrap(
-            deployer.address,
-            deployer.address,
-            collateralToDeposit,
-        )
-    ).wait(3);
-
-    // ---------------------------------- Execute borrow OP ----------------------------------
-
-    const call = toftFrom.interface.encodeFunctionData('sendToYBAndBorrow', [
+    // Change for each scenario
+    // Repay + withdraw + send collateral cross chain
+    // Repay
+    // Withdraw collateral + send collateral cross chain
+    const call = usdoFrom.interface.encodeFunctionData('sendAndLendOrRepay', [
         deployer.address,
         deployer.address,
         toChain.lzChainId,
-        airdropAdapterParams,
         {
-            amount: collateralToDeposit,
-            borrowAmount,
+            repay: true,
+            amount: repayAmount,
             marketHelper: magnetar.address,
             market: singularity.address,
-        },
-        {
-            withdraw: true,
-            withdrawAdapterParams: hre.ethers.utils.solidityPack(
-                ['uint16', 'uint256'],
-                [1, 200000],
-            ),
-            withdrawLzChainId: fromChain.lzChainId,
-            withdrawLzFeeAmount: withdrawFees,
-            withdrawOnOtherChain: true,
+            removeCollateral: false,
+            removeCollateralShare: 0,
         },
         {
             extraGasLimit: 1_000_000,
             zroPaymentAddress: deployer.address,
         },
-        [permitBorrowStruct, permitLendStruct],
+        [permitBorrowStruct],
+        {
+            withdraw: false,
+            withdrawLzFeeAmount: withdrawFees,
+            withdrawOnOtherChain: false,
+            withdrawLzChainId: fromChain.lzChainId,
+            withdrawAdapterParams: hre.ethers.utils.solidityPack(
+                ['uint16', 'uint256'],
+                [1, 200000],
+            ),
+        },
+        airdropAdapterParams,
     ]);
 
     const lz = await hre.ethers.getContractAt(
@@ -316,36 +290,44 @@ export const testCrossChainBorrow__task = async (
     console.log(`[+] Call fee: ${hre.ethers.utils.formatEther(callFee)} Ether`);
 
     const tx = await (
-        await toftFrom.sendToYBAndBorrow(
+        await usdoFrom.sendAndLendOrRepay(
             deployer.address,
             deployer.address,
             toChain.lzChainId,
-            airdropAdapterParams,
             {
-                amount: collateralToDeposit,
-                borrowAmount,
+                repay: true,
+                amount: repayAmount,
                 marketHelper: magnetar.address,
                 market: singularity.address,
+                removeCollateral: false,
+                removeCollateralShare: 0,
             },
             {
-                withdraw: true,
-                withdrawAdapterParams: hre.ethers.utils.solidityPack(
-                    ['uint16', 'uint256'],
-                    [1, 200000],
-                ),
-                withdrawLzChainId: fromChain.lzChainId,
-                withdrawLzFeeAmount: withdrawFees,
-                withdrawOnOtherChain: true,
-            },
-            {
-                extraGasLimit: 1_000_000,
+                extraGasLimit: 2_000_000,
                 zroPaymentAddress: deployer.address,
             },
-            [permitBorrowStruct, permitLendStruct],
-            { value: callFee.add(withdrawFees) },
+            [],
+            {
+                withdraw: false,
+                withdrawLzFeeAmount: withdrawFees,
+                withdrawOnOtherChain: false,
+                withdrawLzChainId: fromChain.lzChainId,
+                withdrawAdapterParams: hre.ethers.utils.solidityPack(
+                    ['uint16', 'uint256'],
+                    [1, 1_000_000],
+                ),
+            },
+            hre.ethers.utils.solidityPack(
+                ['uint16', 'uint256'],
+                [1, 1_000_000],
+            ),
+            // airdropAdapterParams,
+            { value: callFee.add(withdrawFees).mul(3) },
         )
     ).wait();
-    console.log(`[+] Borrow Tx ${tx.transactionHash}`);
+    console.log(`[+] Repay Tx ${tx.transactionHash}`);
+
+    console.log('\n[+] Done');
 };
 
 async function getSGLPermitSignature(

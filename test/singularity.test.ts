@@ -2762,7 +2762,7 @@ describe('Singularity test', () => {
             await erc20Mock.approve(toft.address, amount);
         };
 
-        it.only('should bounce between 2 chains', async () => {
+        it('should bounce between 2 chains', async () => {
             const {
                 deployer,
                 tap,
@@ -3399,9 +3399,6 @@ describe('Singularity test', () => {
                 ethers.constants.MaxUint256,
             );
 
-            await magnetar.setApprovalForAll(tapiocaOFT0.address, true);
-            await magnetar.setApprovalForAll(tapiocaOFT10.address, true);
-
             await SGL_10.multiHopBuyCollateral(
                 deployer.address,
                 0,
@@ -3459,7 +3456,6 @@ describe('Singularity test', () => {
                 ],
             );
 
-            await magnetar.setApprovalForAll(USDO_0.address, true);
             await SGL_0.approve(USDO_0.address, ethers.constants.MaxUint256);
 
             const forDeposit = await USDO_0.balanceOf(deployer.address);
@@ -3494,7 +3490,6 @@ describe('Singularity test', () => {
 
             // hre.tracer.enabled = true;
             // await YieldBox_0.setApprovalForAll(magnetar.address, true);
-            // await magnetar.setApprovalForAll(USDO_0.address, true);
             // const lent = await SGL_0.balanceOf(deployer.address);
             // await USDO_10.removeAsset(
             //     deployer.address,

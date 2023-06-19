@@ -34,7 +34,9 @@ import { deployBigBangMarket__task } from './tasks/deploy/deployBigBangMarket';
 import { testCrossChainBorrow__task } from './tasks/test-borrow';
 import { testCrossChainLend__task } from './tasks/test-lend';
 import { setMinterStatus__task } from './tasks/exec/setMinterStatus';
-import { sameChainFlowTest__task } from './tasks/tests/sameChainFlow';
+import { sameChainFlowTest__task } from './tasks/test-sameChainFlow';
+import { crossChainRepay__task } from './tasks/test-crossChainRepay';
+import { sendFrom__task } from './tasks/exec/sendFrom';
 
 task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
     const accounts = await hre.ethers.getSigners();
@@ -285,7 +287,14 @@ task(
     testCrossChainBorrow__task,
 );
 
-task('testCrossChainLend', 'Test crosschain lend', testCrossChainLend__task);
+task('testCrossChainRepay', 'Test crosschain repay', crossChainRepay__task);
+
+// To Remove
+task('sendFrom', 'Calls toftSendFrom on tOFT contract', sendFrom__task)
+    .addParam('contractName', 'Name of the contract')
+    .addParam('src', 'Name of the source chain')
+    .addParam('dst', 'Name of the destination chain')
+    .addParam('value', 'Amount to send, (ex: 1.45)');
 
 /**
  * Test

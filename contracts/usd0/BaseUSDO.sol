@@ -197,30 +197,35 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
     }
 
     /// @notice sends to YieldBox over layer and lends asset to market
-    /// @param from sending address
-    /// @param to receiver address
+    /// @param _from sending address
+    /// @param _to receiver address
     /// @param lzDstChainId LayerZero destination chain id
     /// @param lendParams lend specific params
-    /// @param options send specific params
     /// @param approvals approvals specific params
+    /// @param withdrawParams parameter to withdraw the SGL collateral
+    /// @param adapterParams adapter params of the withdrawn collateral
     function sendAndLendOrRepay(
-        address from,
-        address to,
+        address _from,
+        address _to,
         uint16 lzDstChainId,
+        address zroPaymentAddress,
         IUSDOBase.ILendParams calldata lendParams,
-        IUSDOBase.ISendOptions calldata options,
-        IUSDOBase.IApproval[] calldata approvals
+        IUSDOBase.IApproval[] calldata approvals,
+        ITapiocaOFT.IWithdrawParams calldata withdrawParams,
+        bytes calldata adapterParams
     ) external payable {
         _executeModule(
             Module.Market,
             abi.encodeWithSelector(
                 USDOMarketModule.sendAndLendOrRepay.selector,
-                from,
-                to,
+                _from,
+                _to,
                 lzDstChainId,
+                zroPaymentAddress,
                 lendParams,
-                options,
-                approvals
+                approvals,
+                withdrawParams,
+                adapterParams
             )
         );
     }
