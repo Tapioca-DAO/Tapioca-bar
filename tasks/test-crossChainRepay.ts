@@ -322,7 +322,7 @@ export const crossChainRepay__task = async (
                 [1, 1_000_000],
             ),
             // airdropAdapterParams,
-            { value: callFee.add(withdrawFees).mul(3)},
+            { value: callFee.add(withdrawFees).mul(3) },
         )
     ).wait();
     console.log(`[+] Repay Tx ${tx.transactionHash}`);

@@ -12,6 +12,7 @@ import "tapioca-periph/contracts/interfaces/IMagnetar.sol";
 import "tapioca-periph/contracts/interfaces/IMarket.sol";
 import "tapioca-periph/contracts/interfaces/ISingularity.sol";
 import "tapioca-periph/contracts/interfaces/IPermitBorrow.sol";
+import "tapioca-periph/contracts/interfaces/IPermitAll.sol";
 
 import "../BaseUSDOStorage.sol";
 
@@ -257,6 +258,21 @@ contract USDOMarketModule is BaseUSDOStorage {
                         revert(reason);
                     }
                 }
+            } else if (approvals[i].permitAll) {
+                try
+                    IPermitAll(approvals[i].target).permitAll(
+                        approvals[i].owner,
+                        approvals[i].spender,
+                        approvals[i].deadline,
+                        approvals[i].v,
+                        approvals[i].r,
+                        approvals[i].s
+                    )
+                {} catch Error(string memory reason) {
+                    if (!approvals[i].allowFailure) {
+                        revert(reason);
+                    }
+                }
             } else {
                 try
                     IERC20Permit(approvals[i].target).permit(
@@ -274,6 +290,7 @@ contract USDOMarketModule is BaseUSDOStorage {
                     }
                 }
             }
+
             unchecked {
                 ++i;
             }
