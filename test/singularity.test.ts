@@ -3399,7 +3399,6 @@ describe('Singularity test', () => {
                 ethers.constants.MaxUint256,
             );
 
-
             await SGL_10.multiHopBuyCollateral(
                 deployer.address,
                 0,
