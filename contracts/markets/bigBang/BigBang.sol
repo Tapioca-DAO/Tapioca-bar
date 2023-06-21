@@ -73,6 +73,9 @@ contract BigBang is BoringOwnable, Market {
         uint256 amount,
         uint256 part
     );
+    event MinDebtRateUpdated(uint256 oldVal, uint256 newVal);
+    event MaxDebtRateUpdated(uint256 oldVal, uint256 newVal);
+    event DebtRateAgainstEthUpdated(uint256 oldVal, uint256 newVal);
 
     // ***************** //
     // *** CONSTANTS *** //
@@ -282,29 +285,6 @@ contract BigBang is BoringOwnable, Market {
         _removeCollateral(from, to, share);
     }
 
-    /// @notice Transfers fees to penrose
-    function refreshPenroseFees(
-        address
-    ) external onlyOwner notPaused returns (uint256 feeShares) {
-        uint256 balance = asset.balanceOf(address(this));
-        totalFees += balance;
-        feeShares = yieldBox.toShare(assetId, totalFees, false);
-
-        if (totalFees > 0) {
-            asset.approve(address(yieldBox), totalFees);
-
-            yieldBox.depositAsset(
-                assetId,
-                address(this),
-                msg.sender,
-                totalFees,
-                0
-            );
-
-            totalFees = 0;
-        }
-    }
-
     /// @notice Entry point for liquidations.
     /// @param users An array of user addresses.
     /// @param maxBorrowParts A one-to-one mapping to `users`, contains maximum (partial) borrow amounts (to liquidate) of the respective user.
@@ -437,6 +417,54 @@ contract BigBang is BoringOwnable, Market {
         address to,
         uint256 amount
     ) public override returns (bool) {}
+
+    // ************************* //
+    // *** OWNER FUNCTIONS ***** //
+    // ************************* //
+
+    /// @notice Transfers fees to penrose
+    function refreshPenroseFees(
+        address
+    ) external onlyOwner notPaused returns (uint256 feeShares) {
+        uint256 balance = asset.balanceOf(address(this));
+        totalFees += balance;
+        feeShares = yieldBox.toShare(assetId, totalFees, false);
+
+        if (totalFees > 0) {
+            asset.approve(address(yieldBox), totalFees);
+
+            yieldBox.depositAsset(
+                assetId,
+                address(this),
+                msg.sender,
+                totalFees,
+                0
+            );
+
+            totalFees = 0;
+        }
+    }
+
+    function setMinDebtRate(uint256 val) external onlyOwner {
+        if (_isEthMarket) {
+            emit MinDebtRateUpdated(minDebtRate, val);
+            minDebtRate = val;
+        }
+    }
+
+    function setMaxDebtRate(uint256 val) external onlyOwner {
+        if (_isEthMarket) {
+            emit MaxDebtRateUpdated(maxDebtRate, val);
+            maxDebtRate = val;
+        }
+    }
+
+    function setDebtRateAgainstEth(uint256 val) external onlyOwner {
+        if (_isEthMarket) {
+            emit DebtRateAgainstEthUpdated(debtRateAgainstEthMarket, val);
+            debtRateAgainstEthMarket = val;
+        }
+    }
 
     // ************************* //
     // *** PRIVATE FUNCTIONS *** //
