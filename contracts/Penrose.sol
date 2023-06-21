@@ -363,7 +363,6 @@ contract Penrose is BoringOwnable, BoringFactory {
     /// @notice Registers an existing Singularity market (without deployment)
     /// @dev can only be called by the owner
     /// @param mc The address of the master contract which must be already registered
-    /// @param useCreate2 Whether to use create2 or not
     function addSingularity(
         address mc,
         address _contract
@@ -396,7 +395,6 @@ contract Penrose is BoringOwnable, BoringFactory {
     /// @notice Registers an existing BigBang market (without deployment)
     /// @dev can only be called by the owner
     /// @param mc The address of the master contract which must be already registered
-    /// @param useCreate2 Whether to use create2 or not
     function addBigBang(
         address mc,
         address _contract
