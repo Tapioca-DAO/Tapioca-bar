@@ -181,6 +181,8 @@ contract BigBang is BoringOwnable, Market {
             DEBT_PRECISION +
             minDebtRate;
 
+        if (debt > maxDebtRate) return maxDebtRate;
+
         return debt;
     }
 

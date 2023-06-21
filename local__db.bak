@@ -593,6 +593,17 @@
         ],
         "421613": [
             {
+                "name": "BigBang-TapiocaOFT-AVAXMock",
+                "address": "0x6D0A3ec85659E0b983D1AD08c8625e794a77D278",
+                "meta": {
+                    "isBigBangMarket": true,
+                    "collateral": {
+                        "collateralAddress": "0x1d98B1B41cD0b8A0B6A84c3DbbE259835cD330D4",
+                        "collateralStrategyAddress": "0x0696298626b35a2fb5Ed2fC3d4f07B44964853a8"
+                    }
+                }
+            },
+            {
                 "name": "BigBang-TapiocaOFT-MATICMock",
                 "address": "0xab55463D72daD2b5b2B7bD1eaa859Fe2735ba1Ac",
                 "meta": {
@@ -788,17 +799,6 @@
                     ],
                     "salt": "0x257f9c6cb76b44e42138d8262f7d4b9cbb4eedee7a2bf870edd6c2eddb5b3ae8",
                     "create2": true
-                }
-            },
-            {
-                "name": "BigBang-TapiocaOFT-AVAXMock",
-                "address": "0x249A5144FEd2ba85DF1F563A37dA45F5106e4A03",
-                "meta": {
-                    "isBigBangMarket": true,
-                    "collateral": {
-                        "collateralAddress": "0x1d98B1B41cD0b8A0B6A84c3DbbE259835cD330D4",
-                        "collateralStrategyAddress": "0x0696298626b35a2fb5Ed2fC3d4f07B44964853a8"
-                    }
                 }
             },
             {
