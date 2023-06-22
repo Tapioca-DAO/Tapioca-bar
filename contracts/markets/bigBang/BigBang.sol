@@ -448,21 +448,21 @@ contract BigBang is BoringOwnable, Market {
     }
 
     function setMinDebtRate(uint256 val) external onlyOwner {
-        if (_isEthMarket) {
+        if (!_isEthMarket) {
             emit MinDebtRateUpdated(minDebtRate, val);
             minDebtRate = val;
         }
     }
 
     function setMaxDebtRate(uint256 val) external onlyOwner {
-        if (_isEthMarket) {
+        if (!_isEthMarket) {
             emit MaxDebtRateUpdated(maxDebtRate, val);
             maxDebtRate = val;
         }
     }
 
     function setDebtRateAgainstEth(uint256 val) external onlyOwner {
-        if (_isEthMarket) {
+        if (!_isEthMarket) {
             emit DebtRateAgainstEthUpdated(debtRateAgainstEthMarket, val);
             debtRateAgainstEthMarket = val;
         }

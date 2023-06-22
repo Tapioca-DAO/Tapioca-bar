@@ -368,6 +368,7 @@ contract Penrose is BoringOwnable, BoringFactory {
         address _contract
     ) external onlyOwner registeredSingularityMasterContract(mc) {
         isMarketRegistered[_contract] = true;
+        clonesOf[mc].push(_contract);
         emit RegisterSingularity(_contract, mc);
     }
 
@@ -400,6 +401,7 @@ contract Penrose is BoringOwnable, BoringFactory {
         address _contract
     ) external onlyOwner registeredBigBangMasterContract(mc) {
         isMarketRegistered[_contract] = true;
+        clonesOf[mc].push(_contract);
         emit RegisterBigBang(_contract, mc);
     }
 
