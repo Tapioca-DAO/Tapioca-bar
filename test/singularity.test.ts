@@ -2555,8 +2555,12 @@ describe('Singularity test', () => {
             //borrow
             const usdoBorrowVal = ethers.utils.parseEther('7500');
 
-            console.log(`usdoBorrowVal ${ethers.utils.formatEther(usdoBorrowVal)}`);
-            console.log(`lent ${ ((await wethUsdoSingularity.totalAsset())[0])/1e26}`);
+            console.log(
+                `usdoBorrowVal ${ethers.utils.formatEther(usdoBorrowVal)}`,
+            );
+            console.log(
+                `lent ${(await wethUsdoSingularity.totalAsset())[0] / 1e26}`,
+            );
 
             await wethUsdoSingularity
                 .connect(eoa1)
@@ -2569,7 +2573,7 @@ describe('Singularity test', () => {
                 }`,
             );
 
-            console.log("1");
+            console.log('1');
             await timeTravel(86400);
             await wethUsdoSingularity.accrue();
             accrueInfo = await wethUsdoSingularity.accrueInfo();
@@ -2579,7 +2583,7 @@ describe('Singularity test', () => {
                 }`,
             );
 
-            console.log("2");
+            console.log('2');
             await timeTravel(86400);
             await wethUsdoSingularity.accrue();
             accrueInfo = await wethUsdoSingularity.accrueInfo();
@@ -2589,7 +2593,7 @@ describe('Singularity test', () => {
                 }`,
             );
 
-            console.log("3");
+            console.log('3');
             await timeTravel(86400);
             await wethUsdoSingularity.accrue();
             accrueInfo = await wethUsdoSingularity.accrueInfo();
@@ -2599,7 +2603,7 @@ describe('Singularity test', () => {
                 }`,
             );
 
-            console.log("4");
+            console.log('4');
             await timeTravel(86400);
             await wethUsdoSingularity.accrue();
             accrueInfo = await wethUsdoSingularity.accrueInfo();
@@ -2609,7 +2613,7 @@ describe('Singularity test', () => {
                 }`,
             );
 
-            console.log("5");
+            console.log('5');
             await timeTravel(86400);
             await wethUsdoSingularity.accrue();
             accrueInfo = await wethUsdoSingularity.accrueInfo();
@@ -2619,8 +2623,7 @@ describe('Singularity test', () => {
                 }`,
             );
 
-
-            console.log("6");
+            console.log('6');
             await timeTravel(86400);
             await wethUsdoSingularity.accrue();
             accrueInfo = await wethUsdoSingularity.accrueInfo();
@@ -2630,9 +2633,7 @@ describe('Singularity test', () => {
                 }`,
             );
 
-
-
-            console.log("7");
+            console.log('7');
             await timeTravel(86400);
             await wethUsdoSingularity.accrue();
             accrueInfo = await wethUsdoSingularity.accrueInfo();
@@ -2642,9 +2643,7 @@ describe('Singularity test', () => {
                 }`,
             );
 
-
-
-            console.log("8");
+            console.log('8');
             await timeTravel(86400);
             await wethUsdoSingularity.accrue();
             accrueInfo = await wethUsdoSingularity.accrueInfo();
@@ -2654,9 +2653,7 @@ describe('Singularity test', () => {
                 }`,
             );
 
-
-
-            console.log("9");
+            console.log('9');
             await timeTravel(86400);
             await wethUsdoSingularity.accrue();
             accrueInfo = await wethUsdoSingularity.accrueInfo();
@@ -2666,7 +2663,7 @@ describe('Singularity test', () => {
                 }`,
             );
 
-            console.log("10");
+            console.log('10');
             await timeTravel(86400);
             await wethUsdoSingularity.accrue();
             accrueInfo = await wethUsdoSingularity.accrueInfo();
@@ -2676,7 +2673,7 @@ describe('Singularity test', () => {
                 }`,
             );
 
-            console.log("11");
+            console.log('11');
             await timeTravel(86400);
             await wethUsdoSingularity.accrue();
             accrueInfo = await wethUsdoSingularity.accrueInfo();
@@ -2686,7 +2683,7 @@ describe('Singularity test', () => {
                 }`,
             );
 
-            console.log("12");
+            console.log('12');
             await timeTravel(86400);
             await wethUsdoSingularity.accrue();
             accrueInfo = await wethUsdoSingularity.accrueInfo();
@@ -2696,8 +2693,7 @@ describe('Singularity test', () => {
                 }`,
             );
 
-
-            console.log("13");
+            console.log('13');
             await timeTravel(86400);
             await wethUsdoSingularity.accrue();
             accrueInfo = await wethUsdoSingularity.accrueInfo();
@@ -2707,8 +2703,7 @@ describe('Singularity test', () => {
                 }`,
             );
 
-
-            console.log("14");
+            console.log('14');
             await timeTravel(86400);
             await wethUsdoSingularity.accrue();
             accrueInfo = await wethUsdoSingularity.accrueInfo();
@@ -2718,8 +2713,7 @@ describe('Singularity test', () => {
                 }`,
             );
 
-
-            console.log("15");
+            console.log('15');
             await timeTravel(86400);
             await wethUsdoSingularity.accrue();
             accrueInfo = await wethUsdoSingularity.accrueInfo();
@@ -2729,8 +2723,7 @@ describe('Singularity test', () => {
                 }`,
             );
 
-
-            console.log("16");
+            console.log('16');
             await timeTravel(86400);
             await wethUsdoSingularity.accrue();
             accrueInfo = await wethUsdoSingularity.accrueInfo();
@@ -2740,7 +2733,7 @@ describe('Singularity test', () => {
                 }`,
             );
 
-            console.log("17");
+            console.log('17');
             await timeTravel(86400);
             await wethUsdoSingularity.accrue();
             accrueInfo = await wethUsdoSingularity.accrueInfo();
@@ -2750,8 +2743,7 @@ describe('Singularity test', () => {
                 }`,
             );
 
-
-            console.log("18");
+            console.log('18');
             await timeTravel(86400);
             await wethUsdoSingularity.accrue();
             accrueInfo = await wethUsdoSingularity.accrueInfo();
@@ -2761,7 +2753,7 @@ describe('Singularity test', () => {
                 }`,
             );
 
-            console.log("19");
+            console.log('19');
             await timeTravel(86400);
             await wethUsdoSingularity.accrue();
             accrueInfo = await wethUsdoSingularity.accrueInfo();
@@ -2771,7 +2763,7 @@ describe('Singularity test', () => {
                 }`,
             );
 
-            console.log("20");
+            console.log('20');
             await timeTravel(86400);
             await wethUsdoSingularity.accrue();
             accrueInfo = await wethUsdoSingularity.accrueInfo();
