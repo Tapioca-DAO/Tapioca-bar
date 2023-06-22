@@ -360,6 +360,18 @@ contract Penrose is BoringOwnable, BoringFactory {
         emit RegisterSingularity(_contract, mc);
     }
 
+    /// @notice Registers an existing Singularity market (without deployment)
+    /// @dev can only be called by the owner
+    /// @param mc The address of the master contract which must be already registered
+    function addSingularity(
+        address mc,
+        address _contract
+    ) external onlyOwner registeredSingularityMasterContract(mc) {
+        isMarketRegistered[_contract] = true;
+        clonesOf[mc].push(_contract);
+        emit RegisterSingularity(_contract, mc);
+    }
+
     /// @notice Registers a BigBang market
     /// @dev can only be called by the owner
     /// @param mc The address of the master contract which must be already registered
@@ -378,6 +390,18 @@ contract Penrose is BoringOwnable, BoringFactory {
     {
         _contract = deploy(mc, data, useCreate2);
         isMarketRegistered[_contract] = true;
+        emit RegisterBigBang(_contract, mc);
+    }
+
+    /// @notice Registers an existing BigBang market (without deployment)
+    /// @dev can only be called by the owner
+    /// @param mc The address of the master contract which must be already registered
+    function addBigBang(
+        address mc,
+        address _contract
+    ) external onlyOwner registeredBigBangMasterContract(mc) {
+        isMarketRegistered[_contract] = true;
+        clonesOf[mc].push(_contract);
         emit RegisterBigBang(_contract, mc);
     }
 

@@ -2332,6 +2332,448 @@ describe('Singularity test', () => {
     });
 
     describe('usdo SGL', async () => {
+        it.skip('should test interest rate', async () => {
+            const {
+                deployer,
+                bar,
+                eoa1,
+                yieldBox,
+                weth,
+                wethAssetId,
+                mediumRiskMC,
+                wethUsdcOracle,
+                usdc,
+                usd0,
+                __wethUsdcPrice,
+                deployCurveStableToUsdoBidder,
+                timeTravel,
+            } = await loadFixture(register);
+            //deploy and register USDO
+
+            const usdoStratregy = await bar.emptyStrategies(usd0.address);
+            const usdoAssetId = await yieldBox.ids(
+                1,
+                usd0.address,
+                usdoStratregy,
+                0,
+            );
+
+            //Deploy & set Singularity
+            const _sglLiquidationModule = await (
+                await ethers.getContractFactory('SGLLiquidation')
+            ).deploy();
+            await _sglLiquidationModule.deployed();
+            const _sglBorrow = await (
+                await ethers.getContractFactory('SGLBorrow')
+            ).deploy();
+            await _sglBorrow.deployed();
+            const _sglCollateral = await (
+                await ethers.getContractFactory('SGLCollateral')
+            ).deploy();
+            await _sglCollateral.deployed();
+            const _sglLeverage = await (
+                await ethers.getContractFactory('SGLLeverage')
+            ).deploy();
+            await _sglLeverage.deployed();
+
+            const collateralSwapPath = [usd0.address, weth.address];
+
+            const newPrice = __wethUsdcPrice.div(1000000);
+            await wethUsdcOracle.set(newPrice);
+
+            const data = new ethers.utils.AbiCoder().encode(
+                [
+                    'address',
+                    'address',
+                    'address',
+                    'address',
+                    'address',
+                    'address',
+                    'uint256',
+                    'address',
+                    'uint256',
+                    'address',
+                    'uint256',
+                ],
+                [
+                    _sglLiquidationModule.address,
+                    _sglBorrow.address,
+                    _sglCollateral.address,
+                    _sglLeverage.address,
+                    bar.address,
+                    usd0.address,
+                    usdoAssetId,
+                    weth.address,
+                    wethAssetId,
+                    wethUsdcOracle.address,
+                    ethers.utils.parseEther('1'),
+                ],
+            );
+            await bar.registerSingularity(mediumRiskMC.address, data, true);
+            const wethUsdoSingularity = await ethers.getContractAt(
+                'Singularity',
+                await bar.clonesOf(
+                    mediumRiskMC.address,
+                    (await bar.clonesOfCount(mediumRiskMC.address)).sub(1),
+                ),
+            );
+
+            //Deploy & set LiquidationQueue
+            await usd0.setMinterStatus(wethUsdoSingularity.address, true);
+            await usd0.setBurnerStatus(wethUsdoSingularity.address, true);
+
+            const LiquidationQueue = new LiquidationQueue__factory(deployer);
+            const liquidationQueue = await LiquidationQueue.deploy();
+
+            const feeCollector = new ethers.Wallet(
+                ethers.Wallet.createRandom().privateKey,
+                ethers.provider,
+            );
+
+            const { stableToUsdoBidder } = await deployCurveStableToUsdoBidder(
+                yieldBox,
+                usdc,
+                usd0,
+            );
+
+            const LQ_META = {
+                activationTime: 600, // 10min
+                minBidAmount: ethers.BigNumber.from((1e18).toString()).mul(200), // 200 USDC
+                closeToMinBidAmount: ethers.BigNumber.from(
+                    (1e18).toString(),
+                ).mul(202),
+                defaultBidAmount: ethers.BigNumber.from((1e18).toString()).mul(
+                    400,
+                ), // 400 USDC
+                feeCollector: feeCollector.address,
+                bidExecutionSwapper: ethers.constants.AddressZero,
+                usdoSwapper: stableToUsdoBidder.address,
+            };
+            await liquidationQueue.init(LQ_META, wethUsdoSingularity.address);
+
+            const payload = wethUsdoSingularity.interface.encodeFunctionData(
+                'setLiquidationQueue',
+                [liquidationQueue.address],
+            );
+
+            await (
+                await bar.executeMarketFn(
+                    [wethUsdoSingularity.address],
+                    [payload],
+                    true,
+                )
+            ).wait();
+
+            //get tokens
+            const wethAmount = ethers.BigNumber.from((1e18).toString()).mul(
+                100,
+            );
+            const usdoAmount = ethers.BigNumber.from((1e18).toString()).mul(
+                20000,
+            );
+            await usd0.mint(deployer.address, usdoAmount);
+            await weth.connect(eoa1).freeMint(wethAmount);
+
+            //aprove external operators
+            await usd0
+                .connect(deployer)
+                .approve(yieldBox.address, ethers.constants.MaxUint256);
+            await weth
+                .connect(deployer)
+                .approve(yieldBox.address, ethers.constants.MaxUint256);
+            await yieldBox
+                .connect(deployer)
+                .setApprovalForAll(wethUsdoSingularity.address, true);
+
+            await usd0
+                .connect(eoa1)
+                .approve(yieldBox.address, ethers.constants.MaxUint256);
+            await weth
+                .connect(eoa1)
+                .approve(yieldBox.address, ethers.constants.MaxUint256);
+            await yieldBox
+                .connect(eoa1)
+                .setApprovalForAll(wethUsdoSingularity.address, true);
+
+            // We lend Usdo as deployer
+            const usdoLendValue = usdoAmount.div(2);
+            const _valShare = await yieldBox.toShare(
+                usdoAssetId,
+                usdoLendValue,
+                false,
+            );
+            await yieldBox.depositAsset(
+                usdoAssetId,
+                deployer.address,
+                deployer.address,
+                0,
+                _valShare,
+            );
+            await wethUsdoSingularity.addAsset(
+                deployer.address,
+                deployer.address,
+                false,
+                _valShare,
+            );
+            expect(
+                await wethUsdoSingularity.balanceOf(deployer.address),
+            ).to.be.equal(
+                await yieldBox.toShare(usdoAssetId, usdoLendValue, false),
+            );
+
+            //we lend weth collateral
+            const wethDepositAmount = ethers.BigNumber.from(
+                (1e18).toString(),
+            ).mul(12);
+            await yieldBox
+                .connect(eoa1)
+                .depositAsset(
+                    wethAssetId,
+                    eoa1.address,
+                    eoa1.address,
+                    wethDepositAmount,
+                    0,
+                );
+            const _wethValShare = await yieldBox
+                .connect(eoa1)
+                .balanceOf(eoa1.address, wethAssetId);
+            await wethUsdoSingularity
+                .connect(eoa1)
+                .addCollateral(
+                    eoa1.address,
+                    eoa1.address,
+                    false,
+                    0,
+                    _wethValShare,
+                );
+            expect(
+                await wethUsdoSingularity.userCollateralShare(eoa1.address),
+            ).equal(
+                await yieldBox.toShare(wethAssetId, wethDepositAmount, false),
+            );
+
+            //borrow
+            const usdoBorrowVal = ethers.utils.parseEther('7500');
+
+            console.log(
+                `usdoBorrowVal ${ethers.utils.formatEther(usdoBorrowVal)}`,
+            );
+            console.log(
+                `lent ${(await wethUsdoSingularity.totalAsset())[0] / 1e26}`,
+            );
+
+            await wethUsdoSingularity
+                .connect(eoa1)
+                .borrow(eoa1.address, eoa1.address, usdoBorrowVal);
+
+            let accrueInfo = await wethUsdoSingularity.accrueInfo();
+            console.log(
+                `interestPerSecond ${
+                    (accrueInfo.interestPerSecond * 60 * 60 * 24 * 365) / 1e16
+                }`,
+            );
+
+            console.log('1');
+            await timeTravel(86400);
+            await wethUsdoSingularity.accrue();
+            accrueInfo = await wethUsdoSingularity.accrueInfo();
+            console.log(
+                `interestPerSecond ${
+                    (accrueInfo.interestPerSecond * 60 * 60 * 24 * 365) / 1e16
+                }`,
+            );
+
+            console.log('2');
+            await timeTravel(86400);
+            await wethUsdoSingularity.accrue();
+            accrueInfo = await wethUsdoSingularity.accrueInfo();
+            console.log(
+                `interestPerSecond ${
+                    (accrueInfo.interestPerSecond * 60 * 60 * 24 * 365) / 1e16
+                }`,
+            );
+
+            console.log('3');
+            await timeTravel(86400);
+            await wethUsdoSingularity.accrue();
+            accrueInfo = await wethUsdoSingularity.accrueInfo();
+            console.log(
+                `interestPerSecond ${
+                    (accrueInfo.interestPerSecond * 60 * 60 * 24 * 365) / 1e16
+                }`,
+            );
+
+            console.log('4');
+            await timeTravel(86400);
+            await wethUsdoSingularity.accrue();
+            accrueInfo = await wethUsdoSingularity.accrueInfo();
+            console.log(
+                `interestPerSecond ${
+                    (accrueInfo.interestPerSecond * 60 * 60 * 24 * 365) / 1e16
+                }`,
+            );
+
+            console.log('5');
+            await timeTravel(86400);
+            await wethUsdoSingularity.accrue();
+            accrueInfo = await wethUsdoSingularity.accrueInfo();
+            console.log(
+                `interestPerSecond ${
+                    (accrueInfo.interestPerSecond * 60 * 60 * 24 * 365) / 1e16
+                }`,
+            );
+
+            console.log('6');
+            await timeTravel(86400);
+            await wethUsdoSingularity.accrue();
+            accrueInfo = await wethUsdoSingularity.accrueInfo();
+            console.log(
+                `interestPerSecond ${
+                    (accrueInfo.interestPerSecond * 60 * 60 * 24 * 365) / 1e16
+                }`,
+            );
+
+            console.log('7');
+            await timeTravel(86400);
+            await wethUsdoSingularity.accrue();
+            accrueInfo = await wethUsdoSingularity.accrueInfo();
+            console.log(
+                `interestPerSecond ${
+                    (accrueInfo.interestPerSecond * 60 * 60 * 24 * 365) / 1e16
+                }`,
+            );
+
+            console.log('8');
+            await timeTravel(86400);
+            await wethUsdoSingularity.accrue();
+            accrueInfo = await wethUsdoSingularity.accrueInfo();
+            console.log(
+                `interestPerSecond ${
+                    (accrueInfo.interestPerSecond * 60 * 60 * 24 * 365) / 1e16
+                }`,
+            );
+
+            console.log('9');
+            await timeTravel(86400);
+            await wethUsdoSingularity.accrue();
+            accrueInfo = await wethUsdoSingularity.accrueInfo();
+            console.log(
+                `interestPerSecond ${
+                    (accrueInfo.interestPerSecond * 60 * 60 * 24 * 365) / 1e16
+                }`,
+            );
+
+            console.log('10');
+            await timeTravel(86400);
+            await wethUsdoSingularity.accrue();
+            accrueInfo = await wethUsdoSingularity.accrueInfo();
+            console.log(
+                `interestPerSecond ${
+                    (accrueInfo.interestPerSecond * 60 * 60 * 24 * 365) / 1e16
+                }`,
+            );
+
+            console.log('11');
+            await timeTravel(86400);
+            await wethUsdoSingularity.accrue();
+            accrueInfo = await wethUsdoSingularity.accrueInfo();
+            console.log(
+                `interestPerSecond ${
+                    (accrueInfo.interestPerSecond * 60 * 60 * 24 * 365) / 1e16
+                }`,
+            );
+
+            console.log('12');
+            await timeTravel(86400);
+            await wethUsdoSingularity.accrue();
+            accrueInfo = await wethUsdoSingularity.accrueInfo();
+            console.log(
+                `interestPerSecond ${
+                    (accrueInfo.interestPerSecond * 60 * 60 * 24 * 365) / 1e16
+                }`,
+            );
+
+            console.log('13');
+            await timeTravel(86400);
+            await wethUsdoSingularity.accrue();
+            accrueInfo = await wethUsdoSingularity.accrueInfo();
+            console.log(
+                `interestPerSecond ${
+                    (accrueInfo.interestPerSecond * 60 * 60 * 24 * 365) / 1e16
+                }`,
+            );
+
+            console.log('14');
+            await timeTravel(86400);
+            await wethUsdoSingularity.accrue();
+            accrueInfo = await wethUsdoSingularity.accrueInfo();
+            console.log(
+                `interestPerSecond ${
+                    (accrueInfo.interestPerSecond * 60 * 60 * 24 * 365) / 1e16
+                }`,
+            );
+
+            console.log('15');
+            await timeTravel(86400);
+            await wethUsdoSingularity.accrue();
+            accrueInfo = await wethUsdoSingularity.accrueInfo();
+            console.log(
+                `interestPerSecond ${
+                    (accrueInfo.interestPerSecond * 60 * 60 * 24 * 365) / 1e16
+                }`,
+            );
+
+            console.log('16');
+            await timeTravel(86400);
+            await wethUsdoSingularity.accrue();
+            accrueInfo = await wethUsdoSingularity.accrueInfo();
+            console.log(
+                `interestPerSecond ${
+                    (accrueInfo.interestPerSecond * 60 * 60 * 24 * 365) / 1e16
+                }`,
+            );
+
+            console.log('17');
+            await timeTravel(86400);
+            await wethUsdoSingularity.accrue();
+            accrueInfo = await wethUsdoSingularity.accrueInfo();
+            console.log(
+                `interestPerSecond ${
+                    (accrueInfo.interestPerSecond * 60 * 60 * 24 * 365) / 1e16
+                }`,
+            );
+
+            console.log('18');
+            await timeTravel(86400);
+            await wethUsdoSingularity.accrue();
+            accrueInfo = await wethUsdoSingularity.accrueInfo();
+            console.log(
+                `interestPerSecond ${
+                    (accrueInfo.interestPerSecond * 60 * 60 * 24 * 365) / 1e16
+                }`,
+            );
+
+            console.log('19');
+            await timeTravel(86400);
+            await wethUsdoSingularity.accrue();
+            accrueInfo = await wethUsdoSingularity.accrueInfo();
+            console.log(
+                `interestPerSecond ${
+                    (accrueInfo.interestPerSecond * 60 * 60 * 24 * 365) / 1e16
+                }`,
+            );
+
+            console.log('20');
+            await timeTravel(86400);
+            await wethUsdoSingularity.accrue();
+            accrueInfo = await wethUsdoSingularity.accrueInfo();
+            console.log(
+                `interestPerSecond ${
+                    (accrueInfo.interestPerSecond * 60 * 60 * 24 * 365) / 1e16
+                }`,
+            );
+        });
+
         it('should create and test wethUsd0 singularity', async () => {
             const {
                 deployer,
