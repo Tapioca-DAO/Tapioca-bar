@@ -593,6 +593,17 @@
         ],
         "421613": [
             {
+                "name": "MockSwapper",
+                "address": "0xDD39F18070E07EF94Cd2359798128c134211adf7",
+                "meta": {
+                    "args": [
+                        "0x2e2D0CB0fF8Aee700a044bd03745cC7800E876a2"
+                    ],
+                    "salt": "0x6d8895ceb9081dc37aa3a432341c50ab977f3c0a7ea83955564398a6f9cee72b",
+                    "create2": true
+                }
+            },
+            {
                 "name": "Tapioca Singularity TapiocaOFT-FTMLPMOck/USDO-OracleMock-TapiocaOFT-FTMLPMOck",
                 "address": "0xb9b788Bcc18d562920cCF65Bb09AacA296aADF22",
                 "meta": {

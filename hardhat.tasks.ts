@@ -37,6 +37,7 @@ import { setMinterStatus__task } from './tasks/exec/setMinterStatus';
 import { sameChainFlowTest__task } from './tasks/test-sameChainFlow';
 import { crossChainRepay__task } from './tasks/test-crossChainRepay';
 import { sendFrom__task } from './tasks/exec/sendFrom';
+import { testDeployMockSwapper__task } from './tasks/deploy/1000-testDeployMockSwapper';
 
 task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
     const accounts = await hre.ethers.getSigners();
@@ -307,3 +308,9 @@ task(
     .addParam('bbMarket', 'BigBang market address')
     .addParam('sglMarket', 'SGL market address')
     .addParam('magnetarAddress', 'Magnetar address');
+
+task(
+    'testDeployMockSwapper',
+    'Deploy MockSwapper',
+    testDeployMockSwapper__task,
+);

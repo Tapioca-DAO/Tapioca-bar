@@ -593,6 +593,32 @@
         ],
         "421613": [
             {
+                "name": "MockSwapper",
+                "address": "0xa61fEC3B03eAe84A77112A656Dd85b5e977056d0",
+                "meta": {
+                    "args": [
+                        "0x2e2D0CB0fF8Aee700a044bd03745cC7800E876a2"
+                    ],
+                    "salt": "0x75f81604c2712e758b645ee735a6af68eb151a15cda25590037e1984999ea980",
+                    "create2": true
+                }
+            },
+            {
+                "name": "Tapioca Singularity TapiocaOFT-FTMLPMOck/USDO-OracleMock-TapiocaOFT-FTMLPMOck",
+                "address": "0xb9b788Bcc18d562920cCF65Bb09AacA296aADF22",
+                "meta": {
+                    "isSGLMarket": true,
+                    "collateral": {
+                        "collateralAddress": "0xD9734ED77E5934FAf7dbf5Fe5A8fF8a0815a1CD7",
+                        "collateralStrategyAddress": "0x48Ed10D9a70E9083bE17c03e6853beD08B8B952B"
+                    },
+                    "asset": {
+                        "assetAddress": "0x74306106DD3920315EfC90eF95fEc1Dd5478e4D9",
+                        "assetStrategyAddress": "0xa0ccE0A0201C5aa96844Ed428DE7ADaCB4845014"
+                    }
+                }
+            },
+            {
                 "name": "Tapioca Singularity TapiocaOFT-AVAXLPMock/USDO-OracleMock-TapiocaOFT-AVAXLPMock",
                 "address": "0x3Cb2bFC466Da75011537f4078be5d58d928625D6",
                 "meta": {
@@ -730,21 +756,6 @@
                     "collateral": {
                         "collateralAddress": "0x04800171465565D5810d1c1C7a65Bd3fb5060c6c",
                         "collateralStrategyAddress": "0x4beAFCEC8F9A380934c119eb57A8F04cb924445E"
-                    }
-                }
-            },
-            {
-                "name": "Tapioca Singularity TapiocaOFT-FTMLPMOck/USDO-OracleMock-TapiocaOFT-FTMLPMOck",
-                "address": "0xBe9F7F208Ead7c54647c5c7C32aBAb29C2D5B179",
-                "meta": {
-                    "isSGLMarket": true,
-                    "collateral": {
-                        "collateralAddress": "0xb0D35EDC5cA8445517b7af163E9A108C71D95C87",
-                        "collateralStrategyAddress": "0xf06a128c314b09a0E9e07105B1883e25391B24Ff"
-                    },
-                    "asset": {
-                        "assetAddress": "0x74306106DD3920315EfC90eF95fEc1Dd5478e4D9",
-                        "assetStrategyAddress": "0xa0ccE0A0201C5aa96844Ed428DE7ADaCB4845014"
                     }
                 }
             },
