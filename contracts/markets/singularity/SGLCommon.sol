@@ -15,7 +15,7 @@ contract SGLCommon is SGLStorage {
         _accrue();
     }
 
-    function getInterestRate()
+    function getInterestDetails()
         external
         view
         returns (
