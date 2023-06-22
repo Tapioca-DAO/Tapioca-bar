@@ -15,32 +15,82 @@ contract SGLCommon is SGLStorage {
         _accrue();
     }
 
+    function getInterestDetails()
+        external
+        view
+        returns (
+            ISingularity.AccrueInfo memory _accrueInfo,
+            uint256 utilization
+        )
+    {
+        (_accrueInfo, , , , , utilization, ) = _getInterestRate();
+    }
+
     // ************************** //
     // *** PRIVATE FUNCTIONS *** //
     // ************************* //
-    function _accrue() internal override {
-        ISingularity.AccrueInfo memory _accrueInfo = accrueInfo;
+    function _getInterestRate()
+        internal
+        view
+        returns (
+            ISingularity.AccrueInfo memory _accrueInfo,
+            Rebase memory _totalBorrow,
+            Rebase memory _totalAsset,
+            uint256 extraAmount,
+            uint256 feeFraction,
+            uint256 utilization,
+            bool logStartingInterest
+        )
+    {
+        _accrueInfo = accrueInfo;
+        _totalBorrow = totalBorrow;
+        _totalAsset = totalAsset;
+        extraAmount = 0;
+        feeFraction = 0;
+        logStartingInterest = false;
+
+        uint256 fullAssetAmount = yieldBox.toAmount(
+            assetId,
+            _totalAsset.elastic,
+            false
+        ) + _totalBorrow.elastic;
+
+        utilization = fullAssetAmount == 0
+            ? 0
+            : (uint256(_totalBorrow.elastic) * UTILIZATION_PRECISION) /
+                fullAssetAmount;
+
         // Number of seconds since accrue was called
         uint256 elapsedTime = block.timestamp - _accrueInfo.lastAccrued;
         if (elapsedTime == 0) {
-            return;
+            return (
+                _accrueInfo,
+                totalBorrow,
+                totalAsset,
+                0,
+                0,
+                utilization,
+                logStartingInterest
+            );
         }
         _accrueInfo.lastAccrued = uint64(block.timestamp);
 
-        Rebase memory _totalBorrow = totalBorrow;
         if (_totalBorrow.base == 0) {
             // If there are no borrows, reset the interest rate
             if (_accrueInfo.interestPerSecond != STARTING_INTEREST_PER_SECOND) {
                 _accrueInfo.interestPerSecond = STARTING_INTEREST_PER_SECOND;
-                emit LogAccrue(0, 0, STARTING_INTEREST_PER_SECOND, 0);
+                logStartingInterest = true;
             }
-            accrueInfo = _accrueInfo;
-            return;
+            return (
+                _accrueInfo,
+                _totalBorrow,
+                totalAsset,
+                0,
+                0,
+                utilization,
+                logStartingInterest
+            );
         }
-
-        uint256 extraAmount = 0;
-        uint256 feeFraction = 0;
-        Rebase memory _totalAsset = totalAsset;
 
         // Accrue interest
         extraAmount =
@@ -49,21 +99,13 @@ contract SGLCommon is SGLStorage {
                 elapsedTime) /
             1e18;
         _totalBorrow.elastic += uint128(extraAmount);
-        uint256 fullAssetAmount = yieldBox.toAmount(
-            assetId,
-            _totalAsset.elastic,
-            false
-        ) + _totalBorrow.elastic;
 
         uint256 feeAmount = (extraAmount * protocolFee) / FEE_PRECISION; // % of interest paid goes to fee
         feeFraction = (feeAmount * _totalAsset.base) / fullAssetAmount;
         _accrueInfo.feesEarnedFraction += uint128(feeFraction);
-        totalAsset.base = _totalAsset.base + uint128(feeFraction);
-        totalBorrow = _totalBorrow;
+        _totalAsset.base = _totalAsset.base + uint128(feeFraction);
 
         // Update interest rate
-        uint256 utilization = (uint256(_totalBorrow.elastic) *
-            UTILIZATION_PRECISION) / fullAssetAmount;
         if (utilization < MINIMUM_TARGET_UTILIZATION) {
             uint256 underFactor = ((MINIMUM_TARGET_UTILIZATION - utilization) *
                 FACTOR_PRECISION) / MINIMUM_TARGET_UTILIZATION;
@@ -90,14 +132,32 @@ contract SGLCommon is SGLStorage {
             }
             _accrueInfo.interestPerSecond = uint64(newInterestPerSecond);
         }
+    }
 
-        emit LogAccrue(
-            extraAmount,
-            feeFraction,
-            _accrueInfo.interestPerSecond,
-            utilization
-        );
+    function _accrue() internal override {
+        (
+            ISingularity.AccrueInfo memory _accrueInfo,
+            Rebase memory _totalBorrow,
+            Rebase memory _totalAsset,
+            uint256 extraAmount,
+            uint256 feeFraction,
+            uint256 utilization,
+            bool logStartingInterest
+        ) = _getInterestRate();
+
+        if (logStartingInterest) {
+            emit LogAccrue(0, 0, STARTING_INTEREST_PER_SECOND, 0);
+        } else {
+            emit LogAccrue(
+                extraAmount,
+                feeFraction,
+                _accrueInfo.interestPerSecond,
+                utilization
+            );
+        }
         accrueInfo = _accrueInfo;
+        totalBorrow = _totalBorrow;
+        totalAsset = _totalAsset;
     }
 
     /// @dev Helper function to move tokens.
