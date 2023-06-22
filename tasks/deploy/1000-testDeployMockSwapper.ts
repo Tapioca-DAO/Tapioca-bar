@@ -46,5 +46,20 @@ export const testDeployMockSwapper__task = async (
 
     await VM.execute(3);
     VM.save();
+
+    const penroseDeployment = hre.SDK.db
+        .loadLocalDeployment(tag, chainInfo.chainId)
+        .find((e) => e.name == 'Penrose');
+
+    const swapperDeployment = hre.SDK.db
+        .loadLocalDeployment(tag, chainInfo.chainId)
+        .find((e) => e.name == 'MockSwapper');
+
+    const penroseContract = await hre.ethers.getContractAt(
+        'Penrose',
+        penroseDeployment?.address,
+    );
+    await penroseContract.setSwapper(swapperDeployment?.address, true);
+
     await VM.verify();
 };
