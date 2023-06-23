@@ -221,8 +221,20 @@ describe('BigBang test', () => {
 
             const borrowFeeUpdateFn =
                 wethBigBangMarket.interface.encodeFunctionData(
-                    'setBorrowOpeningFee',
-                    [5e2],
+                    'setMarketConfig',
+                    [
+                        5e2,
+                        ethers.constants.AddressZero,
+                        ethers.utils.toUtf8Bytes(''),
+                        ethers.constants.AddressZero,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                    ],
                 );
             await bar.executeMarketFn(
                 [wethBigBangMarket.address],
@@ -537,8 +549,20 @@ describe('BigBang test', () => {
             const feeAmount = 50000; //50%
             const borrowFeeUpdateFn =
                 wethBigBangMarket.interface.encodeFunctionData(
-                    'setBorrowOpeningFee',
-                    [feeAmount],
+                    'setMarketConfig',
+                    [
+                        feeAmount,
+                        ethers.constants.AddressZero,
+                        ethers.utils.toUtf8Bytes(''),
+                        ethers.constants.AddressZero,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                    ],
                 );
             await bar.executeMarketFn(
                 [wethBigBangMarket.address],
@@ -714,8 +738,20 @@ describe('BigBang test', () => {
 
             const borrowFeeUpdateFn =
                 wethBigBangMarket.interface.encodeFunctionData(
-                    'setBorrowOpeningFee',
-                    [feeAmount],
+                    'setMarketConfig',
+                    [
+                        feeAmount,
+                        ethers.constants.AddressZero,
+                        ethers.utils.toUtf8Bytes(''),
+                        ethers.constants.AddressZero,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                    ],
                 );
             await bar.executeMarketFn(
                 [wethBigBangMarket.address],
@@ -898,8 +934,20 @@ describe('BigBang test', () => {
 
             const borrowFeeUpdateFn =
                 wethBigBangMarket.interface.encodeFunctionData(
-                    'setBorrowOpeningFee',
-                    [5e2],
+                    'setMarketConfig',
+                    [
+                        5e2,
+                        ethers.constants.AddressZero,
+                        ethers.utils.toUtf8Bytes(''),
+                        ethers.constants.AddressZero,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                    ],
                 );
             await bar.executeMarketFn(
                 [wethBigBangMarket.address],
@@ -1081,8 +1129,20 @@ describe('BigBang test', () => {
 
             const borrowFeeUpdateFn =
                 wethBigBangMarket.interface.encodeFunctionData(
-                    'setBorrowOpeningFee',
-                    [5e2],
+                    'setMarketConfig',
+                    [
+                        5e2,
+                        ethers.constants.AddressZero,
+                        ethers.utils.toUtf8Bytes(''),
+                        ethers.constants.AddressZero,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                    ],
                 );
             await bar.executeMarketFn(
                 [wethBigBangMarket.address],
@@ -1296,8 +1356,20 @@ describe('BigBang test', () => {
 
             const borrowFeeUpdateFn =
                 wethBigBangMarket.interface.encodeFunctionData(
-                    'setBorrowOpeningFee',
-                    [5e2],
+                    'setMarketConfig',
+                    [
+                        5e2,
+                        ethers.constants.AddressZero,
+                        ethers.utils.toUtf8Bytes(''),
+                        ethers.constants.AddressZero,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                    ],
                 );
             await bar.executeMarketFn(
                 [wethBigBangMarket.address],
@@ -1447,53 +1519,6 @@ describe('BigBang test', () => {
     });
 
     describe('setters and debt', () => {
-        it('should test setters', async () => {
-            const { bar, wethBigBangMarket, eoa1 } = await loadFixture(
-                register,
-            );
-
-            await expect(wethBigBangMarket.connect(eoa1).setBorrowCap(100)).to
-                .be.reverted;
-
-            await expect(
-                wethBigBangMarket.connect(eoa1).setBorrowOpeningFee(100),
-            ).to.be.reverted;
-
-            let updateBorrowingFeeFn =
-                wethBigBangMarket.interface.encodeFunctionData(
-                    'setBorrowOpeningFee',
-                    [1e6],
-                );
-            await expect(
-                bar.executeMarketFn(
-                    [wethBigBangMarket.address],
-                    [updateBorrowingFeeFn],
-                    true,
-                ),
-            ).to.be.reverted;
-
-            const updateBorrowCapFn =
-                wethBigBangMarket.interface.encodeFunctionData('setBorrowCap', [
-                    100,
-                ]);
-            await bar.executeMarketFn(
-                [wethBigBangMarket.address],
-                [updateBorrowCapFn],
-                true,
-            );
-
-            updateBorrowingFeeFn =
-                wethBigBangMarket.interface.encodeFunctionData(
-                    'setBorrowOpeningFee',
-                    [100],
-                );
-            await bar.executeMarketFn(
-                [wethBigBangMarket.address],
-                [updateBorrowingFeeFn],
-                true,
-            );
-        });
-
         it('should not be able to borrow when cap is reached', async () => {
             const {
                 wethBigBangMarket,
@@ -1533,9 +1558,22 @@ describe('BigBang test', () => {
             );
 
             const borrowCapUpdateFn =
-                wethBigBangMarket.interface.encodeFunctionData('setBorrowCap', [
-                    1,
-                ]);
+                wethBigBangMarket.interface.encodeFunctionData(
+                    'setMarketConfig',
+                    [
+                        0,
+                        ethers.constants.AddressZero,
+                        ethers.utils.toUtf8Bytes(''),
+                        ethers.constants.AddressZero,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        1,
+                        0,
+                    ],
+                );
             await bar.executeMarketFn(
                 [wethBigBangMarket.address],
                 [borrowCapUpdateFn],
@@ -1572,8 +1610,20 @@ describe('BigBang test', () => {
 
             const setConservatorData =
                 wethBigBangMarket.interface.encodeFunctionData(
-                    'setConservator',
-                    [deployer.address],
+                    'setMarketConfig',
+                    [
+                        5e2,
+                        ethers.constants.AddressZero,
+                        ethers.utils.toUtf8Bytes(''),
+                        deployer.address,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                    ],
                 );
             await bar.executeMarketFn(
                 [wethBigBangMarket.address],

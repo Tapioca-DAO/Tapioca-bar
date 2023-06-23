@@ -102,7 +102,12 @@ contract Singularity is SGLCommon {
         collateralId = _collateralId;
         oracle = _oracle;
 
-        accrueInfo.interestPerSecond = uint64(STARTING_INTEREST_PER_SECOND); // 1% APR, with 1e18 being 100%
+        minimumInterestPerSecond = 317097920; // approx 1% APR
+        maximumInterestPerSecond = 6341958400; // approx 20% APR
+        interestElasticity = 1800e36; // Half or double in 28800 seconds (1 hours) if linear
+        startingInterestPerSecond = minimumInterestPerSecond;
+
+        accrueInfo.interestPerSecond = uint64(startingInterestPerSecond); // 1% APR, with 1e18 being 100%
 
         updateExchangeRate();
 
@@ -124,6 +129,10 @@ contract Singularity is SGLCommon {
         minLiquidatorReward = 1e3;
         maxLiquidatorReward = 1e4;
         liquidationBonusAmount = 1e4;
+
+        minimumTargetUtilization = 6e17;
+        maximumTargetUtilization = 7e17;
+        fullUtilizationMinusMax = FULL_UTILIZATION - maximumTargetUtilization;
     }
 
     // ********************** //
@@ -469,49 +478,122 @@ contract Singularity is SGLCommon {
         feeShares = _removeAsset(feeTo, msg.sender, balanceOf[feeTo], false);
     }
 
-    /// @notice sets the collateralization rate used for LiquidationQueue type liquidations
-    /// @dev can only be called by the owner
-    /// @param _val the new value
-    function setLqCollateralizationRate(uint256 _val) external onlyOwner {
-        require(_val <= COLLATERALIZATION_RATE_PRECISION, "SGL: not valid");
-        lqCollateralizationRate = _val;
-    }
-
-    /// @notice sets the liquidation multiplier
-    /// @dev can only be called by the owner
-    /// @param _val the new value
-    function setLiquidationMultiplier(uint256 _val) external onlyOwner {
-        liquidationMultiplier = _val;
-    }
-
-    /// @notice sets the order book multiplier
-    /// @dev can only be called by the owner
-    /// @param _val the new value
-    function setOrderBookLiquidationMultiplier(
-        uint256 _val
+    /// @notice sets Singularity specific configuration
+    /// @dev values are updated only if > 0 or not address(0)
+    function setSingularityConfig(
+        uint256 _lqCollateralizationRate,
+        uint256 _liquidationMultiplier,
+        uint256 _orderBookLiquidationMultiplier,
+        uint256 _minimumTargetUtilization,
+        uint256 _maximumTargetUtilization,
+        uint64 _minimumInterestPerSecond,
+        uint64 _maximumInterestPerSecond,
+        uint256 _interestElasticity
     ) external onlyOwner {
-        orderBookLiquidationMultiplier = _val;
+        if (_minimumTargetUtilization > 0) {
+            emit MinimumTargetUtilizationUpdated(
+                minimumTargetUtilization,
+                _minimumTargetUtilization
+            );
+            minimumTargetUtilization = _minimumTargetUtilization;
+        }
+
+        if (_maximumTargetUtilization > 0) {
+            require(
+                _maximumTargetUtilization < FULL_UTILIZATION,
+                "SGL: not valid"
+            );
+            emit MaximumTargetUtilizationUpdated(
+                maximumTargetUtilization,
+                _maximumTargetUtilization
+            );
+            maximumTargetUtilization = _maximumTargetUtilization;
+            fullUtilizationMinusMax =
+                FULL_UTILIZATION -
+                maximumTargetUtilization;
+        }
+
+        if (_minimumInterestPerSecond > 0) {
+            require(
+                _minimumInterestPerSecond < maximumInterestPerSecond,
+                "SGL: not valid"
+            );
+            emit MinimumInterestPerSecondUpdated(
+                minimumInterestPerSecond,
+                _minimumInterestPerSecond
+            );
+            minimumInterestPerSecond = _minimumInterestPerSecond;
+        }
+
+        if (_maximumInterestPerSecond > 0) {
+            require(
+                _maximumInterestPerSecond > minimumInterestPerSecond,
+                "SGL: not valid"
+            );
+            emit MaximumInterestPerSecondUpdated(
+                maximumInterestPerSecond,
+                _maximumInterestPerSecond
+            );
+            maximumInterestPerSecond = _maximumInterestPerSecond;
+        }
+
+        if (_interestElasticity > 0) {
+            emit InterestElasticityUpdated(
+                interestElasticity,
+                _interestElasticity
+            );
+            interestElasticity = _interestElasticity;
+        }
+
+        if (_lqCollateralizationRate > 0) {
+            require(
+                _lqCollateralizationRate <= COLLATERALIZATION_RATE_PRECISION,
+                "SGL: not valid"
+            );
+            emit LqCollateralizationRateUpdated(
+                lqCollateralizationRate,
+                _lqCollateralizationRate
+            );
+            lqCollateralizationRate = _lqCollateralizationRate;
+        }
+
+        if (_liquidationMultiplier > 0) {
+            emit LiquidationMultiplierUpdated(
+                liquidationMultiplier,
+                _liquidationMultiplier
+            );
+            liquidationMultiplier = _liquidationMultiplier;
+        }
+
+        if (_orderBookLiquidationMultiplier > 0) {
+            emit OrderBookLiquidationMultiplierUpdated(
+                orderBookLiquidationMultiplier,
+                _orderBookLiquidationMultiplier
+            );
+            orderBookLiquidationMultiplier = _orderBookLiquidationMultiplier;
+        }
     }
 
-    /// @notice Set a new LiquidationQueue.
-    /// @param _liquidationQueue The address of the new LiquidationQueue contract.
-    function setLiquidationQueue(
-        ILiquidationQueue _liquidationQueue
-    ) public onlyOwner {
-        require(_liquidationQueue.onlyOnce(), "SGL: LQ not initalized");
-        liquidationQueue = _liquidationQueue;
-    }
+    /// @notice sets LQ specific confinguration
+    function setLiquidationQueueConfig(
+        ILiquidationQueue _liquidationQueue,
+        address _bidExecutionSwapper,
+        address _usdoSwapper
+    ) external onlyOwner {
+        if (address(_liquidationQueue) != address(0)) {
+            require(_liquidationQueue.onlyOnce(), "SGL: LQ not initalized");
+            liquidationQueue = _liquidationQueue;
+        }
 
-    /// @notice Execute an only owner function inside of the LiquidationQueue
-    /// @param _swapper the new swapper address
-    function updateLQExecutionSwapper(address _swapper) external onlyOwner {
-        liquidationQueue.setBidExecutionSwapper(_swapper);
-    }
+        if (_bidExecutionSwapper != address(0)) {
+            emit BidExecutionSwapperUpdated(_bidExecutionSwapper);
+            liquidationQueue.setBidExecutionSwapper(_bidExecutionSwapper);
+        }
 
-    /// @notice Execute an only owner function inside of the LiquidationQueue
-    /// @param _swapper the new swapper address
-    function updateLQUsdoSwapper(address _swapper) external onlyOwner {
-        liquidationQueue.setUsdoSwapper(_swapper);
+        if (_usdoSwapper != address(0)) {
+            emit UsdoSwapperUpdated(_usdoSwapper);
+            liquidationQueue.setUsdoSwapper(_usdoSwapper);
+        }
     }
 
     // ************************* //

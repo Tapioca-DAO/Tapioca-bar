@@ -506,8 +506,12 @@ describe('LiquidationQueue test', () => {
                 await deployCurveStableToUsdoBidder(yieldBox, usdc, usd0);
 
             const usdofnData = wethUsdcSingularity.interface.encodeFunctionData(
-                'updateLQUsdoSwapper',
-                [stableToUsdoBidder.address],
+                'setLiquidationQueueConfig',
+                [
+                    ethers.constants.AddressZero,
+                    ethers.constants.AddressZero,
+                    stableToUsdoBidder.address,
+                ],
             );
             await bar.executeMarketFn(
                 [wethUsdcSingularity.address],
@@ -517,8 +521,12 @@ describe('LiquidationQueue test', () => {
 
             const executionfnData =
                 wethUsdcSingularity.interface.encodeFunctionData(
-                    'updateLQExecutionSwapper',
-                    [usdoToWethBidder.address],
+                    'setLiquidationQueueConfig',
+                    [
+                        ethers.constants.AddressZero,
+                        usdoToWethBidder.address,
+                        ethers.constants.AddressZero,
+                    ],
                 );
             await bar.executeMarketFn(
                 [wethUsdcSingularity.address],
@@ -649,8 +657,12 @@ describe('LiquidationQueue test', () => {
             );
 
             const usdofnData = wethUsdcSingularity.interface.encodeFunctionData(
-                'updateLQUsdoSwapper',
-                [stableToUsdoBidder.address],
+                'setLiquidationQueueConfig',
+                [
+                    ethers.constants.AddressZero,
+                    ethers.constants.AddressZero,
+                    stableToUsdoBidder.address,
+                ],
             );
             await bar.executeMarketFn(
                 [wethUsdcSingularity.address],
@@ -660,8 +672,12 @@ describe('LiquidationQueue test', () => {
 
             const executionfnData =
                 wethUsdcSingularity.interface.encodeFunctionData(
-                    'updateLQExecutionSwapper',
-                    [usdoToWethBidder.address],
+                    'setLiquidationQueueConfig',
+                    [
+                        ethers.constants.AddressZero,
+                        usdoToWethBidder.address,
+                        ethers.constants.AddressZero,
+                    ],
                 );
             await bar.executeMarketFn(
                 [wethUsdcSingularity.address],
@@ -760,8 +776,12 @@ describe('LiquidationQueue test', () => {
             );
 
             const usdofnData = wethUsdcSingularity.interface.encodeFunctionData(
-                'updateLQUsdoSwapper',
-                [stableToUsdoBidder.address],
+                'setLiquidationQueueConfig',
+                [
+                    ethers.constants.AddressZero,
+                    ethers.constants.AddressZero,
+                    stableToUsdoBidder.address,
+                ],
             );
             await bar.executeMarketFn(
                 [wethUsdcSingularity.address],
@@ -771,8 +791,12 @@ describe('LiquidationQueue test', () => {
 
             const executionfnData =
                 wethUsdcSingularity.interface.encodeFunctionData(
-                    'updateLQExecutionSwapper',
-                    [usdoToWethBidder.address],
+                    'setLiquidationQueueConfig',
+                    [
+                        ethers.constants.AddressZero,
+                        usdoToWethBidder.address,
+                        ethers.constants.AddressZero,
+                    ],
                 );
             await bar.executeMarketFn(
                 [wethUsdcSingularity.address],
@@ -884,8 +908,12 @@ describe('LiquidationQueue test', () => {
             );
 
             const usdofnData = wethUsdcSingularity.interface.encodeFunctionData(
-                'updateLQUsdoSwapper',
-                [stableToUsdoBidder.address],
+                'setLiquidationQueueConfig',
+                [
+                    ethers.constants.AddressZero,
+                    ethers.constants.AddressZero,
+                    stableToUsdoBidder.address,
+                ],
             );
             await bar.executeMarketFn(
                 [wethUsdcSingularity.address],
@@ -895,8 +923,12 @@ describe('LiquidationQueue test', () => {
 
             const executionfnData =
                 wethUsdcSingularity.interface.encodeFunctionData(
-                    'updateLQExecutionSwapper',
-                    [usdoToWethBidder.address],
+                    'setLiquidationQueueConfig',
+                    [
+                        ethers.constants.AddressZero,
+                        usdoToWethBidder.address,
+                        ethers.constants.AddressZero,
+                    ],
                 );
             await bar.executeMarketFn(
                 [wethUsdcSingularity.address],
@@ -1145,8 +1177,12 @@ describe('LiquidationQueue test', () => {
             );
 
             const usdofnData = wethUsdcSingularity.interface.encodeFunctionData(
-                'updateLQUsdoSwapper',
-                [stableToUsdoBidder.address],
+                'setLiquidationQueueConfig',
+                [
+                    ethers.constants.AddressZero,
+                    ethers.constants.AddressZero,
+                    stableToUsdoBidder.address,
+                ],
             );
             await bar.executeMarketFn(
                 [wethUsdcSingularity.address],
@@ -1156,8 +1192,12 @@ describe('LiquidationQueue test', () => {
 
             const executionfnData =
                 wethUsdcSingularity.interface.encodeFunctionData(
-                    'updateLQExecutionSwapper',
-                    [usdoToWethBidder.address],
+                    'setLiquidationQueueConfig',
+                    [
+                        ethers.constants.AddressZero,
+                        usdoToWethBidder.address,
+                        ethers.constants.AddressZero,
+                    ],
                 );
             await bar.executeMarketFn(
                 [wethUsdcSingularity.address],

@@ -57,6 +57,15 @@ contract SGLStorage is BoringOwnable, Market {
     /// @notice collateralization rate
     uint256 public lqCollateralizationRate = 25000; // 25%
 
+    uint256 public minimumTargetUtilization;
+    uint256 public maximumTargetUtilization;
+    uint256 public fullUtilizationMinusMax;
+
+    uint64 public minimumInterestPerSecond;
+    uint64 public maximumInterestPerSecond;
+    uint256 public interestElasticity;
+    uint64 public startingInterestPerSecond;
+
     // ************** //
     // *** EVENTS *** //
     // ************** //
@@ -112,22 +121,36 @@ contract SGLStorage is BoringOwnable, Market {
     event LogWithdrawFees(address indexed feeTo, uint256 feesEarnedFraction);
     /// @notice event emitted when fees are deposited to YieldBox
     event LogYieldBoxFeesDeposit(uint256 feeShares, uint256 ethAmount);
+    /// @notice event emitted when the minimum target utilization is updated
+    event MinimumTargetUtilizationUpdated(uint256 oldVal, uint256 newVal);
+    /// @notice event emitted when the maximum target utilization is updated
+    event MaximumTargetUtilizationUpdated(uint256 oldVal, uint256 newVal);
+    /// @notice event emitted when the minimum interest per second is updated
+    event MinimumInterestPerSecondUpdated(uint256 oldVal, uint256 newVal);
+    /// @notice event emitted when the maximum interest per second is updated
+    event MaximumInterestPerSecondUpdated(uint256 oldVal, uint256 newVal);
+    /// @notice event emitted when the interest elasticity updated
+    event InterestElasticityUpdated(uint256 oldVal, uint256 newVal);
+    /// @notice event emitted when the LQ collateralization rate is updated
+    event LqCollateralizationRateUpdated(uint256 oldVal, uint256 newVal);
+    /// @notice event emitted when the liquidation multiplier rate is updated
+    event LiquidationMultiplierUpdated(uint256 oldVal, uint256 newVal);
+    /// @notice event emitted when the order book liquidation multiplier rate is updated
+    event OrderBookLiquidationMultiplierUpdated(uint256 oldVal, uint256 newVal);
+    /// @notice event emitted when the bid execution swapper is updated
+    event BidExecutionSwapperUpdated(address newAddress);
+    /// @notice event emitted when the usdo swapper is updated
+    event UsdoSwapperUpdated(address newAddress);
 
     // ***************** //
     // *** CONSTANTS *** //
     // ***************** //
-    uint256 internal constant MINIMUM_TARGET_UTILIZATION = 7e17; // 70%
-    uint256 internal constant MAXIMUM_TARGET_UTILIZATION = 8e17; // 80%
-    uint256 internal constant UTILIZATION_PRECISION = 1e18;
     uint256 internal constant FULL_UTILIZATION = 1e18;
-    uint256 internal constant FULL_UTILIZATION_MINUS_MAX =
-        FULL_UTILIZATION - MAXIMUM_TARGET_UTILIZATION;
+    uint256 internal constant UTILIZATION_PRECISION = 1e18;
+
     uint256 internal constant FACTOR_PRECISION = 1e18;
 
-    uint64 internal constant STARTING_INTEREST_PER_SECOND = 317097920; // approx 1% APR
-    uint64 internal constant MINIMUM_INTEREST_PER_SECOND = 79274480; // approx 0.25% APR
-    uint64 internal constant MAXIMUM_INTEREST_PER_SECOND = 317097920000; // approx 1000% APR
-    uint256 internal constant INTEREST_ELASTICITY = 28800e36; // Half or double in 28800 seconds (8 hours) if linear
+    uint256 internal constant INTEREST_ELASTICITY = 1800e36; // Half or double in 28800 seconds (1 hours) if linear
 
     constructor() MarketERC20("Tapioca Singularity") {}
 
