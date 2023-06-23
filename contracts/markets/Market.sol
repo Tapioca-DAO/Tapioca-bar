@@ -139,47 +139,100 @@ abstract contract Market is MarketERC20, BoringOwnable {
         emit LogBorrowingFee(borrowOpeningFee, _val);
         borrowOpeningFee = _val;
     }
-
-    /// @notice updates oracle
+    
+    /// @notice sets max borrowable amount
     /// @dev can only be called by the owner
-    /// @param _oracle the new oracle
-    function setOracle(IOracle _oracle) external onlyOwner {
-        oracle = _oracle;
-        emit OracleUpdated();
+    /// @param _cap the new value
+    function setBorrowCap(uint256 _cap) external notPaused onlyOwner {
+        emit LogBorrowCapUpdated(totalBorrowCap, _cap);
+        totalBorrowCap = _cap;
     }
 
-    /// @notice updates oracle data
-    /// @dev can only be called by the owner
-    /// @param _oracleData new oracle data
-    function setOracleData(bytes calldata _oracleData) external onlyOwner {
-        oracleData = _oracleData;
-        emit OracleDataUpdated();
-    }
 
-    /// @notice Set the Conservator address
-    /// @dev conservator can pause the contract
-    ///      can only be called by the owner
-    /// @param _conservator The new address
-    function setConservator(address _conservator) external onlyOwner {
-        require(_conservator != address(0), "Market: address not valid");
-        emit ConservatorUpdated(conservator, _conservator);
-        conservator = _conservator;
-    }
+    /// @notice sets common market configuration
+    /// @dev values are updated only if > 0 or not address(0)
+    function setMarketConfig(
+        uint256 _borrowOpeningFee,
+        IOracle _oracle,
+        bytes calldata _oracleData,
+        address _conservator,
+        uint256 _callerFee,
+        uint256 _protocolFee,
+        uint256 _liquidationBonusAmount,
+        uint256 _minLiquidatorReward,
+        uint256 _maxLiquidatorReward,
+        uint256 _totalBorrowCap,
+        uint256 _collateralizationRate
+    ) external onlyOwner {
+        if (_borrowOpeningFee > 0) {
+            require(_borrowOpeningFee <= FEE_PRECISION, "Market: not valid");
+            emit LogBorrowingFee(borrowOpeningFee, _borrowOpeningFee);
+            borrowOpeningFee = _borrowOpeningFee;
+        }
 
-    /// @notice sets the liquidator fee
-    /// @dev can only be called by the owner
-    /// @param _val the new value
-    function setCallerFee(uint256 _val) external onlyOwner {
-        require(_val <= FEE_PRECISION, "Market: not valid");
-        callerFee = _val;
-    }
+        if (address(_oracle) != address(0)) {
+            oracle = _oracle;
+            emit OracleUpdated();
+        }
 
-    /// @notice sets the protocol fee
-    /// @dev can only be called by the owner
-    /// @param _val the new value
-    function setProtocolFee(uint256 _val) external onlyOwner {
-        require(_val <= FEE_PRECISION, "Market: not valid");
-        protocolFee = _val;
+        if (_oracleData.length > 0) {
+            oracleData = _oracleData;
+            emit OracleDataUpdated();
+        }
+
+        if (_conservator != address(0)) {
+            emit ConservatorUpdated(conservator, _conservator);
+            conservator = _conservator;
+        }
+
+        if (_callerFee > 0) {
+            require(_callerFee <= FEE_PRECISION, "Market: not valid");
+            callerFee = _callerFee;
+        }
+
+        if (_protocolFee > 0) {
+            require(_protocolFee <= FEE_PRECISION, "Market: not valid");
+            protocolFee = _protocolFee;
+        }
+
+        if (_liquidationBonusAmount > 0) {
+            require(
+                _liquidationBonusAmount < FEE_PRECISION,
+                "Market: not valid"
+            );
+            liquidationBonusAmount = _liquidationBonusAmount;
+        }
+
+        if (_minLiquidatorReward > 0) {
+            require(_minLiquidatorReward < FEE_PRECISION, "Market: not valid");
+            require(
+                _minLiquidatorReward < maxLiquidatorReward,
+                "Market: not valid"
+            );
+            minLiquidatorReward = _minLiquidatorReward;
+        }
+
+        if (_maxLiquidatorReward > 0) {
+            require(_maxLiquidatorReward < FEE_PRECISION, "Market: not valid");
+            require(
+                _maxLiquidatorReward > minLiquidatorReward,
+                "Market: not valid"
+            );
+            maxLiquidatorReward = _maxLiquidatorReward;
+        }
+
+        if (_totalBorrowCap > 0) {
+            emit LogBorrowCapUpdated(totalBorrowCap, _totalBorrowCap);
+            totalBorrowCap = _totalBorrowCap;
+        }
+
+        if (_collateralizationRate > 0) {
+            require(
+                _collateralizationRate <= COLLATERALIZATION_RATE_PRECISION,
+                "Market: not valid"
+            );
+            collateralizationRate = _collateralizationRate;
+        }
     }
 
     /// @notice updates the pause state of the contract
@@ -190,48 +243,6 @@ abstract contract Market is MarketERC20, BoringOwnable {
         require(val != paused, "Market: same state");
         emit PausedUpdated(paused, val);
         paused = val;
-    }
-
-    /// @notice Set the bonus amount a liquidator can make use of, on top of the amount needed to make the user solvent
-    /// @dev can only be called by the owner
-    /// @param _val the new value
-    function setLiquidationBonusAmount(uint256 _val) external onlyOwner {
-        require(_val < FEE_PRECISION, "Market: not valid");
-        liquidationBonusAmount = _val;
-    }
-
-    /// @notice Set the liquidator min reward
-    /// @dev can only be called by the owner
-    /// @param _val the new value
-    function setMinLiquidatorReward(uint256 _val) external onlyOwner {
-        require(_val < FEE_PRECISION, "Market: not valid");
-        require(_val < maxLiquidatorReward, "Market: not valid");
-        minLiquidatorReward = _val;
-    }
-
-    /// @notice Set the liquidator max reward
-    /// @dev can only be called by the owner
-    /// @param _val the new value
-    function setMaxLiquidatorReward(uint256 _val) external onlyOwner {
-        require(_val < FEE_PRECISION, "Market: not valid");
-        require(_val > minLiquidatorReward, "Market: not valid");
-        maxLiquidatorReward = _val;
-    }
-
-    /// @notice sets max borrowable amount
-    /// @dev can only be called by the owner
-    /// @param _cap the new value
-    function setBorrowCap(uint256 _cap) external notPaused onlyOwner {
-        emit LogBorrowCapUpdated(totalBorrowCap, _cap);
-        totalBorrowCap = _cap;
-    }
-
-    /// @notice sets the collateralization rate
-    /// @dev can only be called by the owner
-    /// @param _val the new value
-    function setCollateralizationRate(uint256 _val) external onlyOwner {
-        require(_val <= COLLATERALIZATION_RATE_PRECISION, "Market: not valid");
-        collateralizationRate = _val;
     }
 
     // ********************** //

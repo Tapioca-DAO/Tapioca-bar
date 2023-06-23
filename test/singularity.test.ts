@@ -27,6 +27,213 @@ import {
 import TapiocaOFTArtifact from '../gitsub_tapioca-sdk/src/artifacts/tapiocaz/TapiocaOFT.json';
 
 describe('Singularity test', () => {
+    describe('setters', () => {
+        it('should be able to set mutable properties', async() => {
+            const { wethUsdcSingularity, wbtcBigBangMarket, deployer, bar } = await loadFixture(register);
+
+            const toSetAddress = deployer.address;
+            const toSetValue = 101;
+            const toSetMaxValue = 102;
+
+            //common properties
+            let borrowingOpeningFee = await wethUsdcSingularity.borrowOpeningFee();
+            let oracle = await wethUsdcSingularity.oracle();
+            let oracleData = await wethUsdcSingularity.oracleData();
+            let conservator = await wethUsdcSingularity.conservator();
+            let callerFee = await wethUsdcSingularity.callerFee();
+            let protocolFee = await wethUsdcSingularity.protocolFee();
+            let liquidationBonusAmount = await wethUsdcSingularity.liquidationBonusAmount();
+            let minLiquidatorReward = await wethUsdcSingularity.minLiquidatorReward();
+            let maxLiquidatorReward = await wethUsdcSingularity.maxLiquidatorReward();
+            let totalBorrowCap = await wethUsdcSingularity.totalBorrowCap();
+            let collateralizationRate = await wethUsdcSingularity.collateralizationRate();
+
+            // set common config
+            let payload = wethUsdcSingularity.interface.encodeFunctionData(
+                'setMarketConfig',
+                [
+                    0,
+                    ethers.constants.AddressZero,
+                    ethers.utils.toUtf8Bytes(''),
+                    ethers.constants.AddressZero,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                ],
+            );
+            await bar.executeMarketFn(
+                [wethUsdcSingularity.address],
+                [payload],
+                false,
+            );
+            expect(
+                borrowingOpeningFee.eq(
+                    await wethUsdcSingularity.borrowOpeningFee(),
+                ),
+            ).to.be.true;
+            expect(oracle).to.eq(await wethUsdcSingularity.oracle());
+            expect(conservator).to.eq(await wethUsdcSingularity.conservator());
+            expect(callerFee).to.eq(await wethUsdcSingularity.callerFee());
+            expect(protocolFee).to.eq(await wethUsdcSingularity.protocolFee());
+            expect(liquidationBonusAmount).to.eq(await wethUsdcSingularity.liquidationBonusAmount());
+            expect(minLiquidatorReward).to.eq(await wethUsdcSingularity.minLiquidatorReward());
+            expect(maxLiquidatorReward).to.eq(await wethUsdcSingularity.maxLiquidatorReward());
+            expect(totalBorrowCap).to.eq(await wethUsdcSingularity.totalBorrowCap());
+            expect(collateralizationRate).to.eq(await wethUsdcSingularity.collateralizationRate());
+
+            payload = wethUsdcSingularity.interface.encodeFunctionData(
+                'setMarketConfig',
+                [
+                    toSetValue,
+                    toSetAddress,
+                    ethers.utils.toUtf8Bytes(''),
+                    toSetAddress,
+                    toSetValue,
+                    toSetValue,
+                    toSetValue,
+                    toSetValue,
+                    toSetMaxValue,
+                    toSetValue,
+                    toSetValue,
+                ],
+            );
+            await bar.executeMarketFn(
+                [wethUsdcSingularity.address],
+                [payload],
+                false,
+            );
+
+            borrowingOpeningFee = await wethUsdcSingularity.borrowOpeningFee();
+            oracle = await wethUsdcSingularity.oracle();
+            oracleData = await wethUsdcSingularity.oracleData();
+            conservator = await wethUsdcSingularity.conservator();
+            callerFee = await wethUsdcSingularity.callerFee();
+            protocolFee = await wethUsdcSingularity.protocolFee();
+            liquidationBonusAmount = await wethUsdcSingularity.liquidationBonusAmount();
+            minLiquidatorReward = await wethUsdcSingularity.minLiquidatorReward();
+            maxLiquidatorReward = await wethUsdcSingularity.maxLiquidatorReward();
+            totalBorrowCap = await wethUsdcSingularity.totalBorrowCap();
+            collateralizationRate = await wethUsdcSingularity.collateralizationRate();
+
+            expect(borrowingOpeningFee).to.eq(toSetValue);
+            expect(oracle).to.eq(toSetAddress);
+            expect(conservator).to.eq(toSetAddress);
+            expect(callerFee).to.eq(toSetValue);
+            expect(protocolFee).to.eq(toSetValue);
+            expect(liquidationBonusAmount).to.eq(toSetValue);
+            expect(minLiquidatorReward).to.eq(toSetValue);
+            expect(maxLiquidatorReward).to.eq(toSetMaxValue);
+            expect(totalBorrowCap).to.eq(toSetValue);
+            expect(collateralizationRate).to.eq(toSetValue);
+
+
+            await bar.setBigBangEthMarket(deployer.address);
+
+            let minDebtRate = await wbtcBigBangMarket.minDebtRate();
+            let maxDebtRate = await wbtcBigBangMarket.maxDebtRate();
+            let debtRateAgainstEthMarket = await wbtcBigBangMarket.debtRateAgainstEthMarket();
+
+            payload = wbtcBigBangMarket.interface.encodeFunctionData(
+                'setBigBangConfig',
+                [0, 0, 0],
+            );
+            await bar.executeMarketFn(
+                [wbtcBigBangMarket.address],
+                [payload],
+                false,
+            );
+            expect(minDebtRate).to.eq(await wbtcBigBangMarket.minDebtRate());
+            expect(maxDebtRate).to.eq(await wbtcBigBangMarket.maxDebtRate());
+            expect(debtRateAgainstEthMarket).to.eq(await wbtcBigBangMarket.debtRateAgainstEthMarket());
+
+            payload = wbtcBigBangMarket.interface.encodeFunctionData(
+                'setBigBangConfig',
+                [toSetValue, toSetMaxValue, toSetValue],
+            );
+            await bar.executeMarketFn(
+                [wbtcBigBangMarket.address],
+                [payload],
+                false,
+            );
+            minDebtRate = await wbtcBigBangMarket.minDebtRate();
+            maxDebtRate = await wbtcBigBangMarket.maxDebtRate();
+            debtRateAgainstEthMarket = await wbtcBigBangMarket.debtRateAgainstEthMarket();
+            expect(minDebtRate).to.eq(toSetValue);
+            expect(maxDebtRate).to.eq(toSetMaxValue);
+            expect(debtRateAgainstEthMarket).to.eq(toSetValue);
+
+            let lqCollateralizationRate = await wethUsdcSingularity.lqCollateralizationRate();
+            let liquidationMultiplier = await wethUsdcSingularity.liquidationMultiplier();
+            let orderBookLiquidationMultiplier = await wethUsdcSingularity.orderBookLiquidationMultiplier();
+            let minimumTargetUtilization = await wethUsdcSingularity.minimumTargetUtilization();
+            let maximumTargetUtilization = await wethUsdcSingularity.maximumTargetUtilization();
+            let minimumInterestPerSecond = await wethUsdcSingularity.minimumInterestPerSecond();
+            let maximumInterestPerSecond = await wethUsdcSingularity.maximumInterestPerSecond();
+            let interestElasticity = await wethUsdcSingularity.interestElasticity();
+
+            payload = wethUsdcSingularity.interface.encodeFunctionData(
+                'setSingularityConfig',
+                [0, 0, 0, 0, 0, 0, 0, 0],
+            );
+            await bar.executeMarketFn(
+                [wethUsdcSingularity.address],
+                [payload],
+                false,
+            );
+            expect(lqCollateralizationRate).to.eq(await wethUsdcSingularity.lqCollateralizationRate());
+            expect(liquidationMultiplier).to.eq(await wethUsdcSingularity.liquidationMultiplier());
+            expect(orderBookLiquidationMultiplier).to.eq(await wethUsdcSingularity.orderBookLiquidationMultiplier());
+            expect(minimumTargetUtilization).to.eq(await wethUsdcSingularity.minimumTargetUtilization());
+            expect(maximumTargetUtilization).to.eq(await wethUsdcSingularity.maximumTargetUtilization());
+            expect(minimumInterestPerSecond).to.eq(await wethUsdcSingularity.minimumInterestPerSecond());
+            expect(maximumInterestPerSecond).to.eq(await wethUsdcSingularity.maximumInterestPerSecond());
+            expect(interestElasticity).to.eq(await wethUsdcSingularity.interestElasticity());
+
+
+            payload = wethUsdcSingularity.interface.encodeFunctionData(
+                'setSingularityConfig',
+                [
+                    toSetValue,
+                    toSetValue,
+                    toSetValue,
+                    toSetValue,
+                    toSetMaxValue,
+                    toSetValue,
+                    toSetMaxValue,
+                    toSetValue,
+                ],
+            );
+            await bar.executeMarketFn(
+                [wethUsdcSingularity.address],
+                [payload],
+                false,
+            );
+
+            lqCollateralizationRate = await wethUsdcSingularity.lqCollateralizationRate();
+            liquidationMultiplier = await wethUsdcSingularity.liquidationMultiplier();
+            orderBookLiquidationMultiplier = await wethUsdcSingularity.orderBookLiquidationMultiplier();
+            minimumTargetUtilization = await wethUsdcSingularity.minimumTargetUtilization();
+            maximumTargetUtilization = await wethUsdcSingularity.maximumTargetUtilization();
+            minimumInterestPerSecond = await wethUsdcSingularity.minimumInterestPerSecond();
+            maximumInterestPerSecond = await wethUsdcSingularity.maximumInterestPerSecond();
+            interestElasticity = await wethUsdcSingularity.interestElasticity();
+
+            expect(lqCollateralizationRate).to.eq(toSetValue);
+            expect(liquidationMultiplier).to.eq(toSetValue);
+            expect(orderBookLiquidationMultiplier).to.eq(toSetValue);
+            expect(minimumTargetUtilization).to.eq(toSetValue);
+            expect(maximumTargetUtilization).to.eq(toSetMaxValue);
+            expect(minimumInterestPerSecond).to.eq(toSetValue);
+            expect(maximumInterestPerSecond).to.eq(toSetMaxValue);
+            expect(interestElasticity).to.eq(toSetValue);
+
+
+        });
+    });
     describe('reverts', () => {
         it('should not be allowed to initialize twice', async () => {
             const { wethUsdcSingularity } = await loadFixture(register);
@@ -85,8 +292,20 @@ describe('Singularity test', () => {
 
             const setConservatorData =
                 wethUsdcSingularity.interface.encodeFunctionData(
-                    'setConservator',
-                    [deployer.address],
+                    'setMarketConfig',
+                    [
+                        0,
+                        ethers.constants.AddressZero,
+                        ethers.utils.toUtf8Bytes(''),
+                        deployer.address,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                    ],
                 );
             await bar.executeMarketFn(
                 [wethUsdcSingularity.address],
@@ -1657,8 +1876,20 @@ describe('Singularity test', () => {
 
             let borrowCapData =
                 wethUsdcSingularity.interface.encodeFunctionData(
-                    'setBorrowCap',
-                    [wethBorrowVal.div(2)],
+                    'setMarketConfig',
+                    [
+                        0,
+                        ethers.constants.AddressZero,
+                        ethers.utils.toUtf8Bytes(''),
+                        ethers.constants.AddressZero,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        wethBorrowVal.div(2),
+                        0,
+                    ],
                 );
             await bar.executeMarketFn(
                 [wethUsdcSingularity.address],
@@ -2332,7 +2563,7 @@ describe('Singularity test', () => {
     });
 
     describe('usdo SGL', async () => {
-        it.skip('should test interest rate', async () => {
+        it('should test interest rate', async () => {
             const {
                 deployer,
                 bar,
@@ -2452,8 +2683,12 @@ describe('Singularity test', () => {
             await liquidationQueue.init(LQ_META, wethUsdoSingularity.address);
 
             const payload = wethUsdoSingularity.interface.encodeFunctionData(
-                'setLiquidationQueue',
-                [liquidationQueue.address],
+                'setLiquidationQueueConfig',
+                [
+                    liquidationQueue.address,
+                    ethers.constants.AddressZero,
+                    ethers.constants.AddressZero,
+                ],
             );
 
             await (
@@ -2573,205 +2808,18 @@ describe('Singularity test', () => {
                 }`,
             );
 
-            console.log('1');
-            await timeTravel(86400);
-            await wethUsdoSingularity.accrue();
-            accrueInfo = await wethUsdoSingularity.accrueInfo();
-            console.log(
-                `interestPerSecond ${
-                    (accrueInfo.interestPerSecond * 60 * 60 * 24 * 365) / 1e16
-                }`,
-            );
-
-            console.log('2');
-            await timeTravel(86400);
-            await wethUsdoSingularity.accrue();
-            accrueInfo = await wethUsdoSingularity.accrueInfo();
-            console.log(
-                `interestPerSecond ${
-                    (accrueInfo.interestPerSecond * 60 * 60 * 24 * 365) / 1e16
-                }`,
-            );
-
-            console.log('3');
-            await timeTravel(86400);
-            await wethUsdoSingularity.accrue();
-            accrueInfo = await wethUsdoSingularity.accrueInfo();
-            console.log(
-                `interestPerSecond ${
-                    (accrueInfo.interestPerSecond * 60 * 60 * 24 * 365) / 1e16
-                }`,
-            );
-
-            console.log('4');
-            await timeTravel(86400);
-            await wethUsdoSingularity.accrue();
-            accrueInfo = await wethUsdoSingularity.accrueInfo();
-            console.log(
-                `interestPerSecond ${
-                    (accrueInfo.interestPerSecond * 60 * 60 * 24 * 365) / 1e16
-                }`,
-            );
-
-            console.log('5');
-            await timeTravel(86400);
-            await wethUsdoSingularity.accrue();
-            accrueInfo = await wethUsdoSingularity.accrueInfo();
-            console.log(
-                `interestPerSecond ${
-                    (accrueInfo.interestPerSecond * 60 * 60 * 24 * 365) / 1e16
-                }`,
-            );
-
-            console.log('6');
-            await timeTravel(86400);
-            await wethUsdoSingularity.accrue();
-            accrueInfo = await wethUsdoSingularity.accrueInfo();
-            console.log(
-                `interestPerSecond ${
-                    (accrueInfo.interestPerSecond * 60 * 60 * 24 * 365) / 1e16
-                }`,
-            );
-
-            console.log('7');
-            await timeTravel(86400);
-            await wethUsdoSingularity.accrue();
-            accrueInfo = await wethUsdoSingularity.accrueInfo();
-            console.log(
-                `interestPerSecond ${
-                    (accrueInfo.interestPerSecond * 60 * 60 * 24 * 365) / 1e16
-                }`,
-            );
-
-            console.log('8');
-            await timeTravel(86400);
-            await wethUsdoSingularity.accrue();
-            accrueInfo = await wethUsdoSingularity.accrueInfo();
-            console.log(
-                `interestPerSecond ${
-                    (accrueInfo.interestPerSecond * 60 * 60 * 24 * 365) / 1e16
-                }`,
-            );
-
-            console.log('9');
-            await timeTravel(86400);
-            await wethUsdoSingularity.accrue();
-            accrueInfo = await wethUsdoSingularity.accrueInfo();
-            console.log(
-                `interestPerSecond ${
-                    (accrueInfo.interestPerSecond * 60 * 60 * 24 * 365) / 1e16
-                }`,
-            );
-
-            console.log('10');
-            await timeTravel(86400);
-            await wethUsdoSingularity.accrue();
-            accrueInfo = await wethUsdoSingularity.accrueInfo();
-            console.log(
-                `interestPerSecond ${
-                    (accrueInfo.interestPerSecond * 60 * 60 * 24 * 365) / 1e16
-                }`,
-            );
-
-            console.log('11');
-            await timeTravel(86400);
-            await wethUsdoSingularity.accrue();
-            accrueInfo = await wethUsdoSingularity.accrueInfo();
-            console.log(
-                `interestPerSecond ${
-                    (accrueInfo.interestPerSecond * 60 * 60 * 24 * 365) / 1e16
-                }`,
-            );
-
-            console.log('12');
-            await timeTravel(86400);
-            await wethUsdoSingularity.accrue();
-            accrueInfo = await wethUsdoSingularity.accrueInfo();
-            console.log(
-                `interestPerSecond ${
-                    (accrueInfo.interestPerSecond * 60 * 60 * 24 * 365) / 1e16
-                }`,
-            );
-
-            console.log('13');
-            await timeTravel(86400);
-            await wethUsdoSingularity.accrue();
-            accrueInfo = await wethUsdoSingularity.accrueInfo();
-            console.log(
-                `interestPerSecond ${
-                    (accrueInfo.interestPerSecond * 60 * 60 * 24 * 365) / 1e16
-                }`,
-            );
-
-            console.log('14');
-            await timeTravel(86400);
-            await wethUsdoSingularity.accrue();
-            accrueInfo = await wethUsdoSingularity.accrueInfo();
-            console.log(
-                `interestPerSecond ${
-                    (accrueInfo.interestPerSecond * 60 * 60 * 24 * 365) / 1e16
-                }`,
-            );
-
-            console.log('15');
-            await timeTravel(86400);
-            await wethUsdoSingularity.accrue();
-            accrueInfo = await wethUsdoSingularity.accrueInfo();
-            console.log(
-                `interestPerSecond ${
-                    (accrueInfo.interestPerSecond * 60 * 60 * 24 * 365) / 1e16
-                }`,
-            );
-
-            console.log('16');
-            await timeTravel(86400);
-            await wethUsdoSingularity.accrue();
-            accrueInfo = await wethUsdoSingularity.accrueInfo();
-            console.log(
-                `interestPerSecond ${
-                    (accrueInfo.interestPerSecond * 60 * 60 * 24 * 365) / 1e16
-                }`,
-            );
-
-            console.log('17');
-            await timeTravel(86400);
-            await wethUsdoSingularity.accrue();
-            accrueInfo = await wethUsdoSingularity.accrueInfo();
-            console.log(
-                `interestPerSecond ${
-                    (accrueInfo.interestPerSecond * 60 * 60 * 24 * 365) / 1e16
-                }`,
-            );
-
-            console.log('18');
-            await timeTravel(86400);
-            await wethUsdoSingularity.accrue();
-            accrueInfo = await wethUsdoSingularity.accrueInfo();
-            console.log(
-                `interestPerSecond ${
-                    (accrueInfo.interestPerSecond * 60 * 60 * 24 * 365) / 1e16
-                }`,
-            );
-
-            console.log('19');
-            await timeTravel(86400);
-            await wethUsdoSingularity.accrue();
-            accrueInfo = await wethUsdoSingularity.accrueInfo();
-            console.log(
-                `interestPerSecond ${
-                    (accrueInfo.interestPerSecond * 60 * 60 * 24 * 365) / 1e16
-                }`,
-            );
-
-            console.log('20');
-            await timeTravel(86400);
-            await wethUsdoSingularity.accrue();
-            accrueInfo = await wethUsdoSingularity.accrueInfo();
-            console.log(
-                `interestPerSecond ${
-                    (accrueInfo.interestPerSecond * 60 * 60 * 24 * 365) / 1e16
-                }`,
-            );
+            for (let i = 1; i < 150; i++) {
+                console.log(i);
+                await timeTravel(1800);
+                await wethUsdoSingularity.accrue();
+                accrueInfo = await wethUsdoSingularity.accrueInfo();
+                console.log(
+                    `interestPerSecond ${
+                        (accrueInfo.interestPerSecond * 60 * 60 * 24 * 365) /
+                        1e16
+                    }`,
+                );
+            }
         });
 
         it('should create and test wethUsd0 singularity', async () => {
@@ -2897,8 +2945,12 @@ describe('Singularity test', () => {
             await liquidationQueue.init(LQ_META, wethUsdoSingularity.address);
 
             const payload = wethUsdoSingularity.interface.encodeFunctionData(
-                'setLiquidationQueue',
-                [liquidationQueue.address],
+                'setLiquidationQueueConfig',
+                [
+                    liquidationQueue.address,
+                    ethers.constants.AddressZero,
+                    ethers.constants.AddressZero,
+                ],
             );
 
             await (

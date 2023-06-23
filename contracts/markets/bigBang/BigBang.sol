@@ -49,17 +49,21 @@ contract BigBang is BoringOwnable, Market {
     // ************** //
     // *** EVENTS *** //
     // ************** //
+    /// @notice event emitted when accrue is called
     event LogAccrue(uint256 accruedAmount, uint64 rate);
+    /// @notice event emitted when collateral is added
     event LogAddCollateral(
         address indexed from,
         address indexed to,
         uint256 share
     );
+    /// @notice event emitted when collateral is removed
     event LogRemoveCollateral(
         address indexed from,
         address indexed to,
         uint256 share
     );
+    /// @notice event emitted when borrow is performed
     event LogBorrow(
         address indexed from,
         address indexed to,
@@ -67,14 +71,18 @@ contract BigBang is BoringOwnable, Market {
         uint256 feeAmount,
         uint256 part
     );
+    /// @notice event emitted when a repay operation is performed
     event LogRepay(
         address indexed from,
         address indexed to,
         uint256 amount,
         uint256 part
     );
+    /// @notice event emitted when the minimum debt rate is updated
     event MinDebtRateUpdated(uint256 oldVal, uint256 newVal);
+    /// @notice event emitted when the maximum debt rate is updated
     event MaxDebtRateUpdated(uint256 oldVal, uint256 newVal);
+    /// @notice event emitted when the debt rate against the main market is updated
     event DebtRateAgainstEthUpdated(uint256 oldVal, uint256 newVal);
 
     // ***************** //
@@ -447,24 +455,35 @@ contract BigBang is BoringOwnable, Market {
         }
     }
 
-    function setMinDebtRate(uint256 val) external onlyOwner {
-        if (!_isEthMarket) {
-            emit MinDebtRateUpdated(minDebtRate, val);
-            minDebtRate = val;
-        }
-    }
+    /// @notice sets BigBang specific configuration
+    /// @dev values are updated only if > 0 or not address(0)
+    function setBigBangConfig(
+        uint256 _minDebtRate,
+        uint256 _maxDebtRate,
+        uint256 _debtRateAgainstEthMarket
+    ) external onlyOwner {
+        _isEthMarket = collateralId == penrose.wethAssetId();
 
-    function setMaxDebtRate(uint256 val) external onlyOwner {
         if (!_isEthMarket) {
-            emit MaxDebtRateUpdated(maxDebtRate, val);
-            maxDebtRate = val;
-        }
-    }
+            if (_minDebtRate > 0) {
+                require(_minDebtRate < maxDebtRate, "BigBang: not valid");
+                emit MinDebtRateUpdated(minDebtRate, _minDebtRate);
+                minDebtRate = _minDebtRate;
+            }
 
-    function setDebtRateAgainstEth(uint256 val) external onlyOwner {
-        if (!_isEthMarket) {
-            emit DebtRateAgainstEthUpdated(debtRateAgainstEthMarket, val);
-            debtRateAgainstEthMarket = val;
+            if (_maxDebtRate > 0) {
+                require(_maxDebtRate > minDebtRate, "BigBang: not valid");
+                emit MaxDebtRateUpdated(maxDebtRate, _maxDebtRate);
+                maxDebtRate = _maxDebtRate;
+            }
+
+            if (_debtRateAgainstEthMarket > 0) {
+                emit DebtRateAgainstEthUpdated(
+                    debtRateAgainstEthMarket,
+                    _debtRateAgainstEthMarket
+                );
+                debtRateAgainstEthMarket = _debtRateAgainstEthMarket;
+            }
         }
     }
 

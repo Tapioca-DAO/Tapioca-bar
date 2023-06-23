@@ -77,8 +77,8 @@ contract SGLCommon is SGLStorage {
 
         if (_totalBorrow.base == 0) {
             // If there are no borrows, reset the interest rate
-            if (_accrueInfo.interestPerSecond != STARTING_INTEREST_PER_SECOND) {
-                _accrueInfo.interestPerSecond = STARTING_INTEREST_PER_SECOND;
+            if (_accrueInfo.interestPerSecond != startingInterestPerSecond) {
+                _accrueInfo.interestPerSecond = startingInterestPerSecond;
                 logStartingInterest = true;
             }
             return (
@@ -106,29 +106,29 @@ contract SGLCommon is SGLStorage {
         _totalAsset.base = _totalAsset.base + uint128(feeFraction);
 
         // Update interest rate
-        if (utilization < MINIMUM_TARGET_UTILIZATION) {
-            uint256 underFactor = ((MINIMUM_TARGET_UTILIZATION - utilization) *
-                FACTOR_PRECISION) / MINIMUM_TARGET_UTILIZATION;
-            uint256 scale = INTEREST_ELASTICITY +
+        if (utilization < minimumTargetUtilization) {
+            uint256 underFactor = ((minimumTargetUtilization - utilization) *
+                FACTOR_PRECISION) / minimumTargetUtilization;
+            uint256 scale = interestElasticity +
                 (underFactor * underFactor * elapsedTime);
             _accrueInfo.interestPerSecond = uint64(
-                (uint256(_accrueInfo.interestPerSecond) * INTEREST_ELASTICITY) /
+                (uint256(_accrueInfo.interestPerSecond) * interestElasticity) /
                     scale
             );
 
-            if (_accrueInfo.interestPerSecond < MINIMUM_INTEREST_PER_SECOND) {
-                _accrueInfo.interestPerSecond = MINIMUM_INTEREST_PER_SECOND; // 0.25% APR minimum
+            if (_accrueInfo.interestPerSecond < minimumInterestPerSecond) {
+                _accrueInfo.interestPerSecond = maximumInterestPerSecond; // 0.25% APR minimum
             }
-        } else if (utilization > MAXIMUM_TARGET_UTILIZATION) {
-            uint256 overFactor = ((utilization - MAXIMUM_TARGET_UTILIZATION) *
-                FACTOR_PRECISION) / FULL_UTILIZATION_MINUS_MAX;
-            uint256 scale = INTEREST_ELASTICITY +
+        } else if (utilization > maximumTargetUtilization) {
+            uint256 overFactor = ((utilization - maximumTargetUtilization) *
+                FACTOR_PRECISION) / fullUtilizationMinusMax;
+            uint256 scale = interestElasticity +
                 (overFactor * overFactor * elapsedTime);
             uint256 newInterestPerSecond = (uint256(
                 _accrueInfo.interestPerSecond
-            ) * scale) / INTEREST_ELASTICITY;
-            if (newInterestPerSecond > MAXIMUM_INTEREST_PER_SECOND) {
-                newInterestPerSecond = MAXIMUM_INTEREST_PER_SECOND; // 1000% APR maximum
+            ) * scale) / interestElasticity;
+            if (newInterestPerSecond > maximumInterestPerSecond) {
+                newInterestPerSecond = maximumInterestPerSecond; // 1000% APR maximum
             }
             _accrueInfo.interestPerSecond = uint64(newInterestPerSecond);
         }
@@ -146,7 +146,7 @@ contract SGLCommon is SGLStorage {
         ) = _getInterestRate();
 
         if (logStartingInterest) {
-            emit LogAccrue(0, 0, STARTING_INTEREST_PER_SECOND, 0);
+            emit LogAccrue(0, 0, startingInterestPerSecond, 0);
         } else {
             emit LogAccrue(
                 extraAmount,

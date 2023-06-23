@@ -1029,8 +1029,12 @@ async function createWethUsd0Singularity(
     log('LiquidationQueue initialized');
 
     const payload = wethUsdoSingularity.interface.encodeFunctionData(
-        'setLiquidationQueue',
-        [liquidationQueue.address],
+        'setLiquidationQueueConfig',
+        [
+            liquidationQueue.address,
+            ethers.constants.AddressZero,
+            ethers.constants.AddressZero,
+        ],
     );
 
     await (
@@ -1075,9 +1079,14 @@ async function registerLiquidationQueue(
     log('LiquidationQueue initialized', staging);
 
     const payload = singularity.interface.encodeFunctionData(
-        'setLiquidationQueue',
-        [liquidationQueue.address],
+        'setLiquidationQueueConfig',
+        [
+            liquidationQueue.address,
+            ethers.constants.AddressZero,
+            ethers.constants.AddressZero,
+        ],
     );
+
 
     await (
         await bar.executeMarketFn([singularity.address], [payload], true, {
