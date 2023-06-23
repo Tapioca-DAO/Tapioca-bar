@@ -1087,7 +1087,6 @@ async function registerLiquidationQueue(
         ],
     );
 
-
     await (
         await bar.executeMarketFn([singularity.address], [payload], true, {
             gasPrice: gasPrice,

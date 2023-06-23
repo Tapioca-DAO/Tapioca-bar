@@ -521,13 +521,13 @@ describe('LiquidationQueue test', () => {
 
             const executionfnData =
                 wethUsdcSingularity.interface.encodeFunctionData(
-                'setLiquidationQueueConfig',
-                [
-                    ethers.constants.AddressZero,
-                    usdoToWethBidder.address,
-                    ethers.constants.AddressZero,
-                ],
-            );
+                    'setLiquidationQueueConfig',
+                    [
+                        ethers.constants.AddressZero,
+                        usdoToWethBidder.address,
+                        ethers.constants.AddressZero,
+                    ],
+                );
             await bar.executeMarketFn(
                 [wethUsdcSingularity.address],
                 [executionfnData],
@@ -672,13 +672,13 @@ describe('LiquidationQueue test', () => {
 
             const executionfnData =
                 wethUsdcSingularity.interface.encodeFunctionData(
-                'setLiquidationQueueConfig',
-                [
-                    ethers.constants.AddressZero,
-                    usdoToWethBidder.address,
-                    ethers.constants.AddressZero,
-                ],
-            );
+                    'setLiquidationQueueConfig',
+                    [
+                        ethers.constants.AddressZero,
+                        usdoToWethBidder.address,
+                        ethers.constants.AddressZero,
+                    ],
+                );
             await bar.executeMarketFn(
                 [wethUsdcSingularity.address],
                 [executionfnData],
@@ -791,13 +791,13 @@ describe('LiquidationQueue test', () => {
 
             const executionfnData =
                 wethUsdcSingularity.interface.encodeFunctionData(
-                'setLiquidationQueueConfig',
-                [
-                    ethers.constants.AddressZero,
-                    usdoToWethBidder.address,
-                    ethers.constants.AddressZero,
-                ],
-            );
+                    'setLiquidationQueueConfig',
+                    [
+                        ethers.constants.AddressZero,
+                        usdoToWethBidder.address,
+                        ethers.constants.AddressZero,
+                    ],
+                );
             await bar.executeMarketFn(
                 [wethUsdcSingularity.address],
                 [executionfnData],
@@ -923,13 +923,13 @@ describe('LiquidationQueue test', () => {
 
             const executionfnData =
                 wethUsdcSingularity.interface.encodeFunctionData(
-                'setLiquidationQueueConfig',
-                [
-                    ethers.constants.AddressZero,
-                    usdoToWethBidder.address,
-                    ethers.constants.AddressZero,
-                ],
-            );
+                    'setLiquidationQueueConfig',
+                    [
+                        ethers.constants.AddressZero,
+                        usdoToWethBidder.address,
+                        ethers.constants.AddressZero,
+                    ],
+                );
             await bar.executeMarketFn(
                 [wethUsdcSingularity.address],
                 [executionfnData],
@@ -1192,13 +1192,13 @@ describe('LiquidationQueue test', () => {
 
             const executionfnData =
                 wethUsdcSingularity.interface.encodeFunctionData(
-                'setLiquidationQueueConfig',
-                [
-                    ethers.constants.AddressZero,
-                    usdoToWethBidder.address,
-                    ethers.constants.AddressZero,
-                ],
-            );
+                    'setLiquidationQueueConfig',
+                    [
+                        ethers.constants.AddressZero,
+                        usdoToWethBidder.address,
+                        ethers.constants.AddressZero,
+                    ],
+                );
             await bar.executeMarketFn(
                 [wethUsdcSingularity.address],
                 [executionfnData],

@@ -28,25 +28,31 @@ import TapiocaOFTArtifact from '../gitsub_tapioca-sdk/src/artifacts/tapiocaz/Tap
 
 describe('Singularity test', () => {
     describe('setters', () => {
-        it('should be able to set mutable properties', async() => {
-            const { wethUsdcSingularity, wbtcBigBangMarket, deployer, bar } = await loadFixture(register);
+        it('should be able to set mutable properties', async () => {
+            const { wethUsdcSingularity, wbtcBigBangMarket, deployer, bar } =
+                await loadFixture(register);
 
             const toSetAddress = deployer.address;
             const toSetValue = 101;
             const toSetMaxValue = 102;
 
             //common properties
-            let borrowingOpeningFee = await wethUsdcSingularity.borrowOpeningFee();
+            let borrowingOpeningFee =
+                await wethUsdcSingularity.borrowOpeningFee();
             let oracle = await wethUsdcSingularity.oracle();
             let oracleData = await wethUsdcSingularity.oracleData();
             let conservator = await wethUsdcSingularity.conservator();
             let callerFee = await wethUsdcSingularity.callerFee();
             let protocolFee = await wethUsdcSingularity.protocolFee();
-            let liquidationBonusAmount = await wethUsdcSingularity.liquidationBonusAmount();
-            let minLiquidatorReward = await wethUsdcSingularity.minLiquidatorReward();
-            let maxLiquidatorReward = await wethUsdcSingularity.maxLiquidatorReward();
+            let liquidationBonusAmount =
+                await wethUsdcSingularity.liquidationBonusAmount();
+            let minLiquidatorReward =
+                await wethUsdcSingularity.minLiquidatorReward();
+            let maxLiquidatorReward =
+                await wethUsdcSingularity.maxLiquidatorReward();
             let totalBorrowCap = await wethUsdcSingularity.totalBorrowCap();
-            let collateralizationRate = await wethUsdcSingularity.collateralizationRate();
+            let collateralizationRate =
+                await wethUsdcSingularity.collateralizationRate();
 
             // set common config
             let payload = wethUsdcSingularity.interface.encodeFunctionData(
@@ -79,11 +85,21 @@ describe('Singularity test', () => {
             expect(conservator).to.eq(await wethUsdcSingularity.conservator());
             expect(callerFee).to.eq(await wethUsdcSingularity.callerFee());
             expect(protocolFee).to.eq(await wethUsdcSingularity.protocolFee());
-            expect(liquidationBonusAmount).to.eq(await wethUsdcSingularity.liquidationBonusAmount());
-            expect(minLiquidatorReward).to.eq(await wethUsdcSingularity.minLiquidatorReward());
-            expect(maxLiquidatorReward).to.eq(await wethUsdcSingularity.maxLiquidatorReward());
-            expect(totalBorrowCap).to.eq(await wethUsdcSingularity.totalBorrowCap());
-            expect(collateralizationRate).to.eq(await wethUsdcSingularity.collateralizationRate());
+            expect(liquidationBonusAmount).to.eq(
+                await wethUsdcSingularity.liquidationBonusAmount(),
+            );
+            expect(minLiquidatorReward).to.eq(
+                await wethUsdcSingularity.minLiquidatorReward(),
+            );
+            expect(maxLiquidatorReward).to.eq(
+                await wethUsdcSingularity.maxLiquidatorReward(),
+            );
+            expect(totalBorrowCap).to.eq(
+                await wethUsdcSingularity.totalBorrowCap(),
+            );
+            expect(collateralizationRate).to.eq(
+                await wethUsdcSingularity.collateralizationRate(),
+            );
 
             payload = wethUsdcSingularity.interface.encodeFunctionData(
                 'setMarketConfig',
@@ -113,11 +129,15 @@ describe('Singularity test', () => {
             conservator = await wethUsdcSingularity.conservator();
             callerFee = await wethUsdcSingularity.callerFee();
             protocolFee = await wethUsdcSingularity.protocolFee();
-            liquidationBonusAmount = await wethUsdcSingularity.liquidationBonusAmount();
-            minLiquidatorReward = await wethUsdcSingularity.minLiquidatorReward();
-            maxLiquidatorReward = await wethUsdcSingularity.maxLiquidatorReward();
+            liquidationBonusAmount =
+                await wethUsdcSingularity.liquidationBonusAmount();
+            minLiquidatorReward =
+                await wethUsdcSingularity.minLiquidatorReward();
+            maxLiquidatorReward =
+                await wethUsdcSingularity.maxLiquidatorReward();
             totalBorrowCap = await wethUsdcSingularity.totalBorrowCap();
-            collateralizationRate = await wethUsdcSingularity.collateralizationRate();
+            collateralizationRate =
+                await wethUsdcSingularity.collateralizationRate();
 
             expect(borrowingOpeningFee).to.eq(toSetValue);
             expect(oracle).to.eq(toSetAddress);
@@ -130,12 +150,12 @@ describe('Singularity test', () => {
             expect(totalBorrowCap).to.eq(toSetValue);
             expect(collateralizationRate).to.eq(toSetValue);
 
-
             await bar.setBigBangEthMarket(deployer.address);
 
             let minDebtRate = await wbtcBigBangMarket.minDebtRate();
             let maxDebtRate = await wbtcBigBangMarket.maxDebtRate();
-            let debtRateAgainstEthMarket = await wbtcBigBangMarket.debtRateAgainstEthMarket();
+            let debtRateAgainstEthMarket =
+                await wbtcBigBangMarket.debtRateAgainstEthMarket();
 
             payload = wbtcBigBangMarket.interface.encodeFunctionData(
                 'setBigBangConfig',
@@ -148,7 +168,9 @@ describe('Singularity test', () => {
             );
             expect(minDebtRate).to.eq(await wbtcBigBangMarket.minDebtRate());
             expect(maxDebtRate).to.eq(await wbtcBigBangMarket.maxDebtRate());
-            expect(debtRateAgainstEthMarket).to.eq(await wbtcBigBangMarket.debtRateAgainstEthMarket());
+            expect(debtRateAgainstEthMarket).to.eq(
+                await wbtcBigBangMarket.debtRateAgainstEthMarket(),
+            );
 
             payload = wbtcBigBangMarket.interface.encodeFunctionData(
                 'setBigBangConfig',
@@ -161,19 +183,28 @@ describe('Singularity test', () => {
             );
             minDebtRate = await wbtcBigBangMarket.minDebtRate();
             maxDebtRate = await wbtcBigBangMarket.maxDebtRate();
-            debtRateAgainstEthMarket = await wbtcBigBangMarket.debtRateAgainstEthMarket();
+            debtRateAgainstEthMarket =
+                await wbtcBigBangMarket.debtRateAgainstEthMarket();
             expect(minDebtRate).to.eq(toSetValue);
             expect(maxDebtRate).to.eq(toSetMaxValue);
             expect(debtRateAgainstEthMarket).to.eq(toSetValue);
 
-            let lqCollateralizationRate = await wethUsdcSingularity.lqCollateralizationRate();
-            let liquidationMultiplier = await wethUsdcSingularity.liquidationMultiplier();
-            let orderBookLiquidationMultiplier = await wethUsdcSingularity.orderBookLiquidationMultiplier();
-            let minimumTargetUtilization = await wethUsdcSingularity.minimumTargetUtilization();
-            let maximumTargetUtilization = await wethUsdcSingularity.maximumTargetUtilization();
-            let minimumInterestPerSecond = await wethUsdcSingularity.minimumInterestPerSecond();
-            let maximumInterestPerSecond = await wethUsdcSingularity.maximumInterestPerSecond();
-            let interestElasticity = await wethUsdcSingularity.interestElasticity();
+            let lqCollateralizationRate =
+                await wethUsdcSingularity.lqCollateralizationRate();
+            let liquidationMultiplier =
+                await wethUsdcSingularity.liquidationMultiplier();
+            let orderBookLiquidationMultiplier =
+                await wethUsdcSingularity.orderBookLiquidationMultiplier();
+            let minimumTargetUtilization =
+                await wethUsdcSingularity.minimumTargetUtilization();
+            let maximumTargetUtilization =
+                await wethUsdcSingularity.maximumTargetUtilization();
+            let minimumInterestPerSecond =
+                await wethUsdcSingularity.minimumInterestPerSecond();
+            let maximumInterestPerSecond =
+                await wethUsdcSingularity.maximumInterestPerSecond();
+            let interestElasticity =
+                await wethUsdcSingularity.interestElasticity();
 
             payload = wethUsdcSingularity.interface.encodeFunctionData(
                 'setSingularityConfig',
@@ -184,15 +215,30 @@ describe('Singularity test', () => {
                 [payload],
                 false,
             );
-            expect(lqCollateralizationRate).to.eq(await wethUsdcSingularity.lqCollateralizationRate());
-            expect(liquidationMultiplier).to.eq(await wethUsdcSingularity.liquidationMultiplier());
-            expect(orderBookLiquidationMultiplier).to.eq(await wethUsdcSingularity.orderBookLiquidationMultiplier());
-            expect(minimumTargetUtilization).to.eq(await wethUsdcSingularity.minimumTargetUtilization());
-            expect(maximumTargetUtilization).to.eq(await wethUsdcSingularity.maximumTargetUtilization());
-            expect(minimumInterestPerSecond).to.eq(await wethUsdcSingularity.minimumInterestPerSecond());
-            expect(maximumInterestPerSecond).to.eq(await wethUsdcSingularity.maximumInterestPerSecond());
-            expect(interestElasticity).to.eq(await wethUsdcSingularity.interestElasticity());
-
+            expect(lqCollateralizationRate).to.eq(
+                await wethUsdcSingularity.lqCollateralizationRate(),
+            );
+            expect(liquidationMultiplier).to.eq(
+                await wethUsdcSingularity.liquidationMultiplier(),
+            );
+            expect(orderBookLiquidationMultiplier).to.eq(
+                await wethUsdcSingularity.orderBookLiquidationMultiplier(),
+            );
+            expect(minimumTargetUtilization).to.eq(
+                await wethUsdcSingularity.minimumTargetUtilization(),
+            );
+            expect(maximumTargetUtilization).to.eq(
+                await wethUsdcSingularity.maximumTargetUtilization(),
+            );
+            expect(minimumInterestPerSecond).to.eq(
+                await wethUsdcSingularity.minimumInterestPerSecond(),
+            );
+            expect(maximumInterestPerSecond).to.eq(
+                await wethUsdcSingularity.maximumInterestPerSecond(),
+            );
+            expect(interestElasticity).to.eq(
+                await wethUsdcSingularity.interestElasticity(),
+            );
 
             payload = wethUsdcSingularity.interface.encodeFunctionData(
                 'setSingularityConfig',
@@ -213,13 +259,20 @@ describe('Singularity test', () => {
                 false,
             );
 
-            lqCollateralizationRate = await wethUsdcSingularity.lqCollateralizationRate();
-            liquidationMultiplier = await wethUsdcSingularity.liquidationMultiplier();
-            orderBookLiquidationMultiplier = await wethUsdcSingularity.orderBookLiquidationMultiplier();
-            minimumTargetUtilization = await wethUsdcSingularity.minimumTargetUtilization();
-            maximumTargetUtilization = await wethUsdcSingularity.maximumTargetUtilization();
-            minimumInterestPerSecond = await wethUsdcSingularity.minimumInterestPerSecond();
-            maximumInterestPerSecond = await wethUsdcSingularity.maximumInterestPerSecond();
+            lqCollateralizationRate =
+                await wethUsdcSingularity.lqCollateralizationRate();
+            liquidationMultiplier =
+                await wethUsdcSingularity.liquidationMultiplier();
+            orderBookLiquidationMultiplier =
+                await wethUsdcSingularity.orderBookLiquidationMultiplier();
+            minimumTargetUtilization =
+                await wethUsdcSingularity.minimumTargetUtilization();
+            maximumTargetUtilization =
+                await wethUsdcSingularity.maximumTargetUtilization();
+            minimumInterestPerSecond =
+                await wethUsdcSingularity.minimumInterestPerSecond();
+            maximumInterestPerSecond =
+                await wethUsdcSingularity.maximumInterestPerSecond();
             interestElasticity = await wethUsdcSingularity.interestElasticity();
 
             expect(lqCollateralizationRate).to.eq(toSetValue);
@@ -230,8 +283,6 @@ describe('Singularity test', () => {
             expect(minimumInterestPerSecond).to.eq(toSetValue);
             expect(maximumInterestPerSecond).to.eq(toSetMaxValue);
             expect(interestElasticity).to.eq(toSetValue);
-
-
         });
     });
     describe('reverts', () => {

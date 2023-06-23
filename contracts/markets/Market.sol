@@ -139,7 +139,7 @@ abstract contract Market is MarketERC20, BoringOwnable {
         emit LogBorrowingFee(borrowOpeningFee, _val);
         borrowOpeningFee = _val;
     }
-    
+
     /// @notice sets max borrowable amount
     /// @dev can only be called by the owner
     /// @param _cap the new value
@@ -147,7 +147,6 @@ abstract contract Market is MarketERC20, BoringOwnable {
         emit LogBorrowCapUpdated(totalBorrowCap, _cap);
         totalBorrowCap = _cap;
     }
-
 
     /// @notice sets common market configuration
     /// @dev values are updated only if > 0 or not address(0)
