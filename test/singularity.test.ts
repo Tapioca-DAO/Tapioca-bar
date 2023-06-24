@@ -2614,7 +2614,7 @@ describe('Singularity test', () => {
     });
 
     describe('usdo SGL', async () => {
-        it.only('should test interest rate', async () => {
+        it('should test interest rate', async () => {
             const {
                 deployer,
                 bar,
