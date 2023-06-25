@@ -150,8 +150,6 @@ contract SGLStorage is BoringOwnable, Market {
 
     uint256 internal constant FACTOR_PRECISION = 1e18;
 
-    uint256 internal constant INTEREST_ELASTICITY = 1800e36; // Half or double in 28800 seconds (1 hours) if linear
-
     constructor() MarketERC20("Tapioca Singularity") {}
 
     // ********************** //

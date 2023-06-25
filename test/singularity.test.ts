@@ -2839,7 +2839,7 @@ describe('Singularity test', () => {
             );
 
             //borrow
-            const usdoBorrowVal = ethers.utils.parseEther('7500');
+            const usdoBorrowVal = ethers.utils.parseEther('8500');
 
             console.log(
                 `usdoBorrowVal ${ethers.utils.formatEther(usdoBorrowVal)}`,
@@ -2859,9 +2859,9 @@ describe('Singularity test', () => {
                 }`,
             );
 
-            for (let i = 1; i < 150; i++) {
+            for (let i = 1; i < 100; i++) {
                 console.log(i);
-                await timeTravel(1800);
+                await timeTravel(7200);
                 await wethUsdoSingularity.accrue();
                 accrueInfo = await wethUsdoSingularity.accrueInfo();
                 console.log(

@@ -102,9 +102,9 @@ contract Singularity is SGLCommon {
         collateralId = _collateralId;
         oracle = _oracle;
 
-        minimumInterestPerSecond = 317097920; // approx 1% APR
-        maximumInterestPerSecond = 6341958400; // approx 20% APR
-        interestElasticity = 1800e36; // Half or double in 28800 seconds (1 hours) if linear
+        minimumInterestPerSecond = 951293760; // approx 3% APR
+        maximumInterestPerSecond = 2536783360; // approx 8% APR
+        interestElasticity = 7200e36; // Half or double in 28800 seconds (1 hours) if linear
         startingInterestPerSecond = minimumInterestPerSecond;
 
         accrueInfo.interestPerSecond = uint64(startingInterestPerSecond); // 1% APR, with 1e18 being 100%
@@ -130,8 +130,8 @@ contract Singularity is SGLCommon {
         maxLiquidatorReward = 1e4;
         liquidationBonusAmount = 1e4;
 
-        minimumTargetUtilization = 6e17;
-        maximumTargetUtilization = 7e17;
+        minimumTargetUtilization = 3e17;
+        maximumTargetUtilization = 5e17;
         fullUtilizationMinusMax = FULL_UTILIZATION - maximumTargetUtilization;
     }
 

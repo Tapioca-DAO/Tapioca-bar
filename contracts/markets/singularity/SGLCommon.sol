@@ -115,9 +115,8 @@ contract SGLCommon is SGLStorage {
                 (uint256(_accrueInfo.interestPerSecond) * interestElasticity) /
                     scale
             );
-
             if (_accrueInfo.interestPerSecond < minimumInterestPerSecond) {
-                _accrueInfo.interestPerSecond = maximumInterestPerSecond; // 0.25% APR minimum
+                _accrueInfo.interestPerSecond = minimumInterestPerSecond; // 0.25% APR minimum
             }
         } else if (utilization > maximumTargetUtilization) {
             uint256 overFactor = ((utilization - maximumTargetUtilization) *
