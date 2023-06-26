@@ -151,8 +151,7 @@ contract USDOOptionsModule is BaseUSDOStorage {
             paymentToken,
             tapAmount
         );
-        if (tapSendData.withdraw) {
-            if (tapSendData.lzDstChainId > 0) {
+        if (tapSendData.withdrawOnAnotherChain) {
                 ISendFrom(tapSendData.tapOftAddress).sendFrom(
                     address(this),
                     tapSendData.lzDstChainId,
@@ -166,9 +165,8 @@ contract USDOOptionsModule is BaseUSDOStorage {
                         )
                     })
                 );
-            } else {
-                IERC20(tapSendData.tapOftAddress).safeTransfer(from, tapAmount);
-            }
+        } else {
+            IERC20(tapSendData.tapOftAddress).safeTransfer(from, tapAmount);
         }
     }
 
