@@ -392,6 +392,8 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
                     USDOMarketModule.lend.selector,
                     marketModule,
                     _srcChainId,
+                    _srcAddress,
+                    _nonce,
                     _payload
                 ),
                 _srcChainId,
@@ -406,7 +408,9 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
                     USDOLeverageModule.leverageUp.selector,
                     leverageModule,
                     _srcChainId,
-                    _payload
+                    _srcAddress,
+                    _payload,
+                    _nonce
                 ),
                 _srcChainId,
                 _srcAddress,
@@ -443,6 +447,8 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
                 abi.encodeWithSelector(
                     USDOOptionsModule.exercise.selector,
                     _srcChainId,
+                    _srcAddress,
+                    _nonce,
                     _payload
                 ),
                 _srcChainId,

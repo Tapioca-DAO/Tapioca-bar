@@ -64,7 +64,12 @@ contract USDOOptionsModule is BaseUSDOStorage {
         emit SendToChain(lzDstChainId, from, toAddress, paymentTokenAmount);
     }
 
-    function exercise(uint16 _srcChainId, bytes memory _payload) public {
+    function exercise(
+        uint16 _srcChainId,
+        bytes memory _srcAddress,
+        uint64 _nonce,
+        bytes memory _payload
+    ) public {
         (
             ,
             address from,
@@ -88,7 +93,11 @@ contract USDOOptionsModule is BaseUSDOStorage {
                 )
             );
 
-        _creditTo(_srcChainId, from, paymentTokenAmount);
+        bool credited = creditedPackets[_srcChainId][_srcAddress][_nonce];
+        if (!credited) {
+            _creditTo(_srcChainId, from, paymentTokenAmount);
+            creditedPackets[_srcChainId][_srcAddress][_nonce] = true;
+        }
 
         if (approvals.length > 0) {
             _callApproval(approvals);

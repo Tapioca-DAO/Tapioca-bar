@@ -162,6 +162,8 @@ contract USDOMarketModule is BaseUSDOStorage {
     function lend(
         address module,
         uint16 _srcChainId,
+        bytes memory _srcAddress,
+        uint64 _nonce,
         bytes memory _payload
     ) public {
         (
@@ -184,7 +186,11 @@ contract USDOMarketModule is BaseUSDOStorage {
             );
 
         uint256 balanceBefore = balanceOf(address(this));
-        _creditTo(_srcChainId, address(this), lendParams.depositAmount);
+        bool credited = creditedPackets[_srcChainId][_srcAddress][_nonce];
+        if (!credited) {
+            _creditTo(_srcChainId, address(this), lendParams.depositAmount);
+            creditedPackets[_srcChainId][_srcAddress][_nonce] = true;
+        }
         uint256 balanceAfter = balanceOf(address(this));
 
         (bool success, bytes memory reason) = module.delegatecall(
