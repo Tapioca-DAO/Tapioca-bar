@@ -36,9 +36,17 @@ contract USDO is BaseUSDO, IERC3156FlashLender {
         IYieldBoxBase _yieldBox,
         address _owner,
         address payable _leverageModule,
-        address payable _marketModule
+        address payable _marketModule,
+        address payable _optionsModule
     )
-        BaseUSDO(_lzEndpoint, _yieldBox, _owner, _leverageModule, _marketModule)
+        BaseUSDO(
+            _lzEndpoint,
+            _yieldBox,
+            _owner,
+            _leverageModule,
+            _marketModule,
+            _optionsModule
+        )
     {}
 
     // ********************** //

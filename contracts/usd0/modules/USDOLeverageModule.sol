@@ -8,6 +8,9 @@ import "tapioca-sdk/dist/contracts/libraries/LzLib.sol";
 import {IUSDOBase} from "tapioca-periph/contracts/interfaces/IUSDO.sol";
 import "tapioca-periph/contracts/interfaces/ISwapper.sol";
 import "tapioca-periph/contracts/interfaces/ITapiocaOFT.sol";
+import "tapioca-periph/contracts/interfaces/ISingularity.sol";
+import "tapioca-periph/contracts/interfaces/IPermitBorrow.sol";
+import "tapioca-periph/contracts/interfaces/IPermitAll.sol";
 
 import "../BaseUSDOStorage.sol";
 
@@ -18,6 +21,41 @@ contract USDOLeverageModule is BaseUSDOStorage {
         address _lzEndpoint,
         IYieldBoxBase _yieldBox
     ) BaseUSDOStorage(_lzEndpoint, _yieldBox) {}
+
+    function initMultiHopBuy(
+        address from,
+        uint256 collateralAmount,
+        uint256 borrowAmount,
+        IUSDOBase.ILeverageSwapData calldata swapData,
+        IUSDOBase.ILeverageLZData calldata lzData,
+        IUSDOBase.ILeverageExternalContractsData calldata externalData,
+        bytes calldata airdropAdapterParams,
+        IUSDOBase.IApproval[] calldata approvals
+    ) external payable {
+        bytes32 senderBytes = LzLib.addressToBytes32(from);
+
+        bytes memory lzPayload = abi.encode(
+            PT_MARKET_MULTIHOP_BUY,
+            senderBytes,
+            from,
+            collateralAmount,
+            borrowAmount,
+            swapData,
+            lzData,
+            externalData,
+            approvals
+        );
+
+        _lzSend(
+            lzData.lzSrcChainId,
+            lzPayload,
+            payable(lzData.refundAddress),
+            lzData.zroPaymentAddress,
+            airdropAdapterParams,
+            msg.value
+        );
+        emit SendToChain(lzData.lzSrcChainId, msg.sender, senderBytes, 0);
+    }
 
     function sendForLeverage(
         uint256 amount,
@@ -50,7 +88,51 @@ contract USDOLeverageModule is BaseUSDOStorage {
         emit SendToChain(lzData.lzDstChainId, msg.sender, senderBytes, amount);
     }
 
-    function leverageUp(uint16 _srcChainId, bytes memory _payload) public {
+    function multiHop(bytes memory _payload) public {
+        (
+            ,
+            ,
+            address from,
+            uint256 collateralAmount,
+            uint256 borrowAmount,
+            IUSDOBase.ILeverageSwapData memory swapData,
+            IUSDOBase.ILeverageLZData memory lzData,
+            IUSDOBase.ILeverageExternalContractsData memory externalData,
+            IUSDOBase.IApproval[] memory approvals
+        ) = abi.decode(
+                _payload,
+                (
+                    uint16,
+                    bytes32,
+                    address,
+                    uint256,
+                    uint256,
+                    IUSDOBase.ILeverageSwapData,
+                    IUSDOBase.ILeverageLZData,
+                    IUSDOBase.ILeverageExternalContractsData,
+                    IUSDOBase.IApproval[]
+                )
+            );
+
+        if (approvals.length > 0) {
+            _callApproval(approvals);
+        }
+
+        ISingularity(externalData.srcMarket).multiHopBuyCollateral(
+            from,
+            collateralAmount,
+            borrowAmount,
+            swapData,
+            lzData,
+            externalData
+        );
+    }
+
+    function leverageUp(
+        address module,
+        uint16 _srcChainId,
+        bytes memory _payload
+    ) public {
         (
             ,
             ,
@@ -72,8 +154,38 @@ contract USDOLeverageModule is BaseUSDOStorage {
                 )
             );
 
+        uint256 balanceBefore = balanceOf(address(this));
         _creditTo(_srcChainId, address(this), amount);
+        uint256 balanceAfter = balanceOf(address(this));
 
+        (bool success, bytes memory reason) = module.delegatecall(
+            abi.encodeWithSelector(
+                this.leverageUpInternal.selector,
+                amount,
+                swapData,
+                externalData,
+                lzData,
+                leverageFor
+            )
+        );
+
+        if (!success) {
+            if (balanceAfter - balanceBefore >= amount) {
+                IERC20(address(this)).safeTransfer(leverageFor, amount);
+            }
+            revert(_getRevertMsg(reason)); //forward revert because it's handled by the main executor
+        }
+
+        emit ReceiveFromChain(_srcChainId, leverageFor, amount);
+    }
+
+    function leverageUpInternal(
+        uint256 amount,
+        IUSDOBase.ILeverageSwapData memory swapData,
+        IUSDOBase.ILeverageExternalContractsData memory externalData,
+        IUSDOBase.ILeverageLZData memory lzData,
+        address leverageFor
+    ) public payable {
         //swap from USDO
         _approve(address(this), externalData.swapper, amount);
         ISwapper.SwapData memory _swapperData = ISwapper(externalData.swapper)
@@ -129,5 +241,62 @@ contract USDOLeverageModule is BaseUSDOStorage {
             }),
             approvals
         );
+    }
+
+    function _callApproval(IUSDOBase.IApproval[] memory approvals) private {
+        for (uint256 i = 0; i < approvals.length; ) {
+            if (approvals[i].permitBorrow) {
+                try
+                    IPermitBorrow(approvals[i].target).permitBorrow(
+                        approvals[i].owner,
+                        approvals[i].spender,
+                        approvals[i].value,
+                        approvals[i].deadline,
+                        approvals[i].v,
+                        approvals[i].r,
+                        approvals[i].s
+                    )
+                {} catch Error(string memory reason) {
+                    if (!approvals[i].allowFailure) {
+                        revert(reason);
+                    }
+                }
+            } else if (approvals[i].permitAll) {
+                try
+                    IPermitAll(approvals[i].target).permitAll(
+                        approvals[i].owner,
+                        approvals[i].spender,
+                        approvals[i].deadline,
+                        approvals[i].v,
+                        approvals[i].r,
+                        approvals[i].s
+                    )
+                {} catch Error(string memory reason) {
+                    if (!approvals[i].allowFailure) {
+                        revert(reason);
+                    }
+                }
+            } else {
+                try
+                    IERC20Permit(approvals[i].target).permit(
+                        approvals[i].owner,
+                        approvals[i].spender,
+                        approvals[i].value,
+                        approvals[i].deadline,
+                        approvals[i].v,
+                        approvals[i].r,
+                        approvals[i].s
+                    )
+                {} catch Error(string memory reason) {
+                    if (!approvals[i].allowFailure) {
+                        revert(reason);
+                    }
+                }
+            }
+
+            unchecked {
+                ++i;
+            }
+        }
     }
 }

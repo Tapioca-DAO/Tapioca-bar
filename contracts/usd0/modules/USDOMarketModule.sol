@@ -81,7 +81,6 @@ contract USDOMarketModule is BaseUSDOStorage {
             PT_YB_SEND_SGL_LEND_OR_REPAY,
             _from,
             _to,
-            toAddress,
             lendParams,
             approvals,
             withdrawParams
@@ -160,12 +159,15 @@ contract USDOMarketModule is BaseUSDOStorage {
         }
     }
 
-    function lend(uint16 _srcChainId, bytes memory _payload) public {
+    function lend(
+        address module,
+        uint16 _srcChainId,
+        bytes memory _payload
+    ) public {
         (
             ,
             ,
             address to,
-            ,
             IUSDOBase.ILendParams memory lendParams,
             IUSDOBase.IApproval[] memory approvals,
             ITapiocaOFT.IWithdrawParams memory withdrawParams
@@ -175,18 +177,48 @@ contract USDOMarketModule is BaseUSDOStorage {
                     uint16,
                     address,
                     address,
-                    bytes32,
                     IUSDOBase.ILendParams,
                     IUSDOBase.IApproval[],
                     ITapiocaOFT.IWithdrawParams
                 )
             );
 
+        uint256 balanceBefore = balanceOf(address(this));
+        _creditTo(_srcChainId, address(this), lendParams.depositAmount);
+        uint256 balanceAfter = balanceOf(address(this));
+
+        (bool success, bytes memory reason) = module.delegatecall(
+            abi.encodeWithSelector(
+                this.lendInternal.selector,
+                to,
+                lendParams,
+                approvals,
+                withdrawParams
+            )
+        );
+
+        if (!success) {
+            if (balanceAfter - balanceBefore >= lendParams.depositAmount) {
+                IERC20(address(this)).safeTransfer(
+                    to,
+                    lendParams.depositAmount
+                );
+            }
+            revert(_getRevertMsg(reason)); //forward revert because it's handled by the main executor
+        }
+
+        emit ReceiveFromChain(_srcChainId, to, lendParams.depositAmount);
+    }
+
+    function lendInternal(
+        address to,
+        IUSDOBase.ILendParams memory lendParams,
+        IUSDOBase.IApproval[] memory approvals,
+        ITapiocaOFT.IWithdrawParams memory withdrawParams
+    ) public payable {
         if (approvals.length > 0) {
             _callApproval(approvals);
         }
-
-        _creditTo(_srcChainId, address(this), lendParams.depositAmount);
 
         // Use market helper to deposit and add asset to market
         approve(address(lendParams.marketHelper), lendParams.depositAmount);
