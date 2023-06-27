@@ -19,6 +19,7 @@ import {
     BaseTOFT,
     BaseTOFTLeverageModule__factory,
     BaseTOFTMarketModule__factory,
+    BaseTOFTOptionsModule__factory,
     BaseTOFTStrategyModule__factory,
     TapiocaOFT,
     TapiocaOFT__factory,
@@ -3265,6 +3266,19 @@ describe('Singularity test', () => {
                 hostChainID,
             );
 
+            const BaseTOFTOptionsModule = new BaseTOFTOptionsModule__factory(
+                hostChainNetworkSigner,
+            );
+            const optionsModule = await BaseTOFTOptionsModule.deploy(
+                lzEndpoint,
+                erc20Address,
+                yieldBoxAddress,
+                erc20name,
+                erc20symbol,
+                erc20decimal,
+                hostChainID,
+            );
+
             const args: Parameters<TapiocaOFT__factory['deploy']> = [
                 lzEndpoint,
                 erc20Address,
@@ -3276,6 +3290,7 @@ describe('Singularity test', () => {
                 leverageModule.address,
                 strategyModule.address,
                 marketModule.address,
+                optionsModule.address,
             ];
 
             const TapiocaOFT = new TapiocaOFT__factory(hostChainNetworkSigner);

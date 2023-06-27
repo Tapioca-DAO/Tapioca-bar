@@ -19,6 +19,38 @@ contract USDOOptionsModule is BaseUSDOStorage {
         IYieldBoxBase _yieldBox
     ) BaseUSDOStorage(_lzEndpoint, _yieldBox) {}
 
+    function triggerSendFrom(
+        uint16 lzDstChainId,
+        bytes calldata airdropAdapterParams,
+        address zroPaymentAddress,
+        uint256 amount,
+        ISendFrom.LzCallParams calldata sendFromData
+    ) external payable {
+        bytes memory lzPayload = abi.encode(
+            PT_SEND_FROM,
+            msg.sender,
+            amount,
+            sendFromData,
+            lzEndpoint.getChainId()
+        );
+
+        _lzSend(
+            lzDstChainId,
+            lzPayload,
+            payable(msg.sender),
+            zroPaymentAddress,
+            airdropAdapterParams,
+            msg.value
+        );
+
+        emit SendToChain(
+            lzDstChainId,
+            msg.sender,
+            LzLib.addressToBytes32(msg.sender),
+            0
+        );
+    }
+
     function exerciseOption(
         ITapiocaOptionsBrokerCrossChain.IExerciseOptionsData
             calldata optionsData,
@@ -62,6 +94,29 @@ contract USDOOptionsModule is BaseUSDOStorage {
             toAddress,
             optionsData.paymentTokenAmount
         );
+    }
+
+    function sendFromDestination(bytes memory _payload) public {
+        (
+            ,
+            address from,
+            uint256 amount,
+            ISendFrom.LzCallParams memory callParams,
+            uint16 lzDstChainId
+        ) = abi.decode(
+                _payload,
+                (uint16, address, uint256, ISendFrom.LzCallParams, uint16)
+            );
+
+        ISendFrom(address(this)).sendFrom{value: address(this).balance}(
+            from,
+            lzDstChainId,
+            LzLib.addressToBytes32(from),
+            amount,
+            callParams
+        );
+
+        emit ReceiveFromChain(lzDstChainId, from, 0);
     }
 
     function exercise(

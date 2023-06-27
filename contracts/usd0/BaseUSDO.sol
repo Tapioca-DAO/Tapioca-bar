@@ -144,6 +144,31 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
     // *** PUBLIC FUNCTIONS *** //
     // ************************ //
 
+    /// @notice triggers a sendFrom to another layer from destination
+    /// @param lzDstChainId LZ destination id
+    /// @param airdropAdapterParams airdrop params
+    /// @param sendFromData data needed to trigger sendFrom on destination
+    function triggerSendFrom(
+        uint16 lzDstChainId,
+        bytes calldata airdropAdapterParams,
+        address zroPaymentAddress,
+        uint256 amount,
+        ISendFrom.LzCallParams calldata sendFromData
+    ) external payable {
+        _executeModule(
+            Module.Options,
+            abi.encodeWithSelector(
+                USDOOptionsModule.triggerSendFrom.selector,
+                lzDstChainId,
+                airdropAdapterParams,
+                zroPaymentAddress,
+                amount,
+                sendFromData
+            ),
+            false
+        );
+    }
+
     /// @notice Exercise an oTAP position
     /// @param optionsData oTap exerciseOptions data
     /// @param lzData data needed for the cross chain transer
@@ -393,8 +418,8 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
                     leverageModule,
                     _srcChainId,
                     _srcAddress,
-                    _payload,
-                    _nonce
+                    _nonce,
+                    _payload
                 ),
                 _srcChainId,
                 _srcAddress,
@@ -434,6 +459,18 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
                     _srcChainId,
                     _srcAddress,
                     _nonce,
+                    _payload
+                ),
+                _srcChainId,
+                _srcAddress,
+                _nonce,
+                _payload
+            );
+        } else if (packetType == PT_SEND_FROM) {
+            _executeOnDestination(
+                Module.Options,
+                abi.encodeWithSelector(
+                    USDOOptionsModule.sendFromDestination.selector,
                     _payload
                 ),
                 _srcChainId,

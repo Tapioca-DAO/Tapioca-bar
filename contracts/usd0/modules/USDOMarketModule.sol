@@ -273,7 +273,9 @@ contract USDOMarketModule is BaseUSDOStorage {
                 to,
                 lendParams.depositAmount,
                 true,
-                true
+                true,
+                lendParams.lockData,
+                lendParams.participateData
             );
         }
     }
