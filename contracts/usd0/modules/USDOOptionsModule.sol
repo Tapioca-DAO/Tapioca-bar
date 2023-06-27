@@ -24,14 +24,16 @@ contract USDOOptionsModule is BaseUSDOStorage {
         bytes calldata airdropAdapterParams,
         address zroPaymentAddress,
         uint256 amount,
-        ISendFrom.LzCallParams calldata sendFromData
+        ISendFrom.LzCallParams calldata sendFromData,
+        ITapiocaOptionsBrokerCrossChain.IApproval[] calldata approvals
     ) external payable {
         bytes memory lzPayload = abi.encode(
             PT_SEND_FROM,
             msg.sender,
             amount,
             sendFromData,
-            lzEndpoint.getChainId()
+            lzEndpoint.getChainId(),
+            approvals
         );
 
         _lzSend(
@@ -102,11 +104,23 @@ contract USDOOptionsModule is BaseUSDOStorage {
             address from,
             uint256 amount,
             ISendFrom.LzCallParams memory callParams,
-            uint16 lzDstChainId
+            uint16 lzDstChainId,
+            ITapiocaOptionsBrokerCrossChain.IApproval[] memory approvals
         ) = abi.decode(
                 _payload,
-                (uint16, address, uint256, ISendFrom.LzCallParams, uint16)
+                (
+                    uint16,
+                    address,
+                    uint256,
+                    ISendFrom.LzCallParams,
+                    uint16,
+                    ITapiocaOptionsBrokerCrossChain.IApproval[]
+                )
             );
+
+        if (approvals.length > 0) {
+            _callApproval(approvals);
+        }
 
         ISendFrom(address(this)).sendFrom{value: address(this).balance}(
             from,

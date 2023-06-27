@@ -118,7 +118,6 @@ contract Singularity is SGLCommon {
 
         //liquidation
         liquidationMultiplier = 112000; //12%
-        orderBookLiquidationMultiplier = 127000; //27%
 
         collateralizationRate = 75000;
         lqCollateralizationRate = 25000;
@@ -483,7 +482,6 @@ contract Singularity is SGLCommon {
     function setSingularityConfig(
         uint256 _lqCollateralizationRate,
         uint256 _liquidationMultiplier,
-        uint256 _orderBookLiquidationMultiplier,
         uint256 _minimumTargetUtilization,
         uint256 _maximumTargetUtilization,
         uint64 _minimumInterestPerSecond,
@@ -563,14 +561,6 @@ contract Singularity is SGLCommon {
                 _liquidationMultiplier
             );
             liquidationMultiplier = _liquidationMultiplier;
-        }
-
-        if (_orderBookLiquidationMultiplier > 0) {
-            emit OrderBookLiquidationMultiplierUpdated(
-                orderBookLiquidationMultiplier,
-                _orderBookLiquidationMultiplier
-            );
-            orderBookLiquidationMultiplier = _orderBookLiquidationMultiplier;
         }
     }
 

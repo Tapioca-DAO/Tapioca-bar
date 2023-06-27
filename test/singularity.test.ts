@@ -194,8 +194,6 @@ describe('Singularity test', () => {
                 await wethUsdcSingularity.lqCollateralizationRate();
             let liquidationMultiplier =
                 await wethUsdcSingularity.liquidationMultiplier();
-            let orderBookLiquidationMultiplier =
-                await wethUsdcSingularity.orderBookLiquidationMultiplier();
             let minimumTargetUtilization =
                 await wethUsdcSingularity.minimumTargetUtilization();
             let maximumTargetUtilization =
@@ -209,7 +207,7 @@ describe('Singularity test', () => {
 
             payload = wethUsdcSingularity.interface.encodeFunctionData(
                 'setSingularityConfig',
-                [0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0],
             );
             await bar.executeMarketFn(
                 [wethUsdcSingularity.address],
@@ -221,9 +219,6 @@ describe('Singularity test', () => {
             );
             expect(liquidationMultiplier).to.eq(
                 await wethUsdcSingularity.liquidationMultiplier(),
-            );
-            expect(orderBookLiquidationMultiplier).to.eq(
-                await wethUsdcSingularity.orderBookLiquidationMultiplier(),
             );
             expect(minimumTargetUtilization).to.eq(
                 await wethUsdcSingularity.minimumTargetUtilization(),
@@ -247,7 +242,6 @@ describe('Singularity test', () => {
                     toSetValue,
                     toSetValue,
                     toSetValue,
-                    toSetValue,
                     toSetMaxValue,
                     toSetValue,
                     toSetMaxValue,
@@ -264,8 +258,6 @@ describe('Singularity test', () => {
                 await wethUsdcSingularity.lqCollateralizationRate();
             liquidationMultiplier =
                 await wethUsdcSingularity.liquidationMultiplier();
-            orderBookLiquidationMultiplier =
-                await wethUsdcSingularity.orderBookLiquidationMultiplier();
             minimumTargetUtilization =
                 await wethUsdcSingularity.minimumTargetUtilization();
             maximumTargetUtilization =
@@ -278,7 +270,6 @@ describe('Singularity test', () => {
 
             expect(lqCollateralizationRate).to.eq(toSetValue);
             expect(liquidationMultiplier).to.eq(toSetValue);
-            expect(orderBookLiquidationMultiplier).to.eq(toSetValue);
             expect(minimumTargetUtilization).to.eq(toSetValue);
             expect(maximumTargetUtilization).to.eq(toSetMaxValue);
             expect(minimumInterestPerSecond).to.eq(toSetValue);

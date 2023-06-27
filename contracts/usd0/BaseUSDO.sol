@@ -147,13 +147,17 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
     /// @notice triggers a sendFrom to another layer from destination
     /// @param lzDstChainId LZ destination id
     /// @param airdropAdapterParams airdrop params
+    /// @param zroPaymentAddress ZRO payment address
+    /// @param amount amount to send back
     /// @param sendFromData data needed to trigger sendFrom on destination
+    /// @param approvals approvals array
     function triggerSendFrom(
         uint16 lzDstChainId,
         bytes calldata airdropAdapterParams,
         address zroPaymentAddress,
         uint256 amount,
-        ISendFrom.LzCallParams calldata sendFromData
+        ISendFrom.LzCallParams calldata sendFromData,
+        ITapiocaOptionsBrokerCrossChain.IApproval[] calldata approvals
     ) external payable {
         _executeModule(
             Module.Options,
@@ -163,7 +167,8 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
                 airdropAdapterParams,
                 zroPaymentAddress,
                 amount,
-                sendFromData
+                sendFromData,
+                approvals
             ),
             false
         );
