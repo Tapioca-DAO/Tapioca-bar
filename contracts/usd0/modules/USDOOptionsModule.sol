@@ -152,19 +152,19 @@ contract USDOOptionsModule is BaseUSDOStorage {
             tapAmount
         );
         if (tapSendData.withdrawOnAnotherChain) {
-                ISendFrom(tapSendData.tapOftAddress).sendFrom(
-                    address(this),
-                    tapSendData.lzDstChainId,
-                    LzLib.addressToBytes32(from),
-                    tapAmount,
-                    ISendFrom.LzCallParams({
-                        refundAddress: payable(from),
-                        zroPaymentAddress: tapSendData.zroPaymentAddress,
-                        adapterParams: LzLib.buildDefaultAdapterParams(
-                            tapSendData.extraGas
-                        )
-                    })
-                );
+            ISendFrom(tapSendData.tapOftAddress).sendFrom(
+                address(this),
+                tapSendData.lzDstChainId,
+                LzLib.addressToBytes32(from),
+                tapAmount,
+                ISendFrom.LzCallParams({
+                    refundAddress: payable(from),
+                    zroPaymentAddress: tapSendData.zroPaymentAddress,
+                    adapterParams: LzLib.buildDefaultAdapterParams(
+                        tapSendData.extraGas
+                    )
+                })
+            );
         } else {
             IERC20(tapSendData.tapOftAddress).safeTransfer(from, tapAmount);
         }
