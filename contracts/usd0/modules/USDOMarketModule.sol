@@ -29,21 +29,17 @@ contract USDOMarketModule is BaseUSDOStorage {
         address from,
         address to,
         uint16 lzDstChainId,
-        ITapiocaOFT.IWithdrawParams calldata withdrawParams,
-        IUSDOBase.ISendOptions calldata options,
-        IUSDOBase.IRemoveParams calldata removeParams,
-        IUSDOBase.IApproval[] calldata approvals,
-        bytes calldata adapterParams
+        address zroPaymentAddress,
+        bytes calldata adapterParams,
+        IUSDOBase.IRemoveAndRepayExternalContracts calldata externalData,
+        IUSDOBase.IRemoveAndRepay calldata removeAndRepayData,
+        IUSDOBase.IApproval[] calldata approvals
     ) external payable {
-        bytes32 toAddress = LzLib.addressToBytes32(to);
-
         bytes memory lzPayload = abi.encode(
             PT_MARKET_REMOVE_ASSET,
-            from,
             to,
-            toAddress,
-            removeParams,
-            withdrawParams,
+            externalData,
+            removeAndRepayData,
             approvals
         );
 
@@ -51,12 +47,12 @@ contract USDOMarketModule is BaseUSDOStorage {
             lzDstChainId,
             lzPayload,
             payable(from),
-            options.zroPaymentAddress,
+            zroPaymentAddress,
             adapterParams,
             msg.value
         );
 
-        emit SendToChain(lzDstChainId, from, toAddress, 0);
+        emit SendToChain(lzDstChainId, from, LzLib.addressToBytes32(to), 0);
     }
 
     function sendAndLendOrRepay(
@@ -64,7 +60,7 @@ contract USDOMarketModule is BaseUSDOStorage {
         address _to,
         uint16 lzDstChainId,
         address zroPaymentAddress,
-        IUSDOBase.ILendParams calldata lendParams,
+        IUSDOBase.ILendOrRepayParams calldata lendParams,
         IUSDOBase.IApproval[] calldata approvals,
         ITapiocaOFT.IWithdrawParams calldata withdrawParams,
         bytes calldata adapterParams
@@ -106,57 +102,31 @@ contract USDOMarketModule is BaseUSDOStorage {
     function remove(bytes memory _payload) public {
         (
             ,
-            ,
             address to,
-            ,
-            IUSDOBase.IRemoveParams memory removeParams,
-            ITapiocaOFT.IWithdrawParams memory withdrawParams,
+            IUSDOBase.IRemoveAndRepayExternalContracts memory externalData,
+            IUSDOBase.IRemoveAndRepay memory removeAndRepayData,
             IUSDOBase.IApproval[] memory approvals
         ) = abi.decode(
                 _payload,
                 (
                     uint16,
                     address,
-                    address,
-                    bytes32,
-                    IUSDOBase.IRemoveParams,
-                    ITapiocaOFT.IWithdrawParams,
+                    IUSDOBase.IRemoveAndRepayExternalContracts,
+                    IUSDOBase.IRemoveAndRepay,
                     IUSDOBase.IApproval[]
                 )
             );
 
+        //approvals
         if (approvals.length > 0) {
             _callApproval(approvals);
         }
 
-        approve(removeParams.market, removeParams.share);
-        ISingularity(removeParams.market).removeAsset(
+        IMagnetar(externalData.magnetar).removeAssetAndRepay(
             to,
-            to,
-            removeParams.share
+            externalData,
+            removeAndRepayData
         );
-        address ybAddress = IMarket(removeParams.market).yieldBox();
-        uint256 assetId = IMarket(removeParams.market).assetId();
-        if (withdrawParams.withdraw) {
-            IMagnetar(removeParams.marketHelper).withdrawTo{
-                value: withdrawParams.withdrawLzFeeAmount
-            }(
-                ybAddress,
-                to,
-                assetId,
-                withdrawParams.withdrawLzChainId,
-                LzLib.addressToBytes32(to),
-                IYieldBoxBase(ybAddress).toAmount(
-                    assetId,
-                    removeParams.share,
-                    false
-                ),
-                removeParams.share,
-                withdrawParams.withdrawAdapterParams,
-                payable(to),
-                withdrawParams.withdrawLzFeeAmount
-            );
-        }
     }
 
     function lend(
@@ -170,7 +140,7 @@ contract USDOMarketModule is BaseUSDOStorage {
             ,
             ,
             address to,
-            IUSDOBase.ILendParams memory lendParams,
+            IUSDOBase.ILendOrRepayParams memory lendParams,
             IUSDOBase.IApproval[] memory approvals,
             ITapiocaOFT.IWithdrawParams memory withdrawParams
         ) = abi.decode(
@@ -179,7 +149,7 @@ contract USDOMarketModule is BaseUSDOStorage {
                     uint16,
                     address,
                     address,
-                    IUSDOBase.ILendParams,
+                    IUSDOBase.ILendOrRepayParams,
                     IUSDOBase.IApproval[],
                     ITapiocaOFT.IWithdrawParams
                 )
@@ -218,7 +188,7 @@ contract USDOMarketModule is BaseUSDOStorage {
 
     function lendInternal(
         address to,
-        IUSDOBase.ILendParams memory lendParams,
+        IUSDOBase.ILendOrRepayParams memory lendParams,
         IUSDOBase.IApproval[] memory approvals,
         ITapiocaOFT.IWithdrawParams memory withdrawParams
     ) public payable {

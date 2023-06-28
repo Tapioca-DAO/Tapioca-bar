@@ -235,23 +235,24 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
         );
     }
 
-    /// @notice calls removeAsset on another layer
+    /// @notice calls removeAssetAndRepay on Magnetar from the destination layer
     /// @param from sending address
     /// @param to receiver address
     /// @param lzDstChainId LayerZero destination chain id
-    /// @param withdrawParams withdrawTo specific params
-    /// @param options send specific params
-    /// @param removeParams removeAsset specific params
-    /// @param approvals approvals specific params
+    /// @param zroPaymentAddress ZRO payment address
+    /// @param adapterParams LZ adapter params
+    /// @param externalData external addresses needed for the operation
+    /// @param removeAndRepayData removeAssetAndRepay params
+    /// @param approvals approvals params
     function removeAsset(
         address from,
         address to,
         uint16 lzDstChainId,
-        ITapiocaOFT.IWithdrawParams calldata withdrawParams,
-        IUSDOBase.ISendOptions calldata options,
-        IUSDOBase.IRemoveParams calldata removeParams,
-        IUSDOBase.IApproval[] calldata approvals,
-        bytes calldata adapterParams
+        address zroPaymentAddress,
+        bytes calldata adapterParams,
+        IUSDOBase.IRemoveAndRepayExternalContracts calldata externalData,
+        IUSDOBase.IRemoveAndRepay calldata removeAndRepayData,
+        IUSDOBase.IApproval[] calldata approvals
     ) external payable {
         _executeModule(
             Module.Market,
@@ -260,11 +261,11 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
                 from,
                 to,
                 lzDstChainId,
-                withdrawParams,
-                options,
-                removeParams,
-                approvals,
-                adapterParams
+                zroPaymentAddress,
+                adapterParams,
+                externalData,
+                removeAndRepayData,
+                approvals
             ),
             false
         );
@@ -310,7 +311,7 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
         address _to,
         uint16 lzDstChainId,
         address zroPaymentAddress,
-        IUSDOBase.ILendParams calldata lendParams,
+        IUSDOBase.ILendOrRepayParams calldata lendParams,
         IUSDOBase.IApproval[] calldata approvals,
         ITapiocaOFT.IWithdrawParams calldata withdrawParams,
         bytes calldata adapterParams
