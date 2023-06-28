@@ -17,11 +17,13 @@ export const buildUSD0 = async (
             owner,
             hre.ethers.constants.AddressZero,
             hre.ethers.constants.AddressZero,
+            hre.ethers.constants.AddressZero,
         ],
         dependsOn: [
             { argPosition: 1, deploymentName: 'YieldBox' },
             { argPosition: 3, deploymentName: 'USDOLeverageModule' },
             { argPosition: 4, deploymentName: 'USDOMarketModule' },
+            { argPosition: 5, deploymentName: 'USDOOptionsModule' },
         ],
         runStaticSimulation: false,
     };

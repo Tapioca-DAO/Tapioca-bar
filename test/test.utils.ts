@@ -92,6 +92,9 @@ async function registerUsd0Contract(
     const usdo_market = await (
         await ethers.getContractFactory('USDOMarketModule')
     ).deploy(lzEndpointContract.address, yieldBox);
+    const usdo_options = await (
+        await ethers.getContractFactory('USDOOptionsModule')
+    ).deploy(lzEndpointContract.address, yieldBox);
 
     const usd0 = await (
         await ethers.getContractFactory('USDO')
@@ -101,6 +104,7 @@ async function registerUsd0Contract(
         owner,
         usdo_leverage.address,
         usdo_market.address,
+        usdo_options.address,
         {
             gasPrice: gasPrice,
         },

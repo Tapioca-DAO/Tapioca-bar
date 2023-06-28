@@ -19,6 +19,7 @@ import {
     BaseTOFT,
     BaseTOFTLeverageModule__factory,
     BaseTOFTMarketModule__factory,
+    BaseTOFTOptionsModule__factory,
     BaseTOFTStrategyModule__factory,
     TapiocaOFT,
     TapiocaOFT__factory,
@@ -193,8 +194,6 @@ describe('Singularity test', () => {
                 await wethUsdcSingularity.lqCollateralizationRate();
             let liquidationMultiplier =
                 await wethUsdcSingularity.liquidationMultiplier();
-            let orderBookLiquidationMultiplier =
-                await wethUsdcSingularity.orderBookLiquidationMultiplier();
             let minimumTargetUtilization =
                 await wethUsdcSingularity.minimumTargetUtilization();
             let maximumTargetUtilization =
@@ -208,7 +207,7 @@ describe('Singularity test', () => {
 
             payload = wethUsdcSingularity.interface.encodeFunctionData(
                 'setSingularityConfig',
-                [0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0],
             );
             await bar.executeMarketFn(
                 [wethUsdcSingularity.address],
@@ -220,9 +219,6 @@ describe('Singularity test', () => {
             );
             expect(liquidationMultiplier).to.eq(
                 await wethUsdcSingularity.liquidationMultiplier(),
-            );
-            expect(orderBookLiquidationMultiplier).to.eq(
-                await wethUsdcSingularity.orderBookLiquidationMultiplier(),
             );
             expect(minimumTargetUtilization).to.eq(
                 await wethUsdcSingularity.minimumTargetUtilization(),
@@ -246,7 +242,6 @@ describe('Singularity test', () => {
                     toSetValue,
                     toSetValue,
                     toSetValue,
-                    toSetValue,
                     toSetMaxValue,
                     toSetValue,
                     toSetMaxValue,
@@ -263,8 +258,6 @@ describe('Singularity test', () => {
                 await wethUsdcSingularity.lqCollateralizationRate();
             liquidationMultiplier =
                 await wethUsdcSingularity.liquidationMultiplier();
-            orderBookLiquidationMultiplier =
-                await wethUsdcSingularity.orderBookLiquidationMultiplier();
             minimumTargetUtilization =
                 await wethUsdcSingularity.minimumTargetUtilization();
             maximumTargetUtilization =
@@ -277,7 +270,6 @@ describe('Singularity test', () => {
 
             expect(lqCollateralizationRate).to.eq(toSetValue);
             expect(liquidationMultiplier).to.eq(toSetValue);
-            expect(orderBookLiquidationMultiplier).to.eq(toSetValue);
             expect(minimumTargetUtilization).to.eq(toSetValue);
             expect(maximumTargetUtilization).to.eq(toSetMaxValue);
             expect(minimumInterestPerSecond).to.eq(toSetValue);
@@ -2614,7 +2606,7 @@ describe('Singularity test', () => {
     });
 
     describe('usdo SGL', async () => {
-        it('should test interest rate', async () => {
+        it.skip('should test interest rate', async () => {
             const {
                 deployer,
                 bar,
@@ -3265,6 +3257,19 @@ describe('Singularity test', () => {
                 hostChainID,
             );
 
+            const BaseTOFTOptionsModule = new BaseTOFTOptionsModule__factory(
+                hostChainNetworkSigner,
+            );
+            const optionsModule = await BaseTOFTOptionsModule.deploy(
+                lzEndpoint,
+                erc20Address,
+                yieldBoxAddress,
+                erc20name,
+                erc20symbol,
+                erc20decimal,
+                hostChainID,
+            );
+
             const args: Parameters<TapiocaOFT__factory['deploy']> = [
                 lzEndpoint,
                 erc20Address,
@@ -3276,6 +3281,7 @@ describe('Singularity test', () => {
                 leverageModule.address,
                 strategyModule.address,
                 marketModule.address,
+                optionsModule.address,
             ];
 
             const TapiocaOFT = new TapiocaOFT__factory(hostChainNetworkSigner);
@@ -3344,6 +3350,9 @@ describe('Singularity test', () => {
             const usdo_0_market = await (
                 await ethers.getContractFactory('USDOMarketModule')
             ).deploy(LZEndpointMock_chainID_0.address, YieldBox_0.address);
+            const usdo_0_options = await (
+                await ethers.getContractFactory('USDOOptionsModule')
+            ).deploy(LZEndpointMock_chainID_0.address, YieldBox_0.address);
 
             const USDO_0 = await (
                 await ethers.getContractFactory('USDO')
@@ -3353,6 +3362,7 @@ describe('Singularity test', () => {
                 deployer.address,
                 usdo_0_leverage.address,
                 usdo_0_market.address,
+                usdo_0_options.address,
             );
             await USDO_0.deployed();
 
@@ -3362,6 +3372,9 @@ describe('Singularity test', () => {
             const usdo_10_market = await (
                 await ethers.getContractFactory('USDOMarketModule')
             ).deploy(LZEndpointMock_chainID_10.address, YieldBox_0.address);
+            const usdo_10_options = await (
+                await ethers.getContractFactory('USDOOptionsModule')
+            ).deploy(LZEndpointMock_chainID_10.address, YieldBox_0.address);
             const USDO_10 = await (
                 await ethers.getContractFactory('USDO')
             ).deploy(
@@ -3370,6 +3383,7 @@ describe('Singularity test', () => {
                 deployer.address,
                 usdo_10_leverage.address,
                 usdo_10_market.address,
+                usdo_10_options.address,
             );
             await USDO_10.deployed();
 

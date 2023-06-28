@@ -52,8 +52,6 @@ contract SGLStorage is BoringOwnable, Market {
 
     /// @notice liquidation multiplier used to compute liquidator rewards
     uint256 public liquidationMultiplier = 112000; //12%
-    /// @notice order book liquidation multiplier used to compute liquidator rewards
-    uint256 public orderBookLiquidationMultiplier = 127000; //27%
     /// @notice collateralization rate
     uint256 public lqCollateralizationRate = 25000; // 25%
 

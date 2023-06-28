@@ -36,9 +36,12 @@ contract BaseUSDOStorage is OFTV2 {
     bytes32 internal constant FLASH_MINT_CALLBACK_SUCCESS =
         keccak256("ERC3156FlashBorrower.onFlashLoan");
 
+    uint16 internal constant PT_MARKET_MULTIHOP_BUY = 772;
     uint16 internal constant PT_MARKET_REMOVE_ASSET = 773;
     uint16 internal constant PT_YB_SEND_SGL_LEND_OR_REPAY = 774;
     uint16 internal constant PT_LEVERAGE_MARKET_UP = 775;
+    uint16 internal constant PT_TAP_EXERCISE = 777;
+    uint16 internal constant PT_SEND_FROM = 778;
 
     // ************** //
     // *** EVENTS *** //
@@ -77,5 +80,18 @@ contract BaseUSDOStorage is OFTV2 {
 
     function _getChainId() internal view returns (uint256) {
         return ILayerZeroEndpoint(lzEndpoint).getChainId();
+    }
+
+    function _getRevertMsg(
+        bytes memory _returnData
+    ) internal pure returns (string memory) {
+        // If the _res length is less than 68, then the transaction failed silently (without a revert message)
+        if (_returnData.length < 68) return "USDO: no return data";
+        // solhint-disable-next-line no-inline-assembly
+        assembly {
+            // Slice the sighash.
+            _returnData := add(_returnData, 0x04)
+        }
+        return abi.decode(_returnData, (string)); // All that remains is the revert string
     }
 }
