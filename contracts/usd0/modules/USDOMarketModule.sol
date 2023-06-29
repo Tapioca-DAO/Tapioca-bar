@@ -33,7 +33,7 @@ contract USDOMarketModule is BaseUSDOStorage {
         bytes calldata adapterParams,
         IUSDOBase.IRemoveAndRepayExternalContracts calldata externalData,
         IUSDOBase.IRemoveAndRepay calldata removeAndRepayData,
-        IUSDOBase.IApproval[] calldata approvals
+        ICommonData.IApproval[] calldata approvals
     ) external payable {
         bytes memory lzPayload = abi.encode(
             PT_MARKET_REMOVE_ASSET,
@@ -61,8 +61,8 @@ contract USDOMarketModule is BaseUSDOStorage {
         uint16 lzDstChainId,
         address zroPaymentAddress,
         IUSDOBase.ILendOrRepayParams calldata lendParams,
-        IUSDOBase.IApproval[] calldata approvals,
-        ITapiocaOFT.IWithdrawParams calldata withdrawParams,
+        ICommonData.IApproval[] calldata approvals,
+        ICommonData.IWithdrawParams calldata withdrawParams,
         bytes calldata adapterParams
     ) external payable {
         bytes32 toAddress = LzLib.addressToBytes32(_to);
@@ -105,7 +105,7 @@ contract USDOMarketModule is BaseUSDOStorage {
             address to,
             IUSDOBase.IRemoveAndRepayExternalContracts memory externalData,
             IUSDOBase.IRemoveAndRepay memory removeAndRepayData,
-            IUSDOBase.IApproval[] memory approvals
+            ICommonData.IApproval[] memory approvals
         ) = abi.decode(
                 _payload,
                 (
@@ -113,7 +113,7 @@ contract USDOMarketModule is BaseUSDOStorage {
                     address,
                     IUSDOBase.IRemoveAndRepayExternalContracts,
                     IUSDOBase.IRemoveAndRepay,
-                    IUSDOBase.IApproval[]
+                    ICommonData.IApproval[]
                 )
             );
 
@@ -141,8 +141,8 @@ contract USDOMarketModule is BaseUSDOStorage {
             ,
             address to,
             IUSDOBase.ILendOrRepayParams memory lendParams,
-            IUSDOBase.IApproval[] memory approvals,
-            ITapiocaOFT.IWithdrawParams memory withdrawParams
+            ICommonData.IApproval[] memory approvals,
+            ICommonData.IWithdrawParams memory withdrawParams
         ) = abi.decode(
                 _payload,
                 (
@@ -150,8 +150,8 @@ contract USDOMarketModule is BaseUSDOStorage {
                     address,
                     address,
                     IUSDOBase.ILendOrRepayParams,
-                    IUSDOBase.IApproval[],
-                    ITapiocaOFT.IWithdrawParams
+                    ICommonData.IApproval[],
+                    ICommonData.IWithdrawParams
                 )
             );
 
@@ -189,8 +189,8 @@ contract USDOMarketModule is BaseUSDOStorage {
     function lendInternal(
         address to,
         IUSDOBase.ILendOrRepayParams memory lendParams,
-        IUSDOBase.IApproval[] memory approvals,
-        ITapiocaOFT.IWithdrawParams memory withdrawParams
+        ICommonData.IApproval[] memory approvals,
+        ICommonData.IWithdrawParams memory withdrawParams
     ) public payable {
         if (approvals.length > 0) {
             _callApproval(approvals);
@@ -199,44 +199,15 @@ contract USDOMarketModule is BaseUSDOStorage {
         // Use market helper to deposit and add asset to market
         approve(address(lendParams.marketHelper), lendParams.depositAmount);
         if (lendParams.repay) {
-            IMagnetar(lendParams.marketHelper).depositAndRepay(
+            IMagnetar(lendParams.marketHelper).depositRepayAndRemoveCollateral(
                 lendParams.market,
                 to,
                 lendParams.depositAmount,
                 lendParams.repayAmount,
+                0,
                 true,
-                true
+                withdrawParams
             );
-
-            if (lendParams.removeCollateral) {
-                IMarket(lendParams.market).removeCollateral(
-                    to,
-                    to,
-                    lendParams.removeCollateralShare
-                );
-            }
-            if (withdrawParams.withdraw) {
-                address ybAddress = IMarket(lendParams.market).yieldBox();
-                uint256 assetId = IMarket(lendParams.market).collateralId();
-                IMagnetar(lendParams.marketHelper).withdrawTo{
-                    value: withdrawParams.withdrawLzFeeAmount
-                }(
-                    ybAddress,
-                    to,
-                    assetId,
-                    withdrawParams.withdrawLzChainId,
-                    LzLib.addressToBytes32(to),
-                    IYieldBoxBase(ybAddress).toAmount(
-                        assetId,
-                        lendParams.removeCollateralShare,
-                        false
-                    ),
-                    lendParams.removeCollateralShare,
-                    withdrawParams.withdrawAdapterParams,
-                    payable(to),
-                    withdrawParams.withdrawLzFeeAmount
-                );
-            }
         } else {
             IMagnetar(lendParams.marketHelper).depositAndAddAsset(
                 lendParams.market,
@@ -250,7 +221,7 @@ contract USDOMarketModule is BaseUSDOStorage {
         }
     }
 
-    function _callApproval(IUSDOBase.IApproval[] memory approvals) private {
+    function _callApproval(ICommonData.IApproval[] memory approvals) private {
         for (uint256 i = 0; i < approvals.length; ) {
             if (approvals[i].permitBorrow) {
                 try
