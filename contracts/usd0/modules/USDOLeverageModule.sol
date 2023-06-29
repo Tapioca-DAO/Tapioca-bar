@@ -30,7 +30,7 @@ contract USDOLeverageModule is BaseUSDOStorage {
         IUSDOBase.ILeverageLZData calldata lzData,
         IUSDOBase.ILeverageExternalContractsData calldata externalData,
         bytes calldata airdropAdapterParams,
-        IUSDOBase.IApproval[] calldata approvals
+        ICommonData.IApproval[] calldata approvals
     ) external payable {
         bytes32 senderBytes = LzLib.addressToBytes32(from);
 
@@ -98,7 +98,7 @@ contract USDOLeverageModule is BaseUSDOStorage {
             IUSDOBase.ILeverageSwapData memory swapData,
             IUSDOBase.ILeverageLZData memory lzData,
             IUSDOBase.ILeverageExternalContractsData memory externalData,
-            IUSDOBase.IApproval[] memory approvals
+            ICommonData.IApproval[] memory approvals
         ) = abi.decode(
                 _payload,
                 (
@@ -110,7 +110,7 @@ contract USDOLeverageModule is BaseUSDOStorage {
                     IUSDOBase.ILeverageSwapData,
                     IUSDOBase.ILeverageLZData,
                     IUSDOBase.ILeverageExternalContractsData,
-                    IUSDOBase.IApproval[]
+                    ICommonData.IApproval[]
                 )
             );
 
@@ -220,7 +220,7 @@ contract USDOLeverageModule is BaseUSDOStorage {
         );
 
         //send to YB & deposit
-        ITapiocaOFT.IApproval[] memory approvals;
+        ICommonData.IApproval[] memory approvals;
         ITapiocaOFT(externalData.tOft).sendToYBAndBorrow{
             value: address(this).balance
         }(
@@ -234,14 +234,14 @@ contract USDOLeverageModule is BaseUSDOStorage {
                 marketHelper: externalData.magnetar,
                 market: externalData.srcMarket
             }),
-            ITapiocaOFT.IWithdrawParams({
+            ICommonData.IWithdrawParams({
                 withdraw: false,
                 withdrawLzFeeAmount: 0,
                 withdrawOnOtherChain: false,
                 withdrawLzChainId: 0,
                 withdrawAdapterParams: "0x"
             }),
-            ITapiocaOFT.ISendOptions({
+            ICommonData.ISendOptions({
                 extraGasLimit: lzData.srcExtraGasLimit,
                 zroPaymentAddress: lzData.zroPaymentAddress
             }),
@@ -249,7 +249,7 @@ contract USDOLeverageModule is BaseUSDOStorage {
         );
     }
 
-    function _callApproval(IUSDOBase.IApproval[] memory approvals) private {
+    function _callApproval(ICommonData.IApproval[] memory approvals) private {
         for (uint256 i = 0; i < approvals.length; ) {
             if (approvals[i].permitBorrow) {
                 try

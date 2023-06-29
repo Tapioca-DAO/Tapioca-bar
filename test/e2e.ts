@@ -159,13 +159,20 @@ describe('e2e tests', () => {
 
             await magnetar
                 .connect(repayer)
-                .depositAndRepay(
+                .depositRepayAndRemoveCollateral(
                     wethUsdoSingularity.address,
                     repayer.address,
                     repayerUsd0Balance.add(repayerUsd0Balance.div(2)),
                     repayerUsd0Balance,
+                    0,
                     true,
-                    true,
+                    {
+                        withdraw: false,
+                        withdrawLzFeeAmount: 0,
+                        withdrawOnOtherChain: false,
+                        withdrawLzChainId: 0,
+                        withdrawAdapterParams: ethers.utils.toUtf8Bytes(''),
+                    },
                 );
         }
 
@@ -737,13 +744,20 @@ async function depositAndRepayPlug(
         await expect(
             magnetar
                 .connect(signer)
-                .depositAndRepay(
+                .depositRepayAndRemoveCollateral(
                     Singularity.address,
                     signer.address,
                     depositVal,
                     repayVal,
+                    0,
                     true,
-                    true,
+                    {
+                        withdraw: false,
+                        withdrawLzFeeAmount: 0,
+                        withdrawOnOtherChain: false,
+                        withdrawLzChainId: 0,
+                        withdrawAdapterParams: ethers.utils.toUtf8Bytes(''),
+                    },
                 ),
         ).to.be.revertedWith(revertMessage!);
         return;
@@ -754,13 +768,20 @@ async function depositAndRepayPlug(
     );
     await magnetar
         .connect(signer)
-        .depositAndRepay(
+        .depositRepayAndRemoveCollateral(
             Singularity.address,
             signer.address,
             depositVal,
             repayVal,
+            0,
             true,
-            true,
+            {
+                withdraw: false,
+                withdrawLzFeeAmount: 0,
+                withdrawOnOtherChain: false,
+                withdrawLzChainId: 0,
+                withdrawAdapterParams: ethers.utils.toUtf8Bytes(''),
+            },
         );
     const finalBorrowAmount = await Singularity.userBorrowPart(signer.address);
 

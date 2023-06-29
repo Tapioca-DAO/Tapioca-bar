@@ -11,6 +11,7 @@ import "@openzeppelin/contracts/token/ERC20/extensions/draft-ERC20Permit.sol";
 //TAPIOCA
 import "tapioca-periph/contracts/interfaces/IYieldBoxBase.sol";
 import {IUSDOBase} from "tapioca-periph/contracts/interfaces/IUSDO.sol";
+import "tapioca-periph/contracts/interfaces/ICommonData.sol";
 
 import "./BaseUSDOStorage.sol";
 import "./modules/USDOLeverageModule.sol";
@@ -157,7 +158,7 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
         address zroPaymentAddress,
         uint256 amount,
         ISendFrom.LzCallParams calldata sendFromData,
-        ITapiocaOptionsBrokerCrossChain.IApproval[] calldata approvals
+        ICommonData.IApproval[] calldata approvals
     ) external payable {
         _executeModule(
             Module.Options,
@@ -185,7 +186,7 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
         ITapiocaOptionsBrokerCrossChain.IExerciseLZData calldata lzData,
         ITapiocaOptionsBrokerCrossChain.IExerciseLZSendTapData
             calldata tapSendData,
-        ITapiocaOptionsBrokerCrossChain.IApproval[] calldata approvals
+        ICommonData.IApproval[] calldata approvals
     ) external payable {
         _executeModule(
             Module.Options,
@@ -216,7 +217,7 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
         IUSDOBase.ILeverageLZData calldata lzData,
         IUSDOBase.ILeverageExternalContractsData calldata externalData,
         bytes calldata airdropAdapterParams,
-        IUSDOBase.IApproval[] memory approvals
+        ICommonData.IApproval[] memory approvals
     ) external payable {
         _executeModule(
             Module.Leverage,
@@ -252,7 +253,7 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
         bytes calldata adapterParams,
         IUSDOBase.IRemoveAndRepayExternalContracts calldata externalData,
         IUSDOBase.IRemoveAndRepay calldata removeAndRepayData,
-        IUSDOBase.IApproval[] calldata approvals
+        ICommonData.IApproval[] calldata approvals
     ) external payable {
         _executeModule(
             Module.Market,
@@ -312,8 +313,8 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
         uint16 lzDstChainId,
         address zroPaymentAddress,
         IUSDOBase.ILendOrRepayParams calldata lendParams,
-        IUSDOBase.IApproval[] calldata approvals,
-        ITapiocaOFT.IWithdrawParams calldata withdrawParams,
+        ICommonData.IApproval[] calldata approvals,
+        ICommonData.IWithdrawParams calldata withdrawParams,
         bytes calldata adapterParams
     ) external payable {
         _executeModule(
