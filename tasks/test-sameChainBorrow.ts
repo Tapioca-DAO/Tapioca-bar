@@ -54,7 +54,7 @@ export const sameChainBorrow__task = async (
     //Execute
     console.log('\nExecuting...');
     await (
-        await marketHelperContract.depositAddCollateralAndBorrow(
+        await marketHelperContract.depositAddCollateralAndBorrowFromMarket(
             singularityAddress,
             taskArgs.collateralAmount,
             taskArgs.borrowAmount,

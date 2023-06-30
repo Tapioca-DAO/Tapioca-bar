@@ -251,7 +251,7 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
         uint16 lzDstChainId,
         address zroPaymentAddress,
         bytes calldata adapterParams,
-        IUSDOBase.IRemoveAndRepayExternalContracts calldata externalData,
+        ICommonData.ICommonExternalContracts calldata externalData,
         IUSDOBase.IRemoveAndRepay calldata removeAndRepayData,
         ICommonData.IApproval[] calldata approvals
     ) external payable {

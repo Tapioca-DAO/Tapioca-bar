@@ -31,7 +31,7 @@ contract USDOMarketModule is BaseUSDOStorage {
         uint16 lzDstChainId,
         address zroPaymentAddress,
         bytes calldata adapterParams,
-        IUSDOBase.IRemoveAndRepayExternalContracts calldata externalData,
+        ICommonData.ICommonExternalContracts calldata externalData,
         IUSDOBase.IRemoveAndRepay calldata removeAndRepayData,
         ICommonData.IApproval[] calldata approvals
     ) external payable {
@@ -103,7 +103,7 @@ contract USDOMarketModule is BaseUSDOStorage {
         (
             ,
             address to,
-            IUSDOBase.IRemoveAndRepayExternalContracts memory externalData,
+            ICommonData.ICommonExternalContracts memory externalData,
             IUSDOBase.IRemoveAndRepay memory removeAndRepayData,
             ICommonData.IApproval[] memory approvals
         ) = abi.decode(
@@ -111,7 +111,7 @@ contract USDOMarketModule is BaseUSDOStorage {
                 (
                     uint16,
                     address,
-                    IUSDOBase.IRemoveAndRepayExternalContracts,
+                    ICommonData.ICommonExternalContracts,
                     IUSDOBase.IRemoveAndRepay,
                     ICommonData.IApproval[]
                 )
@@ -122,7 +122,7 @@ contract USDOMarketModule is BaseUSDOStorage {
             _callApproval(approvals);
         }
 
-        IMagnetar(externalData.magnetar).removeAssetAndRepay(
+        IMagnetar(externalData.magnetar).exitPositionAndRemoveCollateral(
             to,
             externalData,
             removeAndRepayData
@@ -199,24 +199,41 @@ contract USDOMarketModule is BaseUSDOStorage {
         // Use market helper to deposit and add asset to market
         approve(address(lendParams.marketHelper), lendParams.depositAmount);
         if (lendParams.repay) {
-            IMagnetar(lendParams.marketHelper).depositRepayAndRemoveCollateral(
-                lendParams.market,
-                to,
-                lendParams.depositAmount,
-                lendParams.repayAmount,
-                0,
-                true,
-                withdrawParams
-            );
+            IMagnetar(lendParams.marketHelper)
+                .depositRepayAndRemoveCollateralFromMarket(
+                    lendParams.market,
+                    to,
+                    lendParams.depositAmount,
+                    lendParams.repayAmount,
+                    0,
+                    true,
+                    withdrawParams
+                );
         } else {
-            IMagnetar(lendParams.marketHelper).depositAndAddAsset(
-                lendParams.market,
+            IMagnetar(lendParams.marketHelper).mintFromBBAndLendOnSGL(
                 to,
                 lendParams.depositAmount,
-                true,
-                true,
+                IUSDOBase.IMintData({
+                    mint: false,
+                    mintAmount: 0,
+                    collateralDepositData: ICommonData.IDepositData({
+                        deposit: false,
+                        amount: 0,
+                        extractFromSender: false
+                    })
+                }),
+                ICommonData.IDepositData({
+                    deposit: true,
+                    amount: lendParams.depositAmount,
+                    extractFromSender: true
+                }),
                 lendParams.lockData,
-                lendParams.participateData
+                lendParams.participateData,
+                ICommonData.ICommonExternalContracts({
+                    magnetar: address(0),
+                    singularity: lendParams.market,
+                    bigBang: address(0)
+                })
             );
         }
     }
