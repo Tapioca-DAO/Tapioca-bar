@@ -29,8 +29,8 @@ import {
     UniUsdoToWethBidder__factory,
     CurveStableToUsdoBidder__factory,
     MagnetarMarketModule__factory,
+    MagnetarV2__factory,
 } from '../gitsub_tapioca-sdk/src/typechain/tapioca-periphery';
-import { MagnetarV2__factory } from '../gitsub_tapioca-sdk/src/typechain/tapioca-periphery/factories/Magnetar';
 
 import {
     UniswapV2Factory,

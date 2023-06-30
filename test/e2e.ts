@@ -3,13 +3,11 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { expect } from 'chai';
 import { BigNumber, BigNumberish } from 'ethers';
 import { ethers } from 'hardhat';
-import { BigBang, ERC20, ERC20Mock, USDO } from '../typechain';
-import { Singularity } from '../typechain/contracts/singularity/Singularity';
+import { BigBang, ERC20, ERC20Mock, USDO, Singularity } from '../typechain';
 import { BN, register } from './test.utils';
 
 import OracleMockArtifact from '../gitsub_tapioca-sdk/src/artifacts/tapioca-mocks/OracleMock.json';
-import { MagnetarV2 } from '../gitsub_tapioca-sdk/src/typechain/tapioca-periphery/Magnetar/MagnetarV2';
-import { YieldBox } from '../typechain/yieldbox/contracts';
+import { MagnetarV2 } from '../gitsub_tapioca-sdk/src/typechain/tapioca-periphery';
 
 describe('e2e tests', () => {
     /*
@@ -159,7 +157,7 @@ describe('e2e tests', () => {
 
             await magnetar
                 .connect(repayer)
-                .depositRepayAndRemoveCollateral(
+                .depositRepayAndRemoveCollateralFromMarket(
                     wethUsdoSingularity.address,
                     repayer.address,
                     repayerUsd0Balance.add(repayerUsd0Balance.div(2)),
@@ -674,7 +672,7 @@ async function depositAddCollateralAndBorrowPlug(
         await expect(
             magnetar
                 .connect(signer)
-                .depositAddCollateralAndBorrow(
+                .depositAddCollateralAndBorrowFromMarket(
                     Singularity.address,
                     signer.address,
                     collateralValue,
@@ -691,7 +689,7 @@ async function depositAddCollateralAndBorrowPlug(
 
     await magnetar
         .connect(signer)
-        .depositAddCollateralAndBorrow(
+        .depositAddCollateralAndBorrowFromMarket(
             Singularity.address,
             signer.address,
             collateralValue,
@@ -744,7 +742,7 @@ async function depositAndRepayPlug(
         await expect(
             magnetar
                 .connect(signer)
-                .depositRepayAndRemoveCollateral(
+                .depositRepayAndRemoveCollateralFromMarket(
                     Singularity.address,
                     signer.address,
                     depositVal,
@@ -768,7 +766,7 @@ async function depositAndRepayPlug(
     );
     await magnetar
         .connect(signer)
-        .depositRepayAndRemoveCollateral(
+        .depositRepayAndRemoveCollateralFromMarket(
             Singularity.address,
             signer.address,
             depositVal,
