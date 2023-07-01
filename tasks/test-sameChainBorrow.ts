@@ -56,11 +56,20 @@ export const sameChainBorrow__task = async (
     await (
         await marketHelperContract.depositAddCollateralAndBorrowFromMarket(
             singularityAddress,
+            (
+                await hre.ethers.getSigners()
+            )[0].address,
             taskArgs.collateralAmount,
             taskArgs.borrowAmount,
             true,
-            false,
-            hre.ethers.utils.toUtf8Bytes(''),
+            true,
+            {
+                withdraw: false,
+                withdrawLzFeeAmount: 0,
+                withdrawOnOtherChain: false,
+                withdrawLzChainId: 0,
+                withdrawAdapterParams: hre.ethers.utils.toUtf8Bytes(''),
+            },
             {
                 gasLimit: 7920027,
             },
