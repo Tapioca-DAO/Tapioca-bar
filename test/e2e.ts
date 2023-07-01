@@ -276,13 +276,13 @@ describe('e2e tests', () => {
             usdoAssetId,
             wethMintVal,
             usdoBorrowVal,
-            true,
-            encodeMarketHelperWithdrawData(
-                false,
-                0,
-                borrowers[0].address,
-                '0x00',
-            ),
+            {
+                withdraw: true,
+                withdrawLzFeeAmount: 0,
+                withdrawOnOtherChain: false,
+                withdrawLzChainId: 0,
+                withdrawAdapterParams: ethers.utils.toUtf8Bytes(''),
+            },
             true,
             'SGL: min limit',
         );
@@ -321,13 +321,13 @@ describe('e2e tests', () => {
             usdoAssetId,
             wethMintVal.mul(10),
             usdoBorrowVal.mul(10),
-            true,
-            encodeMarketHelperWithdrawData(
-                false,
-                0,
-                borrowers[borrowers.length - 1].address,
-                '0x00',
-            ),
+            {
+                withdraw: true,
+                withdrawLzFeeAmount: 0,
+                withdrawOnOtherChain: false,
+                withdrawLzChainId: 0,
+                withdrawAdapterParams: ethers.utils.toUtf8Bytes(''),
+            },
             true,
             'Market: no return data',
         );
@@ -660,7 +660,6 @@ async function depositAddCollateralAndBorrowPlug(
     assetId: BigNumberish,
     collateralValue: BigNumberish,
     borrowValue: BigNumberish,
-    withdraw: boolean,
     withdrawData: any,
     shouldRevert?: boolean,
     revertMessage?: string,
@@ -679,7 +678,6 @@ async function depositAddCollateralAndBorrowPlug(
                     borrowValue,
                     true,
                     true,
-                    withdraw,
                     withdrawData,
                 ),
             // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -696,14 +694,13 @@ async function depositAddCollateralAndBorrowPlug(
             borrowValue,
             true,
             true,
-            withdraw,
             withdrawData,
         );
 
     share = await yieldBox.balanceOf(signer.address, assetId);
     amount = await yieldBox.toAmount(assetId, share, false);
 
-    if (!withdraw) {
+    if (!withdrawData.withdraw) {
         expect(amount.eq(borrowValue)).to.be.true;
     } else {
         expect(amount.eq(0)).to.be.true;
@@ -954,8 +951,14 @@ async function addUsd0Module(
             usdoAssetId,
             wethMintVal,
             usdoBorrowVal,
+            {
+                withdraw: false,
+                withdrawLzFeeAmount: 0,
+                withdrawOnOtherChain: false,
+                withdrawLzChainId: 0,
+                withdrawAdapterParams: ethers.utils.toUtf8Bytes(''),
+            },
             false,
-            encodeMarketHelperWithdrawData(false, 0, lender.address, '0x00'),
         );
 
         //lend USDO to WethUSD0Singularity
@@ -1001,8 +1004,13 @@ async function borrowFromSingularityModule(
             usdoAssetId,
             wethMintVal,
             usdoBorrowVal,
-            true,
-            encodeMarketHelperWithdrawData(false, 0, borrower.address, '0x00'),
+            {
+                withdraw: true,
+                withdrawLzFeeAmount: 0,
+                withdrawOnOtherChain: false,
+                withdrawLzChainId: 0,
+                withdrawAdapterParams: ethers.utils.toUtf8Bytes(''),
+            },
         );
 
         const borrowerUsd0Balance = await usd0.balanceOf(borrower.address);
