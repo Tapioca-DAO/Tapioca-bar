@@ -1,25 +1,63 @@
 # Tapioca Bar🍹 & Singularity 🤙
-## The gist of it
+# Full testnet deployment
 
-`YieldBox` : Serves as a vault to store assets/collaterals, strategies can later be used on those vaults to yield farm.
-* `deposit(uint256 assetId, address from, address to, uint256 amount, uint256 share)` Used to deposit, it’s the first step to enter a market.
-* `withdraw(uint256 assetId, address from, address to, uint256 amount, uint256 share, bool withdrawNative)` Used to withdraw asset from `YieldBox` , if the asset if the wrapped native, the last parameter is to decide to unwrap or not the asset.
-* `setApprovalForAll(address operator, bool approved)` Used to allow a `Singularity` market to use the user’s `YieldBox` assets.
-* `toShare(uint256 assetId, uint256 amount, roundUp)` Convert from an asset amount to a `YieldBox`  share.
-* `toAmount(uint256 assetId, uint256 share, roundUp)` Convert from a `YieldBox` share to an asset amount.
-* `amountOf(address user, uint256 assetId)` The amount in underlying token that a user has stored in.
-* `balanceOf(address user, uint256 assetId)` The amount of shares a user has.
+Host chain is `arbitrum_goerli`
 
-`Singularity` : Users can deposit / withdraw from `YieldBox` to `Singularity` to enter / exit markets.
- * `addCollateral(address to, bool skim, uint256 share)` Users can add collateral from the `YieldBox` deposit to the `Singularity` market.
-* `removeCollateral(address to, uint256 share)`  Users can remove collateral and exit their position, if they are solvent.
-* `addAsset(address to, bool skim, uint256 share)` Users can lend `YieldBox` deposited asset with it.
-* `removeAsset(address to, uint256 fraction)` Users can exist lending position with this.
-* `borrow(address to, uint256 amount)` Users can borrow the lent asset of the market, they need to addCollateral  first.
-* `repay(address to, bool skim, uint256 part)` Users can repay their positions with it. Since we’ll have self-repaying loans technically it’s not gonna be used but it’s good to have it.
-* `mix(uint8[] calldata actions, uint256[] calldata values, bytes[] calldata datas)` Used to make multiple actions in one Tx.
-* `balanceOf(address user)` The balance in fraction unit of a user, we can use `SingularityHelper` to compute the real asset amount.
+Some args are not needed within the CLI as it'll be asked live within the task execution
 
-`SingularityHelper` : A helper contract for `Singularity` .
-* `getCollateralSharesForBorrowPart(Singularity Singularity, uint256 borrowPart)` Used to compute the amount of shares needed for an amount of asset to be borrowed.
-* `getAmountForAssetFraction(Singularity Singularity, uint256 fraction)` Used to compute the amount of assets based on a fraction. Can be used to get asset amounts from `Singularity.balanceOf`.
+  
+
+Note: make sure to get the latest deployments for tapioca-sdk by executing:
+
+```plain
+git submodule update --init
+```
+
+  
+
+**Deployment steps \[UPDATED\]:**
+
+1. use `tapioca-mocks`to deploy WETHMock token on all chains
+    1. npx hardhat deployERC20Mock --network goerli --save
+2. use `tapioca-mocks` to deploy "native" tokens for each chain (WETH for goerli, ARB for arbitrum, MATIC for mumbai, AVAX for fuji, BNB for bsc testnet)
+    1. `npx hardhat deployERC20Mock --network goerli --save`
+3. use `tap-token` to deploy TapOFT and export it to the SDK
+    1. `npx hardhat deployTapOFT --network arbitrum_goerli`
+    2. `npx hardhat exportSDK` (make sure to first do a git pull on the submodule folder)
+4. use tap-token
+    1. `npx hardhat setLZConfig --network <each network>`
+        1. for TapOFT
+5. use Tapioca-bar
+    1. `npx hardhat deployFullStack --network arbitrum_goerli`
+    2. `npx hardhat deployLinkedChainStack --network <everything else>`
+    3. `npx hardhat setLZConfig --network <each network>`
+        1. for each token
+6. use TapiocaZ to deploy TapiocaWrapper to each chain
+    1. `npx hardhat deployTapiocaWrapper --network arbitrum_goerli`
+7. use TapiocaZ to deploy TOFT to each chain + linked TOFTs
+    1. `npx hardhat deployTOFT --network`
+    2. `npx hardhat setLZConfig --is-toft --network` for each TOFT, for each chain
+8. deploy strategies for YB asset registration (for host chain, no need to deploy for USDO and Tap as these 2 are already registered from previous deployments)
+    1. `npx hardhat deployEmptyStrats --type 0 --network` , for each chain, for each token
+    2. `npx hardhat deployEmptyStrats --type 1 --network` , for each chain, for each token
+    3. `npx hardhat deployEmptyStrats --type 2 --network` , for each chain, for each token
+9. register YB assets on Tapioca-bar by using `npx hardhat registerYbAssets --network`
+10. deploy SGL market on Tapioca-bar by using `npx hardhat deploySGLMarket --network`
+
+  
+
+## Big Bang markets
+
+1. deploy empty strategy for the token you want to use `npx hardhat deployEmptyStrateg --type 3 --network arbitrum_goerli`
+2. register yb asset
+3. deploy BB `npx hardhat deployBigBangMarket --network arbitrum_goerli`
+
+  
+
+## TapOFT/twAML
+
+  
+
+1. Use `tap-token` repo
+    1. `hh deployStack --network arbitrum_goerli` to deploy the entire stack on the native chain
+    2. `hh deployTapOFT --network fuji_avalanche` for linked chain
