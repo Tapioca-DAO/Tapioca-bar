@@ -91,11 +91,9 @@ export const deployFullStack__task = async (
     VM.add(liq).add(borrow).add(collateral).add(leverage);
 
     // 06 USDO
-    const [leverageModule, marketModule] = await buildUSDOModules(
-        chainInfo.address,
-        hre,
-    );
-    VM.add(leverageModule).add(marketModule);
+    const [leverageModule, marketModule, optionsModule] =
+        await buildUSDOModules(chainInfo.address, hre);
+    VM.add(leverageModule).add(marketModule).add(optionsModule);
 
     const usdo = await buildUSD0(hre, chainInfo.address, signer.address);
     VM.add(usdo);

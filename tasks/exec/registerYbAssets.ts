@@ -84,7 +84,7 @@ export const registerYbAssets__task = async (
 
     const signer = (await hre.ethers.getSigners())[0];
     const multiCall =
-        typechain.TapiocaPeriphery.multicall.Multicall3__factory.connect(
+        typechain.TapiocaPeriphery.contracts.multicall.Multicall3__factory.connect(
             hre.SDK.config.MULTICALL_ADDRESSES[chainInfo?.chainId],
             signer,
         );

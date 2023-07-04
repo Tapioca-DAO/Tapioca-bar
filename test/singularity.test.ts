@@ -28,6 +28,90 @@ import {
 import TapiocaOFTArtifact from '../gitsub_tapioca-sdk/src/artifacts/tapiocaz/TapiocaOFT.json';
 
 describe('Singularity test', () => {
+    describe('test', () => {
+        it.skip('should compute the right closing factor', async () => {
+            const { wethUsdcSingularity, wbtcBigBangMarket, deployer, bar } =
+                await loadFixture(register);
+
+            let x = await wethUsdcSingularity.computeClosingFactor(
+                ethers.utils.parseEther('7600'),
+                ethers.utils.parseEther('10000'),
+                18,
+                18,
+                5,
+            );
+            console.log(
+                `Borrow part: 7600 with 18 decimals, collateral part: 10000 with 18 decimals, closing factor without bonus: ${ethers.utils.formatEther(
+                    x,
+                )}`,
+            );
+
+            x = await wethUsdcSingularity.computeClosingFactor(
+                ethers.utils.parseEther('7000'),
+                ethers.utils.parseEther('10000'),
+                18,
+                18,
+                5,
+            );
+            console.log(
+                `Borrow part: 7000 with 18 decimals, collateral part: 10000 with 18 decimals, closing factor without bonus: ${ethers.utils.formatEther(
+                    x,
+                )}`,
+            );
+
+            x = await wethUsdcSingularity.computeClosingFactor(
+                ethers.utils.parseEther('8000'),
+                ethers.utils.parseEther('10000'),
+                18,
+                18,
+                5,
+            );
+            console.log(
+                `Borrow part: 8000 with 18 decimals, collateral part: 10000 with 18 decimals, closing factor without bonus: ${ethers.utils.formatEther(
+                    x,
+                )}`,
+            );
+
+            x = await wethUsdcSingularity.computeClosingFactor(
+                ethers.utils.parseEther('8000'),
+                '10000000000',
+                18,
+                6,
+                5,
+            );
+            console.log(
+                `Borrow part: 8000 with 18 decimals, collateral part: 10000 with 6 decimals, closing factor without bonus: ${ethers.utils.formatEther(
+                    x,
+                )}`,
+            );
+
+            x = await wethUsdcSingularity.computeClosingFactor(
+                ethers.utils.parseEther('4000'),
+                ethers.utils.parseEther('5000'),
+                18,
+                18,
+                5,
+            );
+            console.log(
+                `Borrow part: 4000 with 18 decimals, collateral part: 5000 with 18 decimals, closing factor without bonus: ${ethers.utils.formatEther(
+                    x,
+                )}`,
+            );
+
+            x = await wethUsdcSingularity.computeClosingFactor(
+                '8000000000',
+                ethers.utils.parseEther('10000'),
+                6,
+                18,
+                5,
+            );
+            console.log(
+                `Borrow part: 8000 with 6 decimals, collateral part: 10000 with 18 decimals, closing factor without bonus: ${ethers.utils.formatEther(
+                    x,
+                )}`,
+            );
+        });
+    });
     describe('setters', () => {
         it('should be able to set mutable properties', async () => {
             const { wethUsdcSingularity, wbtcBigBangMarket, deployer, bar } =
@@ -160,7 +244,7 @@ describe('Singularity test', () => {
 
             payload = wbtcBigBangMarket.interface.encodeFunctionData(
                 'setBigBangConfig',
-                [0, 0, 0],
+                [0, 0, 0, 0],
             );
             await bar.executeMarketFn(
                 [wbtcBigBangMarket.address],
@@ -175,7 +259,7 @@ describe('Singularity test', () => {
 
             payload = wbtcBigBangMarket.interface.encodeFunctionData(
                 'setBigBangConfig',
-                [toSetValue, toSetMaxValue, toSetValue],
+                [toSetValue, toSetMaxValue, toSetValue, toSetValue],
             );
             await bar.executeMarketFn(
                 [wbtcBigBangMarket.address],
@@ -2046,8 +2130,16 @@ describe('Singularity test', () => {
             expect(reward.gt(0)).to.be.true;
             let prevClosingFactor;
             let closingFactor = await wethUsdcSingularity.computeClosingFactor(
-                deployer.address,
-                exchangeRate,
+                await wethUsdcSingularity.userBorrowPart(deployer.address),
+                (
+                    await wethUsdcSingularity.computeTVLInfo(
+                        deployer.address,
+                        exchangeRate,
+                    )
+                )[2],
+                18,
+                18,
+                5,
             );
             expect(closingFactor.gt(0)).to.be.true;
             prevClosingFactor = closingFactor;
@@ -2063,8 +2155,16 @@ describe('Singularity test', () => {
             expect(reward.lt(prevReward)).to.be.true;
             prevReward = reward;
             closingFactor = await wethUsdcSingularity.computeClosingFactor(
-                deployer.address,
-                exchangeRate,
+                await wethUsdcSingularity.userBorrowPart(deployer.address),
+                (
+                    await wethUsdcSingularity.computeTVLInfo(
+                        deployer.address,
+                        exchangeRate,
+                    )
+                )[2],
+                18,
+                18,
+                5,
             );
             expect(closingFactor.gt(prevClosingFactor)).to.be.true;
             prevClosingFactor = closingFactor;
@@ -2080,8 +2180,16 @@ describe('Singularity test', () => {
             expect(reward.lt(prevReward)).to.be.true;
             prevReward = reward;
             closingFactor = await wethUsdcSingularity.computeClosingFactor(
-                deployer.address,
-                exchangeRate,
+                await wethUsdcSingularity.userBorrowPart(deployer.address),
+                (
+                    await wethUsdcSingularity.computeTVLInfo(
+                        deployer.address,
+                        exchangeRate,
+                    )
+                )[2],
+                18,
+                18,
+                5,
             );
             expect(closingFactor.gt(prevClosingFactor)).to.be.true;
             prevClosingFactor = closingFactor;
@@ -2097,8 +2205,16 @@ describe('Singularity test', () => {
             expect(reward.lt(prevReward)).to.be.true;
             prevReward = reward;
             closingFactor = await wethUsdcSingularity.computeClosingFactor(
-                deployer.address,
-                exchangeRate,
+                await wethUsdcSingularity.userBorrowPart(deployer.address),
+                (
+                    await wethUsdcSingularity.computeTVLInfo(
+                        deployer.address,
+                        exchangeRate,
+                    )
+                )[2],
+                18,
+                18,
+                5,
             );
             expect(closingFactor.gt(prevClosingFactor)).to.be.true;
             prevClosingFactor = closingFactor;
@@ -2114,10 +2230,18 @@ describe('Singularity test', () => {
             expect(reward.eq(prevReward)).to.be.true;
             prevReward = reward;
             closingFactor = await wethUsdcSingularity.computeClosingFactor(
-                deployer.address,
-                exchangeRate,
+                await wethUsdcSingularity.userBorrowPart(deployer.address),
+                (
+                    await wethUsdcSingularity.computeTVLInfo(
+                        deployer.address,
+                        exchangeRate,
+                    )
+                )[2],
+                18,
+                18,
+                5,
             );
-            expect(closingFactor.eq(prevClosingFactor)).to.be.true;
+            expect(closingFactor.gt(prevClosingFactor)).to.be.true;
             prevClosingFactor = closingFactor;
         });
         it('Should accumulate fees for lender', async () => {

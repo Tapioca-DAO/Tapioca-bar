@@ -49,9 +49,6 @@ contract SGLStorage is BoringOwnable, Market {
         0x0bd4060688a1800ae986e4840aebc924bb40b5bf44de4583df2257220b54b77c; // keccak256("asset")
     bytes32 internal COLLATERAL_SIG =
         0x7d1dc38e60930664f8cbf495da6556ca091d2f92d6550877750c049864b18230; // keccak256("collateral")
-
-    /// @notice liquidation multiplier used to compute liquidator rewards
-    uint256 public liquidationMultiplier = 112000; //12%
     /// @notice collateralization rate
     uint256 public lqCollateralizationRate = 25000; // 25%
 
@@ -131,8 +128,6 @@ contract SGLStorage is BoringOwnable, Market {
     event InterestElasticityUpdated(uint256 oldVal, uint256 newVal);
     /// @notice event emitted when the LQ collateralization rate is updated
     event LqCollateralizationRateUpdated(uint256 oldVal, uint256 newVal);
-    /// @notice event emitted when the liquidation multiplier rate is updated
-    event LiquidationMultiplierUpdated(uint256 oldVal, uint256 newVal);
     /// @notice event emitted when the order book liquidation multiplier rate is updated
     event OrderBookLiquidationMultiplierUpdated(uint256 oldVal, uint256 newVal);
     /// @notice event emitted when the bid execution swapper is updated

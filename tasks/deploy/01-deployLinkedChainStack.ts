@@ -43,17 +43,15 @@ export const deployLinkedChainStack__task = async (
     VM.add(ybURI).add(yieldBox);
 
     // 02 USDO
-    const [leverageModule, marketModule] = await buildUSDOModules(
-        chainInfo.address,
-        hre,
-    );
-    VM.add(leverageModule).add(marketModule);
+    const [leverageModule, marketModule, optionsModule] =
+        await buildUSDOModules(chainInfo.address, hre);
+    VM.add(leverageModule).add(marketModule).add(optionsModule);
 
     const usdo = await buildUSD0(hre, chainInfo.address, signer.address);
     VM.add(usdo);
 
     // Add and execute
-    await VM.execute(3, false);
+    await VM.execute(3, true);
     VM.save();
     const { wantToVerify } = await inquirer.prompt({
         type: 'confirm',
