@@ -85,11 +85,6 @@ contract BigBang is BoringOwnable, Market {
     /// @notice event emitted when the debt rate against the main market is updated
     event DebtRateAgainstEthUpdated(uint256 oldVal, uint256 newVal);
 
-    // ***************** //
-    // *** CONSTANTS *** //
-    // ***************** //
-    uint256 private constant LIQUIDATION_MULTIPLIER = 112000; // add 12%
-
     constructor() MarketERC20("Tapioca BigBang") {}
 
     /// @notice The init function that acts as a constructor
@@ -160,6 +155,7 @@ contract BigBang is BoringOwnable, Market {
         maxLiquidatorReward = 1e4;
         liquidationBonusAmount = 1e4;
         borrowOpeningFee = 50; // 0.05%
+        liquidationMultiplier = 12000; //12%
     }
 
     // ********************** //
@@ -460,7 +456,8 @@ contract BigBang is BoringOwnable, Market {
     function setBigBangConfig(
         uint256 _minDebtRate,
         uint256 _maxDebtRate,
-        uint256 _debtRateAgainstEthMarket
+        uint256 _debtRateAgainstEthMarket,
+        uint256 _liquidationMultiplier
     ) external onlyOwner {
         _isEthMarket = collateralId == penrose.wethAssetId();
 
@@ -483,6 +480,18 @@ contract BigBang is BoringOwnable, Market {
                     _debtRateAgainstEthMarket
                 );
                 debtRateAgainstEthMarket = _debtRateAgainstEthMarket;
+            }
+
+            if (_liquidationMultiplier > 0) {
+                require(
+                    _liquidationMultiplier < FEE_PRECISION,
+                    "BigBang: not valid"
+                );
+                emit LiquidationMultiplierUpdated(
+                    liquidationMultiplier,
+                    _liquidationMultiplier
+                );
+                liquidationMultiplier = _liquidationMultiplier;
             }
         }
     }
@@ -759,20 +768,44 @@ contract BigBang is BoringOwnable, Market {
             uint256 collateralShare
         )
     {
-        uint256 availableBorrowPart = computeClosingFactor(user, _exchangeRate);
+        uint256 collateralPartInAsset = (yieldBox.toAmount(
+            collateralId,
+            userCollateralShare[user],
+            false
+        ) * EXCHANGE_RATE_PRECISION) / _exchangeRate;
+
+        uint256 borrowAssetDecimals = asset.safeDecimals();
+        uint256 collateralDecimals = collateral.safeDecimals();
+
+        uint256 availableBorrowPart = computeClosingFactor(
+            userBorrowPart[user],
+            collateralPartInAsset,
+            borrowAssetDecimals,
+            collateralDecimals,
+            FEE_PRECISION_DECIMALS
+        );
         borrowPart = maxBorrowPart > availableBorrowPart
             ? availableBorrowPart
             : maxBorrowPart;
 
+        if (borrowPart > userBorrowPart[user]) {
+            borrowPart = userBorrowPart[user];
+        }
+
         userBorrowPart[user] = userBorrowPart[user] - borrowPart;
 
         borrowAmount = totalBorrow.toElastic(borrowPart, false);
+        uint256 amountWithBonus = borrowAmount +
+            (borrowAmount * liquidationMultiplier) /
+            FEE_PRECISION;
         collateralShare = yieldBox.toShare(
             collateralId,
-            (borrowAmount * LIQUIDATION_MULTIPLIER * _exchangeRate) /
-                (LIQUIDATION_MULTIPLIER_PRECISION * EXCHANGE_RATE_PRECISION),
+            (amountWithBonus * _exchangeRate) / EXCHANGE_RATE_PRECISION,
             false
         );
+        if (collateralShare > userCollateralShare[user]) {
+            collateralShare = userCollateralShare[user];
+        }
         userCollateralShare[user] -= collateralShare;
         require(borrowAmount != 0, "SGL: solvent");
 

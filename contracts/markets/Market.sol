@@ -71,14 +71,15 @@ abstract contract Market is MarketERC20, BoringOwnable {
     uint256 public collateralizationRate; // 75%
     /// @notice borrowing opening fee
     uint256 public borrowOpeningFee = 50; //0.05%
+    /// @notice liquidation multiplier used to compute liquidator rewards
+    uint256 public liquidationMultiplier = 12000; //12%
 
     // ***************** //
     // *** CONSTANTS *** //
     // ***************** //
     uint256 internal EXCHANGE_RATE_PRECISION; //not costant, but can only be set in the 'init' method
-    uint256 internal constant COLLATERALIZATION_RATE_PRECISION = 1e5; // Must be less than EXCHANGE_RATE_PRECISION (due to optimization in math)
     uint256 internal constant FEE_PRECISION = 1e5;
-    uint256 internal constant LIQUIDATION_MULTIPLIER_PRECISION = 1e5;
+    uint256 internal constant FEE_PRECISION_DECIMALS = 5;
 
     // ************** //
     // *** EVENTS *** //
@@ -106,6 +107,8 @@ abstract contract Market is MarketERC20, BoringOwnable {
     );
     /// @notice event emitted when borrow opening fee is updated
     event LogBorrowingFee(uint256 _oldVal, uint256 _newVal);
+    /// @notice event emitted when the liquidation multiplier rate is updated
+    event LiquidationMultiplierUpdated(uint256 oldVal, uint256 newVal);
 
     modifier notPaused() {
         require(!paused, "Market: paused");
@@ -227,7 +230,7 @@ abstract contract Market is MarketERC20, BoringOwnable {
 
         if (_collateralizationRate > 0) {
             require(
-                _collateralizationRate <= COLLATERALIZATION_RATE_PRECISION,
+                _collateralizationRate <= FEE_PRECISION,
                 "Market: not valid"
             );
             collateralizationRate = _collateralizationRate;
@@ -248,24 +251,47 @@ abstract contract Market is MarketERC20, BoringOwnable {
     // *** VIEW FUNCTIONS *** //
     // ********************** //
     /// @notice returns the maximum liquidatable amount for user
-    /// @param user the user address
-    /// @param _exchangeRate the exchange rate asset/collateral to use for internal computations
     function computeClosingFactor(
-        address user,
-        uint256 _exchangeRate
+        uint256 borrowPart,
+        uint256 collateralPartInAsset,
+        uint256 borrowPartDecimals,
+        uint256 collateralPartDecimals,
+        uint256 ratesPrecision
     ) public view returns (uint256) {
-        if (_isSolvent(user, _exchangeRate)) return 0;
+        uint256 borrowPartScaled = borrowPart;
+        if (borrowPartDecimals > 18) {
+            borrowPartScaled = borrowPart / (10 ** (borrowPartDecimals - 18));
+        }
+        if (borrowPartDecimals < 18) {
+            borrowPartScaled = borrowPart * (10 ** (18 - borrowPartDecimals));
+        }
 
-        (uint256 amountToSolvency, , uint256 maxTVL) = computeTVLInfo(
-            user,
-            _exchangeRate
-        );
-        uint256 borrowed = userBorrowPart[user];
-        if (borrowed >= maxTVL) return borrowed;
+        uint256 collateralPartInAssetScaled = collateralPartInAsset;
+        if (collateralPartDecimals > 18) {
+            collateralPartInAssetScaled =
+                collateralPartInAsset /
+                (10 ** (collateralPartDecimals - 18));
+        }
+        if (collateralPartDecimals < 18) {
+            collateralPartInAssetScaled =
+                collateralPartInAsset *
+                (10 ** (18 - collateralPartDecimals));
+        }
 
-        return
-            amountToSolvency +
-            ((liquidationBonusAmount * borrowed) / FEE_PRECISION);
+        uint256 liquidationStartsAt = (collateralPartInAssetScaled *
+            collateralizationRate) / (10 ** ratesPrecision);
+        if (borrowPartScaled < liquidationStartsAt) return 0;
+
+        uint256 numerator = borrowPartScaled -
+            ((collateralizationRate * collateralPartInAssetScaled) /
+                (10 ** ratesPrecision));
+        uint256 denominator = ((10 ** ratesPrecision) -
+            (collateralizationRate *
+                ((10 ** ratesPrecision) + liquidationMultiplier)) /
+            (10 ** ratesPrecision)) * (10 ** (18 - ratesPrecision));
+
+        uint256 x = (numerator * 1e18) / denominator;
+        return x;
     }
 
     /// @notice return the amount of collateral for a `user` to be solvent, min TVL and max TVL. Returns 0 if user already solvent.
@@ -362,8 +388,7 @@ abstract contract Market is MarketERC20, BoringOwnable {
             yieldBox.toAmount(
                 collateralId,
                 (userCollateralShare[user] *
-                    (EXCHANGE_RATE_PRECISION /
-                        COLLATERALIZATION_RATE_PRECISION) *
+                    (EXCHANGE_RATE_PRECISION / FEE_PRECISION) *
                     collateralizationRate),
                 false
             ) /
@@ -388,8 +413,7 @@ abstract contract Market is MarketERC20, BoringOwnable {
             yieldBox.toAmount(
                 collateralId,
                 collateralShare *
-                    (EXCHANGE_RATE_PRECISION /
-                        COLLATERALIZATION_RATE_PRECISION) *
+                    (EXCHANGE_RATE_PRECISION / FEE_PRECISION) *
                     collateralizationRate,
                 false
             ) >=
@@ -410,7 +434,7 @@ abstract contract Market is MarketERC20, BoringOwnable {
         );
 
         max = (collateralAmount * EXCHANGE_RATE_PRECISION) / _exchangeRate;
-        min = (max * collateralizationRate) / COLLATERALIZATION_RATE_PRECISION;
+        min = (max * collateralizationRate) / FEE_PRECISION;
     }
 
     function _getCallerReward(

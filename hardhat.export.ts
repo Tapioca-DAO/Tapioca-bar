@@ -34,13 +34,7 @@ const supportedChains = SDK.API.utils.getSupportedChains().reduce(
                     ? [process.env.PRIVATE_KEY]
                     : [],
             live: true,
-            url:
-                chain.rpc == 'https://api.avax-test.network/ext/bc/C/rpc'
-                    ? 'https://rpc.ankr.com/avalanche_fuji'
-                    : chain.rpc.replace(
-                          '<api_key>',
-                          process.env.ALCHEMY_API_KEY,
-                      ),
+            url: chain.rpc.replace('<api_key>', process.env.ALCHEMY_API_KEY),
             gasMultiplier: chain.tags[0] === 'testnet' ? 2 : 1,
             chainId: Number(chain.chainId),
             tags: [...chain.tags],

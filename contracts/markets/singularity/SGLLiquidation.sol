@@ -79,7 +79,7 @@ contract SGLLiquidation is SGLCommon {
         uint256 collateralAmountInAsset = yieldBox.toAmount(
             collateralId,
             (collateralShare *
-                (EXCHANGE_RATE_PRECISION / COLLATERALIZATION_RATE_PRECISION) *
+                (EXCHANGE_RATE_PRECISION / FEE_PRECISION) *
                 lqCollateralizationRate),
             false
         ) / _exchangeRate;
@@ -120,11 +120,12 @@ contract SGLLiquidation is SGLCommon {
                     borrowPart = _totalBorrow.toBase(borrowAmount, false);
                     userBorrowPart[user] = availableBorrowPart - borrowPart;
                 }
+                uint256 amountWithBonus = borrowAmount +
+                    (borrowAmount * liquidationMultiplier) /
+                    FEE_PRECISION;
                 uint256 collateralShare = yieldBox.toShare(
                     collateralId,
-                    (borrowAmount * _exchangeRate * liquidationMultiplier) /
-                        (EXCHANGE_RATE_PRECISION *
-                            LIQUIDATION_MULTIPLIER_PRECISION),
+                    (amountWithBonus * _exchangeRate) / EXCHANGE_RATE_PRECISION,
                     false
                 );
                 userCollateralShare[user] -= collateralShare;
@@ -210,20 +211,53 @@ contract SGLLiquidation is SGLCommon {
             uint256 collateralShare
         )
     {
-        uint256 availableBorrowPart = computeClosingFactor(user, _exchangeRate);
+        uint256 collateralPartInAsset = (yieldBox.toAmount(
+            collateralId,
+            userCollateralShare[user],
+            false
+        ) * EXCHANGE_RATE_PRECISION) / _exchangeRate;
+
+        uint256 borrowAssetDecimals = asset.safeDecimals();
+        uint256 collateralDecimals = collateral.safeDecimals();
+
+        uint256 availableBorrowPart = computeClosingFactor(
+            userBorrowPart[user],
+            collateralPartInAsset,
+            borrowAssetDecimals,
+            collateralDecimals,
+            FEE_PRECISION_DECIMALS
+        );
+
+        if (liquidationBonusAmount > 0) {
+            availableBorrowPart =
+                availableBorrowPart +
+                (availableBorrowPart * liquidationBonusAmount) /
+                FEE_PRECISION;
+        }
+
         borrowPart = maxBorrowPart > availableBorrowPart
             ? availableBorrowPart
             : maxBorrowPart;
 
+        if (borrowPart > userBorrowPart[user]) {
+            borrowPart = userBorrowPart[user];
+        }
+
         userBorrowPart[user] = userBorrowPart[user] - borrowPart;
 
         borrowAmount = totalBorrow.toElastic(borrowPart, false);
+
+        uint256 amountWithBonus = borrowAmount +
+            (borrowAmount * liquidationMultiplier) /
+            FEE_PRECISION;
         collateralShare = yieldBox.toShare(
             collateralId,
-            (borrowAmount * liquidationMultiplier * _exchangeRate) /
-                (LIQUIDATION_MULTIPLIER_PRECISION * EXCHANGE_RATE_PRECISION),
+            (amountWithBonus * _exchangeRate) / EXCHANGE_RATE_PRECISION,
             false
         );
+        if (collateralShare > userCollateralShare[user]) {
+            collateralShare = userCollateralShare[user];
+        }
         userCollateralShare[user] -= collateralShare;
         require(borrowAmount != 0, "SGL: solvent");
 
