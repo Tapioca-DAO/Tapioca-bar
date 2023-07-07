@@ -34,12 +34,14 @@ contract USDOLeverageModule is BaseUSDOStorage {
     ) external payable {
         bytes32 senderBytes = LzLib.addressToBytes32(from);
 
+        (collateralAmount, ) = _removeDust(collateralAmount);
+        (borrowAmount, ) = _removeDust(borrowAmount);
         bytes memory lzPayload = abi.encode(
             PT_MARKET_MULTIHOP_BUY,
             senderBytes,
             from,
-            collateralAmount,
-            borrowAmount,
+            _ld2sd(collateralAmount),
+            _ld2sd(borrowAmount),
             swapData,
             lzData,
             externalData,
@@ -65,12 +67,13 @@ contract USDOLeverageModule is BaseUSDOStorage {
         IUSDOBase.ILeverageExternalContractsData calldata externalData
     ) external payable {
         bytes32 senderBytes = LzLib.addressToBytes32(msg.sender);
+        (amount, ) = _removeDust(amount);
         _debitFrom(msg.sender, lzEndpoint.getChainId(), senderBytes, amount);
 
         bytes memory lzPayload = abi.encode(
             PT_LEVERAGE_MARKET_UP,
             senderBytes,
-            amount,
+            _ld2sd(amount),
             swapData,
             externalData,
             lzData,
@@ -93,8 +96,8 @@ contract USDOLeverageModule is BaseUSDOStorage {
             ,
             ,
             address from,
-            uint256 collateralAmount,
-            uint256 borrowAmount,
+            uint64 collateralAmountSD,
+            uint64 borrowAmountSD,
             IUSDOBase.ILeverageSwapData memory swapData,
             IUSDOBase.ILeverageLZData memory lzData,
             IUSDOBase.ILeverageExternalContractsData memory externalData,
@@ -105,8 +108,8 @@ contract USDOLeverageModule is BaseUSDOStorage {
                     uint16,
                     bytes32,
                     address,
-                    uint256,
-                    uint256,
+                    uint64,
+                    uint64,
                     IUSDOBase.ILeverageSwapData,
                     IUSDOBase.ILeverageLZData,
                     IUSDOBase.ILeverageExternalContractsData,
@@ -120,8 +123,8 @@ contract USDOLeverageModule is BaseUSDOStorage {
 
         ISingularity(externalData.srcMarket).multiHopBuyCollateral(
             from,
-            collateralAmount,
-            borrowAmount,
+            _sd2ld(collateralAmountSD),
+            _sd2ld(borrowAmountSD),
             swapData,
             lzData,
             externalData
@@ -138,7 +141,7 @@ contract USDOLeverageModule is BaseUSDOStorage {
         (
             ,
             ,
-            uint256 amount,
+            uint64 amountSD,
             IUSDOBase.ILeverageSwapData memory swapData,
             IUSDOBase.ILeverageExternalContractsData memory externalData,
             IUSDOBase.ILeverageLZData memory lzData,
@@ -148,7 +151,7 @@ contract USDOLeverageModule is BaseUSDOStorage {
                 (
                     uint16,
                     bytes32,
-                    uint256,
+                    uint64,
                     IUSDOBase.ILeverageSwapData,
                     IUSDOBase.ILeverageExternalContractsData,
                     IUSDOBase.ILeverageLZData,
@@ -156,6 +159,7 @@ contract USDOLeverageModule is BaseUSDOStorage {
                 )
             );
 
+        uint256 amount = _sd2ld(amountSD);
         uint256 balanceBefore = balanceOf(address(this));
         bool credited = creditedPackets[_srcChainId][_srcAddress][_nonce];
         if (!credited) {

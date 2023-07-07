@@ -4220,7 +4220,11 @@ describe('Singularity test', () => {
                 await SGL_0.userCollateralShare(deployer.address);
             await SGL_0.multiHopSellCollateral(
                 deployer.address,
-                userCollateralShareAfter.div(4),
+                await YieldBox_0.toAmount(
+                    await SGL_0.collateralId(),
+                    userCollateralShareAfter.div(4),
+                    false,
+                ),
                 {
                     tokenOut: USDO_10.address,
                     amountOutMin: 0,

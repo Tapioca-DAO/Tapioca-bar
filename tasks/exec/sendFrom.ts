@@ -1,5 +1,4 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
-import { TapiocaOFT } from '../../gitsub_tapioca-sdk/src/typechain/tapiocaz';
 import { TAPIOCA_PROJECTS_NAME } from '../../gitsub_tapioca-sdk/src/api/config';
 
 // TODO use the new task arg system
