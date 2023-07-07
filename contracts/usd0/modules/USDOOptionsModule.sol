@@ -27,10 +27,11 @@ contract USDOOptionsModule is BaseUSDOStorage {
         ISendFrom.LzCallParams calldata sendFromData,
         ICommonData.IApproval[] calldata approvals
     ) external payable {
+        (amount, ) = _removeDust(amount);
         bytes memory lzPayload = abi.encode(
             PT_SEND_FROM,
             msg.sender,
-            amount,
+            _ld2sd(amount),
             sendFromData,
             lzEndpoint.getChainId(),
             approvals
@@ -63,15 +64,19 @@ contract USDOOptionsModule is BaseUSDOStorage {
     ) external payable {
         bytes32 toAddress = LzLib.addressToBytes32(optionsData.from);
 
+        (uint256 paymentTokenAmount, ) = _removeDust(
+            optionsData.paymentTokenAmount
+        );
         _debitFrom(
             optionsData.from,
             lzEndpoint.getChainId(),
             toAddress,
-            optionsData.paymentTokenAmount
+            paymentTokenAmount
         );
 
         bytes memory lzPayload = abi.encode(
             PT_TAP_EXERCISE,
+            _ld2sd(paymentTokenAmount),
             optionsData,
             tapSendData,
             approvals
@@ -102,7 +107,7 @@ contract USDOOptionsModule is BaseUSDOStorage {
         (
             ,
             address from,
-            uint256 amount,
+            uint64 amount,
             ISendFrom.LzCallParams memory callParams,
             uint16 lzDstChainId,
             ICommonData.IApproval[] memory approvals
@@ -111,7 +116,7 @@ contract USDOOptionsModule is BaseUSDOStorage {
                 (
                     uint16,
                     address,
-                    uint256,
+                    uint64,
                     ISendFrom.LzCallParams,
                     uint16,
                     ICommonData.IApproval[]
@@ -126,7 +131,7 @@ contract USDOOptionsModule is BaseUSDOStorage {
             from,
             lzDstChainId,
             LzLib.addressToBytes32(from),
-            amount,
+            _sd2ld(amount),
             callParams
         );
 
@@ -142,6 +147,7 @@ contract USDOOptionsModule is BaseUSDOStorage {
     ) public {
         (
             ,
+            uint64 amountSD,
             ITapiocaOptionsBrokerCrossChain.IExerciseOptionsData
                 memory optionsData,
             ITapiocaOptionsBrokerCrossChain.IExerciseLZSendTapData
@@ -151,12 +157,14 @@ contract USDOOptionsModule is BaseUSDOStorage {
                 _payload,
                 (
                     uint16,
+                    uint64,
                     ITapiocaOptionsBrokerCrossChain.IExerciseOptionsData,
                     ITapiocaOptionsBrokerCrossChain.IExerciseLZSendTapData,
                     ICommonData.IApproval[]
                 )
             );
 
+        optionsData.paymentTokenAmount = _sd2ld(amountSD);
         uint256 balanceBefore = balanceOf(address(this));
         bool credited = creditedPackets[_srcChainId][_srcAddress][_nonce];
         if (!credited) {

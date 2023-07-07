@@ -60,12 +60,14 @@ contract USDOMarketModule is BaseUSDOStorage {
         address _to,
         uint16 lzDstChainId,
         address zroPaymentAddress,
-        IUSDOBase.ILendOrRepayParams calldata lendParams,
+        IUSDOBase.ILendOrRepayParams memory lendParams,
         ICommonData.IApproval[] calldata approvals,
         ICommonData.IWithdrawParams calldata withdrawParams,
         bytes calldata adapterParams
     ) external payable {
         bytes32 toAddress = LzLib.addressToBytes32(_to);
+
+        (lendParams.depositAmount, ) = _removeDust(lendParams.depositAmount);
         _debitFrom(
             _from,
             lzEndpoint.getChainId(),
@@ -77,6 +79,7 @@ contract USDOMarketModule is BaseUSDOStorage {
             PT_YB_SEND_SGL_LEND_OR_REPAY,
             _from,
             _to,
+            _ld2sd(lendParams.depositAmount),
             lendParams,
             approvals,
             withdrawParams
@@ -140,6 +143,7 @@ contract USDOMarketModule is BaseUSDOStorage {
             ,
             ,
             address to,
+            uint64 lendAmountSD,
             IUSDOBase.ILendOrRepayParams memory lendParams,
             ICommonData.IApproval[] memory approvals,
             ICommonData.IWithdrawParams memory withdrawParams
@@ -149,12 +153,14 @@ contract USDOMarketModule is BaseUSDOStorage {
                     uint16,
                     address,
                     address,
+                    uint64,
                     IUSDOBase.ILendOrRepayParams,
                     ICommonData.IApproval[],
                     ICommonData.IWithdrawParams
                 )
             );
 
+        lendParams.depositAmount = _sd2ld(lendAmountSD);
         uint256 balanceBefore = balanceOf(address(this));
         bool credited = creditedPackets[_srcChainId][_srcAddress][_nonce];
         if (!credited) {

@@ -38,6 +38,7 @@ import { sameChainFlowTest__task } from './tasks/test-sameChainFlow';
 import { crossChainRepay__task } from './tasks/test-crossChainRepay';
 import { sendFrom__task } from './tasks/exec/sendFrom';
 import { testDeployMockSwapper__task } from './tasks/deploy/1000-testDeployMockSwapper';
+import { fillMockSwapper__test } from './tasks/exec/fillMockSwapper';
 
 task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
     const accounts = await hre.ethers.getSigners();
@@ -314,3 +315,7 @@ task(
     'Deploy MockSwapper',
     testDeployMockSwapper__task,
 );
+
+task('fillMockSwapper', 'Fill MockSwapper with tokens', fillMockSwapper__test)
+    .addParam('toft', 'tOFT address')
+    .addParam('assetid', 'tOFT YB asset id');

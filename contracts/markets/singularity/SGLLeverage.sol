@@ -55,7 +55,7 @@ contract SGLLeverage is SGLLendingCommon {
 
     function multiHopSellCollateral(
         address from,
-        uint256 share,
+        uint256 amount,
         IUSDOBase.ILeverageSwapData calldata swapData,
         IUSDOBase.ILeverageLZData calldata lzData,
         IUSDOBase.ILeverageExternalContractsData calldata externalData
@@ -65,6 +65,7 @@ contract SGLLeverage is SGLLendingCommon {
             "SGL: Invalid swapper"
         );
 
+        uint256 share = yieldBox.toShare(collateralId, amount, false);
         _allowedBorrow(from, share);
         _removeCollateral(from, address(this), share);
         (uint256 amountOut, ) = yieldBox.withdraw(
