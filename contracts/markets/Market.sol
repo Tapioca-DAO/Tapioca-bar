@@ -98,7 +98,7 @@ abstract contract Market is MarketERC20, BoringOwnable {
     event OracleUpdated();
     /// @notice event emitted when a position is liquidated
     event Liquidated(
-        address liquidator,
+        address indexed liquidator,
         address[] users,
         uint256 liquidatorReward,
         uint256 protocolReward,
@@ -384,6 +384,7 @@ abstract contract Market is MarketERC20, BoringOwnable {
         address user,
         uint256 _exchangeRate
     ) internal view returns (uint256 collateralAmountInAsset) {
+        require(_exchangeRate > 0, "Market: exchangeRate not valid");
         collateralAmountInAsset =
             yieldBox.toAmount(
                 collateralId,
@@ -427,6 +428,7 @@ abstract contract Market is MarketERC20, BoringOwnable {
         uint256 collateralShare,
         uint256 _exchangeRate
     ) internal view returns (uint256 min, uint256 max) {
+        require(_exchangeRate > 0, "Market: exchangeRate not valid");
         uint256 collateralAmount = yieldBox.toAmount(
             collateralId,
             collateralShare,

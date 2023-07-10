@@ -20,7 +20,7 @@ contract SGLBorrow is SGLLendingCommon {
         address from,
         address to,
         uint256 amount
-    ) public notPaused solvent(from) returns (uint256 part, uint256 share) {
+    ) external notPaused solvent(from) returns (uint256 part, uint256 share) {
         if (amount == 0) return (0, 0);
         uint256 allowanceShare = _computeAllowanceAmountInAsset(
             from,
@@ -45,7 +45,7 @@ contract SGLBorrow is SGLLendingCommon {
         address to,
         bool skim,
         uint256 part
-    ) public notPaused allowedBorrow(from, part) returns (uint256 amount) {
+    ) external notPaused allowedBorrow(from, part) returns (uint256 amount) {
         updateExchangeRate();
 
         _accrue();

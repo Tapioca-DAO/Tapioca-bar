@@ -52,12 +52,6 @@ contract MarketERC20 is IERC20, IERC20Permit, EIP712 {
     mapping(address => uint256) private _nonces;
 
     // ************** //
-    // *** ERRORS *** //
-    // ************** //
-    /// @notice error thrown when operation is not approved
-    error NotApproved(address _from, address _operator);
-
-    // ************** //
     // *** EVENTS *** //
     // ************** //
     /// @notice event emitted when borrow approval is performed
@@ -72,18 +66,20 @@ contract MarketERC20 is IERC20, IERC20Permit, EIP712 {
     // ***************** //
     function _allowedLend(address from, uint share) internal {
         if (from != msg.sender) {
-            if (allowance[from][msg.sender] < share) {
-                revert NotApproved(from, msg.sender);
-            }
+            require(
+                allowance[from][msg.sender] >= share,
+                "Market: not approved"
+            );
             allowance[from][msg.sender] -= share;
         }
     }
 
     function _allowedBorrow(address from, uint share) internal {
         if (from != msg.sender) {
-            if (allowanceBorrow[from][msg.sender] < share) {
-                revert NotApproved(from, msg.sender);
-            }
+            require(
+                allowanceBorrow[from][msg.sender] >= share,
+                "Market: not approved"
+            );
             allowanceBorrow[from][msg.sender] -= share;
         }
     }
@@ -111,7 +107,7 @@ contract MarketERC20 is IERC20, IERC20Permit, EIP712 {
     // ********************** //
     function totalSupply() public view virtual override returns (uint256) {}
 
-    function nonces(address owner) public view returns (uint256) {
+    function nonces(address owner) external view returns (uint256) {
         return _nonces[owner];
     }
 
@@ -199,7 +195,7 @@ contract MarketERC20 is IERC20, IERC20Permit, EIP712 {
     function approveBorrow(
         address spender,
         uint256 amount
-    ) public returns (bool) {
+    ) external returns (bool) {
         _approveBorrow(msg.sender, spender, amount);
         return true;
     }

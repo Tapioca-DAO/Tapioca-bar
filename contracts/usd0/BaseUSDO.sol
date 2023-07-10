@@ -79,6 +79,14 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
     // *********************** //
     // *** OWNER FUNCTIONS *** //
     // *********************** //
+    /// @notice rescues unused ETH from the contract
+    /// @param amount the amount to rescue
+    /// @param to the recipient
+    function rescueEth(uint256 amount, address to) external onlyOwner {
+        (bool success, ) = to.call{value: amount}("");
+        require(success, "USDO: transfer failed.");
+    }
+
     /// @notice set the max allowed USDO mintable through flashloan
     /// @dev can only be called by the owner
     /// @param _val the new amount

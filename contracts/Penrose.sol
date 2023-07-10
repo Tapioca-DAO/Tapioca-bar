@@ -123,22 +123,28 @@ contract Penrose is BoringOwnable, BoringFactory {
     event ProtocolWithdrawal(IMarket[] markets, uint256 timestamp);
     /// @notice event emitted when Singularity master contract is registered
     event RegisterSingularityMasterContract(
-        address location,
+        address indexed location,
         IPenrose.ContractType risk
     );
     /// @notice event emitted when BigBang master contract is registered
     event RegisterBigBangMasterContract(
-        address location,
+        address indexed location,
         IPenrose.ContractType risk
     );
     /// @notice event emitted when Singularity is registered
-    event RegisterSingularity(address location, address masterContract);
+    event RegisterSingularity(
+        address indexed location,
+        address indexed masterContract
+    );
     /// @notice event emitted when BigBang is registered
-    event RegisterBigBang(address location, address masterContract);
+    event RegisterBigBang(
+        address indexed location,
+        address indexed masterContract
+    );
     /// @notice event emitted when feeTo address is updated
-    event FeeToUpdate(address newFeeTo);
+    event FeeToUpdate(address indexed newFeeTo);
     /// @notice event emitted when ISwapper address is updated
-    event SwapperUpdate(address swapper, bool isRegistered);
+    event SwapperUpdate(address indexed swapper, bool isRegistered);
     /// @notice event emitted when USDO address is updated
     event UsdoTokenUpdated(address indexed usdoToken, uint256 assetId);
     /// @notice event emitted when conservator is updated
@@ -182,7 +188,7 @@ contract Penrose is BoringOwnable, BoringFactory {
     /// @notice Get all the Singularity contract addresses
     /// @return markets list of available markets
     function singularityMarkets()
-        public
+        external
         view
         returns (address[] memory markets)
     {
@@ -191,17 +197,17 @@ contract Penrose is BoringOwnable, BoringFactory {
 
     /// @notice Get all the BigBang contract addresses
     /// @return markets list of available markets
-    function bigBangMarkets() public view returns (address[] memory markets) {
+    function bigBangMarkets() external view returns (address[] memory markets) {
         markets = _getMasterContractLength(bigbangMasterContracts);
     }
 
     /// @notice Get the length of `singularityMasterContracts`
-    function singularityMasterContractLength() public view returns (uint256) {
+    function singularityMasterContractLength() external view returns (uint256) {
         return singularityMasterContracts.length;
     }
 
     /// @notice Get the length of `bigbangMasterContracts`
-    function bigBangMasterContractLength() public view returns (uint256) {
+    function bigBangMasterContractLength() external view returns (uint256) {
         return bigbangMasterContracts.length;
     }
 
@@ -218,7 +224,7 @@ contract Penrose is BoringOwnable, BoringFactory {
         IMarket[] calldata markets_,
         ISwapper[] calldata swappers_,
         IPenrose.SwapData[] calldata swapData_
-    ) public notPaused {
+    ) external notPaused {
         require(
             markets_.length == swappers_.length &&
                 swappers_.length == swapData_.length,
@@ -417,6 +423,7 @@ contract Penrose is BoringOwnable, BoringFactory {
         returns (bool[] memory success, bytes[] memory result)
     {
         uint256 len = mc.length;
+        require(len == data.length, "Penrose: length mismatch");
         success = new bool[](len);
         result = new bytes[](len);
         for (uint256 i = 0; i < len; ) {
@@ -426,6 +433,7 @@ contract Penrose is BoringOwnable, BoringFactory {
                 ] || isBigBangMasterContractRegistered[masterContractOf[mc[i]]],
                 "Penrose: MC not registered"
             );
+            require(address(mc[i]).code.length > 0, "Penrose: no contract");
             (success[i], result[i]) = mc[i].call(data[i]);
             if (forceSuccess) {
                 require(success[i], _getRevertMsg(result[i]));
