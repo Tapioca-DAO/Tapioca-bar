@@ -72,8 +72,10 @@ contract SGLLiquidation is SGLCommon {
         // accrue must have already been called!
         uint256 borrowPart = userBorrowPart[user];
         if (borrowPart == 0) return 0;
-        uint256 collateralShare = userCollateralShare[user];
 
+        require(_exchangeRate > 0, "SGL: exchangeRate not valid");
+
+        uint256 collateralShare = userCollateralShare[user];
         Rebase memory _totalBorrow = totalBorrow;
 
         uint256 collateralAmountInAsset = yieldBox.toAmount(
@@ -211,6 +213,7 @@ contract SGLLiquidation is SGLCommon {
             uint256 collateralShare
         )
     {
+        require(_exchangeRate > 0, "SGL: exchangeRate not valid");
         uint256 collateralPartInAsset = (yieldBox.toAmount(
             collateralId,
             userCollateralShare[user],
@@ -370,7 +373,7 @@ contract SGLLiquidation is SGLCommon {
     /// @param users An array of user addresses.
     /// @param maxBorrowParts A one-to-one mapping to `users`, contains maximum (partial) borrow amounts (to liquidate) of the respective user.
     /// @param swapper Contract address of the `MultiSwapper` implementation. See `setSwapper`.
-    /// @param swapData Swap necessar data
+    /// @param swapData Swap necessary data
     function _closedLiquidation(
         address[] calldata users,
         uint256[] calldata maxBorrowParts,

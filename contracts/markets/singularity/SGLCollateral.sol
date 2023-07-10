@@ -22,7 +22,7 @@ contract SGLCollateral is SGLLendingCommon {
         bool skim,
         uint256 amount,
         uint256 share
-    ) public notPaused allowedBorrow(from, share) {
+    ) external notPaused allowedBorrow(from, share) {
         _addCollateral(from, to, skim, amount, share);
     }
 
@@ -34,7 +34,7 @@ contract SGLCollateral is SGLLendingCommon {
         address from,
         address to,
         uint256 share
-    ) public notPaused solvent(from) allowedBorrow(from, share) {
+    ) external notPaused solvent(from) allowedBorrow(from, share) {
         _removeCollateral(from, to, share);
     }
 }

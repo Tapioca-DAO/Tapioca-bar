@@ -11,7 +11,7 @@ contract SGLCommon is SGLStorage {
     // ************************ //
 
     /// @notice Accrues the interest on the borrowed tokens and handles the accumulation of fees.
-    function accrue() public {
+    function accrue() external {
         _accrue();
     }
 

@@ -199,7 +199,7 @@ contract Singularity is SGLCommon {
         address to,
         bool skim,
         uint256 share
-    ) public notPaused allowedLend(from, share) returns (uint256 fraction) {
+    ) external notPaused allowedLend(from, share) returns (uint256 fraction) {
         _accrue();
         fraction = _addAsset(from, to, skim, share);
     }
@@ -213,7 +213,7 @@ contract Singularity is SGLCommon {
         address from,
         address to,
         uint256 fraction
-    ) public notPaused returns (uint256 share) {
+    ) external notPaused returns (uint256 share) {
         _accrue();
         share = _removeAsset(from, to, fraction, true);
         _allowedLend(from, share);
@@ -231,7 +231,7 @@ contract Singularity is SGLCommon {
         bool skim,
         uint256 amount,
         uint256 share
-    ) public {
+    ) external {
         _executeModule(
             Module.Collateral,
             abi.encodeWithSelector(
@@ -249,7 +249,11 @@ contract Singularity is SGLCommon {
     /// @param from Account to debit collateral from.
     /// @param to The receiver of the shares.
     /// @param share Amount of shares to remove.
-    function removeCollateral(address from, address to, uint256 share) public {
+    function removeCollateral(
+        address from,
+        address to,
+        uint256 share
+    ) external {
         _executeModule(
             Module.Collateral,
             abi.encodeWithSelector(
@@ -271,7 +275,7 @@ contract Singularity is SGLCommon {
         address from,
         address to,
         uint256 amount
-    ) public returns (uint256 part, uint256 share) {
+    ) external returns (uint256 part, uint256 share) {
         bytes memory result = _executeModule(
             Module.Borrow,
             abi.encodeWithSelector(SGLBorrow.borrow.selector, from, to, amount)
@@ -291,7 +295,7 @@ contract Singularity is SGLCommon {
         address to,
         bool skim,
         uint256 part
-    ) public returns (uint256 amount) {
+    ) external returns (uint256 amount) {
         bytes memory result = _executeModule(
             Module.Borrow,
             abi.encodeWithSelector(
@@ -308,7 +312,7 @@ contract Singularity is SGLCommon {
     /// @notice Lever down: Sell collateral to repay debt; excess goes to YB
     /// @param from The user who sells
     /// @param share Collateral YieldBox-shares to sell
-    /// @param minAmountOut Mininal proceeds required for the sale
+    /// @param minAmountOut Minimal proceeds required for the sale
     /// @param swapper Swapper to execute the sale
     /// @param dexData Additional data to pass to the swapper
     /// @return amountOut Actual asset amount received in the sale
@@ -337,7 +341,7 @@ contract Singularity is SGLCommon {
     /// @param from The user who buys
     /// @param borrowAmount Amount of extra asset borrowed
     /// @param supplyAmount Amount of asset supplied (down payment)
-    /// @param minAmountOut Mininal collateral amount to receive
+    /// @param minAmountOut Minimal collateral amount to receive
     /// @param swapper Swapper to execute the purchase
     /// @param dexData Additional data to pass to the swapper
     /// @return amountOut Actual collateral amount purchased
@@ -437,6 +441,8 @@ contract Singularity is SGLCommon {
         bytes calldata collateralToAssetSwapData,
         bytes calldata usdoToBorrowedSwapData
     ) external {
+        require(users.length == maxBorrowParts.length, "SGL: length mismatch");
+        require(users.length > 0, "SGL: nothing to liquidate");
         _executeModule(
             Module.Liquidation,
             abi.encodeWithSelector(
@@ -464,6 +470,14 @@ contract Singularity is SGLCommon {
     // *********************** //
     // *** OWNER FUNCTIONS *** //
     // *********************** //
+    /// @notice rescues unused ETH from the contract
+    /// @param amount the amount to rescue
+    /// @param to the recipient
+    function rescueEth(uint256 amount, address to) external onlyOwner {
+        (bool success, ) = to.call{value: amount}("");
+        require(success, "SGL: transfer failed.");
+    }
+
     /// @notice Transfers fees to penrose
     /// @dev can only be called by the owner
     /// @param feeTo fees receiver

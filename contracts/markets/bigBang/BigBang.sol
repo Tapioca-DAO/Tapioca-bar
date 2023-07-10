@@ -145,6 +145,16 @@ contract BigBang is BoringOwnable, Market {
 
         _isEthMarket = collateralId == penrose.wethAssetId();
         if (!_isEthMarket) {
+            if (minDebtRate != 0 && maxDebtRate != 0) {
+                require(
+                    minDebtRate < maxDebtRate,
+                    "BigBang: debt rates not valid"
+                );
+                require(
+                    maxDebtRate <= 1e18,
+                    "BigBang: max debt rate not valid"
+                );
+            }
             debtRateAgainstEthMarket = _debtRateAgainstEth;
             maxDebtRate = _debtRateMax;
             minDebtRate = _debtRateMin;
@@ -233,7 +243,7 @@ contract BigBang is BoringOwnable, Market {
         address from,
         address to,
         uint256 amount
-    ) public notPaused solvent(from) returns (uint256 part, uint256 share) {
+    ) external notPaused solvent(from) returns (uint256 part, uint256 share) {
         uint256 allowanceShare = _computeAllowanceAmountInAsset(
             from,
             exchangeRate,
@@ -255,7 +265,7 @@ contract BigBang is BoringOwnable, Market {
         address to,
         bool,
         uint256 part
-    ) public notPaused allowedBorrow(from, part) returns (uint256 amount) {
+    ) external notPaused allowedBorrow(from, part) returns (uint256 amount) {
         updateExchangeRate();
 
         accrue();
@@ -275,7 +285,7 @@ contract BigBang is BoringOwnable, Market {
         bool skim,
         uint256 amount,
         uint256 share
-    ) public allowedBorrow(from, share) notPaused {
+    ) external allowedBorrow(from, share) notPaused {
         _addCollateral(from, to, skim, amount, share);
     }
 
@@ -287,7 +297,7 @@ contract BigBang is BoringOwnable, Market {
         address from,
         address to,
         uint256 share
-    ) public notPaused solvent(from) allowedBorrow(from, share) {
+    ) external notPaused solvent(from) allowedBorrow(from, share) {
         _removeCollateral(from, to, share);
     }
 
@@ -302,6 +312,10 @@ contract BigBang is BoringOwnable, Market {
         ISwapper swapper,
         bytes calldata collateralToAssetSwapData
     ) external notPaused {
+        require(
+            users.length == maxBorrowParts.length,
+            "BigBang: length mismatch"
+        );
         // Oracle can fail but we still need to allow liquidations
         (, uint256 _exchangeRate) = updateExchangeRate();
         _accrue();
@@ -319,7 +333,7 @@ contract BigBang is BoringOwnable, Market {
     /// @param from The user who buys
     /// @param borrowAmount Amount of extra asset borrowed
     /// @param supplyAmount Amount of asset supplied (down payment)
-    /// @param minAmountOut Mininal collateral amount to receive
+    /// @param minAmountOut Minimal collateral amount to receive
     /// @param swapper Swapper to execute the purchase
     /// @param dexData Additional data to pass to the swapper
     /// @return amountOut Actual collateral amount purchased
@@ -367,7 +381,7 @@ contract BigBang is BoringOwnable, Market {
     /// @notice Lever down: Sell collateral to repay debt; excess goes to YB
     /// @param from The user who sells
     /// @param share Collateral YieldBox-shares to sell
-    /// @param minAmountOut Mininal proceeds required for the sale
+    /// @param minAmountOut Minimal proceeds required for the sale
     /// @param swapper Swapper to execute the sale
     /// @param dexData Additional data to pass to the swapper
     /// @return amountOut Actual asset amount received in the sale
@@ -413,15 +427,12 @@ contract BigBang is BoringOwnable, Market {
         }
     }
 
-    function transfer(
-        address to,
-        uint256 amount
-    ) public override returns (bool) {}
+    function transfer(address, uint256) public override returns (bool) {}
 
     function transferFrom(
-        address from,
-        address to,
-        uint256 amount
+        address,
+        address,
+        uint256
     ) public override returns (bool) {}
 
     // ************************* //
@@ -437,6 +448,7 @@ contract BigBang is BoringOwnable, Market {
         feeShares = yieldBox.toShare(assetId, totalFees, false);
 
         if (totalFees > 0) {
+            asset.approve(address(yieldBox), 0);
             asset.approve(address(yieldBox), totalFees);
 
             yieldBox.depositAsset(
@@ -644,7 +656,7 @@ contract BigBang is BoringOwnable, Market {
     /// @param users An array of user addresses.
     /// @param maxBorrowParts A one-to-one mapping to `users`, contains maximum (partial) borrow amounts (to liquidate) of the respective user.
     /// @param swapper Contract address of the `MultiSwapper` implementation. See `setSwapper`.
-    /// @param swapData Swap necessar data
+    /// @param swapData Swap necessary data
     function _closedLiquidation(
         address[] calldata users,
         uint256[] calldata maxBorrowParts,
@@ -717,7 +729,7 @@ contract BigBang is BoringOwnable, Market {
 
         userBorrowPart[to] -= part;
 
-        uint256 toWithdraw = (amount - part); //acrrued
+        uint256 toWithdraw = (amount - part); //accrued
         uint256 toBurn = amount - toWithdraw;
         yieldBox.withdraw(assetId, from, address(this), amount, 0);
         //burn USDO
@@ -748,6 +760,7 @@ contract BigBang is BoringOwnable, Market {
         IUSDOBase(address(asset)).mint(address(this), amount);
 
         //deposit borrowed amount to user
+        asset.approve(address(yieldBox), 0);
         asset.approve(address(yieldBox), amount);
         yieldBox.depositAsset(assetId, address(this), to, amount, 0);
 
@@ -768,6 +781,7 @@ contract BigBang is BoringOwnable, Market {
             uint256 collateralShare
         )
     {
+        require(_exchangeRate > 0, "BigBang: exchangeRate not valid");
         uint256 collateralPartInAsset = (yieldBox.toAmount(
             collateralId,
             userCollateralShare[user],

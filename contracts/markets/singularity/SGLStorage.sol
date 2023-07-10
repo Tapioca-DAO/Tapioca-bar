@@ -131,9 +131,9 @@ contract SGLStorage is BoringOwnable, Market {
     /// @notice event emitted when the order book liquidation multiplier rate is updated
     event OrderBookLiquidationMultiplierUpdated(uint256 oldVal, uint256 newVal);
     /// @notice event emitted when the bid execution swapper is updated
-    event BidExecutionSwapperUpdated(address newAddress);
+    event BidExecutionSwapperUpdated(address indexed newAddress);
     /// @notice event emitted when the usdo swapper is updated
-    event UsdoSwapperUpdated(address newAddress);
+    event UsdoSwapperUpdated(address indexed newAddress);
 
     // ***************** //
     // *** CONSTANTS *** //
@@ -149,7 +149,7 @@ contract SGLStorage is BoringOwnable, Market {
     // *** VIEW FUNCTIONS *** //
     // ********************** //
     /// @notice returns market's ERC20 symbol
-    function symbol() public view returns (string memory) {
+    function symbol() external view returns (string memory) {
         return
             string(
                 abi.encodePacked(

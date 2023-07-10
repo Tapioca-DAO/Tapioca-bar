@@ -89,7 +89,7 @@ contract SGLLeverage is SGLLendingCommon {
     /// @notice Lever down: Sell collateral to repay debt; excess goes to YB
     /// @param from The user who sells
     /// @param share Collateral YieldBox-shares to sell
-    /// @param minAmountOut Mininal proceeds required for the sale
+    /// @param minAmountOut Minimal proceeds required for the sale
     /// @param swapper Swapper to execute the sale
     /// @param dexData Additional data to pass to the swapper
     /// @return amountOut Actual asset amount received in the sale
@@ -139,7 +139,7 @@ contract SGLLeverage is SGLLendingCommon {
     /// @param from The user who buys
     /// @param borrowAmount Amount of extra asset borrowed
     /// @param supplyAmount Amount of asset supplied (down payment)
-    /// @param minAmountOut Mininal collateral amount to receive
+    /// @param minAmountOut Minimal collateral amount to receive
     /// @param swapper Swapper to execute the purchase
     /// @param dexData Additional data to pass to the swapper
     /// @return amountOut Actual collateral amount purchased
