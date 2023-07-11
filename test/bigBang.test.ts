@@ -1811,7 +1811,7 @@ describe('BigBang test', () => {
             expect(collateralShares.eq(0)).to.be.true;
         });
 
-        it.only('should test the variable debt', async () => {
+        it('should test the variable debt', async () => {
             const {
                 wethBigBangMarket,
                 wbtcBigBangMarket,
