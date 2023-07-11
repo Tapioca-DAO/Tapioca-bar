@@ -108,7 +108,7 @@ contract USDO is BaseUSDO, IERC3156FlashLender {
     function mint(address _to, uint256 _amount) external notPaused {
         require(allowedMinter[_getChainId()][msg.sender], "USDO: unauthorized");
         _mint(_to, _amount);
-        // emit Minted(_to, _amount);
+        emit Minted(_to, _amount);
     }
 
     /// @notice burns USDO
@@ -117,6 +117,6 @@ contract USDO is BaseUSDO, IERC3156FlashLender {
     function burn(address _from, uint256 _amount) external notPaused {
         require(allowedBurner[_getChainId()][msg.sender], "USDO: unauthorized");
         _burn(_from, _amount);
-        // emit Burned(_from, _amount);
+        emit Burned(_from, _amount);
     }
 }
