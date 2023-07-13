@@ -7,6 +7,7 @@ export const buildMultiSwapper = async (
     hre: HardhatRuntimeEnvironment,
     uniV2Router: string,
     uniV2Factory: string,
+    yieldBox: string,
 ): Promise<IDeployerVMAdd<UniswapV2Swapper__factory>> => {
     const UniswapV2Swapper = (await hre.ethers.getContractFactoryFromArtifact(
         UniswapV2SwapperArtifact,
@@ -15,12 +16,7 @@ export const buildMultiSwapper = async (
     return {
         contract: UniswapV2Swapper,
         deploymentName: 'MultiSwapper',
-        args: [
-            uniV2Router,
-            uniV2Factory,
-            // YieldBox, to be replaced by VM
-            hre.ethers.constants.AddressZero,
-        ],
+        args: [uniV2Router, uniV2Factory, yieldBox],
         dependsOn: [{ argPosition: 2, deploymentName: 'YieldBox' }],
         runStaticSimulation: false,
     };

@@ -91,7 +91,6 @@ export const useNetwork = async (
     return { signer: new hre.ethers.Wallet(pk, provider), provider: provider };
 };
 
-// [{address: '0x85b10c8F1B00A21942D3dcdB233D33a022B89833', assetId:7}, {address: '0xa6F8dF7d09f228Bdb8AaF5B319E6966a3F94476f', assetId:11}]
 export const fillMockSwapper__test = async (
     taskArgs: { toft: string; assetid: string },
     hre: HardhatRuntimeEnvironment,
@@ -238,7 +237,7 @@ export const fillMockSwapper__test = async (
                 },
                 { value: sendFromFee.mul(2) },
             )
-        ).wait(200);
+        ).wait(150);
         console.log('       [+] sendFrom tx hash:', tx.transactionHash);
 
         const dstChainInfo = hre.SDK.utils.getChainBy(

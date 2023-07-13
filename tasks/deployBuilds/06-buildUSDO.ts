@@ -6,14 +6,14 @@ export const buildUSD0 = async (
     hre: HardhatRuntimeEnvironment,
     lzEndPoint: string,
     owner: string,
+    yieldBox: string,
 ): Promise<IDeployerVMAdd<USDO__factory>> => {
     return {
         contract: await hre.ethers.getContractFactory('USDO'),
         deploymentName: 'USDO',
         args: [
             lzEndPoint,
-            // YieldBox, to be replaced by VM
-            hre.ethers.constants.AddressZero,
+            yieldBox,
             owner,
             hre.ethers.constants.AddressZero,
             hre.ethers.constants.AddressZero,

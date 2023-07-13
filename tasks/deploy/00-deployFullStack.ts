@@ -30,6 +30,7 @@ export const deployFullStack__task = async (
     if (!chainInfo) {
         throw new Error('Chain not found');
     }
+    // const isTestnet = chainInfo.tags.find((a) => a == 'testnet')?.length > 0;
 
     let tapToken = hre.SDK.db
         .loadGlobalDeployment(tag, 'tap-token', chainInfo.chainId)
@@ -56,8 +57,19 @@ export const deployFullStack__task = async (
         throw new Error(`[-] Token not found: ${tapToken}, ${weth}`);
     }
 
-    // const test = await buildTest(hre);
-    // VM.add(test);
+    let ybAddress = hre.ethers.constants.AddressZero;
+    let yb = hre.SDK.db
+        .loadGlobalDeployment(tag, 'YieldBox', chainInfo.chainId)
+        .find((e) => e.name == 'YieldBox');
+
+    if (!yb) {
+        yb = hre.SDK.db
+            .loadLocalDeployment(tag, chainInfo.chainId)
+            .find((e) => e.name == 'YieldBox');
+    }
+    if (yb) {
+        ybAddress = yb.address;
+    }
 
     // 00 - Deploy YieldBox
     const [ybURI, yieldBox] = await buildYieldBox(hre, weth.address);
@@ -69,6 +81,7 @@ export const deployFullStack__task = async (
         tapToken.address,
         weth.address,
         signer.address,
+        ybAddress,
     );
     VM.add(penrose);
 
@@ -81,6 +94,7 @@ export const deployFullStack__task = async (
         hre,
         constants[chainInfo.chainId].uniV2Router,
         constants[chainInfo.chainId].uniV2Factory,
+        ybAddress,
     );
     VM.add(multiSwapper);
 
@@ -92,16 +106,22 @@ export const deployFullStack__task = async (
 
     // 06 USDO
     const [leverageModule, marketModule, optionsModule] =
-        await buildUSDOModules(chainInfo.address, hre);
+        await buildUSDOModules(chainInfo.address, hre, ybAddress);
     VM.add(leverageModule).add(marketModule).add(optionsModule);
 
-    const usdo = await buildUSD0(hre, chainInfo.address, signer.address);
+    const usdo = await buildUSD0(
+        hre,
+        chainInfo.address,
+        signer.address,
+        ybAddress,
+    );
     VM.add(usdo);
 
     // 07 - CurveSwapper-buildStableToUSD0Bidder
     const [curveSwapper, curveStableToUsd0] = await buildStableToUSD0Bidder(
         hre,
         constants[chainInfo.chainId].crvStablePool,
+        ybAddress,
     );
     VM.add(curveSwapper).add(curveStableToUsd0);
 

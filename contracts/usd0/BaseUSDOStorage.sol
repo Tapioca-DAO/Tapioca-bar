@@ -46,10 +46,6 @@ contract BaseUSDOStorage is OFTV2 {
     // ************** //
     // *** EVENTS *** //
     // ************** //
-    /// @notice event emitted when USDO is minted
-    event Minted(address indexed _for, uint256 _amount);
-    /// @notice event emitted when USDO is burned
-    event Burned(address indexed _from, uint256 _amount);
     /// @notice event emitted when a new address is set or removed from minters array
     event SetMinterStatus(address indexed _for, bool _status);
     /// @notice event emitted when a new address is set or removed from burners array
