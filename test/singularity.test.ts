@@ -2529,6 +2529,8 @@ describe('Singularity test', () => {
             const userBorrowPart = await wethUsdcSingularity.userBorrowPart(
                 eoa1.address,
             );
+            console.log(`userBorrowPart ${userBorrowPart}`);
+            console.log(`borrowVal      ${borrowVal}`);
             expect(borrowVal.add(borrowVal.mul(10).div(100)).eq(userBorrowPart))
                 .to.be.true;
             const minCollateralShareRepay =
@@ -2554,7 +2556,6 @@ describe('Singularity test', () => {
             const assetId = await wethUsdcSingularity.assetId();
 
             await weth.connect(eoa1).freeMint(userBorrowPart);
-
             await yieldBox
                 .connect(eoa1)
                 .depositAsset(
