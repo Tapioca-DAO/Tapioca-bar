@@ -2573,10 +2573,12 @@ describe('Singularity test', () => {
             ).to.be.eq(BN(0));
 
             const feeTo = await bar.feeTo();
-            const sglBalanceOfFeeTo = await wethUsdcSingularity.balanceOf(feeTo);
+            const sglBalanceOfFeeTo = await wethUsdcSingularity.balanceOf(
+                feeTo,
+            );
 
-            expect(sglBalanceOfFeeTo.eq(borrowVal.mul(1e4).div(1e5))).to.be.true;
-
+            expect(sglBalanceOfFeeTo.eq(borrowVal.mul(1e4).div(1e5))).to.be
+                .true;
 
             // Withdraw collateral
             await (

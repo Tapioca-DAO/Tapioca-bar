@@ -755,6 +755,11 @@ contract BigBang is BoringOwnable, Market {
         );
 
         userBorrowPart[from] += part;
+        emit LogBorrow(from, to, amount, feeAmount, part);
+
+        if (feeAmount > 0) {
+            balanceOf[penrose.feeTo()] += feeAmount;
+        }
 
         //mint USDO
         IUSDOBase(address(asset)).mint(address(this), amount);
@@ -765,8 +770,6 @@ contract BigBang is BoringOwnable, Market {
         yieldBox.depositAsset(assetId, address(this), to, amount, 0);
 
         share = yieldBox.toShare(assetId, amount, false);
-
-        emit LogBorrow(from, to, amount, feeAmount, part);
     }
 
     function _updateBorrowAndCollateralShare(
