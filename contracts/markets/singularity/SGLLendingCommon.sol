@@ -68,6 +68,10 @@ contract SGLLendingCommon is SGLCommon {
         userBorrowPart[from] += part;
         emit LogBorrow(from, to, amount, feeAmount, part);
 
+        if (feeAmount > 0) {
+            balanceOf[penrose.feeTo()] += feeAmount;
+        }
+
         share = yieldBox.toShare(assetId, amount, false);
         Rebase memory _totalAsset = totalAsset;
         require(_totalAsset.base >= 1000, "SGL: min limit");

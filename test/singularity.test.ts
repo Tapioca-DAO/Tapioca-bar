@@ -2423,6 +2423,210 @@ describe('Singularity test', () => {
             expect(balanceAfter.gt(balanceBefore)).to.be.true;
         });
 
+        it('Should accumulate opening fees', async () => {
+            const {
+                usdc,
+                weth,
+                yieldBox,
+                eoa1,
+                wethUsdcSingularity,
+                deployer,
+                initContracts,
+                approveTokensAndSetBarApproval,
+                usdcDepositAndAddCollateral,
+                magnetar,
+                bar,
+                BN,
+                __wethUsdcPrice,
+            } = await loadFixture(register);
+
+            await initContracts(); // To prevent `Singularity: below minimum`
+
+            const lendVal = ethers.BigNumber.from((1e18).toString()).mul(10);
+            const collateralVal = lendVal.mul(
+                __wethUsdcPrice.div((1e18).toString()),
+            );
+            const borrowVal = collateralVal
+                .mul(50)
+                .div(100)
+                .div(__wethUsdcPrice.div((1e18).toString()));
+            await weth.freeMint(lendVal);
+            await usdc.connect(eoa1).freeMint(collateralVal);
+
+            /**
+             * LEND
+             */
+            const balanceBefore = await weth.balanceOf(deployer.address);
+            // Deposit assets to bar
+            const lendValShare = await yieldBox.toShare(
+                await wethUsdcSingularity.assetId(),
+                lendVal,
+                false,
+            );
+            await (await weth.approve(yieldBox.address, lendVal)).wait();
+            await (
+                await yieldBox.depositAsset(
+                    await wethUsdcSingularity.assetId(),
+                    deployer.address,
+                    deployer.address,
+                    0,
+                    lendValShare,
+                )
+            ).wait();
+
+            // Add asset to Singularity
+            await (
+                await yieldBox.setApprovalForAll(
+                    wethUsdcSingularity.address,
+                    true,
+                )
+            ).wait();
+            await (
+                await wethUsdcSingularity.addAsset(
+                    deployer.address,
+                    deployer.address,
+                    false,
+                    lendValShare,
+                )
+            ).wait();
+
+            /**
+             * BORROW
+             */
+            const collateralId = await wethUsdcSingularity.collateralId();
+
+            // We approve external operators
+            await approveTokensAndSetBarApproval();
+            await approveTokensAndSetBarApproval(eoa1);
+
+            // We deposit USDC collateral
+            await usdcDepositAndAddCollateral(collateralVal, eoa1);
+            expect(
+                await wethUsdcSingularity.userCollateralShare(eoa1.address),
+            ).equal(await yieldBox.toShare(collateralId, collateralVal, false));
+
+            const payload = wethUsdcSingularity.interface.encodeFunctionData(
+                'setBorrowOpeningFee',
+                [1e4],
+            );
+
+            await (
+                await bar.executeMarketFn(
+                    [wethUsdcSingularity.address],
+                    [payload],
+                    true,
+                )
+            ).wait();
+            const openingFeeAfter =
+                await wethUsdcSingularity.borrowOpeningFee();
+            expect(openingFeeAfter.eq(1e4)).to.be.true;
+            // We borrow
+            await wethUsdcSingularity
+                .connect(eoa1)
+                .borrow(eoa1.address, eoa1.address, borrowVal);
+
+            // Validate fees
+            const userBorrowPart = await wethUsdcSingularity.userBorrowPart(
+                eoa1.address,
+            );
+            expect(borrowVal.add(borrowVal.mul(10).div(100)).eq(userBorrowPart))
+                .to.be.true;
+            const minCollateralShareRepay =
+                await magnetar.getCollateralSharesForBorrowPart(
+                    wethUsdcSingularity.address,
+                    borrowVal.mul(1e4).div(1e5).add(borrowVal),
+                    ethers.BigNumber.from((1e5).toString()),
+                    ethers.BigNumber.from((1e18).toString()),
+                );
+            const userCollateralShareToRepay =
+                await magnetar.getCollateralSharesForBorrowPart(
+                    wethUsdcSingularity.address,
+                    userBorrowPart,
+                    ethers.BigNumber.from((1e5).toString()),
+                    ethers.BigNumber.from((1e18).toString()),
+                );
+
+            expect(userCollateralShareToRepay).to.be.eq(
+                minCollateralShareRepay,
+            );
+
+            // Repay borrow
+            const assetId = await wethUsdcSingularity.assetId();
+
+            await weth.connect(eoa1).freeMint(userBorrowPart);
+
+            await yieldBox
+                .connect(eoa1)
+                .depositAsset(
+                    assetId,
+                    eoa1.address,
+                    eoa1.address,
+                    userBorrowPart,
+                    0,
+                );
+            await wethUsdcSingularity
+                .connect(eoa1)
+                .repay(eoa1.address, eoa1.address, false, userBorrowPart);
+
+            expect(
+                await wethUsdcSingularity.userBorrowPart(eoa1.address),
+            ).to.be.eq(BN(0));
+
+            const feeTo = await bar.feeTo();
+            const sglBalanceOfFeeTo = await wethUsdcSingularity.balanceOf(feeTo);
+
+            expect(sglBalanceOfFeeTo.eq(borrowVal.mul(1e4).div(1e5))).to.be.true;
+
+
+            // Withdraw collateral
+            await (
+                await wethUsdcSingularity
+                    .connect(eoa1)
+                    .removeCollateral(
+                        eoa1.address,
+                        eoa1.address,
+                        await wethUsdcSingularity.userCollateralShare(
+                            eoa1.address,
+                        ),
+                    )
+            ).wait();
+
+            await (
+                await yieldBox
+                    .connect(eoa1)
+                    .withdraw(
+                        collateralId,
+                        eoa1.address,
+                        eoa1.address,
+                        0,
+                        await yieldBox.balanceOf(eoa1.address, collateralId),
+                    )
+            ).wait();
+
+            // Withdraw assets
+            await (
+                await wethUsdcSingularity.removeAsset(
+                    deployer.address,
+                    deployer.address,
+                    lendValShare,
+                )
+            ).wait();
+
+            await (
+                await yieldBox.withdraw(
+                    assetId,
+                    deployer.address,
+                    deployer.address,
+                    0,
+                    await yieldBox.balanceOf(deployer.address, assetId),
+                )
+            ).wait();
+
+            // Check that the lender has an increased amount
+            const balanceAfter = await weth.balanceOf(deployer.address);
+            expect(balanceAfter.gt(balanceBefore)).to.be.true;
+        });
+
         it('Should accumulate fees and harvest them as collateral', async () => {
             const {
                 usdc,

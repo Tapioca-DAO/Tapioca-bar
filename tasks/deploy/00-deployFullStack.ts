@@ -13,7 +13,10 @@ import { buildMasterContractsSetup } from '../setups/02-buildMasterContractsSetu
 import { loadVM } from '../utils';
 import SDK from 'tapioca-sdk';
 import { buildUSDOModules } from '../deployBuilds/11-buildUSDOModules';
-import { CURVE_DEPLOYMENTS, UNISWAP_DEPLOYMENTS } from '../../gitsub_tapioca-sdk/src/api/constants';
+import {
+    CURVE_DEPLOYMENTS,
+    UNISWAP_DEPLOYMENTS,
+} from '../../gitsub_tapioca-sdk/src/api/constants';
 
 // hh deployFullStack --network goerli
 export const deployFullStack__task = async (
