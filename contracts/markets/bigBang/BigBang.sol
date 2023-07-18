@@ -758,7 +758,7 @@ contract BigBang is BoringOwnable, Market {
         emit LogBorrow(from, to, amount, feeAmount, part);
 
         if (feeAmount > 0) {
-            IUSDOBase(bar.feeTo()).mint(address(this), feeAmount);
+            IUSDOBase(penrose.feeTo()).mint(address(this), feeAmount);
         }
 
         //mint USDO
