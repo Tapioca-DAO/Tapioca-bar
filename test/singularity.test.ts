@@ -1864,9 +1864,7 @@ describe('Singularity test', () => {
             const decimals = await wethUsdcSingularity.decimals();
             const totalSupply = await wethUsdcSingularity.totalSupply();
 
-            expect(symbol.toLowerCase()).to.contain(
-                'tmusdcm/wethm-wethmoracle',
-            );
+            expect(symbol.toLowerCase()).to.contain('tm-usdcm');
             expect(decimals).to.eq(18);
             expect(totalSupply).to.eq(0);
         });

@@ -150,31 +150,14 @@ contract SGLStorage is BoringOwnable, Market {
     // ********************** //
     /// @notice returns market's ERC20 symbol
     function symbol() external view returns (string memory) {
-        return
-            string(
-                abi.encodePacked(
-                    "tm",
-                    collateral.safeSymbol(),
-                    "/",
-                    asset.safeSymbol(),
-                    "-",
-                    oracle.symbol(oracleData)
-                )
-            );
+        return string(abi.encodePacked("tm-", collateral.safeSymbol()));
     }
 
     /// @notice returns market's ERC20 name
     function name() external view returns (string memory) {
         return
             string(
-                abi.encodePacked(
-                    "Tapioca Singularity ",
-                    collateral.safeName(),
-                    "/",
-                    asset.safeName(),
-                    "-",
-                    oracle.name(oracleData)
-                )
+                abi.encodePacked("Tapioca Singularity-", collateral.safeName())
             );
     }
 
