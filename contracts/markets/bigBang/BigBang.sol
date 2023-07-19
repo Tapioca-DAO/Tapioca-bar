@@ -536,6 +536,9 @@ contract BigBang is BoringOwnable, Market {
             1e18;
         _totalBorrow.elastic += uint128(extraAmount);
 
+        uint256 feeAmount = (extraAmount * protocolFee) / FEE_PRECISION; // % of interest paid goes to fee
+        IUSDOBase(address(asset)).mint(address(this), feeAmount); //withdrawn when refreshPenroseFees is called
+
         totalBorrow = _totalBorrow;
         accrueInfo = _accrueInfo;
 
