@@ -38,16 +38,34 @@ export const deployLinkedChainStack__task = async (
         throw new Error('[-] Token not found');
     }
 
+    let ybAddress = hre.ethers.constants.AddressZero;
+    let yb = hre.SDK.db
+        .loadGlobalDeployment(tag, 'YieldBox', chainInfo.chainId)
+        .find((e) => e.name == 'YieldBox');
+
+    if (!yb) {
+        yb = hre.SDK.db
+            .loadLocalDeployment(tag, chainInfo.chainId)
+            .find((e) => e.name == 'YieldBox');
+    }
+    if (yb) {
+        ybAddress = yb.address;
+    }
     // 01 YieldBox
     const [ybURI, yieldBox] = await buildYieldBox(hre, weth.address);
     VM.add(ybURI).add(yieldBox);
 
     // 02 USDO
     const [leverageModule, marketModule, optionsModule] =
-        await buildUSDOModules(chainInfo.address, hre);
+        await buildUSDOModules(chainInfo.address, hre, ybAddress);
     VM.add(leverageModule).add(marketModule).add(optionsModule);
 
-    const usdo = await buildUSD0(hre, chainInfo.address, signer.address);
+    const usdo = await buildUSD0(
+        hre,
+        chainInfo.address,
+        signer.address,
+        ybAddress,
+    );
     VM.add(usdo);
 
     // Add and execute

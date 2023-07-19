@@ -217,7 +217,7 @@ contract USDOMarketModule is BaseUSDOStorage {
                     to,
                     lendParams.depositAmount,
                     lendParams.repayAmount,
-                    0,
+                    lendParams.removeCollateralAmount,
                     true,
                     withdrawParams
                 );

@@ -536,6 +536,9 @@ contract BigBang is BoringOwnable, Market {
             1e18;
         _totalBorrow.elastic += uint128(extraAmount);
 
+        uint256 feeAmount = (extraAmount * protocolFee) / FEE_PRECISION; // % of interest paid goes to fee
+        IUSDOBase(address(asset)).mint(address(this), feeAmount); //withdrawn when refreshPenroseFees is called
+
         totalBorrow = _totalBorrow;
         accrueInfo = _accrueInfo;
 
@@ -647,7 +650,8 @@ contract BigBang is BoringOwnable, Market {
         feeShare = (extraShare * protocolFee) / FEE_PRECISION; // x% of profit goes to fee.
         callerShare = (extraShare * callerReward) / FEE_PRECISION; //  y%  of profit goes to caller.
 
-        yieldBox.transfer(address(this), penrose.feeTo(), assetId, feeShare);
+        //protocol fees should be kept in the contract as we do a yieldBox.depositAsset when we are extracting the fees using `refreshPenroseFees`
+        yieldBox.withdraw(assetId, address(this), address(this), 0, feeShare);
         yieldBox.transfer(address(this), msg.sender, assetId, callerShare);
     }
 
@@ -755,9 +759,10 @@ contract BigBang is BoringOwnable, Market {
         );
 
         userBorrowPart[from] += part;
+        emit LogBorrow(from, to, amount, feeAmount, part);
 
         //mint USDO
-        IUSDOBase(address(asset)).mint(address(this), amount);
+        IUSDOBase(address(asset)).mint(address(this), amount + feeAmount);
 
         //deposit borrowed amount to user
         asset.approve(address(yieldBox), 0);
@@ -765,8 +770,6 @@ contract BigBang is BoringOwnable, Market {
         yieldBox.depositAsset(assetId, address(this), to, amount, 0);
 
         share = yieldBox.toShare(assetId, amount, false);
-
-        emit LogBorrow(from, to, amount, feeAmount, part);
     }
 
     function _updateBorrowAndCollateralShare(

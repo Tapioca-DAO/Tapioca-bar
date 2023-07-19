@@ -1,10 +1,9 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
-import inquirer from 'inquirer';
 import { IDeployerVMAdd } from 'tapioca-sdk/dist/ethers/hardhat/DeployerVM';
 import { MockSwapper__factory } from '../../gitsub_tapioca-sdk/src/typechain/tapioca-mocks';
-import { buildOracleMock } from '../deployBuilds/05-buildOracleMock';
+import MockSwapperArtifact from '../../gitsub_tapioca-sdk/src/artifacts/tapioca-mocks/MockSwapper.json';
+import { EChainID } from '../../gitsub_tapioca-sdk/src/api/config';
 import { loadVM } from '../utils';
-import MockSwapperArtifact from 'tapioca-sdk/dist/artifacts/tapioca-mocks/MockSwapper.json';
 
 const buildMockSwapper = async (
     hre: HardhatRuntimeEnvironment,
@@ -46,20 +45,18 @@ export const testDeployMockSwapper__task = async (
 
     await VM.execute(3);
     VM.save();
-
-    const penroseDeployment = hre.SDK.db
-        .loadLocalDeployment(tag, chainInfo.chainId)
-        .find((e) => e.name == 'Penrose');
-
-    const swapperDeployment = hre.SDK.db
-        .loadLocalDeployment(tag, chainInfo.chainId)
-        .find((e) => e.name == 'MockSwapper');
-
-    const penroseContract = await hre.ethers.getContractAt(
-        'Penrose',
-        penroseDeployment?.address,
-    );
-    await penroseContract.setSwapper(swapperDeployment?.address, true);
-
+    if (chainInfo.chainId == EChainID.ARBITRUM_GOERLI) {
+        const penroseDeployment = hre.SDK.db
+            .loadLocalDeployment(tag, chainInfo.chainId)
+            .find((e) => e.name == 'Penrose');
+        const penroseContract = await hre.ethers.getContractAt(
+            'Penrose',
+            penroseDeployment?.address,
+        );
+        const swapperDeployment = hre.SDK.db
+            .loadLocalDeployment(tag, chainInfo.chainId)
+            .find((e) => e.name == 'MockSwapper');
+        await penroseContract.setSwapper(swapperDeployment?.address, true);
+    }
     await VM.verify();
 };

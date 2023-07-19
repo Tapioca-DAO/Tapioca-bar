@@ -8,17 +8,12 @@ export const buildPenrose = async (
     tapTokenAddress: string,
     wethTokenAddress: string,
     owner: string,
+    yieldBox: string,
 ): Promise<IDeployerVMAdd<Penrose__factory>> => {
     return {
         contract: await hre.ethers.getContractFactory('Penrose'),
         deploymentName: 'Penrose',
-        args: [
-            // Yieldbox, to be replaced by VM
-            hre.ethers.constants.AddressZero,
-            tapTokenAddress,
-            wethTokenAddress,
-            owner,
-        ],
+        args: [yieldBox, tapTokenAddress, wethTokenAddress, owner],
         dependsOn: [{ argPosition: 0, deploymentName: 'YieldBox' }],
         runStaticSimulation: false,
     };

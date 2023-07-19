@@ -11,6 +11,7 @@ import CurveStableToUsdoBidderArtifact from 'tapioca-sdk/dist/artifacts/tapioca-
 export const buildStableToUSD0Bidder = async (
     hre: HardhatRuntimeEnvironment,
     crvStablePoolAddr: string,
+    yieldBox: string,
     curvePoolAssetCount = '4',
 ): Promise<
     [
@@ -31,11 +32,7 @@ export const buildStableToUSD0Bidder = async (
         {
             contract: CurveSwapper,
             deploymentName: 'CurveSwapper',
-            args: [
-                crvStablePoolAddr,
-                // YieldBox, to be replaced by VM
-                hre.ethers.constants.AddressZero,
-            ],
+            args: [crvStablePoolAddr, yieldBox],
             dependsOn: [{ argPosition: 1, deploymentName: 'YieldBox' }],
             runStaticSimulation: false,
         },
