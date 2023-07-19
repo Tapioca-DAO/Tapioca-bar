@@ -216,7 +216,6 @@ contract Penrose is BoringOwnable, BoringFactory {
     // ************************ //
     /// @notice Loop through the master contracts and call `_depositFeesToYieldBox()` to each one of their clones.
     /// @dev `swappers_` can have one element that'll be used for all clones. Or one swapper per MasterContract.
-    /// @dev Fees are withdrawn in TAP and sent to the FeeDistributor contract
     /// @param markets_ Singularity &/ BigBang markets array
     /// @param swappers_ one or more swappers to convert the asset to TAP.
     /// @param swapData_ swap data for each swapper

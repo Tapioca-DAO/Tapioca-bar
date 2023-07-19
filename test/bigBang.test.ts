@@ -674,8 +674,16 @@ describe('BigBang test', () => {
             expect(userBorrowPart.eq(usdoBorrowValWithFee)).to.be.true;
 
             const totalSupplyAfter = await usd0.totalSupply();
-            expect(totalSupplyAfter.sub(totalSupplyBefore).eq(usdoBorrowVal)).to
-                .be.true;
+
+            expect(
+                totalSupplyAfter
+                    .sub(totalSupplyBefore)
+                    .eq(
+                        usdoBorrowVal.add(
+                            usdoBorrowVal.mul(feeAmount).div(1e5),
+                        ),
+                    ),
+            ).to.be.true;
 
             const feeToAddress = await bar.feeTo();
             const wethMinterBalance = await wethBigBangMarket.totalFees();
@@ -863,8 +871,15 @@ describe('BigBang test', () => {
             expect(userBorrowPart.eq(usdoBorrowValWithFee)).to.be.true;
 
             const totalSupplyAfter = await usd0.totalSupply();
-            expect(totalSupplyAfter.sub(totalSupplyBefore).eq(usdoBorrowVal)).to
-                .be.true;
+            expect(
+                totalSupplyAfter
+                    .sub(totalSupplyBefore)
+                    .eq(
+                        usdoBorrowVal.add(
+                            usdoBorrowVal.mul(feeAmount).div(1e5),
+                        ),
+                    ),
+            ).to.be.true;
 
             const feeToAddress = await bar.feeTo();
             const wethMinterBalance = await wethBigBangMarket.totalFees();
