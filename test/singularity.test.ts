@@ -744,6 +744,7 @@ describe('Singularity test', () => {
                 deployer,
                 wethUsdcSingularity,
                 multiSwapper,
+                bar,
                 wethUsdcOracle,
                 __wethUsdcPrice,
             } = await loadFixture(register);
@@ -796,7 +797,134 @@ describe('Singularity test', () => {
                     0,
                 );
 
-            return;
+            const data = new ethers.utils.AbiCoder().encode(['uint256'], [1]);
+
+            let priceDrop = __wethUsdcPrice.mul(2).div(100);
+            await wethUsdcOracle.set(__wethUsdcPrice.add(priceDrop));
+            await wethUsdcSingularity.updateExchangeRate();
+
+            const liquidateBadDebtFn =
+                wethUsdcSingularity.interface.encodeFunctionData(
+                    'liquidateBadDebt',
+                    [
+                        eoa1.address,
+                        deployer.address,
+                        multiSwapper.address,
+                        data,
+                    ],
+                );
+            await expect(
+                bar.executeMarketFn(
+                    [wethUsdcSingularity.address],
+                    [liquidateBadDebtFn],
+                    true,
+                ),
+            ).to.be.reverted;
+
+            priceDrop = __wethUsdcPrice.mul(200).div(100);
+            await wethUsdcOracle.set(__wethUsdcPrice.add(priceDrop));
+            await wethUsdcSingularity.updateExchangeRate();
+
+            await expect(
+                wethUsdcSingularity.liquidate(
+                    [eoa1.address],
+                    [wethBorrowVal],
+                    multiSwapper.address,
+                    data,
+                    data,
+                ),
+            ).to.be.revertedWith('SGL: bad debt');
+
+            await expect(
+                wethUsdcSingularity.liquidateBadDebt(
+                    eoa1.address,
+                    deployer.address,
+                    multiSwapper.address,
+                    data,
+                ),
+            ).to.be.revertedWith('Ownable: caller is not the owner');
+
+            await expect(
+                bar.executeMarketFn(
+                    [wethUsdcSingularity.address],
+                    [liquidateBadDebtFn],
+                    true,
+                ),
+            ).to.not.be.reverted;
+
+            const userBorrowedAmountAfter =
+                await wethUsdcSingularity.userBorrowPart(eoa1.address);
+            const userCollateralShareAfter =
+                await wethUsdcSingularity.userBorrowPart(eoa1.address);
+
+            expect(userBorrowedAmountAfter.eq(0)).to.be.true;
+            expect(userCollateralShareAfter.eq(0)).to.be.true;
+        });
+
+        it('Should lend Weth, deposit Usdc collateral and borrow Weth and be liquidated for price drop', async () => {
+            const {
+                usdc,
+                weth,
+                yieldBox,
+                wethDepositAndAddAsset,
+                usdcDepositAndAddCollateral,
+                eoa1,
+                approveTokensAndSetBarApproval,
+                deployer,
+                wethUsdcSingularity,
+                multiSwapper,
+                wethUsdcOracle,
+                __wethUsdcPrice,
+            } = await loadFixture(register);
+
+            const assetId = await wethUsdcSingularity.assetId();
+            const collateralId = await wethUsdcSingularity.collateralId();
+            const wethMintVal = ethers.BigNumber.from((1e18).toString()).mul(
+                10,
+            );
+            const usdcMintVal = wethMintVal.mul(
+                __wethUsdcPrice.div((1e18).toString()),
+            );
+
+            // We get asset
+            await weth.freeMint(wethMintVal);
+            await usdc.connect(eoa1).freeMint(usdcMintVal);
+
+            // We approve external operators
+            await approveTokensAndSetBarApproval();
+            await approveTokensAndSetBarApproval(eoa1);
+
+            // We lend WETH as deployer
+            await wethDepositAndAddAsset(wethMintVal);
+            expect(
+                await wethUsdcSingularity.balanceOf(deployer.address),
+            ).to.be.equal(await yieldBox.toShare(assetId, wethMintVal, false));
+
+            // We deposit USDC collateral
+            await usdcDepositAndAddCollateral(usdcMintVal, eoa1);
+            expect(
+                await wethUsdcSingularity.userCollateralShare(eoa1.address),
+            ).equal(await yieldBox.toShare(collateralId, usdcMintVal, false));
+
+            // We borrow 74% collateral, max is 75%
+            const wethBorrowVal = usdcMintVal
+                .mul(74)
+                .div(100)
+                .div(__wethUsdcPrice.div((1e18).toString()));
+
+            await wethUsdcSingularity
+                .connect(eoa1)
+                .borrow(eoa1.address, eoa1.address, wethBorrowVal);
+            await yieldBox
+                .connect(eoa1)
+                .withdraw(
+                    assetId,
+                    eoa1.address,
+                    eoa1.address,
+                    wethBorrowVal,
+                    0,
+                );
+
             const data = new ethers.utils.AbiCoder().encode(['uint256'], [1]);
 
             // Can't liquidate
@@ -816,15 +944,24 @@ describe('Singularity test', () => {
             await wethUsdcSingularity.updateExchangeRate();
 
             const exchangeRate = await wethUsdcSingularity.exchangeRate();
+            const collateralShareInAmount = await yieldBox.toAmount(
+                await wethUsdcSingularity.collateralId(),
+                await wethUsdcSingularity.userCollateralShare(eoa1.address),
+                false,
+            );
+            const collateralPartInAsset = ethers.utils.parseEther(
+                collateralShareInAmount.div(exchangeRate).toNumber().toString(),
+            );
+
             const maxLiquidatable =
                 await wethUsdcSingularity.computeClosingFactor(
-                    eoa1.address,
-                    exchangeRate,
+                    await wethUsdcSingularity.userBorrowPart(eoa1.address),
+                    collateralPartInAsset,
+                    5,
                 );
             const userBorrowedAmountBefore =
                 await wethUsdcSingularity.userBorrowPart(eoa1.address);
 
-            hre.tracer.enabled = true;
             await expect(
                 wethUsdcSingularity.liquidate(
                     [eoa1.address],
@@ -834,7 +971,6 @@ describe('Singularity test', () => {
                     data,
                 ),
             ).to.not.be.reverted;
-            hre.tracer.enabled = false;
 
             const userBorrowedAmountAfter =
                 await wethUsdcSingularity.userBorrowPart(eoa1.address);
@@ -889,11 +1025,7 @@ describe('Singularity test', () => {
             ).equal(await yieldBox.toShare(collateralId, usdcMintVal, false));
 
             // We borrow 74% collateral, max is 75%
-            const wbtcBorrowVal = usdcMintVal
-                .mul(74)
-                .div(100)
-                .div(__wbtcUsdcPrice.div((1e18).toString()))
-                .div(1e10);
+            const wbtcBorrowVal = wbtcMintVal.mul(74).div(100);
 
             await wbtcUsdcSingularity
                 .connect(eoa1)
@@ -921,8 +1053,7 @@ describe('Singularity test', () => {
             ).to.be.reverted;
 
             // Can be liquidated price drop (USDC/WETH)
-            const priceDrop = __wbtcUsdcPrice.mul(20).div(100);
-
+            const priceDrop = __wbtcUsdcPrice.mul(2).div(100);
             await wbtcUsdcOracle.set(__wbtcUsdcPrice.add(priceDrop));
 
             await expect(
@@ -2135,8 +2266,6 @@ describe('Singularity test', () => {
                         exchangeRate,
                     )
                 )[2],
-                18,
-                18,
                 5,
             );
             expect(closingFactor.gt(0)).to.be.true;
@@ -2160,8 +2289,6 @@ describe('Singularity test', () => {
                         exchangeRate,
                     )
                 )[2],
-                18,
-                18,
                 5,
             );
             expect(closingFactor.gt(prevClosingFactor)).to.be.true;
@@ -2185,8 +2312,6 @@ describe('Singularity test', () => {
                         exchangeRate,
                     )
                 )[2],
-                18,
-                18,
                 5,
             );
             expect(closingFactor.gt(prevClosingFactor)).to.be.true;
@@ -2210,8 +2335,6 @@ describe('Singularity test', () => {
                         exchangeRate,
                     )
                 )[2],
-                18,
-                18,
                 5,
             );
             expect(closingFactor.gt(prevClosingFactor)).to.be.true;
@@ -2235,8 +2358,6 @@ describe('Singularity test', () => {
                         exchangeRate,
                     )
                 )[2],
-                18,
-                18,
                 5,
             );
             expect(closingFactor.gt(prevClosingFactor)).to.be.true;
@@ -2527,8 +2648,6 @@ describe('Singularity test', () => {
             const userBorrowPart = await wethUsdcSingularity.userBorrowPart(
                 eoa1.address,
             );
-            console.log(`userBorrowPart ${userBorrowPart}`);
-            console.log(`borrowVal      ${borrowVal}`);
             expect(borrowVal.add(borrowVal.mul(10).div(100)).eq(userBorrowPart))
                 .to.be.true;
             const minCollateralShareRepay =

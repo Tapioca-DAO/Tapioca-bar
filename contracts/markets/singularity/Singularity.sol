@@ -423,12 +423,35 @@ contract Singularity is SGLCommon {
         );
     }
 
+    /// @notice liquidates a position where collateral value is less than the borrowed amount
+    /// @param user to liquidate
+    /// @param receiver funds receiver
+    /// @param swapper contract address of the `ISwapper` implementation. See `setSwapper`.
+    /// @param collateralToAssetSwapData extra swap data
+    function liquidateBadDebt(
+        address user,
+        address receiver,
+        ISwapper swapper,
+        bytes calldata collateralToAssetSwapData
+    ) external {
+        _executeModule(
+            Module.Liquidation,
+            abi.encodeWithSelector(
+                SGLLiquidation.liquidateBadDebt.selector,
+                user,
+                receiver,
+                swapper,
+                collateralToAssetSwapData
+            )
+        );
+    }
+
     /// @notice Entry point for liquidations.
     /// @dev Will call `closedLiquidation()` if not LQ exists or no LQ bid avail exists. Otherwise use LQ.
     /// @param users An array of user addresses.
     /// @param maxBorrowParts A one-to-one mapping to `users`, contains maximum (partial) borrow amounts (to liquidate) of the respective user.
     ///        Ignore for `orderBookLiquidation()`
-    /// @param swapper Contract address of the `MultiSwapper` implementation. See `setSwapper`.
+    /// @param swapper Contract address of the `ISwapper` implementation. See `setSwapper`.
     ///        Ignore for `orderBookLiquidation()`
     /// @param collateralToAssetSwapData Extra swap data
     ///        Ignore for `orderBookLiquidation()`
@@ -470,6 +493,7 @@ contract Singularity is SGLCommon {
     // *********************** //
     // *** OWNER FUNCTIONS *** //
     // *********************** //
+
     /// @notice rescues unused ETH from the contract
     /// @param amount the amount to rescue
     /// @param to the recipient

@@ -318,8 +318,6 @@ describe('BigBang test', () => {
                         exchangeRate,
                     )
                 )[2],
-                18,
-                18,
                 5,
             );
             expect(closingFactor.gt(0)).to.be.true;
@@ -351,8 +349,6 @@ describe('BigBang test', () => {
                         exchangeRate,
                     )
                 )[2],
-                18,
-                18,
                 5,
             );
             expect(closingFactor.gt(prevClosingFactor)).to.be.true;
@@ -376,8 +372,6 @@ describe('BigBang test', () => {
                         exchangeRate,
                     )
                 )[2],
-                18,
-                18,
                 5,
             );
             expect(closingFactor.gt(prevClosingFactor)).to.be.true;
@@ -401,8 +395,6 @@ describe('BigBang test', () => {
                         exchangeRate,
                     )
                 )[2],
-                18,
-                18,
                 5,
             );
             expect(closingFactor.gt(prevClosingFactor)).to.be.true;
@@ -509,8 +501,6 @@ describe('BigBang test', () => {
                         exchangeRate,
                     )
                 )[2],
-                18,
-                18,
                 5,
             );
 
@@ -531,7 +521,6 @@ describe('BigBang test', () => {
                 ),
             ).to.not.be.reverted;
 
-            return;
             await expect(
                 wethBigBangMarket.liquidate(
                     [eoa1.address],
