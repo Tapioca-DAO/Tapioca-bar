@@ -125,6 +125,7 @@ contract USDOLeverageModule is BaseUSDOStorage {
             from,
             _sd2ld(collateralAmountSD),
             _sd2ld(borrowAmountSD),
+            true,
             swapData,
             lzData,
             externalData

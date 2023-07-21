@@ -254,37 +254,15 @@ abstract contract Market is MarketERC20, BoringOwnable {
     function computeClosingFactor(
         uint256 borrowPart,
         uint256 collateralPartInAsset,
-        uint256 borrowPartDecimals,
-        uint256 collateralPartDecimals,
         uint256 ratesPrecision
     ) public view returns (uint256) {
-        uint256 borrowPartScaled = borrowPart;
-        if (borrowPartDecimals > 18) {
-            borrowPartScaled = borrowPart / (10 ** (borrowPartDecimals - 18));
-        }
-        if (borrowPartDecimals < 18) {
-            borrowPartScaled = borrowPart * (10 ** (18 - borrowPartDecimals));
-        }
-
-        uint256 collateralPartInAssetScaled = collateralPartInAsset;
-        if (collateralPartDecimals > 18) {
-            collateralPartInAssetScaled =
-                collateralPartInAsset /
-                (10 ** (collateralPartDecimals - 18));
-        }
-        if (collateralPartDecimals < 18) {
-            collateralPartInAssetScaled =
-                collateralPartInAsset *
-                (10 ** (18 - collateralPartDecimals));
-        }
-
-        uint256 liquidationStartsAt = (collateralPartInAssetScaled *
+        //borrowPart and collateralPartInAsset should already be scaled due to the exchange rate computation
+        uint256 liquidationStartsAt = (collateralPartInAsset *
             collateralizationRate) / (10 ** ratesPrecision);
-        if (borrowPartScaled < liquidationStartsAt) return 0;
 
-        uint256 numerator = borrowPartScaled -
-            ((collateralizationRate * collateralPartInAssetScaled) /
-                (10 ** ratesPrecision));
+        if (borrowPart < liquidationStartsAt) return 0;
+
+        uint256 numerator = borrowPart - liquidationStartsAt;
         uint256 denominator = ((10 ** ratesPrecision) -
             (collateralizationRate *
                 ((10 ** ratesPrecision) + liquidationMultiplier)) /

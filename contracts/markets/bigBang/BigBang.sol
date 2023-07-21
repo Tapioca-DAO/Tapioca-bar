@@ -508,6 +508,57 @@ contract BigBang is BoringOwnable, Market {
         }
     }
 
+    function liquidateBadDebt(
+        address user,
+        address receiver,
+        ISwapper swapper,
+        bytes calldata collateralToAssetSwapData
+    ) external onlyOwner {
+        // Oracle can fail but we still need to allow liquidations
+        updateExchangeRate();
+        require(exchangeRate > 0, "BigBang: exchangeRate not valid");
+
+        _accrue();
+
+        // Closed liquidation using a pre-approved swapper
+        require(penrose.swappers(swapper), "BigBang: Invalid swapper");
+
+        uint256 borrowAmountWithBonus = userBorrowPart[user] +
+            (userBorrowPart[user] * liquidationMultiplier) /
+            FEE_PRECISION;
+        uint256 requiredCollateral = yieldBox.toShare(
+            collateralId,
+            (borrowAmountWithBonus * exchangeRate) / EXCHANGE_RATE_PRECISION,
+            false
+        );
+
+        // equality is included in the require to minimize risk and liquidate as soon as possible
+        require(
+            requiredCollateral >= userCollateralShare[user],
+            "BigBang: Cannot force liquidated"
+        );
+
+        uint256 collateralShare = userCollateralShare[user];
+
+        // everything will be liquidated; set borrow part and collateral share to 0
+        uint256 borrowAmount;
+        (totalBorrow, borrowAmount) = totalBorrow.sub(
+            userBorrowPart[user],
+            true
+        );
+        userBorrowPart[user] = 0;
+
+        totalCollateralShare -= userCollateralShare[user];
+        userCollateralShare[user] = 0;
+
+        _swapCollateralWithAsset(
+            collateralShare,
+            receiver,
+            address(swapper),
+            collateralToAssetSwapData
+        );
+    }
+
     // ************************* //
     // *** PRIVATE FUNCTIONS *** //
     // ************************* //
@@ -571,6 +622,9 @@ contract BigBang is BoringOwnable, Market {
     ) private {
         if (_isSolvent(user, _exchangeRate)) return;
 
+        // Closed liquidation using a pre-approved swapper
+        require(penrose.swappers(swapper), "BigBang: Invalid swapper");
+
         (
             uint256 startTVLInAsset,
             uint256 maxTVLInAsset
@@ -593,37 +647,12 @@ contract BigBang is BoringOwnable, Market {
         emit LogRepay(address(swapper), user, borrowAmount, borrowPart);
 
         uint256 borrowShare = yieldBox.toShare(assetId, borrowAmount, true);
-
-        // Closed liquidation using a pre-approved swapper
-        require(penrose.swappers(swapper), "BigBang: Invalid swapper");
-
-        // Swaps the users collateral for the borrowed asset
-        yieldBox.transfer(
+        uint256 returnedShare = _swapCollateralWithAsset(
+            collateralShare,
             address(this),
             address(swapper),
-            collateralId,
-            collateralShare
+            _dexData
         );
-
-        uint256 minAssetMount = 0;
-        if (_dexData.length > 0) {
-            minAssetMount = abi.decode(_dexData, (uint256));
-        }
-
-        uint256 balanceBefore = yieldBox.balanceOf(address(this), assetId);
-
-        ISwapper.SwapData memory swapData = swapper.buildSwapData(
-            collateralId,
-            assetId,
-            0,
-            collateralShare,
-            true,
-            true
-        );
-        swapper.swap(swapData, minAssetMount, address(this), "");
-        uint256 balanceAfter = yieldBox.balanceOf(address(this), assetId);
-
-        uint256 returnedShare = balanceAfter - balanceBefore;
         (uint256 feeShare, uint256 callerShare) = _extractLiquidationFees(
             returnedShare,
             borrowShare,
@@ -639,6 +668,42 @@ contract BigBang is BoringOwnable, Market {
             borrowAmount,
             collateralShare
         );
+    }
+
+    function _swapCollateralWithAsset(
+        uint256 _collateralShare,
+        address _receiver,
+        address _swapper,
+        bytes memory _dexData
+    ) private returns (uint256 returnedShare) {
+        // Swaps the users collateral for the borrowed asset
+        yieldBox.transfer(
+            address(this),
+            address(_swapper),
+            collateralId,
+            _collateralShare
+        );
+
+        uint256 minAssetMount = 0;
+        if (_dexData.length > 0) {
+            minAssetMount = abi.decode(_dexData, (uint256));
+        }
+
+        uint256 balanceBefore = yieldBox.balanceOf(_receiver, assetId);
+
+        ISwapper.SwapData memory swapData = ISwapper(_swapper).buildSwapData(
+            collateralId,
+            assetId,
+            0,
+            _collateralShare,
+            true,
+            true
+        );
+        ISwapper(_swapper).swap(swapData, minAssetMount, _receiver, "");
+        uint256 balanceAfter = yieldBox.balanceOf(_receiver, assetId);
+
+        returnedShare = balanceAfter - balanceBefore;
+        require(returnedShare > 0, "BigBang: Swap failed");
     }
 
     function _extractLiquidationFees(
@@ -791,16 +856,24 @@ contract BigBang is BoringOwnable, Market {
             false
         ) * EXCHANGE_RATE_PRECISION) / _exchangeRate;
 
-        uint256 borrowAssetDecimals = asset.safeDecimals();
-        uint256 collateralDecimals = collateral.safeDecimals();
-
         uint256 availableBorrowPart = computeClosingFactor(
             userBorrowPart[user],
             collateralPartInAsset,
-            borrowAssetDecimals,
-            collateralDecimals,
             FEE_PRECISION_DECIMALS
         );
+
+        if (liquidationBonusAmount > 0) {
+            availableBorrowPart =
+                availableBorrowPart +
+                (availableBorrowPart * liquidationBonusAmount) /
+                FEE_PRECISION;
+        }
+
+        require(
+            collateralPartInAsset > availableBorrowPart,
+            "BigBang: bad debt"
+        );
+
         borrowPart = maxBorrowPart > availableBorrowPart
             ? availableBorrowPart
             : maxBorrowPart;

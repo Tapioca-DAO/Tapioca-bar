@@ -211,6 +211,13 @@ contract USDOMarketModule is BaseUSDOStorage {
         // Use market helper to deposit and add asset to market
         approve(address(lendParams.marketHelper), lendParams.depositAmount);
         if (lendParams.repay) {
+            if (lendParams.repayAmount == 0) {
+                lendParams.repayAmount = IMagnetar(lendParams.marketHelper)
+                    .getBorrowPartForAmount(
+                        lendParams.market,
+                        lendParams.depositAmount
+                    );
+            }
             IMagnetar(lendParams.marketHelper)
                 .depositRepayAndRemoveCollateralFromMarket(
                     lendParams.market,

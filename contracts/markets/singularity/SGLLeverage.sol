@@ -20,6 +20,7 @@ contract SGLLeverage is SGLLendingCommon {
         address from,
         uint256 collateralAmount,
         uint256 borrowAmount,
+        bool useAirdroppedFunds,
         IUSDOBase.ILeverageSwapData calldata swapData,
         IUSDOBase.ILeverageLZData calldata lzData,
         IUSDOBase.ILeverageExternalContractsData calldata externalData
@@ -44,18 +45,15 @@ contract SGLLeverage is SGLLendingCommon {
         //withdraw
         yieldBox.withdraw(assetId, from, address(this), 0, borrowShare);
 
-        IUSDOBase(address(asset)).sendForLeverage{value: msg.value}(
-            borrowAmount,
-            from,
-            lzData,
-            swapData,
-            externalData
-        );
+        IUSDOBase(address(asset)).sendForLeverage{
+            value: useAirdroppedFunds ? address(this).balance : msg.value
+        }(borrowAmount, from, lzData, swapData, externalData);
     }
 
     function multiHopSellCollateral(
         address from,
         uint256 amount,
+        bool useAirdroppedFunds,
         IUSDOBase.ILeverageSwapData calldata swapData,
         IUSDOBase.ILeverageLZData calldata lzData,
         IUSDOBase.ILeverageExternalContractsData calldata externalData
@@ -77,13 +75,9 @@ contract SGLLeverage is SGLLendingCommon {
         );
 
         //send for unwrap
-        ITapiocaOFT(address(collateral)).sendForLeverage{value: msg.value}(
-            amountOut,
-            from,
-            lzData,
-            swapData,
-            externalData
-        );
+        ITapiocaOFT(address(collateral)).sendForLeverage{
+            value: useAirdroppedFunds ? address(this).balance : msg.value
+        }(amountOut, from, lzData, swapData, externalData);
     }
 
     /// @notice Lever down: Sell collateral to repay debt; excess goes to YB

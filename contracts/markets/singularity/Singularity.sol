@@ -372,6 +372,7 @@ contract Singularity is SGLCommon {
     /// @param from The user who sells
     /// @param collateralAmount Extra collateral to be added
     /// @param borrowAmount Borrowed amount that will be swapped into collateral
+    /// @param useAirdropped if true it uses contract's balance to pay for LZ fees
     /// @param swapData Swap data used on destination chain for swapping USDO to the underlying TOFT token
     /// @param lzData LayerZero specific data
     /// @param externalData External contracts used for the cross chain operation
@@ -379,6 +380,7 @@ contract Singularity is SGLCommon {
         address from,
         uint256 collateralAmount,
         uint256 borrowAmount,
+        bool useAirdropped,
         IUSDOBase.ILeverageSwapData calldata swapData,
         IUSDOBase.ILeverageLZData calldata lzData,
         IUSDOBase.ILeverageExternalContractsData calldata externalData
@@ -390,6 +392,7 @@ contract Singularity is SGLCommon {
                 from,
                 collateralAmount,
                 borrowAmount,
+                useAirdropped,
                 swapData,
                 lzData,
                 externalData
@@ -400,12 +403,14 @@ contract Singularity is SGLCommon {
     /// @notice Level up cross-chain: Borrow more and buy collateral with it.
     /// @param from The user who sells
     /// @param share Collateral YieldBox-shares to sell
+    /// @param useAirdropped if true it uses contract's balance to pay for LZ fees
     /// @param swapData Swap data used on destination chain for swapping USDO to the underlying TOFT token
     /// @param lzData LayerZero specific data
     /// @param externalData External contracts used for the cross chain operation
     function multiHopSellCollateral(
         address from,
         uint256 share,
+        bool useAirdropped,
         IUSDOBase.ILeverageSwapData calldata swapData,
         IUSDOBase.ILeverageLZData calldata lzData,
         IUSDOBase.ILeverageExternalContractsData calldata externalData
@@ -416,9 +421,33 @@ contract Singularity is SGLCommon {
                 SGLLeverage.multiHopSellCollateral.selector,
                 from,
                 share,
+                useAirdropped,
                 swapData,
                 lzData,
                 externalData
+            )
+        );
+    }
+
+    /// @notice liquidates a position where collateral value is less than the borrowed amount
+    /// @param user to liquidate
+    /// @param receiver funds receiver
+    /// @param swapper contract address of the `ISwapper` implementation. See `setSwapper`.
+    /// @param collateralToAssetSwapData extra swap data
+    function liquidateBadDebt(
+        address user,
+        address receiver,
+        ISwapper swapper,
+        bytes calldata collateralToAssetSwapData
+    ) external {
+        _executeModule(
+            Module.Liquidation,
+            abi.encodeWithSelector(
+                SGLLiquidation.liquidateBadDebt.selector,
+                user,
+                receiver,
+                swapper,
+                collateralToAssetSwapData
             )
         );
     }
@@ -428,7 +457,7 @@ contract Singularity is SGLCommon {
     /// @param users An array of user addresses.
     /// @param maxBorrowParts A one-to-one mapping to `users`, contains maximum (partial) borrow amounts (to liquidate) of the respective user.
     ///        Ignore for `orderBookLiquidation()`
-    /// @param swapper Contract address of the `MultiSwapper` implementation. See `setSwapper`.
+    /// @param swapper Contract address of the `ISwapper` implementation. See `setSwapper`.
     ///        Ignore for `orderBookLiquidation()`
     /// @param collateralToAssetSwapData Extra swap data
     ///        Ignore for `orderBookLiquidation()`
@@ -470,6 +499,7 @@ contract Singularity is SGLCommon {
     // *********************** //
     // *** OWNER FUNCTIONS *** //
     // *********************** //
+
     /// @notice rescues unused ETH from the contract
     /// @param amount the amount to rescue
     /// @param to the recipient
