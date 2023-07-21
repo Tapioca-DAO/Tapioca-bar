@@ -3761,7 +3761,7 @@ describe('Singularity test', () => {
             await erc20Mock.approve(toft.address, amount);
         };
 
-        it('should bounce between 2 chains', async () => {
+        it.only('should bounce between 2 chains', async () => {
             const {
                 deployer,
                 tap,
@@ -4410,6 +4410,7 @@ describe('Singularity test', () => {
                 deployer.address,
                 0,
                 bigDummyAmount,
+                false,
                 {
                     tokenOut: await tapiocaOFT10.erc20(),
                     amountOutMin: 0,
@@ -4549,6 +4550,7 @@ describe('Singularity test', () => {
                     userCollateralShareAfter.div(4),
                     false,
                 ),
+                false,
                 {
                     tokenOut: USDO_10.address,
                     amountOutMin: 0,

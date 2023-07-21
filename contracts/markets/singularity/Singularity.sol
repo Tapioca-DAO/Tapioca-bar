@@ -372,6 +372,7 @@ contract Singularity is SGLCommon {
     /// @param from The user who sells
     /// @param collateralAmount Extra collateral to be added
     /// @param borrowAmount Borrowed amount that will be swapped into collateral
+    /// @param useAirdropped if true it uses contract's balance to pay for LZ fees
     /// @param swapData Swap data used on destination chain for swapping USDO to the underlying TOFT token
     /// @param lzData LayerZero specific data
     /// @param externalData External contracts used for the cross chain operation
@@ -379,6 +380,7 @@ contract Singularity is SGLCommon {
         address from,
         uint256 collateralAmount,
         uint256 borrowAmount,
+        bool useAirdropped,
         IUSDOBase.ILeverageSwapData calldata swapData,
         IUSDOBase.ILeverageLZData calldata lzData,
         IUSDOBase.ILeverageExternalContractsData calldata externalData
@@ -390,6 +392,7 @@ contract Singularity is SGLCommon {
                 from,
                 collateralAmount,
                 borrowAmount,
+                useAirdropped,
                 swapData,
                 lzData,
                 externalData
@@ -400,12 +403,14 @@ contract Singularity is SGLCommon {
     /// @notice Level up cross-chain: Borrow more and buy collateral with it.
     /// @param from The user who sells
     /// @param share Collateral YieldBox-shares to sell
+    /// @param useAirdropped if true it uses contract's balance to pay for LZ fees
     /// @param swapData Swap data used on destination chain for swapping USDO to the underlying TOFT token
     /// @param lzData LayerZero specific data
     /// @param externalData External contracts used for the cross chain operation
     function multiHopSellCollateral(
         address from,
         uint256 share,
+        bool useAirdropped,
         IUSDOBase.ILeverageSwapData calldata swapData,
         IUSDOBase.ILeverageLZData calldata lzData,
         IUSDOBase.ILeverageExternalContractsData calldata externalData
@@ -416,6 +421,7 @@ contract Singularity is SGLCommon {
                 SGLLeverage.multiHopSellCollateral.selector,
                 from,
                 share,
+                useAirdropped,
                 swapData,
                 lzData,
                 externalData
