@@ -51,9 +51,10 @@ export const deployLinkedChainStack__task = async (
     if (yb) {
         ybAddress = yb.address;
     }
-    // // 01 YieldBox
-    // const [ybURI, yieldBox] = await buildYieldBox(hre, weth.address);
-    // VM.add(ybURI).add(yieldBox);
+
+    // 01 YieldBox
+    const [ybURI, yieldBox] = await buildYieldBox(hre, weth.address);
+    VM.add(ybURI).add(yieldBox);
 
     // 02 USDO
     const [leverageModule, marketModule, optionsModule] =

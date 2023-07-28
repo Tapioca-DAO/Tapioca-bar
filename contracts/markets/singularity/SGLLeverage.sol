@@ -25,11 +25,6 @@ contract SGLLeverage is SGLLendingCommon {
         IUSDOBase.ILeverageLZData calldata lzData,
         IUSDOBase.ILeverageExternalContractsData calldata externalData
     ) external payable notPaused solvent(from) {
-        require(
-            penrose.swappers(ISwapper(externalData.swapper)),
-            "SGL: Invalid swapper"
-        );
-
         //add collateral
         uint256 collateralShare = yieldBox.toShare(
             collateralId,
@@ -58,11 +53,6 @@ contract SGLLeverage is SGLLendingCommon {
         IUSDOBase.ILeverageLZData calldata lzData,
         IUSDOBase.ILeverageExternalContractsData calldata externalData
     ) external payable notPaused solvent(from) {
-        require(
-            penrose.swappers(ISwapper(externalData.swapper)),
-            "SGL: Invalid swapper"
-        );
-
         uint256 share = yieldBox.toShare(collateralId, amount, false);
         _allowedBorrow(from, share);
         _removeCollateral(from, address(this), share);
