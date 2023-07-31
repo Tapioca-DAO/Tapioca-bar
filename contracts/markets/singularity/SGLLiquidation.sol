@@ -25,7 +25,10 @@ contract SGLLiquidation is SGLCommon {
         _accrue();
 
         // Closed liquidation using a pre-approved swapper
-        require(penrose.swappers(swapper), "SGL: Invalid swapper");
+        require(
+            penrose.swappers(penrose.hostLzChainId(), swapper),
+            "SGL: Invalid swapper"
+        );
 
         uint256 borrowAmountWithBonus = userBorrowPart[user] +
             (userBorrowPart[user] * liquidationMultiplier) /
@@ -411,7 +414,10 @@ contract SGLLiquidation is SGLCommon {
         uint256 borrowShare = yieldBox.toShare(assetId, borrowAmount, true);
 
         // Closed liquidation using a pre-approved swapper
-        require(penrose.swappers(swapper), "SGL: Invalid swapper");
+        require(
+            penrose.swappers(penrose.hostLzChainId(), swapper),
+            "SGL: Invalid swapper"
+        );
 
         _swapCollateralWithAsset(
             collateralShare,

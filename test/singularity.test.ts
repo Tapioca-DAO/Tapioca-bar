@@ -3761,7 +3761,7 @@ describe('Singularity test', () => {
             await erc20Mock.approve(toft.address, amount);
         };
 
-        it.only('should bounce between 2 chains', async () => {
+        it('should bounce between 2 chains', async () => {
             const {
                 deployer,
                 tap,
@@ -3842,6 +3842,7 @@ describe('Singularity test', () => {
                 YieldBox_0.address,
                 tap.address,
                 weth.address,
+                await LZEndpointMock_chainID_0.getChainId(),
                 deployer.address,
             );
             await BAR_0.deployed();
@@ -4395,7 +4396,11 @@ describe('Singularity test', () => {
             );
             expect(borrowPartBefore.eq(0)).to.be.true;
 
-            await BAR_0.setSwapper(uniV3SwapperMock.address, true);
+            await BAR_0.setSwapper(
+                uniV3SwapperMock.address,
+                await LZEndpointMock_chainID_10.getChainId(),
+                true,
+            );
 
             await SGL_0.approve(
                 tapiocaOFT0.address,

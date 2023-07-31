@@ -345,7 +345,10 @@ contract BigBang is BoringOwnable, Market {
         ISwapper swapper,
         bytes calldata dexData
     ) external notPaused solvent(from) returns (uint256 amountOut) {
-        require(penrose.swappers(swapper), "SGL: Invalid swapper");
+        require(
+            penrose.swappers(penrose.hostLzChainId(), swapper),
+            "SGL: Invalid swapper"
+        );
 
         // Let this fail first to save gas:
         uint256 supplyShare = yieldBox.toShare(assetId, supplyAmount, true);
@@ -392,7 +395,10 @@ contract BigBang is BoringOwnable, Market {
         ISwapper swapper,
         bytes calldata dexData
     ) external notPaused solvent(from) returns (uint256 amountOut) {
-        require(penrose.swappers(swapper), "SGL: Invalid swapper");
+        require(
+            penrose.swappers(penrose.hostLzChainId(), swapper),
+            "SGL: Invalid swapper"
+        );
 
         _allowedBorrow(from, share);
         _removeCollateral(from, address(swapper), share);
@@ -521,7 +527,10 @@ contract BigBang is BoringOwnable, Market {
         _accrue();
 
         // Closed liquidation using a pre-approved swapper
-        require(penrose.swappers(swapper), "BigBang: Invalid swapper");
+        require(
+            penrose.swappers(penrose.hostLzChainId(), swapper),
+            "BigBang: Invalid swapper"
+        );
 
         uint256 borrowAmountWithBonus = userBorrowPart[user] +
             (userBorrowPart[user] * liquidationMultiplier) /
@@ -623,7 +632,10 @@ contract BigBang is BoringOwnable, Market {
         if (_isSolvent(user, _exchangeRate)) return;
 
         // Closed liquidation using a pre-approved swapper
-        require(penrose.swappers(swapper), "BigBang: Invalid swapper");
+        require(
+            penrose.swappers(penrose.hostLzChainId(), swapper),
+            "BigBang: Invalid swapper"
+        );
 
         (
             uint256 startTVLInAsset,

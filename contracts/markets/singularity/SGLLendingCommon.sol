@@ -16,7 +16,8 @@ contract SGLLendingCommon is SGLCommon {
         address to,
         bool skim,
         uint256 amount,
-        uint256 share
+        uint256 share,
+        bool multiHopLeverage
     ) internal {
         if (share == 0) {
             share = yieldBox.toShare(collateralId, amount, false);
@@ -24,14 +25,16 @@ contract SGLLendingCommon is SGLCommon {
         userCollateralShare[to] += share;
         uint256 oldTotalCollateralShare = totalCollateralShare;
         totalCollateralShare = oldTotalCollateralShare + share;
-        _addTokens(
-            from,
-            to,
-            collateralId,
-            share,
-            oldTotalCollateralShare,
-            skim
-        );
+        if (!multiHopLeverage) {
+            _addTokens(
+                from,
+                to,
+                collateralId,
+                share,
+                oldTotalCollateralShare,
+                skim
+            );
+        }
         emit LogAddCollateral(skim ? address(yieldBox) : from, to, share);
     }
 
@@ -39,12 +42,15 @@ contract SGLLendingCommon is SGLCommon {
     function _removeCollateral(
         address from,
         address to,
-        uint256 share
+        uint256 share,
+        bool multiHopLeverage
     ) internal {
         userCollateralShare[from] -= share;
         totalCollateralShare -= share;
+        if (!multiHopLeverage) {
+            yieldBox.transfer(address(this), to, collateralId, share);
+        }
         emit LogRemoveCollateral(from, to, share);
-        yieldBox.transfer(address(this), to, collateralId, share);
         if (share > _yieldBoxShares[from][COLLATERAL_SIG]) {
             _yieldBoxShares[from][COLLATERAL_SIG] = 0; //accrues in time
         } else {

@@ -269,6 +269,7 @@ async function registerPenrose(
         yieldBox,
         tapAddress,
         wethAddress,
+        1,
         (
             await hre.ethers.getSigners()
         )[0].address,
@@ -632,7 +633,9 @@ async function registerMultiSwapper(
     );
 
     await (
-        await bar.setSwapper(multiSwapper.address, true, { gasPrice: gasPrice })
+        await bar.setSwapper(multiSwapper.address, 0, true, {
+            gasPrice: gasPrice,
+        })
     ).wait();
     log('Swapper was set on Penrose', staging);
 

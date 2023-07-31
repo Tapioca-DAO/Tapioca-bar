@@ -22,6 +22,11 @@ export const buildPenroseSetup = async (
 
     const usd0 = await getAfterDepContract<USDO>(hre, deps, 'USDO');
 
+    const chainInfo = hre.SDK.utils.getChainBy(
+        'chainId',
+        await hre.getChainId(),
+    );
+
     /**
      * Add calls
      */
@@ -29,7 +34,13 @@ export const buildPenroseSetup = async (
     await (await penrose.setFeeTo(feeTo)).wait(3);
 
     console.log('[+] +Setting: Setting MultiSwapper');
-    await (await penrose.setSwapper(multiSwapperAddress, true)).wait(3);
+    await (
+        await penrose.setSwapper(
+            multiSwapperAddress,
+            chainInfo?.lzChainId,
+            true,
+        )
+    ).wait(3);
 
     console.log('[+] +Setting: Setting USDO');
     await (await penrose.setUsdoToken(usd0.address)).wait(3);

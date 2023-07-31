@@ -23,7 +23,7 @@ contract SGLCollateral is SGLLendingCommon {
         uint256 amount,
         uint256 share
     ) external notPaused allowedBorrow(from, share) {
-        _addCollateral(from, to, skim, amount, share);
+        _addCollateral(from, to, skim, amount, share, false);
     }
 
     /// @notice Removes `share` amount of collateral and transfers it to `to`.
@@ -35,6 +35,6 @@ contract SGLCollateral is SGLLendingCommon {
         address to,
         uint256 share
     ) external notPaused solvent(from) allowedBorrow(from, share) {
-        _removeCollateral(from, to, share);
+        _removeCollateral(from, to, share, false);
     }
 }
