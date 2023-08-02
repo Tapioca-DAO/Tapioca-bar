@@ -45,22 +45,22 @@ export const testDeployMockSwapper__task = async (
 
     await VM.execute(3);
     VM.save();
-    if (chainInfo.chainId == EChainID.ARBITRUM_GOERLI) {
-        const penroseDeployment = hre.SDK.db
-            .loadLocalDeployment(tag, chainInfo.chainId)
-            .find((e) => e.name == 'Penrose');
-        const penroseContract = await hre.ethers.getContractAt(
-            'Penrose',
-            penroseDeployment?.address,
-        );
-        const swapperDeployment = hre.SDK.db
-            .loadLocalDeployment(tag, chainInfo.chainId)
-            .find((e) => e.name == 'MockSwapper');
-        await penroseContract.setSwapper(
-            swapperDeployment?.address,
-            chainInfo.lzChainId,
-            true,
-        );
-    }
+    // if (chainInfo.chainId == EChainID.ARBITRUM_GOERLI) {
+    //     const penroseDeployment = hre.SDK.db
+    //         .loadLocalDeployment(tag, chainInfo.chainId)
+    //         .find((e) => e.name == 'Penrose');
+    //     const penroseContract = await hre.ethers.getContractAt(
+    //         'Penrose',
+    //         penroseDeployment?.address,
+    //     );
+    //     const swapperDeployment = hre.SDK.db
+    //         .loadLocalDeployment(tag, chainInfo.chainId)
+    //         .find((e) => e.name == 'MockSwapper');
+    //     await penroseContract.setSwapper(
+    //         swapperDeployment?.address,
+    //         chainInfo.lzChainId,
+    //         true,
+    //     );
+    // }
     await VM.verify();
 };

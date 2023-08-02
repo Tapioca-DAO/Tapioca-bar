@@ -367,7 +367,7 @@ contract SGLLiquidation is SGLCommon {
         feeShare = (extraShare * protocolFee) / FEE_PRECISION; // x% of profit goes to fee.
         callerShare = (extraShare * callerReward) / FEE_PRECISION; //  y%  of profit goes to caller.
 
-        yieldBox.transfer(address(this), penrose.feeTo(), assetId, feeShare);
+        yieldBox.transfer(address(this), address(penrose), assetId, feeShare);
         yieldBox.transfer(address(this), msg.sender, assetId, callerShare);
 
         totalAsset.elastic += uint128(returnedShare - feeShare - callerShare);

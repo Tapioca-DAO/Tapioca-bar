@@ -12,6 +12,7 @@ import {
     UniswapV2Router02__factory,
     LZEndpointMock__factory,
     CurvePoolMock__factory,
+    TwTwapMock__factory,
 } from '../gitsub_tapioca-sdk/src/typechain/tapioca-mocks';
 
 import {
@@ -597,7 +598,11 @@ async function uniV2EnvironnementSetup(
         __uniRouter,
     };
 }
-
+async function registerTwTapMock(deployer: any) {
+    const TwTapMock = new TwTwapMock__factory(deployer);
+    const twTap = await TwTapMock.deploy();
+    return {twTap};
+}
 async function registerMagnetar(deployer: any) {
     const MagnetarV2 = new MagnetarV2__factory(deployer);
     const MagnetarMarketMoodule = new MagnetarMarketModule__factory(deployer);
@@ -1531,15 +1536,20 @@ export async function register(staging?: boolean) {
 
     log(`Deployed WbtcUsdcSingularity ${wbtcUsdcSingularity.address}`, staging);
 
+    log('Deploy TwTap', staging);
+    const { twTap } = await registerTwTapMock(deployer);
+    log(`Deployed TwTap ${twTap.address}`, staging);
+
+    await twTap.addRewardToken(usdc.address);
+    await twTap.addRewardToken(weth.address);
+    await twTap.addRewardToken(tap.address);
+    await twTap.addRewardToken(wbtc.address);
+    log('USDC, WETH, TAP and WBTC were set on twTap', staging);
+
+
     log('Deploying Magnetar', staging);
     const { magnetar } = await registerMagnetar(deployer);
     log(`Deployed Magnetar ${magnetar.address}`, staging);
-
-    // ------------------- 8 Set feeTo -------------------
-    log('Setting feeTo and feeVeTap', staging);
-    const singularityFeeTo = ethers.Wallet.createRandom();
-    await bar.setFeeTo(singularityFeeTo.address, { gasPrice: gasPrice });
-    log(`feeTo ${singularityFeeTo} were set for WethUsdcSingularity`, staging);
 
     // ------------------- 9 Deploy & set LiquidationQueue -------------------
     log('Registering WETHUSDC LiquidationQueue', staging);
@@ -1586,6 +1596,12 @@ export async function register(staging?: boolean) {
     // ------------------- 11 Set USDO on Penrose -------------------
     await bar.setUsdoToken(usd0.address, { gasPrice: gasPrice });
     log('USDO was set on Penrose', staging);
+
+    await twTap.addRewardToken(usd0.address);
+    log('USDO was set on twTap', staging);
+
+    // ------------------- 11.5 Set USDO on Penrose -------------------
+
 
     // ------------------- 12 Register WETH BigBang -------------------
     log('Deploying WethMinterSingularity', staging);
@@ -1761,7 +1777,6 @@ export async function register(staging?: boolean) {
         _sglWbtcUsdcLeverageModule,
         eoa1,
         multiSwapper,
-        singularityFeeTo,
         liquidationQueue,
         LQ_META,
         wbtcLiquidationQueue,
@@ -1779,6 +1794,7 @@ export async function register(staging?: boolean) {
         __wethUsdoMockPair,
         __tapUsdoMockPair,
         createSimpleSwapData,
+        twTap,
     };
 
     /**

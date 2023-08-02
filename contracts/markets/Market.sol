@@ -459,7 +459,7 @@ abstract contract Market is MarketERC20, BoringOwnable {
         uint256 numerator,
         uint256 denominator,
         uint256 precision
-    ) private pure returns (uint256) {
+    ) internal pure returns (uint256) {
         if (numerator == 0 || denominator == 0) {
             return 0;
         }

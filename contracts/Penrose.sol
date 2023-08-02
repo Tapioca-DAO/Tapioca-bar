@@ -9,6 +9,7 @@ import "tapioca-sdk/dist/contracts/YieldBox/contracts/interfaces/IYieldBox.sol";
 import "tapioca-sdk/dist/contracts/YieldBox/contracts/strategies/ERC20WithoutStrategy.sol";
 import "tapioca-periph/contracts/interfaces/ISingularity.sol";
 import "tapioca-periph/contracts/interfaces/IPenrose.sol";
+import "tapioca-periph/contracts/interfaces/ITwTap.sol";
 
 // TODO: Permissionless market deployment
 ///     + asset registration? (toggle to renounce ownership so users can call)
@@ -48,9 +49,6 @@ contract Penrose is BoringOwnable, BoringFactory {
     mapping(address => bool) public isBigBangMasterContractRegistered;
     // Used to check if a SGL/BB is a real market
     mapping(address => bool) public isMarketRegistered;
-
-    /// @notice protocol fees
-    address public feeTo;
 
     /// @notice whitelisted swappers
     mapping(uint16 lzChainId => mapping(ISwapper => bool isWhitelisted))
@@ -148,8 +146,6 @@ contract Penrose is BoringOwnable, BoringFactory {
         address indexed location,
         address indexed masterContract
     );
-    /// @notice event emitted when feeTo address is updated
-    event FeeToUpdate(address indexed newFeeTo);
     /// @notice event emitted when ISwapper address is updated
     event SwapperUpdate(
         address indexed swapper,
@@ -166,8 +162,8 @@ contract Penrose is BoringOwnable, BoringFactory {
     event BigBangEthMarketSet(address indexed _newAddress);
     /// @notice event emitted when BigBang ETH market debt rate is updated
     event BigBangEthMarketDebtRate(uint256 _rate);
-    /// @notice event emitted when fees are deposited to YieldBox
-    event LogYieldBoxFeesDeposit(uint256 feeShares, uint256 ethAmount);
+    /// @notice event emitted when fees are deposited to twTap
+    event LogTwTapFeesDeposit(uint256 feeShares, uint256 ethAmount);
 
     // ******************//
     // *** MODIFIERS *** //
@@ -226,24 +222,21 @@ contract Penrose is BoringOwnable, BoringFactory {
     // *** PUBLIC FUNCTIONS *** //
     // ************************ //
     /// @notice Loop through the master contracts and call `_depositFeesToYieldBox()` to each one of their clones.
-    /// @dev `swappers_` can have one element that'll be used for all clones. Or one swapper per MasterContract.
     /// @param markets_ Singularity &/ BigBang markets array
-    /// @param swappers_ one or more swappers to convert the asset to TAP.
-    /// @param swapData_ swap data for each swapper
+    /// @param twTap the TwTap contract
     function withdrawAllMarketFees(
         IMarket[] calldata markets_,
-        ISwapper[] calldata swappers_,
-        IPenrose.SwapData[] calldata swapData_
-    ) external notPaused {
-        require(
-            markets_.length == swappers_.length &&
-                swappers_.length == swapData_.length,
-            "Penrose: length mismatch"
-        );
-        require(address(swappers_[0]) != address(0), "Penrose: zero address");
-        require(address(markets_[0]) != address(0), "Penrose: zero address");
+        ITwTap twTap
+    ) external onlyOwner notPaused {
+        require(address(twTap) != address(0), "Penrose: twTap not valid");
 
-        _withdrawAllProtocolFees(swappers_, swapData_, markets_);
+        uint256 length = markets_.length;
+        unchecked {
+            for (uint256 i = 0; i < length; ) {
+                _depositFeesToTwTap(markets_[i], twTap);
+                ++i;
+            }
+        }
 
         emit ProtocolWithdrawal(markets_, block.timestamp);
     }
@@ -452,14 +445,6 @@ contract Penrose is BoringOwnable, BoringFactory {
         }
     }
 
-    /// @notice Set protocol fees address
-    /// @dev can only be called by the owner
-    /// @param feeTo_ the new feeTo address
-    function setFeeTo(address feeTo_) external onlyOwner {
-        feeTo = feeTo_;
-        emit FeeToUpdate(feeTo_);
-    }
-
     /// @notice Used to register and enable or disable swapper contracts used in closed liquidations.
     /// @dev can only be called by the owner
     /// @param swapper The address of the swapper contract that conforms to `ISwapper`.
@@ -493,61 +478,23 @@ contract Penrose is BoringOwnable, BoringFactory {
         return abi.decode(_returnData, (string)); // All that remains is the revert string
     }
 
-    function _withdrawAllProtocolFees(
-        ISwapper[] calldata swappers_,
-        IPenrose.SwapData[] calldata swapData_,
-        IMarket[] memory markets_
-    ) private {
-        uint256 length = markets_.length;
-        unchecked {
-            for (uint256 i = 0; i < length; ) {
-                _depositFeesToYieldBox(markets_[i], swappers_[i], swapData_[i]);
-                ++i;
-            }
-        }
-    }
-
-    /// @notice Withdraw the balance of `feeTo`, swap asset into TAP and deposit it to yieldBox of `feeTo`
-    function _depositFeesToYieldBox(
-        IMarket market,
-        ISwapper swapper,
-        IPenrose.SwapData calldata dexData
-    ) private {
-        require(swappers[hostLzChainId][swapper], "Penrose: Invalid swapper");
+    function _depositFeesToTwTap(IMarket market, ITwTap twTap) private {
         require(isMarketRegistered[address(market)], "Penrose: Invalid market");
 
-        uint256 feeShares = market.refreshPenroseFees(feeTo);
+        uint256 feeShares = market.refreshPenroseFees();
         if (feeShares == 0) return;
 
-        uint256 assetId = market.assetId();
-        uint256 amount = 0;
-        if (assetId != wethAssetId) {
-            yieldBox.transfer(
-                address(this),
-                address(swapper),
-                assetId,
-                feeShares
-            );
+        address _asset = market.asset();
+        uint256 _assetId = market.assetId();
+        yieldBox.withdraw(_assetId, address(this), address(this), 0, feeShares);
 
-            ISwapper.SwapData memory swapData = swapper.buildSwapData(
-                assetId,
-                wethAssetId,
-                0,
-                feeShares,
-                true,
-                true
-            );
-            (amount, ) = swapper.swap(
-                swapData,
-                dexData.minAssetAmount,
-                feeTo,
-                ""
-            );
-        } else {
-            yieldBox.transfer(address(this), feeTo, assetId, feeShares);
-        }
-
-        emit LogYieldBoxFeesDeposit(feeShares, amount);
+        //TODO: call twTap.distributeRewards
+        uint256 rewardTokenId = twTap.rewardTokenIndex(_asset);
+        uint256 feeAmount = yieldBox.toAmount(_assetId, feeShares, false);
+        IERC20(_asset).approve(address(twTap), 0);
+        IERC20(_asset).approve(address(twTap), feeAmount);
+        twTap.distributeReward(rewardTokenId, feeAmount);
+        emit LogTwTapFeesDeposit(feeShares, feeAmount);
     }
 
     function _getMasterContractLength(

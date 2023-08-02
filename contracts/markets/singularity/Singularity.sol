@@ -485,17 +485,6 @@ contract Singularity is SGLCommon {
         );
     }
 
-    /// @notice Withdraw the fees accumulated in `accrueInfo.feesEarnedFraction` to the balance of `feeTo`.
-    function withdrawFeesEarned() public {
-        _accrue();
-        address _feeTo = penrose.feeTo();
-        uint256 _feesEarnedFraction = accrueInfo.feesEarnedFraction;
-        balanceOf[_feeTo] += _feesEarnedFraction;
-        emit Transfer(address(0), _feeTo, _feesEarnedFraction);
-        accrueInfo.feesEarnedFraction = 0;
-        emit LogWithdrawFees(_feeTo, _feesEarnedFraction);
-    }
-
     // *********************** //
     // *** OWNER FUNCTIONS *** //
     // *********************** //
@@ -510,15 +499,24 @@ contract Singularity is SGLCommon {
 
     /// @notice Transfers fees to penrose
     /// @dev can only be called by the owner
-    /// @param feeTo fees receiver
-    function refreshPenroseFees(
-        address feeTo
-    ) external onlyOwner notPaused returns (uint256 feeShares) {
+    function refreshPenroseFees()
+        external
+        onlyOwner
+        notPaused
+        returns (uint256 feeShares)
+    {
+        address _feeTo = address(penrose);
+        // withdraw the fees accumulated in `accrueInfo.feesEarnedFraction` to the balance of `feeTo`.
         if (accrueInfo.feesEarnedFraction > 0) {
-            withdrawFeesEarned();
+            _accrue();
+            uint256 _feesEarnedFraction = accrueInfo.feesEarnedFraction;
+            balanceOf[_feeTo] += _feesEarnedFraction;
+            emit Transfer(address(0), _feeTo, _feesEarnedFraction);
+            accrueInfo.feesEarnedFraction = 0;
+            emit LogWithdrawFees(_feeTo, _feesEarnedFraction);
         }
 
-        feeShares = _removeAsset(feeTo, msg.sender, balanceOf[feeTo], false);
+        feeShares = _removeAsset(_feeTo, msg.sender, balanceOf[_feeTo], false);
     }
 
     /// @notice sets Singularity specific configuration
