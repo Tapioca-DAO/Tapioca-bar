@@ -905,7 +905,8 @@ describe('BigBang test', () => {
             feeBalance = await usd0.balanceOf(twTap.address);
 
             expect(feeBalance.gt(0)).to.be.true;
-            expect(usdoBorrowValWithFee.sub(usdoBorrowVal).lt(feeBalance)).to.be.true;
+            expect(usdoBorrowValWithFee.sub(usdoBorrowVal).lt(feeBalance)).to.be
+                .true;
         });
 
         it('should have multiple borrowers and check fees accrued over time', async () => {
@@ -1432,7 +1433,9 @@ describe('BigBang test', () => {
                 feeVeTap,
                 await wethBigBangMarket.collateralId(),
             );
-            const yieldBoxBalanceOfFeeVeAmount = await usd0.balanceOf(twTap.address);
+            const yieldBoxBalanceOfFeeVeAmount = await usd0.balanceOf(
+                twTap.address,
+            );
 
             expect(yieldBoxBalanceOfFeeVeAmount.gt(0)).to.be.true;
         });

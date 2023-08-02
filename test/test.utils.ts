@@ -601,7 +601,7 @@ async function uniV2EnvironnementSetup(
 async function registerTwTapMock(deployer: any) {
     const TwTapMock = new TwTwapMock__factory(deployer);
     const twTap = await TwTapMock.deploy();
-    return {twTap};
+    return { twTap };
 }
 async function registerMagnetar(deployer: any) {
     const MagnetarV2 = new MagnetarV2__factory(deployer);
@@ -1546,7 +1546,6 @@ export async function register(staging?: boolean) {
     await twTap.addRewardToken(wbtc.address);
     log('USDC, WETH, TAP and WBTC were set on twTap', staging);
 
-
     log('Deploying Magnetar', staging);
     const { magnetar } = await registerMagnetar(deployer);
     log(`Deployed Magnetar ${magnetar.address}`, staging);
@@ -1601,7 +1600,6 @@ export async function register(staging?: boolean) {
     log('USDO was set on twTap', staging);
 
     // ------------------- 11.5 Set USDO on Penrose -------------------
-
 
     // ------------------- 12 Register WETH BigBang -------------------
     log('Deploying WethMinterSingularity', staging);
