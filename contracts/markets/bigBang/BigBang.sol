@@ -834,10 +834,6 @@ contract BigBang is BoringOwnable, Market {
             return openingFees[user];
         }
 
-        if (userBorrowPart[user] - repayPart == 0) {
-            return openingFees[user];
-        }
-
         uint256 _assetDecimals = asset.safeDecimals();
         uint256 repayRatio = _getRatio(repayPart, _totalPart, _assetDecimals);
         //it can return 0 when numerator is very low compared to the denominator
