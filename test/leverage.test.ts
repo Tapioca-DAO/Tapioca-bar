@@ -69,7 +69,7 @@ describe('Singularity Leverage', () => {
         const MockSwapper = new MockSwapper__factory(deployer);
         const mockSwapper = await MockSwapper.deploy(yieldBox.address);
         await mockSwapper.deployed();
-        await bar.setSwapper(mockSwapper.address, true);
+        await bar.setSwapper(mockSwapper.address, 0, true);
 
         const [alice, bob, carol] = [0, 0, 0].map(
             () =>

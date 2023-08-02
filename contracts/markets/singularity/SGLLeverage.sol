@@ -25,6 +25,14 @@ contract SGLLeverage is SGLLendingCommon {
         IUSDOBase.ILeverageLZData calldata lzData,
         IUSDOBase.ILeverageExternalContractsData calldata externalData
     ) external payable notPaused solvent(from) {
+        require(
+            penrose.swappers(
+                lzData.lzDstChainId,
+                ISwapper(externalData.swapper)
+            ),
+            "SGL: Invalid swapper"
+        );
+
         //add collateral
         uint256 collateralShare = yieldBox.toShare(
             collateralId,
@@ -32,7 +40,7 @@ contract SGLLeverage is SGLLendingCommon {
             false
         );
         _allowedBorrow(from, collateralShare);
-        _addCollateral(from, from, false, 0, collateralShare);
+        _addCollateral(from, from, false, 0, collateralShare, true);
 
         //borrow
         (, uint256 borrowShare) = _borrow(from, from, borrowAmount);
@@ -53,9 +61,17 @@ contract SGLLeverage is SGLLendingCommon {
         IUSDOBase.ILeverageLZData calldata lzData,
         IUSDOBase.ILeverageExternalContractsData calldata externalData
     ) external payable notPaused solvent(from) {
+        require(
+            penrose.swappers(
+                lzData.lzDstChainId,
+                ISwapper(externalData.swapper)
+            ),
+            "SGL: Invalid swapper"
+        );
+
         uint256 share = yieldBox.toShare(collateralId, amount, false);
         _allowedBorrow(from, share);
-        _removeCollateral(from, address(this), share);
+        _removeCollateral(from, address(this), share, true);
         (uint256 amountOut, ) = yieldBox.withdraw(
             collateralId,
             address(this),
@@ -84,10 +100,13 @@ contract SGLLeverage is SGLLendingCommon {
         ISwapper swapper,
         bytes calldata dexData
     ) external notPaused solvent(from) returns (uint256 amountOut) {
-        require(penrose.swappers(swapper), "SGL: Invalid swapper");
+        require(
+            penrose.swappers(penrose.hostLzChainId(), swapper),
+            "SGL: Invalid swapper"
+        );
 
         _allowedBorrow(from, share);
-        _removeCollateral(from, address(swapper), share);
+        _removeCollateral(from, address(swapper), share, false);
         ISwapper.SwapData memory swapData = swapper.buildSwapData(
             collateralId,
             assetId,
@@ -135,7 +154,10 @@ contract SGLLeverage is SGLLendingCommon {
         ISwapper swapper,
         bytes calldata dexData
     ) external notPaused solvent(from) returns (uint256 amountOut) {
-        require(penrose.swappers(swapper), "SGL: Invalid swapper");
+        require(
+            penrose.swappers(penrose.hostLzChainId(), swapper),
+            "SGL: Invalid swapper"
+        );
 
         // Let this fail first to save gas:
         uint256 supplyShare = yieldBox.toShare(assetId, supplyAmount, true);
@@ -165,6 +187,6 @@ contract SGLLeverage is SGLLendingCommon {
         require(amountOut >= minAmountOut, "SGL: not enough");
 
         _allowedBorrow(from, collateralShare);
-        _addCollateral(from, from, false, 0, collateralShare);
+        _addCollateral(from, from, false, 0, collateralShare, false);
     }
 }

@@ -53,7 +53,11 @@ contract Penrose is BoringOwnable, BoringFactory {
     address public feeTo;
 
     /// @notice whitelisted swappers
-    mapping(ISwapper => bool) public swappers;
+    mapping(uint16 lzChainId => mapping(ISwapper => bool isWhitelisted))
+        public swappers;
+
+    /// @notice default LZ Chain id
+    uint16 public hostLzChainId;
 
     /// @notice BigBang ETH market address
     address public bigBangEthMarket;
@@ -67,11 +71,13 @@ contract Penrose is BoringOwnable, BoringFactory {
     /// @param _yieldBox YieldBox contract address
     /// @param tapToken_ TapOFT contract address
     /// @param wethToken_ WETH contract address
+    /// @param _hostLzChainId the default protocol's LZ chain id
     /// @param _owner owner address
     constructor(
         YieldBox _yieldBox,
         IERC20 tapToken_,
         IERC20 wethToken_,
+        uint16 _hostLzChainId,
         address _owner
     ) {
         yieldBox = _yieldBox;
@@ -114,6 +120,7 @@ contract Penrose is BoringOwnable, BoringFactory {
         );
 
         bigBangEthDebtRate = 5e15;
+        hostLzChainId = _hostLzChainId;
     }
 
     // **************//
@@ -144,7 +151,11 @@ contract Penrose is BoringOwnable, BoringFactory {
     /// @notice event emitted when feeTo address is updated
     event FeeToUpdate(address indexed newFeeTo);
     /// @notice event emitted when ISwapper address is updated
-    event SwapperUpdate(address indexed swapper, bool isRegistered);
+    event SwapperUpdate(
+        address indexed swapper,
+        uint16 indexed id,
+        bool isRegistered
+    );
     /// @notice event emitted when USDO address is updated
     event UsdoTokenUpdated(address indexed usdoToken, uint256 assetId);
     /// @notice event emitted when conservator is updated
@@ -452,10 +463,18 @@ contract Penrose is BoringOwnable, BoringFactory {
     /// @notice Used to register and enable or disable swapper contracts used in closed liquidations.
     /// @dev can only be called by the owner
     /// @param swapper The address of the swapper contract that conforms to `ISwapper`.
+    /// @param lzChainId The LZ chain id
     /// @param enable True to enable the swapper. To disable use False.
-    function setSwapper(ISwapper swapper, bool enable) external onlyOwner {
-        swappers[swapper] = enable;
-        emit SwapperUpdate(address(swapper), enable);
+    function setSwapper(
+        ISwapper swapper,
+        uint16 lzChainId,
+        bool enable
+    ) external onlyOwner {
+        if (lzChainId == 0) {
+            lzChainId = hostLzChainId;
+        }
+        swappers[lzChainId][swapper] = enable;
+        emit SwapperUpdate(address(swapper), lzChainId, enable);
     }
 
     // ************************* //
@@ -494,7 +513,7 @@ contract Penrose is BoringOwnable, BoringFactory {
         ISwapper swapper,
         IPenrose.SwapData calldata dexData
     ) private {
-        require(swappers[swapper], "Penrose: Invalid swapper");
+        require(swappers[hostLzChainId][swapper], "Penrose: Invalid swapper");
         require(isMarketRegistered[address(market)], "Penrose: Invalid market");
 
         uint256 feeShares = market.refreshPenroseFees(feeTo);

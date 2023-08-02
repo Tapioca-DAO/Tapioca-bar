@@ -9,11 +9,12 @@ export const buildPenrose = async (
     wethTokenAddress: string,
     owner: string,
     yieldBox: string,
+    chainId: string,
 ): Promise<IDeployerVMAdd<Penrose__factory>> => {
     return {
         contract: await hre.ethers.getContractFactory('Penrose'),
         deploymentName: 'Penrose',
-        args: [yieldBox, tapTokenAddress, wethTokenAddress, owner],
+        args: [yieldBox, tapTokenAddress, wethTokenAddress, chainId, owner],
         dependsOn: [{ argPosition: 0, deploymentName: 'YieldBox' }],
         runStaticSimulation: false,
     };

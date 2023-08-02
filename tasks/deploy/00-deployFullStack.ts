@@ -86,6 +86,7 @@ export const deployFullStack__task = async (
         weth.address,
         signer.address,
         ybAddress,
+        chainInfo.lzChainId,
     );
     VM.add(penrose);
 
