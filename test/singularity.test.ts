@@ -1865,10 +1865,10 @@ describe('Singularity test', () => {
                 usdcDepositAndAddCollateral,
                 wethDepositAndAddAsset,
                 multiSwapper,
-                singularityFeeTo,
                 __wethUsdcPrice,
                 timeTravel,
                 magnetar,
+                twTap,
             } = await loadFixture(register);
 
             const assetId = await wethUsdcSingularity.assetId();
@@ -1942,37 +1942,14 @@ describe('Singularity test', () => {
             // Confirm fees accumulation
             expect(userBorrowPart.gt(wethBorrowVal));
 
-            const feeShareIn = await yieldBox.toShare(
-                assetId,
-                feesAmountInAsset,
-                false,
-            );
-            const marketAsset = await wethUsdcSingularity.asset();
-            const marketCollateral = await wethUsdcSingularity.collateral();
-            const marketAssetId = await wethUsdcSingularity.assetId();
-
-            const swapData = await multiSwapper[
-                'buildSwapData(uint256,uint256,uint256,uint256,bool,bool)'
-            ](marketAssetId, collateralId, 0, feeShareIn, true, true);
-            const feeMinAmount = await multiSwapper.getOutputAmount(
-                swapData,
-                '0x00',
-            );
-
             // Withdraw fees from Penrose
             const markets = [wethUsdcSingularity.address];
-            const swappers = [multiSwapper.address];
-            const dexData = [{ minAssetAmount: feeMinAmount }];
 
             await expect(
-                bar.withdrawAllMarketFees(markets, swappers, dexData),
-            ).to.emit(bar, 'LogYieldBoxFeesDeposit');
+                bar.withdrawAllMarketFees(markets, twTap.address),
+            ).to.emit(bar, 'LogTwTapFeesDeposit');
 
-            const amountHarvested = await yieldBox.toAmount(
-                wethAssetId,
-                await yieldBox.balanceOf(singularityFeeTo.address, wethAssetId),
-                false,
-            );
+            const amountHarvested = await weth.balanceOf(twTap.address);
             // 0.31%
             const acceptableHarvestMargin = feesAmountInAsset.sub(
                 feesAmountInAsset.mul(31).div(10000),
@@ -2690,7 +2667,7 @@ describe('Singularity test', () => {
                 await wethUsdcSingularity.userBorrowPart(eoa1.address),
             ).to.be.eq(BN(0));
 
-            const feeTo = await bar.feeTo();
+            const feeTo = bar.address;
             const sglBalanceOfFeeTo = await wethUsdcSingularity.balanceOf(
                 feeTo,
             );
@@ -2747,7 +2724,7 @@ describe('Singularity test', () => {
             expect(balanceAfter.gt(balanceBefore)).to.be.true;
         });
 
-        it('Should accumulate fees and harvest them as collateral', async () => {
+        it('Should accumulate fees and harvest them as asset', async () => {
             const {
                 usdc,
                 weth,
@@ -2760,10 +2737,10 @@ describe('Singularity test', () => {
                 usdcDepositAndAddCollateral,
                 wethDepositAndAddAsset,
                 multiSwapper,
-                singularityFeeTo,
                 __wethUsdcPrice,
                 timeTravel,
                 magnetar,
+                twTap,
             } = await loadFixture(register);
 
             const assetId = await wethUsdcSingularity.assetId();
@@ -2845,41 +2822,15 @@ describe('Singularity test', () => {
                 swapData.push({ minAssetAmount: 1 });
             }
             await expect(
-                bar.withdrawAllMarketFees(markets, swappers, swapData),
-            ).to.emit(bar, 'LogYieldBoxFeesDeposit');
+                bar.withdrawAllMarketFees(markets, twTap.address),
+            ).to.emit(bar, 'LogTwTapFeesDeposit');
 
-            const amountHarvested = await yieldBox.toAmount(
-                await bar.wethAssetId(),
-                await yieldBox.balanceOf(
-                    singularityFeeTo.address,
-                    await bar.wethAssetId(),
-                ),
-                false,
-            );
+            const amountHarvested = await weth.balanceOf(twTap.address);
             // 0.31%
             const acceptableHarvestMargin = feesAmountInAsset.sub(
                 feesAmountInAsset.mul(31).div(10000),
             );
             expect(amountHarvested.gte(acceptableHarvestMargin)).to.be.true;
-        });
-
-        it('deposit fees to yieldbox should not work for inexistent swapper', async () => {
-            const { wethUsdcSingularity, bar } = await loadFixture(register);
-            await expect(
-                bar.withdrawAllMarketFees(
-                    [wethUsdcSingularity.address],
-                    [ethers.constants.AddressZero],
-                    [{ minAssetAmount: 1 }],
-                ),
-            ).to.be.revertedWith('Penrose: zero address');
-
-            await expect(
-                bar.withdrawAllMarketFees(
-                    [wethUsdcSingularity.address],
-                    [wethUsdcSingularity.address],
-                    [{ minAssetAmount: 1 }],
-                ),
-            ).to.be.revertedWith('Penrose: Invalid swapper');
         });
     });
 
@@ -2900,6 +2851,7 @@ describe('Singularity test', () => {
                 usdcDepositAndAddCollateral,
                 eoas,
                 bar,
+                twTap,
             } = await loadFixture(register);
 
             const assetId = await wethUsdcSingularity.assetId();
@@ -2963,12 +2915,7 @@ describe('Singularity test', () => {
             timeTravel(10 * 86400);
             await bar.withdrawAllMarketFees(
                 [wethUsdcSingularity.address],
-                [multiSwapper.address],
-                [
-                    {
-                        minAssetAmount: 1,
-                    },
-                ],
+                twTap.address,
             );
         });
     });

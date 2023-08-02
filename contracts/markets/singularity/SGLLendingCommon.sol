@@ -75,7 +75,7 @@ contract SGLLendingCommon is SGLCommon {
         emit LogBorrow(from, to, amount, feeAmount, part);
 
         if (feeAmount > 0) {
-            balanceOf[penrose.feeTo()] += feeAmount;
+            balanceOf[address(penrose)] += feeAmount;
         }
 
         share = yieldBox.toShare(assetId, amount, false);

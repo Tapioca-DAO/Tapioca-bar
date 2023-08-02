@@ -34,6 +34,7 @@ contract BigBang is BoringOwnable, Market {
     // *** VARS *** //
     // ************ //
     mapping(address => mapping(address => bool)) public operators;
+    mapping(address user => uint256 fee) public openingFees;
 
     IBigBang.AccrueInfo public accrueInfo;
 
@@ -44,6 +45,7 @@ contract BigBang is BoringOwnable, Market {
     uint256 public minDebtRate;
     uint256 public debtRateAgainstEthMarket;
     uint256 public debtStartPoint;
+
     uint256 private constant DEBT_PRECISION = 1e18;
 
     // ************** //
@@ -446,26 +448,23 @@ contract BigBang is BoringOwnable, Market {
     // ************************* //
 
     /// @notice Transfers fees to penrose
-    function refreshPenroseFees(
-        address
-    ) external onlyOwner notPaused returns (uint256 feeShares) {
-        uint256 balance = asset.balanceOf(address(this));
-        totalFees += balance;
-        feeShares = yieldBox.toShare(assetId, totalFees, false);
-
-        if (totalFees > 0) {
-            asset.approve(address(yieldBox), 0);
-            asset.approve(address(yieldBox), totalFees);
-
+    function refreshPenroseFees()
+        external
+        onlyOwner
+        notPaused
+        returns (uint256 feeShares)
+    {
+        uint256 fees = asset.balanceOf(address(this));
+        feeShares = yieldBox.toShare(assetId, fees, false);
+        if (feeShares > 0) {
+            asset.approve(address(yieldBox), fees);
             yieldBox.depositAsset(
                 assetId,
                 address(this),
                 msg.sender,
-                totalFees,
-                0
+                0,
+                feeShares
             );
-
-            totalFees = 0;
         }
     }
 
@@ -581,23 +580,18 @@ contract BigBang is BoringOwnable, Market {
         //update debt rate
         uint256 annumDebtRate = getDebtRate();
         _accrueInfo.debtRate = uint64(annumDebtRate / 31536000); //per second
-
         _accrueInfo.lastAccrued = uint64(block.timestamp);
 
         Rebase memory _totalBorrow = totalBorrow;
 
-        uint256 extraAmount = 0;
-
         // Calculate fees
+        uint256 extraAmount = 0;
         extraAmount =
             (uint256(_totalBorrow.elastic) *
                 _accrueInfo.debtRate *
                 elapsedTime) /
             1e18;
         _totalBorrow.elastic += uint128(extraAmount);
-
-        uint256 feeAmount = (extraAmount * protocolFee) / FEE_PRECISION; // % of interest paid goes to fee
-        IUSDOBase(address(asset)).mint(address(this), feeAmount); //withdrawn when refreshPenroseFees is called
 
         totalBorrow = _totalBorrow;
         accrueInfo = _accrueInfo;
@@ -806,19 +800,50 @@ contract BigBang is BoringOwnable, Market {
         address to,
         uint256 part
     ) internal returns (uint256 amount) {
-        (totalBorrow, amount) = totalBorrow.sub(part, true);
+        uint256 openingFee = _computeRepayFee(to, part);
 
+        require(openingFee < part, "BB: repayment too low");
+        openingFees[to] -= openingFee;
+
+        (totalBorrow, amount) = totalBorrow.sub(part, true);
         userBorrowPart[to] -= part;
 
-        uint256 toWithdraw = (amount - part); //accrued
-        uint256 toBurn = amount - toWithdraw;
         yieldBox.withdraw(assetId, from, address(this), amount, 0);
+
+        uint256 accruedFees = amount - part;
+        if (accruedFees > 0) {
+            uint256 feeAmount = (accruedFees * protocolFee) / FEE_PRECISION;
+            amount -= feeAmount;
+        }
+        uint256 toBurn = (amount - openingFee); //the opening & accrued fees remain in the contract
         //burn USDO
         if (toBurn > 0) {
             IUSDOBase(address(asset)).burn(address(this), toBurn);
         }
 
         emit LogRepay(from, to, amount, part);
+    }
+
+    function _computeRepayFee(
+        address user,
+        uint256 repayPart
+    ) private view returns (uint256) {
+        uint256 _totalPart = userBorrowPart[user];
+
+        if (repayPart == _totalPart) {
+            return openingFees[user];
+        }
+
+        uint256 _assetDecimals = asset.safeDecimals();
+        uint256 repayRatio = _getRatio(repayPart, _totalPart, _assetDecimals);
+        //it can return 0 when numerator is very low compared to the denominator
+        if (repayRatio == 0) return 0;
+
+        uint256 openingFee = (repayRatio * openingFees[user]) /
+            (10 ** _assetDecimals);
+        if (openingFee > openingFees[user]) return openingFees[user];
+
+        return openingFee;
     }
 
     /// @dev Concrete implementation of `borrow`.
@@ -828,6 +853,7 @@ contract BigBang is BoringOwnable, Market {
         uint256 amount
     ) internal returns (uint256 part, uint256 share) {
         uint256 feeAmount = (amount * borrowOpeningFee) / FEE_PRECISION; // A flat % fee is charged for any borrow
+        openingFees[to] += feeAmount;
 
         (totalBorrow, part) = totalBorrow.add(amount + feeAmount, true);
         require(
@@ -839,7 +865,7 @@ contract BigBang is BoringOwnable, Market {
         emit LogBorrow(from, to, amount, feeAmount, part);
 
         //mint USDO
-        IUSDOBase(address(asset)).mint(address(this), amount + feeAmount);
+        IUSDOBase(address(asset)).mint(address(this), amount);
 
         //deposit borrowed amount to user
         asset.approve(address(yieldBox), 0);

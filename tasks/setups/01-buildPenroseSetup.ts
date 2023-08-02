@@ -10,7 +10,6 @@ import { getAfterDepContract } from '../utils';
 export const buildPenroseSetup = async (
     hre: HardhatRuntimeEnvironment,
     deps: TDeploymentVMContract[],
-    feeTo: string,
 ): Promise<Multicall3.CallStruct[]> => {
     const calls: Multicall3.CallStruct[] = [];
 
@@ -30,9 +29,6 @@ export const buildPenroseSetup = async (
     /**
      * Add calls
      */
-    console.log('[+] +Setting: Setting Penrose feeTo');
-    await (await penrose.setFeeTo(feeTo)).wait(3);
-
     console.log('[+] +Setting: Setting MultiSwapper');
     await (
         await penrose.setSwapper(

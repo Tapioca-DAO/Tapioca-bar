@@ -3,12 +3,12 @@
         "4002": [
             {
                 "name": "MockSwapper",
-                "address": "0xA49C1BFA5c9641999d97e30DCf4e4b39A89356e6",
+                "address": "0xDD507A57af3D1497CD2b56fAE2C63578645764fc",
                 "meta": {
                     "args": [
                         "0x3d58d11dcf64B7CC691E1dCC606085b14ACBA4EC"
                     ],
-                    "salt": "0xa25fe709ac2274d07e1d25dae6d70227339b49f9f57a8752f0e439be935d6bcb",
+                    "salt": "0x4ce1d0086c78a53e01f36c01049ac7be91a8682501155f0d77ae97341e5dc56d",
                     "create2": true
                 }
             },
@@ -225,6 +225,17 @@
         ],
         "80001": [
             {
+                "name": "MockSwapper",
+                "address": "0xAEA5d54656d1231FC8c472b5a6a8585868296e18",
+                "meta": {
+                    "args": [
+                        "0x2593af45D3EEb6d9492B06CfDf418a41fd44Ab7B"
+                    ],
+                    "salt": "0x38ffe7d7e8e999fada930e1f6c710233756e3b0d78558ae3546caf68696b170d",
+                    "create2": true
+                }
+            },
+            {
                 "name": "ERC20WithoutStrategy-TapiocaOFT-FTMLPMock",
                 "address": "0x0f206fD7029E216937fE2443A83a9d4953Aed839",
                 "meta": {
@@ -410,12 +421,12 @@
         "421613": [
             {
                 "name": "MockSwapper",
-                "address": "0x150464864baF652bf42789c6acdCB34d7328de64",
+                "address": "0xb449C36Cb0fe37B9528F8ebda282057F250ee200",
                 "meta": {
                     "args": [
                         "0xDb82e7182Ab442B3baF0aC6ac8078b517b3eB8be"
                     ],
-                    "salt": "0xb71a655922856c63d9e4aa7d3880863df87603541b4b520b75d10ba5281f3a5c",
+                    "salt": "0x44b892bcbb6d1334d305b3df00241259ff506d7ab9fc8d190d63a1b97ff43e7a",
                     "create2": true
                 }
             },

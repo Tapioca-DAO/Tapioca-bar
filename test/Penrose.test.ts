@@ -69,22 +69,6 @@ describe('Penrose test', () => {
             ).to.be.revertedWith('Penrose: MC not registered');
         });
 
-        it('should not withdraw for zero address swapper', async () => {
-            const { bar } = await loadFixture(register);
-
-            await expect(
-                bar.withdrawAllMarketFees(
-                    [ethers.constants.AddressZero],
-                    [ethers.constants.AddressZero],
-                    [
-                        {
-                            minAssetAmount: 1,
-                        },
-                    ],
-                ),
-            ).to.be.revertedWith('Penrose: zero address');
-        });
-
         it('should not allow to call withdraw when paused', async () => {
             const { bar, deployer } = await loadFixture(register);
             await bar.setConservator(deployer.address);
@@ -92,24 +76,14 @@ describe('Penrose test', () => {
             await expect(
                 bar.withdrawAllMarketFees(
                     [ethers.constants.AddressZero],
-                    [ethers.constants.AddressZero],
-                    [
-                        {
-                            minAssetAmount: 1,
-                        },
-                    ],
+                    ethers.constants.AddressZero,
                 ),
             ).to.be.revertedWith('Penrose: paused');
 
             await expect(
                 bar.withdrawAllMarketFees(
                     [ethers.constants.AddressZero],
-                    [ethers.constants.AddressZero],
-                    [
-                        {
-                            minAssetAmount: 1,
-                        },
-                    ],
+                    ethers.constants.AddressZero,
                 ),
             ).to.be.revertedWith('Penrose: paused');
         });

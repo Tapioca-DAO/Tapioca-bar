@@ -152,7 +152,7 @@ export const deployFullStack__task = async (
     const multiCall = await VM.getMulticall();
 
     const calls: Multicall3.CallStruct[] = [
-        ...(await buildPenroseSetup(hre, vmList, signer.address)),
+        ...(await buildPenroseSetup(hre, vmList)),
         ...(await buildMasterContractsSetup(hre, vmList)),
     ];
 
