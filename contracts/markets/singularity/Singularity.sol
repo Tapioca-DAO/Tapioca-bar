@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
+// SGL modules
 import "./SGLCommon.sol";
 import "./SGLLiquidation.sol";
 import "./SGLCollateral.sol";

@@ -299,7 +299,7 @@ async function setPenroseAssets(
     usdcAddress: string,
     wbtcAddress: string,
 ) {
-    const wethAssetId = await bar.wethAssetId();
+    const wethAssetId = await bar.mainAssetId();
 
     const usdcStrategy = await createTokenEmptyStrategy(
         yieldBox.address,
@@ -1129,8 +1129,45 @@ async function registerBigBangMarket(
     debtStartPoint?: BigNumberish,
     staging?: boolean,
 ) {
+    const _bbLiquidationModule = await (
+        await ethers.getContractFactory('BBLiquidation')
+    ).deploy({ gasPrice: gasPrice });
+    await _bbLiquidationModule.deployed();
+    log(
+        `Deployed BBLiquidationModule ${_bbLiquidationModule.address} with no arguments`,
+        staging,
+    );
+
+    const _bbCollateral = await (
+        await ethers.getContractFactory('BBCollateral')
+    ).deploy({ gasPrice: gasPrice });
+    await _bbCollateral.deployed();
+    log(
+        `Deployed BBCollateral ${_bbCollateral.address} with no arguments`,
+        staging,
+    );
+
+    const _bbBorrow = await (
+        await ethers.getContractFactory('BBBorrow')
+    ).deploy({ gasPrice: gasPrice });
+    await _bbBorrow.deployed();
+    log(`Deployed BBBorrow ${_bbBorrow.address} with no arguments`, staging);
+
+    const _bbLeverage = await (
+        await ethers.getContractFactory('BBLeverage')
+    ).deploy({ gasPrice: gasPrice });
+    await _bbLeverage.deployed();
+    log(
+        `Deployed BBLeverage ${_bbLeverage.address} with no arguments`,
+        staging,
+    );
+
     const data = new ethers.utils.AbiCoder().encode(
         [
+            'address',
+            'address',
+            'address',
+            'address',
             'address',
             'address',
             'uint256',
@@ -1142,6 +1179,10 @@ async function registerBigBangMarket(
             'uint256',
         ],
         [
+            _bbLiquidationModule.address,
+            _bbBorrow.address,
+            _bbCollateral.address,
+            _bbLeverage.address,
             bar.address,
             collateral.address,
             collateralId,

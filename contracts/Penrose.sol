@@ -33,10 +33,10 @@ contract Penrose is BoringOwnable, BoringFactory {
     IERC20 public usdoToken;
     /// @notice returns USDO asset id registered in the YieldBox contract
     uint256 public usdoAssetId;
-    /// @notice returns the WETH contract
-    IERC20 public immutable wethToken;
-    /// @notice returns WETH asset id registered in the YieldBox contract
-    uint256 public immutable wethAssetId;
+    /// @notice returns the WETH/main contract
+    IERC20 public immutable mainToken;
+    /// @notice returns WETH/main asset id registered in the YieldBox contract
+    uint256 public immutable mainAssetId;
 
     /// @notice Singularity master contracts
     IPenrose.MasterContract[] public singularityMasterContracts;
@@ -57,7 +57,7 @@ contract Penrose is BoringOwnable, BoringFactory {
     /// @notice default LZ Chain id
     uint16 public hostLzChainId;
 
-    /// @notice BigBang ETH market address
+    /// @notice BigBang ETH market addressf
     address public bigBangEthMarket;
     /// @notice BigBang ETH market debt rate
     uint256 public bigBangEthDebtRate;
@@ -68,13 +68,13 @@ contract Penrose is BoringOwnable, BoringFactory {
     /// @notice creates a Penrose contract
     /// @param _yieldBox YieldBox contract address
     /// @param tapToken_ TapOFT contract address
-    /// @param wethToken_ WETH contract address
+    /// @param mainToken_ WETH contract address
     /// @param _hostLzChainId the default protocol's LZ chain id
     /// @param _owner owner address
     constructor(
         YieldBox _yieldBox,
         IERC20 tapToken_,
-        IERC20 wethToken_,
+        IERC20 mainToken_,
         uint16 _hostLzChainId,
         address _owner
     ) {
@@ -99,20 +99,20 @@ contract Penrose is BoringOwnable, BoringFactory {
             )
         );
 
-        wethToken = wethToken_;
-        emptyStrategies[address(wethToken_)] = IStrategy(
+        mainToken = mainToken_;
+        emptyStrategies[address(mainToken_)] = IStrategy(
             address(
                 new ERC20WithoutStrategy(
                     IYieldBox(address(_yieldBox)),
-                    wethToken_
+                    mainToken_
                 )
             )
         );
-        wethAssetId = uint96(
+        mainAssetId = uint96(
             _yieldBox.registerAsset(
                 TokenType.ERC20,
-                address(wethToken_),
-                emptyStrategies[address(wethToken_)],
+                address(mainToken_),
+                emptyStrategies[address(mainToken_)],
                 0
             )
         );

@@ -4225,7 +4225,7 @@ describe('Singularity test', () => {
                 YieldBox_0,
                 BAR_0,
                 weth,
-                await BAR_0.wethAssetId(),
+                await BAR_0.mainAssetId(),
                 oracleMock,
                 0,
                 0,
@@ -4241,7 +4241,7 @@ describe('Singularity test', () => {
             await weth.approve(YieldBox_0.address, ethers.constants.MaxUint256);
             await YieldBox_0.setApprovalForAll(bigBangMarket.address, true);
             await YieldBox_0.depositAsset(
-                await BAR_0.wethAssetId(),
+                await BAR_0.mainAssetId(),
                 deployer.address,
                 deployer.address,
                 bigDummyAmount.mul(5),
@@ -4259,7 +4259,7 @@ describe('Singularity test', () => {
             expect(bigBangCollateralShare.gt(0)).to.be.true;
 
             const collateralIdSaved = await bigBangMarket.collateralId();
-            const wethId = await BAR_0.wethAssetId();
+            const wethId = await BAR_0.mainAssetId();
             expect(collateralIdSaved.eq(wethId)).to.be.true;
 
             await USDO_0.setMinterStatus(bigBangMarket.address, true);

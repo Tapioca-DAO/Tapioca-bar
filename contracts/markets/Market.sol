@@ -333,11 +333,7 @@ abstract contract Market is MarketERC20, BoringOwnable {
         address user,
         uint256 _exchangeRate
     ) public view returns (uint256) {
-        (uint256 minTVL, uint256 maxTVL) = _computeMaxAndMinLTVInAsset(
-            userCollateralShare[user],
-            _exchangeRate
-        );
-        return _getCallerReward(userBorrowPart[user], minTVL, maxTVL);
+        return _getCallerReward(user, _exchangeRate);
     }
 
     // ************************** //
@@ -418,10 +414,18 @@ abstract contract Market is MarketERC20, BoringOwnable {
     }
 
     function _getCallerReward(
-        uint256 borrowed,
-        uint256 startTVLInAsset,
-        uint256 maxTVLInAsset
+        address user,
+        uint256 _exchangeRate
     ) internal view returns (uint256) {
+        (
+            uint256 startTVLInAsset,
+            uint256 maxTVLInAsset
+        ) = _computeMaxAndMinLTVInAsset(
+                userCollateralShare[user],
+                _exchangeRate
+            );
+
+        uint256 borrowed = userBorrowPart[user];
         if (borrowed == 0) return 0;
         if (startTVLInAsset == 0) return 0;
 

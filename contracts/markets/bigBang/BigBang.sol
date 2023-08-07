@@ -1,15 +1,13 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-import "@boringcrypto/boring-solidity/contracts/BoringOwnable.sol";
-import "@boringcrypto/boring-solidity/contracts/ERC20.sol";
-
-import "tapioca-periph/contracts/interfaces/IBigBang.sol";
+// BB modules
+import "./BBCommon.sol";
+import "./BBLiquidation.sol";
+import "./BBCollateral.sol";
+import "./BBBorrow.sol";
+import "./BBLeverage.sol";
 import "tapioca-periph/contracts/interfaces/ISendFrom.sol";
-import "tapioca-periph/contracts/interfaces/ISwapper.sol";
-import {IUSDOBase} from "tapioca-periph/contracts/interfaces/IUSDO.sol";
-
-import "../Market.sol";
 
 // solhint-disable max-line-length
 /*
@@ -26,73 +24,39 @@ __/\\\\\\\\\\\\\\\_____/\\\\\\\\\_____/\\\\\\\\\\\\\____/\\\\\\\\\\\_______/\\\\
 
 */
 
-contract BigBang is BoringOwnable, Market {
+contract BigBang is BBCommon {
     using RebaseLibrary for Rebase;
     using BoringERC20 for IERC20;
 
     // ************ //
     // *** VARS *** //
     // ************ //
-    mapping(address => mapping(address => bool)) public operators;
-    mapping(address user => uint256 fee) public openingFees;
-
-    IBigBang.AccrueInfo public accrueInfo;
-
-    uint256 public totalFees;
-
-    bool private _isEthMarket;
-    uint256 public maxDebtRate;
-    uint256 public minDebtRate;
-    uint256 public debtRateAgainstEthMarket;
-    uint256 public debtStartPoint;
-
-    uint256 private constant DEBT_PRECISION = 1e18;
-
-    // ************** //
-    // *** EVENTS *** //
-    // ************** //
-    /// @notice event emitted when accrue is called
-    event LogAccrue(uint256 accruedAmount, uint64 rate);
-    /// @notice event emitted when collateral is added
-    event LogAddCollateral(
-        address indexed from,
-        address indexed to,
-        uint256 share
-    );
-    /// @notice event emitted when collateral is removed
-    event LogRemoveCollateral(
-        address indexed from,
-        address indexed to,
-        uint256 share
-    );
-    /// @notice event emitted when borrow is performed
-    event LogBorrow(
-        address indexed from,
-        address indexed to,
-        uint256 amount,
-        uint256 feeAmount,
-        uint256 part
-    );
-    /// @notice event emitted when a repay operation is performed
-    event LogRepay(
-        address indexed from,
-        address indexed to,
-        uint256 amount,
-        uint256 part
-    );
-    /// @notice event emitted when the minimum debt rate is updated
-    event MinDebtRateUpdated(uint256 oldVal, uint256 newVal);
-    /// @notice event emitted when the maximum debt rate is updated
-    event MaxDebtRateUpdated(uint256 oldVal, uint256 newVal);
-    /// @notice event emitted when the debt rate against the main market is updated
-    event DebtRateAgainstEthUpdated(uint256 oldVal, uint256 newVal);
-
-    constructor() MarketERC20("Tapioca BigBang") {}
+    /// @notice enum representing each type of module associated with a Singularity market
+    /// @dev modules are contracts that holds a portion of the market's logic
+    enum Module {
+        Base,
+        Borrow,
+        Collateral,
+        Liquidation,
+        Leverage
+    }
+    /// @notice returns the liquidation module
+    BBLiquidation public liquidationModule;
+    /// @notice returns the borrow module
+    BBBorrow public borrowModule;
+    /// @notice returns the collateral module
+    BBCollateral public collateralModule;
+    /// @notice returns the leverage module
+    BBLeverage public leverageModule;
 
     /// @notice The init function that acts as a constructor
     function init(bytes calldata data) external onlyOnce {
         (
-            IPenrose tapiocaBar_,
+            address _liquidationModule,
+            address _borrowModule,
+            address _collateralModule,
+            address _leverageModule,
+            IPenrose penrose_,
             IERC20 _collateral,
             uint256 _collateralId,
             IOracle _oracle,
@@ -104,6 +68,10 @@ contract BigBang is BoringOwnable, Market {
         ) = abi.decode(
                 data,
                 (
+                    address,
+                    address,
+                    address,
+                    address,
                     IPenrose,
                     IERC20,
                     uint256,
@@ -115,45 +83,54 @@ contract BigBang is BoringOwnable, Market {
                     uint256
                 )
             );
-
-        penrose = tapiocaBar_;
-        yieldBox = YieldBox(tapiocaBar_.yieldBox());
-        owner = address(penrose);
-
-        address _asset = penrose.usdoToken();
-
-        require(
-            address(_collateral) != address(0) &&
-                address(_asset) != address(0) &&
-                address(_oracle) != address(0),
-            "BigBang: bad pair"
+        _initModules(
+            _liquidationModule,
+            _borrowModule,
+            _collateralModule,
+            _leverageModule
         );
+        _initCoreStorage(
+            penrose_,
+            _collateral,
+            _collateralId,
+            _oracle,
+            _exchangeRatePrecision
+        );
+        _initDebtStorage(
+            _debtRateAgainstEth,
+            _debtRateMin,
+            _debtRateMax,
+            _debtStartPoint
+        );
+    }
 
-        asset = IERC20(_asset);
-        assetId = penrose.usdoAssetId();
-        collateral = _collateral;
-        collateralId = _collateralId;
-        oracle = _oracle;
+    function _initModules(
+        address _liquidationModule,
+        address _borrowModule,
+        address _collateralModule,
+        address _leverageModule
+    ) private {
+        liquidationModule = BBLiquidation(_liquidationModule);
+        collateralModule = BBCollateral(_collateralModule);
+        borrowModule = BBBorrow(_borrowModule);
+        leverageModule = BBLeverage(_leverageModule);
+    }
 
-        updateExchangeRate();
-
-        callerFee = 90000; // 90%
-        protocolFee = 10000; // 10%
-        collateralizationRate = 75000; // 75%
-
-        EXCHANGE_RATE_PRECISION = _exchangeRatePrecision > 0
-            ? _exchangeRatePrecision
-            : 1e18;
-
-        _isEthMarket = collateralId == penrose.wethAssetId();
-        if (!_isEthMarket) {
+    function _initDebtStorage(
+        uint256 _debtRateAgainstEth,
+        uint256 _debtRateMin,
+        uint256 _debtRateMax,
+        uint256 _debtStartPoint
+    ) private {
+        isMainMarket = collateralId == penrose.mainAssetId();
+        if (!isMainMarket) {
             if (minDebtRate != 0 && maxDebtRate != 0) {
                 require(
-                    minDebtRate < maxDebtRate,
+                    _debtRateMin < _debtRateMax,
                     "BigBang: debt rates not valid"
                 );
                 require(
-                    maxDebtRate <= 1e18,
+                    _debtRateMax <= 1e18,
                     "BigBang: max debt rate not valid"
                 );
             }
@@ -162,6 +139,37 @@ contract BigBang is BoringOwnable, Market {
             minDebtRate = _debtRateMin;
             debtStartPoint = _debtStartPoint;
         }
+    }
+
+    function _initCoreStorage(
+        IPenrose _penrose,
+        IERC20 _collateral,
+        uint256 _collateralId,
+        IOracle _oracle,
+        uint256 _exchangeRatePrecision
+    ) private {
+        penrose = _penrose;
+        yieldBox = YieldBox(_penrose.yieldBox());
+        owner = address(penrose);
+        address _asset = penrose.usdoToken();
+        require(
+            address(_collateral) != address(0) &&
+                address(_asset) != address(0) &&
+                address(_oracle) != address(0),
+            "BigBang: bad pair"
+        );
+        asset = IERC20(_asset);
+        assetId = penrose.usdoAssetId();
+        collateral = _collateral;
+        collateralId = _collateralId;
+        oracle = _oracle;
+        updateExchangeRate();
+        callerFee = 90000; // 90%
+        protocolFee = 10000; // 10%
+        collateralizationRate = 75000; // 75%
+        EXCHANGE_RATE_PRECISION = _exchangeRatePrecision > 0
+            ? _exchangeRatePrecision
+            : 1e18;
 
         minLiquidatorReward = 1e3;
         maxLiquidatorReward = 1e4;
@@ -170,41 +178,10 @@ contract BigBang is BoringOwnable, Market {
         liquidationMultiplier = 12000; //12%
     }
 
-    // ********************** //
-    // *** VIEW FUNCTIONS *** //
-    // ********************** //
-    /// @notice returns total market debt
-    function getTotalDebt() external view returns (uint256) {
-        return totalBorrow.elastic;
-    }
-
-    /// @notice returns the current debt rate
-    function getDebtRate() public view returns (uint256) {
-        if (_isEthMarket) return penrose.bigBangEthDebtRate(); // default 0.5%
-        if (totalBorrow.elastic == 0) return minDebtRate;
-
-        uint256 _ethMarketTotalDebt = BigBang(penrose.bigBangEthMarket())
-            .getTotalDebt();
-        uint256 _currentDebt = totalBorrow.elastic;
-        uint256 _maxDebtPoint = (_ethMarketTotalDebt *
-            debtRateAgainstEthMarket) / 1e18;
-
-        if (_currentDebt >= _maxDebtPoint) return maxDebtRate;
-
-        uint256 debtPercentage = ((_currentDebt - debtStartPoint) *
-            DEBT_PRECISION) / (_maxDebtPoint - debtStartPoint);
-        uint256 debt = ((maxDebtRate - minDebtRate) * debtPercentage) /
-            DEBT_PRECISION +
-            minDebtRate;
-
-        if (debt > maxDebtRate) return maxDebtRate;
-
-        return debt;
-    }
-
     // ************************ //
     // *** PUBLIC FUNCTIONS *** //
     // ************************ //
+
     /// @notice Allows batched call to BingBang.
     /// @param calls An array encoded call data.
     /// @param revertOnFail If True then reverts after a failed call and stops doing further calls.
@@ -224,57 +201,6 @@ contract BigBang is BoringOwnable, Market {
         }
     }
 
-    /// @notice allows 'operator' to act on behalf of the sender
-    /// @param status true/false
-    function updateOperator(address operator, bool status) external {
-        operators[msg.sender][operator] = status;
-    }
-
-    /// @notice Accrues the interest on the borrowed tokens and handles the accumulation of fees.
-    function accrue() public {
-        _accrue();
-    }
-
-    /// @notice Sender borrows `amount` and transfers it to `to`.
-    /// @param from Account to borrow for.
-    /// @param to The receiver of borrowed tokens.
-    /// @param amount Amount to borrow.
-    /// @return part Total part of the debt held by borrowers.
-    /// @return share Total amount in shares borrowed.
-    function borrow(
-        address from,
-        address to,
-        uint256 amount
-    ) external notPaused solvent(from) returns (uint256 part, uint256 share) {
-        uint256 allowanceShare = _computeAllowanceAmountInAsset(
-            from,
-            exchangeRate,
-            amount,
-            asset.safeDecimals()
-        );
-        _allowedBorrow(from, allowanceShare);
-        (part, share) = _borrow(from, to, amount);
-    }
-
-    /// @notice Repays a loan.
-    /// @dev The bool param is not used but we added it to respect the ISingularity interface for MarketsHelper compatibility
-    /// @param from Address to repay from.
-    /// @param to Address of the user this payment should go.
-    /// @param part The amount to repay. See `userBorrowPart`.
-    /// @return amount The total amount repayed.
-    function repay(
-        address from,
-        address to,
-        bool,
-        uint256 part
-    ) external notPaused allowedBorrow(from, part) returns (uint256 amount) {
-        updateExchangeRate();
-
-        accrue();
-
-        amount = _repay(from, to, part);
-    }
-
     /// @notice Adds `collateral` from msg.sender to the account `to`.
     /// @param from Account to transfer shares from.
     /// @param to The receiver of the tokens.
@@ -288,7 +214,17 @@ contract BigBang is BoringOwnable, Market {
         uint256 amount,
         uint256 share
     ) external allowedBorrow(from, share) notPaused {
-        _addCollateral(from, to, skim, amount, share);
+        _executeModule(
+            Module.Collateral,
+            abi.encodeWithSelector(
+                BBCollateral.addCollateral.selector,
+                from,
+                to,
+                skim,
+                amount,
+                share
+            )
+        );
     }
 
     /// @notice Removes `share` amount of collateral and transfers it to `to`.
@@ -300,35 +236,86 @@ contract BigBang is BoringOwnable, Market {
         address to,
         uint256 share
     ) external notPaused solvent(from) allowedBorrow(from, share) {
-        _removeCollateral(from, to, share);
+        _executeModule(
+            Module.Collateral,
+            abi.encodeWithSelector(
+                BBCollateral.removeCollateral.selector,
+                from,
+                to,
+                share
+            )
+        );
     }
 
-    /// @notice Entry point for liquidations.
-    /// @param users An array of user addresses.
-    /// @param maxBorrowParts A one-to-one mapping to `users`, contains maximum (partial) borrow amounts (to liquidate) of the respective user.
-    /// @param swapper Contract address of the `MultiSwapper` implementation. See `setSwapper`.
-    /// @param collateralToAssetSwapData Extra swap data
-    function liquidate(
-        address[] calldata users,
-        uint256[] calldata maxBorrowParts,
-        ISwapper swapper,
-        bytes calldata collateralToAssetSwapData
-    ) external notPaused {
-        require(
-            users.length == maxBorrowParts.length,
-            "BigBang: length mismatch"
+    /// @notice Sender borrows `amount` and transfers it to `to`.
+    /// @param from Account to borrow for.
+    /// @param to The receiver of borrowed tokens.
+    /// @param amount Amount to borrow.
+    /// @return part Total part of the debt held by borrowers.
+    /// @return share Total amount in shares borrowed.
+    function borrow(
+        address from,
+        address to,
+        uint256 amount
+    ) external notPaused solvent(from) returns (uint256 part, uint256 share) {
+        bytes memory result = _executeModule(
+            Module.Borrow,
+            abi.encodeWithSelector(BBBorrow.borrow.selector, from, to, amount)
         );
-        // Oracle can fail but we still need to allow liquidations
-        (, uint256 _exchangeRate) = updateExchangeRate();
-        _accrue();
+        (part, share) = abi.decode(result, (uint256, uint256));
+    }
 
-        _closedLiquidation(
-            users,
-            maxBorrowParts,
-            swapper,
-            _exchangeRate,
-            collateralToAssetSwapData
+    /// @notice Repays a loan.
+    /// @dev The bool param is not used but we added it to respect the ISingularity interface for MarketsHelper compatibility
+    /// @param from Address to repay from.
+    /// @param to Address of the user this payment should go.
+    /// @param part The amount to repay. See `userBorrowPart`.
+    /// @return amount The total amount repayed.
+    function repay(
+        address from,
+        address to,
+        bool skim,
+        uint256 part
+    ) external notPaused allowedBorrow(from, part) returns (uint256 amount) {
+        bytes memory result = _executeModule(
+            Module.Borrow,
+            abi.encodeWithSelector(
+                BBBorrow.repay.selector,
+                from,
+                to,
+                skim,
+                part
+            )
         );
+        amount = abi.decode(result, (uint256));
+    }
+
+    /// @notice Lever down: Sell collateral to repay debt; excess goes to YB
+    /// @param from The user who sells
+    /// @param share Collateral YieldBox-shares to sell
+    /// @param minAmountOut Minimal proceeds required for the sale
+    /// @param swapper Swapper to execute the sale
+    /// @param dexData Additional data to pass to the swapper
+    /// @return amountOut Actual asset amount received in the sale
+    function sellCollateral(
+        address from,
+        uint256 share,
+        uint256 minAmountOut,
+        ISwapper swapper,
+        bytes calldata dexData
+    ) external notPaused solvent(from) returns (uint256 amountOut) {
+        bytes memory result = _executeModule(
+            Module.Leverage,
+            abi.encodeWithSelector(
+                BBLeverage.sellCollateral.selector,
+                from,
+                share,
+                minAmountOut,
+                swapper,
+                dexData
+            )
+        );
+        amountOut = abi.decode(result, (uint256));
     }
 
     /// @notice Lever up: Borrow more and buy collateral with it.
@@ -347,105 +334,89 @@ contract BigBang is BoringOwnable, Market {
         ISwapper swapper,
         bytes calldata dexData
     ) external notPaused solvent(from) returns (uint256 amountOut) {
-        require(
-            penrose.swappers(penrose.hostLzChainId(), swapper),
-            "SGL: Invalid swapper"
+        bytes memory result = _executeModule(
+            Module.Leverage,
+            abi.encodeWithSelector(
+                BBLeverage.buyCollateral.selector,
+                from,
+                borrowAmount,
+                supplyAmount,
+                minAmountOut,
+                swapper,
+                dexData
+            )
         );
-
-        // Let this fail first to save gas:
-        uint256 supplyShare = yieldBox.toShare(assetId, supplyAmount, true);
-        if (supplyShare > 0) {
-            yieldBox.transfer(from, address(swapper), assetId, supplyShare);
-        }
-
-        uint256 borrowShare;
-        (, borrowShare) = _borrow(from, address(swapper), borrowAmount);
-
-        ISwapper.SwapData memory swapData = swapper.buildSwapData(
-            assetId,
-            collateralId,
-            0,
-            supplyShare + borrowShare,
-            true,
-            true
-        );
-
-        uint256 collateralShare;
-        (amountOut, collateralShare) = swapper.swap(
-            swapData,
-            minAmountOut,
-            from,
-            dexData
-        );
-        require(amountOut >= minAmountOut, "SGL: not enough");
-
-        _allowedBorrow(from, collateralShare);
-        _addCollateral(from, from, false, 0, collateralShare);
+        amountOut = abi.decode(result, (uint256));
     }
 
-    /// @notice Lever down: Sell collateral to repay debt; excess goes to YB
-    /// @param from The user who sells
-    /// @param share Collateral YieldBox-shares to sell
-    /// @param minAmountOut Minimal proceeds required for the sale
-    /// @param swapper Swapper to execute the sale
-    /// @param dexData Additional data to pass to the swapper
-    /// @return amountOut Actual asset amount received in the sale
-    function sellCollateral(
-        address from,
-        uint256 share,
-        uint256 minAmountOut,
+    function liquidateBadDebt(
+        address user,
+        address receiver,
         ISwapper swapper,
-        bytes calldata dexData
-    ) external notPaused solvent(from) returns (uint256 amountOut) {
-        require(
-            penrose.swappers(penrose.hostLzChainId(), swapper),
-            "SGL: Invalid swapper"
+        bytes calldata collateralToAssetSwapData
+    ) external onlyOwner {
+        _executeModule(
+            Module.Liquidation,
+            abi.encodeWithSelector(
+                BBLiquidation.liquidateBadDebt.selector,
+                user,
+                receiver,
+                swapper,
+                collateralToAssetSwapData
+            )
         );
-
-        _allowedBorrow(from, share);
-        _removeCollateral(from, address(swapper), share);
-        ISwapper.SwapData memory swapData = swapper.buildSwapData(
-            collateralId,
-            assetId,
-            0,
-            share,
-            true,
-            true
-        );
-        uint256 shareOut;
-        (amountOut, shareOut) = swapper.swap(
-            swapData,
-            minAmountOut,
-            from,
-            dexData
-        );
-        // As long as the ratio is correct, we trust `amountOut` resp.
-        // `shareOut`, because all money received by the swapper gets used up
-        // one way or another, or the transaction will revert.
-        require(amountOut >= minAmountOut, "SGL: not enough");
-        uint256 partOwed = userBorrowPart[from];
-        uint256 amountOwed = totalBorrow.toElastic(partOwed, true);
-        uint256 shareOwed = yieldBox.toShare(assetId, amountOwed, true);
-        if (shareOwed <= shareOut) {
-            _repay(from, from, partOwed);
-        } else {
-            //repay as much as we can
-            uint256 partOut = totalBorrow.toBase(amountOut, false);
-            _repay(from, from, partOut);
-        }
     }
 
-    function transfer(address, uint256) public override returns (bool) {}
+    /// @notice Entry point for liquidations.
+    /// @param users An array of user addresses.
+    /// @param maxBorrowParts A one-to-one mapping to `users`, contains maximum (partial) borrow amounts (to liquidate) of the respective user.
+    /// @param swapper Contract address of the `MultiSwapper` implementation. See `setSwapper`.
+    /// @param collateralToAssetSwapData Extra swap data
+    function liquidate(
+        address[] calldata users,
+        uint256[] calldata maxBorrowParts,
+        ISwapper swapper,
+        bytes calldata collateralToAssetSwapData
+    ) external notPaused {
+        require(
+            users.length == maxBorrowParts.length,
+            "BigBang: length mismatch"
+        );
+        _executeModule(
+            Module.Liquidation,
+            abi.encodeWithSelector(
+                BBLiquidation.liquidate.selector,
+                users,
+                maxBorrowParts,
+                swapper,
+                collateralToAssetSwapData
+            )
+        );
+    }
+
+    function transfer(address, uint256) public pure override returns (bool) {
+        revert("BB: not allowed");
+    }
 
     function transferFrom(
         address,
         address,
         uint256
-    ) public override returns (bool) {}
+    ) public pure override returns (bool) {
+        revert("BB: not allowed");
+    }
 
     // ************************* //
     // *** OWNER FUNCTIONS ***** //
     // ************************* //
+
+    /// @notice rescues unused ETH from the contract
+    /// @param amount the amount to rescue
+    /// @param to the recipient
+    function rescueEth(uint256 amount, address to) external onlyOwner {
+        (bool success, ) = to.call{value: amount}("");
+        require(success, "BB: transfer failed.");
+    }
 
     /// @notice Transfers fees to penrose
     function refreshPenroseFees()
@@ -476,9 +447,9 @@ contract BigBang is BoringOwnable, Market {
         uint256 _debtRateAgainstEthMarket,
         uint256 _liquidationMultiplier
     ) external onlyOwner {
-        _isEthMarket = collateralId == penrose.wethAssetId();
+        isMainMarket = collateralId == penrose.mainAssetId();
 
-        if (!_isEthMarket) {
+        if (!isMainMarket) {
             if (_minDebtRate > 0) {
                 require(_minDebtRate < maxDebtRate, "BigBang: not valid");
                 emit MinDebtRateUpdated(minDebtRate, _minDebtRate);
@@ -513,431 +484,52 @@ contract BigBang is BoringOwnable, Market {
         }
     }
 
-    function liquidateBadDebt(
-        address user,
-        address receiver,
-        ISwapper swapper,
-        bytes calldata collateralToAssetSwapData
-    ) external onlyOwner {
-        // Oracle can fail but we still need to allow liquidations
-        updateExchangeRate();
-        require(exchangeRate > 0, "BigBang: exchangeRate not valid");
-
-        _accrue();
-
-        // Closed liquidation using a pre-approved swapper
-        require(
-            penrose.swappers(penrose.hostLzChainId(), swapper),
-            "BigBang: Invalid swapper"
-        );
-
-        uint256 borrowAmountWithBonus = userBorrowPart[user] +
-            (userBorrowPart[user] * liquidationMultiplier) /
-            FEE_PRECISION;
-        uint256 requiredCollateral = yieldBox.toShare(
-            collateralId,
-            (borrowAmountWithBonus * exchangeRate) / EXCHANGE_RATE_PRECISION,
-            false
-        );
-
-        // equality is included in the require to minimize risk and liquidate as soon as possible
-        require(
-            requiredCollateral >= userCollateralShare[user],
-            "BigBang: Cannot force liquidated"
-        );
-
-        uint256 collateralShare = userCollateralShare[user];
-
-        // everything will be liquidated; set borrow part and collateral share to 0
-        uint256 borrowAmount;
-        (totalBorrow, borrowAmount) = totalBorrow.sub(
-            userBorrowPart[user],
-            true
-        );
-        userBorrowPart[user] = 0;
-
-        totalCollateralShare -= userCollateralShare[user];
-        userCollateralShare[user] = 0;
-
-        _swapCollateralWithAsset(
-            collateralShare,
-            receiver,
-            address(swapper),
-            collateralToAssetSwapData
-        );
-    }
-
     // ************************* //
     // *** PRIVATE FUNCTIONS *** //
     // ************************* //
-    function _accrue() internal override {
-        IBigBang.AccrueInfo memory _accrueInfo = accrueInfo;
-        // Number of seconds since accrue was called
-        uint256 elapsedTime = block.timestamp - _accrueInfo.lastAccrued;
-        if (elapsedTime == 0) {
-            return;
+    function _extractModule(Module _module) private view returns (address) {
+        address module;
+        if (_module == Module.Borrow) {
+            module = address(borrowModule);
+        } else if (_module == Module.Collateral) {
+            module = address(collateralModule);
+        } else if (_module == Module.Liquidation) {
+            module = address(liquidationModule);
+        } else if (_module == Module.Leverage) {
+            module = address(leverageModule);
         }
-        //update debt rate
-        uint256 annumDebtRate = getDebtRate();
-        _accrueInfo.debtRate = uint64(annumDebtRate / 31536000); //per second
-        _accrueInfo.lastAccrued = uint64(block.timestamp);
-
-        Rebase memory _totalBorrow = totalBorrow;
-
-        // Calculate fees
-        uint256 extraAmount = 0;
-        extraAmount =
-            (uint256(_totalBorrow.elastic) *
-                _accrueInfo.debtRate *
-                elapsedTime) /
-            1e18;
-        _totalBorrow.elastic += uint128(extraAmount);
-
-        totalBorrow = _totalBorrow;
-        accrueInfo = _accrueInfo;
-
-        emit LogAccrue(extraAmount, _accrueInfo.debtRate);
-    }
-
-    function _addCollateral(
-        address from,
-        address to,
-        bool skim,
-        uint256 amount,
-        uint256 share
-    ) internal {
-        if (share == 0) {
-            share = yieldBox.toShare(collateralId, amount, false);
-        }
-        userCollateralShare[to] += share;
-        uint256 oldTotalCollateralShare = totalCollateralShare;
-        totalCollateralShare = oldTotalCollateralShare + share;
-        _addTokens(from, collateralId, share, oldTotalCollateralShare, skim);
-        emit LogAddCollateral(skim ? address(yieldBox) : from, to, share);
-    }
-
-    function _liquidateUser(
-        address user,
-        uint256 maxBorrowPart,
-        ISwapper swapper,
-        uint256 _exchangeRate,
-        bytes calldata _dexData
-    ) private {
-        if (_isSolvent(user, _exchangeRate)) return;
-
-        // Closed liquidation using a pre-approved swapper
-        require(
-            penrose.swappers(penrose.hostLzChainId(), swapper),
-            "BigBang: Invalid swapper"
-        );
-
-        (
-            uint256 startTVLInAsset,
-            uint256 maxTVLInAsset
-        ) = _computeMaxAndMinLTVInAsset(
-                userCollateralShare[user],
-                _exchangeRate
-            );
-        uint256 callerReward = _getCallerReward(
-            userBorrowPart[user],
-            startTVLInAsset,
-            maxTVLInAsset
-        );
-
-        (
-            uint256 borrowAmount,
-            uint256 borrowPart,
-            uint256 collateralShare
-        ) = _updateBorrowAndCollateralShare(user, maxBorrowPart, _exchangeRate);
-        emit LogRemoveCollateral(user, address(swapper), collateralShare);
-        emit LogRepay(address(swapper), user, borrowAmount, borrowPart);
-
-        uint256 borrowShare = yieldBox.toShare(assetId, borrowAmount, true);
-        uint256 returnedShare = _swapCollateralWithAsset(
-            collateralShare,
-            address(this),
-            address(swapper),
-            _dexData
-        );
-        (uint256 feeShare, uint256 callerShare) = _extractLiquidationFees(
-            returnedShare,
-            borrowShare,
-            callerReward
-        );
-        address[] memory _users = new address[](1);
-        _users[0] = user;
-        emit Liquidated(
-            msg.sender,
-            _users,
-            callerShare,
-            feeShare,
-            borrowAmount,
-            collateralShare
-        );
-    }
-
-    function _swapCollateralWithAsset(
-        uint256 _collateralShare,
-        address _receiver,
-        address _swapper,
-        bytes memory _dexData
-    ) private returns (uint256 returnedShare) {
-        // Swaps the users collateral for the borrowed asset
-        yieldBox.transfer(
-            address(this),
-            address(_swapper),
-            collateralId,
-            _collateralShare
-        );
-
-        uint256 minAssetMount = 0;
-        if (_dexData.length > 0) {
-            minAssetMount = abi.decode(_dexData, (uint256));
+        if (module == address(0)) {
+            revert("BB: module not set");
         }
 
-        uint256 balanceBefore = yieldBox.balanceOf(_receiver, assetId);
-
-        ISwapper.SwapData memory swapData = ISwapper(_swapper).buildSwapData(
-            collateralId,
-            assetId,
-            0,
-            _collateralShare,
-            true,
-            true
-        );
-        ISwapper(_swapper).swap(swapData, minAssetMount, _receiver, "");
-        uint256 balanceAfter = yieldBox.balanceOf(_receiver, assetId);
-
-        returnedShare = balanceAfter - balanceBefore;
-        require(returnedShare > 0, "BigBang: Swap failed");
+        return module;
     }
 
-    function _extractLiquidationFees(
-        uint256 returnedShare,
-        uint256 borrowShare,
-        uint256 callerReward
-    ) private returns (uint256 feeShare, uint256 callerShare) {
-        uint256 extraShare = returnedShare - borrowShare;
-        feeShare = (extraShare * protocolFee) / FEE_PRECISION; // x% of profit goes to fee.
-        callerShare = (extraShare * callerReward) / FEE_PRECISION; //  y%  of profit goes to caller.
+    function _executeModule(
+        Module _module,
+        bytes memory _data
+    ) private returns (bytes memory returnData) {
+        bool success = true;
+        address module = _extractModule(_module);
 
-        //protocol fees should be kept in the contract as we do a yieldBox.depositAsset when we are extracting the fees using `refreshPenroseFees`
-        yieldBox.withdraw(assetId, address(this), address(this), 0, feeShare);
-        yieldBox.transfer(address(this), msg.sender, assetId, callerShare);
-    }
-
-    /// @notice Handles the liquidation of users' balances, once the users' amount of collateral is too low.
-    /// @dev Closed liquidations Only, 90% of extra shares goes to caller and 10% to protocol
-    /// @param users An array of user addresses.
-    /// @param maxBorrowParts A one-to-one mapping to `users`, contains maximum (partial) borrow amounts (to liquidate) of the respective user.
-    /// @param swapper Contract address of the `MultiSwapper` implementation. See `setSwapper`.
-    /// @param swapData Swap necessary data
-    function _closedLiquidation(
-        address[] calldata users,
-        uint256[] calldata maxBorrowParts,
-        ISwapper swapper,
-        uint256 _exchangeRate,
-        bytes calldata swapData
-    ) private {
-        uint256 liquidatedCount = 0;
-        for (uint256 i = 0; i < users.length; i++) {
-            address user = users[i];
-            if (!_isSolvent(user, _exchangeRate)) {
-                liquidatedCount++;
-                _liquidateUser(
-                    user,
-                    maxBorrowParts[i],
-                    swapper,
-                    _exchangeRate,
-                    swapData
-                );
-            }
-        }
-
-        require(liquidatedCount > 0, "SGL: no users found");
-    }
-
-    /// @dev Helper function to move tokens.
-    /// @param from Account to debit tokens from, in `yieldBox`.
-    /// @param _tokenId The ERC-20 token asset ID in yieldBox.
-    /// @param share The amount in shares to add.
-    /// @param total Grand total amount to deduct from this contract's balance. Only applicable if `skim` is True.
-    /// Only used for accounting checks.
-    /// @param skim If True, only does a balance check on this contract.
-    /// False if tokens from msg.sender in `yieldBox` should be transferred.
-    function _addTokens(
-        address from,
-        uint256 _tokenId,
-        uint256 share,
-        uint256 total,
-        bool skim
-    ) internal {
-        if (skim) {
-            require(
-                share <= yieldBox.balanceOf(address(this), _tokenId) - total,
-                "BigBang: too much"
-            );
-        } else {
-            yieldBox.transfer(from, address(this), _tokenId, share);
+        (success, returnData) = module.delegatecall(_data);
+        if (!success) {
+            revert(_getRevertMsg(returnData));
         }
     }
 
-    /// @dev Concrete implementation of `removeCollateral`.
-    function _removeCollateral(
-        address from,
-        address to,
-        uint256 share
-    ) internal {
-        userCollateralShare[from] -= share;
-        totalCollateralShare -= share;
-        emit LogRemoveCollateral(from, to, share);
-        yieldBox.transfer(address(this), to, collateralId, share);
+    function _executeViewModule(
+        Module _module,
+        bytes memory _data
+    ) private view returns (bytes memory returnData) {
+        bool success = true;
+        address module = _extractModule(_module);
+
+        (success, returnData) = module.staticcall(_data);
+        if (!success) {
+            revert(_getRevertMsg(returnData));
+        }
     }
 
-    /// @dev Concrete implementation of `repay`.
-    function _repay(
-        address from,
-        address to,
-        uint256 part
-    ) internal returns (uint256 amount) {
-        uint256 openingFee = _computeRepayFee(to, part);
-
-        require(openingFee < part, "BB: repayment too low");
-        openingFees[to] -= openingFee;
-
-        (totalBorrow, amount) = totalBorrow.sub(part, true);
-        userBorrowPart[to] -= part;
-
-        yieldBox.withdraw(assetId, from, address(this), amount, 0);
-
-        uint256 accruedFees = amount - part;
-        if (accruedFees > 0) {
-            uint256 feeAmount = (accruedFees * protocolFee) / FEE_PRECISION;
-            amount -= feeAmount;
-        }
-        uint256 toBurn = (amount - openingFee); //the opening & accrued fees remain in the contract
-        //burn USDO
-        if (toBurn > 0) {
-            IUSDOBase(address(asset)).burn(address(this), toBurn);
-        }
-
-        emit LogRepay(from, to, amount, part);
-    }
-
-    function _computeRepayFee(
-        address user,
-        uint256 repayPart
-    ) private view returns (uint256) {
-        uint256 _totalPart = userBorrowPart[user];
-
-        if (repayPart == _totalPart) {
-            return openingFees[user];
-        }
-
-        uint256 _assetDecimals = asset.safeDecimals();
-        uint256 repayRatio = _getRatio(repayPart, _totalPart, _assetDecimals);
-        //it can return 0 when numerator is very low compared to the denominator
-        if (repayRatio == 0) return 0;
-
-        uint256 openingFee = (repayRatio * openingFees[user]) /
-            (10 ** _assetDecimals);
-        if (openingFee > openingFees[user]) return openingFees[user];
-
-        return openingFee;
-    }
-
-    /// @dev Concrete implementation of `borrow`.
-    function _borrow(
-        address from,
-        address to,
-        uint256 amount
-    ) internal returns (uint256 part, uint256 share) {
-        uint256 feeAmount = (amount * borrowOpeningFee) / FEE_PRECISION; // A flat % fee is charged for any borrow
-        openingFees[to] += feeAmount;
-
-        (totalBorrow, part) = totalBorrow.add(amount + feeAmount, true);
-        require(
-            totalBorrowCap == 0 || totalBorrow.elastic <= totalBorrowCap,
-            "BigBang: borrow cap reached"
-        );
-
-        userBorrowPart[from] += part;
-        emit LogBorrow(from, to, amount, feeAmount, part);
-
-        //mint USDO
-        IUSDOBase(address(asset)).mint(address(this), amount);
-
-        //deposit borrowed amount to user
-        asset.approve(address(yieldBox), 0);
-        asset.approve(address(yieldBox), amount);
-        yieldBox.depositAsset(assetId, address(this), to, amount, 0);
-
-        share = yieldBox.toShare(assetId, amount, false);
-    }
-
-    function _updateBorrowAndCollateralShare(
-        address user,
-        uint256 maxBorrowPart,
-        uint256 _exchangeRate
-    )
-        private
-        returns (
-            uint256 borrowAmount,
-            uint256 borrowPart,
-            uint256 collateralShare
-        )
-    {
-        require(_exchangeRate > 0, "BigBang: exchangeRate not valid");
-        uint256 collateralPartInAsset = (yieldBox.toAmount(
-            collateralId,
-            userCollateralShare[user],
-            false
-        ) * EXCHANGE_RATE_PRECISION) / _exchangeRate;
-
-        uint256 availableBorrowPart = computeClosingFactor(
-            userBorrowPart[user],
-            collateralPartInAsset,
-            FEE_PRECISION_DECIMALS
-        );
-
-        if (liquidationBonusAmount > 0) {
-            availableBorrowPart =
-                availableBorrowPart +
-                (availableBorrowPart * liquidationBonusAmount) /
-                FEE_PRECISION;
-        }
-
-        require(
-            collateralPartInAsset > availableBorrowPart,
-            "BigBang: bad debt"
-        );
-
-        borrowPart = maxBorrowPart > availableBorrowPart
-            ? availableBorrowPart
-            : maxBorrowPart;
-
-        if (borrowPart > userBorrowPart[user]) {
-            borrowPart = userBorrowPart[user];
-        }
-
-        userBorrowPart[user] = userBorrowPart[user] - borrowPart;
-
-        borrowAmount = totalBorrow.toElastic(borrowPart, false);
-        uint256 amountWithBonus = borrowAmount +
-            (borrowAmount * liquidationMultiplier) /
-            FEE_PRECISION;
-        collateralShare = yieldBox.toShare(
-            collateralId,
-            (amountWithBonus * _exchangeRate) / EXCHANGE_RATE_PRECISION,
-            false
-        );
-        if (collateralShare > userCollateralShare[user]) {
-            collateralShare = userCollateralShare[user];
-        }
-        userCollateralShare[user] -= collateralShare;
-        require(borrowAmount != 0, "SGL: solvent");
-
-        totalBorrow.elastic -= uint128(borrowAmount);
-        totalBorrow.base -= uint128(borrowPart);
-    }
+    receive() external payable {}
 }
