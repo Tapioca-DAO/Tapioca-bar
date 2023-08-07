@@ -599,7 +599,6 @@ async function bigBangApprovePlug(
     val: BigNumberish,
 ) {
     await tokenApprovalPlug(signer, token, magnetar, yieldBox, val);
-    await BigBang.connect(signer).updateOperator(magnetar.address, true);
     await BigBang.connect(signer).approve(
         magnetar.address,
         // TODO use correct amount

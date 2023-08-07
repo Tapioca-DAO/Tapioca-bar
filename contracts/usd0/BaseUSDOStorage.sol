@@ -32,6 +32,8 @@ contract BaseUSDOStorage is OFTV2 {
     /// @notice returns the maximum amount of USDO that can be minted through the EIP-3156 flow
     uint256 public maxFlashMint;
 
+    mapping(address moduleAddr => bool isValid) internal validModules;
+
     uint256 internal constant FLASH_MINT_FEE_PRECISION = 1e6;
     bytes32 internal constant FLASH_MINT_CALLBACK_SUCCESS =
         keccak256("ERC3156FlashBorrower.onFlashLoan");
