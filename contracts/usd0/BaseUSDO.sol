@@ -73,6 +73,10 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
         marketModule = USDOMarketModule(_marketModule);
         optionsModule = USDOOptionsModule(_optionsModule);
 
+        validModules[_leverageModule] = true;
+        validModules[_marketModule] = true;
+        validModules[_optionsModule] = true;
+
         transferOwnership(_owner);
     }
 

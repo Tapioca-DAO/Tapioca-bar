@@ -145,6 +145,8 @@ contract USDOOptionsModule is BaseUSDOStorage {
         uint64 _nonce,
         bytes memory _payload
     ) public {
+        require(validModules[module], "USDO: module not valid");
+
         (
             ,
             uint64 amountSD,
