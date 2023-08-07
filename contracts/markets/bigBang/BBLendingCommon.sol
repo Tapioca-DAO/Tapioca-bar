@@ -73,7 +73,8 @@ contract BBLendingCommon is BBCommon {
         address from,
         address to,
         uint256 part
-    ) internal returns (uint256 amount) {
+    ) internal returns (uint256 amountOut) {
+        uint256 amount;
         uint256 openingFee = _computeRepayFee(to, part);
 
         require(openingFee < part, "BB: repayment too low");
@@ -81,6 +82,8 @@ contract BBLendingCommon is BBCommon {
 
         (totalBorrow, amount) = totalBorrow.sub(part, true);
         userBorrowPart[to] -= part;
+
+        amountOut = amount;
 
         yieldBox.withdraw(assetId, from, address(this), amount, 0);
 
@@ -95,7 +98,7 @@ contract BBLendingCommon is BBCommon {
             IUSDOBase(address(asset)).burn(address(this), toBurn);
         }
 
-        emit LogRepay(from, to, amount, part);
+        emit LogRepay(from, to, amountOut, part);
     }
 
     function _computeRepayFee(
