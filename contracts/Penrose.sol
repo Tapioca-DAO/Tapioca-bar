@@ -365,6 +365,7 @@ contract Penrose is BoringOwnable, BoringFactory {
         returns (address _contract)
     {
         _contract = deploy(mc, data, useCreate2);
+        require(!iszero(extcodesize(_contract)), "Penrose: deployment failed");
         isMarketRegistered[_contract] = true;
         emit RegisterSingularity(_contract, mc);
     }
@@ -399,6 +400,7 @@ contract Penrose is BoringOwnable, BoringFactory {
         returns (address _contract)
     {
         _contract = deploy(mc, data, useCreate2);
+        require(!iszero(extcodesize(_contract)), "Penrose: deployment failed");
         isMarketRegistered[_contract] = true;
         emit RegisterBigBang(_contract, mc);
     }
