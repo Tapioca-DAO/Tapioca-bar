@@ -669,9 +669,6 @@ describe('BigBang test', () => {
             expect(totalSupplyAfter.sub(totalSupplyBefore).eq(usdoBorrowVal)).to
                 .be.true;
 
-            const wethMinterBalance = await wethBigBangMarket.totalFees();
-            expect(wethMinterBalance.eq(0)).to.be.true;
-
             const yieldBoxBalanceOfFeeToInAsset = await yieldBox.toAmount(
                 await wethBigBangMarket.assetId(),
                 await yieldBox.balanceOf(
@@ -846,9 +843,6 @@ describe('BigBang test', () => {
             // there shouldn't be any fee taken before repayment
             expect(totalSupplyAfter.sub(totalSupplyBefore).eq(usdoBorrowVal)).to
                 .be.true;
-
-            const wethMinterBalance = await wethBigBangMarket.totalFees();
-            expect(wethMinterBalance.eq(0)).to.be.true;
 
             const yieldBoxBalanceOfFeeToInAsset = await yieldBox.toAmount(
                 await wethBigBangMarket.assetId(),

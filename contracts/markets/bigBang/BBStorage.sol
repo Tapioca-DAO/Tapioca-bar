@@ -38,8 +38,6 @@ contract BBStorage is BoringOwnable, Market {
 
     IBigBang.AccrueInfo public accrueInfo;
 
-    uint256 public totalFees;
-
     bool public isMainMarket;
     uint256 public maxDebtRate;
     uint256 public minDebtRate;

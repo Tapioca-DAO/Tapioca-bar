@@ -24,7 +24,13 @@ contract BBLeverage is BBLendingCommon {
         uint256 minAmountOut,
         ISwapper swapper,
         bytes calldata dexData
-    ) external notPaused solvent(from) returns (uint256 amountOut) {
+    )
+        external
+        notPaused
+        solvent(from)
+        notSelf(from)
+        returns (uint256 amountOut)
+    {
         require(
             penrose.swappers(penrose.hostLzChainId(), swapper),
             "BigBang: Invalid swapper"
@@ -87,7 +93,13 @@ contract BBLeverage is BBLendingCommon {
         uint256 minAmountOut,
         ISwapper swapper,
         bytes calldata dexData
-    ) external notPaused solvent(from) returns (uint256 amountOut) {
+    )
+        external
+        notPaused
+        solvent(from)
+        notSelf(from)
+        returns (uint256 amountOut)
+    {
         require(
             penrose.swappers(penrose.hostLzChainId(), swapper),
             "BigBang: Invalid swapper"

@@ -219,7 +219,7 @@ contract BigBang is BBCommon {
         bool skim,
         uint256 amount,
         uint256 share
-    ) external allowedBorrow(from, share) notPaused {
+    ) external {
         _executeModule(
             Module.Collateral,
             abi.encodeWithSelector(
@@ -241,7 +241,7 @@ contract BigBang is BBCommon {
         address from,
         address to,
         uint256 share
-    ) external notPaused solvent(from) allowedBorrow(from, share) {
+    ) external {
         _executeModule(
             Module.Collateral,
             abi.encodeWithSelector(
@@ -263,7 +263,7 @@ contract BigBang is BBCommon {
         address from,
         address to,
         uint256 amount
-    ) external notPaused solvent(from) returns (uint256 part, uint256 share) {
+    ) external returns (uint256 part, uint256 share) {
         bytes memory result = _executeModule(
             Module.Borrow,
             abi.encodeWithSelector(BBBorrow.borrow.selector, from, to, amount)
@@ -282,7 +282,7 @@ contract BigBang is BBCommon {
         address to,
         bool skim,
         uint256 part
-    ) external notPaused allowedBorrow(from, part) returns (uint256 amount) {
+    ) external returns (uint256 amount) {
         bytes memory result = _executeModule(
             Module.Borrow,
             abi.encodeWithSelector(
@@ -309,7 +309,7 @@ contract BigBang is BBCommon {
         uint256 minAmountOut,
         ISwapper swapper,
         bytes calldata dexData
-    ) external notPaused solvent(from) returns (uint256 amountOut) {
+    ) external returns (uint256 amountOut) {
         bytes memory result = _executeModule(
             Module.Leverage,
             abi.encodeWithSelector(
@@ -339,7 +339,7 @@ contract BigBang is BBCommon {
         uint256 minAmountOut,
         ISwapper swapper,
         bytes calldata dexData
-    ) external notPaused solvent(from) returns (uint256 amountOut) {
+    ) external returns (uint256 amountOut) {
         bytes memory result = _executeModule(
             Module.Leverage,
             abi.encodeWithSelector(
@@ -360,7 +360,7 @@ contract BigBang is BBCommon {
         address receiver,
         ISwapper swapper,
         bytes calldata collateralToAssetSwapData
-    ) external onlyOwner {
+    ) external {
         _executeModule(
             Module.Liquidation,
             abi.encodeWithSelector(
@@ -383,7 +383,7 @@ contract BigBang is BBCommon {
         uint256[] calldata maxBorrowParts,
         ISwapper swapper,
         bytes calldata collateralToAssetSwapData
-    ) external notPaused {
+    ) external {
         require(
             users.length == maxBorrowParts.length,
             "BigBang: length mismatch"
