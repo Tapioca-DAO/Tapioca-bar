@@ -63,6 +63,13 @@ export const deploySGLMarket__task = async (
         default: '0',
     });
 
+    const { collateralizationRate } = await inquirer.prompt({
+        type: 'input',
+        name: 'collateralizationRate',
+        message: 'Collateralization rate (75000 is 75%)',
+        default: '0',
+    });
+
     const data = new hre.ethers.utils.AbiCoder().encode(
         [
             'address',
@@ -75,6 +82,7 @@ export const deploySGLMarket__task = async (
             'address',
             'uint256',
             'address',
+            'uint256',
             'uint256',
         ],
         [
@@ -90,6 +98,7 @@ export const deploySGLMarket__task = async (
             oracleAddress,
             exchangeRatePrecision ??
                 hre.ethers.BigNumber.from((1e18).toString()),
+            collateralizationRate,
         ],
     );
 

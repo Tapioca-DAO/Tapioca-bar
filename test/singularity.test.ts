@@ -504,6 +504,7 @@ describe('Singularity test', () => {
                     'uint256',
                     'address',
                     'uint256',
+                    'uint256',
                 ],
                 [
                     ethers.constants.AddressZero,
@@ -517,6 +518,7 @@ describe('Singularity test', () => {
                     usdcAssetId,
                     wethUsdcOracle.address,
                     ethers.utils.parseEther('1'),
+                    0,
                 ],
             );
             await (
@@ -3325,6 +3327,7 @@ describe('Singularity test', () => {
                     'uint256',
                     'address',
                     'uint256',
+                    'uint256',
                 ],
                 [
                     _sglLiquidationModule.address,
@@ -3338,6 +3341,7 @@ describe('Singularity test', () => {
                     wethAssetId,
                     wethUsdcOracle.address,
                     ethers.utils.parseEther('1'),
+                    0,
                 ],
             );
             await bar.registerSingularity(mediumRiskMC.address, data, true);

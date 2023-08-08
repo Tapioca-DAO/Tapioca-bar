@@ -65,7 +65,8 @@ contract Singularity is SGLCommon {
             IERC20 _collateral,
             uint256 _collateralId,
             IOracle _oracle,
-            uint256 _exchangeRatePrecision
+            uint256 _exchangeRatePrecision,
+            uint256 _collateralizationRate
         ) = abi.decode(
                 data,
                 (
@@ -79,6 +80,7 @@ contract Singularity is SGLCommon {
                     IERC20,
                     uint256,
                     IOracle,
+                    uint256,
                     uint256
                 )
             );
@@ -120,7 +122,9 @@ contract Singularity is SGLCommon {
         //liquidation
         liquidationMultiplier = 12000; //12%
 
-        collateralizationRate = 75000;
+        collateralizationRate = _collateralizationRate > 0
+            ? _collateralizationRate
+            : 75000;
         lqCollateralizationRate = 25000;
         EXCHANGE_RATE_PRECISION = _exchangeRatePrecision > 0
             ? _exchangeRatePrecision
