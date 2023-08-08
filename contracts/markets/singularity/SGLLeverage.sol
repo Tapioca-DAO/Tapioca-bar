@@ -34,14 +34,15 @@ contract SGLLeverage is SGLLendingCommon {
         );
 
         //add collateral
-        uint256 collateralShare = yieldBox.toShare(
-            collateralId,
-            collateralAmount,
-            false
-        );
-        _allowedBorrow(from, collateralShare);
-        _addCollateral(from, from, false, 0, collateralShare, true);
-
+        if (collateralAmount > 0) {
+            uint256 collateralShare = yieldBox.toShare(
+                collateralId,
+                collateralAmount,
+                false
+            );
+            _allowedBorrow(from, collateralShare);
+            _addCollateral(from, from, false, 0, collateralShare, true);
+        }
         //borrow
         (, uint256 borrowShare) = _borrow(from, from, borrowAmount);
 

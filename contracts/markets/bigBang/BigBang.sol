@@ -64,7 +64,8 @@ contract BigBang is BBCommon {
             uint256 _debtRateAgainstEth,
             uint256 _debtRateMin,
             uint256 _debtRateMax,
-            uint256 _debtStartPoint
+            uint256 _debtStartPoint,
+            uint256 _collateralizationRate
         ) = abi.decode(
                 data,
                 (
@@ -76,6 +77,7 @@ contract BigBang is BBCommon {
                     IERC20,
                     uint256,
                     IOracle,
+                    uint256,
                     uint256,
                     uint256,
                     uint256,
@@ -94,7 +96,8 @@ contract BigBang is BBCommon {
             _collateral,
             _collateralId,
             _oracle,
-            _exchangeRatePrecision
+            _exchangeRatePrecision,
+            _collateralizationRate
         );
         _initDebtStorage(
             _debtRateAgainstEth,
@@ -146,7 +149,8 @@ contract BigBang is BBCommon {
         IERC20 _collateral,
         uint256 _collateralId,
         IOracle _oracle,
-        uint256 _exchangeRatePrecision
+        uint256 _exchangeRatePrecision,
+        uint256 _collateralizationRate
     ) private {
         penrose = _penrose;
         yieldBox = YieldBox(_penrose.yieldBox());
@@ -166,7 +170,9 @@ contract BigBang is BBCommon {
         updateExchangeRate();
         callerFee = 90000; // 90%
         protocolFee = 10000; // 10%
-        collateralizationRate = 75000; // 75%
+        collateralizationRate = _collateralizationRate > 0
+            ? _collateralizationRate
+            : 75000;
         EXCHANGE_RATE_PRECISION = _exchangeRatePrecision > 0
             ? _exchangeRatePrecision
             : 1e18;

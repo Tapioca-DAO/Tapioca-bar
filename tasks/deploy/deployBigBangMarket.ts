@@ -125,6 +125,13 @@ export const deployBigBangMarket__task = async (
         default: '0',
     });
 
+    const { collateralizationRate } = await inquirer.prompt({
+        type: 'input',
+        name: 'collateralizationRate',
+        message: 'Collateralization rate (75000 is 75%)',
+        default: '0',
+    });
+
     const { debtRateAgainstEth } = await inquirer.prompt({
         type: 'input',
         name: 'debtRateAgainstEth',
@@ -165,6 +172,7 @@ export const deployBigBangMarket__task = async (
             'uint256', //debtRateMin
             'uint256', //debtRateMax
             'uint256', //debtStartPoint
+            'uint256', //collateralizationRate
         ],
         [
             penrose.address,
@@ -177,6 +185,7 @@ export const deployBigBangMarket__task = async (
             debtRateMin,
             debtRateMax,
             debtStartPoint,
+            collateralizationRate,
         ],
     );
 
