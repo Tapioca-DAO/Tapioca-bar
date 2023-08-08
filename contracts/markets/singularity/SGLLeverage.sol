@@ -24,7 +24,7 @@ contract SGLLeverage is SGLLendingCommon {
         IUSDOBase.ILeverageSwapData calldata swapData,
         IUSDOBase.ILeverageLZData calldata lzData,
         IUSDOBase.ILeverageExternalContractsData calldata externalData
-    ) external payable notPaused solvent(from) {
+    ) external payable notPaused solvent(from) notSelf(from) {
         require(
             penrose.swappers(
                 lzData.lzDstChainId,
@@ -61,7 +61,7 @@ contract SGLLeverage is SGLLendingCommon {
         IUSDOBase.ILeverageSwapData calldata swapData,
         IUSDOBase.ILeverageLZData calldata lzData,
         IUSDOBase.ILeverageExternalContractsData calldata externalData
-    ) external payable notPaused solvent(from) {
+    ) external payable notPaused solvent(from) notSelf(from) {
         require(
             penrose.swappers(
                 lzData.lzDstChainId,
@@ -100,7 +100,13 @@ contract SGLLeverage is SGLLendingCommon {
         uint256 minAmountOut,
         ISwapper swapper,
         bytes calldata dexData
-    ) external notPaused solvent(from) returns (uint256 amountOut) {
+    )
+        external
+        notPaused
+        solvent(from)
+        notSelf(from)
+        returns (uint256 amountOut)
+    {
         require(
             penrose.swappers(penrose.hostLzChainId(), swapper),
             "SGL: Invalid swapper"
@@ -154,7 +160,13 @@ contract SGLLeverage is SGLLendingCommon {
         uint256 minAmountOut,
         ISwapper swapper,
         bytes calldata dexData
-    ) external notPaused solvent(from) returns (uint256 amountOut) {
+    )
+        external
+        notPaused
+        solvent(from)
+        notSelf(from)
+        returns (uint256 amountOut)
+    {
         require(
             penrose.swappers(penrose.hostLzChainId(), swapper),
             "SGL: Invalid swapper"

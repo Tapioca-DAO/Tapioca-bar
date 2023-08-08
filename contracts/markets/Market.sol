@@ -110,6 +110,13 @@ abstract contract Market is MarketERC20, BoringOwnable {
     /// @notice event emitted when the liquidation multiplier rate is updated
     event LiquidationMultiplierUpdated(uint256 oldVal, uint256 newVal);
 
+    modifier notSelf(address destination) {
+        require(
+            destination != address(this),
+            "Market: cannot execute on itself"
+        );
+        _;
+    }
     modifier notPaused() {
         require(!paused, "Market: paused");
         _;

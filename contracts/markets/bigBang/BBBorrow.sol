@@ -21,7 +21,13 @@ contract BBBorrow is BBLendingCommon {
         address from,
         address to,
         uint256 amount
-    ) external notPaused solvent(from) returns (uint256 part, uint256 share) {
+    )
+        external
+        notPaused
+        notSelf(to)
+        solvent(from)
+        returns (uint256 part, uint256 share)
+    {
         uint256 allowanceShare = _computeAllowanceAmountInAsset(
             from,
             exchangeRate,
@@ -43,7 +49,13 @@ contract BBBorrow is BBLendingCommon {
         address to,
         bool,
         uint256 part
-    ) external notPaused allowedBorrow(from, part) returns (uint256 amount) {
+    )
+        external
+        notPaused
+        notSelf(to)
+        allowedBorrow(from, part)
+        returns (uint256 amount)
+    {
         updateExchangeRate();
 
         _accrue();
