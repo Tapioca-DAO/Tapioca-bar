@@ -447,6 +447,10 @@ abstract contract Market is MarketERC20, BoringOwnable {
             int256(FEE_PRECISION) +
             int256(maxLiquidatorReward);
 
+        if (reward < int256(minLiquidatorReward)) {
+            reward = int256(minLiquidatorReward);
+        }
+
         return uint256(reward);
     }
 
