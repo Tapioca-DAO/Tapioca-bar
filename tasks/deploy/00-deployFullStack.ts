@@ -7,7 +7,7 @@ import { buildMasterContracts } from '../deployBuilds/02-buildMasterContracts';
 import { buildMultiSwapper } from '../deployBuilds/04-buildMultiSwapper';
 import { buildUSD0 } from '../deployBuilds/06-buildUSDO';
 import { buildStableToUSD0Bidder } from '../deployBuilds/07-buildStableToUSD0Bidder';
-import { buildSingularityModules } from '../deployBuilds/08-buildSingularityModules';
+import { buildBigBangModules, buildSingularityModules } from '../deployBuilds/09-buildBigBangModules';
 import { buildPenroseSetup } from '../setups/01-buildPenroseSetup';
 import { buildMasterContractsSetup } from '../setups/02-buildMasterContractsSetup';
 import { loadVM } from '../utils';
@@ -108,6 +108,12 @@ export const deployFullStack__task = async (
         hre,
     );
     VM.add(liq).add(borrow).add(collateral).add(leverage);
+
+
+    // 05 - BigBang Modules
+    const [bbLiq, bbBorrow, bbCollateral, bbLeverage] =
+        await buildBigBangModules(hre);
+    VM.add(bbLiq).add(bbBorrow).add(bbCollateral).add(bbLeverage);
 
     // 06 USDO
     const [leverageModule, marketModule, optionsModule] =
