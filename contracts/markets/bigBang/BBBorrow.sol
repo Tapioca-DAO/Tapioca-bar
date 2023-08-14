@@ -49,17 +49,19 @@ contract BBBorrow is BBLendingCommon {
         address to,
         bool,
         uint256 part
-    )
-        external
-        notPaused
-        notSelf(to)
-        allowedBorrow(from, part)
-        returns (uint256 amount)
-    {
+    ) external notPaused notSelf(to) returns (uint256 amount) {
         updateExchangeRate();
 
         _accrue();
 
         amount = _repay(from, to, part);
+
+        uint256 allowanceShare = _computeAllowanceAmountInAsset(
+            from,
+            exchangeRate,
+            amount,
+            asset.safeDecimals()
+        );
+        _allowedBorrow(from, allowanceShare);
     }
 }

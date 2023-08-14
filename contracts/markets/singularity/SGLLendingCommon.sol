@@ -35,6 +35,7 @@ contract SGLLendingCommon is SGLCommon {
                 skim
             );
         }
+        _yieldBoxShares[to][COLLATERAL_SIG] += share;
         emit LogAddCollateral(skim ? address(yieldBox) : from, to, share);
     }
 
@@ -102,6 +103,13 @@ contract SGLLendingCommon is SGLCommon {
         uint128 totalShare = totalAsset.elastic;
         _addTokens(from, to, assetId, share, uint256(totalShare), skim);
         totalAsset.elastic = totalShare + uint128(share);
+
+        if (share > _yieldBoxShares[from][ASSET_SIG]) {
+            _yieldBoxShares[from][ASSET_SIG] = 0; //accrues in time
+        } else {
+            _yieldBoxShares[from][ASSET_SIG] -= share;
+        }
+
         emit LogRepay(skim ? address(yieldBox) : from, to, amount, part);
     }
 }

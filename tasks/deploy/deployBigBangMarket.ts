@@ -118,6 +118,22 @@ export const deployBigBangMarket__task = async (
             .find((e) => e.name.startsWith('WETHMock'));
     }
 
+
+    const { contract: bbLiquidation } =
+        await hre.SDK.hardhatUtils.getLocalContract(hre, 'BBLiquidation', tag);
+
+    const { contract: bbCollateral } =
+        await hre.SDK.hardhatUtils.getLocalContract(hre, 'BBCollateral', tag);
+
+    const { contract: bbBorrow } = await hre.SDK.hardhatUtils.getLocalContract(
+        hre,
+        'BBBorrow',
+        tag,
+    );
+
+    const { contract: bbLeverage } =
+        await hre.SDK.hardhatUtils.getLocalContract(hre, 'BBLeverage', tag);
+
     const { exchangeRatePrecision } = await inquirer.prompt({
         type: 'input',
         name: 'exchangeRatePrecision',
@@ -163,6 +179,10 @@ export const deployBigBangMarket__task = async (
 
     const data = new hre.ethers.utils.AbiCoder().encode(
         [
+            'address', //bb liquidation
+            'address', //bb borrow
+            'address', //bb collateral
+            'address', //bb leverage
             'address', //penrose
             'address', //collateral address
             'uint256', //collateral id
@@ -175,6 +195,10 @@ export const deployBigBangMarket__task = async (
             'uint256', //collateralizationRate
         ],
         [
+            bbLiquidation.address,
+            bbBorrow.address,
+            bbCollateral.address,
+            bbLeverage.address,
             penrose.address,
             collateral.collateralAddress,
             collateralId,

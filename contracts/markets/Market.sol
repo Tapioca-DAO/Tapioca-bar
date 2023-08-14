@@ -439,6 +439,8 @@ abstract contract Market is MarketERC20, BoringOwnable {
         if (borrowed < startTVLInAsset) return 0;
         if (borrowed >= maxTVLInAsset) return minLiquidatorReward;
 
+        borrowed = (borrowed * totalBorrow.elastic) / totalBorrow.base;
+
         uint256 rewardPercentage = ((borrowed - startTVLInAsset) *
             FEE_PRECISION) / (maxTVLInAsset - startTVLInAsset);
 
@@ -446,6 +448,10 @@ abstract contract Market is MarketERC20, BoringOwnable {
         int256 reward = (diff * int256(rewardPercentage)) /
             int256(FEE_PRECISION) +
             int256(maxLiquidatorReward);
+
+        if (reward < int256(minLiquidatorReward)) {
+            reward = int256(minLiquidatorReward);
+        }
 
         return uint256(reward);
     }

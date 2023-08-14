@@ -161,7 +161,6 @@ contract SGLCommon is SGLStorage {
 
     /// @dev Helper function to move tokens.
     /// @param from Account to debit tokens from, in `yieldBox`.
-    /// @param to The user that receives the tokens.
     /// @param _assetId The ERC-20 token asset ID in yieldBox.
     /// @param share The amount in shares to add.
     /// @param total Grand total amount to deduct from this contract's balance. Only applicable if `skim` is True.
@@ -170,16 +169,12 @@ contract SGLCommon is SGLStorage {
     /// False if tokens from msg.sender in `yieldBox` should be transferred.
     function _addTokens(
         address from,
-        address to,
+        address,
         uint256 _assetId,
         uint256 share,
         uint256 total,
         bool skim
     ) internal {
-        bytes32 _asset_sig = _assetId == assetId ? ASSET_SIG : COLLATERAL_SIG;
-
-        _yieldBoxShares[to][_asset_sig] += share;
-
         if (skim) {
             require(
                 share <= yieldBox.balanceOf(address(this), _assetId) - total,
@@ -212,6 +207,7 @@ contract SGLCommon is SGLStorage {
         emit Transfer(address(0), to, fraction);
 
         _addTokens(from, to, assetId, share, totalAssetShare, skim);
+        _yieldBoxShares[to][ASSET_SIG] += share;
         emit LogAddAsset(skim ? address(yieldBox) : from, to, share, fraction);
     }
 

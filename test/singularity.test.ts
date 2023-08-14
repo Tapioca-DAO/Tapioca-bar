@@ -3065,6 +3065,7 @@ describe('Singularity test', () => {
                     'uint256',
                     'address',
                     'uint256',
+                    'uint256',
                 ],
                 [
                     _sglLiquidationModule.address,
@@ -3078,6 +3079,7 @@ describe('Singularity test', () => {
                     wethAssetId,
                     wethUsdcOracle.address,
                     ethers.utils.parseEther('1'),
+                    0,
                 ],
             );
             await bar.registerSingularity(mediumRiskMC.address, data, true);
@@ -3248,9 +3250,9 @@ describe('Singularity test', () => {
                 }`,
             );
 
-            for (let i = 1; i < 100; i++) {
+            for (let i = 1; i < 30 * 48; i++) {
                 console.log(i);
-                await timeTravel(7200);
+                await timeTravel(1800);
                 await wethUsdoSingularity.accrue();
                 accrueInfo = await wethUsdoSingularity.accrueInfo();
                 console.log(

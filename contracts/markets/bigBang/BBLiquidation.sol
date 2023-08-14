@@ -208,13 +208,29 @@ contract BBLiquidation is BBCommon {
         uint256 borrowShare,
         uint256 callerReward
     ) private returns (uint256 feeShare, uint256 callerShare) {
+        yieldBox.withdraw(
+            assetId,
+            address(this),
+            address(this),
+            0,
+            returnedShare
+        );
+
         uint256 extraShare = returnedShare - borrowShare;
         feeShare = (extraShare * protocolFee) / FEE_PRECISION; // x% of profit goes to fee.
         callerShare = (extraShare * callerReward) / FEE_PRECISION; //  y%  of profit goes to caller.
 
         //protocol fees should be kept in the contract as we do a yieldBox.depositAsset when we are extracting the fees using `refreshPenroseFees`
-        yieldBox.withdraw(assetId, address(this), address(this), 0, feeShare);
-        yieldBox.transfer(address(this), msg.sender, assetId, callerShare);
+        asset.approve(address(yieldBox), 0);
+        asset.approve(address(yieldBox), type(uint256).max);
+        yieldBox.depositAsset(
+            assetId,
+            address(this),
+            msg.sender,
+            0,
+            callerShare
+        );
+        asset.approve(address(yieldBox), 0);
     }
 
     function _liquidateUser(
@@ -247,11 +263,15 @@ contract BBLiquidation is BBCommon {
             address(swapper),
             _dexData
         );
+
         (uint256 feeShare, uint256 callerShare) = _extractLiquidationFees(
             returnedShare,
             borrowShare,
             callerReward
         );
+
+        IUSDOBase(address(asset)).burn(address(this), borrowAmount);
+
         address[] memory _users = new address[](1);
         _users[0] = user;
         emit Liquidated(
