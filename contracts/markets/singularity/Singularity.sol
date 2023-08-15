@@ -204,7 +204,12 @@ contract Singularity is SGLCommon {
         address to,
         bool skim,
         uint256 share
-    ) external notPaused allowedLend(from, share) returns (uint256 fraction) {
+    )
+        external
+        optionNotPaused(PauseType.AddAsset)
+        allowedLend(from, share)
+        returns (uint256 fraction)
+    {
         _accrue();
         fraction = _addAsset(from, to, skim, share);
     }
@@ -218,7 +223,7 @@ contract Singularity is SGLCommon {
         address from,
         address to,
         uint256 fraction
-    ) external notPaused returns (uint256 share) {
+    ) external optionNotPaused(PauseType.RemoveAsset) returns (uint256 share) {
         _accrue();
         share = _removeAsset(from, to, fraction, true);
         _allowedLend(from, share);
@@ -507,7 +512,6 @@ contract Singularity is SGLCommon {
     function refreshPenroseFees()
         external
         onlyOwner
-        notPaused
         returns (uint256 feeShares)
     {
         address _feeTo = address(penrose);

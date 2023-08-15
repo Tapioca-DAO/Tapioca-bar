@@ -400,6 +400,7 @@ describe('Singularity test', () => {
                 ),
             ).to.be.revertedWith('SGL: min limit');
         });
+
         it('actions should not work when the contract is paused', async () => {
             const {
                 deployer,
@@ -445,7 +446,7 @@ describe('Singularity test', () => {
                 .mul(__wethUsdcPrice.mul(2))
                 .div((1e18).toString());
 
-            await wethUsdcSingularity.updatePause(true);
+            await wethUsdcSingularity.updatePause(2, true);
 
             await usdc.freeMint(usdcAmount);
             await timeTravel(86500);
@@ -454,13 +455,13 @@ describe('Singularity test', () => {
                 usdcDepositAndAddCollateral(usdcAmount),
             ).to.be.revertedWith('Market: paused');
 
-            await wethUsdcSingularity.updatePause(false);
+            await wethUsdcSingularity.updatePause(2, false);
 
             await usdc.freeMint(usdcAmount);
             await approveTokensAndSetBarApproval();
             await usdcDepositAndAddCollateral(usdcAmount);
 
-            await wethUsdcSingularity.updatePause(true);
+            await wethUsdcSingularity.updatePause(7, true);
 
             await approveTokensAndSetBarApproval(eoa1);
             await weth.connect(eoa1).freeMint(wethAmount);
@@ -469,7 +470,7 @@ describe('Singularity test', () => {
                 wethDepositAndAddAsset(wethAmount, eoa1),
             ).to.be.revertedWith('Market: paused');
 
-            await wethUsdcSingularity.updatePause(false);
+            await wethUsdcSingularity.updatePause(7, false);
 
             await approveTokensAndSetBarApproval(eoa1);
             await weth.connect(eoa1).freeMint(wethAmount);

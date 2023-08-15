@@ -23,7 +23,7 @@ contract BBBorrow is BBLendingCommon {
         uint256 amount
     )
         external
-        notPaused
+        optionNotPaused(PauseType.Borrow)
         notSelf(to)
         solvent(from)
         returns (uint256 part, uint256 share)
@@ -49,7 +49,12 @@ contract BBBorrow is BBLendingCommon {
         address to,
         bool,
         uint256 part
-    ) external notPaused notSelf(to) returns (uint256 amount) {
+    )
+        external
+        optionNotPaused(PauseType.Repay)
+        notSelf(to)
+        returns (uint256 amount)
+    {
         updateExchangeRate();
 
         _accrue();

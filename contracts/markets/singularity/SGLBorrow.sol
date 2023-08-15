@@ -22,7 +22,7 @@ contract SGLBorrow is SGLLendingCommon {
         uint256 amount
     )
         external
-        notPaused
+        optionNotPaused(PauseType.Borrow)
         solvent(from)
         notSelf(to)
         returns (uint256 part, uint256 share)
@@ -53,7 +53,7 @@ contract SGLBorrow is SGLLendingCommon {
         uint256 part
     )
         external
-        notPaused
+        optionNotPaused(PauseType.Repay)
         allowedBorrow(from, part)
         notSelf(to)
         returns (uint256 amount)
