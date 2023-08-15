@@ -115,10 +115,8 @@ contract BBLiquidation is BBCommon {
             _collateralShare
         );
 
-        uint256 minAssetMount = 0;
-        if (_dexData.length > 0) {
-            minAssetMount = abi.decode(_dexData, (uint256));
-        }
+        uint256 minAssetMount = abi.decode(_dexData, (uint256));
+        require(minAssetMount > 0, "BB: slippage too high");
 
         uint256 balanceBefore = yieldBox.balanceOf(_receiver, assetId);
 
