@@ -465,8 +465,8 @@ describe('BigBang test', () => {
                 wethBigBangMarket.liquidate(
                     [eoa1.address],
                     [usdoBorrowVal],
+                    [swapData],
                     multiSwapper.address,
-                    swapData,
                 ),
             ).to.be.reverted;
 
@@ -516,8 +516,8 @@ describe('BigBang test', () => {
                 wethBigBangMarket.liquidate(
                     [eoa1.address],
                     [borrowPart],
+                    [swapData],
                     multiSwapper.address,
-                    swapData,
                 ),
             ).to.not.be.reverted;
 
@@ -525,16 +525,16 @@ describe('BigBang test', () => {
                 wethBigBangMarket.liquidate(
                     [eoa1.address],
                     [borrowPart],
+                    [swapData],
                     ethers.constants.AddressZero,
-                    swapData,
                 ),
             ).to.be.reverted;
             await expect(
                 wethBigBangMarket.liquidate(
                     [eoa1.address],
                     [borrowPart],
-                    ethers.constants.AddressZero,
                     [],
+                    ethers.constants.AddressZero,
                 ),
             ).to.be.reverted;
             const liquidatorAmountAfter = await yieldBox.toAmount(

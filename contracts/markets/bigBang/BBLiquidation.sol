@@ -73,18 +73,21 @@ contract BBLiquidation is BBCommon {
     /// @notice Entry point for liquidations.
     /// @param users An array of user addresses.
     /// @param maxBorrowParts A one-to-one mapping to `users`, contains maximum (partial) borrow amounts (to liquidate) of the respective user.
+    /// @param collateralToAssetSwapDatas Extra swap data parameters
     /// @param swapper Contract address of the `MultiSwapper` implementation. See `setSwapper`.
-    /// @param collateralToAssetSwapData Extra swap data
     function liquidate(
         address[] calldata users,
         uint256[] calldata maxBorrowParts,
-        ISwapper swapper,
-        bytes calldata collateralToAssetSwapData
+        bytes[] calldata collateralToAssetSwapDatas,
+        ISwapper swapper
     ) external optionNotPaused(PauseType.Liquidation) {
+        require(users.length > 0, "BB: nothing to liquidate");
+        require(users.length == maxBorrowParts.length, "BB: length mismatch");
         require(
-            users.length == maxBorrowParts.length,
-            "BigBang: length mismatch"
+            users.length == collateralToAssetSwapDatas.length,
+            "BB: length mismatch"
         );
+
         // Oracle can fail but we still need to allow liquidations
         (, uint256 _exchangeRate) = updateExchangeRate();
         _accrue();
@@ -92,9 +95,9 @@ contract BBLiquidation is BBCommon {
         _closedLiquidation(
             users,
             maxBorrowParts,
+            collateralToAssetSwapDatas,
             swapper,
-            _exchangeRate,
-            collateralToAssetSwapData
+            _exchangeRate
         );
     }
 
@@ -286,16 +289,12 @@ contract BBLiquidation is BBCommon {
 
     /// @notice Handles the liquidation of users' balances, once the users' amount of collateral is too low.
     /// @dev Closed liquidations Only, 90% of extra shares goes to caller and 10% to protocol
-    /// @param users An array of user addresses.
-    /// @param maxBorrowParts A one-to-one mapping to `users`, contains maximum (partial) borrow amounts (to liquidate) of the respective user.
-    /// @param swapper Contract address of the `MultiSwapper` implementation. See `setSwapper`.
-    /// @param swapData Swap necessary data
     function _closedLiquidation(
         address[] calldata users,
         uint256[] calldata maxBorrowParts,
+        bytes[] calldata collateralToAssetSwapDatas,
         ISwapper swapper,
-        uint256 _exchangeRate,
-        bytes calldata swapData
+        uint256 _exchangeRate
     ) private {
         uint256 liquidatedCount = 0;
         for (uint256 i = 0; i < users.length; i++) {
@@ -307,7 +306,7 @@ contract BBLiquidation is BBCommon {
                     maxBorrowParts[i],
                     swapper,
                     _exchangeRate,
-                    swapData
+                    collateralToAssetSwapDatas[i]
                 );
             }
         }

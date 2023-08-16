@@ -469,28 +469,26 @@ contract Singularity is SGLCommon {
     ///        Ignore for `orderBookLiquidation()`
     /// @param swapper Contract address of the `ISwapper` implementation. See `setSwapper`.
     ///        Ignore for `orderBookLiquidation()`
-    /// @param collateralToAssetSwapData Extra swap data
+    /// @param collateralToAssetSwapDatas Extra swap data
     ///        Ignore for `orderBookLiquidation()`
     /// @param usdoToBorrowedSwapData Extra swap data
     ///        Ignore for `closedLiquidation()`
     function liquidate(
         address[] calldata users,
         uint256[] calldata maxBorrowParts,
-        ISwapper swapper,
-        bytes calldata collateralToAssetSwapData,
-        bytes calldata usdoToBorrowedSwapData
+        bytes[] calldata collateralToAssetSwapDatas,
+        bytes calldata usdoToBorrowedSwapData,
+        ISwapper swapper
     ) external {
-        require(users.length == maxBorrowParts.length, "SGL: length mismatch");
-        require(users.length > 0, "SGL: nothing to liquidate");
         _executeModule(
             Module.Liquidation,
             abi.encodeWithSelector(
                 SGLLiquidation.liquidate.selector,
                 users,
                 maxBorrowParts,
-                swapper,
-                collateralToAssetSwapData,
-                usdoToBorrowedSwapData
+                collateralToAssetSwapDatas,
+                usdoToBorrowedSwapData,
+                swapper
             )
         );
     }

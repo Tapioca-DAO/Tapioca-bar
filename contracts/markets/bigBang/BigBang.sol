@@ -130,12 +130,9 @@ contract BigBang is BBCommon {
             if (minDebtRate != 0 && maxDebtRate != 0) {
                 require(
                     _debtRateMin < _debtRateMax,
-                    "BigBang: debt rates not valid"
+                    "BB: debt rates not valid"
                 );
-                require(
-                    _debtRateMax <= 1e18,
-                    "BigBang: max debt rate not valid"
-                );
+                require(_debtRateMax <= 1e18, "BB: max debt rate not valid");
             }
             debtRateAgainstEthMarket = _debtRateAgainstEth;
             maxDebtRate = _debtRateMax;
@@ -160,7 +157,7 @@ contract BigBang is BBCommon {
             address(_collateral) != address(0) &&
                 address(_asset) != address(0) &&
                 address(_oracle) != address(0),
-            "BigBang: bad pair"
+            "BB: bad pair"
         );
         asset = IERC20(_asset);
         assetId = penrose.usdoAssetId();
@@ -376,26 +373,22 @@ contract BigBang is BBCommon {
     /// @notice Entry point for liquidations.
     /// @param users An array of user addresses.
     /// @param maxBorrowParts A one-to-one mapping to `users`, contains maximum (partial) borrow amounts (to liquidate) of the respective user.
+    /// @param collateralToAssetSwapDatas Extra swap data
     /// @param swapper Contract address of the `MultiSwapper` implementation. See `setSwapper`.
-    /// @param collateralToAssetSwapData Extra swap data
     function liquidate(
         address[] calldata users,
         uint256[] calldata maxBorrowParts,
-        ISwapper swapper,
-        bytes calldata collateralToAssetSwapData
+        bytes[] calldata collateralToAssetSwapDatas,
+        ISwapper swapper
     ) external {
-        require(
-            users.length == maxBorrowParts.length,
-            "BigBang: length mismatch"
-        );
         _executeModule(
             Module.Liquidation,
             abi.encodeWithSelector(
                 BBLiquidation.liquidate.selector,
                 users,
                 maxBorrowParts,
-                swapper,
-                collateralToAssetSwapData
+                collateralToAssetSwapDatas,
+                swapper
             )
         );
     }
@@ -456,13 +449,13 @@ contract BigBang is BBCommon {
 
         if (!isMainMarket) {
             if (_minDebtRate > 0) {
-                require(_minDebtRate < maxDebtRate, "BigBang: not valid");
+                require(_minDebtRate < maxDebtRate, "BB: not valid");
                 emit MinDebtRateUpdated(minDebtRate, _minDebtRate);
                 minDebtRate = _minDebtRate;
             }
 
             if (_maxDebtRate > 0) {
-                require(_maxDebtRate > minDebtRate, "BigBang: not valid");
+                require(_maxDebtRate > minDebtRate, "BB: not valid");
                 emit MaxDebtRateUpdated(maxDebtRate, _maxDebtRate);
                 maxDebtRate = _maxDebtRate;
             }
@@ -478,7 +471,7 @@ contract BigBang is BBCommon {
             if (_liquidationMultiplier > 0) {
                 require(
                     _liquidationMultiplier < FEE_PRECISION,
-                    "BigBang: not valid"
+                    "BB: not valid"
                 );
                 emit LiquidationMultiplierUpdated(
                     liquidationMultiplier,
