@@ -50,6 +50,14 @@ contract SGLLeverage is SGLLendingCommon {
             _addCollateral(from, from, false, 0, collateralShare, true);
         }
         //borrow
+        uint256 feeAmount = (borrowAmount * borrowOpeningFee) / FEE_PRECISION;
+        uint256 allowanceShare = _computeAllowanceAmountInAsset(
+            from,
+            exchangeRate,
+            borrowAmount + feeAmount,
+            asset.safeDecimals()
+        );
+        _allowedBorrow(from, allowanceShare);
         (, uint256 borrowShare) = _borrow(from, from, borrowAmount);
 
         //withdraw
