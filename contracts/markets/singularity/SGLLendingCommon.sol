@@ -95,6 +95,11 @@ contract SGLLendingCommon is SGLCommon {
         bool skim,
         uint256 part
     ) internal returns (uint256 amount) {
+        if (part > userBorrowPart[to]) {
+            part = userBorrowPart[to];
+        }
+        require(part > 0, "SGL: nothing to repay");
+
         (totalBorrow, amount) = totalBorrow.sub(part, true);
 
         userBorrowPart[to] -= part;

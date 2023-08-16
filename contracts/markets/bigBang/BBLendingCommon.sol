@@ -74,12 +74,17 @@ contract BBLendingCommon is BBCommon {
         address to,
         uint256 part
     ) internal returns (uint256 amountOut) {
-        uint256 amount;
+        if (part > userBorrowPart[to]) {
+            part = userBorrowPart[to];
+        }
+        require(part > 0, "SGL: nothing to repay");
+
         uint256 openingFee = _computeRepayFee(to, part);
 
         require(openingFee < part, "BB: repayment too low");
         openingFees[to] -= openingFee;
 
+        uint256 amount;
         (totalBorrow, amount) = totalBorrow.sub(part, true);
         userBorrowPart[to] -= part;
 
