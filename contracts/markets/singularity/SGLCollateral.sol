@@ -22,12 +22,12 @@ contract SGLCollateral is SGLLendingCommon {
         bool skim,
         uint256 amount,
         uint256 share
-    )
-        external
-        optionNotPaused(PauseType.AddCollateral)
-        allowedBorrow(from, share)
-        notSelf(to)
-    {
+    ) external optionNotPaused(PauseType.AddCollateral) notSelf(to) {
+        if (share == 0) {
+            share = yieldBox.toShare(collateralId, amount, false);
+        }
+        _allowedBorrow(from, share);
+
         _addCollateral(from, to, skim, amount, share, false);
     }
 

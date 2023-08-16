@@ -22,12 +22,12 @@ contract BBCollateral is BBLendingCommon {
         bool skim,
         uint256 amount,
         uint256 share
-    )
-        external
-        allowedBorrow(from, share)
-        notSelf(to)
-        optionNotPaused(PauseType.AddCollateral)
-    {
+    ) external notSelf(to) optionNotPaused(PauseType.AddCollateral) {
+        if (share == 0) {
+            share = yieldBox.toShare(collateralId, amount, false);
+        }
+        _allowedBorrow(from, share);
+
         _addCollateral(from, to, skim, amount, share);
     }
 
