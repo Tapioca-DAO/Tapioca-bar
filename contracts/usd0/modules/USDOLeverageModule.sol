@@ -66,6 +66,11 @@ contract USDOLeverageModule is BaseUSDOStorage {
         IUSDOBase.ILeverageSwapData calldata swapData,
         IUSDOBase.ILeverageExternalContractsData calldata externalData
     ) external payable {
+        require(
+            swapData.tokenOut != address(this),
+            "USDO: token out not valid"
+        );
+
         bytes32 senderBytes = LzLib.addressToBytes32(msg.sender);
         (amount, ) = _removeDust(amount);
         _debitFrom(msg.sender, lzEndpoint.getChainId(), senderBytes, amount);
