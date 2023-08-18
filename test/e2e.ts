@@ -842,9 +842,11 @@ async function liquidatePlug(
     shouldRevert?: boolean,
     revertMessage?: string,
 ) {
+    const data = new ethers.utils.AbiCoder().encode(['uint256'], [1]);
     const liquidateValues = [];
     const liquidateAddresses = [];
     const previousCollaterals = [];
+    const collateralSwapDatas = [];
     for (let i = 0; i < liquidateArr.length; i++) {
         const lq = liquidateArr[i];
         const amount = await asset.balanceOf(lq.address);
@@ -859,18 +861,17 @@ async function liquidatePlug(
             false,
         );
         previousCollaterals.push(collateralAmount);
+        collateralSwapDatas.push(data);
     }
-
-    const data = new ethers.utils.AbiCoder().encode(['uint256'], [1]);
 
     if (shouldRevert) {
         await expect(
             Singularity.liquidate(
                 liquidateAddresses,
                 liquidateValues,
+                collateralSwapDatas,
+                data,
                 multiSwapper.address,
-                data,
-                data,
             ),
         ).to.be.revertedWith(revertMessage!);
         return;
@@ -878,9 +879,9 @@ async function liquidatePlug(
     await Singularity.liquidate(
         liquidateAddresses,
         liquidateValues,
+        collateralSwapDatas,
+        data,
         multiSwapper.address,
-        data,
-        data,
     );
 
     for (let i = 0; i < liquidateArr.length; i++) {

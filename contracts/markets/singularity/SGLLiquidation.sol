@@ -77,17 +77,20 @@ contract SGLLiquidation is SGLCommon {
     ///        Ignore for `orderBookLiquidation()`
     /// @param swapper Contract address of the `MultiSwapper` implementation. See `setSwapper`.
     ///        Ignore for `orderBookLiquidation()`
-    /// @param collateralToAssetSwapData Extra swap data
+    /// @param collateralToAssetSwapDatas Extra swap data
     ///        Ignore for `orderBookLiquidation()`
     /// @param usdoToBorrowedSwapData Extra swap data
     ///        Ignore for `closedLiquidation()`
     function liquidate(
         address[] calldata users,
         uint256[] calldata maxBorrowParts,
-        ISwapper swapper,
-        bytes calldata collateralToAssetSwapData,
-        bytes calldata usdoToBorrowedSwapData
+        bytes[] calldata collateralToAssetSwapDatas,
+        bytes calldata usdoToBorrowedSwapData,
+        ISwapper swapper
     ) external optionNotPaused(PauseType.Liquidation) {
+        require(users.length == maxBorrowParts.length, "SGL: length mismatch");
+        require(users.length > 0, "SGL: nothing to liquidate");
+
         // Oracle can fail but we still need to allow liquidations
         (, uint256 _exchangeRate) = updateExchangeRate();
         _accrue();
@@ -113,9 +116,9 @@ contract SGLLiquidation is SGLCommon {
         _closedLiquidation(
             users,
             maxBorrowParts,
+            collateralToAssetSwapDatas,
             swapper,
-            _exchangeRate,
-            collateralToAssetSwapData
+            _exchangeRate
         );
     }
 
@@ -432,15 +435,18 @@ contract SGLLiquidation is SGLCommon {
     /// @dev Closed liquidations Only, 90% of extra shares goes to caller and 10% to protocol
     /// @param users An array of user addresses.
     /// @param maxBorrowParts A one-to-one mapping to `users`, contains maximum (partial) borrow amounts (to liquidate) of the respective user.
+    /// @param swapDatas Swap necessary data
     /// @param swapper Contract address of the `MultiSwapper` implementation. See `setSwapper`.
-    /// @param swapData Swap necessary data
     function _closedLiquidation(
         address[] calldata users,
         uint256[] calldata maxBorrowParts,
+        bytes[] calldata swapDatas,
         ISwapper swapper,
-        uint256 _exchangeRate,
-        bytes calldata swapData
+        uint256 _exchangeRate
     ) private {
+        require(users.length == maxBorrowParts.length, "SGL: length mismatch");
+        require(users.length == swapDatas.length, "SGL: length mismatch");
+
         uint256 liquidatedCount = 0;
         for (uint256 i = 0; i < users.length; i++) {
             address user = users[i];
@@ -451,7 +457,7 @@ contract SGLLiquidation is SGLCommon {
                     maxBorrowParts[i],
                     swapper,
                     _exchangeRate,
-                    swapData
+                    swapDatas[i]
                 );
             }
         }
