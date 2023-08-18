@@ -80,7 +80,7 @@ contract BBLiquidation is BBCommon {
         uint256[] calldata maxBorrowParts,
         ISwapper swapper,
         bytes calldata collateralToAssetSwapData
-    ) external notPaused {
+    ) external optionNotPaused(PauseType.Liquidation) {
         require(
             users.length == maxBorrowParts.length,
             "BigBang: length mismatch"

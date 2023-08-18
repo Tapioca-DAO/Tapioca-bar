@@ -34,6 +34,7 @@ contract BBStorage is BoringOwnable, Market {
     // ************ //
     // *** VARS *** //
     // ************ //
+
     mapping(address user => uint256 fee) public openingFees;
 
     IBigBang.AccrueInfo public accrueInfo;

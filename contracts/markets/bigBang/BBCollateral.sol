@@ -22,7 +22,12 @@ contract BBCollateral is BBLendingCommon {
         bool skim,
         uint256 amount,
         uint256 share
-    ) external allowedBorrow(from, share) notSelf(to) notPaused {
+    )
+        external
+        allowedBorrow(from, share)
+        notSelf(to)
+        optionNotPaused(PauseType.AddCollateral)
+    {
         _addCollateral(from, to, skim, amount, share);
     }
 
@@ -34,7 +39,13 @@ contract BBCollateral is BBLendingCommon {
         address from,
         address to,
         uint256 share
-    ) external notPaused solvent(from) notSelf(to) allowedBorrow(from, share) {
+    )
+        external
+        optionNotPaused(PauseType.RemoveCollateral)
+        solvent(from)
+        notSelf(to)
+        allowedBorrow(from, share)
+    {
         _removeCollateral(from, to, share);
     }
 }

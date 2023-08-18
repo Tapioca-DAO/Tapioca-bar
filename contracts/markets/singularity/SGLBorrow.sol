@@ -22,16 +22,17 @@ contract SGLBorrow is SGLLendingCommon {
         uint256 amount
     )
         external
-        notPaused
+        optionNotPaused(PauseType.Borrow)
         solvent(from)
         notSelf(to)
         returns (uint256 part, uint256 share)
     {
         if (amount == 0) return (0, 0);
+        uint256 feeAmount = (amount * borrowOpeningFee) / FEE_PRECISION;
         uint256 allowanceShare = _computeAllowanceAmountInAsset(
             from,
             exchangeRate,
-            amount,
+            amount + feeAmount,
             asset.safeDecimals()
         );
         _allowedBorrow(from, allowanceShare);
@@ -53,7 +54,7 @@ contract SGLBorrow is SGLLendingCommon {
         uint256 part
     )
         external
-        notPaused
+        optionNotPaused(PauseType.Repay)
         allowedBorrow(from, part)
         notSelf(to)
         returns (uint256 amount)

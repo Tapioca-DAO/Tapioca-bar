@@ -87,7 +87,7 @@ contract SGLLiquidation is SGLCommon {
         ISwapper swapper,
         bytes calldata collateralToAssetSwapData,
         bytes calldata usdoToBorrowedSwapData
-    ) external notPaused {
+    ) external optionNotPaused(PauseType.Liquidation) {
         // Oracle can fail but we still need to allow liquidations
         (, uint256 _exchangeRate) = updateExchangeRate();
         _accrue();
