@@ -24,7 +24,13 @@ contract SGLLeverage is SGLLendingCommon {
         IUSDOBase.ILeverageSwapData calldata swapData,
         IUSDOBase.ILeverageLZData calldata lzData,
         IUSDOBase.ILeverageExternalContractsData calldata externalData
-    ) external payable notPaused solvent(from) notSelf(from) {
+    )
+        external
+        payable
+        optionNotPaused(PauseType.LeverageBuy)
+        solvent(from)
+        notSelf(from)
+    {
         require(
             penrose.swappers(
                 lzData.lzDstChainId,
@@ -61,7 +67,13 @@ contract SGLLeverage is SGLLendingCommon {
         IUSDOBase.ILeverageSwapData calldata swapData,
         IUSDOBase.ILeverageLZData calldata lzData,
         IUSDOBase.ILeverageExternalContractsData calldata externalData
-    ) external payable notPaused solvent(from) notSelf(from) {
+    )
+        external
+        payable
+        optionNotPaused(PauseType.LeverageSell)
+        solvent(from)
+        notSelf(from)
+    {
         require(
             penrose.swappers(
                 lzData.lzDstChainId,
@@ -102,7 +114,7 @@ contract SGLLeverage is SGLLendingCommon {
         bytes calldata dexData
     )
         external
-        notPaused
+        optionNotPaused(PauseType.LeverageSell)
         solvent(from)
         notSelf(from)
         returns (uint256 amountOut)
@@ -162,7 +174,7 @@ contract SGLLeverage is SGLLendingCommon {
         bytes calldata dexData
     )
         external
-        notPaused
+        optionNotPaused(PauseType.LeverageBuy)
         solvent(from)
         notSelf(from)
         returns (uint256 amountOut)

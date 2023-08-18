@@ -26,7 +26,7 @@ contract BBLeverage is BBLendingCommon {
         bytes calldata dexData
     )
         external
-        notPaused
+        optionNotPaused(PauseType.LeverageBuy)
         solvent(from)
         notSelf(from)
         returns (uint256 amountOut)
@@ -95,7 +95,7 @@ contract BBLeverage is BBLendingCommon {
         bytes calldata dexData
     )
         external
-        notPaused
+        optionNotPaused(PauseType.LeverageSell)
         solvent(from)
         notSelf(from)
         returns (uint256 amountOut)

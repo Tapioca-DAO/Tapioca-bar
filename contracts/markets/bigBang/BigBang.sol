@@ -428,7 +428,6 @@ contract BigBang is BBCommon {
     function refreshPenroseFees()
         external
         onlyOwner
-        notPaused
         returns (uint256 feeShares)
     {
         uint256 fees = asset.balanceOf(address(this));
