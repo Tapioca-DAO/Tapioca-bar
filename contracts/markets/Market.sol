@@ -15,6 +15,24 @@ abstract contract Market is MarketERC20, BoringOwnable {
     // ************ //
     // *** VARS *** //
     // ************ //
+    enum PauseType {
+        Borrow,
+        Repay,
+        AddCollateral,
+        RemoveCollateral,
+        Liquidation,
+        LeverageBuy,
+        LeverageSell,
+        AddAsset,
+        RemoveAsset
+    }
+
+    /// @notice pause options
+    mapping(PauseType pauseProp => bool pauseStatus) public pauseOptions;
+    /// @notice conservator's addresss
+    /// @dev conservator can pause/unpause the contract
+    address public conservator;
+
     /// @notice returns YieldBox address
     YieldBox public yieldBox;
     /// @notice returns Penrose address
@@ -28,13 +46,6 @@ abstract contract Market is MarketERC20, BoringOwnable {
     IERC20 public asset;
     /// @notice asset token YieldBox id
     uint256 public assetId;
-
-    /// @notice contract's pause state
-    bool public paused;
-    /// @notice conservator's addresss
-    /// @dev conservator can pause/unpause the contract
-    address public conservator;
-
     /// @notice oracle address
     IOracle public oracle;
     /// @notice oracleData
@@ -87,7 +98,7 @@ abstract contract Market is MarketERC20, BoringOwnable {
     /// @notice event emitted when conservator is updated
     event ConservatorUpdated(address indexed old, address indexed _new);
     /// @notice event emitted when pause state is changed
-    event PausedUpdated(bool oldState, bool newState);
+    event PausedUpdated(PauseType _type, bool oldState, bool newState);
     /// @notice event emitted when cached exchange rate is updated
     event LogExchangeRate(uint256 rate);
     /// @notice event emitted when borrow cap is updated
@@ -110,6 +121,11 @@ abstract contract Market is MarketERC20, BoringOwnable {
     /// @notice event emitted when the liquidation multiplier rate is updated
     event LiquidationMultiplierUpdated(uint256 oldVal, uint256 newVal);
 
+    modifier optionNotPaused(PauseType _type) {
+        require(!pauseOptions[_type], "Market: paused");
+        _;
+    }
+
     modifier notSelf(address destination) {
         require(
             destination != address(this),
@@ -117,10 +133,7 @@ abstract contract Market is MarketERC20, BoringOwnable {
         );
         _;
     }
-    modifier notPaused() {
-        require(!paused, "Market: paused");
-        _;
-    }
+
     /// @dev Checks if the user is solvent in the closed liquidation case at the end of the function body.
     modifier solvent(address from) {
         updateExchangeRate();
@@ -153,7 +166,7 @@ abstract contract Market is MarketERC20, BoringOwnable {
     /// @notice sets max borrowable amount
     /// @dev can only be called by the owner
     /// @param _cap the new value
-    function setBorrowCap(uint256 _cap) external notPaused onlyOwner {
+    function setBorrowCap(uint256 _cap) external onlyOwner {
         emit LogBorrowCapUpdated(totalBorrowCap, _cap);
         totalBorrowCap = _cap;
     }
@@ -247,11 +260,11 @@ abstract contract Market is MarketERC20, BoringOwnable {
     /// @notice updates the pause state of the contract
     /// @dev can only be called by the conservator
     /// @param val the new value
-    function updatePause(bool val) external {
+    function updatePause(PauseType _type, bool val) external {
         require(msg.sender == conservator, "Market: unauthorized");
-        require(val != paused, "Market: same state");
-        emit PausedUpdated(paused, val);
-        paused = val;
+        require(val != pauseOptions[_type], "Market: same state");
+        emit PausedUpdated(_type, pauseOptions[_type], val);
+        pauseOptions[_type] = val;
     }
 
     // ********************** //

@@ -465,8 +465,8 @@ describe('BigBang test', () => {
                 wethBigBangMarket.liquidate(
                     [eoa1.address],
                     [usdoBorrowVal],
+                    [swapData],
                     multiSwapper.address,
-                    swapData,
                 ),
             ).to.be.reverted;
 
@@ -516,8 +516,8 @@ describe('BigBang test', () => {
                 wethBigBangMarket.liquidate(
                     [eoa1.address],
                     [borrowPart],
+                    [swapData],
                     multiSwapper.address,
-                    swapData,
                 ),
             ).to.not.be.reverted;
 
@@ -525,16 +525,16 @@ describe('BigBang test', () => {
                 wethBigBangMarket.liquidate(
                     [eoa1.address],
                     [borrowPart],
+                    [swapData],
                     ethers.constants.AddressZero,
-                    swapData,
                 ),
             ).to.be.reverted;
             await expect(
                 wethBigBangMarket.liquidate(
                     [eoa1.address],
                     [borrowPart],
-                    ethers.constants.AddressZero,
                     [],
+                    ethers.constants.AddressZero,
                 ),
             ).to.be.reverted;
             const liquidatorAmountAfter = await yieldBox.toAmount(
@@ -1568,9 +1568,9 @@ describe('BigBang test', () => {
                 valShare,
             );
 
-            await wethBigBangMarket.updatePause(true);
+            await wethBigBangMarket.updatePause(2, true);
 
-            const pauseState = await wethBigBangMarket.paused();
+            const pauseState = await wethBigBangMarket.pauseOptions(2);
             expect(pauseState).to.be.true;
 
             await expect(
@@ -1583,7 +1583,7 @@ describe('BigBang test', () => {
                 ),
             ).to.be.revertedWith('Market: paused');
 
-            await wethBigBangMarket.updatePause(false);
+            await wethBigBangMarket.updatePause(2, false);
 
             await wethBigBangMarket.addCollateral(
                 deployer.address,
@@ -1593,7 +1593,7 @@ describe('BigBang test', () => {
                 valShare,
             );
 
-            await wethBigBangMarket.updatePause(true);
+            await wethBigBangMarket.updatePause(0, true);
 
             //borrow
             const usdoBorrowVal = wethMintVal
@@ -1609,7 +1609,7 @@ describe('BigBang test', () => {
                 ),
             ).to.be.revertedWith('Market: paused');
 
-            await wethBigBangMarket.updatePause(false);
+            await wethBigBangMarket.updatePause(0, false);
 
             await expect(
                 wethBigBangMarket.borrow(
@@ -1633,7 +1633,7 @@ describe('BigBang test', () => {
                 deployer.address,
             );
 
-            await wethBigBangMarket.updatePause(true);
+            await wethBigBangMarket.updatePause(1, true);
 
             await expect(
                 wethBigBangMarket.repay(
@@ -1644,7 +1644,7 @@ describe('BigBang test', () => {
                 ),
             ).to.be.revertedWith('Market: paused');
 
-            await wethBigBangMarket.updatePause(false);
+            await wethBigBangMarket.updatePause(1, false);
 
             await expect(
                 wethBigBangMarket.repay(
@@ -1655,7 +1655,7 @@ describe('BigBang test', () => {
                 ),
             ).not.to.be.reverted;
 
-            await wethBigBangMarket.updatePause(true);
+            await wethBigBangMarket.updatePause(3, true);
 
             let collateralShares = await wethBigBangMarket.userCollateralShare(
                 deployer.address,
@@ -1671,7 +1671,7 @@ describe('BigBang test', () => {
                 ),
             ).to.be.revertedWith('Market: paused');
 
-            await wethBigBangMarket.updatePause(false);
+            await wethBigBangMarket.updatePause(3, false);
 
             await expect(
                 wethBigBangMarket.removeCollateral(

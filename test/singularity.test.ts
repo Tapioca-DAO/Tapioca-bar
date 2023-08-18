@@ -400,6 +400,7 @@ describe('Singularity test', () => {
                 ),
             ).to.be.revertedWith('SGL: min limit');
         });
+
         it('actions should not work when the contract is paused', async () => {
             const {
                 deployer,
@@ -445,7 +446,7 @@ describe('Singularity test', () => {
                 .mul(__wethUsdcPrice.mul(2))
                 .div((1e18).toString());
 
-            await wethUsdcSingularity.updatePause(true);
+            await wethUsdcSingularity.updatePause(2, true);
 
             await usdc.freeMint(usdcAmount);
             await timeTravel(86500);
@@ -454,13 +455,13 @@ describe('Singularity test', () => {
                 usdcDepositAndAddCollateral(usdcAmount),
             ).to.be.revertedWith('Market: paused');
 
-            await wethUsdcSingularity.updatePause(false);
+            await wethUsdcSingularity.updatePause(2, false);
 
             await usdc.freeMint(usdcAmount);
             await approveTokensAndSetBarApproval();
             await usdcDepositAndAddCollateral(usdcAmount);
 
-            await wethUsdcSingularity.updatePause(true);
+            await wethUsdcSingularity.updatePause(7, true);
 
             await approveTokensAndSetBarApproval(eoa1);
             await weth.connect(eoa1).freeMint(wethAmount);
@@ -469,7 +470,7 @@ describe('Singularity test', () => {
                 wethDepositAndAddAsset(wethAmount, eoa1),
             ).to.be.revertedWith('Market: paused');
 
-            await wethUsdcSingularity.updatePause(false);
+            await wethUsdcSingularity.updatePause(7, false);
 
             await approveTokensAndSetBarApproval(eoa1);
             await weth.connect(eoa1).freeMint(wethAmount);
@@ -831,9 +832,9 @@ describe('Singularity test', () => {
                 wethUsdcSingularity.liquidate(
                     [eoa1.address],
                     [wethBorrowVal],
+                    [data],
+                    data,
                     multiSwapper.address,
-                    data,
-                    data,
                 ),
             ).to.be.revertedWith('SGL: bad debt');
 
@@ -934,9 +935,9 @@ describe('Singularity test', () => {
                 wethUsdcSingularity.liquidate(
                     [eoa1.address],
                     [wethBorrowVal],
+                    [data],
+                    data,
                     multiSwapper.address,
-                    data,
-                    data,
                 ),
             ).to.be.reverted;
 
@@ -968,9 +969,9 @@ describe('Singularity test', () => {
                 wethUsdcSingularity.liquidate(
                     [eoa1.address],
                     [wethBorrowVal],
+                    [data],
+                    data,
                     multiSwapper.address,
-                    data,
-                    data,
                 ),
             ).to.not.be.reverted;
 
@@ -1048,9 +1049,9 @@ describe('Singularity test', () => {
                 wbtcUsdcSingularity.liquidate(
                     [eoa1.address],
                     [wbtcBorrowVal],
+                    [data],
+                    data,
                     multiSwapper.address,
-                    data,
-                    data,
                 ),
             ).to.be.reverted;
 
@@ -1062,9 +1063,9 @@ describe('Singularity test', () => {
                 wbtcUsdcSingularity.liquidate(
                     [eoa1.address],
                     [wbtcBorrowVal],
+                    [data],
+                    data,
                     multiSwapper.address,
-                    data,
-                    data,
                 ),
             ).to.not.be.reverted;
         });
@@ -3522,9 +3523,9 @@ describe('Singularity test', () => {
                 wethUsdoSingularity.liquidate(
                     [eoa1.address],
                     [usdoBorrowVal],
+                    [swapData],
+                    swapData,
                     multiSwapper.address,
-                    swapData,
-                    swapData,
                 ),
             ).to.be.reverted;
 
@@ -3567,9 +3568,9 @@ describe('Singularity test', () => {
                 wethUsdoSingularity.liquidate(
                     [eoa1.address],
                     [usdoBorrowVal],
+                    [swapData],
+                    swapData,
                     multiSwapper.address,
-                    swapData,
-                    swapData,
                 ),
             ).to.not.be.reverted;
         });

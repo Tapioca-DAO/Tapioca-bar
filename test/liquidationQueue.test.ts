@@ -377,9 +377,9 @@ describe('LiquidationQueue test', () => {
                             deployer.address,
                         ),
                     ],
+                    [data],
+                    data,
                     ethers.constants.AddressZero,
-                    data,
-                    data,
                 ),
             ).to.be.revertedWith('SGL: solvent');
 
@@ -396,9 +396,9 @@ describe('LiquidationQueue test', () => {
                             deployer.address,
                         ),
                     ],
+                    [data],
+                    data,
                     multiSwapper.address,
-                    data,
-                    data,
                 ),
             ).to.not.be.reverted;
 
@@ -410,9 +410,9 @@ describe('LiquidationQueue test', () => {
                             deployer.address,
                         ),
                     ],
+                    [data],
+                    data,
                     multiSwapper.address,
-                    data,
-                    data,
                 ),
             ).to.be.revertedWith('SGL: solvent');
 
@@ -1115,9 +1115,9 @@ describe('LiquidationQueue test', () => {
                 wethUsdcSingularity.liquidate(
                     [accounts[1].address],
                     [borrowVal],
+                    [swapData],
+                    swapData,
                     multiSwapper.address,
-                    swapData,
-                    swapData,
                 ),
             ).to.be.reverted;
 
@@ -1134,9 +1134,9 @@ describe('LiquidationQueue test', () => {
                 .liquidate(
                     [accounts[1].address],
                     [borrowVal],
+                    [swapData],
+                    swapData,
                     multiSwapper.address,
-                    swapData,
-                    swapData,
                 );
             const shareForCallerAfter = await yieldBox.balanceOf(
                 accounts[0].address,
@@ -1428,9 +1428,9 @@ describe('LiquidationQueue test', () => {
                 wethUsdcSingularity.liquidate(
                     [accounts[1].address],
                     [borrowVal],
+                    [swapData],
+                    swapData,
                     multiSwapper.address,
-                    swapData,
-                    swapData,
                 ),
             ).to.be.reverted;
 
@@ -1447,9 +1447,9 @@ describe('LiquidationQueue test', () => {
                 .liquidate(
                     [accounts[1].address],
                     [borrowVal],
+                    [swapData],
+                    swapData,
                     multiSwapper.address,
-                    swapData,
-                    swapData,
                 );
             const shareForCallerAfter = await yieldBox.balanceOf(
                 accounts[0].address,
@@ -2152,9 +2152,9 @@ describe('LiquidationQueue test', () => {
                         wethUsdcSingularity.liquidate(
                             [account.address],
                             [borrowVal],
+                            [swapData],
+                            swapData,
                             multiSwapper.address,
-                            swapData,
-                            swapData,
                         ),
                     ).to.be.reverted;
                 }
@@ -2171,6 +2171,10 @@ describe('LiquidationQueue test', () => {
                     { length: liqudatableAccounts.length },
                     (_) => borrowVal,
                 );
+                const collateralSwapDatas = Array.from(
+                    { length: liqudatableAccounts.length },
+                    (_) => swapData,
+                );
 
                 const shareForCallerBefore = await yieldBox.balanceOf(
                     accounts[0].address,
@@ -2182,9 +2186,9 @@ describe('LiquidationQueue test', () => {
                     .liquidate(
                         liqudatableAccounts,
                         liquidatebleAmonts,
+                        collateralSwapDatas,
+                        swapData,
                         multiSwapper.address,
-                        swapData,
-                        swapData,
                     );
                 const shareForCallerAfter = await yieldBox.balanceOf(
                     accounts[0].address,
@@ -2346,9 +2350,9 @@ describe('LiquidationQueue test', () => {
                             deployer.address,
                         ),
                     ],
+                    [data],
+                    data,
                     ethers.constants.AddressZero,
-                    data,
-                    data,
                 ),
             ).to.be.revertedWith('SGL: no users found');
 
@@ -2369,9 +2373,9 @@ describe('LiquidationQueue test', () => {
                             deployer.address,
                         ),
                     ],
+                    [data],
+                    data,
                     multiSwapper.address,
-                    data,
-                    data,
                 ),
             ).to.not.be.reverted;
 
@@ -2379,9 +2383,9 @@ describe('LiquidationQueue test', () => {
                 wethUsdcSingularity.liquidate(
                     [eoa1.address],
                     [await wethUsdcSingularity.userBorrowPart(eoa1.address)],
+                    [data],
+                    data,
                     multiSwapper.address,
-                    data,
-                    data,
                 ),
             ).to.be.revertedWith('SGL: no users found');
 
@@ -2521,9 +2525,9 @@ describe('LiquidationQueue test', () => {
                             deployer.address,
                         ),
                     ],
+                    [data],
+                    data,
                     multiSwapper.address,
-                    data,
-                    data,
                 ),
             ).to.not.be.reverted;
 
@@ -2680,9 +2684,9 @@ describe('LiquidationQueue test', () => {
                             deployer.address,
                         ),
                     ],
+                    [data],
+                    data,
                     multiSwapper.address,
-                    data,
-                    data,
                 ),
             ).to.not.be.reverted;
 

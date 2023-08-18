@@ -118,7 +118,6 @@ export const deployBigBangMarket__task = async (
             .find((e) => e.name.startsWith('WETHMock'));
     }
 
-
     const { contract: bbLiquidation } =
         await hre.SDK.hardhatUtils.getLocalContract(hre, 'BBLiquidation', tag);
 

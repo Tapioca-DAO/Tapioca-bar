@@ -23,15 +23,17 @@ contract BBBorrow is BBLendingCommon {
         uint256 amount
     )
         external
-        notPaused
+        optionNotPaused(PauseType.Borrow)
         notSelf(to)
         solvent(from)
         returns (uint256 part, uint256 share)
     {
+        if (amount == 0) return (0, 0);
+        uint256 feeAmount = (amount * borrowOpeningFee) / FEE_PRECISION;
         uint256 allowanceShare = _computeAllowanceAmountInAsset(
             from,
             exchangeRate,
-            amount,
+            amount + feeAmount,
             asset.safeDecimals()
         );
         _allowedBorrow(from, allowanceShare);
@@ -49,7 +51,12 @@ contract BBBorrow is BBLendingCommon {
         address to,
         bool,
         uint256 part
-    ) external notPaused notSelf(to) returns (uint256 amount) {
+    )
+        external
+        optionNotPaused(PauseType.Repay)
+        notSelf(to)
+        returns (uint256 amount)
+    {
         updateExchangeRate();
 
         _accrue();

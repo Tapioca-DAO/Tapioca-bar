@@ -24,7 +24,13 @@ contract SGLLeverage is SGLLendingCommon {
         IUSDOBase.ILeverageSwapData calldata swapData,
         IUSDOBase.ILeverageLZData calldata lzData,
         IUSDOBase.ILeverageExternalContractsData calldata externalData
-    ) external payable notPaused solvent(from) notSelf(from) {
+    )
+        external
+        payable
+        optionNotPaused(PauseType.LeverageBuy)
+        solvent(from)
+        notSelf(from)
+    {
         require(
             penrose.swappers(
                 lzData.lzDstChainId,
@@ -44,6 +50,14 @@ contract SGLLeverage is SGLLendingCommon {
             _addCollateral(from, from, false, 0, collateralShare, true);
         }
         //borrow
+        uint256 feeAmount = (borrowAmount * borrowOpeningFee) / FEE_PRECISION;
+        uint256 allowanceShare = _computeAllowanceAmountInAsset(
+            from,
+            exchangeRate,
+            borrowAmount + feeAmount,
+            asset.safeDecimals()
+        );
+        _allowedBorrow(from, allowanceShare);
         (, uint256 borrowShare) = _borrow(from, from, borrowAmount);
 
         //withdraw
@@ -61,7 +75,13 @@ contract SGLLeverage is SGLLendingCommon {
         IUSDOBase.ILeverageSwapData calldata swapData,
         IUSDOBase.ILeverageLZData calldata lzData,
         IUSDOBase.ILeverageExternalContractsData calldata externalData
-    ) external payable notPaused solvent(from) notSelf(from) {
+    )
+        external
+        payable
+        optionNotPaused(PauseType.LeverageSell)
+        solvent(from)
+        notSelf(from)
+    {
         require(
             penrose.swappers(
                 lzData.lzDstChainId,
@@ -102,7 +122,7 @@ contract SGLLeverage is SGLLendingCommon {
         bytes calldata dexData
     )
         external
-        notPaused
+        optionNotPaused(PauseType.LeverageSell)
         solvent(from)
         notSelf(from)
         returns (uint256 amountOut)
@@ -162,7 +182,7 @@ contract SGLLeverage is SGLLendingCommon {
         bytes calldata dexData
     )
         external
-        notPaused
+        optionNotPaused(PauseType.LeverageBuy)
         solvent(from)
         notSelf(from)
         returns (uint256 amountOut)

@@ -204,7 +204,12 @@ contract Singularity is SGLCommon {
         address to,
         bool skim,
         uint256 share
-    ) external notPaused allowedLend(from, share) returns (uint256 fraction) {
+    )
+        external
+        optionNotPaused(PauseType.AddAsset)
+        allowedLend(from, share)
+        returns (uint256 fraction)
+    {
         _accrue();
         fraction = _addAsset(from, to, skim, share);
     }
@@ -218,7 +223,7 @@ contract Singularity is SGLCommon {
         address from,
         address to,
         uint256 fraction
-    ) external notPaused returns (uint256 share) {
+    ) external optionNotPaused(PauseType.RemoveAsset) returns (uint256 share) {
         _accrue();
         share = _removeAsset(from, to, fraction, true);
         _allowedLend(from, share);
@@ -464,28 +469,26 @@ contract Singularity is SGLCommon {
     ///        Ignore for `orderBookLiquidation()`
     /// @param swapper Contract address of the `ISwapper` implementation. See `setSwapper`.
     ///        Ignore for `orderBookLiquidation()`
-    /// @param collateralToAssetSwapData Extra swap data
+    /// @param collateralToAssetSwapDatas Extra swap data
     ///        Ignore for `orderBookLiquidation()`
     /// @param usdoToBorrowedSwapData Extra swap data
     ///        Ignore for `closedLiquidation()`
     function liquidate(
         address[] calldata users,
         uint256[] calldata maxBorrowParts,
-        ISwapper swapper,
-        bytes calldata collateralToAssetSwapData,
-        bytes calldata usdoToBorrowedSwapData
+        bytes[] calldata collateralToAssetSwapDatas,
+        bytes calldata usdoToBorrowedSwapData,
+        ISwapper swapper
     ) external {
-        require(users.length == maxBorrowParts.length, "SGL: length mismatch");
-        require(users.length > 0, "SGL: nothing to liquidate");
         _executeModule(
             Module.Liquidation,
             abi.encodeWithSelector(
                 SGLLiquidation.liquidate.selector,
                 users,
                 maxBorrowParts,
-                swapper,
-                collateralToAssetSwapData,
-                usdoToBorrowedSwapData
+                collateralToAssetSwapDatas,
+                usdoToBorrowedSwapData,
+                swapper
             )
         );
     }
@@ -507,7 +510,6 @@ contract Singularity is SGLCommon {
     function refreshPenroseFees()
         external
         onlyOwner
-        notPaused
         returns (uint256 feeShares)
     {
         address _feeTo = address(penrose);
