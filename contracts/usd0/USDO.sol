@@ -54,7 +54,11 @@ contract USDO is BaseUSDO, IERC3156FlashLender {
     // ********************** //
     /// @notice returns the maximum amount of tokens available for a flash mint
     function maxFlashLoan(address) public view override returns (uint256) {
-        return maxFlashMint;
+        if (totalSupply() > maxFlashMint) {
+            return maxFlashMint;
+        } else {
+            return totalSupply();
+        }
     }
 
     /// @notice returns the flash mint fee
