@@ -448,6 +448,7 @@ contract BigBang is BBCommon {
         isMainMarket = collateralId == penrose.mainAssetId();
 
         if (!isMainMarket) {
+            _accrue();
             if (_minDebtRate > 0) {
                 require(_minDebtRate < maxDebtRate, "BB: not valid");
                 emit MinDebtRateUpdated(minDebtRate, _minDebtRate);
