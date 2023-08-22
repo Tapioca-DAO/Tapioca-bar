@@ -10,6 +10,7 @@ import 'hardhat-gas-reporter';
 import SDK from 'tapioca-sdk';
 import { HttpNetworkConfig } from 'hardhat/types';
 import 'hardhat-tracer';
+import '@primitivefi/hardhat-dodoc';
 
 dotenv.config();
 
@@ -133,7 +134,7 @@ const config: HardhatUserConfig & { dodoc?: any; vyper: any } = {
         timeout: 4000000,
     },
     dodoc: {
-        runOnCompile: false,
+        runOnCompile: true,
         freshOutput: true,
     },
 };

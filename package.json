@@ -83,6 +83,7 @@
     },
     "dependencies": {
         "@nomiclabs/hardhat-vyper": "^3.0.1",
+        "@primitivefi/hardhat-dodoc": "^0.2.3",
         "@uniswap/v3-core": "^1.0.1",
         "@uniswap/v3-periphery": "^1.4.3",
         "husky": "^8.0.1",
