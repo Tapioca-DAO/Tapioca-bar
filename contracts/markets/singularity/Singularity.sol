@@ -186,7 +186,10 @@ contract Singularity is SGLCommon {
             (bool success, bytes memory result) = address(this).delegatecall(
                 calls[i]
             );
-            require(success || !revertOnFail, _getRevertMsg(result));
+
+            if (!success && revertOnFail) {
+                revert(_getRevertMsg(result));
+            }
             successes[i] = success;
             results[i] = _getRevertMsg(result);
         }
