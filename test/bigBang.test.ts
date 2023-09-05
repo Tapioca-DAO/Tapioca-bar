@@ -2074,6 +2074,7 @@ describe('BigBang test', () => {
                 __wethUsdcPrice,
                 eoa1,
                 timeTravel,
+                cluster,
             } = await loadFixture(register);
             await initContracts();
 
@@ -2110,7 +2111,7 @@ describe('BigBang test', () => {
             const MockSwapper = new MockSwapper__factory(deployer);
             const mockSwapper = await MockSwapper.deploy(yieldBox.address);
             await mockSwapper.deployed();
-            await bar.setSwapper(mockSwapper.address, 0, true);
+            await cluster.updateContract(0, mockSwapper.address, true);
 
             await yieldBox
                 .connect(deployer)

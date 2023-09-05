@@ -33,6 +33,7 @@ describe('Singularity Leverage', () => {
             deployer,
             initContracts,
             __wethUsdcPrice,
+            cluster,
         } = await loadFixture(register);
         await initContracts();
 
@@ -69,7 +70,7 @@ describe('Singularity Leverage', () => {
         const MockSwapper = new MockSwapper__factory(deployer);
         const mockSwapper = await MockSwapper.deploy(yieldBox.address);
         await mockSwapper.deployed();
-        await bar.setSwapper(mockSwapper.address, 0, true);
+        await cluster.updateContract(0, mockSwapper.address, true);
 
         const [alice, bob, carol] = [0, 0, 0].map(
             () =>

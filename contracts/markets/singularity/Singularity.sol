@@ -445,7 +445,7 @@ contract Singularity is SGLCommon {
     /// @notice liquidates a position where collateral value is less than the borrowed amount
     /// @param user to liquidate
     /// @param receiver funds receiver
-    /// @param swapper contract address of the `ISwapper` implementation. See `setSwapper`.
+    /// @param swapper contract address of the `ISwapper` implementation.
     /// @param collateralToAssetSwapData extra swap data
     function liquidateBadDebt(
         address user,
@@ -470,7 +470,7 @@ contract Singularity is SGLCommon {
     /// @param users An array of user addresses.
     /// @param maxBorrowParts A one-to-one mapping to `users`, contains maximum (partial) borrow amounts (to liquidate) of the respective user.
     ///        Ignore for `orderBookLiquidation()`
-    /// @param swapper Contract address of the `ISwapper` implementation. See `setSwapper`.
+    /// @param swapper Contract address of the `ISwapper` implementation.
     ///        Ignore for `orderBookLiquidation()`
     /// @param collateralToAssetSwapDatas Extra swap data
     ///        Ignore for `orderBookLiquidation()`

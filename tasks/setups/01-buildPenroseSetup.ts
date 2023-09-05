@@ -29,7 +29,7 @@ export const buildPenroseSetup = async (
     /**
      * Add calls
      */
-    console.log('[+] +Setting: Setting MultiSwapper');
+    console.log('[+] +Setting: Whitelisting MultiSwapper');
     await (
         await penrose.setSwapper(
             multiSwapperAddress,
