@@ -334,7 +334,7 @@ abstract contract Market is MarketERC20, BoringOwnable {
     /// @return updated True if `exchangeRate` was updated.
     /// @return rate The new exchange rate.
     function updateExchangeRate() public returns (bool updated, uint256 rate) {
-        (updated, rate) = oracle.get("");
+        (updated, rate) = oracle.get(oracleData);
 
         if (updated) {
             require(rate > 0, "Market: invalid rate");
