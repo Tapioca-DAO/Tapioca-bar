@@ -379,14 +379,15 @@ abstract contract Market is MarketERC20, BoringOwnable {
         uint256 _exchangeRate
     ) internal view returns (uint256 collateralAmountInAsset) {
         require(_exchangeRate > 0, "Market: exchangeRate not valid");
+        uint256 userCollateralAmount = yieldBox.toAmount(
+            collateralId,
+            userCollateralShare[user],
+            false
+        );
         collateralAmountInAsset =
-            yieldBox.toAmount(
-                collateralId,
-                (userCollateralShare[user] *
-                    (EXCHANGE_RATE_PRECISION / FEE_PRECISION) *
-                    collateralizationRate),
-                false
-            ) /
+            (userCollateralAmount *
+                (EXCHANGE_RATE_PRECISION / FEE_PRECISION) *
+                collateralizationRate) /
             _exchangeRate;
     }
 
@@ -404,14 +405,16 @@ abstract contract Market is MarketERC20, BoringOwnable {
 
         Rebase memory _totalBorrow = totalBorrow;
 
+        uint256 collateralAmount = yieldBox.toAmount(
+            collateralId,
+            collateralShare,
+            false
+        );
+
         return
-            yieldBox.toAmount(
-                collateralId,
-                collateralShare *
-                    (EXCHANGE_RATE_PRECISION / FEE_PRECISION) *
-                    collateralizationRate,
-                false
-            ) >=
+            collateralAmount *
+                (EXCHANGE_RATE_PRECISION / FEE_PRECISION) *
+                collateralizationRate >=
             // Moved exchangeRate here instead of dividing the other side to preserve more precision
             (borrowPart * _totalBorrow.elastic * _exchangeRate) /
                 _totalBorrow.base;
