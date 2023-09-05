@@ -4,7 +4,10 @@ import { getOverrideOptions } from '../../gitsub_tapioca-sdk/src/api/utils';
 import { TContract } from 'tapioca-sdk/dist/shared';
 import { Penrose, YieldBox } from '../../typechain';
 import { buildOracleMock } from '../deployBuilds/05-buildOracleMock';
+import ClusterArtifact from '../../gitsub_tapioca-sdk/src/artifacts/tapioca-periphery/Cluster.json';
+
 import { loadVM } from '../utils';
+import { Cluster } from '../../gitsub_tapioca-sdk/src/typechain/tapioca-periphery';
 
 export const deployBigBangMarket__task = async (
     taskArgs: {
@@ -264,5 +267,28 @@ export const deployBigBangMarket__task = async (
         );
 
         await penrose.setBigBangEthMarket(market.address);
+    }
+
+    let clusterAddress = hre.ethers.constants.AddressZero;
+    let clusterDep = hre.SDK.db
+        .loadGlobalDeployment(tag, 'Cluster', chainInfo.chainId)
+        .find((e) => e.name == 'Cluster');
+
+    if (!clusterDep) {
+        clusterDep = hre.SDK.db
+            .loadLocalDeployment(tag, chainInfo.chainId)
+            .find((e) => e.name == 'Cluster');
+    }
+    if (clusterDep) {
+        clusterAddress = clusterDep.address;
+    }
+
+    if (clusterAddress != hre.ethers.constants.AddressZero) {
+        const clusterContract = (await hre.ethers.getContractAtFromArtifact(
+            ClusterArtifact,
+            clusterAddress,
+        )) as Cluster;
+
+        await clusterContract.updateContract(0, market.address, true);
     }
 };

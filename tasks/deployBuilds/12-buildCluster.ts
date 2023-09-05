@@ -1,7 +1,7 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { IDeployerVMAdd } from 'tapioca-sdk/dist/ethers/hardhat/DeployerVM';
-import { Cluster__factory } from 'tapioca-sdk/dist/typechain/tapioca-periphery';
-import ClusterArtifact from 'tapioca-sdk/dist/artifacts/tapioca-periphery/Cluster.json';
+import { Cluster__factory } from '../../gitsub_tapioca-sdk/src/typechain/tapioca-periphery';
+import ClusterArtifact from '../../gitsub_tapioca-sdk/src/artifacts/tapioca-periphery/Cluster.json';
 
 export const buildCluster = async (
     hre: HardhatRuntimeEnvironment,
