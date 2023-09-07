@@ -72,6 +72,7 @@ contract USDOLeverageModule is BaseUSDOStorage {
             swapData.tokenOut != address(this),
             "USDO: token out not valid"
         );
+        _assureMaxSlippage(amount, swapData.amountOutMin);
 
         bytes32 senderBytes = LzLib.addressToBytes32(msg.sender);
         (amount, ) = _removeDust(amount);
