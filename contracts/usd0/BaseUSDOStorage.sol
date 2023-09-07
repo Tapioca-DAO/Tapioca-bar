@@ -45,6 +45,9 @@ contract BaseUSDOStorage is OFTV2 {
     uint16 internal constant PT_TAP_EXERCISE = 777;
     uint16 internal constant PT_SEND_FROM = 778;
 
+    uint256 internal constant SWAP_MAX_SLIPPAGE = 500; //5%
+    uint256 internal constant SLIPPAGE_PRECISION = 1e4;
+
     // ************** //
     // *** EVENTS *** //
     // ************** //
@@ -78,6 +81,15 @@ contract BaseUSDOStorage is OFTV2 {
 
     function _getChainId() internal view returns (uint256) {
         return ILayerZeroEndpoint(lzEndpoint).getChainId();
+    }
+
+    function _assureMaxSlippage(
+        uint256 amount,
+        uint256 minAmount
+    ) internal pure {
+        uint256 slippageMinAmount = amount -
+            ((SWAP_MAX_SLIPPAGE * amount) / SLIPPAGE_PRECISION);
+        require(minAmount >= slippageMinAmount, "TOFT_SLIPPAGE");
     }
 
     function _getRevertMsg(

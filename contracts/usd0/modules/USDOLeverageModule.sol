@@ -32,6 +32,8 @@ contract USDOLeverageModule is BaseUSDOStorage {
         bytes calldata airdropAdapterParams,
         ICommonData.IApproval[] calldata approvals
     ) external payable {
+        _assureMaxSlippage(borrowAmount, swapData.amountOutMin);
+
         bytes32 senderBytes = LzLib.addressToBytes32(from);
 
         (collateralAmount, ) = _removeDust(collateralAmount);
