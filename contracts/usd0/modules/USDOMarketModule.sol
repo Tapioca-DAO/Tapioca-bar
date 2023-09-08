@@ -22,8 +22,9 @@ contract USDOMarketModule is BaseUSDOStorage {
 
     constructor(
         address _lzEndpoint,
-        IYieldBoxBase _yieldBox
-    ) BaseUSDOStorage(_lzEndpoint, _yieldBox) {}
+        IYieldBoxBase _yieldBox,
+        ICluster _cluster
+    ) BaseUSDOStorage(_lzEndpoint, _yieldBox, _cluster) {}
 
     function removeAsset(
         address from,

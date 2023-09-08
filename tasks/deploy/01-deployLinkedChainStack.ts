@@ -77,7 +77,12 @@ export const deployLinkedChainStack__task = async (
 
     // 02 USDO
     const [leverageModule, marketModule, optionsModule] =
-        await buildUSDOModules(chainInfo.address, hre, ybAddress);
+        await buildUSDOModules(
+            chainInfo.address,
+            hre,
+            ybAddress,
+            clusterAddress,
+        );
     VM.add(leverageModule).add(marketModule).add(optionsModule);
 
     const usdo = await buildUSD0(
@@ -85,6 +90,7 @@ export const deployLinkedChainStack__task = async (
         chainInfo.address,
         signer.address,
         ybAddress,
+        clusterAddress,
     );
     VM.add(usdo);
 

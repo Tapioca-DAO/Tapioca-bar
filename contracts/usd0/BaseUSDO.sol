@@ -64,11 +64,12 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
     constructor(
         address _lzEndpoint,
         IYieldBoxBase _yieldBox,
+        ICluster _cluster,
         address _owner,
         address payable _leverageModule,
         address payable _marketModule,
         address payable _optionsModule
-    ) BaseUSDOStorage(_lzEndpoint, _yieldBox) ERC20Permit("USDO") {
+    ) BaseUSDOStorage(_lzEndpoint, _yieldBox, _cluster) ERC20Permit("USDO") {
         leverageModule = USDOLeverageModule(_leverageModule);
         marketModule = USDOMarketModule(_marketModule);
         optionsModule = USDOOptionsModule(_optionsModule);

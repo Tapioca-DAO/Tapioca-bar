@@ -3735,12 +3735,8 @@ describe('Singularity test', () => {
                 deployer,
             );
             const Cluster = new Cluster__factory(deployer);
-            const Cluster_0 = await Cluster.deploy(
-                await LZEndpointMock_chainID_0.getChainId(),
-            );
-            const Cluster_10 = await Cluster.deploy(
-                await LZEndpointMock_chainID_10.getChainId(),
-            );
+            const Cluster_0 = await Cluster.deploy(0);
+            const Cluster_10 = await Cluster.deploy(0);
 
             //Deploy TapiocaWrapper
             const tapiocaWrapper_0 = await deployTapiocaWrapper(deployer);
@@ -3752,19 +3748,32 @@ describe('Singularity test', () => {
 
             const usdo_0_leverage = await (
                 await ethers.getContractFactory('USDOLeverageModule')
-            ).deploy(LZEndpointMock_chainID_0.address, YieldBox_0.address);
+            ).deploy(
+                LZEndpointMock_chainID_0.address,
+                YieldBox_0.address,
+                Cluster_0.address,
+            );
             const usdo_0_market = await (
                 await ethers.getContractFactory('USDOMarketModule')
-            ).deploy(LZEndpointMock_chainID_0.address, YieldBox_0.address);
+            ).deploy(
+                LZEndpointMock_chainID_0.address,
+                YieldBox_0.address,
+                Cluster_0.address,
+            );
             const usdo_0_options = await (
                 await ethers.getContractFactory('USDOOptionsModule')
-            ).deploy(LZEndpointMock_chainID_0.address, YieldBox_0.address);
+            ).deploy(
+                LZEndpointMock_chainID_0.address,
+                YieldBox_0.address,
+                Cluster_0.address,
+            );
 
             const USDO_0 = await (
                 await ethers.getContractFactory('USDO')
             ).deploy(
                 LZEndpointMock_chainID_0.address,
                 YieldBox_0.address,
+                Cluster_0.address,
                 deployer.address,
                 usdo_0_leverage.address,
                 usdo_0_market.address,
@@ -3774,18 +3783,31 @@ describe('Singularity test', () => {
 
             const usdo_10_leverage = await (
                 await ethers.getContractFactory('USDOLeverageModule')
-            ).deploy(LZEndpointMock_chainID_10.address, YieldBox_0.address);
+            ).deploy(
+                LZEndpointMock_chainID_10.address,
+                YieldBox_0.address,
+                Cluster_0.address,
+            );
             const usdo_10_market = await (
                 await ethers.getContractFactory('USDOMarketModule')
-            ).deploy(LZEndpointMock_chainID_10.address, YieldBox_0.address);
+            ).deploy(
+                LZEndpointMock_chainID_10.address,
+                YieldBox_0.address,
+                Cluster_0.address,
+            );
             const usdo_10_options = await (
                 await ethers.getContractFactory('USDOOptionsModule')
-            ).deploy(LZEndpointMock_chainID_10.address, YieldBox_0.address);
+            ).deploy(
+                LZEndpointMock_chainID_10.address,
+                YieldBox_0.address,
+                Cluster_0.address,
+            );
             const USDO_10 = await (
                 await ethers.getContractFactory('USDO')
             ).deploy(
                 LZEndpointMock_chainID_10.address,
                 YieldBox_0.address,
+                Cluster_0.address,
                 deployer.address,
                 usdo_10_leverage.address,
                 usdo_10_market.address,
@@ -4363,8 +4385,37 @@ describe('Singularity test', () => {
                 true,
             );
 
+            await Cluster_0.updateContract(
+                await LZEndpointMock_chainID_0.getChainId(),
+                uniV3SwapperMock.address,
+                true,
+            );
+
+            await Cluster_0.updateContract(0, uniV3SwapperMock.address, true);
+            await Cluster_0.updateContract(10, uniV3SwapperMock.address, true);
+            await Cluster_0.updateContract(
+                31337,
+                uniV3SwapperMock.address,
+                true,
+            );
+            await Cluster_0.updateContract(1, uniV3SwapperMock.address, true);
+            await Cluster_10.updateContract(10, uniV3SwapperMock.address, true);
+            await Cluster_10.updateContract(0, uniV3SwapperMock.address, true);
+            await Cluster_10.updateContract(1, uniV3SwapperMock.address, true);
+            await Cluster_10.updateContract(
+                31337,
+                uniV3SwapperMock.address,
+                true,
+            );
+
             await Cluster_10.updateContract(
                 await LZEndpointMock_chainID_0.getChainId(),
+                uniV3SwapperMock.address,
+                true,
+            );
+
+            await Cluster_10.updateContract(
+                await LZEndpointMock_chainID_10.getChainId(),
                 uniV3SwapperMock.address,
                 true,
             );
@@ -4385,7 +4436,9 @@ describe('Singularity test', () => {
                 false,
                 {
                     tokenOut: await tapiocaOFT10.erc20(),
-                    amountOutMin: 0,
+                    amountOutMin: bigDummyAmount.sub(
+                        bigDummyAmount.mul(450).div(1e4),
+                    ),
                     data: ethers.utils.toUtf8Bytes(''),
                 },
                 {
@@ -4458,51 +4511,6 @@ describe('Singularity test', () => {
                 ),
             );
 
-            // const airdropAdapterParams = hre.ethers.utils.solidityPack(
-            //     ['uint16', 'uint', 'uint', 'address'],
-            //     [
-            //         2, //it needs to be 2
-            //         1_000_000, //extra gas limit; min 200k
-            //         ethers.utils.parseEther('1'), //amount of eth to airdrop
-            //         USDO_0.address,
-            //     ],
-            // );
-
-            // hre.tracer.enabled = true;
-            // await YieldBox_0.setApprovalForAll(magnetar.address, true);
-            // const lent = await SGL_0.balanceOf(deployer.address);
-            // await USDO_10.removeAsset(
-            //     deployer.address,
-            //     deployer.address,
-            //     0,
-            //     {
-            //         withdraw: true,
-            //         withdrawLzFeeAmount: ethers.utils.parseEther('1'),
-            //         withdrawOnOtherChain: true,
-            //         withdrawLzChainId: 10,
-            //         withdrawAdapterParams: hre.ethers.utils.solidityPack(
-            //             ['uint16', 'uint256'],
-            //             [1, 200000],
-            //         ),
-            //     },
-            //     {
-            //         extraGasLimit: 1_000_000,
-            //         zroPaymentAddress: ethers.constants.AddressZero,
-            //     },
-            //     {
-            //         market: SGL_0.address,
-            //         marketHelper: magnetar.address,
-            //         share: bigDummyAmount.div(10).mul(1e8),
-            //     },
-            //     [],
-            //     airdropAdapterParams,
-            //     {
-            //         value: ethers.utils.parseEther('2'),
-            //     },
-            // );
-            // hre.tracer.enabled = false;
-            // return;
-
             //bc of the actual setup we need to simulate an existing position
             await SGL_0.borrow(
                 deployer.address,
@@ -4515,17 +4523,21 @@ describe('Singularity test', () => {
             );
             const collateralShareBeforeLeverageDown =
                 await SGL_0.userCollateralShare(deployer.address);
+            const amountToSell = await YieldBox_0.toAmount(
+                await SGL_0.collateralId(),
+                userCollateralShareAfter.div(4),
+                false,
+            );
+
             await SGL_0.multiHopSellCollateral(
                 deployer.address,
-                await YieldBox_0.toAmount(
-                    await SGL_0.collateralId(),
-                    userCollateralShareAfter.div(4),
-                    false,
-                ),
+                amountToSell,
                 false,
                 {
                     tokenOut: USDO_10.address,
-                    amountOutMin: 0,
+                    amountOutMin: amountToSell.sub(
+                        amountToSell.mul(450).div(1e4),
+                    ),
                     data: new ethers.utils.AbiCoder().encode(['bool'], [true]),
                 },
                 {

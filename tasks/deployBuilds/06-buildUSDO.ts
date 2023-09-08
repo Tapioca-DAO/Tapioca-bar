@@ -7,6 +7,7 @@ export const buildUSD0 = async (
     lzEndPoint: string,
     owner: string,
     yieldBox: string,
+    cluster: string,
 ): Promise<IDeployerVMAdd<USDO__factory>> => {
     return {
         contract: await hre.ethers.getContractFactory('USDO'),
@@ -14,6 +15,7 @@ export const buildUSD0 = async (
         args: [
             lzEndPoint,
             yieldBox,
+            cluster,
             owner,
             hre.ethers.constants.AddressZero,
             hre.ethers.constants.AddressZero,
@@ -21,6 +23,7 @@ export const buildUSD0 = async (
         ],
         dependsOn: [
             { argPosition: 1, deploymentName: 'YieldBox' },
+            { argPosition: 2, deploymentName: 'Cluster' },
             { argPosition: 3, deploymentName: 'USDOLeverageModule' },
             { argPosition: 4, deploymentName: 'USDOMarketModule' },
             { argPosition: 5, deploymentName: 'USDOOptionsModule' },
