@@ -367,12 +367,23 @@ contract SGLLiquidation is SGLCommon {
     ) private returns (uint256 feeShare, uint256 callerShare) {
         uint256 returnedShare = yieldBox.balanceOf(address(this), assetId) -
             uint256(totalAsset.elastic);
-        uint256 extraShare = returnedShare - borrowShare;
+        uint256 extraShare = returnedShare > borrowShare
+            ? returnedShare - borrowShare
+            : 0;
         feeShare = (extraShare * protocolFee) / FEE_PRECISION; // x% of profit goes to fee.
         callerShare = (extraShare * callerReward) / FEE_PRECISION; //  y%  of profit goes to caller.
 
-        yieldBox.transfer(address(this), address(penrose), assetId, feeShare);
-        yieldBox.transfer(address(this), msg.sender, assetId, callerShare);
+        if (feeShare > 0) {
+            yieldBox.transfer(
+                address(this),
+                address(penrose),
+                assetId,
+                feeShare
+            );
+        }
+        if (callerShare > 0) {
+            yieldBox.transfer(address(this), msg.sender, assetId, callerShare);
+        }
 
         totalAsset.elastic += uint128(returnedShare - feeShare - callerShare);
 

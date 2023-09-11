@@ -155,7 +155,8 @@ describe('USDO', () => {
             const supplyAfter = await usd0.totalSupply();
             expect(supplyAfter.eq(supplyBefore)).to.be.true;
             const usdoBalanceAfter = await usd0.balanceOf(usd0.address);
-            expect(usdoBalanceBefore.eq(usdoBalanceAfter.sub(flashFee))).to.be.true;
+            expect(usdoBalanceBefore.eq(usdoBalanceAfter.sub(flashFee))).to.be
+                .true;
             const flashBorrwerUsd0Balance = await usd0.balanceOf(
                 deployer.address,
             );
