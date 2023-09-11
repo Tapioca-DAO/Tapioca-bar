@@ -149,11 +149,13 @@ describe('USDO', () => {
             await usd0.transfer(flashBorrower.address, flashFee);
 
             const supplyBefore = await usd0.totalSupply();
-
+            const usdoBalanceBefore = await usd0.balanceOf(usd0.address);
             await expect(flashBorrower.flashBorrow(usd0.address, amount)).not.to
                 .be.reverted;
             const supplyAfter = await usd0.totalSupply();
-            expect(supplyAfter.eq(supplyBefore.sub(flashFee))).to.be.true;
+            expect(supplyAfter.eq(supplyBefore)).to.be.true;
+            const usdoBalanceAfter = await usd0.balanceOf(usd0.address);
+            expect(usdoBalanceBefore.eq(usdoBalanceAfter.sub(flashFee))).to.be.true;
             const flashBorrwerUsd0Balance = await usd0.balanceOf(
                 deployer.address,
             );
