@@ -174,4 +174,12 @@ contract SGLStorage is BoringOwnable, Market {
     }
 
     function _accrue() internal virtual override {}
+
+    function _accrueView()
+        internal
+        view
+        virtual
+        override
+        returns (Rebase memory)
+    {}
 }
