@@ -199,7 +199,8 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
         ITapiocaOptionsBrokerCrossChain.IExerciseLZData calldata lzData,
         ITapiocaOptionsBrokerCrossChain.IExerciseLZSendTapData
             calldata tapSendData,
-        ICommonData.IApproval[] calldata approvals
+        ICommonData.IApproval[] calldata approvals,
+        bytes calldata adapterParams
     ) external payable {
         _executeModule(
             Module.Options,
@@ -208,7 +209,8 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
                 optionsData,
                 lzData,
                 tapSendData,
-                approvals
+                approvals,
+                adapterParams
             ),
             false
         );
