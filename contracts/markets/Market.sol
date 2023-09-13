@@ -366,6 +366,7 @@ abstract contract Market is MarketERC20, BoringOwnable {
     function _getRevertMsg(
         bytes memory _returnData
     ) internal pure returns (string memory) {
+        if (_returnData.length > 1000) return "Market: reason too long";
         // If the _res length is less than 68, then the transaction failed silently (without a revert message)
         if (_returnData.length < 68) return "Market: no return data";
         // solhint-disable-next-line no-inline-assembly

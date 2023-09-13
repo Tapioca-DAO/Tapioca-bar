@@ -458,6 +458,8 @@ contract Penrose is BoringOwnable, BoringFactory {
     function _getRevertMsg(
         bytes memory _returnData
     ) private pure returns (string memory) {
+        if (_returnData.length > 1000) return "SGL: reason too long";
+
         // If the _res length is less than 68, then the transaction failed silently (without a revert message)
         if (_returnData.length < 68) return "SGL: no return data";
         // solhint-disable-next-line no-inline-assembly
