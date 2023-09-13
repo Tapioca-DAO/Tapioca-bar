@@ -61,11 +61,17 @@ contract SGLLeverage is SGLLendingCommon {
         (, uint256 borrowShare) = _borrow(from, from, borrowAmount);
 
         //withdraw
-        yieldBox.withdraw(assetId, from, address(this), 0, borrowShare);
+        (uint256 amountOut, ) = yieldBox.withdraw(
+            assetId,
+            from,
+            address(this),
+            0,
+            borrowShare
+        );
 
         IUSDOBase(address(asset)).sendForLeverage{
             value: useAirdroppedFunds ? address(this).balance : msg.value
-        }(borrowAmount, from, lzData, swapData, externalData);
+        }(amountOut, from, lzData, swapData, externalData);
     }
 
     function multiHopSellCollateral(
