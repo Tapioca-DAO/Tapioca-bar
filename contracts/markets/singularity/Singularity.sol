@@ -115,8 +115,6 @@ contract Singularity is SGLCommon {
         updateExchangeRate();
 
         //default fees
-        callerFee = 1000; // 1%
-        protocolFee = 10000; // 10%
         borrowOpeningFee = 50; // 0.05%
 
         //liquidation
@@ -130,8 +128,8 @@ contract Singularity is SGLCommon {
             ? _exchangeRatePrecision
             : 1e18;
 
-        minLiquidatorReward = 1e3;
-        maxLiquidatorReward = 1e4;
+        minLiquidatorReward = 8e4;
+        maxLiquidatorReward = 9e4;
         liquidationBonusAmount = 1e4;
 
         minimumTargetUtilization = 3e17;

@@ -67,14 +67,11 @@ abstract contract Market is MarketERC20, BoringOwnable {
     /// @notice collateral share per user
     mapping(address => uint256) public userCollateralShare;
 
-    /// @notice liquidation caller rewards
-    uint256 public callerFee; // 90%
-    /// @notice liquidation protocol rewards
-    uint256 public protocolFee; // 10%
     /// @notice min % a liquidator can receive in rewards
-    uint256 public minLiquidatorReward = 1e3; //1%
+    uint256
+ public minLiquidatorReward = 8e4; //1%
     /// @notice max % a liquidator can receive in rewards
-    uint256 public maxLiquidatorReward = 1e4; //10%
+    uint256 public maxLiquidatorReward = 9e4; //10%
     /// @notice max liquidatable bonus amount
     /// @dev max % added to the amount that can be liquidated
     uint256 public liquidationBonusAmount = 1e4; //10%
@@ -178,8 +175,6 @@ abstract contract Market is MarketERC20, BoringOwnable {
         IOracle _oracle,
         bytes calldata _oracleData,
         address _conservator,
-        uint256 _callerFee,
-        uint256 _protocolFee,
         uint256 _liquidationBonusAmount,
         uint256 _minLiquidatorReward,
         uint256 _maxLiquidatorReward,
@@ -205,16 +200,6 @@ abstract contract Market is MarketERC20, BoringOwnable {
         if (_conservator != address(0)) {
             emit ConservatorUpdated(conservator, _conservator);
             conservator = _conservator;
-        }
-
-        if (_callerFee > 0) {
-            require(_callerFee <= FEE_PRECISION, "Market: not valid");
-            callerFee = _callerFee;
-        }
-
-        if (_protocolFee > 0) {
-            require(_protocolFee <= FEE_PRECISION, "Market: not valid");
-            protocolFee = _protocolFee;
         }
 
         if (_liquidationBonusAmount > 0) {

@@ -273,7 +273,7 @@ contract SGLLiquidation is SGLCommon {
         uint256 returnedShare = yieldBox.balanceOf(address(this), assetId) -
             uint256(totalAsset.elastic);
         uint256 extraShare = returnedShare - allBorrowShare;
-        uint256 callerShare = (extraShare * callerFee) / FEE_PRECISION; // 1% goes to caller
+        uint256 callerShare = (extraShare * 1e3) / FEE_PRECISION; // 1% goes to caller
 
         emit Liquidated(
             msg.sender,
@@ -370,8 +370,8 @@ contract SGLLiquidation is SGLCommon {
         uint256 extraShare = returnedShare > borrowShare
             ? returnedShare - borrowShare
             : 0;
-        feeShare = (extraShare * protocolFee) / FEE_PRECISION; // x% of profit goes to fee.
-        callerShare = (extraShare * callerReward) / FEE_PRECISION; //  y%  of profit goes to caller.
+        callerShare = (extraShare * callerReward) / FEE_PRECISION; //89-90%
+        feeShare = extraShare - callerShare; //10-20%
 
         if (feeShare > 0) {
             yieldBox.transfer(
@@ -382,10 +382,10 @@ contract SGLLiquidation is SGLCommon {
             );
         }
         if (callerShare > 0) {
-            yieldBox.transfer(address(this), msg.sender, assetId, callerShare);
-        }
+                   callerShare= (extraShare * callerReward) / FEE_PRECISION; //89-90%
+        feeShare = extraShare - callerShare; //10-20%
 
-        totalAsset.elastic += uint128(returnedShare - feeShare - callerShare);
+- feeShare - callerShare);
 
         emit LogAddAsset(
             swapper,
