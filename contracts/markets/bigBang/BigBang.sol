@@ -165,6 +165,8 @@ contract BigBang is BBCommon {
         collateralId = _collateralId;
         oracle = _oracle;
         updateExchangeRate();
+        callerFee = 90000; // 90%
+        protocolFee = 10000; // 10%
         collateralizationRate = _collateralizationRate > 0
             ? _collateralizationRate
             : 75000;
@@ -172,8 +174,8 @@ contract BigBang is BBCommon {
             ? _exchangeRatePrecision
             : 1e18;
 
-        minLiquidatorReward = 8e4;
-        maxLiquidatorReward = 9e4;
+        minLiquidatorReward = 1e3;
+        maxLiquidatorReward = 1e4;
         liquidationBonusAmount = 1e4;
         borrowOpeningFee = 50; // 0.05%
         liquidationMultiplier = 12000; //12%

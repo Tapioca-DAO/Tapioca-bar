@@ -273,7 +273,7 @@ contract SGLLiquidation is SGLCommon {
         uint256 returnedShare = yieldBox.balanceOf(address(this), assetId) -
             uint256(totalAsset.elastic);
         uint256 extraShare = returnedShare - allBorrowShare;
-        uint256 callerShare = (extraShare * 1e3) / FEE_PRECISION; // 1% goes to caller
+        uint256 callerShare = (extraShare * callerFee) / FEE_PRECISION; // 1% goes to caller
 
         emit Liquidated(
             msg.sender,
@@ -370,9 +370,8 @@ contract SGLLiquidation is SGLCommon {
         uint256 extraShare = returnedShare > borrowShare
             ? returnedShare - borrowShare
             : 0;
-        callerShare= (extraShare * callerReward) / FEE_PRECISION; //89-90%
-        feeShare = extraShare - callerShare; //10-20%
-
+        feeShare = (extraShare * protocolFee) / FEE_PRECISION; // x% of profit goes to fee.
+        callerShare = (extraShare * callerReward) / FEE_PRECISION; //  y%  of profit goes to caller.
 
         if (feeShare > 0) {
             yieldBox.transfer(
