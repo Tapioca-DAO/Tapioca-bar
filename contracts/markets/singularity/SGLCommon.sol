@@ -101,7 +101,7 @@ contract SGLCommon is SGLStorage {
         _totalBorrow.elastic += uint128(extraAmount);
 
         uint256 feeAmount = (extraAmount * protocolFee) / FEE_PRECISION; // % of interest paid goes to fee
-        feeFraction = (feeAmount * _totalAsset.base) / fullAssetAmount;
+        feeFraction = (feeAmount * _totalBorrow.base) / fullAssetAmount;
         _accrueInfo.feesEarnedFraction += uint128(feeFraction);
         _totalAsset.base = _totalAsset.base + uint128(feeFraction);
 
