@@ -32,6 +32,7 @@ import {
     MagnetarMarketModule__factory,
     MagnetarV2__factory,
     Cluster__factory,
+    MagnetarHelper__factory,
 } from '../gitsub_tapioca-sdk/src/typechain/tapioca-periphery';
 
 import {
@@ -608,15 +609,21 @@ async function registerTwTapMock(deployer: any) {
     const twTap = await TwTapMock.deploy();
     return { twTap };
 }
-async function registerMagnetar(deployer: any) {
+async function registerMagnetar(clusterAddress: string, deployer: any) {
     const MagnetarV2 = new MagnetarV2__factory(deployer);
     const MagnetarMarketMoodule = new MagnetarMarketModule__factory(deployer);
     const magnetarMarketModule = await MagnetarMarketMoodule.deploy();
     const magnetar = await MagnetarV2.deploy(
+        clusterAddress,
         deployer.address,
         magnetarMarketModule.address,
     );
     return { magnetar };
+}
+async function registerMagnetarHelper(deployer: any) {
+    const MagnetarHelper = new MagnetarHelper__factory(deployer);
+    const magnetarHelper = await MagnetarHelper.deploy(deployer.address);
+    return { magnetarHelper };
 }
 
 async function registerMultiSwapper(
@@ -1609,8 +1616,12 @@ export async function register(staging?: boolean) {
     log('USDC, WETH, TAP and WBTC were set on twTap', staging);
 
     log('Deploying Magnetar', staging);
-    const { magnetar } = await registerMagnetar(deployer);
+    const { magnetar } = await registerMagnetar(cluster.address, deployer);
     log(`Deployed Magnetar ${magnetar.address}`, staging);
+
+    log('Deploying MagnetarHelper', staging);
+    const { magnetarHelper } = await registerMagnetarHelper(deployer);
+    log(`Deployed MagnetarHelper ${magnetar.address}`, staging);
 
     // ------------------- 9 Deploy & set LiquidationQueue -------------------
     log('Registering WETHUSDC LiquidationQueue', staging);
@@ -1864,6 +1875,7 @@ export async function register(staging?: boolean) {
         createSimpleSwapData,
         twTap,
         cluster,
+        magnetarHelper,
     };
 
     /**

@@ -30,7 +30,7 @@ import {
 } from '../gitsub_tapioca-sdk/src/typechain/tapiocaz';
 import TapiocaOFTArtifact from '../gitsub_tapioca-sdk/src/artifacts/tapiocaz/TapiocaOFT.json';
 
-describe('Singularity test', () => {
+describe.only('Singularity test', () => {
     describe('test', () => {
         it.skip('should compute the right closing factor', async () => {
             const { wethUsdcSingularity, wbtcBigBangMarket, deployer, bar } =
@@ -1160,6 +1160,7 @@ describe('Singularity test', () => {
                 magnetar,
                 wethUsdcOracle,
                 __wethUsdcPrice,
+                magnetarHelper,
             } = await loadFixture(register);
 
             const assetId = await wethUsdcSingularity.assetId();
@@ -1247,7 +1248,7 @@ describe('Singularity test', () => {
             ).equal(await yieldBox.toShare(collateralId, usdcMintVal, false));
 
             const dataFromHelper = (
-                await magnetar.singularityMarketInfo(eoa1.address, [
+                await magnetarHelper.singularityMarketInfo(eoa1.address, [
                     wethUsdcSingularity.address,
                 ])
             )[0];
@@ -1355,6 +1356,7 @@ describe('Singularity test', () => {
                 magnetar,
                 wethUsdcOracle,
                 __wethUsdcPrice,
+                magnetarHelper,
             } = await loadFixture(register);
 
             const assetId = await wethUsdcSingularity.assetId();
@@ -1442,7 +1444,7 @@ describe('Singularity test', () => {
             ).equal(await yieldBox.toShare(collateralId, usdcMintVal, false));
 
             const dataFromHelper = (
-                await magnetar.singularityMarketInfo(eoa1.address, [
+                await magnetarHelper.singularityMarketInfo(eoa1.address, [
                     wethUsdcSingularity.address,
                 ])
             )[0];
@@ -1813,6 +1815,7 @@ describe('Singularity test', () => {
                 __wethUsdcPrice,
                 weth,
                 eoa1,
+                magnetarHelper,
             } = await loadFixture(register);
 
             const wethAmount = BN(1e18).mul(1);
@@ -1834,10 +1837,11 @@ describe('Singularity test', () => {
                 wethAmount,
             );
 
-            const amountFromShares = await magnetar.getAmountForBorrowPart(
-                wethUsdcSingularity.address,
-                await wethUsdcSingularity.userBorrowPart(deployer.address),
-            );
+            const amountFromShares =
+                await magnetarHelper.getAmountForBorrowPart(
+                    wethUsdcSingularity.address,
+                    await wethUsdcSingularity.userBorrowPart(deployer.address),
+                );
 
             expect(amountFromShares).to.be.approximately(
                 wethAmount,
@@ -1863,6 +1867,7 @@ describe('Singularity test', () => {
                 timeTravel,
                 magnetar,
                 twTap,
+                magnetarHelper,
             } = await loadFixture(register);
 
             const assetId = await wethUsdcSingularity.assetId();
@@ -1926,12 +1931,13 @@ describe('Singularity test', () => {
                 .connect(eoa1)
                 .repay(eoa1.address, eoa1.address, false, userBorrowPart);
 
-            const feesAmountInAsset = await magnetar.getAmountForAssetFraction(
-                wethUsdcSingularity.address,
-                (
-                    await wethUsdcSingularity.accrueInfo()
-                ).feesEarnedFraction,
-            );
+            const feesAmountInAsset =
+                await magnetarHelper.getAmountForAssetFraction(
+                    wethUsdcSingularity.address,
+                    (
+                        await wethUsdcSingularity.accrueInfo()
+                    ).feesEarnedFraction,
+                );
 
             // Confirm fees accumulation
             expect(userBorrowPart.gt(wethBorrowVal));
@@ -2348,6 +2354,7 @@ describe('Singularity test', () => {
                 magnetar,
                 BN,
                 __wethUsdcPrice,
+                magnetarHelper,
             } = await loadFixture(register);
 
             await initContracts(); // To prevent `Singularity: below minimum`
@@ -2425,14 +2432,14 @@ describe('Singularity test', () => {
                 eoa1.address,
             );
             const minCollateralShareRepay =
-                await magnetar.getCollateralSharesForBorrowPart(
+                await magnetarHelper.getCollateralSharesForBorrowPart(
                     wethUsdcSingularity.address,
                     borrowVal.mul(50).div(100000).add(borrowVal),
                     ethers.BigNumber.from((1e5).toString()),
                     ethers.BigNumber.from((1e18).toString()),
                 );
             const userCollateralShareToRepay =
-                await magnetar.getCollateralSharesForBorrowPart(
+                await magnetarHelper.getCollateralSharesForBorrowPart(
                     wethUsdcSingularity.address,
                     userBorrowPart,
                     ethers.BigNumber.from((1e5).toString()),
@@ -2528,6 +2535,7 @@ describe('Singularity test', () => {
                 bar,
                 BN,
                 __wethUsdcPrice,
+                magnetarHelper,
             } = await loadFixture(register);
 
             await initContracts(); // To prevent `Singularity: below minimum`
@@ -2622,14 +2630,14 @@ describe('Singularity test', () => {
             expect(borrowVal.add(borrowVal.mul(10).div(100)).eq(userBorrowPart))
                 .to.be.true;
             const minCollateralShareRepay =
-                await magnetar.getCollateralSharesForBorrowPart(
+                await magnetarHelper.getCollateralSharesForBorrowPart(
                     wethUsdcSingularity.address,
                     borrowVal.mul(1e4).div(1e5).add(borrowVal),
                     ethers.BigNumber.from((1e5).toString()),
                     ethers.BigNumber.from((1e18).toString()),
                 );
             const userCollateralShareToRepay =
-                await magnetar.getCollateralSharesForBorrowPart(
+                await magnetarHelper.getCollateralSharesForBorrowPart(
                     wethUsdcSingularity.address,
                     userBorrowPart,
                     ethers.BigNumber.from((1e5).toString()),
@@ -2735,6 +2743,7 @@ describe('Singularity test', () => {
                 timeTravel,
                 magnetar,
                 twTap,
+                magnetarHelper,
             } = await loadFixture(register);
 
             const assetId = await wethUsdcSingularity.assetId();
@@ -2798,12 +2807,13 @@ describe('Singularity test', () => {
                 .connect(eoa1)
                 .repay(eoa1.address, eoa1.address, false, userBorrowPart);
 
-            const feesAmountInAsset = await magnetar.getAmountForAssetFraction(
-                wethUsdcSingularity.address,
-                (
-                    await wethUsdcSingularity.accrueInfo()
-                ).feesEarnedFraction,
-            );
+            const feesAmountInAsset =
+                await magnetarHelper.getAmountForAssetFraction(
+                    wethUsdcSingularity.address,
+                    (
+                        await wethUsdcSingularity.accrueInfo()
+                    ).feesEarnedFraction,
+                );
 
             // Confirm fees accumulation
             expect(userBorrowPart.gt(wethBorrowVal));
