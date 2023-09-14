@@ -69,7 +69,7 @@ contract SGLLendingCommon is SGLCommon {
 
         (totalBorrow, part) = totalBorrow.add(amount + feeAmount, true);
         require(
-            totalBorrowCap == 0 || totalBorrow.base <= totalBorrowCap,
+            totalBorrowCap == 0 || totalBorrow.elastic <= totalBorrowCap,
             "SGL: borrow cap reached"
         );
         userBorrowPart[from] += part;
