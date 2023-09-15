@@ -30,7 +30,7 @@ import {
 } from '../gitsub_tapioca-sdk/src/typechain/tapiocaz';
 import TapiocaOFTArtifact from '../gitsub_tapioca-sdk/src/artifacts/tapiocaz/TapiocaOFT.json';
 
-describe.only('Singularity test', () => {
+describe('Singularity test', () => {
     describe('test', () => {
         it.skip('should compute the right closing factor', async () => {
             const { wethUsdcSingularity, wbtcBigBangMarket, deployer, bar } =

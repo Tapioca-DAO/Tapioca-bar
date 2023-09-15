@@ -1623,6 +1623,8 @@ export async function register(staging?: boolean) {
     const { magnetarHelper } = await registerMagnetarHelper(deployer);
     log(`Deployed MagnetarHelper ${magnetar.address}`, staging);
 
+    await magnetar.setHelper(magnetarHelper.address);
+
     // ------------------- 9 Deploy & set LiquidationQueue -------------------
     log('Registering WETHUSDC LiquidationQueue', staging);
     const feeCollector = new ethers.Wallet(
