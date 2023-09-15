@@ -4439,6 +4439,64 @@ describe('Singularity test', () => {
                 ethers.constants.MaxUint256,
             );
 
+            await tapiocaWrapper_10.executeTOFT(
+                tapiocaOFT10.address,
+                tapiocaOFT10.interface.encodeFunctionData('setMinDstGas', [
+                    10,
+                    775,
+                    '200000',
+                ]),
+                true,
+            );
+            await tapiocaWrapper_0.executeTOFT(
+                tapiocaOFT0.address,
+                tapiocaOFT0.interface.encodeFunctionData('setMinDstGas', [
+                    10,
+                    775,
+                    '200000',
+                ]),
+                true,
+            );
+            await tapiocaWrapper_0.executeTOFT(
+                tapiocaOFT0.address,
+                tapiocaOFT0.interface.encodeFunctionData('setMinDstGas', [
+                    0,
+                    775,
+                    '200000',
+                ]),
+                true,
+            );
+
+            await tapiocaWrapper_10.executeTOFT(
+                tapiocaOFT10.address,
+                tapiocaOFT10.interface.encodeFunctionData('setMinDstGas', [
+                    10,
+                    775,
+                    '200000',
+                ]),
+                true,
+            );
+
+            await tapiocaWrapper_10.executeTOFT(
+                tapiocaOFT10.address,
+                tapiocaOFT10.interface.encodeFunctionData('setMinDstGas', [
+                    0,
+                    775,
+                    '200000',
+                ]),
+                true,
+            );
+
+            await USDO_0.setMinDstGas(0, 775, '200000');
+            await USDO_0.setMinDstGas(10, 775, '200000');
+            await USDO_10.setMinDstGas(10, 775, '200000');
+            await USDO_10.setMinDstGas(0, 775, '200000');
+
+            await USDO_10.setMinDstGas(0, 774, '200000');
+            await USDO_10.setMinDstGas(10, 774, '200000');
+            await USDO_0.setMinDstGas(10, 774, '200000');
+            await USDO_0.setMinDstGas(0, 774, '200000');
+
             await SGL_10.multiHopBuyCollateral(
                 deployer.address,
                 0,

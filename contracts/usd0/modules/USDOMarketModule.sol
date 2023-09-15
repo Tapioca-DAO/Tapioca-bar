@@ -45,6 +45,12 @@ contract USDOMarketModule is USDOCommon {
             approvals
         );
 
+        _checkGasLimit(
+            lzDstChainId,
+            PT_MARKET_REMOVE_ASSET,
+            adapterParams,
+            NO_EXTRA_GAS
+        );
         _lzSend(
             lzDstChainId,
             lzPayload,
@@ -87,6 +93,12 @@ contract USDOMarketModule is USDOCommon {
             withdrawParams
         );
 
+        _checkGasLimit(
+            lzDstChainId,
+            PT_YB_SEND_SGL_LEND_OR_REPAY,
+            adapterParams,
+            NO_EXTRA_GAS
+        );
         _lzSend(
             lzDstChainId,
             lzPayload,
