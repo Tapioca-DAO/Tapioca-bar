@@ -146,7 +146,9 @@ contract USDOLeverageModule is USDOCommon {
             _callApproval(approvals);
         }
 
-        ISingularity(externalData.srcMarket).multiHopBuyCollateral(
+        ISingularity(externalData.srcMarket).multiHopBuyCollateral{
+            value: address(this).balance
+        }(
             from,
             _sd2ld(collateralAmountSD),
             _sd2ld(borrowAmountSD),
