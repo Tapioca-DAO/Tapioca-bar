@@ -71,6 +71,14 @@ contract USDOOptionsModule is USDOCommon {
         ICommonData.IApproval[] calldata approvals,
         bytes calldata adapterParams
     ) external payable {
+        require(
+            cluster.isWhitelisted(
+                lzData.lzDstChainId,
+                tapSendData.tapOftAddress
+            ),
+            "USDO: not authorized"
+        ); //fail fast
+
         bytes32 toAddress = LzLib.addressToBytes32(optionsData.from);
 
         (uint256 paymentTokenAmount, ) = _removeDust(
@@ -176,7 +184,10 @@ contract USDOOptionsModule is USDOCommon {
                     ICommonData.IApproval[]
                 )
             );
-
+        require(
+            cluster.isWhitelisted(0, tapSendData.tapOftAddress),
+            "USDO: not authorized"
+        );
         optionsData.paymentTokenAmount = _sd2ld(amountSD);
         uint256 balanceBefore = balanceOf(address(this));
         bool credited = creditedPackets[_srcChainId][_srcAddress][_nonce];
