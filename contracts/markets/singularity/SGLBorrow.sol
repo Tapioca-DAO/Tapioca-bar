@@ -55,7 +55,6 @@ contract SGLBorrow is SGLLendingCommon {
     )
         external
         optionNotPaused(PauseType.Repay)
-        allowedBorrow(from, part)
         notSelf(to)
         returns (uint256 amount)
     {
@@ -64,5 +63,13 @@ contract SGLBorrow is SGLLendingCommon {
         _accrue();
 
         amount = _repay(from, to, skim, part);
+
+        uint256 allowanceShare = _computeAllowanceAmountInAsset(
+            from,
+            exchangeRate,
+            amount,
+            asset.safeDecimals()
+        );
+        _allowedBorrow(from, allowanceShare);
     }
 }
