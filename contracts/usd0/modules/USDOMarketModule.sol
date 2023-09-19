@@ -37,7 +37,34 @@ contract USDOMarketModule is USDOCommon {
         IUSDOBase.IRemoveAndRepay calldata removeAndRepayData,
         ICommonData.IApproval[] calldata approvals
     ) external payable {
-        //allowance is checked on SGl
+        //allowance is also checked on SGl
+        if (from != msg.sender) {
+            if (removeAndRepayData.removeAssetFromSGL) {
+                require(
+                    allowance(from, msg.sender) >=
+                        removeAndRepayData.removeAmount,
+                    "UDSO: sender not approved"
+                );
+                _spendAllowance(
+                    from,
+                    msg.sender,
+                    removeAndRepayData.removeAmount
+                );
+            }
+
+            if (removeAndRepayData.removeCollateralFromBB) {
+                require(
+                    allowance(from, msg.sender) >=
+                        removeAndRepayData.collateralAmount,
+                    "UDSO: sender not approved"
+                );
+                _spendAllowance(
+                    from,
+                    msg.sender,
+                    removeAndRepayData.collateralAmount
+                );
+            }
+        }
 
         bytes memory lzPayload = abi.encode(
             PT_MARKET_REMOVE_ASSET,
