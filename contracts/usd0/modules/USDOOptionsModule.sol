@@ -29,6 +29,8 @@ contract USDOOptionsModule is USDOCommon {
         ISendFrom.LzCallParams calldata sendFromData,
         ICommonData.IApproval[] calldata approvals
     ) external payable {
+        //no allowance check needed because the operation is executed against msg.sender
+
         (amount, ) = _removeDust(amount);
         bytes memory lzPayload = abi.encode(
             PT_SEND_FROM,
@@ -78,6 +80,21 @@ contract USDOOptionsModule is USDOCommon {
             ),
             "USDO: not authorized"
         ); //fail fast
+
+        // allowance is also checked on SGL
+        // check it here as well because tokens are moved over layers
+        if (optionsData.from != msg.sender) {
+            require(
+                allowance(optionsData.from, msg.sender) >=
+                    optionsData.paymentTokenAmount,
+                "UDSO: sender not approved"
+            );
+            _spendAllowance(
+                optionsData.from,
+                msg.sender,
+                optionsData.paymentTokenAmount
+            );
+        }
 
         bytes32 toAddress = LzLib.addressToBytes32(optionsData.from);
 

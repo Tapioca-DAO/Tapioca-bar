@@ -4497,6 +4497,17 @@ describe('Singularity test', () => {
             await USDO_0.setMinDstGas(10, 774, '200000');
             await USDO_0.setMinDstGas(0, 774, '200000');
 
+            await USDO_0.approve(SGL_10.address, ethers.constants.MaxUint256);
+
+            await tapiocaWrapper_0.executeTOFT(
+                tapiocaOFT0.address,
+                tapiocaOFT0.interface.encodeFunctionData('setMinDstGas', [
+                    10,
+                    776,
+                    '200000',
+                ]),
+                true,
+            );
             await SGL_10.multiHopBuyCollateral(
                 deployer.address,
                 0,

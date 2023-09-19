@@ -37,6 +37,8 @@ contract USDOMarketModule is USDOCommon {
         IUSDOBase.IRemoveAndRepay calldata removeAndRepayData,
         ICommonData.IApproval[] calldata approvals
     ) external payable {
+        //allowance is checked on SGl
+
         bytes memory lzPayload = abi.encode(
             PT_MARKET_REMOVE_ASSET,
             to,
@@ -73,8 +75,17 @@ contract USDOMarketModule is USDOCommon {
         ICommonData.IWithdrawParams calldata withdrawParams,
         bytes calldata adapterParams
     ) external payable {
-        bytes32 toAddress = LzLib.addressToBytes32(_to);
+        // allowance is also checked on SGL
+        // check it here as well because tokens are moved over layers
+        if (_from != msg.sender) {
+            require(
+                allowance(_from, msg.sender) >= lendParams.depositAmount,
+                "UDSO: sender not approved"
+            );
+            _spendAllowance(_from, msg.sender, lendParams.depositAmount);
+        }
 
+        bytes32 toAddress = LzLib.addressToBytes32(_to);
         (lendParams.depositAmount, ) = _removeDust(lendParams.depositAmount);
         _debitFrom(
             _from,
@@ -85,6 +96,7 @@ contract USDOMarketModule is USDOCommon {
 
         bytes memory lzPayload = abi.encode(
             PT_YB_SEND_SGL_LEND_OR_REPAY,
+            msg.sender,
             _from,
             _to,
             _ld2sd(lendParams.depositAmount),
@@ -158,6 +170,7 @@ contract USDOMarketModule is USDOCommon {
         (
             ,
             ,
+            ,
             address to,
             uint64 lendAmountSD,
             IUSDOBase.ILendOrRepayParams memory lendParams,
@@ -167,6 +180,7 @@ contract USDOMarketModule is USDOCommon {
                 _payload,
                 (
                     uint16,
+                    address,
                     address,
                     address,
                     uint64,
