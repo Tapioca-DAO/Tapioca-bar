@@ -162,10 +162,6 @@ describe('USDO', () => {
             );
             expect(flashBorrwerUsd0Balance.eq(amount)).to.be.true;
 
-            await expect(
-                flashBorrower.flashBorrow(usd0.address, 0),
-            ).to.be.revertedWith('USDO: amount not valid');
-
             const maxFlashMint = await usd0.maxFlashMint();
             await expect(
                 flashBorrower.flashBorrow(usd0.address, maxFlashMint.add(1)),

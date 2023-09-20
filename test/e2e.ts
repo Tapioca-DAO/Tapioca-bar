@@ -355,7 +355,7 @@ describe('e2e tests', () => {
             usdoBorrowVal,
             usdoBorrowVal,
             true,
-            'SGL: nothing to repay',
+            'Market: no return data',
         );
 
         //try to liquidate
