@@ -38,6 +38,7 @@ contract BBBorrow is BBLendingCommon {
             amount + feeAmount,
             asset.safeDecimals()
         );
+        require(allowanceShare > 0, "BigBang: allowanceShare not valid");
         _allowedBorrow(from, allowanceShare);
         (part, share) = _borrow(from, to, amount);
     }
@@ -62,15 +63,20 @@ contract BBBorrow is BBLendingCommon {
         updateExchangeRate();
 
         _accrue();
-
-        amount = _repay(from, to, part);
+        
+        uint256 partInAmount;
+        Rebase memory _totalBorrow = totalBorrow;
+        (_totalBorrow, partInAmount) = _totalBorrow.sub(part, true);
 
         uint256 allowanceShare = _computeAllowanceAmountInAsset(
-            from,
+            to,
             exchangeRate,
-            amount,
+            partInAmount,
             asset.safeDecimals()
         );
+        require(allowanceShare > 0, "BigBang: allowanceShare not valid");
         _allowedBorrow(from, allowanceShare);
+
+        amount = _repay(from, to, part);
     }
 }
