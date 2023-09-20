@@ -431,6 +431,9 @@ contract SGLLiquidation is SGLCommon {
             "SGL: Invalid swapper"
         );
 
+        totalCollateralShare = totalCollateralShare > collateralShare
+            ? totalCollateralShare - collateralShare
+            : 0;
         if (collateralShare > _yieldBoxShares[user][COLLATERAL_SIG]) {
             _yieldBoxShares[user][COLLATERAL_SIG] = 0; //some assets accrue in time
         } else {
