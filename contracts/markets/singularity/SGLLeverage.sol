@@ -55,7 +55,7 @@ contract SGLLeverage is SGLLendingCommon {
             asset.safeDecimals()
         );
 
-        if(from!= msg.sender) {
+        if (from != msg.sender) {
             require(allowanceShare > 0, "BigBang: allowanceShare not valid");
         }
         _allowedBorrow(from, allowanceShare);

@@ -63,7 +63,7 @@ contract BBBorrow is BBLendingCommon {
         updateExchangeRate();
 
         _accrue();
-        
+
         uint256 partInAmount;
         Rebase memory _totalBorrow = totalBorrow;
         (_totalBorrow, partInAmount) = _totalBorrow.sub(part, true);
