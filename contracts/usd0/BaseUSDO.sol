@@ -89,7 +89,7 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
     /// @param to the recipient
     function rescueEth(uint256 amount, address to) external onlyOwner {
         (bool success, ) = to.call{value: amount}("");
-        require(success, "USDO: transfer failed.");
+        require(success, "USDO: failed");
     }
 
     /// @notice set the max allowed USDO mintable through flashloan
@@ -104,7 +104,7 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
     /// @dev can only be called by the owner
     /// @param _val the new fee
     function setFlashMintFee(uint256 _val) external onlyOwner {
-        require(_val < FLASH_MINT_FEE_PRECISION, "USDO: fee too big");
+        require(_val < FLASH_MINT_FEE_PRECISION, "USDO: big");
         emit FlashMintFeeUpdated(flashMintFee, _val);
         flashMintFee = _val;
     }
@@ -113,7 +113,7 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
     /// @dev conservator can pause the contract
     /// @param _conservator the new address
     function setConservator(address _conservator) external onlyOwner {
-        require(_conservator != address(0), "USDO: address not valid");
+        require(_conservator != address(0), "USDO: unauthorized");
         emit ConservatorUpdated(conservator, _conservator);
         conservator = _conservator;
     }

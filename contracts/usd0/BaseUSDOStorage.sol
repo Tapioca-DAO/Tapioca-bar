@@ -93,14 +93,14 @@ contract BaseUSDOStorage is OFTV2 {
     ) internal pure {
         uint256 slippageMinAmount = amount -
             ((SWAP_MAX_SLIPPAGE * amount) / SLIPPAGE_PRECISION);
-        require(minAmount >= slippageMinAmount, "TOFT_SLIPPAGE");
+        require(minAmount >= slippageMinAmount, "USDO: slippage");
     }
 
     function _getRevertMsg(
         bytes memory _returnData
     ) internal pure returns (string memory) {
         // If the _res length is less than 68, then the transaction failed silently (without a revert message)
-        if (_returnData.length < 68) return "USDO: no return data";
+        if (_returnData.length < 68) return "USDO: data";
         // solhint-disable-next-line no-inline-assembly
         assembly {
             // Slice the sighash.
