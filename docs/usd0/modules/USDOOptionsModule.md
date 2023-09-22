@@ -409,7 +409,7 @@ function exercise(address module, uint16 _srcChainId, bytes _srcAddress, uint64 
 ### exerciseInternal
 
 ```solidity
-function exerciseInternal(address from, uint256 oTAPTokenID, address paymentToken, uint256 tapAmount, address target, ITapiocaOptionsBrokerCrossChain.IExerciseLZSendTapData tapSendData, uint256 paymentTokenAmount, ICommonData.IApproval[] approvals) external nonpayable
+function exerciseInternal(address from, uint256 oTAPTokenID, address paymentToken, uint256 tapAmount, address target, ITapiocaOptionsBrokerCrossChain.IExerciseLZSendTapData tapSendData, uint256 paymentTokenAmount, ICommonData.IApproval[] approvals, uint256 airdropAmount) external nonpayable
 ```
 
 
@@ -428,6 +428,7 @@ function exerciseInternal(address from, uint256 oTAPTokenID, address paymentToke
 | tapSendData | ITapiocaOptionsBrokerCrossChain.IExerciseLZSendTapData | undefined |
 | paymentTokenAmount | uint256 | undefined |
 | approvals | ICommonData.IApproval[] | undefined |
+| airdropAmount | uint256 | undefined |
 
 ### exerciseOption
 
@@ -675,6 +676,22 @@ function minDstGasLookup(uint16, uint16) external view returns (uint256)
 | Name | Type | Description |
 |---|---|---|
 | _0 | uint256 | undefined |
+
+### multiHop
+
+```solidity
+function multiHop(bytes _payload) external nonpayable
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| _payload | bytes | undefined |
 
 ### name
 

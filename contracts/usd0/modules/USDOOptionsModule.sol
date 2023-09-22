@@ -9,6 +9,7 @@ import "tapioca-periph/contracts/interfaces/IPermitBorrow.sol";
 import "tapioca-periph/contracts/interfaces/IPermitAll.sol";
 import "tapioca-periph/contracts/interfaces/ITapiocaOptionsBroker.sol";
 import "tapioca-periph/contracts/interfaces/ISendFrom.sol";
+import "tapioca-periph/contracts/interfaces/ISingularity.sol";
 
 import "./USDOCommon.sol";
 
@@ -110,13 +111,16 @@ contract USDOOptionsModule is USDOCommon {
             toAddress,
             paymentTokenAmount
         );
-
+        (, , uint256 airdropAmount, ) = LzLib.decodeAdapterParams(
+            adapterParams
+        );
         bytes memory lzPayload = abi.encode(
             PT_TAP_EXERCISE,
             _ld2sd(paymentTokenAmount),
             optionsData,
             tapSendData,
-            approvals
+            approvals,
+            airdropAmount
         );
 
         _checkGasLimit(
@@ -195,7 +199,8 @@ contract USDOOptionsModule is USDOCommon {
                 memory optionsData,
             ITapiocaOptionsBrokerCrossChain.IExerciseLZSendTapData
                 memory tapSendData,
-            ICommonData.IApproval[] memory approvals
+            ICommonData.IApproval[] memory approvals,
+            uint256 airdropAmount
         ) = abi.decode(
                 _payload,
                 (
@@ -203,7 +208,8 @@ contract USDOOptionsModule is USDOCommon {
                     uint64,
                     ITapiocaOptionsBrokerCrossChain.IExerciseOptionsData,
                     ITapiocaOptionsBrokerCrossChain.IExerciseLZSendTapData,
-                    ICommonData.IApproval[]
+                    ICommonData.IApproval[],
+                    uint256
                 )
             );
         require(
@@ -233,7 +239,8 @@ contract USDOOptionsModule is USDOCommon {
                 optionsData.target,
                 tapSendData,
                 optionsData.paymentTokenAmount,
-                approvals
+                approvals,
+                airdropAmount
             )
         );
 
@@ -271,7 +278,8 @@ contract USDOOptionsModule is USDOCommon {
         ITapiocaOptionsBrokerCrossChain.IExerciseLZSendTapData
             memory tapSendData,
         uint256 paymentTokenAmount,
-        ICommonData.IApproval[] memory approvals
+        ICommonData.IApproval[] memory approvals,
+        uint256 airdropAmount
     ) public {
         if (approvals.length > 0) {
             _callApproval(approvals);
@@ -297,9 +305,7 @@ contract USDOOptionsModule is USDOCommon {
             }
         }
         if (tapSendData.withdrawOnAnotherChain) {
-            ISendFrom(tapSendData.tapOftAddress).sendFrom{
-                value: address(this).balance
-            }(
+            ISendFrom(tapSendData.tapOftAddress).sendFrom{value: airdropAmount}(
                 address(this),
                 tapSendData.lzDstChainId,
                 LzLib.addressToBytes32(from),
@@ -315,5 +321,50 @@ contract USDOOptionsModule is USDOCommon {
         } else {
             IERC20(tapSendData.tapOftAddress).safeTransfer(from, tapAmount);
         }
+    }
+
+    function multiHop(bytes memory _payload) public {
+        (
+            ,
+            ,
+            address from,
+            uint64 collateralAmountSD,
+            uint64 borrowAmountSD,
+            IUSDOBase.ILeverageSwapData memory swapData,
+            IUSDOBase.ILeverageLZData memory lzData,
+            IUSDOBase.ILeverageExternalContractsData memory externalData,
+            ICommonData.IApproval[] memory approvals,
+            uint256 airdropAmount
+        ) = abi.decode(
+                _payload,
+                (
+                    uint16,
+                    bytes32,
+                    address,
+                    uint64,
+                    uint64,
+                    IUSDOBase.ILeverageSwapData,
+                    IUSDOBase.ILeverageLZData,
+                    IUSDOBase.ILeverageExternalContractsData,
+                    ICommonData.IApproval[],
+                    uint256
+                )
+            );
+
+        if (approvals.length > 0) {
+            _callApproval(approvals);
+        }
+
+        ISingularity(externalData.srcMarket).multiHopBuyCollateral{
+            value: airdropAmount
+        }(
+            from,
+            _sd2ld(collateralAmountSD),
+            _sd2ld(borrowAmountSD),
+            true,
+            swapData,
+            lzData,
+            externalData
+        );
     }
 }

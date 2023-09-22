@@ -34,20 +34,18 @@ contract USDOLeverageModule is USDOCommon {
         ICommonData.IApproval[] calldata approvals
     ) external payable {
         //allowance is also checked on SGl.multiHopBuy
-        if (from != msg.sender) {
-            require(
-                allowance(from, msg.sender) >= collateralAmount,
-                "UDSO: sender not approved"
-            );
-            _spendAllowance(from, msg.sender, collateralAmount);
-        }
-
-        _assureMaxSlippage(borrowAmount, swapData.amountOutMin);
-
+        initMultiHopBuyChecks(
+            from,
+            collateralAmount,
+            borrowAmount,
+            swapData.amountOutMin
+        );
         bytes32 senderBytes = LzLib.addressToBytes32(from);
-
         (collateralAmount, ) = _removeDust(collateralAmount);
         (borrowAmount, ) = _removeDust(borrowAmount);
+        (, , uint256 airdropAmount, ) = LzLib.decodeAdapterParams(
+            airdropAdapterParams
+        );
         bytes memory lzPayload = abi.encode(
             PT_MARKET_MULTIHOP_BUY,
             senderBytes,
@@ -57,9 +55,9 @@ contract USDOLeverageModule is USDOCommon {
             swapData,
             lzData,
             externalData,
-            approvals
+            approvals,
+            airdropAmount
         );
-
         _checkGasLimit(
             lzData.lzSrcChainId,
             PT_MARKET_MULTIHOP_BUY,
@@ -75,6 +73,22 @@ contract USDOLeverageModule is USDOCommon {
             msg.value
         );
         emit SendToChain(lzData.lzSrcChainId, msg.sender, senderBytes, 0);
+    }
+
+    function initMultiHopBuyChecks(
+        address from,
+        uint256 collateralAmount,
+        uint256 borrowAmount,
+        uint256 amountOutMin
+    ) private {
+        if (from != msg.sender) {
+            require(
+                allowance(from, msg.sender) >= collateralAmount,
+                "UDSO: sender not approved"
+            );
+            _spendAllowance(from, msg.sender, collateralAmount);
+        }
+        _assureMaxSlippage(borrowAmount, amountOutMin);
     }
 
     function sendForLeverage(
@@ -100,11 +114,12 @@ contract USDOLeverageModule is USDOCommon {
             cluster.isWhitelisted(lzData.lzDstChainId, externalData.swapper),
             "TOFT_UNAUTHORIZED"
         ); //fail fast
-
         bytes32 senderBytes = LzLib.addressToBytes32(msg.sender);
         (amount, ) = _removeDust(amount);
         _debitFrom(msg.sender, lzEndpoint.getChainId(), senderBytes, amount);
-
+        (, , uint256 airdropAmount, ) = LzLib.decodeAdapterParams(
+            lzData.dstAirdropAdapterParam
+        );
         bytes memory lzPayload = abi.encode(
             PT_LEVERAGE_MARKET_UP,
             senderBytes,
@@ -112,9 +127,9 @@ contract USDOLeverageModule is USDOCommon {
             swapData,
             externalData,
             lzData,
-            leverageFor
+            leverageFor,
+            airdropAmount
         );
-
         _checkGasLimit(
             lzData.lzDstChainId,
             PT_LEVERAGE_MARKET_UP,
@@ -132,49 +147,6 @@ contract USDOLeverageModule is USDOCommon {
         emit SendToChain(lzData.lzDstChainId, msg.sender, senderBytes, amount);
     }
 
-    function multiHop(bytes memory _payload) public {
-        (
-            ,
-            ,
-            address from,
-            uint64 collateralAmountSD,
-            uint64 borrowAmountSD,
-            IUSDOBase.ILeverageSwapData memory swapData,
-            IUSDOBase.ILeverageLZData memory lzData,
-            IUSDOBase.ILeverageExternalContractsData memory externalData,
-            ICommonData.IApproval[] memory approvals
-        ) = abi.decode(
-                _payload,
-                (
-                    uint16,
-                    bytes32,
-                    address,
-                    uint64,
-                    uint64,
-                    IUSDOBase.ILeverageSwapData,
-                    IUSDOBase.ILeverageLZData,
-                    IUSDOBase.ILeverageExternalContractsData,
-                    ICommonData.IApproval[]
-                )
-            );
-
-        if (approvals.length > 0) {
-            _callApproval(approvals);
-        }
-
-        ISingularity(externalData.srcMarket).multiHopBuyCollateral{
-            value: address(this).balance
-        }(
-            from,
-            _sd2ld(collateralAmountSD),
-            _sd2ld(borrowAmountSD),
-            true,
-            swapData,
-            lzData,
-            externalData
-        );
-    }
-
     function leverageUp(
         address module,
         uint16 _srcChainId,
@@ -183,7 +155,6 @@ contract USDOLeverageModule is USDOCommon {
         bytes memory _payload
     ) public {
         require(validModules[module], "USDO: module not valid");
-
         (
             ,
             ,
@@ -191,7 +162,8 @@ contract USDOLeverageModule is USDOCommon {
             IUSDOBase.ILeverageSwapData memory swapData,
             IUSDOBase.ILeverageExternalContractsData memory externalData,
             IUSDOBase.ILeverageLZData memory lzData,
-            address leverageFor
+            address leverageFor,
+            uint256 airdropAmount
         ) = abi.decode(
                 _payload,
                 (
@@ -201,19 +173,14 @@ contract USDOLeverageModule is USDOCommon {
                     IUSDOBase.ILeverageSwapData,
                     IUSDOBase.ILeverageExternalContractsData,
                     IUSDOBase.ILeverageLZData,
-                    address
+                    address,
+                    uint256
                 )
             );
-
         uint256 amount = _sd2ld(amountSD);
         uint256 balanceBefore = balanceOf(address(this));
-        bool credited = creditedPackets[_srcChainId][_srcAddress][_nonce];
-        if (!credited) {
-            _creditTo(_srcChainId, address(this), amount);
-            creditedPackets[_srcChainId][_srcAddress][_nonce] = true;
-        }
+        _checkCredited(_srcChainId, _srcAddress, _nonce, amount);
         uint256 balanceAfter = balanceOf(address(this));
-
         (bool success, bytes memory reason) = module.delegatecall(
             abi.encodeWithSelector(
                 this.leverageUpInternal.selector,
@@ -221,15 +188,14 @@ contract USDOLeverageModule is USDOCommon {
                 swapData,
                 externalData,
                 lzData,
-                leverageFor
+                leverageFor,
+                airdropAmount
             )
         );
-
         if (!success) {
             if (balanceAfter - balanceBefore >= amount) {
                 IERC20(address(this)).safeTransfer(leverageFor, amount);
             }
-
             _storeFailedMessage(
                 _srcChainId,
                 _srcAddress,
@@ -238,8 +204,20 @@ contract USDOLeverageModule is USDOCommon {
                 reason
             );
         }
-
         emit ReceiveFromChain(_srcChainId, leverageFor, amount);
+    }
+
+    function _checkCredited(
+        uint16 _srcChainId,
+        bytes memory _srcAddress,
+        uint64 _nonce,
+        uint256 amount
+    ) private {
+        bool credited = creditedPackets[_srcChainId][_srcAddress][_nonce];
+        if (!credited) {
+            _creditTo(_srcChainId, address(this), amount);
+            creditedPackets[_srcChainId][_srcAddress][_nonce] = true;
+        }
     }
 
     function leverageUpInternal(
@@ -247,7 +225,8 @@ contract USDOLeverageModule is USDOCommon {
         IUSDOBase.ILeverageSwapData memory swapData,
         IUSDOBase.ILeverageExternalContractsData memory externalData,
         IUSDOBase.ILeverageLZData memory lzData,
-        address leverageFor
+        address leverageFor,
+        uint256 airdropAmount
     ) public payable {
         //swap from USDO
         require(
@@ -264,14 +243,12 @@ contract USDOLeverageModule is USDOCommon {
                 false,
                 false
             );
-
         (uint256 amountOut, ) = ISwapper(externalData.swapper).swap(
             _swapperData,
             swapData.amountOutMin,
             address(this),
             swapData.data
         );
-
         //wrap into tOFT
         if (swapData.tokenOut != address(0)) {
             //skip approval for native
@@ -281,12 +258,9 @@ contract USDOLeverageModule is USDOCommon {
         ITapiocaOFTBase(externalData.tOft).wrap{
             value: swapData.tokenOut == address(0) ? amountOut : 0
         }(address(this), address(this), amountOut);
-
         //send to YB & deposit
         ICommonData.IApproval[] memory approvals;
-        ITapiocaOFT(externalData.tOft).sendToYBAndBorrow{
-            value: address(this).balance
-        }(
+        ITapiocaOFT(externalData.tOft).sendToYBAndBorrow{value: airdropAmount}(
             address(this),
             leverageFor,
             lzData.lzSrcChainId,

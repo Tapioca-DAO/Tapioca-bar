@@ -463,7 +463,7 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
             _executeOnDestination(
                 Module.Leverage,
                 abi.encodeWithSelector(
-                    USDOLeverageModule.multiHop.selector,
+                    USDOOptionsModule.multiHop.selector,
                     _payload
                 ),
                 _srcChainId,
