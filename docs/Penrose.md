@@ -213,6 +213,23 @@ Returns the count of clones that exists for a specific masterContract
 |---|---|---|
 | cloneCount | uint256 | total number of clones for the masterContract. |
 
+### cluster
+
+```solidity
+function cluster() external view returns (contract ICluster)
+```
+
+returns the Cluster contract
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | contract ICluster | undefined |
+
 ### conservator
 
 ```solidity
@@ -621,24 +638,6 @@ Set the Conservator address
 |---|---|---|
 | _conservator | address | The new address |
 
-### setSwapper
-
-```solidity
-function setSwapper(contract ISwapper swapper, uint16 lzChainId, bool enable) external nonpayable
-```
-
-Used to register and enable or disable swapper contracts used in closed liquidations.
-
-*can only be called by the owner*
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| swapper | contract ISwapper | The address of the swapper contract that conforms to `ISwapper`. |
-| lzChainId | uint16 | The LZ chain id |
-| enable | bool | True to enable the swapper. To disable use False. |
-
 ### setUsdoToken
 
 ```solidity
@@ -711,29 +710,6 @@ Singularity master contracts
 |---|---|---|
 | location | address | undefined |
 | risk | enum IPenrose.ContractType | undefined |
-
-### swappers
-
-```solidity
-function swappers(uint16 lzChainId, contract ISwapper) external view returns (bool isWhitelisted)
-```
-
-whitelisted swappers
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| lzChainId | uint16 | undefined |
-| _1 | contract ISwapper | undefined |
-
-#### Returns
-
-| Name | Type | Description |
-|---|---|---|
-| isWhitelisted | bool | undefined |
 
 ### tapAssetId
 

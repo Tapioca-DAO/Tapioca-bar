@@ -6,7 +6,10 @@ import {
     loadFixture,
     takeSnapshot,
 } from '@nomicfoundation/hardhat-network-helpers';
-import { LiquidationQueue__factory } from '../gitsub_tapioca-sdk/src/typechain/tapioca-periphery';
+import {
+    LiquidationQueue__factory,
+    Cluster__factory,
+} from '../gitsub_tapioca-sdk/src/typechain/tapioca-periphery';
 import {
     ERC20Mock,
     ERC20Mock__factory,
@@ -36,8 +39,6 @@ describe('Singularity test', () => {
             let x = await wethUsdcSingularity.computeClosingFactor(
                 ethers.utils.parseEther('7600'),
                 ethers.utils.parseEther('10000'),
-                18,
-                18,
                 5,
             );
             console.log(
@@ -49,8 +50,6 @@ describe('Singularity test', () => {
             x = await wethUsdcSingularity.computeClosingFactor(
                 ethers.utils.parseEther('7000'),
                 ethers.utils.parseEther('10000'),
-                18,
-                18,
                 5,
             );
             console.log(
@@ -62,8 +61,6 @@ describe('Singularity test', () => {
             x = await wethUsdcSingularity.computeClosingFactor(
                 ethers.utils.parseEther('8000'),
                 ethers.utils.parseEther('10000'),
-                18,
-                18,
                 5,
             );
             console.log(
@@ -75,8 +72,6 @@ describe('Singularity test', () => {
             x = await wethUsdcSingularity.computeClosingFactor(
                 ethers.utils.parseEther('8000'),
                 '10000000000',
-                18,
-                6,
                 5,
             );
             console.log(
@@ -88,8 +83,6 @@ describe('Singularity test', () => {
             x = await wethUsdcSingularity.computeClosingFactor(
                 ethers.utils.parseEther('4000'),
                 ethers.utils.parseEther('5000'),
-                18,
-                18,
                 5,
             );
             console.log(
@@ -101,8 +94,6 @@ describe('Singularity test', () => {
             x = await wethUsdcSingularity.computeClosingFactor(
                 '8000000000',
                 ethers.utils.parseEther('10000'),
-                6,
-                18,
                 5,
             );
             console.log(
@@ -3737,6 +3728,13 @@ describe('Singularity test', () => {
                 10,
                 deployer,
             );
+            const Cluster = new Cluster__factory(deployer);
+            const Cluster_0 = await Cluster.deploy(
+                await LZEndpointMock_chainID_0.getChainId(),
+            );
+            const Cluster_10 = await Cluster.deploy(
+                await LZEndpointMock_chainID_10.getChainId(),
+            );
 
             //Deploy TapiocaWrapper
             const tapiocaWrapper_0 = await deployTapiocaWrapper(deployer);
@@ -3794,6 +3792,7 @@ describe('Singularity test', () => {
                 await ethers.getContractFactory('Penrose')
             ).deploy(
                 YieldBox_0.address,
+                Cluster_0.address,
                 tap.address,
                 weth.address,
                 await LZEndpointMock_chainID_0.getChainId(),
@@ -4350,9 +4349,15 @@ describe('Singularity test', () => {
             );
             expect(borrowPartBefore.eq(0)).to.be.true;
 
-            await BAR_0.setSwapper(
-                uniV3SwapperMock.address,
+            await Cluster_0.updateContract(
                 await LZEndpointMock_chainID_10.getChainId(),
+                uniV3SwapperMock.address,
+                true,
+            );
+
+            await Cluster_10.updateContract(
+                await LZEndpointMock_chainID_0.getChainId(),
+                uniV3SwapperMock.address,
                 true,
             );
 

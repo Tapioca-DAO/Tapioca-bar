@@ -705,7 +705,7 @@ Entry point for liquidations.
 | maxBorrowParts | uint256[] | A one-to-one mapping to `users`, contains maximum (partial) borrow amounts (to liquidate) of the respective user.        Ignore for `orderBookLiquidation()` |
 | collateralToAssetSwapDatas | bytes[] | Extra swap data        Ignore for `orderBookLiquidation()` |
 | usdoToBorrowedSwapData | bytes | Extra swap data        Ignore for `closedLiquidation()` |
-| swapper | contract ISwapper | Contract address of the `ISwapper` implementation. See `setSwapper`.        Ignore for `orderBookLiquidation()` |
+| swapper | contract ISwapper | Contract address of the `ISwapper` implementation.        Ignore for `orderBookLiquidation()` |
 
 ### liquidateBadDebt
 
@@ -723,7 +723,7 @@ liquidates a position where collateral value is less than the borrowed amount
 |---|---|---|
 | user | address | to liquidate |
 | receiver | address | funds receiver |
-| swapper | contract ISwapper | contract address of the `ISwapper` implementation. See `setSwapper`. |
+| swapper | contract ISwapper | contract address of the `ISwapper` implementation. |
 | collateralToAssetSwapData | bytes | extra swap data |
 
 ### liquidationBonusAmount

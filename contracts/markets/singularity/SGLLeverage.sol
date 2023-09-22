@@ -32,10 +32,7 @@ contract SGLLeverage is SGLLendingCommon {
         notSelf(from)
     {
         require(
-            penrose.swappers(
-                lzData.lzDstChainId,
-                ISwapper(externalData.swapper)
-            ),
+            _isWhitelisted(lzData.lzDstChainId, externalData.swapper),
             "SGL: Invalid swapper"
         );
 
@@ -89,10 +86,7 @@ contract SGLLeverage is SGLLendingCommon {
         notSelf(from)
     {
         require(
-            penrose.swappers(
-                lzData.lzDstChainId,
-                ISwapper(externalData.swapper)
-            ),
+            _isWhitelisted(lzData.lzDstChainId, externalData.swapper),
             "SGL: Invalid swapper"
         );
 
@@ -134,7 +128,7 @@ contract SGLLeverage is SGLLendingCommon {
         returns (uint256 amountOut)
     {
         require(
-            penrose.swappers(penrose.hostLzChainId(), swapper),
+            _isWhitelisted(penrose.hostLzChainId(), address(swapper)),
             "SGL: Invalid swapper"
         );
 
@@ -194,7 +188,7 @@ contract SGLLeverage is SGLLendingCommon {
         returns (uint256 amountOut)
     {
         require(
-            penrose.swappers(penrose.hostLzChainId(), swapper),
+            _isWhitelisted(penrose.hostLzChainId(), address(swapper)),
             "SGL: Invalid swapper"
         );
 

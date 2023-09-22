@@ -20,6 +20,8 @@ import {
     CURVE_DEPLOYMENTS,
     UNISWAP_DEPLOYMENTS,
 } from '../../gitsub_tapioca-sdk/src/api/constants';
+import { buildCluster } from '../deployBuilds/12-buildCluster';
+import { buildClusterSetup } from '../setups/03-buildClusterSetup';
 
 // hh deployFullStack --network goerli
 export const deployFullStack__task = async (
@@ -78,22 +80,41 @@ export const deployFullStack__task = async (
         ybAddress = yb.address;
     }
 
+    let clusterAddress = hre.ethers.constants.AddressZero;
+    let clusterDep = hre.SDK.db
+        .loadGlobalDeployment(tag, 'Cluster', chainInfo.chainId)
+        .find((e) => e.name == 'Cluster');
+
+    if (!clusterDep) {
+        clusterDep = hre.SDK.db
+            .loadLocalDeployment(tag, chainInfo.chainId)
+            .find((e) => e.name == 'Cluster');
+    }
+    if (clusterDep) {
+        clusterAddress = clusterDep.address;
+    }
+
     // 00 - Deploy YieldBox
     const [ybURI, yieldBox] = await buildYieldBox(hre, weth.address);
     VM.add(ybURI).add(yieldBox);
 
-    // 01 - Penrose
+    // 01 - Deploy Cluster
+    const cluster = await buildCluster(hre, chainInfo.lzChainId);
+    VM.add(cluster);
+
+    // 02 - Penrose
     const penrose = await buildPenrose(
         hre,
         tapToken.address,
         weth.address,
         signer.address,
         ybAddress,
+        clusterAddress,
         chainInfo.lzChainId,
     );
     VM.add(penrose);
 
-    // 02 - Master contracts
+    // 03 - Master contracts
     const [sgl, bb] = await buildMasterContracts(hre);
     VM.add(sgl).add(bb);
 
@@ -112,12 +133,12 @@ export const deployFullStack__task = async (
     );
     VM.add(liq).add(borrow).add(collateral).add(leverage);
 
-    // 05 - BigBang Modules
+    // 06 - BigBang Modules
     const [bbLiq, bbBorrow, bbCollateral, bbLeverage] =
         await buildBigBangModules(hre);
     VM.add(bbLiq).add(bbBorrow).add(bbCollateral).add(bbLeverage);
 
-    // 06 USDO
+    // 07 USDO
     const [leverageModule, marketModule, optionsModule] =
         await buildUSDOModules(chainInfo.address, hre, ybAddress);
     VM.add(leverageModule).add(marketModule).add(optionsModule);
@@ -130,7 +151,7 @@ export const deployFullStack__task = async (
     );
     VM.add(usdo);
 
-    // 07 - CurveSwapper-buildStableToUSD0Bidder
+    // 08 - CurveSwapper-buildStableToUSD0Bidder
     const [curveSwapper, curveStableToUsd0] = await buildStableToUSD0Bidder(
         hre,
         CURVE_DEPLOYMENTS[chainInfo?.chainId as EChainID]?.stablePool,
@@ -161,6 +182,7 @@ export const deployFullStack__task = async (
 
     const calls: Multicall3.CallStruct[] = [
         ...(await buildPenroseSetup(hre, vmList)),
+        ...(await buildClusterSetup(hre, vmList)),
         ...(await buildMasterContractsSetup(hre, vmList)),
     ];
 

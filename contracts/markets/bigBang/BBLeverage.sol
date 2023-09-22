@@ -32,7 +32,7 @@ contract BBLeverage is BBLendingCommon {
         returns (uint256 amountOut)
     {
         require(
-            penrose.swappers(penrose.hostLzChainId(), swapper),
+            _isWhitelisted(penrose.hostLzChainId(), address(swapper)),
             "BigBang: Invalid swapper"
         );
         // Let this fail first to save gas:
@@ -101,7 +101,7 @@ contract BBLeverage is BBLendingCommon {
         returns (uint256 amountOut)
     {
         require(
-            penrose.swappers(penrose.hostLzChainId(), swapper),
+            _isWhitelisted(penrose.hostLzChainId(), address(swapper)),
             "BigBang: Invalid swapper"
         );
         _allowedBorrow(from, share);

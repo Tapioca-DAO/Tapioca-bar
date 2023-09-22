@@ -100,4 +100,11 @@ contract BBCommon is BBStorage {
             yieldBox.transfer(from, address(this), _tokenId, share);
         }
     }
+
+    function _isWhitelisted(
+        uint16 _chainId,
+        address _contract
+    ) internal view returns (bool) {
+        return ICluster(penrose.cluster()).isWhitelisted(_chainId, _contract);
+    }
 }

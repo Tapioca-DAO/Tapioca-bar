@@ -249,4 +249,11 @@ contract SGLCommon is SGLStorage {
     ) internal view returns (uint256) {
         return totalBorrow.toElastic(borrowPart, false);
     }
+
+    function _isWhitelisted(
+        uint16 _chainId,
+        address _contract
+    ) internal view returns (bool) {
+        return ICluster(penrose.cluster()).isWhitelisted(_chainId, _contract);
+    }
 }
