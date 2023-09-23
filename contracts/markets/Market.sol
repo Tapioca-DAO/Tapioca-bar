@@ -309,7 +309,7 @@ abstract contract Market is MarketERC20, BoringOwnable {
         uint256 borrowPart = userBorrowPart[user];
         if (borrowPart == 0) return (0, 0, 0);
 
-        Rebase memory _totalBorrow = totalBorrow;
+        Rebase memory _totalBorrow = _accrueView();
 
         uint256 collateralAmountInAsset = _computeMaxBorrowableAmount(
             user,
@@ -360,6 +360,8 @@ abstract contract Market is MarketERC20, BoringOwnable {
     // *** INTERNAL FUNCTIONS *** //
     // ************************** //
     function _accrue() internal virtual;
+
+    function _accrueView() internal view virtual returns (Rebase memory);
 
     function _getRevertMsg(
         bytes memory _returnData

@@ -133,6 +133,15 @@ contract SGLCommon is SGLStorage {
         }
     }
 
+    function _accrueView()
+        internal
+        view
+        override
+        returns (Rebase memory _totalBorrow)
+    {
+        (, _totalBorrow, , , , , ) = _getInterestRate();
+    }
+
     function _accrue() internal override {
         (
             ISingularity.AccrueInfo memory _accrueInfo,

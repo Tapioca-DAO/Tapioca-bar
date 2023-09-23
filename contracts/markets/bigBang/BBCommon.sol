@@ -47,6 +47,25 @@ contract BBCommon is BBStorage {
         _accrue();
     }
 
+    function _accrueView()
+        internal
+        view
+        override
+        returns (Rebase memory _totalBorrow)
+    {
+        uint256 elapsedTime = block.timestamp - accrueInfo.lastAccrued;
+        if (elapsedTime == 0) {
+            return totalBorrow;
+        }
+
+        // Calculate fees
+        _totalBorrow = totalBorrow;
+        uint256 extraAmount = (uint256(_totalBorrow.elastic) *
+            uint64(getDebtRate() / 31536000) *
+            elapsedTime) / 1e18;
+        _totalBorrow.elastic += uint128(extraAmount);
+    }
+
     function _accrue() internal override {
         IBigBang.AccrueInfo memory _accrueInfo = accrueInfo;
         // Number of seconds since accrue was called
