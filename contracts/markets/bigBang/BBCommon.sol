@@ -101,6 +101,17 @@ contract BBCommon is BBStorage {
         }
     }
 
+    function _depositAmountToYb(
+        IERC20 token,
+        address to,
+        uint256 id,
+        uint256 amount
+    ) internal returns (uint256 share) {
+        token.approve(address(yieldBox), 0);
+        token.approve(address(yieldBox), amount);
+        (, share) = yieldBox.depositAsset(id, address(this), to, amount, 0);
+    }
+
     function _isWhitelisted(
         uint16 _chainId,
         address _contract

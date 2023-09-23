@@ -54,10 +54,11 @@ contract SGLLiquidation is SGLCommon {
             true
         );
         userBorrowPart[user] = 0;
+        _yieldBoxShares[user][ASSET_SIG] = 0;
 
         totalCollateralShare -= userCollateralShare[user];
         userCollateralShare[user] = 0;
-
+        _yieldBoxShares[user][COLLATERAL_SIG] = 0;
         _swapCollateralWithAsset(
             collateralShare,
             receiver,
@@ -405,6 +406,18 @@ contract SGLLiquidation is SGLCommon {
             _isWhitelisted(penrose.hostLzChainId(), address(swapper)),
             "SGL: Invalid swapper"
         );
+
+        if (collateralShare > _yieldBoxShares[user][COLLATERAL_SIG]) {
+            _yieldBoxShares[user][COLLATERAL_SIG] = 0; //some assets accrue in time
+        } else {
+            _yieldBoxShares[user][COLLATERAL_SIG] -= collateralShare;
+        }
+
+        if (borrowShare > _yieldBoxShares[user][ASSET_SIG]) {
+            _yieldBoxShares[user][ASSET_SIG] = 0; //some assets accrue in time
+        } else {
+            _yieldBoxShares[user][ASSET_SIG] -= borrowShare;
+        }
 
         _swapCollateralWithAsset(
             collateralShare,
