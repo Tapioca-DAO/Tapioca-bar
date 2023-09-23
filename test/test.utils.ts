@@ -73,6 +73,7 @@ export async function setBalance(addr: string, ether: number) {
 async function registerUsd0Contract(
     chainId: string,
     yieldBox: string,
+    cluster: string,
     owner: string,
     staging?: boolean,
 ) {
@@ -90,19 +91,20 @@ async function registerUsd0Contract(
 
     const usdo_leverage = await (
         await ethers.getContractFactory('USDOLeverageModule')
-    ).deploy(lzEndpointContract.address, yieldBox);
+    ).deploy(lzEndpointContract.address, yieldBox, cluster);
     const usdo_market = await (
         await ethers.getContractFactory('USDOMarketModule')
-    ).deploy(lzEndpointContract.address, yieldBox);
+    ).deploy(lzEndpointContract.address, yieldBox, cluster);
     const usdo_options = await (
         await ethers.getContractFactory('USDOOptionsModule')
-    ).deploy(lzEndpointContract.address, yieldBox);
+    ).deploy(lzEndpointContract.address, yieldBox, cluster);
 
     const usd0 = await (
         await ethers.getContractFactory('USDO')
     ).deploy(
         lzEndpointContract.address,
         yieldBox,
+        cluster,
         owner,
         usdo_leverage.address,
         usdo_market.address,
@@ -1647,6 +1649,7 @@ export async function register(staging?: boolean) {
     const { usd0, lzEndpointContract } = await registerUsd0Contract(
         chainId,
         yieldBox.address,
+        cluster.address,
         deployer.address,
         staging,
     );

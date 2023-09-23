@@ -34,6 +34,7 @@ contract USDO is BaseUSDO, IERC3156FlashLender {
     constructor(
         address _lzEndpoint,
         IYieldBoxBase _yieldBox,
+        ICluster _cluster,
         address _owner,
         address payable _leverageModule,
         address payable _marketModule,
@@ -42,6 +43,7 @@ contract USDO is BaseUSDO, IERC3156FlashLender {
         BaseUSDO(
             _lzEndpoint,
             _yieldBox,
+            _cluster,
             _owner,
             _leverageModule,
             _marketModule,

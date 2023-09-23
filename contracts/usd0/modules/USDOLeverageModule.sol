@@ -19,8 +19,9 @@ contract USDOLeverageModule is BaseUSDOStorage {
 
     constructor(
         address _lzEndpoint,
-        IYieldBoxBase _yieldBox
-    ) BaseUSDOStorage(_lzEndpoint, _yieldBox) {}
+        IYieldBoxBase _yieldBox,
+        ICluster _cluster
+    ) BaseUSDOStorage(_lzEndpoint, _yieldBox, _cluster) {}
 
     function initMultiHopBuy(
         address from,
@@ -73,6 +74,10 @@ contract USDOLeverageModule is BaseUSDOStorage {
             "USDO: token out not valid"
         );
         _assureMaxSlippage(amount, swapData.amountOutMin);
+        require(
+            cluster.isWhitelisted(lzData.lzDstChainId, externalData.swapper),
+            "TOFT_UNAUTHORIZED"
+        ); //fail fast
 
         bytes32 senderBytes = LzLib.addressToBytes32(msg.sender);
         (amount, ) = _removeDust(amount);
@@ -215,6 +220,10 @@ contract USDOLeverageModule is BaseUSDOStorage {
         address leverageFor
     ) public payable {
         //swap from USDO
+        require(
+            cluster.isWhitelisted(0, externalData.swapper),
+            "TOFT_UNAUTHORIZED"
+        );
         _approve(address(this), externalData.swapper, amount);
         ISwapper.SwapData memory _swapperData = ISwapper(externalData.swapper)
             .buildSwapData(
