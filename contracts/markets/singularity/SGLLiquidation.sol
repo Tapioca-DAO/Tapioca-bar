@@ -348,9 +348,11 @@ contract SGLLiquidation is SGLCommon {
             (amountWithBonus * _exchangeRate) / EXCHANGE_RATE_PRECISION,
             false
         );
-        if (collateralShare > userCollateralShare[user]) {
-            collateralShare = userCollateralShare[user];
-        }
+
+        require(
+            collateralShare <= userCollateralShare[user],
+            "BB: not enough collateral"
+        );
         userCollateralShare[user] -= collateralShare;
         require(borrowAmount != 0, "SGL: solvent");
 
