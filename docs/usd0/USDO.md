@@ -439,6 +439,17 @@ function exerciseOption(ITapiocaOptionsBrokerCrossChain.IExerciseOptionsData opt
 | tapSendData | ITapiocaOptionsBrokerCrossChain.IExerciseLZSendTapData | undefined |
 | approvals | ICommonData.IApproval[] | undefined |
 
+### extractFees
+
+```solidity
+function extractFees() external nonpayable
+```
+
+
+
+
+
+
 ### failedMessages
 
 ```solidity
