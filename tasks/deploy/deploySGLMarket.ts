@@ -5,6 +5,8 @@ import { TContract } from 'tapioca-sdk/dist/shared';
 import { Penrose, YieldBox } from '../../typechain';
 import { buildOracleMock } from '../deployBuilds/05-buildOracleMock';
 import { loadVM } from '../utils';
+import ClusterArtifact from '../../gitsub_tapioca-sdk/src/artifacts/tapioca-periphery/Cluster.json';
+import { Cluster } from '../../gitsub_tapioca-sdk/src/typechain/tapioca-periphery';
 
 export const deploySGLMarket__task = async (
     taskArgs: {
@@ -14,6 +16,14 @@ export const deploySGLMarket__task = async (
 ) => {
     console.log('[+] Deploying: SGL market');
     const tag = await hre.SDK.hardhatUtils.askForTag(hre, 'local');
+
+    const chainInfo = hre.SDK.utils.getChainBy(
+        'chainId',
+        await hre.getChainId(),
+    );
+    if (!chainInfo) {
+        throw new Error('Chain not found');
+    }
 
     const {
         yieldBox,
@@ -133,6 +143,29 @@ export const deploySGLMarket__task = async (
         },
     ]);
     VM.save();
+
+    let clusterAddress = hre.ethers.constants.AddressZero;
+    let clusterDep = hre.SDK.db
+        .loadGlobalDeployment(tag, 'Cluster', chainInfo.chainId)
+        .find((e) => e.name == 'Cluster');
+
+    if (!clusterDep) {
+        clusterDep = hre.SDK.db
+            .loadLocalDeployment(tag, chainInfo.chainId)
+            .find((e) => e.name == 'Cluster');
+    }
+    if (clusterDep) {
+        clusterAddress = clusterDep.address;
+    }
+
+    if (clusterAddress != hre.ethers.constants.AddressZero) {
+        const clusterContract = (await hre.ethers.getContractAtFromArtifact(
+            ClusterArtifact,
+            clusterAddress,
+        )) as Cluster;
+
+        await clusterContract.updateContract(0, market.address, true);
+    }
 };
 
 async function loadAssets(

@@ -198,7 +198,10 @@ contract BigBang is BBCommon {
             (bool success, bytes memory result) = address(this).delegatecall(
                 calls[i]
             );
-            require(success || !revertOnFail, _getRevertMsg(result));
+
+            if (!success && revertOnFail) {
+                revert(_getRevertMsg(result));
+            }
             successes[i] = success;
             results[i] = _getRevertMsg(result);
         }
@@ -374,7 +377,7 @@ contract BigBang is BBCommon {
     /// @param users An array of user addresses.
     /// @param maxBorrowParts A one-to-one mapping to `users`, contains maximum (partial) borrow amounts (to liquidate) of the respective user.
     /// @param collateralToAssetSwapDatas Extra swap data
-    /// @param swapper Contract address of the `MultiSwapper` implementation. See `setSwapper`.
+    /// @param swapper Contract address of the `MultiSwapper` implementation.
     function liquidate(
         address[] calldata users,
         uint256[] calldata maxBorrowParts,

@@ -12,15 +12,16 @@ import "tapioca-periph/contracts/interfaces/ISingularity.sol";
 import "tapioca-periph/contracts/interfaces/IPermitBorrow.sol";
 import "tapioca-periph/contracts/interfaces/IPermitAll.sol";
 
-import "../BaseUSDOStorage.sol";
+import "./USDOCommon.sol";
 
-contract USDOLeverageModule is BaseUSDOStorage {
+contract USDOLeverageModule is USDOCommon {
     using SafeERC20 for IERC20;
 
     constructor(
         address _lzEndpoint,
-        IYieldBoxBase _yieldBox
-    ) BaseUSDOStorage(_lzEndpoint, _yieldBox) {}
+        IYieldBoxBase _yieldBox,
+        ICluster _cluster
+    ) BaseUSDOStorage(_lzEndpoint, _yieldBox, _cluster) {}
 
     function initMultiHopBuy(
         address from,
@@ -32,6 +33,8 @@ contract USDOLeverageModule is BaseUSDOStorage {
         bytes calldata airdropAdapterParams,
         ICommonData.IApproval[] calldata approvals
     ) external payable {
+        _assureMaxSlippage(borrowAmount, swapData.amountOutMin);
+
         bytes32 senderBytes = LzLib.addressToBytes32(from);
 
         (collateralAmount, ) = _removeDust(collateralAmount);
@@ -70,6 +73,11 @@ contract USDOLeverageModule is BaseUSDOStorage {
             swapData.tokenOut != address(this),
             "USDO: token out not valid"
         );
+        _assureMaxSlippage(amount, swapData.amountOutMin);
+        require(
+            cluster.isWhitelisted(lzData.lzDstChainId, externalData.swapper),
+            "TOFT_UNAUTHORIZED"
+        ); //fail fast
 
         bytes32 senderBytes = LzLib.addressToBytes32(msg.sender);
         (amount, ) = _removeDust(amount);
@@ -212,6 +220,10 @@ contract USDOLeverageModule is BaseUSDOStorage {
         address leverageFor
     ) public payable {
         //swap from USDO
+        require(
+            cluster.isWhitelisted(0, externalData.swapper),
+            "TOFT_UNAUTHORIZED"
+        );
         _approve(address(this), externalData.swapper, amount);
         ISwapper.SwapData memory _swapperData = ISwapper(externalData.swapper)
             .buildSwapData(
@@ -266,62 +278,5 @@ contract USDOLeverageModule is BaseUSDOStorage {
             }),
             approvals
         );
-    }
-
-    function _callApproval(ICommonData.IApproval[] memory approvals) private {
-        for (uint256 i = 0; i < approvals.length; ) {
-            if (approvals[i].permitBorrow) {
-                try
-                    IPermitBorrow(approvals[i].target).permitBorrow(
-                        approvals[i].owner,
-                        approvals[i].spender,
-                        approvals[i].value,
-                        approvals[i].deadline,
-                        approvals[i].v,
-                        approvals[i].r,
-                        approvals[i].s
-                    )
-                {} catch Error(string memory reason) {
-                    if (!approvals[i].allowFailure) {
-                        revert(reason);
-                    }
-                }
-            } else if (approvals[i].permitAll) {
-                try
-                    IPermitAll(approvals[i].target).permitAll(
-                        approvals[i].owner,
-                        approvals[i].spender,
-                        approvals[i].deadline,
-                        approvals[i].v,
-                        approvals[i].r,
-                        approvals[i].s
-                    )
-                {} catch Error(string memory reason) {
-                    if (!approvals[i].allowFailure) {
-                        revert(reason);
-                    }
-                }
-            } else {
-                try
-                    IERC20Permit(approvals[i].target).permit(
-                        approvals[i].owner,
-                        approvals[i].spender,
-                        approvals[i].value,
-                        approvals[i].deadline,
-                        approvals[i].v,
-                        approvals[i].r,
-                        approvals[i].s
-                    )
-                {} catch Error(string memory reason) {
-                    if (!approvals[i].allowFailure) {
-                        revert(reason);
-                    }
-                }
-            }
-
-            unchecked {
-                ++i;
-            }
-        }
     }
 }

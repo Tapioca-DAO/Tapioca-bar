@@ -494,7 +494,7 @@ Entry point for liquidations.
 | maxBorrowParts | uint256[] | A one-to-one mapping to `users`, contains maximum (partial) borrow amounts (to liquidate) of the respective user.        Ignore for `orderBookLiquidation()` |
 | collateralToAssetSwapDatas | bytes[] | Extra swap data        Ignore for `orderBookLiquidation()` |
 | usdoToBorrowedSwapData | bytes | Extra swap data        Ignore for `closedLiquidation()` |
-| swapper | contract ISwapper | Contract address of the `MultiSwapper` implementation. See `setSwapper`.        Ignore for `orderBookLiquidation()` |
+| swapper | contract ISwapper | Contract address of the `MultiSwapper` implementation.        Ignore for `orderBookLiquidation()` |
 
 ### liquidateBadDebt
 

@@ -89,4 +89,12 @@ contract BBStorage is BoringOwnable, Market {
     constructor() MarketERC20("Tapioca BigBang") {}
 
     function _accrue() internal virtual override {}
+
+    function _accrueView()
+        internal
+        view
+        virtual
+        override
+        returns (Rebase memory)
+    {}
 }

@@ -26,7 +26,7 @@ contract BBLiquidation is BBCommon {
 
         // Closed liquidation using a pre-approved swapper
         require(
-            penrose.swappers(penrose.hostLzChainId(), swapper),
+            _isWhitelisted(penrose.hostLzChainId(), address(swapper)),
             "BigBang: Invalid swapper"
         );
 
@@ -74,7 +74,7 @@ contract BBLiquidation is BBCommon {
     /// @param users An array of user addresses.
     /// @param maxBorrowParts A one-to-one mapping to `users`, contains maximum (partial) borrow amounts (to liquidate) of the respective user.
     /// @param collateralToAssetSwapDatas Extra swap data parameters
-    /// @param swapper Contract address of the `MultiSwapper` implementation. See `setSwapper`.
+    /// @param swapper Contract address of the `MultiSwapper` implementation.
     function liquidate(
         address[] calldata users,
         uint256[] calldata maxBorrowParts,
@@ -194,11 +194,13 @@ contract BBLiquidation is BBCommon {
             (amountWithBonus * _exchangeRate) / EXCHANGE_RATE_PRECISION,
             false
         );
-        if (collateralShare > userCollateralShare[user]) {
-            collateralShare = userCollateralShare[user];
-        }
+
+        require(
+            collateralShare <= userCollateralShare[user],
+            "BB: not enough collateral"
+        );
         userCollateralShare[user] -= collateralShare;
-        require(borrowAmount != 0, "SGL: solvent");
+        require(borrowAmount != 0, "BB: solvent");
 
         totalBorrow.elastic -= uint128(borrowAmount);
         totalBorrow.base -= uint128(borrowPart);
@@ -217,20 +219,24 @@ contract BBLiquidation is BBCommon {
             returnedShare
         );
 
-        uint256 extraShare = returnedShare - borrowShare;
+        uint256 extraShare = returnedShare > borrowShare
+            ? returnedShare - borrowShare
+            : 0;
         feeShare = (extraShare * protocolFee) / FEE_PRECISION; // x% of profit goes to fee.
         callerShare = (extraShare * callerReward) / FEE_PRECISION; //  y%  of profit goes to caller.
 
         //protocol fees should be kept in the contract as we do a yieldBox.depositAsset when we are extracting the fees using `refreshPenroseFees`
-        asset.approve(address(yieldBox), 0);
-        asset.approve(address(yieldBox), type(uint256).max);
-        yieldBox.depositAsset(
-            assetId,
-            address(this),
-            msg.sender,
-            0,
-            callerShare
-        );
+        if (callerShare > 0) {
+            asset.approve(address(yieldBox), 0);
+            asset.approve(address(yieldBox), type(uint256).max);
+            yieldBox.depositAsset(
+                assetId,
+                address(this),
+                msg.sender,
+                0,
+                callerShare
+            );
+        }
         asset.approve(address(yieldBox), 0);
     }
 
@@ -245,7 +251,7 @@ contract BBLiquidation is BBCommon {
 
         // Closed liquidation using a pre-approved swapper
         require(
-            penrose.swappers(penrose.hostLzChainId(), swapper),
+            _isWhitelisted(penrose.hostLzChainId(), address(swapper)),
             "BigBang: Invalid swapper"
         );
 

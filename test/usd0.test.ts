@@ -11,11 +11,12 @@ import {
 describe('USDO', () => {
     describe('views', () => {
         it('should test initial values', async () => {
-            const { registerUsd0Contract, deployer, yieldBox } =
+            const { registerUsd0Contract, deployer, yieldBox, cluster } =
                 await loadFixture(register);
             const { usd0 } = await registerUsd0Contract(
                 '1',
                 yieldBox.address,
+                cluster.address,
                 deployer.address,
             );
 
@@ -37,11 +38,12 @@ describe('USDO', () => {
 
     describe('mint & burn', () => {
         it('should set minters and burners', async () => {
-            const { registerUsd0Contract, deployer, yieldBox } =
+            const { registerUsd0Contract, deployer, yieldBox, cluster } =
                 await loadFixture(register);
             const { usd0 } = await registerUsd0Contract(
                 '1',
                 yieldBox.address,
+                cluster.address,
                 deployer.address,
             );
             const minter = new ethers.Wallet(
@@ -65,11 +67,18 @@ describe('USDO', () => {
         });
 
         it('should mint and burn', async () => {
-            const { registerUsd0Contract, deployer, BN, eoas, yieldBox } =
-                await loadFixture(register);
+            const {
+                registerUsd0Contract,
+                deployer,
+                BN,
+                eoas,
+                yieldBox,
+                cluster,
+            } = await loadFixture(register);
             const { usd0 } = await registerUsd0Contract(
                 '1',
                 yieldBox.address,
+                cluster.address,
                 deployer.address,
             );
             const normalUser = eoas[1];
@@ -98,11 +107,18 @@ describe('USDO', () => {
 
     describe('flashMint', () => {
         it('should flashMint successfully', async () => {
-            const { registerUsd0Contract, deployer, BN, weth, yieldBox } =
-                await loadFixture(register);
+            const {
+                registerUsd0Contract,
+                deployer,
+                BN,
+                weth,
+                yieldBox,
+                cluster,
+            } = await loadFixture(register);
             const { usd0 } = await registerUsd0Contract(
                 '1',
                 yieldBox.address,
+                cluster.address,
                 deployer.address,
             );
 
@@ -133,11 +149,14 @@ describe('USDO', () => {
             await usd0.transfer(flashBorrower.address, flashFee);
 
             const supplyBefore = await usd0.totalSupply();
-
+            const usdoBalanceBefore = await usd0.balanceOf(usd0.address);
             await expect(flashBorrower.flashBorrow(usd0.address, amount)).not.to
                 .be.reverted;
             const supplyAfter = await usd0.totalSupply();
-            expect(supplyAfter.eq(supplyBefore.sub(flashFee))).to.be.true;
+            expect(supplyAfter.eq(supplyBefore)).to.be.true;
+            const usdoBalanceAfter = await usd0.balanceOf(usd0.address);
+            expect(usdoBalanceBefore.eq(usdoBalanceAfter.sub(flashFee))).to.be
+                .true;
             const flashBorrwerUsd0Balance = await usd0.balanceOf(
                 deployer.address,
             );
@@ -158,11 +177,18 @@ describe('USDO', () => {
         });
 
         it('should not flashMint for a malicious operator', async () => {
-            const { registerUsd0Contract, deployer, BN, weth, yieldBox } =
-                await loadFixture(register);
+            const {
+                registerUsd0Contract,
+                deployer,
+                BN,
+                weth,
+                yieldBox,
+                cluster,
+            } = await loadFixture(register);
             const { usd0 } = await registerUsd0Contract(
                 '1',
                 yieldBox.address,
+                cluster.address,
                 deployer.address,
             );
 

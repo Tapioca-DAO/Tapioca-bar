@@ -9,15 +9,17 @@ import "tapioca-periph/contracts/interfaces/IPermitBorrow.sol";
 import "tapioca-periph/contracts/interfaces/IPermitAll.sol";
 import "tapioca-periph/contracts/interfaces/ITapiocaOptionsBroker.sol";
 import "tapioca-periph/contracts/interfaces/ISendFrom.sol";
-import "../BaseUSDOStorage.sol";
 
-contract USDOOptionsModule is BaseUSDOStorage {
+import "./USDOCommon.sol";
+
+contract USDOOptionsModule is USDOCommon {
     using SafeERC20 for IERC20;
 
     constructor(
         address _lzEndpoint,
-        IYieldBoxBase _yieldBox
-    ) BaseUSDOStorage(_lzEndpoint, _yieldBox) {}
+        IYieldBoxBase _yieldBox,
+        ICluster _cluster
+    ) BaseUSDOStorage(_lzEndpoint, _yieldBox, _cluster) {}
 
     function triggerSendFrom(
         uint16 lzDstChainId,
@@ -60,7 +62,8 @@ contract USDOOptionsModule is BaseUSDOStorage {
         ITapiocaOptionsBrokerCrossChain.IExerciseLZData calldata lzData,
         ITapiocaOptionsBrokerCrossChain.IExerciseLZSendTapData
             calldata tapSendData,
-        ICommonData.IApproval[] calldata approvals
+        ICommonData.IApproval[] calldata approvals,
+        bytes calldata adapterParams
     ) external payable {
         bytes32 toAddress = LzLib.addressToBytes32(optionsData.from);
 
@@ -80,10 +83,6 @@ contract USDOOptionsModule is BaseUSDOStorage {
             optionsData,
             tapSendData,
             approvals
-        );
-
-        bytes memory adapterParams = LzLib.buildDefaultAdapterParams(
-            lzData.extraGas
         );
 
         _lzSend(
@@ -188,6 +187,7 @@ contract USDOOptionsModule is BaseUSDOStorage {
                 optionsData.tapAmount,
                 optionsData.target,
                 tapSendData,
+                optionsData.paymentTokenAmount,
                 approvals
             )
         );
@@ -225,19 +225,36 @@ contract USDOOptionsModule is BaseUSDOStorage {
         address target,
         ITapiocaOptionsBrokerCrossChain.IExerciseLZSendTapData
             memory tapSendData,
+        uint256 paymentTokenAmount,
         ICommonData.IApproval[] memory approvals
     ) public {
         if (approvals.length > 0) {
             _callApproval(approvals);
         }
 
+        uint256 paymentTokenBalanceBefore = IERC20(paymentToken).balanceOf(
+            address(this)
+        );
         ITapiocaOptionsBroker(target).exerciseOption(
             oTAPTokenID,
             paymentToken,
             tapAmount
         );
+        uint256 paymentTokenBalanceAfter = IERC20(paymentToken).balanceOf(
+            address(this)
+        );
+
+        if (paymentTokenBalanceBefore > paymentTokenBalanceAfter) {
+            uint256 diff = paymentTokenBalanceBefore - paymentTokenBalanceAfter;
+            if (diff < paymentTokenAmount) {
+                uint256 toReturn = paymentTokenAmount - diff;
+                IERC20(paymentToken).safeTransfer(from, toReturn);
+            }
+        }
         if (tapSendData.withdrawOnAnotherChain) {
-            ISendFrom(tapSendData.tapOftAddress).sendFrom(
+            ISendFrom(tapSendData.tapOftAddress).sendFrom{
+                value: address(this).balance
+            }(
                 address(this),
                 tapSendData.lzDstChainId,
                 LzLib.addressToBytes32(from),
@@ -252,63 +269,6 @@ contract USDOOptionsModule is BaseUSDOStorage {
             );
         } else {
             IERC20(tapSendData.tapOftAddress).safeTransfer(from, tapAmount);
-        }
-    }
-
-    function _callApproval(ICommonData.IApproval[] memory approvals) private {
-        for (uint256 i = 0; i < approvals.length; ) {
-            if (approvals[i].permitBorrow) {
-                try
-                    IPermitBorrow(approvals[i].target).permitBorrow(
-                        approvals[i].owner,
-                        approvals[i].spender,
-                        approvals[i].value,
-                        approvals[i].deadline,
-                        approvals[i].v,
-                        approvals[i].r,
-                        approvals[i].s
-                    )
-                {} catch Error(string memory reason) {
-                    if (!approvals[i].allowFailure) {
-                        revert(reason);
-                    }
-                }
-            } else if (approvals[i].permitAll) {
-                try
-                    IPermitAll(approvals[i].target).permitAll(
-                        approvals[i].owner,
-                        approvals[i].spender,
-                        approvals[i].deadline,
-                        approvals[i].v,
-                        approvals[i].r,
-                        approvals[i].s
-                    )
-                {} catch Error(string memory reason) {
-                    if (!approvals[i].allowFailure) {
-                        revert(reason);
-                    }
-                }
-            } else {
-                try
-                    IERC20Permit(approvals[i].target).permit(
-                        approvals[i].owner,
-                        approvals[i].spender,
-                        approvals[i].value,
-                        approvals[i].deadline,
-                        approvals[i].v,
-                        approvals[i].r,
-                        approvals[i].s
-                    )
-                {} catch Error(string memory reason) {
-                    if (!approvals[i].allowFailure) {
-                        revert(reason);
-                    }
-                }
-            }
-
-            unchecked {
-                ++i;
-            }
         }
     }
 }

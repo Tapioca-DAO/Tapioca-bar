@@ -21,6 +21,8 @@ __/\\\\\\\\\\\\\\\_____/\\\\\\\\\_____/\\\\\\\\\\\\\____/\\\\\\\\\\\_______/\\\\
 
 /// @title USDO OFT contract
 contract USDO is BaseUSDO, IERC3156FlashLender {
+    uint256 private _fees;
+
     modifier notPaused() {
         require(!paused, "USDO: paused");
         _;
@@ -34,6 +36,7 @@ contract USDO is BaseUSDO, IERC3156FlashLender {
     constructor(
         address _lzEndpoint,
         IYieldBoxBase _yieldBox,
+        ICluster _cluster,
         address _owner,
         address payable _leverageModule,
         address payable _marketModule,
@@ -42,6 +45,7 @@ contract USDO is BaseUSDO, IERC3156FlashLender {
         BaseUSDO(
             _lzEndpoint,
             _yieldBox,
+            _cluster,
             _owner,
             _leverageModule,
             _marketModule,
@@ -98,11 +102,12 @@ contract USDO is BaseUSDO, IERC3156FlashLender {
                 FLASH_MINT_CALLBACK_SUCCESS,
             "USDO: failed"
         );
-
         uint256 _allowance = allowance(address(receiver), address(this));
         require(_allowance >= (amount + fee), "USDO: repay not approved");
-        _approve(address(receiver), address(this), _allowance - (amount + fee));
+        _spendAllowance(address(receiver), address(this), amount + fee);
         _burn(address(receiver), amount + fee);
+        _mint(address(this), fee);
+        _fees += fee;
         return true;
     }
 
@@ -120,5 +125,18 @@ contract USDO is BaseUSDO, IERC3156FlashLender {
     function burn(address _from, uint256 _amount) external notPaused {
         require(allowedBurner[_getChainId()][msg.sender], "USDO: unauthorized");
         _burn(_from, _amount);
+    }
+
+    // ************************ //
+    // *** OWNER FUNCTIONS *** //
+    // ************************ //
+    function extractFees() external onlyOwner {
+        if (_fees > 0) {
+            uint256 balance = balanceOf(address(this));
+
+            uint256 toExtract = balance >= _fees ? _fees : balance;
+            _fees -= toExtract;
+            transfer(msg.sender, toExtract); //owner calls it; no need for a require check
+        }
     }
 }

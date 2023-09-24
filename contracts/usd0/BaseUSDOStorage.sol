@@ -11,11 +11,13 @@ import "@openzeppelin/contracts/token/ERC20/extensions/draft-ERC20Permit.sol";
 //TAPIOCA
 import "tapioca-periph/contracts/interfaces/IYieldBoxBase.sol";
 import {IUSDOBase} from "tapioca-periph/contracts/interfaces/IUSDO.sol";
+import "tapioca-periph/contracts/interfaces/ICluster.sol";
 
 contract BaseUSDOStorage is OFTV2 {
     /// @notice the YieldBox address.
     IYieldBoxBase public immutable yieldBox;
-
+    /// @notice The Cluster address
+    ICluster public cluster;
     /// @notice returns the Conservator address
     address public conservator;
     /// @notice addresses allowed to mint USDO
@@ -45,6 +47,9 @@ contract BaseUSDOStorage is OFTV2 {
     uint16 internal constant PT_TAP_EXERCISE = 777;
     uint16 internal constant PT_SEND_FROM = 778;
 
+    uint256 internal constant SWAP_MAX_SLIPPAGE = 500; //5%
+    uint256 internal constant SLIPPAGE_PRECISION = 1e4;
+
     // ************** //
     // *** EVENTS *** //
     // ************** //
@@ -65,7 +70,8 @@ contract BaseUSDOStorage is OFTV2 {
 
     constructor(
         address _lzEndpoint,
-        IYieldBoxBase _yieldBox
+        IYieldBoxBase _yieldBox,
+        ICluster _cluster
     ) OFTV2("USDO", "USDO", 8, _lzEndpoint) {
         uint256 chain = _getChainId();
         allowedMinter[chain][msg.sender] = true;
@@ -74,10 +80,20 @@ contract BaseUSDOStorage is OFTV2 {
         maxFlashMint = 100_000 * 1e18; // 100k USDO
 
         yieldBox = _yieldBox;
+        cluster = _cluster;
     }
 
     function _getChainId() internal view returns (uint256) {
         return ILayerZeroEndpoint(lzEndpoint).getChainId();
+    }
+
+    function _assureMaxSlippage(
+        uint256 amount,
+        uint256 minAmount
+    ) internal pure {
+        uint256 slippageMinAmount = amount -
+            ((SWAP_MAX_SLIPPAGE * amount) / SLIPPAGE_PRECISION);
+        require(minAmount >= slippageMinAmount, "TOFT_SLIPPAGE");
     }
 
     function _getRevertMsg(

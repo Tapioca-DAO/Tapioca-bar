@@ -64,11 +64,12 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
     constructor(
         address _lzEndpoint,
         IYieldBoxBase _yieldBox,
+        ICluster _cluster,
         address _owner,
         address payable _leverageModule,
         address payable _marketModule,
         address payable _optionsModule
-    ) BaseUSDOStorage(_lzEndpoint, _yieldBox) ERC20Permit("USDO") {
+    ) BaseUSDOStorage(_lzEndpoint, _yieldBox, _cluster) ERC20Permit("USDO") {
         leverageModule = USDOLeverageModule(_leverageModule);
         marketModule = USDOMarketModule(_marketModule);
         optionsModule = USDOOptionsModule(_optionsModule);
@@ -198,7 +199,8 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
         ITapiocaOptionsBrokerCrossChain.IExerciseLZData calldata lzData,
         ITapiocaOptionsBrokerCrossChain.IExerciseLZSendTapData
             calldata tapSendData,
-        ICommonData.IApproval[] calldata approvals
+        ICommonData.IApproval[] calldata approvals,
+        bytes calldata adapterParams
     ) external payable {
         _executeModule(
             Module.Options,
@@ -207,7 +209,8 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
                 optionsData,
                 lzData,
                 tapSendData,
-                approvals
+                approvals,
+                adapterParams
             ),
             false
         );

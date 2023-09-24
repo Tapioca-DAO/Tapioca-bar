@@ -508,7 +508,7 @@ Entry point for liquidations.
 | users | address[] | An array of user addresses. |
 | maxBorrowParts | uint256[] | A one-to-one mapping to `users`, contains maximum (partial) borrow amounts (to liquidate) of the respective user. |
 | collateralToAssetSwapDatas | bytes[] | Extra swap data parameters |
-| swapper | contract ISwapper | Contract address of the `MultiSwapper` implementation. See `setSwapper`. |
+| swapper | contract ISwapper | Contract address of the `MultiSwapper` implementation. |
 
 ### liquidateBadDebt
 

@@ -266,6 +266,23 @@ function circulatingSupply() external view returns (uint256)
 |---|---|---|
 | _0 | uint256 | undefined |
 
+### cluster
+
+```solidity
+function cluster() external view returns (contract ICluster)
+```
+
+The Cluster address
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | contract ICluster | undefined |
+
 ### conservator
 
 ```solidity
@@ -406,7 +423,7 @@ function estimateSendFee(uint16 _dstChainId, bytes32 _toAddress, uint256 _amount
 ### exerciseOption
 
 ```solidity
-function exerciseOption(ITapiocaOptionsBrokerCrossChain.IExerciseOptionsData optionsData, ITapiocaOptionsBrokerCrossChain.IExerciseLZData lzData, ITapiocaOptionsBrokerCrossChain.IExerciseLZSendTapData tapSendData, ICommonData.IApproval[] approvals) external payable
+function exerciseOption(ITapiocaOptionsBrokerCrossChain.IExerciseOptionsData optionsData, ITapiocaOptionsBrokerCrossChain.IExerciseLZData lzData, ITapiocaOptionsBrokerCrossChain.IExerciseLZSendTapData tapSendData, ICommonData.IApproval[] approvals, bytes adapterParams) external payable
 ```
 
 
@@ -421,6 +438,18 @@ function exerciseOption(ITapiocaOptionsBrokerCrossChain.IExerciseOptionsData opt
 | lzData | ITapiocaOptionsBrokerCrossChain.IExerciseLZData | undefined |
 | tapSendData | ITapiocaOptionsBrokerCrossChain.IExerciseLZSendTapData | undefined |
 | approvals | ICommonData.IApproval[] | undefined |
+| adapterParams | bytes | undefined |
+
+### extractFees
+
+```solidity
+function extractFees() external nonpayable
+```
+
+
+
+
+
 
 ### failedMessages
 

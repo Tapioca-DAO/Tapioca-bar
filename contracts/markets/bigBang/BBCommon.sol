@@ -47,6 +47,25 @@ contract BBCommon is BBStorage {
         _accrue();
     }
 
+    function _accrueView()
+        internal
+        view
+        override
+        returns (Rebase memory _totalBorrow)
+    {
+        uint256 elapsedTime = block.timestamp - accrueInfo.lastAccrued;
+        if (elapsedTime == 0) {
+            return totalBorrow;
+        }
+
+        // Calculate fees
+        _totalBorrow = totalBorrow;
+        uint256 extraAmount = (uint256(_totalBorrow.elastic) *
+            uint64(getDebtRate() / 31536000) *
+            elapsedTime) / 1e18;
+        _totalBorrow.elastic += uint128(extraAmount);
+    }
+
     function _accrue() internal override {
         IBigBang.AccrueInfo memory _accrueInfo = accrueInfo;
         // Number of seconds since accrue was called
@@ -99,5 +118,23 @@ contract BBCommon is BBStorage {
         } else {
             yieldBox.transfer(from, address(this), _tokenId, share);
         }
+    }
+
+    function _depositAmountToYb(
+        IERC20 token,
+        address to,
+        uint256 id,
+        uint256 amount
+    ) internal returns (uint256 share) {
+        token.approve(address(yieldBox), 0);
+        token.approve(address(yieldBox), amount);
+        (, share) = yieldBox.depositAsset(id, address(this), to, amount, 0);
+    }
+
+    function _isWhitelisted(
+        uint16 _chainId,
+        address _contract
+    ) internal view returns (bool) {
+        return ICluster(penrose.cluster()).isWhitelisted(_chainId, _contract);
     }
 }

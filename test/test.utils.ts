@@ -31,6 +31,7 @@ import {
     CurveStableToUsdoBidder__factory,
     MagnetarMarketModule__factory,
     MagnetarV2__factory,
+    Cluster__factory,
 } from '../gitsub_tapioca-sdk/src/typechain/tapioca-periphery';
 
 import {
@@ -72,6 +73,7 @@ export async function setBalance(addr: string, ether: number) {
 async function registerUsd0Contract(
     chainId: string,
     yieldBox: string,
+    cluster: string,
     owner: string,
     staging?: boolean,
 ) {
@@ -89,19 +91,20 @@ async function registerUsd0Contract(
 
     const usdo_leverage = await (
         await ethers.getContractFactory('USDOLeverageModule')
-    ).deploy(lzEndpointContract.address, yieldBox);
+    ).deploy(lzEndpointContract.address, yieldBox, cluster);
     const usdo_market = await (
         await ethers.getContractFactory('USDOMarketModule')
-    ).deploy(lzEndpointContract.address, yieldBox);
+    ).deploy(lzEndpointContract.address, yieldBox, cluster);
     const usdo_options = await (
         await ethers.getContractFactory('USDOOptionsModule')
-    ).deploy(lzEndpointContract.address, yieldBox);
+    ).deploy(lzEndpointContract.address, yieldBox, cluster);
 
     const usd0 = await (
         await ethers.getContractFactory('USDO')
     ).deploy(
         lzEndpointContract.address,
         yieldBox,
+        cluster,
         owner,
         usdo_leverage.address,
         usdo_market.address,
@@ -260,6 +263,7 @@ async function registerYieldBox(wethAddress: string, staging?: boolean) {
 
 async function registerPenrose(
     yieldBox: string,
+    cluster: string,
     tapAddress: string,
     wethAddress: string,
     staging?: boolean,
@@ -268,6 +272,7 @@ async function registerPenrose(
         await ethers.getContractFactory('Penrose')
     ).deploy(
         yieldBox,
+        cluster,
         tapAddress,
         wethAddress,
         1,
@@ -637,11 +642,6 @@ async function registerMultiSwapper(
         staging,
     );
 
-    await (
-        await bar.setSwapper(multiSwapper.address, 0, true, {
-            gasPrice: gasPrice,
-        })
-    ).wait();
     log('Swapper was set on Penrose', staging);
 
     await verifyEtherscan(
@@ -1463,10 +1463,25 @@ export async function register(staging?: boolean) {
     );
     log(`Deployed YieldBox ${yieldBox.address}`, staging);
 
-    // ------------------- 2.1 Deploy Penrose -------------------
+    // -------------------  2.1 Deploy Yieldbox -------------------
+    const chainInfo = hre.SDK.utils.getChainBy(
+        'chainId',
+        await hre.getChainId(),
+    );
+    const Cluster = new Cluster__factory(deployer);
+    const cluster = await Cluster.deploy(chainInfo?.lzChainId ?? 1, {
+        gasPrice: gasPrice,
+    });
+    log(
+        `Deployed Cluster ${cluster.address} with args [${chainInfo?.lzChainId}]`,
+        staging,
+    );
+
+    // ------------------- 2.2 Deploy Penrose -------------------
     log('Deploying Penrose', staging);
     const { bar } = await registerPenrose(
         yieldBox.address,
+        cluster.address,
         tap.address,
         weth.address,
         staging,
@@ -1634,6 +1649,7 @@ export async function register(staging?: boolean) {
     const { usd0, lzEndpointContract } = await registerUsd0Contract(
         chainId,
         yieldBox.address,
+        cluster.address,
         deployer.address,
         staging,
     );
@@ -1770,6 +1786,13 @@ export async function register(staging?: boolean) {
         );
     }
 
+    // ------------------- 19 Set multiswapper -------------------
+    await (
+        await cluster.updateContract(0, multiSwapper.address, true, {
+            gasPrice: gasPrice,
+        })
+    ).wait();
+
     /**
      * OTHERS
      */
@@ -1840,6 +1863,7 @@ export async function register(staging?: boolean) {
         __tapUsdoMockPair,
         createSimpleSwapData,
         twTap,
+        cluster,
     };
 
     /**

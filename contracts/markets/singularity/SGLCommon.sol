@@ -133,6 +133,15 @@ contract SGLCommon is SGLStorage {
         }
     }
 
+    function _accrueView()
+        internal
+        view
+        override
+        returns (Rebase memory _totalBorrow)
+    {
+        (, _totalBorrow, , , , , ) = _getInterestRate();
+    }
+
     function _accrue() internal override {
         (
             ISingularity.AccrueInfo memory _accrueInfo,
@@ -248,5 +257,12 @@ contract SGLCommon is SGLStorage {
         uint256 borrowPart
     ) internal view returns (uint256) {
         return totalBorrow.toElastic(borrowPart, false);
+    }
+
+    function _isWhitelisted(
+        uint16 _chainId,
+        address _contract
+    ) internal view returns (bool) {
+        return ICluster(penrose.cluster()).isWhitelisted(_chainId, _contract);
     }
 }

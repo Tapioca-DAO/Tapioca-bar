@@ -26,7 +26,7 @@ contract SGLLiquidation is SGLCommon {
 
         // Closed liquidation using a pre-approved swapper
         require(
-            penrose.swappers(penrose.hostLzChainId(), swapper),
+            _isWhitelisted(penrose.hostLzChainId(), address(swapper)),
             "SGL: Invalid swapper"
         );
 
@@ -54,10 +54,11 @@ contract SGLLiquidation is SGLCommon {
             true
         );
         userBorrowPart[user] = 0;
+        _yieldBoxShares[user][ASSET_SIG] = 0;
 
         totalCollateralShare -= userCollateralShare[user];
         userCollateralShare[user] = 0;
-
+        _yieldBoxShares[user][COLLATERAL_SIG] = 0;
         _swapCollateralWithAsset(
             collateralShare,
             receiver,
@@ -75,7 +76,7 @@ contract SGLLiquidation is SGLCommon {
     /// @param users An array of user addresses.
     /// @param maxBorrowParts A one-to-one mapping to `users`, contains maximum (partial) borrow amounts (to liquidate) of the respective user.
     ///        Ignore for `orderBookLiquidation()`
-    /// @param swapper Contract address of the `MultiSwapper` implementation. See `setSwapper`.
+    /// @param swapper Contract address of the `MultiSwapper` implementation.
     ///        Ignore for `orderBookLiquidation()`
     /// @param collateralToAssetSwapDatas Extra swap data
     ///        Ignore for `orderBookLiquidation()`
@@ -347,9 +348,11 @@ contract SGLLiquidation is SGLCommon {
             (amountWithBonus * _exchangeRate) / EXCHANGE_RATE_PRECISION,
             false
         );
-        if (collateralShare > userCollateralShare[user]) {
-            collateralShare = userCollateralShare[user];
-        }
+
+        require(
+            collateralShare <= userCollateralShare[user],
+            "BB: not enough collateral"
+        );
         userCollateralShare[user] -= collateralShare;
         require(borrowAmount != 0, "SGL: solvent");
 
@@ -364,12 +367,23 @@ contract SGLLiquidation is SGLCommon {
     ) private returns (uint256 feeShare, uint256 callerShare) {
         uint256 returnedShare = yieldBox.balanceOf(address(this), assetId) -
             uint256(totalAsset.elastic);
-        uint256 extraShare = returnedShare - borrowShare;
+        uint256 extraShare = returnedShare > borrowShare
+            ? returnedShare - borrowShare
+            : 0;
         feeShare = (extraShare * protocolFee) / FEE_PRECISION; // x% of profit goes to fee.
         callerShare = (extraShare * callerReward) / FEE_PRECISION; //  y%  of profit goes to caller.
 
-        yieldBox.transfer(address(this), address(penrose), assetId, feeShare);
-        yieldBox.transfer(address(this), msg.sender, assetId, callerShare);
+        if (feeShare > 0) {
+            yieldBox.transfer(
+                address(this),
+                address(penrose),
+                assetId,
+                feeShare
+            );
+        }
+        if (callerShare > 0) {
+            yieldBox.transfer(address(this), msg.sender, assetId, callerShare);
+        }
 
         totalAsset.elastic += uint128(returnedShare - feeShare - callerShare);
 
@@ -402,9 +416,21 @@ contract SGLLiquidation is SGLCommon {
 
         // Closed liquidation using a pre-approved swapper
         require(
-            penrose.swappers(penrose.hostLzChainId(), swapper),
+            _isWhitelisted(penrose.hostLzChainId(), address(swapper)),
             "SGL: Invalid swapper"
         );
+
+        if (collateralShare > _yieldBoxShares[user][COLLATERAL_SIG]) {
+            _yieldBoxShares[user][COLLATERAL_SIG] = 0; //some assets accrue in time
+        } else {
+            _yieldBoxShares[user][COLLATERAL_SIG] -= collateralShare;
+        }
+
+        if (borrowShare > _yieldBoxShares[user][ASSET_SIG]) {
+            _yieldBoxShares[user][ASSET_SIG] = 0; //some assets accrue in time
+        } else {
+            _yieldBoxShares[user][ASSET_SIG] -= borrowShare;
+        }
 
         _swapCollateralWithAsset(
             collateralShare,
@@ -436,7 +462,7 @@ contract SGLLiquidation is SGLCommon {
     /// @param users An array of user addresses.
     /// @param maxBorrowParts A one-to-one mapping to `users`, contains maximum (partial) borrow amounts (to liquidate) of the respective user.
     /// @param swapDatas Swap necessary data
-    /// @param swapper Contract address of the `MultiSwapper` implementation. See `setSwapper`.
+    /// @param swapper Contract address of the `MultiSwapper` implementation.
     function _closedLiquidation(
         address[] calldata users,
         uint256[] calldata maxBorrowParts,

@@ -10,6 +10,7 @@ import "tapioca-sdk/dist/contracts/YieldBox/contracts/strategies/ERC20WithoutStr
 import "tapioca-periph/contracts/interfaces/ISingularity.sol";
 import "tapioca-periph/contracts/interfaces/IPenrose.sol";
 import "tapioca-periph/contracts/interfaces/ITwTap.sol";
+import "tapioca-periph/contracts/interfaces/ICluster.sol";
 
 // TODO: Permissionless market deployment
 ///     + asset registration? (toggle to renounce ownership so users can call)
@@ -23,6 +24,8 @@ contract Penrose is BoringOwnable, BoringFactory {
     address public conservator;
     /// @notice returns the pause state of the contract
     bool public paused;
+    /// @notice returns the Cluster contract
+    ICluster public cluster;
     /// @notice returns the YieldBox contract
     YieldBox public immutable yieldBox;
     /// @notice returns the TAP contract
@@ -49,11 +52,6 @@ contract Penrose is BoringOwnable, BoringFactory {
     mapping(address => bool) public isBigBangMasterContractRegistered;
     // Used to check if a SGL/BB is a real market
     mapping(address => bool) public isMarketRegistered;
-
-    /// @notice whitelisted swappers
-    mapping(uint16 lzChainId => mapping(ISwapper => bool isWhitelisted))
-        public swappers;
-
     /// @notice default LZ Chain id
     uint16 public hostLzChainId;
 
@@ -67,18 +65,21 @@ contract Penrose is BoringOwnable, BoringFactory {
 
     /// @notice creates a Penrose contract
     /// @param _yieldBox YieldBox contract address
+    /// @param _cluster Cluster contract address
     /// @param tapToken_ TapOFT contract address
     /// @param mainToken_ WETH contract address
     /// @param _hostLzChainId the default protocol's LZ chain id
     /// @param _owner owner address
     constructor(
         YieldBox _yieldBox,
+        ICluster _cluster,
         IERC20 tapToken_,
         IERC20 mainToken_,
         uint16 _hostLzChainId,
         address _owner
     ) {
         yieldBox = _yieldBox;
+        cluster = _cluster;
         tapToken = tapToken_;
         owner = _owner;
 
@@ -365,6 +366,7 @@ contract Penrose is BoringOwnable, BoringFactory {
         returns (address _contract)
     {
         _contract = deploy(mc, data, useCreate2);
+        require(_contract != address(0), "Penrose: zero address");
         require(_contract.code.length > 0, "Penrose: deployment failed");
         isMarketRegistered[_contract] = true;
         emit RegisterSingularity(_contract, mc);
@@ -400,6 +402,7 @@ contract Penrose is BoringOwnable, BoringFactory {
         returns (address _contract)
     {
         _contract = deploy(mc, data, useCreate2);
+        require(_contract != address(0), "Penrose: zero address");
         require(_contract.code.length > 0, "Penrose: deployment failed");
         isMarketRegistered[_contract] = true;
         emit RegisterBigBang(_contract, mc);
@@ -449,29 +452,14 @@ contract Penrose is BoringOwnable, BoringFactory {
         }
     }
 
-    /// @notice Used to register and enable or disable swapper contracts used in closed liquidations.
-    /// @dev can only be called by the owner
-    /// @param swapper The address of the swapper contract that conforms to `ISwapper`.
-    /// @param lzChainId The LZ chain id
-    /// @param enable True to enable the swapper. To disable use False.
-    function setSwapper(
-        ISwapper swapper,
-        uint16 lzChainId,
-        bool enable
-    ) external onlyOwner {
-        if (lzChainId == 0) {
-            lzChainId = hostLzChainId;
-        }
-        swappers[lzChainId][swapper] = enable;
-        emit SwapperUpdate(address(swapper), lzChainId, enable);
-    }
-
     // ************************* //
     // *** PRIVATE FUNCTIONS *** //
     // ************************* //
     function _getRevertMsg(
         bytes memory _returnData
     ) private pure returns (string memory) {
+        if (_returnData.length > 1000) return "SGL: reason too long";
+
         // If the _res length is less than 68, then the transaction failed silently (without a revert message)
         if (_returnData.length < 68) return "SGL: no return data";
         // solhint-disable-next-line no-inline-assembly

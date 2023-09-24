@@ -45,7 +45,7 @@ contract BBLendingCommon is BBCommon {
         address to,
         uint256 amount
     ) internal returns (uint256 part, uint256 share) {
-        uint256 feeAmount = (amount * borrowOpeningFee) / FEE_PRECISION; // A flat % fee is charged for any borrow
+        uint256 feeAmount = _computeOpeningFee(amount);
         openingFees[to] += feeAmount;
 
         (totalBorrow, part) = totalBorrow.add(amount + feeAmount, true);
@@ -61,11 +61,11 @@ contract BBLendingCommon is BBCommon {
         IUSDOBase(address(asset)).mint(address(this), amount);
 
         //deposit borrowed amount to user
-        asset.approve(address(yieldBox), 0);
-        asset.approve(address(yieldBox), amount);
-        yieldBox.depositAsset(assetId, address(this), to, amount, 0);
+        share = _depositAmountToYb(asset, to, assetId, amount);
+    }
 
-        share = yieldBox.toShare(assetId, amount, false);
+    function _computeOpeningFee(uint256 amount) private view returns (uint256) {
+        return (amount * borrowOpeningFee) / FEE_PRECISION; // A flat % fee is charged for any borrow
     }
 
     /// @dev Concrete implementation of `repay`.
