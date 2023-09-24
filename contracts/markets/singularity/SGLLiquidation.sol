@@ -18,9 +18,13 @@ contract SGLLiquidation is SGLCommon {
         ISwapper swapper,
         bytes calldata collateralToAssetSwapData
     ) external onlyOwner {
-        // Oracle can fail but we still need to allow liquidations
-        updateExchangeRate();
-        require(exchangeRate > 0, "SGL: exchangeRate not valid");
+        (bool updated, uint256 _exchangeRate) = oracle.get(oracleData);
+        if (updated && _exchangeRate > 0) {
+            exchangeRate = _exchangeRate; //update cached rate
+        } else {
+            _exchangeRate = exchangeRate; //use stored rate
+        }
+        require(_exchangeRate > 0, "BB: current exchangeRate not valid"); //validate stored rate
 
         _accrue();
 
@@ -93,7 +97,14 @@ contract SGLLiquidation is SGLCommon {
         require(users.length > 0, "SGL: nothing to liquidate");
 
         // Oracle can fail but we still need to allow liquidations
-        (, uint256 _exchangeRate) = updateExchangeRate();
+        (bool updated, uint256 _exchangeRate) = oracle.get(oracleData);
+        if (updated && _exchangeRate > 0) {
+            exchangeRate = _exchangeRate; //update cached rate
+        } else {
+            _exchangeRate = exchangeRate; //use stored rate
+        }
+        require(_exchangeRate > 0, "BB: current exchangeRate not valid"); //validate stored rate
+
         _accrue();
 
         if (address(liquidationQueue) != address(0)) {

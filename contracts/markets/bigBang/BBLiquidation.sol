@@ -18,9 +18,13 @@ contract BBLiquidation is BBCommon {
         ISwapper swapper,
         bytes calldata collateralToAssetSwapData
     ) external onlyOwner {
-        // Oracle can fail but we still need to allow liquidations
-        updateExchangeRate();
-        require(exchangeRate > 0, "BigBang: exchangeRate not valid");
+        (bool updated, uint256 _exchangeRate) = oracle.get(oracleData);
+        if (updated && _exchangeRate > 0) {
+            exchangeRate = _exchangeRate; //update cached rate
+        } else {
+            _exchangeRate = exchangeRate; //use stored rate
+        }
+        require(_exchangeRate > 0, "BigBang: current exchangeRate not valid"); //validate stored rate
 
         _accrue();
 
@@ -85,11 +89,17 @@ contract BBLiquidation is BBCommon {
         require(users.length == maxBorrowParts.length, "BB: length mismatch");
         require(
             users.length == collateralToAssetSwapDatas.length,
-            "BB: length mismatch"
+            "BigBang: length mismatch"
         );
 
         // Oracle can fail but we still need to allow liquidations
-        (, uint256 _exchangeRate) = updateExchangeRate();
+        (bool updated, uint256 _exchangeRate) = oracle.get(oracleData);
+        if (updated && _exchangeRate > 0) {
+            exchangeRate = _exchangeRate; //update cached rate
+        } else {
+            _exchangeRate = exchangeRate; //use stored rate
+        }
+        require(_exchangeRate > 0, "BigBang: current exchangeRate not valid"); //validate stored rate
         _accrue();
 
         _closedLiquidation(
@@ -119,7 +129,7 @@ contract BBLiquidation is BBCommon {
         );
 
         uint256 minAssetMount = abi.decode(_dexData, (uint256));
-        require(minAssetMount > 0, "BB: slippage too high");
+        require(minAssetMount > 0, "BigBang: slippage too high");
 
         uint256 balanceBefore = yieldBox.balanceOf(_receiver, assetId);
 
