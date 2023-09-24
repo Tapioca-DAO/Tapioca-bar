@@ -35,6 +35,7 @@ contract SGLBorrow is SGLLendingCommon {
             amount + feeAmount,
             asset.safeDecimals()
         );
+        require(allowanceShare > 0, "BigBang: allowanceShare not valid");
         _allowedBorrow(from, allowanceShare);
 
         (part, share) = _borrow(from, to, amount);
@@ -62,14 +63,19 @@ contract SGLBorrow is SGLLendingCommon {
 
         _accrue();
 
-        amount = _repay(from, to, skim, part);
+        uint256 partInAmount;
+        Rebase memory _totalBorrow = totalBorrow;
+        (_totalBorrow, partInAmount) = _totalBorrow.sub(part, true);
 
         uint256 allowanceShare = _computeAllowanceAmountInAsset(
-            from,
+            to,
             exchangeRate,
-            amount,
+            partInAmount,
             asset.safeDecimals()
         );
+        require(allowanceShare > 0, "SGL: allowanceShare not valid");
         _allowedBorrow(from, allowanceShare);
+
+        amount = _repay(from, to, skim, part);
     }
 }
