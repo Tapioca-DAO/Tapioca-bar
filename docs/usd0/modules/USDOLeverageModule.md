@@ -583,7 +583,7 @@ function leverageUp(address module, uint16 _srcChainId, bytes _srcAddress, uint6
 ### leverageUpInternal
 
 ```solidity
-function leverageUpInternal(uint256 amount, IUSDOBase.ILeverageSwapData swapData, IUSDOBase.ILeverageExternalContractsData externalData, IUSDOBase.ILeverageLZData lzData, address leverageFor) external payable
+function leverageUpInternal(uint256 amount, IUSDOBase.ILeverageSwapData swapData, IUSDOBase.ILeverageExternalContractsData externalData, IUSDOBase.ILeverageLZData lzData, address leverageFor, uint256 airdropAmount) external payable
 ```
 
 
@@ -599,6 +599,7 @@ function leverageUpInternal(uint256 amount, IUSDOBase.ILeverageSwapData swapData
 | externalData | IUSDOBase.ILeverageExternalContractsData | undefined |
 | lzData | IUSDOBase.ILeverageLZData | undefined |
 | leverageFor | address | undefined |
+| airdropAmount | uint256 | undefined |
 
 ### lzEndpoint
 
@@ -675,22 +676,6 @@ function minDstGasLookup(uint16, uint16) external view returns (uint256)
 | Name | Type | Description |
 |---|---|---|
 | _0 | uint256 | undefined |
-
-### multiHop
-
-```solidity
-function multiHop(bytes _payload) external nonpayable
-```
-
-
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| _payload | bytes | undefined |
 
 ### name
 
