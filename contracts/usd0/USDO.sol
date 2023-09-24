@@ -92,6 +92,14 @@ contract USDO is BaseUSDO, IERC3156FlashLender {
         uint256 amount,
         bytes calldata data
     ) external override notPaused returns (bool) {
+        if (address(receiver) != msg.sender) {
+            require(
+                allowance(address(receiver), msg.sender) >= amount,
+                "USDO: repay not approved"
+            );
+            _spendAllowance(address(receiver), msg.sender, amount);
+        }
+
         require(!_flashloanEntered, "USDO: reentrancy");
         _flashloanEntered = true;
         require(token == address(this), "USDO: token not valid");
