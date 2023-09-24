@@ -257,12 +257,14 @@ contract USDOLeverageModule is USDOCommon {
         );
 
         //wrap into tOFT
-        IERC20(swapData.tokenOut).approve(externalData.tOft, amountOut);
-        ITapiocaOFTBase(externalData.tOft).wrap(
-            address(this),
-            address(this),
-            amountOut
-        );
+        if (swapData.tokenOut != address(0)) {
+            //skip approval for native
+            IERC20(swapData.tokenOut).approve(externalData.tOft, 0);
+            IERC20(swapData.tokenOut).approve(externalData.tOft, amountOut);
+        }
+        ITapiocaOFTBase(externalData.tOft).wrap{
+            value: swapData.tokenOut == address(0) ? amountOut : 0
+        }(address(this), address(this), amountOut);
 
         //send to YB & deposit
         ICommonData.IApproval[] memory approvals;
