@@ -29,7 +29,9 @@ contract USDOOptionsModule is USDOCommon {
         ISendFrom.LzCallParams calldata sendFromData,
         ICommonData.IApproval[] calldata approvals
     ) external payable {
-        //no allowance check needed because the operation is executed against msg.sender
+        (, , uint256 airdropAmount, ) = LzLib.decodeAdapterParams(
+            airdropAdapterParams
+        );
 
         (amount, ) = _removeDust(amount);
         bytes memory lzPayload = abi.encode(
@@ -38,7 +40,8 @@ contract USDOOptionsModule is USDOCommon {
             _ld2sd(amount),
             sendFromData,
             lzEndpoint.getChainId(),
-            approvals
+            approvals,
+            airdropAmount
         );
 
         _checkGasLimit(
@@ -146,7 +149,8 @@ contract USDOOptionsModule is USDOCommon {
             uint64 amount,
             ISendFrom.LzCallParams memory callParams,
             uint16 lzDstChainId,
-            ICommonData.IApproval[] memory approvals
+            ICommonData.IApproval[] memory approvals,
+            uint256 airdropAmount
         ) = abi.decode(
                 _payload,
                 (
@@ -155,7 +159,8 @@ contract USDOOptionsModule is USDOCommon {
                     uint64,
                     ISendFrom.LzCallParams,
                     uint16,
-                    ICommonData.IApproval[]
+                    ICommonData.IApproval[],
+                    uint256
                 )
             );
 
@@ -163,7 +168,7 @@ contract USDOOptionsModule is USDOCommon {
             _callApproval(approvals);
         }
 
-        ISendFrom(address(this)).sendFrom{value: address(this).balance}(
+        ISendFrom(address(this)).sendFrom{value: airdropAmount}(
             from,
             lzDstChainId,
             LzLib.addressToBytes32(from),
