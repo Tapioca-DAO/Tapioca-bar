@@ -123,7 +123,6 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
     /// @param val the new value
     function updatePause(bool val) external {
         require(msg.sender == conservator, "USDO: unauthorized");
-        require(val != paused, "USDO: same state");
         emit PausedUpdated(paused, val);
         paused = val;
     }

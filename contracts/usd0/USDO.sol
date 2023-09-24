@@ -22,6 +22,7 @@ __/\\\\\\\\\\\\\\\_____/\\\\\\\\\_____/\\\\\\\\\\\\\____/\\\\\\\\\\\_______/\\\\
 /// @title USDO OFT contract
 contract USDO is BaseUSDO, IERC3156FlashLender {
     uint256 private _fees;
+    bool private _flashloanEntered = false;
 
     modifier notPaused() {
         require(!paused, "USDO: paused");
@@ -91,9 +92,10 @@ contract USDO is BaseUSDO, IERC3156FlashLender {
         uint256 amount,
         bytes calldata data
     ) external override notPaused returns (bool) {
+        require(!_flashloanEntered, "USDO: reentrancy");
+        _flashloanEntered = true;
         require(token == address(this), "USDO: token not valid");
         require(maxFlashLoan(token) >= amount, "USDO: amount too big");
-        require(amount > 0, "USDO: amount not valid");
         uint256 fee = flashFee(token, amount);
         _mint(address(receiver), amount);
 
@@ -108,6 +110,7 @@ contract USDO is BaseUSDO, IERC3156FlashLender {
         _burn(address(receiver), amount + fee);
         _mint(address(this), fee);
         _fees += fee;
+        _flashloanEntered = false;
         return true;
     }
 
