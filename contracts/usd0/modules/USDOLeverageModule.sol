@@ -33,7 +33,14 @@ contract USDOLeverageModule is USDOCommon {
         bytes calldata airdropAdapterParams,
         ICommonData.IApproval[] calldata approvals
     ) external payable {
-        //allowance is checked on SGl.multiHopBuy
+        //allowance is also checked on SGl.multiHopBuy
+        if (from != msg.sender) {
+            require(
+                allowance(from, msg.sender) >= collateralAmount,
+                "UDSO: sender not approved"
+            );
+            _spendAllowance(from, msg.sender, collateralAmount);
+        }
 
         _assureMaxSlippage(borrowAmount, swapData.amountOutMin);
 
