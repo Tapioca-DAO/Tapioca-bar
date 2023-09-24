@@ -51,6 +51,12 @@ contract USDOLeverageModule is USDOCommon {
             approvals
         );
 
+        _checkGasLimit(
+            lzData.lzSrcChainId,
+            PT_MARKET_MULTIHOP_BUY,
+            airdropAdapterParams,
+            NO_EXTRA_GAS
+        );
         _lzSend(
             lzData.lzSrcChainId,
             lzPayload,
@@ -93,6 +99,12 @@ contract USDOLeverageModule is USDOCommon {
             leverageFor
         );
 
+        _checkGasLimit(
+            lzData.lzDstChainId,
+            PT_LEVERAGE_MARKET_UP,
+            lzData.dstAirdropAdapterParam,
+            NO_EXTRA_GAS
+        );
         _lzSend(
             lzData.lzDstChainId,
             lzPayload,
