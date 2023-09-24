@@ -28,6 +28,8 @@ contract BBBorrow is BBLendingCommon {
         solvent(from)
         returns (uint256 part, uint256 share)
     {
+        require(amount >= debtStartPoint, "BigBang: borrow amount too small");
+
         if (amount == 0) return (0, 0);
         uint256 feeAmount = (amount * borrowOpeningFee) / FEE_PRECISION;
         uint256 allowanceShare = _computeAllowanceAmountInAsset(
