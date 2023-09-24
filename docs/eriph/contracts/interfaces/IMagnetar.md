@@ -72,51 +72,22 @@ function exitPositionAndRemoveCollateral(address user, ICommonData.ICommonExtern
 | externalData | ICommonData.ICommonExternalContracts | undefined |
 | removeAndRepayData | IUSDOBase.IRemoveAndRepay | undefined |
 
-### getAmountForBorrowPart
+### helper
 
 ```solidity
-function getAmountForBorrowPart(address market, uint256 borrowPart) external view returns (uint256 amount)
+function helper() external view returns (contract IMagnetarHelper)
 ```
 
 
 
 
 
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| market | address | undefined |
-| borrowPart | uint256 | undefined |
 
 #### Returns
 
 | Name | Type | Description |
 |---|---|---|
-| amount | uint256 | undefined |
-
-### getBorrowPartForAmount
-
-```solidity
-function getBorrowPartForAmount(address market, uint256 amount) external view returns (uint256 part)
-```
-
-
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| market | address | undefined |
-| amount | uint256 | undefined |
-
-#### Returns
-
-| Name | Type | Description |
-|---|---|---|
-| part | uint256 | undefined |
+| _0 | contract IMagnetarHelper | undefined |
 
 ### mintFromBBAndLendOnSGL
 
@@ -143,7 +114,7 @@ function mintFromBBAndLendOnSGL(address user, uint256 lendAmount, IUSDOBase.IMin
 ### withdrawToChain
 
 ```solidity
-function withdrawToChain(address yieldBox, address from, uint256 assetId, uint16 dstChainId, bytes32 receiver, uint256 amount, uint256 share, bytes adapterParams, address payable refundAddress, uint256 gas) external payable
+function withdrawToChain(address yieldBox, address from, uint256 assetId, uint16 dstChainId, bytes32 receiver, uint256 amount, bytes adapterParams, address payable refundAddress, uint256 gas) external payable
 ```
 
 
@@ -160,7 +131,6 @@ function withdrawToChain(address yieldBox, address from, uint256 assetId, uint16
 | dstChainId | uint16 | undefined |
 | receiver | bytes32 | undefined |
 | amount | uint256 | undefined |
-| share | uint256 | undefined |
 | adapterParams | bytes | undefined |
 | refundAddress | address payable | undefined |
 | gas | uint256 | undefined |

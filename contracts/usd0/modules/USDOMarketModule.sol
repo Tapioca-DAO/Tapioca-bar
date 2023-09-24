@@ -9,6 +9,7 @@ import "@boringcrypto/boring-solidity/contracts/libraries/BoringRebase.sol";
 import {IUSDOBase} from "tapioca-periph/contracts/interfaces/IUSDO.sol";
 import "tapioca-periph/contracts/interfaces/ITapiocaOFT.sol";
 import "tapioca-periph/contracts/interfaces/IMagnetar.sol";
+import "tapioca-periph/contracts/interfaces/IMagnetarHelper.sol";
 import "tapioca-periph/contracts/interfaces/IMarket.sol";
 import "tapioca-periph/contracts/interfaces/ISingularity.sol";
 import "tapioca-periph/contracts/interfaces/IPermitBorrow.sol";
@@ -215,8 +216,9 @@ contract USDOMarketModule is USDOCommon {
         approve(address(lendParams.marketHelper), lendParams.depositAmount);
         if (lendParams.repay) {
             if (lendParams.repayAmount == 0) {
-                lendParams.repayAmount = IMagnetar(lendParams.marketHelper)
-                    .getBorrowPartForAmount(
+                lendParams.repayAmount = IMagnetarHelper(
+                    IMagnetar(lendParams.marketHelper).helper()
+                ).getBorrowPartForAmount(
                         lendParams.market,
                         lendParams.depositAmount
                     );
