@@ -33,6 +33,8 @@ contract USDOLeverageModule is USDOCommon {
         bytes calldata airdropAdapterParams,
         ICommonData.IApproval[] calldata approvals
     ) external payable {
+        //allowance is checked on SGl.multiHopBuy
+
         _assureMaxSlippage(borrowAmount, swapData.amountOutMin);
 
         bytes32 senderBytes = LzLib.addressToBytes32(from);
@@ -75,6 +77,13 @@ contract USDOLeverageModule is USDOCommon {
         IUSDOBase.ILeverageSwapData calldata swapData,
         IUSDOBase.ILeverageExternalContractsData calldata externalData
     ) external payable {
+        if (leverageFor != msg.sender) {
+            require(
+                allowance(leverageFor, msg.sender) >= amount,
+                "UDSO: sender not approved"
+            );
+            _spendAllowance(leverageFor, msg.sender, amount);
+        }
         require(
             swapData.tokenOut != address(this),
             "USDO: token out not valid"
