@@ -272,6 +272,9 @@ contract BBLiquidation is BBCommon {
             ,
             uint256 collateralShare
         ) = _updateBorrowAndCollateralShare(user, maxBorrowPart, _exchangeRate);
+        totalCollateralShare = totalCollateralShare > collateralShare
+            ? totalCollateralShare - collateralShare
+            : 0;
 
         uint256 borrowShare = yieldBox.toShare(assetId, borrowAmount, true);
         uint256 returnedShare = _swapCollateralWithAsset(
