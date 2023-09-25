@@ -72,7 +72,7 @@ abstract contract Market is MarketERC20, BoringOwnable {
     /// @notice accrual protocol rewards
     uint256 public protocolFee; // 10%
     /// @notice min % a liquidator can receive in rewards
-    uint256 public minLiquidatorReward = 8e3; //80%
+    uint256 public minLiquidatorReward = 8e4; //80%
     /// @notice max % a liquidator can receive in rewards
     uint256 public maxLiquidatorReward = 9e4; //90%
     /// @notice max liquidatable bonus amount

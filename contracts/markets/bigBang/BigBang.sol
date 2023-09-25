@@ -174,8 +174,8 @@ contract BigBang is BBCommon {
             ? _exchangeRatePrecision
             : 1e18;
 
-        minLiquidatorReward = 1e3;
-        maxLiquidatorReward = 1e4;
+        minLiquidatorReward = 8e4;
+        maxLiquidatorReward = 9e4;
         liquidationBonusAmount = 1e4;
         borrowOpeningFee = 50; // 0.05%
         liquidationMultiplier = 12000; //12%
