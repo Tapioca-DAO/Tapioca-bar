@@ -115,7 +115,7 @@ contract Singularity is SGLCommon {
         updateExchangeRate();
 
         //default fees
-        callerFee = 1000; // 1%
+        callerFee = 90000; // 90%
         protocolFee = 10000; // 10%
         borrowOpeningFee = 50; // 0.05%
 

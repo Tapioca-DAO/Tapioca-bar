@@ -232,8 +232,8 @@ contract BBLiquidation is BBCommon {
         uint256 extraShare = returnedShare > borrowShare
             ? returnedShare - borrowShare
             : 0;
-        feeShare = (extraShare * protocolFee) / FEE_PRECISION; // x% of profit goes to fee.
         callerShare = (extraShare * callerReward) / FEE_PRECISION; //  y%  of profit goes to caller.
+        feeShare = extraShare - callerShare; // rest of the profit goes to fee.
 
         //protocol fees should be kept in the contract as we do a yieldBox.depositAsset when we are extracting the fees using `refreshPenroseFees`
         if (callerShare > 0) {

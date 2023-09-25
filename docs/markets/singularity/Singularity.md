@@ -1152,7 +1152,7 @@ function permitBorrow(address owner, address spender, uint256 value, uint256 dea
 function protocolFee() external view returns (uint256)
 ```
 
-liquidation protocol rewards
+accrual protocol rewards
 
 
 
