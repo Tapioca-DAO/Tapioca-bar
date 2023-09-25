@@ -1023,6 +1023,40 @@ liquidation protocol rewards
 |---|---|---|
 | _0 | uint256 | undefined |
 
+### rateTimestamp
+
+```solidity
+function rateTimestamp() external view returns (uint256)
+```
+
+latest timestamp when `exchangeRate` was updated
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | uint256 | undefined |
+
+### rateValidDuration
+
+```solidity
+function rateValidDuration() external view returns (uint256)
+```
+
+cached rate is valid only for the `rateValidDuration` time
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | uint256 | undefined |
+
 ### refreshPenroseFees
 
 ```solidity
@@ -1176,6 +1210,22 @@ sets the borrowing opening fee
 | Name | Type | Description |
 |---|---|---|
 | _val | uint256 | the new value |
+
+### setExchangeRateDuration
+
+```solidity
+function setExchangeRateDuration(uint256 _duration) external nonpayable
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| _duration | uint256 | undefined |
 
 ### setMarketConfig
 
@@ -1506,6 +1556,23 @@ event emitted when the debt rate against the main market is updated
 |---|---|---|
 | oldVal  | uint256 | undefined |
 | newVal  | uint256 | undefined |
+
+### ExchangeRateDurationUpdated
+
+```solidity
+event ExchangeRateDurationUpdated(uint256 _oldVal, uint256 _newVal)
+```
+
+event emitted when `exchangeRate` validation duration is updated
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| _oldVal  | uint256 | undefined |
+| _newVal  | uint256 | undefined |
 
 ### Liquidated
 

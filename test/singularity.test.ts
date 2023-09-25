@@ -1343,6 +1343,41 @@ describe('Singularity test', () => {
         });
     });
 
+    describe('exchangeRate', () => {
+        it('should reset exchange rate validation timestmap', async () => {
+            const { wethUsdcSingularity, timeTravel } = await loadFixture(
+                register,
+            );
+
+            const oldtimestamp = await wethUsdcSingularity.rateTimestamp();
+            expect(oldtimestamp.gt(0)).to.be.true;
+
+            await wethUsdcSingularity.updateExchangeRate();
+            const midtimestamp = await wethUsdcSingularity.rateTimestamp();
+            expect(oldtimestamp.lt(midtimestamp)).to.be.true;
+
+            await timeTravel(2 * 86400);
+            await wethUsdcSingularity.updateExchangeRate();
+            const finaltimestamp = await wethUsdcSingularity.rateTimestamp();
+            expect(finaltimestamp.gt(midtimestamp)).to.be.true;
+        });
+
+        it('should revert if rate is older than validation duration', async () => {
+            const { wethUsdcSingularity, timeTravel, wethUsdcOracle } =
+                await loadFixture(register);
+
+            await wethUsdcSingularity.updateExchangeRate();
+            const timestamp = await wethUsdcSingularity.rateTimestamp();
+            expect(timestamp.gt(0)).to.be.true;
+
+            await wethUsdcOracle.setSuccess(false);
+            await timeTravel(2 * 86400);
+            await expect(
+                wethUsdcSingularity.updateExchangeRate(),
+            ).to.be.revertedWith('Market: rate too old');
+        });
+    });
+
     describe('views', () => {
         it('should compute permit share', async () => {
             const {
