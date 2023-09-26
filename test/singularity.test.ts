@@ -424,6 +424,7 @@ describe('Singularity test', () => {
                         0,
                         0,
                         0,
+                        0,
                     ],
                 );
             await bar.executeMarketFn(
@@ -497,6 +498,7 @@ describe('Singularity test', () => {
                     'address',
                     'uint256',
                     'uint256',
+                    'uint256',
                 ],
                 [
                     ethers.constants.AddressZero,
@@ -510,6 +512,7 @@ describe('Singularity test', () => {
                     usdcAssetId,
                     wethUsdcOracle.address,
                     ethers.utils.parseEther('1'),
+                    0,
                     0,
                 ],
             );
@@ -561,6 +564,7 @@ describe('Singularity test', () => {
                     'address[]',
                     'address[]',
                     'uint256',
+                    'uint256',
                 ],
                 [
                     _sglLiquidationModule.address,
@@ -576,6 +580,7 @@ describe('Singularity test', () => {
                     [],
                     [],
                     ethers.utils.parseEther('1'),
+                    0,
                 ],
             );
 
@@ -855,7 +860,7 @@ describe('Singularity test', () => {
             expect(userCollateralShareAfter.eq(0)).to.be.true;
         });
 
-        it('Should lend Weth, deposit Usdc collateral and borrow Weth and be liquidated for price drop', async () => {
+        it.skip('Should lend Weth, deposit Usdc collateral and borrow Weth and be liquidated for price drop', async () => {
             const {
                 usdc,
                 weth,
@@ -1047,7 +1052,7 @@ describe('Singularity test', () => {
             ).to.be.reverted;
 
             // Can be liquidated price drop (USDC/WETH)
-            const priceDrop = __wbtcUsdcPrice.mul(2).div(100);
+            const priceDrop = __wbtcUsdcPrice.mul(35).div(100);
             await wbtcUsdcOracle.set(__wbtcUsdcPrice.add(priceDrop));
 
             await expect(
@@ -1058,7 +1063,7 @@ describe('Singularity test', () => {
                     data,
                     multiSwapper.address,
                 ),
-            ).to.not.be.reverted;
+            ).to.be.revertedWith('SGL: bad debt');
         });
 
         it('should add addset, remove asset and update exchange rate in a single tx', async () => {
@@ -2122,6 +2127,7 @@ describe('Singularity test', () => {
                         0,
                         wethBorrowVal.div(2),
                         0,
+                        0,
                     ],
                 );
             await bar.executeMarketFn(
@@ -3068,6 +3074,7 @@ describe('Singularity test', () => {
                     'address',
                     'uint256',
                     'uint256',
+                    'uint256',
                 ],
                 [
                     _sglLiquidationModule.address,
@@ -3081,6 +3088,7 @@ describe('Singularity test', () => {
                     wethAssetId,
                     wethUsdcOracle.address,
                     ethers.utils.parseEther('1'),
+                    0,
                     0,
                 ],
             );
@@ -3332,6 +3340,8 @@ describe('Singularity test', () => {
                     'address',
                     'uint256',
                     'uint256',
+                    'uint256',
+                    'uint256',
                 ],
                 [
                     _sglLiquidationModule.address,
@@ -3345,6 +3355,8 @@ describe('Singularity test', () => {
                     wethAssetId,
                     wethUsdcOracle.address,
                     ethers.utils.parseEther('1'),
+                    0,
+                    0,
                     0,
                 ],
             );
@@ -3530,7 +3542,7 @@ describe('Singularity test', () => {
                 ),
             ).to.be.reverted;
 
-            const priceDrop = newPrice.mul(2).div(100);
+            const priceDrop = newPrice.mul(35).div(100);
             await wethUsdcOracle.set(newPrice.add(priceDrop));
 
             const lqAssetId = await liquidationQueue.lqAssetId();

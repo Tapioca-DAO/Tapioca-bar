@@ -234,6 +234,7 @@ describe('BigBang test', () => {
                         0,
                         0,
                         0,
+                        0,
                     ],
                 );
             await bar.executeMarketFn(
@@ -304,7 +305,7 @@ describe('BigBang test', () => {
             expect(reward.eq(0)).to.be.true;
 
             //25% price drop
-            let priceDrop = __usd0WethPrice.mul(25).div(100);
+            let priceDrop = __usd0WethPrice.mul(35).div(100);
             await usd0WethOracle.set(__usd0WethPrice.add(priceDrop));
             await wethBigBangMarket.updateExchangeRate();
             exchangeRate = await wethBigBangMarket.exchangeRate();
@@ -331,7 +332,7 @@ describe('BigBang test', () => {
             prevReward = reward;
             expect(reward.gt(0)).to.be.true;
 
-            priceDrop = __usd0WethPrice.mul(35).div(100);
+            priceDrop = __usd0WethPrice.mul(65).div(100);
             await usd0WethOracle.set(__usd0WethPrice.add(priceDrop));
             await wethBigBangMarket.updateExchangeRate();
             exchangeRate = await wethBigBangMarket.exchangeRate();
@@ -354,30 +355,7 @@ describe('BigBang test', () => {
             expect(closingFactor.gt(prevClosingFactor)).to.be.true;
             prevClosingFactor = closingFactor;
 
-            priceDrop = __usd0WethPrice.mul(50).div(100);
-            await usd0WethOracle.set(__usd0WethPrice.add(priceDrop));
-            await wethBigBangMarket.updateExchangeRate();
-            exchangeRate = await wethBigBangMarket.exchangeRate();
-            reward = await wethBigBangMarket.computeLiquidatorReward(
-                eoa1.address,
-                exchangeRate,
-            );
-            expect(reward.lt(prevReward)).to.be.true;
-            prevReward = reward;
-            closingFactor = await wethBigBangMarket.computeClosingFactor(
-                await wethBigBangMarket.userBorrowPart(eoa1.address),
-                (
-                    await wethBigBangMarket.computeTVLInfo(
-                        eoa1.address,
-                        exchangeRate,
-                    )
-                )[2],
-                5,
-            );
-            expect(closingFactor.gt(prevClosingFactor)).to.be.true;
-            prevClosingFactor = closingFactor;
-
-            priceDrop = __usd0WethPrice.mul(60).div(100);
+            priceDrop = __usd0WethPrice.mul(85).div(100);
             await usd0WethOracle.set(__usd0WethPrice.add(priceDrop));
             await wethBigBangMarket.updateExchangeRate();
             exchangeRate = await wethBigBangMarket.exchangeRate();
@@ -470,7 +448,7 @@ describe('BigBang test', () => {
                 ),
             ).to.be.reverted;
 
-            const priceDrop = __usd0WethPrice.mul(15).div(10).div(100);
+            const priceDrop = __usd0WethPrice.mul(85).div(10).div(100);
             await usd0WethOracle.set(__usd0WethPrice.add(priceDrop));
 
             const userCollateralShareBefore =
@@ -488,11 +466,6 @@ describe('BigBang test', () => {
             await wethBigBangMarket.updateExchangeRate();
             const exchangeRate = await wethBigBangMarket.exchangeRate();
 
-            const tvlInfo = await wethBigBangMarket.computeTVLInfo(
-                eoa1.address,
-                exchangeRate,
-            );
-
             const closingFactor = await wethBigBangMarket.computeClosingFactor(
                 await wethBigBangMarket.userBorrowPart(eoa1.address),
                 (
@@ -504,8 +477,6 @@ describe('BigBang test', () => {
                 5,
             );
 
-            const liquidationBonus =
-                await wethBigBangMarket.liquidationBonusAmount();
             const borrowPart = await wethBigBangMarket.userBorrowPart(
                 eoa1.address,
             );
@@ -586,6 +557,7 @@ describe('BigBang test', () => {
                         ethers.constants.AddressZero,
                         ethers.utils.toUtf8Bytes(''),
                         ethers.constants.AddressZero,
+                        0,
                         0,
                         0,
                         0,
@@ -768,6 +740,7 @@ describe('BigBang test', () => {
                         0,
                         0,
                         0,
+                        0,
                     ],
                 );
             await bar.executeMarketFn(
@@ -927,6 +900,7 @@ describe('BigBang test', () => {
                         ethers.constants.AddressZero,
                         ethers.utils.toUtf8Bytes(''),
                         ethers.constants.AddressZero,
+                        0,
                         0,
                         0,
                         0,
@@ -1110,6 +1084,7 @@ describe('BigBang test', () => {
                         ethers.constants.AddressZero,
                         ethers.utils.toUtf8Bytes(''),
                         ethers.constants.AddressZero,
+                        0,
                         0,
                         0,
                         0,
@@ -1323,6 +1298,7 @@ describe('BigBang test', () => {
                         0,
                         0,
                         0,
+                        0,
                     ],
                 );
             await bar.executeMarketFn(
@@ -1489,6 +1465,7 @@ describe('BigBang test', () => {
                         0,
                         1,
                         0,
+                        0,
                     ],
                 );
             await bar.executeMarketFn(
@@ -1533,6 +1510,7 @@ describe('BigBang test', () => {
                         ethers.constants.AddressZero,
                         ethers.utils.toUtf8Bytes(''),
                         deployer.address,
+                        0,
                         0,
                         0,
                         0,

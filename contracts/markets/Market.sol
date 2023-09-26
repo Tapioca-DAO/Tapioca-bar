@@ -80,6 +80,8 @@ abstract contract Market is MarketERC20, BoringOwnable {
     uint256 public liquidationBonusAmount = 1e4; //10%
     /// @notice collateralization rate
     uint256 public collateralizationRate; // 75%
+    /// @notice liquidation collateralization rate
+    uint256 public liquidationCollateralizationRate; //80%
     /// @notice borrowing opening fee
     uint256 public borrowOpeningFee = 50; //0.05%
     /// @notice liquidation multiplier used to compute liquidator rewards
@@ -135,13 +137,16 @@ abstract contract Market is MarketERC20, BoringOwnable {
     }
 
     /// @dev Checks if the user is solvent in the closed liquidation case at the end of the function body.
-    modifier solvent(address from) {
+    modifier solvent(address from, bool liquidation) {
         updateExchangeRate();
         _accrue();
 
         _;
 
-        require(_isSolvent(from, exchangeRate), "Market: insolvent");
+        require(
+            _isSolvent(from, exchangeRate, liquidation),
+            "Market: insolvent"
+        );
     }
 
     bool internal initialized;
@@ -184,7 +189,8 @@ abstract contract Market is MarketERC20, BoringOwnable {
         uint256 _minLiquidatorReward,
         uint256 _maxLiquidatorReward,
         uint256 _totalBorrowCap,
-        uint256 _collateralizationRate
+        uint256 _collateralizationRate,
+        uint256 _liquidationCollateralizationRate
     ) external onlyOwner {
         if (_borrowOpeningFee > 0) {
             require(_borrowOpeningFee <= FEE_PRECISION, "Market: not valid");
@@ -253,7 +259,19 @@ abstract contract Market is MarketERC20, BoringOwnable {
                 _collateralizationRate <= FEE_PRECISION,
                 "Market: not valid"
             );
+            require(
+                _collateralizationRate <= liquidationCollateralizationRate,
+                "Market: collateralizationRate too big"
+            );
             collateralizationRate = _collateralizationRate;
+        }
+
+        if (_liquidationCollateralizationRate > 0) {
+            require(
+                _liquidationCollateralizationRate >= collateralizationRate,
+                "Market: liquidationCollateralizationRate too small"
+            );
+            liquidationCollateralizationRate = _liquidationCollateralizationRate;
         }
     }
 
@@ -278,13 +296,13 @@ abstract contract Market is MarketERC20, BoringOwnable {
     ) public view returns (uint256) {
         //borrowPart and collateralPartInAsset should already be scaled due to the exchange rate computation
         uint256 liquidationStartsAt = (collateralPartInAsset *
-            collateralizationRate) / (10 ** ratesPrecision);
+            liquidationCollateralizationRate) / (10 ** ratesPrecision);
 
         if (borrowPart < liquidationStartsAt) return 0;
 
         uint256 numerator = borrowPart - liquidationStartsAt;
         uint256 denominator = ((10 ** ratesPrecision) -
-            (collateralizationRate *
+            (liquidationCollateralizationRate *
                 ((10 ** ratesPrecision) + liquidationMultiplier)) /
             (10 ** ratesPrecision)) * (10 ** (18 - ratesPrecision));
 
@@ -398,7 +416,8 @@ abstract contract Market is MarketERC20, BoringOwnable {
     /// @param _exchangeRate The exchange rate. Used to cache the `exchangeRate` between calls.
     function _isSolvent(
         address user,
-        uint256 _exchangeRate
+        uint256 _exchangeRate,
+        bool _liquidation
     ) internal view returns (bool) {
         // accrue must have already been called!
         uint256 borrowPart = userBorrowPart[user];
@@ -417,7 +436,11 @@ abstract contract Market is MarketERC20, BoringOwnable {
         return
             collateralAmount *
                 (EXCHANGE_RATE_PRECISION / FEE_PRECISION) *
-                collateralizationRate >=
+                (
+                    _liquidation
+                        ? liquidationCollateralizationRate
+                        : collateralizationRate
+                ) >=
             // Moved exchangeRate here instead of dividing the other side to preserve more precision
             (borrowPart * _totalBorrow.elastic * _exchangeRate) /
                 _totalBorrow.base;

@@ -25,7 +25,7 @@ contract BBBorrow is BBLendingCommon {
         external
         optionNotPaused(PauseType.Borrow)
         notSelf(to)
-        solvent(from)
+        solvent(from, false)
         returns (uint256 part, uint256 share)
     {
         require(amount >= debtStartPoint, "BigBang: borrow amount too small");

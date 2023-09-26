@@ -535,6 +535,23 @@ max liquidatable bonus amount
 |---|---|---|
 | _0 | uint256 | undefined |
 
+### liquidationCollateralizationRate
+
+```solidity
+function liquidationCollateralizationRate() external view returns (uint256)
+```
+
+liquidation collateralization rate
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | uint256 | undefined |
+
 ### liquidationMultiplier
 
 ```solidity
@@ -893,7 +910,7 @@ sets the borrowing opening fee
 ### setMarketConfig
 
 ```solidity
-function setMarketConfig(uint256 _borrowOpeningFee, contract IOracle _oracle, bytes _oracleData, address _conservator, uint256 _callerFee, uint256 _protocolFee, uint256 _liquidationBonusAmount, uint256 _minLiquidatorReward, uint256 _maxLiquidatorReward, uint256 _totalBorrowCap, uint256 _collateralizationRate) external nonpayable
+function setMarketConfig(uint256 _borrowOpeningFee, contract IOracle _oracle, bytes _oracleData, address _conservator, uint256 _callerFee, uint256 _protocolFee, uint256 _liquidationBonusAmount, uint256 _minLiquidatorReward, uint256 _maxLiquidatorReward, uint256 _totalBorrowCap, uint256 _collateralizationRate, uint256 _liquidationCollateralizationRate) external nonpayable
 ```
 
 sets common market configuration
@@ -915,6 +932,7 @@ sets common market configuration
 | _maxLiquidatorReward | uint256 | undefined |
 | _totalBorrowCap | uint256 | undefined |
 | _collateralizationRate | uint256 | undefined |
+| _liquidationCollateralizationRate | uint256 | undefined |
 
 ### totalBorrow
 

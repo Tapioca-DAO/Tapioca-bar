@@ -89,7 +89,7 @@ contract BBLiquidation is BBCommon {
         require(users.length == maxBorrowParts.length, "BB: length mismatch");
         require(
             users.length == collateralToAssetSwapDatas.length,
-            "BigBang: length mismatch"
+            "BB: length mismatch"
         );
 
         // Oracle can fail but we still need to allow liquidations
@@ -99,7 +99,7 @@ contract BBLiquidation is BBCommon {
         } else {
             _exchangeRate = exchangeRate; //use stored rate
         }
-        require(_exchangeRate > 0, "BigBang: current exchangeRate not valid"); //validate stored rate
+        require(_exchangeRate > 0, "BB: current exchangeRate not valid"); //validate stored rate
         _accrue();
 
         _closedLiquidation(
@@ -257,8 +257,6 @@ contract BBLiquidation is BBCommon {
         uint256 _exchangeRate,
         bytes calldata _dexData
     ) private {
-        if (_isSolvent(user, _exchangeRate)) return;
-
         // Closed liquidation using a pre-approved swapper
         require(
             _isWhitelisted(penrose.hostLzChainId(), address(swapper)),
@@ -316,7 +314,7 @@ contract BBLiquidation is BBCommon {
         uint256 liquidatedCount = 0;
         for (uint256 i = 0; i < users.length; i++) {
             address user = users[i];
-            if (!_isSolvent(user, _exchangeRate)) {
+            if (!_isSolvent(user, _exchangeRate, true)) {
                 liquidatedCount++;
                 _liquidateUser(
                     user,
