@@ -212,7 +212,48 @@ contract MarketERC20 is IERC20, IERC20Permit, EIP712 {
         bytes32 r,
         bytes32 s
     ) external virtual override(IERC20, IERC20Permit) {
-        _permit(true, owner, spender, value, deadline, v, r, s);
+        _permit(true, 0, true, owner, spender, value, deadline, v, r, s);
+    }
+
+    function permitAction(
+        bytes memory data,
+        uint16 actionType
+    ) external virtual {
+        (
+            bool borrow,
+            address owner,
+            address spender,
+            uint256 value,
+            uint256 deadline,
+            uint8 v,
+            bytes32 r,
+            bytes32 s
+        ) = abi.decode(
+                data,
+                (
+                    bool,
+                    address,
+                    address,
+                    uint256,
+                    uint256,
+                    uint8,
+                    bytes32,
+                    bytes32
+                )
+            );
+
+        _permit(
+            false,
+            actionType,
+            borrow,
+            owner,
+            spender,
+            value,
+            deadline,
+            v,
+            r,
+            s
+        );
     }
 
     function permitBorrow(
@@ -224,7 +265,7 @@ contract MarketERC20 is IERC20, IERC20Permit, EIP712 {
         bytes32 r,
         bytes32 s
     ) external virtual {
-        _permit(false, owner, spender, value, deadline, v, r, s);
+        _permit(true, 0, false, owner, spender, value, deadline, v, r, s);
     }
 
     // ************************* //
@@ -243,6 +284,8 @@ contract MarketERC20 is IERC20, IERC20Permit, EIP712 {
     }
 
     function _permit(
+        bool useDefaultBehaviour,
+        uint16 actionType,
         bool asset, // 1 = asset, 0 = collateral
         address owner,
         address spender,
@@ -254,16 +297,32 @@ contract MarketERC20 is IERC20, IERC20Permit, EIP712 {
     ) internal {
         require(block.timestamp <= deadline, "ERC20Permit: expired deadline");
 
-        bytes32 structHash = keccak256(
-            abi.encode(
-                asset ? _PERMIT_TYPEHASH : _PERMIT_TYPEHASH_BORROW,
-                owner,
-                spender,
-                value,
-                _useNonce(owner),
-                deadline
-            )
-        );
+        bytes32 structHash;
+
+        if (useDefaultBehaviour) {
+            structHash = keccak256(
+                abi.encode(
+                    asset ? _PERMIT_TYPEHASH : _PERMIT_TYPEHASH_BORROW,
+                    owner,
+                    spender,
+                    value,
+                    _useNonce(owner),
+                    deadline
+                )
+            );
+        } else {
+            structHash = keccak256(
+                abi.encode(
+                    actionType,
+                    asset ? _PERMIT_TYPEHASH : _PERMIT_TYPEHASH_BORROW,
+                    owner,
+                    spender,
+                    value,
+                    _useNonce(owner),
+                    deadline
+                )
+            );
+        }
 
         bytes32 hash = _hashTypedDataV4(structHash);
 
