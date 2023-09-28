@@ -10,17 +10,6 @@
 
 ## Methods
 
-### accrue
-
-```solidity
-function accrue() external nonpayable
-```
-
-
-
-
-
-
 ### accrueInfo
 
 ```solidity

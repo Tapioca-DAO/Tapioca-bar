@@ -151,17 +151,6 @@ function mainToken() external view returns (address)
 |---|---|---|
 | _0 | address | undefined |
 
-### reAccrueBigBangMarkets
-
-```solidity
-function reAccrueBigBangMarkets() external nonpayable
-```
-
-
-
-
-
-
 ### tapAssetId
 
 ```solidity

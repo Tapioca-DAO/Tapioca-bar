@@ -26,11 +26,11 @@ contract MarketERC20 is IERC20, IERC20Permit, EIP712 {
     // solhint-disable-next-line var-name-mixedcase
     bytes32 private constant _PERMIT_TYPEHASH =
         keccak256(
-            "Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)"
+            "Permit(uint16 actionType,address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)"
         );
     bytes32 private constant _PERMIT_TYPEHASH_BORROW =
         keccak256(
-            "PermitBorrow(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)"
+            "PermitBorrow(uint16 actionType,address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)"
         );
 
     /**
@@ -212,7 +212,7 @@ contract MarketERC20 is IERC20, IERC20Permit, EIP712 {
         bytes32 r,
         bytes32 s
     ) external virtual override(IERC20, IERC20Permit) {
-        _permit(true, 0, true, owner, spender, value, deadline, v, r, s);
+        _permit(0, true, owner, spender, value, deadline, v, r, s);
     }
 
     function permitAction(
@@ -242,18 +242,7 @@ contract MarketERC20 is IERC20, IERC20Permit, EIP712 {
                 )
             );
 
-        _permit(
-            false,
-            actionType,
-            borrow,
-            owner,
-            spender,
-            value,
-            deadline,
-            v,
-            r,
-            s
-        );
+        _permit(actionType, borrow, owner, spender, value, deadline, v, r, s);
     }
 
     function permitBorrow(
@@ -265,7 +254,7 @@ contract MarketERC20 is IERC20, IERC20Permit, EIP712 {
         bytes32 r,
         bytes32 s
     ) external virtual {
-        _permit(true, 0, false, owner, spender, value, deadline, v, r, s);
+        _permit(0, false, owner, spender, value, deadline, v, r, s);
     }
 
     // ************************* //
@@ -284,7 +273,6 @@ contract MarketERC20 is IERC20, IERC20Permit, EIP712 {
     }
 
     function _permit(
-        bool useDefaultBehaviour,
         uint16 actionType,
         bool asset, // 1 = asset, 0 = collateral
         address owner,
@@ -299,34 +287,22 @@ contract MarketERC20 is IERC20, IERC20Permit, EIP712 {
 
         bytes32 structHash;
 
-        if (useDefaultBehaviour) {
-            structHash = keccak256(
-                abi.encode(
-                    asset ? _PERMIT_TYPEHASH : _PERMIT_TYPEHASH_BORROW,
-                    owner,
-                    spender,
-                    value,
-                    _useNonce(owner),
-                    deadline
-                )
-            );
-        } else {
-            structHash = keccak256(
-                abi.encode(
-                    actionType,
-                    asset ? _PERMIT_TYPEHASH : _PERMIT_TYPEHASH_BORROW,
-                    owner,
-                    spender,
-                    value,
-                    _useNonce(owner),
-                    deadline
-                )
-            );
-        }
+        structHash = keccak256(
+            abi.encode(
+                asset ? _PERMIT_TYPEHASH : _PERMIT_TYPEHASH_BORROW,
+                actionType,
+                owner,
+                spender,
+                value,
+                _useNonce(owner),
+                deadline
+            )
+        );
 
         bytes32 hash = _hashTypedDataV4(structHash);
 
         address signer = ECDSA.recover(hash, v, r, s);
+
         require(signer == owner, "ERC20Permit: invalid signature");
 
         if (asset) {
