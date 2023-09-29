@@ -175,7 +175,7 @@ contract USDOMarketModule is USDOCommon {
 
         //approvals
         if (approvals.length > 0) {
-            _callApproval(approvals);
+            _callApproval(approvals, PT_MARKET_REMOVE_ASSET);
         }
 
         IMagnetar(externalData.magnetar).exitPositionAndRemoveCollateral(
@@ -262,7 +262,7 @@ contract USDOMarketModule is USDOCommon {
         ICommonData.IWithdrawParams memory withdrawParams
     ) public payable {
         if (approvals.length > 0) {
-            _callApproval(approvals);
+            _callApproval(approvals, PT_YB_SEND_SGL_LEND_OR_REPAY);
         }
 
         // Use market helper to deposit and add asset to market
