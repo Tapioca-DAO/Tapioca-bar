@@ -166,7 +166,7 @@ contract BigBang is BBCommon {
         oracle = _oracle;
         updateExchangeRate();
         callerFee = 90000; // 90%
-        protocolFee = 10000; // 10%
+        protocolFee = 0; // 10%; used for accrual
         collateralizationRate = _collateralizationRate > 0
             ? _collateralizationRate
             : 75000;

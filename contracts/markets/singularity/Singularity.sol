@@ -116,7 +116,7 @@ contract Singularity is SGLCommon {
 
         //default fees
         callerFee = 1000; // 1%
-        protocolFee = 10000; // 10%
+        protocolFee = 0; // 10%; used for accrual
         borrowOpeningFee = 50; // 0.05%
 
         //liquidation
