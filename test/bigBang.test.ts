@@ -374,7 +374,15 @@ describe('BigBang test', () => {
                 )[2],
                 5,
             );
-            expect(closingFactor.gt(prevClosingFactor)).to.be.true;
+            if (closingFactor.eq(prevClosingFactor)) {
+                expect(
+                    closingFactor.eq(
+                        await wethBigBangMarket.userBorrowPart(eoa1.address),
+                    ),
+                ).to.be.true;
+            } else {
+                expect(closingFactor.gt(prevClosingFactor)).to.be.true;
+            }
             prevClosingFactor = closingFactor;
 
             priceDrop = __usd0WethPrice.mul(60).div(100);
@@ -397,7 +405,15 @@ describe('BigBang test', () => {
                 )[2],
                 5,
             );
-            expect(closingFactor.gt(prevClosingFactor)).to.be.true;
+            if (closingFactor.eq(prevClosingFactor)) {
+                expect(
+                    closingFactor.eq(
+                        await wethBigBangMarket.userBorrowPart(eoa1.address),
+                    ),
+                ).to.be.true;
+            } else {
+                expect(closingFactor.gt(prevClosingFactor)).to.be.true;
+            }
             prevClosingFactor = closingFactor;
         });
         it('should liquidate', async () => {

@@ -282,14 +282,24 @@ abstract contract Market is MarketERC20, BoringOwnable {
 
         if (borrowPart < liquidationStartsAt) return 0;
 
+        //compute numerator
         uint256 numerator = borrowPart - liquidationStartsAt;
-        uint256 denominator = ((10 ** ratesPrecision) -
-            (collateralizationRate *
-                ((10 ** ratesPrecision) + liquidationMultiplier)) /
-            (10 ** ratesPrecision)) * (10 ** (18 - ratesPrecision));
 
-        uint256 x = (numerator * 1e18) / denominator;
-        return x;
+        //compute denominator
+        uint256 diff = (collateralizationRate *
+            ((10 ** ratesPrecision) + liquidationMultiplier)) /
+            (10 ** ratesPrecision);
+        int256 denominator = (int256(10 ** ratesPrecision) - int256(diff)) *
+            int256(1e13);
+
+        //compute closing factor
+        int256 x = (int256(numerator) * int256(1e18)) / denominator;
+        int256 xPos = x < 0 ? -x : x;
+
+        //assure closing factor validity
+        if (uint256(xPos) > borrowPart) return borrowPart;
+
+        return uint256(xPos);
     }
 
     /// @notice return the amount of collateral for a `user` to be solvent, min TVL and max TVL. Returns 0 if user already solvent.
