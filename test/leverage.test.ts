@@ -117,6 +117,12 @@ describe('Singularity Leverage', () => {
             .connect(alice)
             .borrow(alice.address, alice.address, E(1));
 
+        await cluster.updateContract(
+            await bar.hostLzChainId(),
+            mockSwapper.address,
+            true,
+        );
+
         return {
             alice,
             bob,
@@ -129,6 +135,8 @@ describe('Singularity Leverage', () => {
             wethId,
             wethUsdcSingularity,
             yieldBox,
+            cluster,
+            bar,
         };
     }
 
@@ -145,6 +153,8 @@ describe('Singularity Leverage', () => {
                 usdcId,
                 yieldBox,
                 wethUsdcSingularity,
+                cluster,
+                bar,
             } = await loadFixture(setUp);
 
             // Alice now has a LTV ratio of a little over 50%; this equates to
@@ -210,6 +220,8 @@ describe('Singularity Leverage', () => {
                 usdcId,
                 yieldBox,
                 wethUsdcSingularity,
+                bar,
+                cluster,
             } = await loadFixture(setUp);
 
             // Alice is the first borrower and interest has not yet accrued
