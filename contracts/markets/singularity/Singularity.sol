@@ -179,7 +179,11 @@ contract Singularity is SGLCommon {
     function execute(
         bytes[] calldata calls,
         bool revertOnFail
-    ) external returns (bool[] memory successes, string[] memory results) {
+    )
+        external
+        payable
+        returns (bool[] memory successes, string[] memory results)
+    {
         successes = new bool[](calls.length);
         results = new string[](calls.length);
         for (uint256 i = 0; i < calls.length; i++) {

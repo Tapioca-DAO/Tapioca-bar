@@ -379,6 +379,10 @@ contract Penrose is BoringOwnable, BoringFactory {
         address mc,
         address _contract
     ) external onlyOwner registeredSingularityMasterContract(mc) {
+        require(
+            !isMarketRegistered[_contract],
+            "Penrose: market already added"
+        );
         isMarketRegistered[_contract] = true;
         clonesOf[mc].push(_contract);
         masterContractOf[_contract] = mc;
@@ -415,6 +419,10 @@ contract Penrose is BoringOwnable, BoringFactory {
         address mc,
         address _contract
     ) external onlyOwner registeredBigBangMasterContract(mc) {
+        require(
+            !isMarketRegistered[_contract],
+            "Penrose: market already added"
+        );
         isMarketRegistered[_contract] = true;
         clonesOf[mc].push(_contract);
         masterContractOf[_contract] = mc;
