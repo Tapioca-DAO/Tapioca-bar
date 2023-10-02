@@ -25,7 +25,6 @@ contract USDOOptionsModule is USDOCommon {
     function triggerSendFrom(
         uint16 lzDstChainId,
         bytes calldata airdropAdapterParams,
-        address zroPaymentAddress,
         uint256 amount,
         ISendFrom.LzCallParams calldata sendFromData,
         ICommonData.IApproval[] calldata approvals
@@ -55,7 +54,7 @@ contract USDOOptionsModule is USDOCommon {
             lzDstChainId,
             lzPayload,
             payable(msg.sender),
-            zroPaymentAddress,
+            sendFromData.zroPaymentAddress,
             airdropAdapterParams,
             msg.value
         );

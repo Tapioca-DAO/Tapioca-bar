@@ -11,6 +11,8 @@ import "./SGLLeverage.sol";
 import "tapioca-periph/contracts/interfaces/ISendFrom.sol";
 import "tapioca-sdk/dist/contracts/libraries/LzLib.sol";
 
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+
 // solhint-disable max-line-length
 
 /*
@@ -28,7 +30,7 @@ __/\\\\\\\\\\\\\\\_____/\\\\\\\\\_____/\\\\\\\\\\\\\____/\\\\\\\\\\\_______/\\\\
 */
 
 /// @title Tapioca market
-contract Singularity is SGLCommon {
+contract Singularity is SGLCommon, ReentrancyGuard {
     using RebaseLibrary for Rebase;
 
     // ************ //
@@ -179,7 +181,11 @@ contract Singularity is SGLCommon {
     function execute(
         bytes[] calldata calls,
         bool revertOnFail
-    ) external returns (bool[] memory successes, string[] memory results) {
+    )
+        external
+        nonReentrant
+        returns (bool[] memory successes, string[] memory results)
+    {
         successes = new bool[](calls.length);
         results = new string[](calls.length);
         for (uint256 i = 0; i < calls.length; i++) {

@@ -1537,7 +1537,7 @@ function transferOwnership(address newOwner) external nonpayable
 ### triggerSendFrom
 
 ```solidity
-function triggerSendFrom(uint16 lzDstChainId, bytes airdropAdapterParams, address zroPaymentAddress, uint256 amount, ISendFrom.LzCallParams sendFromData, ICommonData.IApproval[] approvals) external payable
+function triggerSendFrom(uint16 lzDstChainId, bytes airdropAdapterParams, uint256 amount, ISendFrom.LzCallParams sendFromData, ICommonData.IApproval[] approvals) external payable
 ```
 
 
@@ -1550,7 +1550,6 @@ function triggerSendFrom(uint16 lzDstChainId, bytes airdropAdapterParams, addres
 |---|---|---|
 | lzDstChainId | uint16 | undefined |
 | airdropAdapterParams | bytes | undefined |
-| zroPaymentAddress | address | undefined |
 | amount | uint256 | undefined |
 | sendFromData | ISendFrom.LzCallParams | undefined |
 | approvals | ICommonData.IApproval[] | undefined |
