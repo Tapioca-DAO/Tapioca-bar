@@ -194,7 +194,7 @@ contract BigBang is BBCommon {
     ) external returns (bool[] memory successes, string[] memory results) {
         successes = new bool[](calls.length);
         results = new string[](calls.length);
-        for (uint256 i = 0; i < calls.length; i++) {
+        for (uint256 i; i < calls.length; i++) {
             (bool success, bytes memory result) = address(this).delegatecall(
                 calls[i]
             );
@@ -512,9 +512,8 @@ contract BigBang is BBCommon {
         bytes memory _data
     ) private returns (bytes memory returnData) {
         bool success = true;
-        address module = _extractModule(_module);
 
-        (success, returnData) = module.delegatecall(_data);
+        (success, returnData) = _extractModule(_module).delegatecall(_data);
         if (!success) {
             revert(_getRevertMsg(returnData));
         }
@@ -525,9 +524,8 @@ contract BigBang is BBCommon {
         bytes memory _data
     ) private view returns (bytes memory returnData) {
         bool success = true;
-        address module = _extractModule(_module);
 
-        (success, returnData) = module.staticcall(_data);
+        (success, returnData) = _extractModule(_module).staticcall(_data);
         if (!success) {
             revert(_getRevertMsg(returnData));
         }

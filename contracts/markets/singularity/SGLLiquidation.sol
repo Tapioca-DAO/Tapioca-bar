@@ -112,7 +112,7 @@ contract SGLLiquidation is SGLCommon {
                 .getNextAvailBidPool();
             if (bidAvail) {
                 uint256 needed = 0;
-                for (uint256 i = 0; i < maxBorrowParts.length; i++) {
+                for (uint256 i; i < maxBorrowParts.length; i++) {
                     needed += maxBorrowParts[i];
                 }
                 if (bidAmount >= needed) {
@@ -180,12 +180,11 @@ contract SGLLiquidation is SGLCommon {
 
         require(_exchangeRate > 0, "SGL: exchangeRate not valid");
 
-        uint256 collateralShare = userCollateralShare[user];
         Rebase memory _totalBorrow = totalBorrow;
 
         uint256 collateralAmountInAsset = yieldBox.toAmount(
             collateralId,
-            (collateralShare *
+            (userCollateralShare[user] *
                 (EXCHANGE_RATE_PRECISION / FEE_PRECISION) *
                 lqCollateralizationRate),
             false
@@ -209,7 +208,7 @@ contract SGLLiquidation is SGLCommon {
         uint256 allBorrowPart;
         Rebase memory _totalBorrow = totalBorrow;
 
-        for (uint256 i = 0; i < users.length; i++) {
+        for (uint256 i; i < users.length; i++) {
             address user = users[i];
             if (!_isSolvent(user, _exchangeRate)) {
                 uint256 borrowAmount = _computeAssetAmountToSolvency(
@@ -488,7 +487,7 @@ contract SGLLiquidation is SGLCommon {
         require(users.length == swapDatas.length, "SGL: length mismatch");
 
         uint256 liquidatedCount = 0;
-        for (uint256 i = 0; i < users.length; i++) {
+        for (uint256 i; i < users.length; i++) {
             address user = users[i];
             if (!_isSolvent(user, _exchangeRate)) {
                 liquidatedCount++;
@@ -501,6 +500,6 @@ contract SGLLiquidation is SGLCommon {
                 );
             }
         }
-        require(liquidatedCount > 0, "SGL: no users found");
+        require(liquidatedCount != 0, "SGL: no users found");
     }
 }

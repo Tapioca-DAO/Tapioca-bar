@@ -126,16 +126,19 @@ contract Penrose is BoringOwnable, BoringFactory {
     // *** EVENTS *** //
     // ************** //
     /// @notice event emitted when fees are extracted
-    event ProtocolWithdrawal(IMarket[] markets, uint256 timestamp);
+    event ProtocolWithdrawal(
+        IMarket[] indexed markets,
+        uint256 indexed timestamp
+    );
     /// @notice event emitted when Singularity master contract is registered
     event RegisterSingularityMasterContract(
         address indexed location,
-        IPenrose.ContractType risk
+        IPenrose.ContractType indexed risk
     );
     /// @notice event emitted when BigBang master contract is registered
     event RegisterBigBangMasterContract(
         address indexed location,
-        IPenrose.ContractType risk
+        IPenrose.ContractType indexed risk
     );
     /// @notice event emitted when Singularity is registered
     event RegisterSingularity(
@@ -151,20 +154,23 @@ contract Penrose is BoringOwnable, BoringFactory {
     event SwapperUpdate(
         address indexed swapper,
         uint16 indexed id,
-        bool isRegistered
+        bool indexed isRegistered
     );
     /// @notice event emitted when USDO address is updated
-    event UsdoTokenUpdated(address indexed usdoToken, uint256 assetId);
+    event UsdoTokenUpdated(address indexed usdoToken, uint256 indexed assetId);
     /// @notice event emitted when conservator is updated
     event ConservatorUpdated(address indexed old, address indexed _new);
     /// @notice event emitted when pause state is updated
-    event PausedUpdated(bool oldState, bool newState);
+    event PausedUpdated(bool indexed oldState, bool indexed newState);
     /// @notice event emitted when BigBang ETH market address is updated
     event BigBangEthMarketSet(address indexed _newAddress);
     /// @notice event emitted when BigBang ETH market debt rate is updated
-    event BigBangEthMarketDebtRate(uint256 _rate);
+    event BigBangEthMarketDebtRate(uint256 indexed _rate);
     /// @notice event emitted when fees are deposited to twTap
-    event LogTwTapFeesDeposit(uint256 feeShares, uint256 ethAmount);
+    event LogTwTapFeesDeposit(
+        uint256 indexed feeShares,
+        uint256 indexed ethAmount
+    );
 
     // ******************//
     // *** MODIFIERS *** //
@@ -233,7 +239,7 @@ contract Penrose is BoringOwnable, BoringFactory {
 
         uint256 length = markets_.length;
         unchecked {
-            for (uint256 i = 0; i < length; ) {
+            for (uint256 i; i < length; ) {
                 _depositFeesToTwTap(markets_[i], twTap);
                 ++i;
             }
@@ -436,7 +442,7 @@ contract Penrose is BoringOwnable, BoringFactory {
         require(len == data.length, "Penrose: length mismatch");
         success = new bool[](len);
         result = new bytes[](len);
-        for (uint256 i = 0; i < len; ) {
+        for (uint256 i; i < len; ) {
             require(
                 isSingularityMasterContractRegistered[
                     masterContractOf[mc[i]]
@@ -497,7 +503,7 @@ contract Penrose is BoringOwnable, BoringFactory {
 
         unchecked {
             // We first compute the length of the markets array
-            for (uint256 i = 0; i < _masterContractLength; ) {
+            for (uint256 i; i < _masterContractLength; ) {
                 marketsLength += clonesOfCount(array[i].location);
 
                 ++i;
@@ -511,7 +517,7 @@ contract Penrose is BoringOwnable, BoringFactory {
 
         unchecked {
             // We populate the array
-            for (uint256 i = 0; i < _masterContractLength; ) {
+            for (uint256 i; i < _masterContractLength; ) {
                 address mcLocation = array[i].location;
                 clonesOfLength = clonesOfCount(mcLocation);
 

@@ -98,11 +98,15 @@ abstract contract Market is MarketERC20, BoringOwnable {
     /// @notice event emitted when conservator is updated
     event ConservatorUpdated(address indexed old, address indexed _new);
     /// @notice event emitted when pause state is changed
-    event PausedUpdated(PauseType _type, bool oldState, bool newState);
+    event PausedUpdated(
+        PauseType indexed _type,
+        bool indexed oldState,
+        bool indexed newState
+    );
     /// @notice event emitted when cached exchange rate is updated
-    event LogExchangeRate(uint256 rate);
+    event LogExchangeRate(uint256 indexed rate);
     /// @notice event emitted when borrow cap is updated
-    event LogBorrowCapUpdated(uint256 _oldVal, uint256 _newVal);
+    event LogBorrowCapUpdated(uint256 indexed _oldVal, uint256 indexed _newVal);
     /// @notice event emitted when oracle data is updated
     event OracleDataUpdated();
     /// @notice event emitted when oracle is updated
@@ -110,16 +114,19 @@ abstract contract Market is MarketERC20, BoringOwnable {
     /// @notice event emitted when a position is liquidated
     event Liquidated(
         address indexed liquidator,
-        address[] users,
-        uint256 liquidatorReward,
+        address[] indexed users,
+        uint256 indexed liquidatorReward,
         uint256 protocolReward,
         uint256 repayedAmount,
         uint256 collateralShareRemoved
     );
     /// @notice event emitted when borrow opening fee is updated
-    event LogBorrowingFee(uint256 _oldVal, uint256 _newVal);
+    event LogBorrowingFee(uint256 indexed _oldVal, uint256 indexed _newVal);
     /// @notice event emitted when the liquidation multiplier rate is updated
-    event LiquidationMultiplierUpdated(uint256 oldVal, uint256 newVal);
+    event LiquidationMultiplierUpdated(
+        uint256 indexed oldVal,
+        uint256 indexed newVal
+    );
 
     modifier optionNotPaused(PauseType _type) {
         require(!pauseOptions[_type], "Market: paused");
@@ -337,7 +344,7 @@ abstract contract Market is MarketERC20, BoringOwnable {
         (updated, rate) = oracle.get(oracleData);
 
         if (updated) {
-            require(rate > 0, "Market: invalid rate");
+            require(rate != 0, "Market: invalid rate");
             exchangeRate = rate;
             emit LogExchangeRate(rate);
         } else {
@@ -352,7 +359,7 @@ abstract contract Market is MarketERC20, BoringOwnable {
     function computeLiquidatorReward(
         address user,
         uint256 _exchangeRate
-    ) public view returns (uint256) {
+    ) external view returns (uint256) {
         return _getCallerReward(user, _exchangeRate);
     }
 
