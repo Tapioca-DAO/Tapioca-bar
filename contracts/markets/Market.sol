@@ -154,23 +154,6 @@ abstract contract Market is MarketERC20, BoringOwnable {
     // *********************** //
     // *** OWNER FUNCTIONS *** //
     // *********************** //
-    /// @notice sets the borrowing opening fee
-    /// @dev can only be called by the owner
-    /// @param _val the new value
-    function setBorrowOpeningFee(uint256 _val) external onlyOwner {
-        require(_val <= FEE_PRECISION, "Market: not valid");
-        emit LogBorrowingFee(borrowOpeningFee, _val);
-        borrowOpeningFee = _val;
-    }
-
-    /// @notice sets max borrowable amount
-    /// @dev can only be called by the owner
-    /// @param _cap the new value
-    function setBorrowCap(uint256 _cap) external onlyOwner {
-        emit LogBorrowCapUpdated(totalBorrowCap, _cap);
-        totalBorrowCap = _cap;
-    }
-
     /// @notice sets common market configuration
     /// @dev values are updated only if > 0 or not address(0)
     function setMarketConfig(
