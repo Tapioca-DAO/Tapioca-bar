@@ -520,18 +520,5 @@ contract BigBang is BBCommon {
         }
     }
 
-    function _executeViewModule(
-        Module _module,
-        bytes memory _data
-    ) private view returns (bytes memory returnData) {
-        bool success = true;
-        address module = _extractModule(_module);
-
-        (success, returnData) = module.staticcall(_data);
-        if (!success) {
-            revert(_getRevertMsg(returnData));
-        }
-    }
-
     receive() external payable {}
 }
