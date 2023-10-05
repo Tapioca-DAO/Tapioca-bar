@@ -481,23 +481,6 @@ liquidation multiplier used to compute liquidator rewards
 |---|---|---|
 | _0 | uint256 | undefined |
 
-### liquidationQueue
-
-```solidity
-function liquidationQueue() external view returns (contract ILiquidationQueue)
-```
-
-liquidation queue address
-
-
-
-
-#### Returns
-
-| Name | Type | Description |
-|---|---|---|
-| _0 | contract ILiquidationQueue | undefined |
-
 ### lqCollateralizationRate
 
 ```solidity

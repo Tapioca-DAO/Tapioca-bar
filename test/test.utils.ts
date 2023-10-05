@@ -13,6 +13,7 @@ import {
     LZEndpointMock__factory,
     CurvePoolMock__factory,
     TwTwapMock__factory,
+    MarketLiquidationReceiverMock__factory,
 } from '../gitsub_tapioca-sdk/src/typechain/tapioca-mocks';
 
 import {
@@ -1023,107 +1024,13 @@ async function createWethUsd0Singularity(
     );
 
     const deployer = (await ethers.getSigners())[0];
-    const LiquidationQueue = new LiquidationQueue__factory(deployer);
-    const liquidationQueue = await LiquidationQueue.deploy();
-    log(
-        `Deployed WethUsd0LiquidationQueue at ${liquidationQueue.address} with no arguments`,
-        staging,
-    );
-
     const feeCollector = new ethers.Wallet(
         ethers.Wallet.createRandom().privateKey,
         ethers.provider,
     );
     log(`WethUsd0Singularity feeCollector ${feeCollector.address}`, staging);
 
-    const LQ_META = {
-        activationTime: 600, // 10min
-        minBidAmount: ethers.BigNumber.from((1e18).toString()).mul(1), // 1 USDC
-        closeToMinBidAmount: ethers.BigNumber.from((1e18).toString()).mul(202),
-        defaultBidAmount: ethers.BigNumber.from((1e18).toString()).mul(400), // 400 USDC
-        feeCollector: feeCollector.address,
-        bidExecutionSwapper: ethers.constants.AddressZero,
-        usdoSwapper: stableToUsdoBidder.address,
-    };
-
-    await liquidationQueue.init(LQ_META, wethUsdoSingularity.address, {
-        gasPrice: gasPrice,
-    });
-    log('LiquidationQueue initialized');
-
-    const payload = wethUsdoSingularity.interface.encodeFunctionData(
-        'setLiquidationQueueConfig',
-        [
-            liquidationQueue.address,
-            ethers.constants.AddressZero,
-            ethers.constants.AddressZero,
-        ],
-    );
-
-    await (
-        await bar.executeMarketFn(
-            [wethUsdoSingularity.address],
-            [payload],
-            true,
-            {
-                gasPrice: gasPrice,
-            },
-        )
-    ).wait();
-    log('WethUsd0LiquidationQueue was set for WethUsd0Singularity', staging);
-
     return { wethUsdoSingularity };
-}
-
-async function registerLiquidationQueue(
-    bar: Penrose,
-    singularity: Singularity,
-    feeCollector: string,
-    staging?: boolean,
-) {
-    const deployer = (await ethers.getSigners())[0];
-    const LiquidationQueue = new LiquidationQueue__factory(deployer);
-    const liquidationQueue = await LiquidationQueue.deploy();
-    log(
-        `Deployed LiquidationQueue ${liquidationQueue.address} with no arguments`,
-        staging,
-    );
-
-    const LQ_META = {
-        activationTime: 600, // 10min
-        minBidAmount: ethers.BigNumber.from((1e18).toString()).mul(1), // 1 USDC
-        closeToMinBidAmount: ethers.BigNumber.from((1e18).toString()).mul(202),
-        defaultBidAmount: ethers.BigNumber.from((1e18).toString()).mul(400), // 400 USDC
-        feeCollector,
-        bidExecutionSwapper: ethers.constants.AddressZero,
-        usdoSwapper: ethers.constants.AddressZero,
-    };
-    await liquidationQueue.init(LQ_META, singularity.address);
-    log('LiquidationQueue initialized', staging);
-
-    const payload = singularity.interface.encodeFunctionData(
-        'setLiquidationQueueConfig',
-        [
-            liquidationQueue.address,
-            ethers.constants.AddressZero,
-            ethers.constants.AddressZero,
-        ],
-    );
-
-    await (
-        await bar.executeMarketFn([singularity.address], [payload], true, {
-            gasPrice: gasPrice,
-        })
-    ).wait();
-    log('WethUsdcLiquidationQueue was set for WethUsdcSingularity', staging);
-
-    await verifyEtherscan(
-        liquidationQueue.address,
-        [BN(1e18).mul(1e9).toString()],
-        staging,
-    );
-
-    return { liquidationQueue, LQ_META };
 }
 
 async function registerBigBangMarket(
@@ -1625,35 +1532,11 @@ export async function register(staging?: boolean) {
 
     await magnetar.setHelper(magnetarHelper.address);
 
-    // ------------------- 9 Deploy & set LiquidationQueue -------------------
-    log('Registering WETHUSDC LiquidationQueue', staging);
+    // ------------------- 9 Deploy  -------------------
+    log('Registering WETHUSDC', staging);
     const feeCollector = new ethers.Wallet(
         ethers.Wallet.createRandom().privateKey,
         ethers.provider,
-    );
-    const { liquidationQueue, LQ_META } = await registerLiquidationQueue(
-        bar,
-        wethUsdcSingularity,
-        feeCollector.address,
-        staging,
-    );
-    log(
-        `Registered WETHUSDC LiquidationQueue ${liquidationQueue.address}`,
-        staging,
-    );
-
-    log('Registering WBTCUSDC LiquidationQueue', staging);
-    const wbtcUsdcLiquidationData = await registerLiquidationQueue(
-        bar,
-        wbtcUsdcSingularity,
-        feeCollector.address,
-        staging,
-    );
-    const wbtcLiquidationQueue = wbtcUsdcLiquidationData.liquidationQueue;
-    const wbtcLQ_META = wbtcUsdcLiquidationData.LQ_META;
-    log(
-        `Registered WBTC LiquidationQueue ${wbtcLiquidationQueue.address}`,
-        staging,
     );
 
     // ------------------- 10 Deploy USDO -------------------
@@ -1806,6 +1689,16 @@ export async function register(staging?: boolean) {
         })
     ).wait();
 
+    // ------------------- 20 ReceiverMock -------------------
+    const deployLiquidationReceiverMock = async (_token: string) => {
+        const MarketLiquidationReceiverMock =
+            new MarketLiquidationReceiverMock__factory(deployer);
+        const liquidationReceiver = await MarketLiquidationReceiverMock.deploy(
+            _token,
+        );
+        return liquidationReceiver;
+    };
+
     /**
      * OTHERS
      */
@@ -1858,10 +1751,6 @@ export async function register(staging?: boolean) {
         _sglWbtcUsdcLeverageModule,
         eoa1,
         multiSwapper,
-        liquidationQueue,
-        LQ_META,
-        wbtcLiquidationQueue,
-        wbtcLQ_META,
         feeCollector,
         usdoToWethBidder,
         mediumRiskMC,
@@ -1878,6 +1767,7 @@ export async function register(staging?: boolean) {
         twTap,
         cluster,
         magnetarHelper,
+        deployLiquidationReceiverMock,
     };
 
     /**
