@@ -42,7 +42,7 @@ contract SGLCollateral is SGLLendingCommon {
     )
         external
         optionNotPaused(PauseType.RemoveCollateral)
-        solvent(from)
+        solvent(from, false)
         allowedBorrow(from, share)
         notSelf(to)
     {

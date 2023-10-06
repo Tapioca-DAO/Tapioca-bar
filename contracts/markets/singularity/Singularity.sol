@@ -66,7 +66,8 @@ contract Singularity is SGLCommon {
             uint256 _collateralId,
             IOracle _oracle,
             uint256 _exchangeRatePrecision,
-            uint256 _collateralizationRate
+            uint256 _collateralizationRate,
+            uint256 _liquidationCollateralizationRate
         ) = abi.decode(
                 data,
                 (
@@ -81,62 +82,98 @@ contract Singularity is SGLCommon {
                     uint256,
                     IOracle,
                     uint256,
+                    uint256,
                     uint256
                 )
             );
 
-        liquidationModule = SGLLiquidation(_liquidationModule);
-        collateralModule = SGLCollateral(_collateralModule);
-        borrowModule = SGLBorrow(_borrowModule);
-        leverageModule = SGLLeverage(_leverageModule);
         penrose = tapiocaBar_;
         yieldBox = YieldBox(tapiocaBar_.yieldBox());
         owner = address(penrose);
-
         require(
             address(_collateral) != address(0) &&
                 address(_asset) != address(0) &&
                 address(_oracle) != address(0),
             "SGL: bad pair"
         );
+        _initModules(
+            _liquidationModule,
+            _borrowModule,
+            _collateralModule,
+            _leverageModule
+        );
+        _initCoreStorage(_asset, _assetId, _collateral, _collateralId, _oracle);
+        _initDefaultValues(
+            _collateralizationRate,
+            _liquidationCollateralizationRate,
+            _exchangeRatePrecision
+        );
+    }
+
+    function _initModules(
+        address _liquidationModule,
+        address _borrowModule,
+        address _collateralModule,
+        address _leverageModule
+    ) private {
+        liquidationModule = SGLLiquidation(_liquidationModule);
+        collateralModule = SGLCollateral(_collateralModule);
+        borrowModule = SGLBorrow(_borrowModule);
+        leverageModule = SGLLeverage(_leverageModule);
+    }
+
+    function _initCoreStorage(
+        IERC20 _asset,
+        uint256 _assetId,
+        IERC20 _collateral,
+        uint256 _collateralId,
+        IOracle _oracle
+    ) private {
         asset = _asset;
         collateral = _collateral;
         assetId = _assetId;
         collateralId = _collateralId;
         oracle = _oracle;
+    }
 
+    function _initDefaultValues(
+        uint256 _collateralizationRate,
+        uint256 _liquidationCollateralizationRate,
+        uint256 _exchangeRatePrecision
+    ) private {
         minimumInterestPerSecond = 158548960; // approx 0.5% APR
         maximumInterestPerSecond = 317097920000; // approx 1000% APR
         interestElasticity = 28800e36; // Half or double in 28800 seconds (8 hours) if linear
         startingInterestPerSecond = minimumInterestPerSecond;
-
         accrueInfo.interestPerSecond = uint64(startingInterestPerSecond); // 1% APR, with 1e18 being 100%
-
         updateExchangeRate();
-
         //default fees
         callerFee = 1000; // 1%
         protocolFee = 0; // 10%; used for accrual
         borrowOpeningFee = 50; // 0.05%
-
         //liquidation
         liquidationMultiplier = 12000; //12%
-
         collateralizationRate = _collateralizationRate > 0
             ? _collateralizationRate
             : 75000;
+        liquidationCollateralizationRate = _liquidationCollateralizationRate > 0
+            ? _liquidationCollateralizationRate
+            : 80000;
+        require(
+            liquidationCollateralizationRate > collateralizationRate,
+            "SGL: liquidationCollateralizationRate not valid"
+        );
         lqCollateralizationRate = 25000;
         EXCHANGE_RATE_PRECISION = _exchangeRatePrecision > 0
             ? _exchangeRatePrecision
             : 1e18;
-
-        minLiquidatorReward = 1e3;
-        maxLiquidatorReward = 1e4;
+        minLiquidatorReward = 8e4;
+        maxLiquidatorReward = 9e4;
         liquidationBonusAmount = 1e4;
-
         minimumTargetUtilization = 3e17;
         maximumTargetUtilization = 5e17;
         fullUtilizationMinusMax = FULL_UTILIZATION - maximumTargetUtilization;
+        rateValidDuration = 24 hours;
     }
 
     // ********************** //
