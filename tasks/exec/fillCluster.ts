@@ -5,7 +5,7 @@ import { TContract } from '../../gitsub_tapioca-sdk/src/shared';
 import { Cluster } from '../../gitsub_tapioca-sdk/src/typechain/tapioca-periphery';
 
 export const fillCluster__task = async (
-    data: { chainIds: [] },
+    data: { chains: [] },
     hre: HardhatRuntimeEnvironment,
 ) => {
     const chainInfo = hre.SDK.utils.getChainBy(
@@ -68,11 +68,11 @@ export const fillCluster__task = async (
         )
     ).wait(3);
 
-    for (let i = 0; i < data.chainIds.length; i++) {
-        allContracts = loadAllContracts(hre, tag, data.chainIds[i], filter);
+    for (let i = 0; i < data.chains.length; i++) {
+        allContracts = loadAllContracts(hre, tag, data.chains[i], filter);
         await (
             await clusterContract.batchUpdateContracts(
-                data.chainIds[i],
+                data.chains[i],
                 allContracts.map((a) => a.address),
                 true,
             )
