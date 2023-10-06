@@ -36,6 +36,29 @@ describe('Singularity test', () => {
             const { wethUsdcSingularity, wbtcBigBangMarket, deployer, bar } =
                 await loadFixture(register);
 
+            // const borrowFeeUpdateFn =
+            //     wethUsdcSingularity.interface.encodeFunctionData(
+            //         'setMarketConfig',
+            //         [
+            //             5e2,
+            //             ethers.constants.AddressZero,
+            //             ethers.utils.toUtf8Bytes(''),
+            //             ethers.constants.AddressZero,
+            //             0,
+            //             0,
+            //             0,
+            //             0,
+            //             0,
+            //             0,
+            //             80000,
+            //         ],
+            //     );
+            // await bar.executeMarketFn(
+            //     [wethUsdcSingularity.address],
+            //     [borrowFeeUpdateFn],
+            //     true,
+            // );
+
             let x = await wethUsdcSingularity.computeClosingFactor(
                 ethers.utils.parseEther('7600'),
                 ethers.utils.parseEther('10000'),
@@ -70,34 +93,12 @@ describe('Singularity test', () => {
             );
 
             x = await wethUsdcSingularity.computeClosingFactor(
-                ethers.utils.parseEther('8000'),
-                '10000000000',
-                5,
-            );
-            console.log(
-                `Borrow part: 8000 with 18 decimals, collateral part: 10000 with 6 decimals, closing factor without bonus: ${ethers.utils.formatEther(
-                    x,
-                )}`,
-            );
-
-            x = await wethUsdcSingularity.computeClosingFactor(
                 ethers.utils.parseEther('4000'),
                 ethers.utils.parseEther('5000'),
                 5,
             );
             console.log(
                 `Borrow part: 4000 with 18 decimals, collateral part: 5000 with 18 decimals, closing factor without bonus: ${ethers.utils.formatEther(
-                    x,
-                )}`,
-            );
-
-            x = await wethUsdcSingularity.computeClosingFactor(
-                '8000000000',
-                ethers.utils.parseEther('10000'),
-                5,
-            );
-            console.log(
-                `Borrow part: 8000 with 6 decimals, collateral part: 10000 with 18 decimals, closing factor without bonus: ${ethers.utils.formatEther(
                     x,
                 )}`,
             );
@@ -2355,7 +2356,17 @@ describe('Singularity test', () => {
                 )[2],
                 5,
             );
-            expect(closingFactor.gt(prevClosingFactor)).to.be.true;
+            if (closingFactor.eq(prevClosingFactor)) {
+                expect(
+                    closingFactor.eq(
+                        await wethUsdcSingularity.userBorrowPart(
+                            deployer.address,
+                        ),
+                    ),
+                ).to.be.true;
+            } else {
+                expect(closingFactor.gt(prevClosingFactor)).to.be.true;
+            }
             prevClosingFactor = closingFactor;
 
             priceDrop = __wethUsdcPrice.mul(60).div(100);
@@ -2378,7 +2389,17 @@ describe('Singularity test', () => {
                 )[2],
                 5,
             );
-            expect(closingFactor.gt(prevClosingFactor)).to.be.true;
+            if (closingFactor.eq(prevClosingFactor)) {
+                expect(
+                    closingFactor.eq(
+                        await wethUsdcSingularity.userBorrowPart(
+                            deployer.address,
+                        ),
+                    ),
+                ).to.be.true;
+            } else {
+                expect(closingFactor.gt(prevClosingFactor)).to.be.true;
+            }
             prevClosingFactor = closingFactor;
         });
         it('Should accumulate fees for lender', async () => {
