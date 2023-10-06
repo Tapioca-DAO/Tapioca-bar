@@ -57,8 +57,6 @@ contract BaseUSDOStorage is OFTV2 {
     event SetMinterStatus(address indexed _for, bool _status);
     /// @notice event emitted when a new address is set or removed from burners array
     event SetBurnerStatus(address indexed _for, bool _status);
-    /// @notice event emitted when conservator address is updated
-    event ConservatorUpdated(address indexed old, address indexed _new);
     /// @notice event emitted when pause state is updated
     event PausedUpdated(bool oldState, bool newState);
     /// @notice event emitted when flash mint fee is updated

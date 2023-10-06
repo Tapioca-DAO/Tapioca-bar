@@ -114,7 +114,6 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
     /// @param _conservator the new address
     function setConservator(address _conservator) external onlyOwner {
         require(_conservator != address(0), "USDO: unauthorized");
-        emit ConservatorUpdated(conservator, _conservator);
         conservator = _conservator;
     }
 
@@ -446,9 +445,9 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
             );
         } else if (packetType == PT_MARKET_REMOVE_ASSET) {
             _executeOnDestination(
-                Module.Market,
+                Module.Leverage,
                 abi.encodeWithSelector(
-                    USDOMarketModule.remove.selector,
+                    USDOLeverageModule.remove.selector,
                     _payload
                 ),
                 _srcChainId,

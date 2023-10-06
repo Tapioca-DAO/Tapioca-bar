@@ -11,6 +11,7 @@ import "tapioca-periph/contracts/interfaces/ITapiocaOFT.sol";
 import "tapioca-periph/contracts/interfaces/ISingularity.sol";
 import "tapioca-periph/contracts/interfaces/IPermitBorrow.sol";
 import "tapioca-periph/contracts/interfaces/IPermitAll.sol";
+import "tapioca-periph/contracts/interfaces/IMagnetar.sol";
 
 import "./USDOCommon.sol";
 
@@ -23,74 +24,6 @@ contract USDOLeverageModule is USDOCommon {
         ICluster _cluster
     ) BaseUSDOStorage(_lzEndpoint, _yieldBox, _cluster) {}
 
-    // function initMultiHopBuy(
-    //     address from,
-    //     uint256 collateralAmount,
-    //     uint256 borrowAmount,
-    //     IUSDOBase.ILeverageSwapData calldata swapData,
-    //     IUSDOBase.ILeverageLZData calldata lzData,
-    //     IUSDOBase.ILeverageExternalContractsData calldata externalData,
-    //     bytes calldata airdropAdapterParams,
-    //     ICommonData.IApproval[] calldata approvals
-    // ) external payable {
-    //     //allowance is also checked on SGl.multiHopBuy
-    //     initMultiHopBuyChecks(
-    //         from,
-    //         collateralAmount,
-    //         borrowAmount,
-    //         swapData.amountOutMin
-    //     );
-    //     bytes32 senderBytes = LzLib.addressToBytes32(from);
-    //     (collateralAmount, ) = _removeDust(collateralAmount);
-    //     (borrowAmount, ) = _removeDust(borrowAmount);
-    //     (, , uint256 airdropAmount, ) = LzLib.decodeAdapterParams(
-    //         airdropAdapterParams
-    //     );
-    //     bytes memory lzPayload = abi.encode(
-    //         PT_MARKET_MULTIHOP_BUY,
-    //         senderBytes,
-    //         from,
-    //         _ld2sd(collateralAmount),
-    //         _ld2sd(borrowAmount),
-    //         swapData,
-    //         lzData,
-    //         externalData,
-    //         approvals,
-    //         airdropAmount
-    //     );
-    //     _checkGasLimit(
-    //         lzData.lzSrcChainId,
-    //         PT_MARKET_MULTIHOP_BUY,
-    //         airdropAdapterParams,
-    //         NO_EXTRA_GAS
-    //     );
-    //     _lzSend(
-    //         lzData.lzSrcChainId,
-    //         lzPayload,
-    //         payable(lzData.refundAddress),
-    //         lzData.zroPaymentAddress,
-    //         airdropAdapterParams,
-    //         msg.value
-    //     );
-    //     emit SendToChain(lzData.lzSrcChainId, msg.sender, senderBytes, 0);
-    // }
-
-    // function initMultiHopBuyChecks(
-    //     address from,
-    //     uint256 collateralAmount,
-    //     uint256 borrowAmount,
-    //     uint256 amountOutMin
-    // ) private {
-    //     if (from != msg.sender) {
-    //         require(
-    //             allowance(from, msg.sender) >= collateralAmount,
-    //             "UDSO: sender not approved"
-    //         );
-    //         _spendAllowance(from, msg.sender, collateralAmount);
-    //     }
-    //     _assureMaxSlippage(borrowAmount, amountOutMin);
-    // }
-
     function sendForLeverage(
         uint256 amount,
         address leverageFor,
@@ -101,7 +34,7 @@ contract USDOLeverageModule is USDOCommon {
         if (leverageFor != msg.sender) {
             require(
                 allowance(leverageFor, msg.sender) >= amount,
-                "UDSO: sender not approved"
+                "UDSO: not approved"
             );
             _spendAllowance(leverageFor, msg.sender, amount);
         }
@@ -112,7 +45,7 @@ contract USDOLeverageModule is USDOCommon {
         _assureMaxSlippage(amount, swapData.amountOutMin);
         require(
             cluster.isWhitelisted(lzData.lzDstChainId, externalData.swapper),
-            "TOFT_UNAUTHORIZED"
+            "USDO: not authorized"
         ); //fail fast
         bytes32 senderBytes = LzLib.addressToBytes32(msg.sender);
         (amount, ) = _removeDust(amount);
@@ -122,7 +55,6 @@ contract USDOLeverageModule is USDOCommon {
         );
         bytes memory lzPayload = abi.encode(
             PT_LEVERAGE_MARKET_UP,
-            senderBytes,
             _ld2sd(amount),
             swapData,
             externalData,
@@ -154,10 +86,11 @@ contract USDOLeverageModule is USDOCommon {
         uint64 _nonce,
         bytes memory _payload
     ) public {
-        require(msg.sender == address(this), "USDO: caller not valid");
-        require(validModules[module], "USDO: module not valid");
+        require(
+            msg.sender == address(this) && validModules[module],
+            "USDO: not valid"
+        );
         (
-            ,
             ,
             uint64 amountSD,
             IUSDOBase.ILeverageSwapData memory swapData,
@@ -169,7 +102,6 @@ contract USDOLeverageModule is USDOCommon {
                 _payload,
                 (
                     uint16,
-                    bytes32,
                     uint64,
                     IUSDOBase.ILeverageSwapData,
                     IUSDOBase.ILeverageExternalContractsData,
@@ -232,7 +164,7 @@ contract USDOLeverageModule is USDOCommon {
         //swap from USDO
         require(
             cluster.isWhitelisted(0, externalData.swapper),
-            "TOFT_UNAUTHORIZED"
+            "USDO: not authorized"
         );
         _approve(address(this), externalData.swapper, amount);
         ISwapper.SwapData memory _swapperData = ISwapper(externalData.swapper)
@@ -284,6 +216,37 @@ contract USDOLeverageModule is USDOCommon {
                 zroPaymentAddress: lzData.zroPaymentAddress
             }),
             approvals
+        );
+    }
+
+    function remove(bytes memory _payload) public {
+        require(msg.sender == address(this), "USDO: not valid");
+        (
+            ,
+            address to,
+            ICommonData.ICommonExternalContracts memory externalData,
+            IUSDOBase.IRemoveAndRepay memory removeAndRepayData,
+            ICommonData.IApproval[] memory approvals
+        ) = abi.decode(
+                _payload,
+                (
+                    uint16,
+                    address,
+                    ICommonData.ICommonExternalContracts,
+                    IUSDOBase.IRemoveAndRepay,
+                    ICommonData.IApproval[]
+                )
+            );
+
+        //approvals
+        if (approvals.length > 0) {
+            _callApproval(approvals, PT_MARKET_REMOVE_ASSET);
+        }
+
+        IMagnetar(externalData.magnetar).exitPositionAndRemoveCollateral(
+            to,
+            externalData,
+            removeAndRepayData
         );
     }
 }

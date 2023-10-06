@@ -1296,23 +1296,6 @@ event CallOFTReceivedSuccess(uint16 indexed _srcChainId, bytes _srcAddress, uint
 | _nonce  | uint64 | undefined |
 | _hash  | bytes32 | undefined |
 
-### ConservatorUpdated
-
-```solidity
-event ConservatorUpdated(address indexed old, address indexed _new)
-```
-
-event emitted when conservator address is updated
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| old `indexed` | address | undefined |
-| _new `indexed` | address | undefined |
-
 ### FlashMintFeeUpdated
 
 ```solidity

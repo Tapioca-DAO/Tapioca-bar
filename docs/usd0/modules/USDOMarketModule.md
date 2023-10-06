@@ -761,22 +761,6 @@ function precrime() external view returns (address)
 |---|---|---|
 | _0 | address | undefined |
 
-### remove
-
-```solidity
-function remove(bytes _payload) external nonpayable
-```
-
-
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| _payload | bytes | undefined |
-
 ### removeAsset
 
 ```solidity
@@ -1296,23 +1280,6 @@ event CallOFTReceivedSuccess(uint16 indexed _srcChainId, bytes _srcAddress, uint
 | _srcAddress  | bytes | undefined |
 | _nonce  | uint64 | undefined |
 | _hash  | bytes32 | undefined |
-
-### ConservatorUpdated
-
-```solidity
-event ConservatorUpdated(address indexed old, address indexed _new)
-```
-
-event emitted when conservator address is updated
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| old `indexed` | address | undefined |
-| _new `indexed` | address | undefined |
 
 ### FlashMintFeeUpdated
 

@@ -107,7 +107,7 @@ contract USDOMarketModule is USDOCommon {
         if (_from != msg.sender) {
             require(
                 allowance(_from, msg.sender) >= lendParams.depositAmount,
-                "UDSO: sender not approved"
+                "UDSO: not approved"
             );
             _spendAllowance(_from, msg.sender, lendParams.depositAmount);
         }
@@ -123,8 +123,6 @@ contract USDOMarketModule is USDOCommon {
 
         bytes memory lzPayload = abi.encode(
             PT_YB_SEND_SGL_LEND_OR_REPAY,
-            msg.sender,
-            _from,
             _to,
             _ld2sd(lendParams.depositAmount),
             lendParams,
@@ -155,37 +153,6 @@ contract USDOMarketModule is USDOCommon {
         );
     }
 
-    function remove(bytes memory _payload) public {
-        require(msg.sender == address(this), "USDO: caller not valid");
-        (
-            ,
-            address to,
-            ICommonData.ICommonExternalContracts memory externalData,
-            IUSDOBase.IRemoveAndRepay memory removeAndRepayData,
-            ICommonData.IApproval[] memory approvals
-        ) = abi.decode(
-                _payload,
-                (
-                    uint16,
-                    address,
-                    ICommonData.ICommonExternalContracts,
-                    IUSDOBase.IRemoveAndRepay,
-                    ICommonData.IApproval[]
-                )
-            );
-
-        //approvals
-        if (approvals.length > 0) {
-            _callApproval(approvals, PT_MARKET_REMOVE_ASSET);
-        }
-
-        IMagnetar(externalData.magnetar).exitPositionAndRemoveCollateral(
-            to,
-            externalData,
-            removeAndRepayData
-        );
-    }
-
     function lend(
         address module,
         uint16 _srcChainId,
@@ -198,8 +165,6 @@ contract USDOMarketModule is USDOCommon {
 
         (
             ,
-            ,
-            ,
             address to,
             uint64 lendAmountSD,
             IUSDOBase.ILendOrRepayParams memory lendParams,
@@ -209,8 +174,6 @@ contract USDOMarketModule is USDOCommon {
                 _payload,
                 (
                     uint16,
-                    address,
-                    address,
                     address,
                     uint64,
                     IUSDOBase.ILendOrRepayParams,
