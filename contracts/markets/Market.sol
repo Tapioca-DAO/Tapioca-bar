@@ -305,6 +305,9 @@ abstract contract Market is MarketERC20, BoringOwnable {
         uint256 collateralPartInAsset,
         uint256 ratesPrecision
     ) public view returns (uint256) {
+        // Obviously it's not `borrowPart` anymore but `borrowAmount`
+        borrowPart = (borrowPart * totalBorrow.elastic) / totalBorrow.base;
+
         //borrowPart and collateralPartInAsset should already be scaled due to the exchange rate computation
         uint256 liquidationStartsAt = (collateralPartInAsset *
             liquidationCollateralizationRate) / (10 ** ratesPrecision);
@@ -313,14 +316,14 @@ abstract contract Market is MarketERC20, BoringOwnable {
 
         uint256 numerator = borrowPart - liquidationStartsAt;
         uint256 denDiff = (collateralizationRate *
-            ((10 ** ratesPrecision) + liquidationMultiplier));
+            ((10 ** ratesPrecision) + liquidationMultiplier)) /
+            (10 ** ratesPrecision);
         require(
             (10 ** ratesPrecision) >= denDiff,
             "Market: closing factor not valid"
         );
-        uint256 denominator = ((10 ** ratesPrecision) -
-            denDiff /
-            (10 ** ratesPrecision)) * (10 ** (18 - ratesPrecision));
+        uint256 denominator = ((10 ** ratesPrecision) - denDiff) *
+            (10 ** (18 - ratesPrecision));
 
         uint256 x = (numerator * 1e18) / denominator;
         return x;
