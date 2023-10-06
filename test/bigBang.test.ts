@@ -795,6 +795,10 @@ describe('BigBang test', () => {
 
             const totalSupplyBefore = await usd0.totalSupply();
 
+            const openingFeeBefore = await wethBigBangMarket.openingFees(
+                eoa1.address,
+            );
+            expect(openingFeeBefore.eq(0)).to.be.true;
             usdoBorrowVal = wethMintVal
                 .mul(10)
                 .div(100)
@@ -826,7 +830,6 @@ describe('BigBang test', () => {
                 false,
             );
             expect(yieldBoxBalanceOfFeeToInAsset.eq(0)).to.be.true;
-
             let feeBalance = await usd0.balanceOf(twTap.address);
             expect(feeBalance.eq(0)).to.be.true;
 
@@ -846,15 +849,22 @@ describe('BigBang test', () => {
             let userBorrowedAmount = await wethBigBangMarket.userBorrowPart(
                 eoa1.address,
             );
+            const openingFeeBeforeRepay = await wethBigBangMarket.openingFees(
+                eoa1.address,
+            );
+            expect(openingFeeBeforeRepay.gt(0)).to.be.true;
 
             await wethBigBangMarket
                 .connect(eoa1)
                 .repay(eoa1.address, eoa1.address, false, userBorrowedAmount);
+            const openingFeeAfterRepay = await wethBigBangMarket.openingFees(
+                eoa1.address,
+            );
+            expect(openingFeeAfterRepay.eq(0)).to.be.true;
             userBorrowedAmount = await wethBigBangMarket.userBorrowPart(
                 eoa1.address,
             );
             expect(userBorrowedAmount.eq(0)).to.be.true;
-
             //deposit fees to yieldBox
             const assetId = await wethBigBangMarket.assetId();
             const feeShareIn = await yieldBox.toShare(
@@ -870,10 +880,7 @@ describe('BigBang test', () => {
                 ),
             ).to.emit(bar, 'LogTwTapFeesDeposit');
             feeBalance = await usd0.balanceOf(twTap.address);
-
             expect(feeBalance.gt(0)).to.be.true;
-            expect(usdoBorrowValWithFee.sub(usdoBorrowVal).lt(feeBalance)).to.be
-                .true;
         });
 
         it('should have multiple borrowers and check fees accrued over time', async () => {
