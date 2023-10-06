@@ -137,6 +137,7 @@ contract Singularity is SGLCommon {
         minimumTargetUtilization = 3e17;
         maximumTargetUtilization = 5e17;
         fullUtilizationMinusMax = FULL_UTILIZATION - maximumTargetUtilization;
+        rateValidDuration = 24 hours;
     }
 
     // ********************** //

@@ -54,6 +54,10 @@ abstract contract Market is MarketERC20, BoringOwnable {
     /// This is 'cached' here because calls to Oracles can be very expensive.
     /// Asset -> collateral = assetAmount * exchangeRate.
     uint256 public exchangeRate;
+    /// @notice cached rate is valid only for the `rateValidDuration` time
+    uint256 public rateValidDuration;
+    /// @notice latest timestamp when `exchangeRate` was updated
+    uint256 public rateTimestamp;
 
     /// @notice total amount borrowed
     /// @dev elastic = Total token amount to be repayed by borrowers, base = Total parts of the debt held by borrowers
@@ -95,6 +99,8 @@ abstract contract Market is MarketERC20, BoringOwnable {
     // ************** //
     // *** EVENTS *** //
     // ************** //
+    /// @notice event emitted when `exchangeRate` validation duration is updated
+    event ExchangeRateDurationUpdated(uint256 _oldVal, uint256 _newVal);
     /// @notice event emitted when conservator is updated
     event ConservatorUpdated(address indexed old, address indexed _new);
     /// @notice event emitted when pause state is changed
@@ -154,6 +160,11 @@ abstract contract Market is MarketERC20, BoringOwnable {
     // *********************** //
     // *** OWNER FUNCTIONS *** //
     // *********************** //
+    function setExchangeRateDuration(uint256 _duration) external onlyOwner {
+        emit ExchangeRateDurationUpdated(rateValidDuration, _duration);
+        rateValidDuration = _duration;
+    }
+
     /// @notice sets the borrowing opening fee
     /// @dev can only be called by the owner
     /// @param _val the new value
@@ -341,9 +352,15 @@ abstract contract Market is MarketERC20, BoringOwnable {
             exchangeRate = rate;
             emit LogExchangeRate(rate);
         } else {
-            // Return the old rate if fetching wasn't successful
+            require(
+                rateTimestamp + rateValidDuration >= block.timestamp,
+                "Market: rate too old"
+            );
+            // Return the old rate if fetching wasn't successful & rate isn't too old
             rate = exchangeRate;
         }
+
+        rateTimestamp = block.timestamp;
     }
 
     /// @notice computes the possible liquidator reward
