@@ -27,7 +27,7 @@ contract BBLeverage is BBLendingCommon {
     )
         external
         optionNotPaused(PauseType.LeverageBuy)
-        solvent(from)
+        solvent(from, false)
         notSelf(from)
         returns (uint256 amountOut)
     {
@@ -96,7 +96,7 @@ contract BBLeverage is BBLendingCommon {
     )
         external
         optionNotPaused(PauseType.LeverageSell)
-        solvent(from)
+        solvent(from, false)
         notSelf(from)
         returns (uint256 amountOut)
     {
