@@ -105,6 +105,8 @@ contract BigBang is BBCommon {
             _debtRateMax,
             _debtStartPoint
         );
+
+        rateValidDuration = 24 hours;
     }
 
     function _initModules(
