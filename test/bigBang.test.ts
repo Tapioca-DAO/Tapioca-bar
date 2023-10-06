@@ -355,7 +355,7 @@ describe('BigBang test', () => {
             expect(closingFactor.gt(prevClosingFactor)).to.be.true;
             prevClosingFactor = closingFactor;
 
-            priceDrop = __usd0WethPrice.mul(85).div(100);
+            priceDrop = __usd0WethPrice.mul(50).div(100);
             await usd0WethOracle.set(__usd0WethPrice.add(priceDrop));
             await wethBigBangMarket.updateExchangeRate();
             exchangeRate = await wethBigBangMarket.exchangeRate();
@@ -375,7 +375,46 @@ describe('BigBang test', () => {
                 )[2],
                 5,
             );
-            expect(closingFactor.gt(prevClosingFactor)).to.be.true;
+            if (closingFactor.eq(prevClosingFactor)) {
+                expect(
+                    closingFactor.eq(
+                        await wethBigBangMarket.userBorrowPart(eoa1.address),
+                    ),
+                ).to.be.true;
+            } else {
+                expect(closingFactor.gt(prevClosingFactor)).to.be.true;
+            }
+            prevClosingFactor = closingFactor;
+
+            priceDrop = __usd0WethPrice.mul(60).div(100);
+            await usd0WethOracle.set(__usd0WethPrice.add(priceDrop));
+            await wethBigBangMarket.updateExchangeRate();
+            exchangeRate = await wethBigBangMarket.exchangeRate();
+            reward = await wethBigBangMarket.computeLiquidatorReward(
+                eoa1.address,
+                exchangeRate,
+            );
+            expect(reward.lt(prevReward)).to.be.true;
+            prevReward = reward;
+            closingFactor = await wethBigBangMarket.computeClosingFactor(
+                await wethBigBangMarket.userBorrowPart(eoa1.address),
+                (
+                    await wethBigBangMarket.computeTVLInfo(
+                        eoa1.address,
+                        exchangeRate,
+                    )
+                )[2],
+                5,
+            );
+            if (closingFactor.eq(prevClosingFactor)) {
+                expect(
+                    closingFactor.eq(
+                        await wethBigBangMarket.userBorrowPart(eoa1.address),
+                    ),
+                ).to.be.true;
+            } else {
+                expect(closingFactor.gt(prevClosingFactor)).to.be.true;
+            }
             prevClosingFactor = closingFactor;
         });
         it('should liquidate', async () => {
