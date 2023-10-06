@@ -2158,6 +2158,7 @@ describe('BigBang test', () => {
                 bar,
                 eoa1,
                 timeTravel,
+                cluster,
             };
         };
 
@@ -2173,8 +2174,14 @@ describe('BigBang test', () => {
                 bar,
                 eoa1,
                 timeTravel,
+                cluster,
             } = await loadFixture(setUp);
 
+            await cluster.updateContract(
+                await bar.hostLzChainId(),
+                mockSwapper.address,
+                true,
+            );
             expect(
                 await wethBigBangMarket.userBorrowPart(deployer.address),
             ).to.equal(E(10_005).div(10_000));
@@ -2255,6 +2262,7 @@ describe('BigBang test', () => {
                 bar,
                 eoa1,
                 timeTravel,
+                cluster,
             } = await loadFixture(setUp);
 
             expect(
@@ -2274,6 +2282,7 @@ describe('BigBang test', () => {
                 wethId,
                 await wethBigBangMarket.assetId(),
                 timeTravel,
+                bar,
                 true,
             );
 
@@ -2289,7 +2298,11 @@ describe('BigBang test', () => {
                 wethBigBangMarket.address,
                 await wethBigBangMarket.assetId(),
             );
-
+            await cluster.updateContract(
+                await bar.hostLzChainId(),
+                mockSwapper.address,
+                true,
+            );
             await wethBigBangMarket.sellCollateral(
                 deployer.address,
                 E(10).mul(1e8),
