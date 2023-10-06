@@ -344,10 +344,11 @@ abstract contract Market is MarketERC20, BoringOwnable {
 
         borrowPart = (borrowPart * _totalBorrow.elastic) / _totalBorrow.base;
 
-        amountToSolvency = borrowPart >= collateralAmountInAsset
-            ? borrowPart - collateralAmountInAsset
-            : 0;
-
+        unchecked {
+            amountToSolvency = borrowPart >= collateralAmountInAsset
+                ? borrowPart - collateralAmountInAsset
+                : 0;
+        }
         (minTVL, maxTVL) = _computeMaxAndMinLTVInAsset(
             userCollateralShare[user],
             _exchangeRate
