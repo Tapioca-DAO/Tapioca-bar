@@ -2,6 +2,7 @@
 pragma solidity ^0.8.18;
 
 import "./BBCommon.sol";
+import "tapioca-periph/contracts/interfaces/IMarketLiquidatorReceiver.sol";
 
 // solhint-disable max-line-length
 
@@ -15,8 +16,8 @@ contract BBLiquidation is BBCommon {
     function liquidateBadDebt(
         address user,
         address receiver,
-        ISwapper swapper,
-        bytes calldata collateralToAssetSwapData
+        IMarketLiquidatorReceiver liquidatorReceiver,
+        bytes calldata liquidatorReceiverData
     ) external onlyOwner {
         (bool updated, uint256 _exchangeRate) = oracle.get(oracleData);
         if (updated && _exchangeRate > 0) {
@@ -27,12 +28,6 @@ contract BBLiquidation is BBCommon {
         require(_exchangeRate > 0, "BigBang: current exchangeRate not valid"); //validate stored rate
 
         _accrue();
-
-        // Closed liquidation using a pre-approved swapper
-        require(
-            _isWhitelisted(penrose.hostLzChainId(), address(swapper)),
-            "BigBang: Invalid swapper"
-        );
 
         uint256 borrowAmountWithBonus = userBorrowPart[user] +
             (userBorrowPart[user] * liquidationMultiplier) /
@@ -62,12 +57,13 @@ contract BBLiquidation is BBCommon {
         totalCollateralShare -= userCollateralShare[user];
         userCollateralShare[user] = 0;
 
-        _swapCollateralWithAsset(
+        (, uint256 returnedAmount) = _swapCollateralWithAsset(
             collateralShare,
-            receiver,
-            address(swapper),
-            collateralToAssetSwapData
+            liquidatorReceiver,
+            liquidatorReceiverData
         );
+
+        asset.safeTransfer(receiver, returnedAmount);
     }
 
     // ************************ //
@@ -77,19 +73,21 @@ contract BBLiquidation is BBCommon {
     /// @notice Entry point for liquidations.
     /// @param users An array of user addresses.
     /// @param maxBorrowParts A one-to-one mapping to `users`, contains maximum (partial) borrow amounts (to liquidate) of the respective user.
-    /// @param collateralToAssetSwapDatas Extra swap data parameters
-    /// @param swapper Contract address of the `MultiSwapper` implementation.
     function liquidate(
         address[] calldata users,
         uint256[] calldata maxBorrowParts,
-        bytes[] calldata collateralToAssetSwapDatas,
-        ISwapper swapper
+        IMarketLiquidatorReceiver[] calldata liquidatorReceivers,
+        bytes[] calldata liquidatorReceiverDatas
     ) external optionNotPaused(PauseType.Liquidation) {
         require(users.length > 0, "BB: nothing to liquidate");
         require(users.length == maxBorrowParts.length, "BB: length mismatch");
         require(
-            users.length == collateralToAssetSwapDatas.length,
-            "BB: length mismatch"
+            users.length == liquidatorReceivers.length,
+            "BigBang: length mismatch"
+        );
+        require(
+            liquidatorReceiverDatas.length == liquidatorReceivers.length,
+            "BigBang: length mismatch"
         );
 
         // Oracle can fail but we still need to allow liquidations
@@ -100,13 +98,14 @@ contract BBLiquidation is BBCommon {
             _exchangeRate = exchangeRate; //use stored rate
         }
         require(_exchangeRate > 0, "BB: current exchangeRate not valid"); //validate stored rate
+
         _accrue();
 
         _closedLiquidation(
             users,
             maxBorrowParts,
-            collateralToAssetSwapDatas,
-            swapper,
+            liquidatorReceivers,
+            liquidatorReceiverDatas,
             _exchangeRate
         );
     }
@@ -116,36 +115,36 @@ contract BBLiquidation is BBCommon {
     // ************************* //
     function _swapCollateralWithAsset(
         uint256 _collateralShare,
-        address _receiver,
-        address _swapper,
-        bytes memory _dexData
-    ) private returns (uint256 returnedShare) {
-        // Swaps the users collateral for the borrowed asset
-        yieldBox.transfer(
-            address(this),
-            address(_swapper),
+        IMarketLiquidatorReceiver _liquidatorReceiver,
+        bytes memory _liquidatorReceiverData
+    ) private returns (uint256 returnedShare, uint256 returnedAmount) {
+        uint256 collateralAmount = yieldBox.toAmount(
             collateralId,
-            _collateralShare
-        );
-
-        uint256 minAssetMount = abi.decode(_dexData, (uint256));
-        require(minAssetMount > 0, "BigBang: slippage too high");
-
-        uint256 balanceBefore = yieldBox.balanceOf(_receiver, assetId);
-
-        ISwapper.SwapData memory swapData = ISwapper(_swapper).buildSwapData(
-            collateralId,
-            assetId,
-            0,
             _collateralShare,
-            true,
-            true
+            false
         );
-        ISwapper(_swapper).swap(swapData, minAssetMount, _receiver, "");
-        uint256 balanceAfter = yieldBox.balanceOf(_receiver, assetId);
+        yieldBox.withdraw(
+            collateralId,
+            address(this),
+            address(_liquidatorReceiver),
+            collateralAmount,
+            0
+        );
 
-        returnedShare = balanceAfter - balanceBefore;
-        require(returnedShare > 0, "BigBang: Swap failed");
+        uint256 assetBalanceBefore = asset.balanceOf(address(this));
+        //msg.sender should be validated against `initiator` on IMarketLiquidatorReceiver
+        _liquidatorReceiver.onCollateralReceiver(
+            msg.sender,
+            address(collateral),
+            address(asset),
+            collateralAmount,
+            _liquidatorReceiverData
+        );
+        uint256 assetBalanceAfter = asset.balanceOf(address(this));
+
+        returnedAmount = assetBalanceAfter - assetBalanceBefore;
+        require(returnedAmount > 0, "BigBang: onCollateralReceiver failed");
+        returnedShare = yieldBox.toShare(assetId, returnedAmount, false);
     }
 
     function _updateBorrowAndCollateralShare(
@@ -167,41 +166,43 @@ contract BBLiquidation is BBCommon {
             false
         ) * EXCHANGE_RATE_PRECISION) / _exchangeRate;
 
-        uint256 availableBorrowPart = computeClosingFactor(
+        uint256 borrowPartWithBonus = computeClosingFactor(
             userBorrowPart[user],
             collateralPartInAsset,
             FEE_PRECISION_DECIMALS
         );
+        borrowPart = borrowPartWithBonus;
 
         if (liquidationBonusAmount > 0) {
-            availableBorrowPart =
-                availableBorrowPart +
-                (availableBorrowPart * liquidationBonusAmount) /
+            borrowPartWithBonus =
+                borrowPartWithBonus +
+                (borrowPartWithBonus * liquidationBonusAmount) /
                 FEE_PRECISION;
         }
 
+        borrowPartWithBonus = maxBorrowPart > borrowPartWithBonus
+            ? borrowPartWithBonus
+            : maxBorrowPart;
+        borrowPartWithBonus = borrowPartWithBonus > userBorrowPart[user]
+            ? userBorrowPart[user]
+            : borrowPartWithBonus;
+
         require(
-            collateralPartInAsset > availableBorrowPart,
+            collateralPartInAsset > borrowPartWithBonus,
             "BigBang: bad debt"
         );
 
-        borrowPart = maxBorrowPart > availableBorrowPart
-            ? availableBorrowPart
-            : maxBorrowPart;
-
-        if (borrowPart > userBorrowPart[user]) {
-            borrowPart = userBorrowPart[user];
-        }
+        borrowPart = maxBorrowPart > borrowPart ? borrowPart : maxBorrowPart;
+        borrowPart = borrowPart > userBorrowPart[user]
+            ? userBorrowPart[user]
+            : borrowPart;
 
         userBorrowPart[user] = userBorrowPart[user] - borrowPart;
 
         borrowAmount = totalBorrow.toElastic(borrowPart, false);
-        uint256 amountWithBonus = borrowAmount +
-            (borrowAmount * liquidationMultiplier) /
-            FEE_PRECISION;
         collateralShare = yieldBox.toShare(
             collateralId,
-            (amountWithBonus * _exchangeRate) / EXCHANGE_RATE_PRECISION,
+            (borrowPartWithBonus * _exchangeRate) / EXCHANGE_RATE_PRECISION,
             false
         );
 
@@ -253,16 +254,10 @@ contract BBLiquidation is BBCommon {
     function _liquidateUser(
         address user,
         uint256 maxBorrowPart,
-        ISwapper swapper,
-        uint256 _exchangeRate,
-        bytes calldata _dexData
+        IMarketLiquidatorReceiver _liquidatorReceiver,
+        bytes calldata _liquidatorReceiverData,
+        uint256 _exchangeRate
     ) private {
-        // Closed liquidation using a pre-approved swapper
-        require(
-            _isWhitelisted(penrose.hostLzChainId(), address(swapper)),
-            "BigBang: Invalid swapper"
-        );
-
         uint256 callerReward = _getCallerReward(user, _exchangeRate);
 
         (
@@ -275,11 +270,15 @@ contract BBLiquidation is BBCommon {
             : 0;
 
         uint256 borrowShare = yieldBox.toShare(assetId, borrowAmount, true);
-        uint256 returnedShare = _swapCollateralWithAsset(
+
+        (uint256 returnedShare, ) = _swapCollateralWithAsset(
             collateralShare,
-            address(this),
-            address(swapper),
-            _dexData
+            _liquidatorReceiver,
+            _liquidatorReceiverData
+        );
+        require(
+            returnedShare >= borrowShare,
+            "BigBang: asset amount not valid"
         );
 
         (uint256 feeShare, uint256 callerShare) = _extractLiquidationFees(
@@ -307,8 +306,8 @@ contract BBLiquidation is BBCommon {
     function _closedLiquidation(
         address[] calldata users,
         uint256[] calldata maxBorrowParts,
-        bytes[] calldata collateralToAssetSwapDatas,
-        ISwapper swapper,
+        IMarketLiquidatorReceiver[] calldata liquidatorReceivers,
+        bytes[] calldata liquidatorReceiverDatas,
         uint256 _exchangeRate
     ) private {
         uint256 liquidatedCount = 0;
@@ -319,9 +318,9 @@ contract BBLiquidation is BBCommon {
                 _liquidateUser(
                     user,
                     maxBorrowParts[i],
-                    swapper,
-                    _exchangeRate,
-                    collateralToAssetSwapDatas[i]
+                    liquidatorReceivers[i],
+                    liquidatorReceiverDatas[i],
+                    _exchangeRate
                 );
             }
         }

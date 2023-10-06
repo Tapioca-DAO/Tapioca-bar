@@ -371,8 +371,8 @@ contract BigBang is BBCommon {
     function liquidateBadDebt(
         address user,
         address receiver,
-        ISwapper swapper,
-        bytes calldata collateralToAssetSwapData
+        IMarketLiquidatorReceiver liquidatorReceiver,
+        bytes calldata liquidatorReceiverData
     ) external {
         _executeModule(
             Module.Liquidation,
@@ -380,8 +380,8 @@ contract BigBang is BBCommon {
                 BBLiquidation.liquidateBadDebt.selector,
                 user,
                 receiver,
-                swapper,
-                collateralToAssetSwapData
+                liquidatorReceiver,
+                liquidatorReceiverData
             )
         );
     }
@@ -389,13 +389,11 @@ contract BigBang is BBCommon {
     /// @notice Entry point for liquidations.
     /// @param users An array of user addresses.
     /// @param maxBorrowParts A one-to-one mapping to `users`, contains maximum (partial) borrow amounts (to liquidate) of the respective user.
-    /// @param collateralToAssetSwapDatas Extra swap data
-    /// @param swapper Contract address of the `MultiSwapper` implementation.
     function liquidate(
         address[] calldata users,
         uint256[] calldata maxBorrowParts,
-        bytes[] calldata collateralToAssetSwapDatas,
-        ISwapper swapper
+        IMarketLiquidatorReceiver[] calldata liquidatorReceivers,
+        bytes[] calldata liquidatorReceiverDatas
     ) external {
         _executeModule(
             Module.Liquidation,
@@ -403,8 +401,8 @@ contract BigBang is BBCommon {
                 BBLiquidation.liquidate.selector,
                 users,
                 maxBorrowParts,
-                collateralToAssetSwapDatas,
-                swapper
+                liquidatorReceivers,
+                liquidatorReceiverDatas
             )
         );
     }

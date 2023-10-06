@@ -394,6 +394,7 @@ describe('BigBang test', () => {
             }
             prevClosingFactor = closingFactor;
         });
+
         it('should liquidate', async () => {
             const {
                 wethBigBangMarket,
@@ -406,6 +407,7 @@ describe('BigBang test', () => {
                 __usd0WethPrice,
                 multiSwapper,
                 usd0WethOracle,
+                deployLiquidationReceiverMock,
             } = await loadFixture(register);
 
             await weth.approve(yieldBox.address, ethers.constants.MaxUint256);
@@ -419,7 +421,7 @@ describe('BigBang test', () => {
                 .setApprovalForAll(wethBigBangMarket.address, true);
 
             const wethMintVal = ethers.BigNumber.from((1e18).toString()).mul(
-                10,
+                20,
             );
             await weth.connect(eoa1).freeMint(wethMintVal);
             const valShare = await yieldBox.toShare(
@@ -449,22 +451,44 @@ describe('BigBang test', () => {
             await wethBigBangMarket
                 .connect(eoa1)
                 .borrow(eoa1.address, eoa1.address, usdoBorrowVal);
+            await yieldBox
+                .connect(eoa1)
+                .withdraw(
+                    await wethBigBangMarket.assetId(),
+                    eoa1.address,
+                    eoa1.address,
+                    usdoBorrowVal.div(2),
+                    0,
+                );
 
             // Can't liquidate
-            const swapData = new ethers.utils.AbiCoder().encode(
+            const liquidateData = new ethers.utils.AbiCoder().encode(
                 ['uint256'],
-                [1],
+                [ethers.utils.parseEther('2500')],
             );
+            const liquidationReceiver = await deployLiquidationReceiverMock(
+                await wethBigBangMarket.asset(),
+            );
+
+            const erc20 = await ethers.getContractAt(
+                '@openzeppelin/contracts/token/ERC20/IERC20.sol:IERC20',
+                await wethBigBangMarket.asset(),
+            );
+            await erc20
+                .connect(eoa1)
+                .transfer(liquidationReceiver.address, usdoBorrowVal.div(2));
+
             await expect(
                 wethBigBangMarket.liquidate(
                     [eoa1.address],
                     [usdoBorrowVal],
-                    [swapData],
-                    multiSwapper.address,
+                    [liquidationReceiver.address],
+                    [liquidateData],
                 ),
             ).to.be.reverted;
 
-            const priceDrop = __usd0WethPrice.mul(85).div(10).div(100);
+            const priceDrop = __usd0WethPrice.mul(35).div(10).div(100);
+
             await usd0WethOracle.set(__usd0WethPrice.add(priceDrop));
 
             const userCollateralShareBefore =
@@ -502,26 +526,25 @@ describe('BigBang test', () => {
             await expect(
                 wethBigBangMarket.liquidate(
                     [eoa1.address],
-                    [borrowPart],
-                    [swapData],
-                    multiSwapper.address,
+                    [usdoBorrowVal],
+                    [liquidationReceiver.address],
+                    [liquidateData],
                 ),
             ).to.not.be.reverted;
-
             await expect(
                 wethBigBangMarket.liquidate(
                     [eoa1.address],
-                    [borrowPart],
-                    [swapData],
-                    ethers.constants.AddressZero,
+                    [usdoBorrowVal],
+                    [liquidationReceiver.address],
+                    [liquidateData],
                 ),
             ).to.be.reverted;
             await expect(
                 wethBigBangMarket.liquidate(
                     [eoa1.address],
-                    [borrowPart],
+                    [usdoBorrowVal],
                     [],
-                    ethers.constants.AddressZero,
+                    [liquidateData],
                 ),
             ).to.be.reverted;
             const liquidatorAmountAfter = await yieldBox.toAmount(

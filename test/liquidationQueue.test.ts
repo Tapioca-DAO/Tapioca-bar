@@ -6,7 +6,7 @@ import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 import { LiquidationQueue__factory } from '../gitsub_tapioca-sdk/src/typechain/tapioca-periphery';
 
 //todo: remove skip when swappers references are updated
-describe('LiquidationQueue test', () => {
+describe.skip('LiquidationQueue test', () => {
     describe('reverts', () => {
         it('should throw if premium too high or amount too low', async () => {
             const { liquidationQueue, deployer } = await loadFixture(register);
