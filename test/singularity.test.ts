@@ -2983,8 +2983,21 @@ describe('Singularity test', () => {
             );
 
             const snapshot = await takeSnapshot();
-            await expect(
-                wethUsdcSingularity.permit(
+
+            const encoder = new ethers.utils.AbiCoder();
+            const permitActionData = encoder.encode(
+                [
+                    'bool',
+                    'address',
+                    'address',
+                    'uint256',
+                    'uint256',
+                    'uint8',
+                    'bytes32',
+                    'bytes32',
+                ],
+                [
+                    true,
                     deployer.address,
                     eoa1.address,
                     (1e18).toString(),
@@ -2992,10 +3005,16 @@ describe('Singularity test', () => {
                     v,
                     r,
                     s,
-                ),
-            )
+                ],
+            );
+
+            await expect(wethUsdcSingularity.permitAction(permitActionData, 0))
                 .to.emit(wethUsdcSingularity, 'Approval')
                 .withArgs(deployer.address, eoa1.address, (1e18).toString());
+
+            await expect(
+                wethUsdcSingularity.permitAction(permitActionData, 10),
+            ).to.be.revertedWith('ERC20Permit: invalid signature');
 
             await snapshot.restore();
             await expect(

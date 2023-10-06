@@ -1324,6 +1324,7 @@ export async function getSGLPermitSignature(
     spender: string,
     value: BigNumberish = ethers.constants.MaxUint256,
     deadline = ethers.constants.MaxUint256,
+    actionType: BigNumberish = 0,
     permitConfig?: {
         nonce?: BigNumberish;
         name?: string;
@@ -1339,6 +1340,10 @@ export async function getSGLPermitSignature(
     ]);
 
     const permit = [
+        {
+            name: 'actionType',
+            type: 'uint16',
+        },
         {
             name: 'owner',
             type: 'address',
@@ -1371,6 +1376,7 @@ export async function getSGLPermitSignature(
             },
             type === 'Permit' ? { Permit: permit } : { PermitBorrow: permit },
             {
+                actionType,
                 owner: wallet.address,
                 spender,
                 value,
