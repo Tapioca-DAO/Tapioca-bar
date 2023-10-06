@@ -312,9 +312,14 @@ abstract contract Market is MarketERC20, BoringOwnable {
         if (borrowPart < liquidationStartsAt) return 0;
 
         uint256 numerator = borrowPart - liquidationStartsAt;
+        uint256 denDiff = (collateralizationRate *
+            ((10 ** ratesPrecision) + liquidationMultiplier));
+        require(
+            (10 ** ratesPrecision) >= denDiff,
+            "Market: closing factor not valid"
+        );
         uint256 denominator = ((10 ** ratesPrecision) -
-            (liquidationCollateralizationRate *
-                ((10 ** ratesPrecision) + liquidationMultiplier)) /
+            denDiff /
             (10 ** ratesPrecision)) * (10 ** (18 - ratesPrecision));
 
         uint256 x = (numerator * 1e18) / denominator;
