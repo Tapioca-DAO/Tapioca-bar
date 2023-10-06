@@ -743,6 +743,23 @@ max liquidatable bonus amount
 |---|---|---|
 | _0 | uint256 | undefined |
 
+### liquidationCollateralizationRate
+
+```solidity
+function liquidationCollateralizationRate() external view returns (uint256)
+```
+
+liquidation collateralization rate
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | uint256 | undefined |
+
 ### liquidationModule
 
 ```solidity
@@ -1152,7 +1169,41 @@ function permitBorrow(address owner, address spender, uint256 value, uint256 dea
 function protocolFee() external view returns (uint256)
 ```
 
-liquidation protocol rewards
+accrual protocol rewards
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | uint256 | undefined |
+
+### rateTimestamp
+
+```solidity
+function rateTimestamp() external view returns (uint256)
+```
+
+latest timestamp when `exchangeRate` was updated
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | uint256 | undefined |
+
+### rateValidDuration
+
+```solidity
+function rateValidDuration() external view returns (uint256)
+```
+
+cached rate is valid only for the `rateValidDuration` time
 
 
 
@@ -1322,6 +1373,22 @@ sets the borrowing opening fee
 |---|---|---|
 | _val | uint256 | the new value |
 
+### setExchangeRateDuration
+
+```solidity
+function setExchangeRateDuration(uint256 _duration) external nonpayable
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| _duration | uint256 | undefined |
+
 ### setLiquidationQueueConfig
 
 ```solidity
@@ -1343,7 +1410,7 @@ sets LQ specific confinguration
 ### setMarketConfig
 
 ```solidity
-function setMarketConfig(uint256 _borrowOpeningFee, contract IOracle _oracle, bytes _oracleData, address _conservator, uint256 _callerFee, uint256 _protocolFee, uint256 _liquidationBonusAmount, uint256 _minLiquidatorReward, uint256 _maxLiquidatorReward, uint256 _totalBorrowCap, uint256 _collateralizationRate) external nonpayable
+function setMarketConfig(uint256 _borrowOpeningFee, contract IOracle _oracle, bytes _oracleData, address _conservator, uint256 _callerFee, uint256 _protocolFee, uint256 _liquidationBonusAmount, uint256 _minLiquidatorReward, uint256 _maxLiquidatorReward, uint256 _totalBorrowCap, uint256 _collateralizationRate, uint256 _liquidationCollateralizationRate) external nonpayable
 ```
 
 sets common market configuration
@@ -1365,6 +1432,7 @@ sets common market configuration
 | _maxLiquidatorReward | uint256 | undefined |
 | _totalBorrowCap | uint256 | undefined |
 | _collateralizationRate | uint256 | undefined |
+| _liquidationCollateralizationRate | uint256 | undefined |
 
 ### setSingularityConfig
 
@@ -1765,6 +1833,23 @@ event emitted when conservator is updated
 |---|---|---|
 | old `indexed` | address | undefined |
 | _new `indexed` | address | undefined |
+
+### ExchangeRateDurationUpdated
+
+```solidity
+event ExchangeRateDurationUpdated(uint256 _oldVal, uint256 _newVal)
+```
+
+event emitted when `exchangeRate` validation duration is updated
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| _oldVal  | uint256 | undefined |
+| _newVal  | uint256 | undefined |
 
 ### InterestElasticityUpdated
 

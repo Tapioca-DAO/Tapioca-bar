@@ -54,6 +54,10 @@ abstract contract Market is MarketERC20, BoringOwnable {
     /// This is 'cached' here because calls to Oracles can be very expensive.
     /// Asset -> collateral = assetAmount * exchangeRate.
     uint256 public exchangeRate;
+    /// @notice cached rate is valid only for the `rateValidDuration` time
+    uint256 public rateValidDuration;
+    /// @notice latest timestamp when `exchangeRate` was updated
+    uint256 public rateTimestamp;
 
     /// @notice total amount borrowed
     /// @dev elastic = Total token amount to be repayed by borrowers, base = Total parts of the debt held by borrowers
@@ -69,17 +73,19 @@ abstract contract Market is MarketERC20, BoringOwnable {
 
     /// @notice liquidation caller rewards
     uint256 public callerFee; // 90%
-    /// @notice liquidation protocol rewards
+    /// @notice accrual protocol rewards
     uint256 public protocolFee; // 10%
     /// @notice min % a liquidator can receive in rewards
-    uint256 public minLiquidatorReward = 1e3; //1%
+    uint256 public minLiquidatorReward = 8e4; //80%
     /// @notice max % a liquidator can receive in rewards
-    uint256 public maxLiquidatorReward = 1e4; //10%
+    uint256 public maxLiquidatorReward = 9e4; //90%
     /// @notice max liquidatable bonus amount
     /// @dev max % added to the amount that can be liquidated
     uint256 public liquidationBonusAmount = 1e4; //10%
     /// @notice collateralization rate
     uint256 public collateralizationRate; // 75%
+    /// @notice liquidation collateralization rate
+    uint256 public liquidationCollateralizationRate; //80%
     /// @notice borrowing opening fee
     uint256 public borrowOpeningFee = 50; //0.05%
     /// @notice liquidation multiplier used to compute liquidator rewards
@@ -95,6 +101,8 @@ abstract contract Market is MarketERC20, BoringOwnable {
     // ************** //
     // *** EVENTS *** //
     // ************** //
+    /// @notice event emitted when `exchangeRate` validation duration is updated
+    event ExchangeRateDurationUpdated(uint256 _oldVal, uint256 _newVal);
     /// @notice event emitted when conservator is updated
     event ConservatorUpdated(address indexed old, address indexed _new);
     /// @notice event emitted when pause state is changed
@@ -135,13 +143,16 @@ abstract contract Market is MarketERC20, BoringOwnable {
     }
 
     /// @dev Checks if the user is solvent in the closed liquidation case at the end of the function body.
-    modifier solvent(address from) {
+    modifier solvent(address from, bool liquidation) {
         updateExchangeRate();
         _accrue();
 
         _;
 
-        require(_isSolvent(from, exchangeRate), "Market: insolvent");
+        require(
+            _isSolvent(from, exchangeRate, liquidation),
+            "Market: insolvent"
+        );
     }
 
     bool internal initialized;
@@ -154,6 +165,11 @@ abstract contract Market is MarketERC20, BoringOwnable {
     // *********************** //
     // *** OWNER FUNCTIONS *** //
     // *********************** //
+    function setExchangeRateDuration(uint256 _duration) external onlyOwner {
+        emit ExchangeRateDurationUpdated(rateValidDuration, _duration);
+        rateValidDuration = _duration;
+    }
+
     /// @notice sets the borrowing opening fee
     /// @dev can only be called by the owner
     /// @param _val the new value
@@ -184,7 +200,8 @@ abstract contract Market is MarketERC20, BoringOwnable {
         uint256 _minLiquidatorReward,
         uint256 _maxLiquidatorReward,
         uint256 _totalBorrowCap,
-        uint256 _collateralizationRate
+        uint256 _collateralizationRate,
+        uint256 _liquidationCollateralizationRate
     ) external onlyOwner {
         if (_borrowOpeningFee > 0) {
             require(_borrowOpeningFee <= FEE_PRECISION, "Market: not valid");
@@ -253,7 +270,19 @@ abstract contract Market is MarketERC20, BoringOwnable {
                 _collateralizationRate <= FEE_PRECISION,
                 "Market: not valid"
             );
+            require(
+                _collateralizationRate <= liquidationCollateralizationRate,
+                "Market: collateralizationRate too big"
+            );
             collateralizationRate = _collateralizationRate;
+        }
+
+        if (_liquidationCollateralizationRate > 0) {
+            require(
+                _liquidationCollateralizationRate >= collateralizationRate,
+                "Market: liquidationCollateralizationRate too small"
+            );
+            liquidationCollateralizationRate = _liquidationCollateralizationRate;
         }
     }
 
@@ -281,7 +310,7 @@ abstract contract Market is MarketERC20, BoringOwnable {
 
         //borrowPart and collateralPartInAsset should already be scaled due to the exchange rate computation
         uint256 liquidationStartsAt = (collateralPartInAsset *
-            collateralizationRate) / (10 ** ratesPrecision);
+            liquidationCollateralizationRate) / (10 ** ratesPrecision);
 
         if (borrowPart < liquidationStartsAt) return 0;
 
@@ -349,9 +378,15 @@ abstract contract Market is MarketERC20, BoringOwnable {
             exchangeRate = rate;
             emit LogExchangeRate(rate);
         } else {
-            // Return the old rate if fetching wasn't successful
+            require(
+                rateTimestamp + rateValidDuration >= block.timestamp,
+                "Market: rate too old"
+            );
+            // Return the old rate if fetching wasn't successful & rate isn't too old
             rate = exchangeRate;
         }
+
+        rateTimestamp = block.timestamp;
     }
 
     /// @notice computes the possible liquidator reward
@@ -406,7 +441,8 @@ abstract contract Market is MarketERC20, BoringOwnable {
     /// @param _exchangeRate The exchange rate. Used to cache the `exchangeRate` between calls.
     function _isSolvent(
         address user,
-        uint256 _exchangeRate
+        uint256 _exchangeRate,
+        bool _liquidation
     ) internal view returns (bool) {
         // accrue must have already been called!
         uint256 borrowPart = userBorrowPart[user];
@@ -425,7 +461,11 @@ abstract contract Market is MarketERC20, BoringOwnable {
         return
             collateralAmount *
                 (EXCHANGE_RATE_PRECISION / FEE_PRECISION) *
-                collateralizationRate >=
+                (
+                    _liquidation
+                        ? liquidationCollateralizationRate
+                        : collateralizationRate
+                ) >=
             // Moved exchangeRate here instead of dividing the other side to preserve more precision
             (borrowPart * _totalBorrow.elastic * _exchangeRate) /
                 _totalBorrow.base;
