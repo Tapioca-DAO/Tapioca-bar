@@ -211,7 +211,7 @@ contract SGLLiquidation is SGLCommon {
 
         for (uint256 i = 0; i < users.length; i++) {
             address user = users[i];
-            if (!_isSolvent(user, _exchangeRate)) {
+            if (!_isSolvent(user, _exchangeRate, true)) {
                 uint256 borrowAmount = _computeAssetAmountToSolvency(
                     user,
                     _exchangeRate
@@ -381,8 +381,9 @@ contract SGLLiquidation is SGLCommon {
         uint256 extraShare = returnedShare > borrowShare
             ? returnedShare - borrowShare
             : 0;
-        feeShare = (extraShare * protocolFee) / FEE_PRECISION; // x% of profit goes to fee.
+
         callerShare = (extraShare * callerReward) / FEE_PRECISION; //  y%  of profit goes to caller.
+        feeShare = extraShare - callerShare; // rest goes to the fee
 
         if (feeShare > 0) {
             yieldBox.transfer(
@@ -413,24 +414,18 @@ contract SGLLiquidation is SGLCommon {
         uint256 _exchangeRate,
         bytes calldata dexData
     ) private {
-        if (_isSolvent(user, _exchangeRate)) return;
-
         uint256 callerReward = _getCallerReward(user, _exchangeRate);
-
         (
             uint256 borrowAmount,
             ,
             uint256 collateralShare
         ) = _updateBorrowAndCollateralShare(user, maxBorrowPart, _exchangeRate);
-
         uint256 borrowShare = yieldBox.toShare(assetId, borrowAmount, true);
-
         // Closed liquidation using a pre-approved swapper
         require(
             _isWhitelisted(penrose.hostLzChainId(), address(swapper)),
             "SGL: Invalid swapper"
         );
-
         totalCollateralShare = totalCollateralShare > collateralShare
             ? totalCollateralShare - collateralShare
             : 0;
@@ -439,26 +434,22 @@ contract SGLLiquidation is SGLCommon {
         } else {
             _yieldBoxShares[user][COLLATERAL_SIG] -= collateralShare;
         }
-
         if (borrowShare > _yieldBoxShares[user][ASSET_SIG]) {
             _yieldBoxShares[user][ASSET_SIG] = 0; //some assets accrue in time
         } else {
             _yieldBoxShares[user][ASSET_SIG] -= borrowShare;
         }
-
         _swapCollateralWithAsset(
             collateralShare,
             address(this),
             address(swapper),
             dexData
         );
-
         (uint256 feeShare, uint256 callerShare) = _extractLiquidationFees(
             borrowShare,
             callerReward,
             address(swapper)
         );
-
         address[] memory _users = new address[](1);
         _users[0] = user;
         emit Liquidated(
@@ -490,7 +481,7 @@ contract SGLLiquidation is SGLCommon {
         uint256 liquidatedCount = 0;
         for (uint256 i = 0; i < users.length; i++) {
             address user = users[i];
-            if (!_isSolvent(user, _exchangeRate)) {
+            if (!_isSolvent(user, _exchangeRate, true)) {
                 liquidatedCount++;
                 _liquidateUser(
                     user,

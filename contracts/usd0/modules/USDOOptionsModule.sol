@@ -190,6 +190,7 @@ contract USDOOptionsModule is USDOCommon {
         uint64 _nonce,
         bytes memory _payload
     ) public {
+        require(msg.sender == address(this), "USDO: caller not valid");
         require(validModules[module], "USDO: module not valid");
 
         (
