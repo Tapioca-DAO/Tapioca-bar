@@ -25,7 +25,7 @@ contract BBBorrow is BBLendingCommon {
         external
         optionNotPaused(PauseType.Borrow)
         notSelf(to)
-        solvent(from)
+        solvent(from, false)
         returns (uint256 part, uint256 share)
     {
         require(amount >= debtStartPoint, "BigBang: borrow amount too small");
@@ -41,6 +41,8 @@ contract BBBorrow is BBLendingCommon {
         require(allowanceShare > 0, "BigBang: allowanceShare not valid");
         _allowedBorrow(from, allowanceShare);
         (part, share) = _borrow(from, to, amount);
+
+        penrose.reAccrueBigBangMarkets();
     }
 
     /// @notice Repays a loan.
@@ -78,5 +80,7 @@ contract BBBorrow is BBLendingCommon {
         _allowedBorrow(from, allowanceShare);
 
         amount = _repay(from, to, part);
+
+        penrose.reAccrueBigBangMarkets();
     }
 }
