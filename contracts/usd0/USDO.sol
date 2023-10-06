@@ -102,7 +102,6 @@ contract USDO is BaseUSDO, IERC3156FlashLender {
 
         require(!_flashloanEntered, "USDO: reentrancy");
         _flashloanEntered = true;
-        require(token == address(this), "USDO: token not valid");
         require(maxFlashLoan(token) >= amount, "USDO: amount too big");
         uint256 fee = flashFee(token, amount);
         _mint(address(receiver), amount);
