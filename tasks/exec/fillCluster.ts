@@ -18,9 +18,14 @@ export const fillCluster__task = async (
 
     const tag = await hre.SDK.hardhatUtils.askForTag(hre, 'local');
 
-    const clusterDeployment = hre.SDK.db
-        .loadLocalDeployment(tag, chainInfo.chainId)
+    let clusterDeployment = hre.SDK.db
+        .loadGlobalDeployment(tag, 'Cluster', chainInfo.chainId)
         .find((e) => e.name == 'Cluster');
+    if (!clusterDeployment) {
+        clusterDeployment = hre.SDK.db
+            .loadGlobalDeployment(tag, 'Cluster', chainInfo.chainId)
+            .find((e) => e.name == 'Cluster');
+    }
     if (!clusterDeployment) {
         throw new Error('[-] Cluster not found');
     }

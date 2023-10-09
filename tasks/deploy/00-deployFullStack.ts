@@ -19,7 +19,6 @@ import {
     UNISWAP_DEPLOYMENTS,
 } from '../../gitsub_tapioca-sdk/src/api/constants';
 import { buildCluster } from '../deployBuilds/12-buildCluster';
-import { buildClusterSetup } from '../setups/03-buildClusterSetup';
 
 // hh deployFullStack --network goerli
 export const deployFullStack__task = async (
@@ -97,8 +96,14 @@ export const deployFullStack__task = async (
     VM.add(ybURI).add(yieldBox);
 
     // 01 - Deploy Cluster
-    const cluster = await buildCluster(hre, chainInfo.address);
-    VM.add(cluster);
+    if (!clusterAddress || clusterAddress == hre.ethers.constants.AddressZero) {
+        const cluster = await buildCluster(
+            hre,
+            chainInfo.address,
+            signer.address,
+        );
+        VM.add(cluster);
+    }
 
     // 02 - Penrose
     const penrose = await buildPenrose(
