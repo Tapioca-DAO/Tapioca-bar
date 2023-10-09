@@ -3831,9 +3831,14 @@ describe('Singularity test', () => {
                 10,
                 deployer,
             );
+
             const Cluster = new Cluster__factory(deployer);
-            const Cluster_0 = await Cluster.deploy(0);
-            const Cluster_10 = await Cluster.deploy(0);
+            const Cluster_0 = await Cluster.deploy(
+                LZEndpointMock_chainID_0.address,
+            );
+            const Cluster_10 = await Cluster.deploy(
+                LZEndpointMock_chainID_10.address,
+            );
 
             //Deploy TapiocaWrapper
             const tapiocaWrapper_0 = await deployTapiocaWrapper(deployer);
