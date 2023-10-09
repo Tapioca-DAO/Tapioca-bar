@@ -24,9 +24,9 @@ export const buildUSD0 = async (
         dependsOn: [
             { argPosition: 1, deploymentName: 'YieldBox' },
             { argPosition: 2, deploymentName: 'Cluster' },
-            { argPosition: 3, deploymentName: 'USDOLeverageModule' },
-            { argPosition: 4, deploymentName: 'USDOMarketModule' },
-            { argPosition: 5, deploymentName: 'USDOOptionsModule' },
+            { argPosition: 4, deploymentName: 'USDOLeverageModule' },
+            { argPosition: 5, deploymentName: 'USDOMarketModule' },
+            { argPosition: 6, deploymentName: 'USDOOptionsModule' },
         ],
         runStaticSimulation: false,
     };

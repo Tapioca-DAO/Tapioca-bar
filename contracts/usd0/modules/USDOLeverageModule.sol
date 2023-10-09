@@ -34,18 +34,15 @@ contract USDOLeverageModule is USDOCommon {
         if (leverageFor != msg.sender) {
             require(
                 allowance(leverageFor, msg.sender) >= amount,
-                "UDSO: not approved"
+                "UDSO: approval"
             );
             _spendAllowance(leverageFor, msg.sender, amount);
         }
-        require(
-            swapData.tokenOut != address(this),
-            "USDO: token out not valid"
-        );
+        require(swapData.tokenOut != address(this), "USDO: not valid");
         _assureMaxSlippage(amount, swapData.amountOutMin);
         require(
             cluster.isWhitelisted(lzData.lzDstChainId, externalData.swapper),
-            "USDO: not authorized"
+            "USDO: auth"
         ); //fail fast
         bytes32 senderBytes = LzLib.addressToBytes32(msg.sender);
         (amount, ) = _removeDust(amount);

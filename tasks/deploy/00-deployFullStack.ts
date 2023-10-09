@@ -7,10 +7,8 @@ import { buildMasterContracts } from '../deployBuilds/02-buildMasterContracts';
 import { buildMultiSwapper } from '../deployBuilds/04-buildMultiSwapper';
 import { buildUSD0 } from '../deployBuilds/06-buildUSDO';
 import { buildStableToUSD0Bidder } from '../deployBuilds/07-buildStableToUSD0Bidder';
-import {
-    buildBigBangModules,
-    buildSingularityModules,
-} from '../deployBuilds/09-buildBigBangModules';
+import { buildBigBangModules } from '../deployBuilds/09-buildBigBangModules';
+import { buildSingularityModules } from '../deployBuilds/08-buildSingularityModules';
 import { buildPenroseSetup } from '../setups/01-buildPenroseSetup';
 import { buildMasterContractsSetup } from '../setups/02-buildMasterContractsSetup';
 import { loadVM } from '../utils';
@@ -188,7 +186,6 @@ export const deployFullStack__task = async (
 
     const calls: Multicall3.CallStruct[] = [
         ...(await buildPenroseSetup(hre, vmList)),
-        ...(await buildClusterSetup(hre, vmList)),
         ...(await buildMasterContractsSetup(hre, vmList)),
     ];
 

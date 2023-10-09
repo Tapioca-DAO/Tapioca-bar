@@ -11,7 +11,7 @@ export const buildClusterSetup = async (
 ): Promise<Multicall3.CallStruct[]> => {
     const calls: Multicall3.CallStruct[] = [];
 
-    const cluster = await getAfterDepContract<Cluster>(hre, deps, 'Cluster');
+    const cluster = await getAfterDepContract<ICluster>(hre, deps, 'Cluster');
 
     const multiSwapperAddress = deps.find(
         (e) => e.name === 'MultiSwapper',
