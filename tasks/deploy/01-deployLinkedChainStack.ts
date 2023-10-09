@@ -55,7 +55,7 @@ export const deployLinkedChainStack__task = async (
 
     let clusterAddress = hre.ethers.constants.AddressZero;
     let clusterDep = hre.SDK.db
-        .loadGlobalDeployment(tag, 'Cluster', chainInfo.chainId)
+        .loadGlobalDeployment(tag, 'tapioca-periphery', chainInfo.chainId)
         .find((e) => e.name == 'Cluster');
 
     if (!clusterDep) {
@@ -73,12 +73,16 @@ export const deployLinkedChainStack__task = async (
 
     // 01 - Deploy Cluster
     if (!clusterAddress || clusterAddress == hre.ethers.constants.AddressZero) {
+        console.log(`Need to deploy Cluster`);
         const cluster = await buildCluster(
             hre,
             chainInfo.address,
             signer.address,
         );
         VM.add(cluster);
+    }
+    else {
+        console.log(`Using deployed Cluster ${clusterAddress}`);
     }
 
     // 02 USDO
