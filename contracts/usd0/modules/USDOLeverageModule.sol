@@ -23,73 +23,73 @@ contract USDOLeverageModule is USDOCommon {
         ICluster _cluster
     ) BaseUSDOStorage(_lzEndpoint, _yieldBox, _cluster) {}
 
-    function initMultiHopBuy(
-        address from,
-        uint256 collateralAmount,
-        uint256 borrowAmount,
-        IUSDOBase.ILeverageSwapData calldata swapData,
-        IUSDOBase.ILeverageLZData calldata lzData,
-        IUSDOBase.ILeverageExternalContractsData calldata externalData,
-        bytes calldata airdropAdapterParams,
-        ICommonData.IApproval[] calldata approvals
-    ) external payable {
-        //allowance is also checked on SGl.multiHopBuy
-        initMultiHopBuyChecks(
-            from,
-            collateralAmount,
-            borrowAmount,
-            swapData.amountOutMin
-        );
-        bytes32 senderBytes = LzLib.addressToBytes32(from);
-        (collateralAmount, ) = _removeDust(collateralAmount);
-        (borrowAmount, ) = _removeDust(borrowAmount);
-        (, , uint256 airdropAmount, ) = LzLib.decodeAdapterParams(
-            airdropAdapterParams
-        );
-        bytes memory lzPayload = abi.encode(
-            PT_MARKET_MULTIHOP_BUY,
-            senderBytes,
-            from,
-            _ld2sd(collateralAmount),
-            _ld2sd(borrowAmount),
-            swapData,
-            lzData,
-            externalData,
-            approvals,
-            airdropAmount
-        );
-        _checkGasLimit(
-            lzData.lzSrcChainId,
-            PT_MARKET_MULTIHOP_BUY,
-            airdropAdapterParams,
-            NO_EXTRA_GAS
-        );
-        _lzSend(
-            lzData.lzSrcChainId,
-            lzPayload,
-            payable(lzData.refundAddress),
-            lzData.zroPaymentAddress,
-            airdropAdapterParams,
-            msg.value
-        );
-        emit SendToChain(lzData.lzSrcChainId, msg.sender, senderBytes, 0);
-    }
+    // function initMultiHopBuy(
+    //     address from,
+    //     uint256 collateralAmount,
+    //     uint256 borrowAmount,
+    //     IUSDOBase.ILeverageSwapData calldata swapData,
+    //     IUSDOBase.ILeverageLZData calldata lzData,
+    //     IUSDOBase.ILeverageExternalContractsData calldata externalData,
+    //     bytes calldata airdropAdapterParams,
+    //     ICommonData.IApproval[] calldata approvals
+    // ) external payable {
+    //     //allowance is also checked on SGl.multiHopBuy
+    //     initMultiHopBuyChecks(
+    //         from,
+    //         collateralAmount,
+    //         borrowAmount,
+    //         swapData.amountOutMin
+    //     );
+    //     bytes32 senderBytes = LzLib.addressToBytes32(from);
+    //     (collateralAmount, ) = _removeDust(collateralAmount);
+    //     (borrowAmount, ) = _removeDust(borrowAmount);
+    //     (, , uint256 airdropAmount, ) = LzLib.decodeAdapterParams(
+    //         airdropAdapterParams
+    //     );
+    //     bytes memory lzPayload = abi.encode(
+    //         PT_MARKET_MULTIHOP_BUY,
+    //         senderBytes,
+    //         from,
+    //         _ld2sd(collateralAmount),
+    //         _ld2sd(borrowAmount),
+    //         swapData,
+    //         lzData,
+    //         externalData,
+    //         approvals,
+    //         airdropAmount
+    //     );
+    //     _checkGasLimit(
+    //         lzData.lzSrcChainId,
+    //         PT_MARKET_MULTIHOP_BUY,
+    //         airdropAdapterParams,
+    //         NO_EXTRA_GAS
+    //     );
+    //     _lzSend(
+    //         lzData.lzSrcChainId,
+    //         lzPayload,
+    //         payable(lzData.refundAddress),
+    //         lzData.zroPaymentAddress,
+    //         airdropAdapterParams,
+    //         msg.value
+    //     );
+    //     emit SendToChain(lzData.lzSrcChainId, msg.sender, senderBytes, 0);
+    // }
 
-    function initMultiHopBuyChecks(
-        address from,
-        uint256 collateralAmount,
-        uint256 borrowAmount,
-        uint256 amountOutMin
-    ) private {
-        if (from != msg.sender) {
-            require(
-                allowance(from, msg.sender) >= collateralAmount,
-                "UDSO: sender not approved"
-            );
-            _spendAllowance(from, msg.sender, collateralAmount);
-        }
-        _assureMaxSlippage(borrowAmount, amountOutMin);
-    }
+    // function initMultiHopBuyChecks(
+    //     address from,
+    //     uint256 collateralAmount,
+    //     uint256 borrowAmount,
+    //     uint256 amountOutMin
+    // ) private {
+    //     if (from != msg.sender) {
+    //         require(
+    //             allowance(from, msg.sender) >= collateralAmount,
+    //             "UDSO: sender not approved"
+    //         );
+    //         _spendAllowance(from, msg.sender, collateralAmount);
+    //     }
+    //     _assureMaxSlippage(borrowAmount, amountOutMin);
+    // }
 
     function sendForLeverage(
         uint256 amount,
@@ -154,6 +154,7 @@ contract USDOLeverageModule is USDOCommon {
         uint64 _nonce,
         bytes memory _payload
     ) public {
+        require(msg.sender == address(this), "USDO: caller not valid");
         require(validModules[module], "USDO: module not valid");
         (
             ,
