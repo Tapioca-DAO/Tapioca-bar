@@ -97,15 +97,14 @@ export const deployFullStack__task = async (
 
     // 01 - Deploy Cluster
     if (!clusterAddress || clusterAddress == hre.ethers.constants.AddressZero) {
-        console.log(`Need to deploy Cluster`);
+        console.log('Need to deploy Cluster');
         const cluster = await buildCluster(
             hre,
             chainInfo.address,
             signer.address,
         );
         VM.add(cluster);
-    }
-    else {
+    } else {
         console.log(`Using deployed Cluster ${clusterAddress}`);
     }
 
