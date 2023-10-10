@@ -3,6 +3,7 @@ import _ from 'lodash';
 
 import { TContract } from '../../gitsub_tapioca-sdk/src/shared';
 import { Cluster } from '../../gitsub_tapioca-sdk/src/typechain/tapioca-periphery';
+import ClusterArtifact from '../../gitsub_tapioca-sdk/src/artifacts/tapioca-periphery/Cluster.json';
 
 export const fillCluster__task = async (
     data: { chains: [] },
@@ -19,20 +20,23 @@ export const fillCluster__task = async (
     const tag = await hre.SDK.hardhatUtils.askForTag(hre, 'local');
 
     let clusterDeployment = hre.SDK.db
-        .loadGlobalDeployment(tag, 'Cluster', chainInfo.chainId)
+        .loadGlobalDeployment(tag, 'tapioca-periphery', chainInfo.chainId)
         .find((e) => e.name == 'Cluster');
     if (!clusterDeployment) {
         clusterDeployment = hre.SDK.db
-            .loadGlobalDeployment(tag, 'Cluster', chainInfo.chainId)
+            .loadLocalDeployment(tag, chainInfo.chainId)
             .find((e) => e.name == 'Cluster');
     }
     if (!clusterDeployment) {
         throw new Error('[-] Cluster not found');
     }
-    const clusterContract = (await hre.ethers.getContractAt(
-        'Cluster',
+
+    const signer = (await hre.ethers.getSigners())[0];
+    const clusterContract = new hre.ethers.Contract(
         clusterDeployment?.address,
-    )) as Cluster;
+        ClusterArtifact.abi,
+        signer,
+    ).connect(signer) as Cluster;
 
     //whitelist ontracts for the current chain; TapiocaOFTs and USDO are set during setLzRemote task
     const fixedNames = [
@@ -65,6 +69,7 @@ export const fillCluster__task = async (
         filter,
     );
 
+    console.log('Whitelist all contracts from current chain');
     await (
         await clusterContract.batchUpdateContracts(
             0,
@@ -72,17 +77,21 @@ export const fillCluster__task = async (
             true,
         )
     ).wait(3);
-
+    const supportedChains = hre.SDK.utils.getSupportedChains();
     for (let i = 0; i < data.chains.length; i++) {
+        console.log(`Whitelist all contracts from chain no ${data.chains[i]}`);
         allContracts = loadAllContracts(hre, tag, data.chains[i], filter);
         await (
             await clusterContract.batchUpdateContracts(
-                data.chains[i],
+                supportedChains.filter((a) => a.chainId == data.chains[i])[0]
+                    .lzChainId,
                 allContracts.map((a) => a.address),
                 true,
             )
         ).wait(3);
     }
+
+    console.log('Done');
 };
 
 const loadAllContracts = (

@@ -324,4 +324,4 @@ task(
     'fillCluster',
     'Whitelist contracts on Cluster',
     fillCluster__task,
-).addParam('chains', 'block.chainid array');
+).addVariadicPositionalParam('chains', 'block.chainid array');
