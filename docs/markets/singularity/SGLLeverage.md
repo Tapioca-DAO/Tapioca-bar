@@ -1399,7 +1399,7 @@ event Approval(address indexed owner, address indexed spender, uint256 value)
 ### ApprovalBorrow
 
 ```solidity
-event ApprovalBorrow(address indexed owner, address indexed spender, uint256 value)
+event ApprovalBorrow(address indexed owner, address indexed spender, uint256 indexed value)
 ```
 
 event emitted when borrow approval is performed
@@ -1412,7 +1412,7 @@ event emitted when borrow approval is performed
 |---|---|---|
 | owner `indexed` | address | undefined |
 | spender `indexed` | address | undefined |
-| value  | uint256 | undefined |
+| value `indexed` | uint256 | undefined |
 
 ### BidExecutionSwapperUpdated
 
@@ -1467,7 +1467,7 @@ event emitted when `exchangeRate` validation duration is updated
 ### InterestElasticityUpdated
 
 ```solidity
-event InterestElasticityUpdated(uint256 oldVal, uint256 newVal)
+event InterestElasticityUpdated(uint256 indexed oldVal, uint256 indexed newVal)
 ```
 
 event emitted when the interest elasticity updated
@@ -1478,13 +1478,13 @@ event emitted when the interest elasticity updated
 
 | Name | Type | Description |
 |---|---|---|
-| oldVal  | uint256 | undefined |
-| newVal  | uint256 | undefined |
+| oldVal `indexed` | uint256 | undefined |
+| newVal `indexed` | uint256 | undefined |
 
 ### Liquidated
 
 ```solidity
-event Liquidated(address indexed liquidator, address[] users, uint256 liquidatorReward, uint256 protocolReward, uint256 repayedAmount, uint256 collateralShareRemoved)
+event Liquidated(address indexed liquidator, address[] indexed users, uint256 indexed liquidatorReward, uint256 protocolReward, uint256 repayedAmount, uint256 collateralShareRemoved)
 ```
 
 event emitted when a position is liquidated
@@ -1496,8 +1496,8 @@ event emitted when a position is liquidated
 | Name | Type | Description |
 |---|---|---|
 | liquidator `indexed` | address | undefined |
-| users  | address[] | undefined |
-| liquidatorReward  | uint256 | undefined |
+| users `indexed` | address[] | undefined |
+| liquidatorReward `indexed` | uint256 | undefined |
 | protocolReward  | uint256 | undefined |
 | repayedAmount  | uint256 | undefined |
 | collateralShareRemoved  | uint256 | undefined |
@@ -1505,7 +1505,7 @@ event emitted when a position is liquidated
 ### LiquidationMultiplierUpdated
 
 ```solidity
-event LiquidationMultiplierUpdated(uint256 oldVal, uint256 newVal)
+event LiquidationMultiplierUpdated(uint256 indexed oldVal, uint256 indexed newVal)
 ```
 
 event emitted when the liquidation multiplier rate is updated
@@ -1516,13 +1516,13 @@ event emitted when the liquidation multiplier rate is updated
 
 | Name | Type | Description |
 |---|---|---|
-| oldVal  | uint256 | undefined |
-| newVal  | uint256 | undefined |
+| oldVal `indexed` | uint256 | undefined |
+| newVal `indexed` | uint256 | undefined |
 
 ### LogAccrue
 
 ```solidity
-event LogAccrue(uint256 accruedAmount, uint256 feeFraction, uint64 rate, uint256 utilization)
+event LogAccrue(uint256 indexed accruedAmount, uint256 indexed feeFraction, uint64 indexed rate, uint256 utilization)
 ```
 
 event emitted when accrual happens
@@ -1533,15 +1533,15 @@ event emitted when accrual happens
 
 | Name | Type | Description |
 |---|---|---|
-| accruedAmount  | uint256 | undefined |
-| feeFraction  | uint256 | undefined |
-| rate  | uint64 | undefined |
+| accruedAmount `indexed` | uint256 | undefined |
+| feeFraction `indexed` | uint256 | undefined |
+| rate `indexed` | uint64 | undefined |
 | utilization  | uint256 | undefined |
 
 ### LogAddAsset
 
 ```solidity
-event LogAddAsset(address indexed from, address indexed to, uint256 share, uint256 fraction)
+event LogAddAsset(address indexed from, address indexed to, uint256 indexed share, uint256 fraction)
 ```
 
 event emitted when asset is added
@@ -1554,13 +1554,13 @@ event emitted when asset is added
 |---|---|---|
 | from `indexed` | address | undefined |
 | to `indexed` | address | undefined |
-| share  | uint256 | undefined |
+| share `indexed` | uint256 | undefined |
 | fraction  | uint256 | undefined |
 
 ### LogAddCollateral
 
 ```solidity
-event LogAddCollateral(address indexed from, address indexed to, uint256 share)
+event LogAddCollateral(address indexed from, address indexed to, uint256 indexed share)
 ```
 
 event emitted when collateral is added
@@ -1573,12 +1573,12 @@ event emitted when collateral is added
 |---|---|---|
 | from `indexed` | address | undefined |
 | to `indexed` | address | undefined |
-| share  | uint256 | undefined |
+| share `indexed` | uint256 | undefined |
 
 ### LogBorrow
 
 ```solidity
-event LogBorrow(address indexed from, address indexed to, uint256 amount, uint256 feeAmount, uint256 part)
+event LogBorrow(address indexed from, address indexed to, uint256 indexed amount, uint256 feeAmount, uint256 part)
 ```
 
 event emitted when asset is borrowed
@@ -1591,14 +1591,14 @@ event emitted when asset is borrowed
 |---|---|---|
 | from `indexed` | address | undefined |
 | to `indexed` | address | undefined |
-| amount  | uint256 | undefined |
+| amount `indexed` | uint256 | undefined |
 | feeAmount  | uint256 | undefined |
 | part  | uint256 | undefined |
 
 ### LogBorrowCapUpdated
 
 ```solidity
-event LogBorrowCapUpdated(uint256 _oldVal, uint256 _newVal)
+event LogBorrowCapUpdated(uint256 indexed _oldVal, uint256 indexed _newVal)
 ```
 
 event emitted when borrow cap is updated
@@ -1609,13 +1609,13 @@ event emitted when borrow cap is updated
 
 | Name | Type | Description |
 |---|---|---|
-| _oldVal  | uint256 | undefined |
-| _newVal  | uint256 | undefined |
+| _oldVal `indexed` | uint256 | undefined |
+| _newVal `indexed` | uint256 | undefined |
 
 ### LogBorrowingFee
 
 ```solidity
-event LogBorrowingFee(uint256 _oldVal, uint256 _newVal)
+event LogBorrowingFee(uint256 indexed _oldVal, uint256 indexed _newVal)
 ```
 
 event emitted when borrow opening fee is updated
@@ -1626,13 +1626,13 @@ event emitted when borrow opening fee is updated
 
 | Name | Type | Description |
 |---|---|---|
-| _oldVal  | uint256 | undefined |
-| _newVal  | uint256 | undefined |
+| _oldVal `indexed` | uint256 | undefined |
+| _newVal `indexed` | uint256 | undefined |
 
 ### LogExchangeRate
 
 ```solidity
-event LogExchangeRate(uint256 rate)
+event LogExchangeRate(uint256 indexed rate)
 ```
 
 event emitted when cached exchange rate is updated
@@ -1643,12 +1643,12 @@ event emitted when cached exchange rate is updated
 
 | Name | Type | Description |
 |---|---|---|
-| rate  | uint256 | undefined |
+| rate `indexed` | uint256 | undefined |
 
 ### LogRemoveAsset
 
 ```solidity
-event LogRemoveAsset(address indexed from, address indexed to, uint256 share, uint256 fraction)
+event LogRemoveAsset(address indexed from, address indexed to, uint256 indexed share, uint256 fraction)
 ```
 
 event emitted when asset is removed
@@ -1661,13 +1661,13 @@ event emitted when asset is removed
 |---|---|---|
 | from `indexed` | address | undefined |
 | to `indexed` | address | undefined |
-| share  | uint256 | undefined |
+| share `indexed` | uint256 | undefined |
 | fraction  | uint256 | undefined |
 
 ### LogRemoveCollateral
 
 ```solidity
-event LogRemoveCollateral(address indexed from, address indexed to, uint256 share)
+event LogRemoveCollateral(address indexed from, address indexed to, uint256 indexed share)
 ```
 
 event emitted when collateral is removed
@@ -1680,12 +1680,12 @@ event emitted when collateral is removed
 |---|---|---|
 | from `indexed` | address | undefined |
 | to `indexed` | address | undefined |
-| share  | uint256 | undefined |
+| share `indexed` | uint256 | undefined |
 
 ### LogRepay
 
 ```solidity
-event LogRepay(address indexed from, address indexed to, uint256 amount, uint256 part)
+event LogRepay(address indexed from, address indexed to, uint256 indexed amount, uint256 part)
 ```
 
 event emitted when asset is repayed
@@ -1698,13 +1698,13 @@ event emitted when asset is repayed
 |---|---|---|
 | from `indexed` | address | undefined |
 | to `indexed` | address | undefined |
-| amount  | uint256 | undefined |
+| amount `indexed` | uint256 | undefined |
 | part  | uint256 | undefined |
 
 ### LogWithdrawFees
 
 ```solidity
-event LogWithdrawFees(address indexed feeTo, uint256 feesEarnedFraction)
+event LogWithdrawFees(address indexed feeTo, uint256 indexed feesEarnedFraction)
 ```
 
 event emitted when fees are extracted
@@ -1716,12 +1716,12 @@ event emitted when fees are extracted
 | Name | Type | Description |
 |---|---|---|
 | feeTo `indexed` | address | undefined |
-| feesEarnedFraction  | uint256 | undefined |
+| feesEarnedFraction `indexed` | uint256 | undefined |
 
 ### LogYieldBoxFeesDeposit
 
 ```solidity
-event LogYieldBoxFeesDeposit(uint256 feeShares, uint256 ethAmount)
+event LogYieldBoxFeesDeposit(uint256 indexed feeShares, uint256 indexed ethAmount)
 ```
 
 event emitted when fees are deposited to YieldBox
@@ -1732,13 +1732,13 @@ event emitted when fees are deposited to YieldBox
 
 | Name | Type | Description |
 |---|---|---|
-| feeShares  | uint256 | undefined |
-| ethAmount  | uint256 | undefined |
+| feeShares `indexed` | uint256 | undefined |
+| ethAmount `indexed` | uint256 | undefined |
 
 ### LqCollateralizationRateUpdated
 
 ```solidity
-event LqCollateralizationRateUpdated(uint256 oldVal, uint256 newVal)
+event LqCollateralizationRateUpdated(uint256 indexed oldVal, uint256 indexed newVal)
 ```
 
 event emitted when the LQ collateralization rate is updated
@@ -1749,13 +1749,13 @@ event emitted when the LQ collateralization rate is updated
 
 | Name | Type | Description |
 |---|---|---|
-| oldVal  | uint256 | undefined |
-| newVal  | uint256 | undefined |
+| oldVal `indexed` | uint256 | undefined |
+| newVal `indexed` | uint256 | undefined |
 
 ### MaximumInterestPerSecondUpdated
 
 ```solidity
-event MaximumInterestPerSecondUpdated(uint256 oldVal, uint256 newVal)
+event MaximumInterestPerSecondUpdated(uint256 indexed oldVal, uint256 indexed newVal)
 ```
 
 event emitted when the maximum interest per second is updated
@@ -1766,13 +1766,13 @@ event emitted when the maximum interest per second is updated
 
 | Name | Type | Description |
 |---|---|---|
-| oldVal  | uint256 | undefined |
-| newVal  | uint256 | undefined |
+| oldVal `indexed` | uint256 | undefined |
+| newVal `indexed` | uint256 | undefined |
 
 ### MaximumTargetUtilizationUpdated
 
 ```solidity
-event MaximumTargetUtilizationUpdated(uint256 oldVal, uint256 newVal)
+event MaximumTargetUtilizationUpdated(uint256 indexed oldVal, uint256 indexed newVal)
 ```
 
 event emitted when the maximum target utilization is updated
@@ -1783,13 +1783,13 @@ event emitted when the maximum target utilization is updated
 
 | Name | Type | Description |
 |---|---|---|
-| oldVal  | uint256 | undefined |
-| newVal  | uint256 | undefined |
+| oldVal `indexed` | uint256 | undefined |
+| newVal `indexed` | uint256 | undefined |
 
 ### MinimumInterestPerSecondUpdated
 
 ```solidity
-event MinimumInterestPerSecondUpdated(uint256 oldVal, uint256 newVal)
+event MinimumInterestPerSecondUpdated(uint256 indexed oldVal, uint256 indexed newVal)
 ```
 
 event emitted when the minimum interest per second is updated
@@ -1800,13 +1800,13 @@ event emitted when the minimum interest per second is updated
 
 | Name | Type | Description |
 |---|---|---|
-| oldVal  | uint256 | undefined |
-| newVal  | uint256 | undefined |
+| oldVal `indexed` | uint256 | undefined |
+| newVal `indexed` | uint256 | undefined |
 
 ### MinimumTargetUtilizationUpdated
 
 ```solidity
-event MinimumTargetUtilizationUpdated(uint256 oldVal, uint256 newVal)
+event MinimumTargetUtilizationUpdated(uint256 indexed oldVal, uint256 indexed newVal)
 ```
 
 event emitted when the minimum target utilization is updated
@@ -1817,8 +1817,8 @@ event emitted when the minimum target utilization is updated
 
 | Name | Type | Description |
 |---|---|---|
-| oldVal  | uint256 | undefined |
-| newVal  | uint256 | undefined |
+| oldVal `indexed` | uint256 | undefined |
+| newVal `indexed` | uint256 | undefined |
 
 ### OracleDataUpdated
 
@@ -1845,7 +1845,7 @@ event emitted when oracle is updated
 ### OrderBookLiquidationMultiplierUpdated
 
 ```solidity
-event OrderBookLiquidationMultiplierUpdated(uint256 oldVal, uint256 newVal)
+event OrderBookLiquidationMultiplierUpdated(uint256 indexed oldVal, uint256 indexed newVal)
 ```
 
 event emitted when the order book liquidation multiplier rate is updated
@@ -1856,8 +1856,8 @@ event emitted when the order book liquidation multiplier rate is updated
 
 | Name | Type | Description |
 |---|---|---|
-| oldVal  | uint256 | undefined |
-| newVal  | uint256 | undefined |
+| oldVal `indexed` | uint256 | undefined |
+| newVal `indexed` | uint256 | undefined |
 
 ### OwnershipTransferred
 
@@ -1879,7 +1879,7 @@ event OwnershipTransferred(address indexed previousOwner, address indexed newOwn
 ### PausedUpdated
 
 ```solidity
-event PausedUpdated(enum Market.PauseType _type, bool oldState, bool newState)
+event PausedUpdated(enum Market.PauseType indexed _type, bool indexed oldState, bool indexed newState)
 ```
 
 event emitted when pause state is changed
@@ -1890,9 +1890,9 @@ event emitted when pause state is changed
 
 | Name | Type | Description |
 |---|---|---|
-| _type  | enum Market.PauseType | undefined |
-| oldState  | bool | undefined |
-| newState  | bool | undefined |
+| _type `indexed` | enum Market.PauseType | undefined |
+| oldState `indexed` | bool | undefined |
+| newState `indexed` | bool | undefined |
 
 ### Transfer
 

@@ -58,7 +58,7 @@ contract MarketERC20 is IERC20, IERC20Permit, EIP712 {
     event ApprovalBorrow(
         address indexed owner,
         address indexed spender,
-        uint256 value
+        uint256 indexed value
     );
 
     // ***************** //
@@ -105,7 +105,7 @@ contract MarketERC20 is IERC20, IERC20Permit, EIP712 {
     // ********************** //
     // *** VIEW FUNCTIONS *** //
     // ********************** //
-    function totalSupply() public view virtual override returns (uint256) {}
+    function totalSupply() external view virtual override returns (uint256) {}
 
     function nonces(address owner) external view returns (uint256) {
         return _nonces[owner];
@@ -129,7 +129,7 @@ contract MarketERC20 is IERC20, IERC20Permit, EIP712 {
     function transfer(
         address to,
         uint256 amount
-    ) public virtual returns (bool) {
+    ) external virtual returns (bool) {
         // If `amount` is 0, or `msg.sender` is `to` nothing happens
         if (amount != 0 || msg.sender == to) {
             uint256 srcBalance = balanceOf[msg.sender];
@@ -154,7 +154,7 @@ contract MarketERC20 is IERC20, IERC20Permit, EIP712 {
         address from,
         address to,
         uint256 amount
-    ) public virtual returns (bool) {
+    ) external virtual returns (bool) {
         // If `amount` is 0, or `from` is `to` nothing happens
         if (amount != 0) {
             uint256 srcBalance = balanceOf[from];
