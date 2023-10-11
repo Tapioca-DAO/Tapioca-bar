@@ -168,7 +168,7 @@ contract USDOOptionsModule is USDOCommon {
             );
 
         if (approvals.length > 0) {
-            _callApproval(approvals);
+            _callApproval(approvals, PT_SEND_FROM);
         }
 
         ISendFrom(address(this)).sendFrom{value: airdropAmount}(
@@ -189,6 +189,7 @@ contract USDOOptionsModule is USDOCommon {
         uint64 _nonce,
         bytes memory _payload
     ) public {
+        require(msg.sender == address(this), "USDO: caller not valid");
         require(validModules[module], "USDO: module not valid");
 
         (
@@ -281,7 +282,7 @@ contract USDOOptionsModule is USDOCommon {
         uint256 airdropAmount
     ) public {
         if (approvals.length > 0) {
-            _callApproval(approvals);
+            _callApproval(approvals, PT_TAP_EXERCISE);
         }
 
         uint256 paymentTokenBalanceBefore = IERC20(paymentToken).balanceOf(
@@ -322,48 +323,48 @@ contract USDOOptionsModule is USDOCommon {
         }
     }
 
-    function multiHop(bytes memory _payload) public {
-        (
-            ,
-            ,
-            address from,
-            uint64 collateralAmountSD,
-            uint64 borrowAmountSD,
-            IUSDOBase.ILeverageSwapData memory swapData,
-            IUSDOBase.ILeverageLZData memory lzData,
-            IUSDOBase.ILeverageExternalContractsData memory externalData,
-            ICommonData.IApproval[] memory approvals,
-            uint256 airdropAmount
-        ) = abi.decode(
-                _payload,
-                (
-                    uint16,
-                    bytes32,
-                    address,
-                    uint64,
-                    uint64,
-                    IUSDOBase.ILeverageSwapData,
-                    IUSDOBase.ILeverageLZData,
-                    IUSDOBase.ILeverageExternalContractsData,
-                    ICommonData.IApproval[],
-                    uint256
-                )
-            );
+    // function multiHop(bytes memory _payload) public {
+    //     (
+    //         ,
+    //         ,
+    //         address from,
+    //         uint64 collateralAmountSD,
+    //         uint64 borrowAmountSD,
+    //         IUSDOBase.ILeverageSwapData memory swapData,
+    //         IUSDOBase.ILeverageLZData memory lzData,
+    //         IUSDOBase.ILeverageExternalContractsData memory externalData,
+    //         ICommonData.IApproval[] memory approvals,
+    //         uint256 airdropAmount
+    //     ) = abi.decode(
+    //             _payload,
+    //             (
+    //                 uint16,
+    //                 bytes32,
+    //                 address,
+    //                 uint64,
+    //                 uint64,
+    //                 IUSDOBase.ILeverageSwapData,
+    //                 IUSDOBase.ILeverageLZData,
+    //                 IUSDOBase.ILeverageExternalContractsData,
+    //                 ICommonData.IApproval[],
+    //                 uint256
+    //             )
+    //         );
 
-        if (approvals.length > 0) {
-            _callApproval(approvals);
-        }
+    //     if (approvals.length > 0) {
+    //         _callApproval(approvals, PT_MARKET_MULTIHOP_BUY);
+    //     }
 
-        ISingularity(externalData.srcMarket).multiHopBuyCollateral{
-            value: airdropAmount
-        }(
-            from,
-            _sd2ld(collateralAmountSD),
-            _sd2ld(borrowAmountSD),
-            true,
-            swapData,
-            lzData,
-            externalData
-        );
-    }
+    //     ISingularity(externalData.srcMarket).multiHopBuyCollateral{
+    //         value: airdropAmount
+    //     }(
+    //         from,
+    //         _sd2ld(collateralAmountSD),
+    //         _sd2ld(borrowAmountSD),
+    //         true,
+    //         swapData,
+    //         lzData,
+    //         externalData
+    //     );
+    // }
 }
