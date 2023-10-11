@@ -28,14 +28,13 @@ contract SGLLeverage is SGLLendingCommon {
         external
         payable
         optionNotPaused(PauseType.LeverageBuy)
-        solvent(from)
+        solvent(from, false)
         notSelf(from)
     {
         require(
             _isWhitelisted(lzData.lzDstChainId, externalData.swapper),
             "SGL: Invalid swapper"
         );
-
         //add collateral
         if (collateralAmount > 0) {
             uint256 collateralShare = yieldBox.toShare(
@@ -54,13 +53,11 @@ contract SGLLeverage is SGLLendingCommon {
             borrowAmount + feeAmount,
             asset.safeDecimals()
         );
-
         if (from != msg.sender) {
             require(allowanceShare > 0, "BigBang: allowanceShare not valid");
         }
         _allowedBorrow(from, allowanceShare);
         (, uint256 borrowShare) = _borrow(from, from, borrowAmount);
-
         //withdraw
         (uint256 amountOut, ) = yieldBox.withdraw(
             assetId,
@@ -69,7 +66,6 @@ contract SGLLeverage is SGLLendingCommon {
             0,
             borrowShare
         );
-
         IUSDOBase(address(asset)).sendForLeverage{
             value: useAirdroppedFunds ? address(this).balance : msg.value
         }(amountOut, from, lzData, swapData, externalData);
@@ -86,7 +82,7 @@ contract SGLLeverage is SGLLendingCommon {
         external
         payable
         optionNotPaused(PauseType.LeverageSell)
-        solvent(from)
+        solvent(from, false)
         notSelf(from)
     {
         require(
@@ -127,7 +123,7 @@ contract SGLLeverage is SGLLendingCommon {
     )
         external
         optionNotPaused(PauseType.LeverageSell)
-        solvent(from)
+        solvent(from, false)
         notSelf(from)
         returns (uint256 amountOut)
     {
@@ -187,7 +183,7 @@ contract SGLLeverage is SGLLendingCommon {
     )
         external
         optionNotPaused(PauseType.LeverageBuy)
-        solvent(from)
+        solvent(from, false)
         notSelf(from)
         returns (uint256 amountOut)
     {

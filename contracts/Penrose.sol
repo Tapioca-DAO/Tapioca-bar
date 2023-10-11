@@ -11,6 +11,7 @@ import "tapioca-periph/contracts/interfaces/ISingularity.sol";
 import "tapioca-periph/contracts/interfaces/IPenrose.sol";
 import "tapioca-periph/contracts/interfaces/ITwTap.sol";
 import "tapioca-periph/contracts/interfaces/ICluster.sol";
+import "tapioca-periph/contracts/interfaces/IBigBang.sol";
 
 // TODO: Permissionless market deployment
 ///     + asset registration? (toggle to renounce ownership so users can call)
@@ -62,6 +63,8 @@ contract Penrose is BoringOwnable, BoringFactory {
 
     /// @notice registered empty strategies
     mapping(address => IStrategy) public emptyStrategies;
+
+    address[] public allBigBangMarkets;
 
     /// @notice creates a Penrose contract
     /// @param _yieldBox YieldBox contract address
@@ -409,6 +412,7 @@ contract Penrose is BoringOwnable, BoringFactory {
         require(_contract != address(0), "Penrose: zero address");
         require(_contract.code.length > 0, "Penrose: deployment failed");
         isMarketRegistered[_contract] = true;
+        allBigBangMarkets.push(_contract);
         emit RegisterBigBang(_contract, mc);
     }
 
@@ -457,6 +461,25 @@ contract Penrose is BoringOwnable, BoringFactory {
                 require(success[i], _getRevertMsg(result[i]));
             }
             ++i;
+        }
+    }
+
+    /// @notice Calls `accrue()` on all BigBang registered markets
+    /// @dev callable by BigBang ETH market only
+    function reAccrueBigBangMarkets() external notPaused {
+        require(
+            isMarketRegistered[msg.sender] == true,
+            "Penrose: unauthorized"
+        );
+        if (msg.sender == bigBangEthMarket) {
+            uint256 len = allBigBangMarkets.length;
+            address[] memory markets = allBigBangMarkets;
+            for (uint256 i = 0; i < len; i++) {
+                address market = markets[i];
+                if (market != bigBangEthMarket && isMarketRegistered[market]) {
+                    IBigBang(market).accrue();
+                }
+            }
         }
     }
 
