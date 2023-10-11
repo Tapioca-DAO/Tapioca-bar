@@ -66,6 +66,28 @@ Registers an existing Singularity market (without deployment)
 | mc | address | The address of the master contract which must be already registered |
 | _contract | address | undefined |
 
+### allBigBangMarkets
+
+```solidity
+function allBigBangMarkets(uint256) external view returns (address)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | uint256 | undefined |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | address | undefined |
+
 ### bigBangEthDebtRate
 
 ```solidity
@@ -507,6 +529,17 @@ function pendingOwner() external view returns (address)
 | Name | Type | Description |
 |---|---|---|
 | _0 | address | undefined |
+
+### reAccrueBigBangMarkets
+
+```solidity
+function reAccrueBigBangMarkets() external nonpayable
+```
+
+Calls `accrue()` on all BigBang registered markets
+
+*callable by BigBang ETH market only*
+
 
 ### registerBigBang
 
