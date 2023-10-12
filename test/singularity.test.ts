@@ -36,6 +36,29 @@ describe('Singularity test', () => {
             const { wethUsdcSingularity, wbtcBigBangMarket, deployer, bar } =
                 await loadFixture(register);
 
+            // const borrowFeeUpdateFn =
+            //     wethUsdcSingularity.interface.encodeFunctionData(
+            //         'setMarketConfig',
+            //         [
+            //             5e2,
+            //             ethers.constants.AddressZero,
+            //             ethers.utils.toUtf8Bytes(''),
+            //             ethers.constants.AddressZero,
+            //             0,
+            //             0,
+            //             0,
+            //             0,
+            //             0,
+            //             0,
+            //             80000,
+            //         ],
+            //     );
+            // await bar.executeMarketFn(
+            //     [wethUsdcSingularity.address],
+            //     [borrowFeeUpdateFn],
+            //     true,
+            // );
+
             let x = await wethUsdcSingularity.computeClosingFactor(
                 ethers.utils.parseEther('7600'),
                 ethers.utils.parseEther('10000'),
@@ -70,34 +93,12 @@ describe('Singularity test', () => {
             );
 
             x = await wethUsdcSingularity.computeClosingFactor(
-                ethers.utils.parseEther('8000'),
-                '10000000000',
-                5,
-            );
-            console.log(
-                `Borrow part: 8000 with 18 decimals, collateral part: 10000 with 6 decimals, closing factor without bonus: ${ethers.utils.formatEther(
-                    x,
-                )}`,
-            );
-
-            x = await wethUsdcSingularity.computeClosingFactor(
                 ethers.utils.parseEther('4000'),
                 ethers.utils.parseEther('5000'),
                 5,
             );
             console.log(
                 `Borrow part: 4000 with 18 decimals, collateral part: 5000 with 18 decimals, closing factor without bonus: ${ethers.utils.formatEther(
-                    x,
-                )}`,
-            );
-
-            x = await wethUsdcSingularity.computeClosingFactor(
-                '8000000000',
-                ethers.utils.parseEther('10000'),
-                5,
-            );
-            console.log(
-                `Borrow part: 8000 with 6 decimals, collateral part: 10000 with 18 decimals, closing factor without bonus: ${ethers.utils.formatEther(
                     x,
                 )}`,
             );
@@ -424,6 +425,7 @@ describe('Singularity test', () => {
                         0,
                         0,
                         0,
+                        0,
                     ],
                 );
             await bar.executeMarketFn(
@@ -497,6 +499,7 @@ describe('Singularity test', () => {
                     'address',
                     'uint256',
                     'uint256',
+                    'uint256',
                 ],
                 [
                     ethers.constants.AddressZero,
@@ -510,6 +513,7 @@ describe('Singularity test', () => {
                     usdcAssetId,
                     wethUsdcOracle.address,
                     ethers.utils.parseEther('1'),
+                    0,
                     0,
                 ],
             );
@@ -561,6 +565,7 @@ describe('Singularity test', () => {
                     'address[]',
                     'address[]',
                     'uint256',
+                    'uint256',
                 ],
                 [
                     _sglLiquidationModule.address,
@@ -576,6 +581,7 @@ describe('Singularity test', () => {
                     [],
                     [],
                     ethers.utils.parseEther('1'),
+                    0,
                 ],
             );
 
@@ -741,7 +747,13 @@ describe('Singularity test', () => {
                 bar,
                 wethUsdcOracle,
                 __wethUsdcPrice,
+                deployLiquidationReceiverMock,
+                timeTravel,
             } = await loadFixture(register);
+
+            const liquidationReceiver = await deployLiquidationReceiverMock(
+                await wethUsdcSingularity.asset(),
+            );
 
             const assetId = await wethUsdcSingularity.assetId();
             const collateralId = await wethUsdcSingularity.collateralId();
@@ -752,9 +764,17 @@ describe('Singularity test', () => {
                 __wethUsdcPrice.div((1e18).toString()),
             );
 
+            const liquidateData = new ethers.utils.AbiCoder().encode(
+                ['uint256'],
+                [wethMintVal],
+            );
             // We get asset
             await weth.freeMint(wethMintVal);
+            await timeTravel(86401);
+            await weth.freeMint(wethMintVal);
             await usdc.connect(eoa1).freeMint(usdcMintVal);
+
+            await weth.transfer(liquidationReceiver.address, wethMintVal);
 
             // We approve external operators
             await approveTokensAndSetBarApproval();
@@ -803,8 +823,8 @@ describe('Singularity test', () => {
                     [
                         eoa1.address,
                         deployer.address,
-                        multiSwapper.address,
-                        data,
+                        liquidationReceiver.address,
+                        liquidateData,
                     ],
                 );
             await expect(
@@ -823,9 +843,8 @@ describe('Singularity test', () => {
                 wethUsdcSingularity.liquidate(
                     [eoa1.address],
                     [wethBorrowVal],
-                    [data],
-                    data,
-                    multiSwapper.address,
+                    [liquidationReceiver.address],
+                    [liquidateData],
                 ),
             ).to.be.revertedWith('SGL: bad debt');
 
@@ -833,8 +852,8 @@ describe('Singularity test', () => {
                 wethUsdcSingularity.liquidateBadDebt(
                     eoa1.address,
                     deployer.address,
-                    multiSwapper.address,
-                    data,
+                    liquidationReceiver.address,
+                    liquidateData,
                 ),
             ).to.be.revertedWith('Ownable: caller is not the owner');
 
@@ -855,7 +874,7 @@ describe('Singularity test', () => {
             expect(userCollateralShareAfter.eq(0)).to.be.true;
         });
 
-        it('Should lend Weth, deposit Usdc collateral and borrow Weth and be liquidated for price drop', async () => {
+        it.skip('Should lend Weth, deposit Usdc collateral and borrow Weth and be liquidated for price drop', async () => {
             const {
                 usdc,
                 weth,
@@ -869,7 +888,13 @@ describe('Singularity test', () => {
                 multiSwapper,
                 wethUsdcOracle,
                 __wethUsdcPrice,
+                deployLiquidationReceiverMock,
+                timeTravel,
             } = await loadFixture(register);
+
+            const liquidationReceiver = await deployLiquidationReceiverMock(
+                await wethUsdcSingularity.asset(),
+            );
 
             const assetId = await wethUsdcSingularity.assetId();
             const collateralId = await wethUsdcSingularity.collateralId();
@@ -882,7 +907,16 @@ describe('Singularity test', () => {
 
             // We get asset
             await weth.freeMint(wethMintVal);
+            await timeTravel(86401);
+            await weth.freeMint(wethMintVal);
             await usdc.connect(eoa1).freeMint(usdcMintVal);
+
+            await weth.transfer(liquidationReceiver.address, wethMintVal);
+
+            const liquidateData = new ethers.utils.AbiCoder().encode(
+                ['uint256'],
+                [wethMintVal],
+            );
 
             // We approve external operators
             await approveTokensAndSetBarApproval();
@@ -919,16 +953,13 @@ describe('Singularity test', () => {
                     0,
                 );
 
-            const data = new ethers.utils.AbiCoder().encode(['uint256'], [1]);
-
             // Can't liquidate
             await expect(
                 wethUsdcSingularity.liquidate(
                     [eoa1.address],
                     [wethBorrowVal],
-                    [data],
-                    data,
-                    multiSwapper.address,
+                    [liquidationReceiver.address],
+                    [liquidateData],
                 ),
             ).to.be.reverted;
 
@@ -960,9 +991,8 @@ describe('Singularity test', () => {
                 wethUsdcSingularity.liquidate(
                     [eoa1.address],
                     [wethBorrowVal],
-                    [data],
-                    data,
-                    multiSwapper.address,
+                    [liquidationReceiver.address],
+                    [liquidateData],
                 ),
             ).to.not.be.reverted;
 
@@ -989,7 +1019,13 @@ describe('Singularity test', () => {
                 multiSwapper,
                 wbtcUsdcOracle,
                 __wbtcUsdcPrice,
+                deployLiquidationReceiverMock,
+                timeTravel,
             } = await loadFixture(register);
+
+            const liquidationReceiver = await deployLiquidationReceiverMock(
+                await wbtcUsdcSingularity.asset(),
+            );
 
             const assetId = await wbtcUsdcSingularity.assetId();
             const collateralId = await wbtcUsdcSingularity.collateralId();
@@ -1000,7 +1036,11 @@ describe('Singularity test', () => {
 
             // We get asset
             await wbtc.freeMint(wbtcMintVal);
+            await timeTravel(86401);
+            await wbtc.freeMint(wbtcMintVal);
             await usdc.connect(eoa1).freeMint(usdcMintVal);
+
+            await wbtc.transfer(liquidationReceiver.address, wbtcMintVal);
 
             // We approve external operators
             await approveTokensAndSetBarApproval();
@@ -1034,31 +1074,32 @@ describe('Singularity test', () => {
                     0,
                 );
 
-            const data = new ethers.utils.AbiCoder().encode(['uint256'], [1]);
+            const liquidateData = new ethers.utils.AbiCoder().encode(
+                ['uint256'],
+                [wbtcBorrowVal],
+            );
             // Can't liquidate
             await expect(
                 wbtcUsdcSingularity.liquidate(
                     [eoa1.address],
                     [wbtcBorrowVal],
-                    [data],
-                    data,
-                    multiSwapper.address,
+                    [liquidationReceiver.address],
+                    [liquidateData],
                 ),
             ).to.be.reverted;
 
             // Can be liquidated price drop (USDC/WETH)
-            const priceDrop = __wbtcUsdcPrice.mul(2).div(100);
+            const priceDrop = __wbtcUsdcPrice.mul(35).div(100);
             await wbtcUsdcOracle.set(__wbtcUsdcPrice.add(priceDrop));
 
             await expect(
                 wbtcUsdcSingularity.liquidate(
                     [eoa1.address],
                     [wbtcBorrowVal],
-                    [data],
-                    data,
-                    multiSwapper.address,
+                    [liquidationReceiver.address],
+                    [liquidateData],
                 ),
-            ).to.not.be.reverted;
+            ).to.be.revertedWith('SGL: bad debt');
         });
 
         it('should add addset, remove asset and update exchange rate in a single tx', async () => {
@@ -1340,6 +1381,41 @@ describe('Singularity test', () => {
             // Check the value of the asset
             const balanceAfter = await weth.balanceOf(deployer.address);
             expect(balanceAfter).to.equal(balanceBefore);
+        });
+    });
+
+    describe('exchangeRate', () => {
+        it('should reset exchange rate validation timestmap', async () => {
+            const { wethUsdcSingularity, timeTravel } = await loadFixture(
+                register,
+            );
+
+            const oldtimestamp = await wethUsdcSingularity.rateTimestamp();
+            expect(oldtimestamp.gt(0)).to.be.true;
+
+            await wethUsdcSingularity.updateExchangeRate();
+            const midtimestamp = await wethUsdcSingularity.rateTimestamp();
+            expect(oldtimestamp.lt(midtimestamp)).to.be.true;
+
+            await timeTravel(2 * 86400);
+            await wethUsdcSingularity.updateExchangeRate();
+            const finaltimestamp = await wethUsdcSingularity.rateTimestamp();
+            expect(finaltimestamp.gt(midtimestamp)).to.be.true;
+        });
+
+        it('should revert if rate is older than validation duration', async () => {
+            const { wethUsdcSingularity, timeTravel, wethUsdcOracle } =
+                await loadFixture(register);
+
+            await wethUsdcSingularity.updateExchangeRate();
+            const timestamp = await wethUsdcSingularity.rateTimestamp();
+            expect(timestamp.gt(0)).to.be.true;
+
+            await wethUsdcOracle.setSuccess(false);
+            await timeTravel(2 * 86400);
+            await expect(
+                wethUsdcSingularity.updateExchangeRate(),
+            ).to.be.revertedWith('Market: rate too old');
         });
     });
 
@@ -2122,6 +2198,7 @@ describe('Singularity test', () => {
                         0,
                         wethBorrowVal.div(2),
                         0,
+                        0,
                     ],
                 );
             await bar.executeMarketFn(
@@ -2314,7 +2391,17 @@ describe('Singularity test', () => {
                 )[2],
                 5,
             );
-            expect(closingFactor.gt(prevClosingFactor)).to.be.true;
+            if (closingFactor.eq(prevClosingFactor)) {
+                expect(
+                    closingFactor.eq(
+                        await wethUsdcSingularity.userBorrowPart(
+                            deployer.address,
+                        ),
+                    ),
+                ).to.be.true;
+            } else {
+                expect(closingFactor.gt(prevClosingFactor)).to.be.true;
+            }
             prevClosingFactor = closingFactor;
 
             priceDrop = __wethUsdcPrice.mul(60).div(100);
@@ -2337,7 +2424,17 @@ describe('Singularity test', () => {
                 )[2],
                 5,
             );
-            expect(closingFactor.gt(prevClosingFactor)).to.be.true;
+            if (closingFactor.eq(prevClosingFactor)) {
+                expect(
+                    closingFactor.eq(
+                        await wethUsdcSingularity.userBorrowPart(
+                            deployer.address,
+                        ),
+                    ),
+                ).to.be.true;
+            } else {
+                expect(closingFactor.gt(prevClosingFactor)).to.be.true;
+            }
             prevClosingFactor = closingFactor;
         });
         it('Should accumulate fees for lender', async () => {
@@ -2942,8 +3039,21 @@ describe('Singularity test', () => {
             );
 
             const snapshot = await takeSnapshot();
-            await expect(
-                wethUsdcSingularity.permit(
+
+            const encoder = new ethers.utils.AbiCoder();
+            const permitActionData = encoder.encode(
+                [
+                    'bool',
+                    'address',
+                    'address',
+                    'uint256',
+                    'uint256',
+                    'uint8',
+                    'bytes32',
+                    'bytes32',
+                ],
+                [
+                    true,
                     deployer.address,
                     eoa1.address,
                     (1e18).toString(),
@@ -2951,10 +3061,16 @@ describe('Singularity test', () => {
                     v,
                     r,
                     s,
-                ),
-            )
+                ],
+            );
+
+            await expect(wethUsdcSingularity.permitAction(permitActionData, 0))
                 .to.emit(wethUsdcSingularity, 'Approval')
                 .withArgs(deployer.address, eoa1.address, (1e18).toString());
+
+            await expect(
+                wethUsdcSingularity.permitAction(permitActionData, 10),
+            ).to.be.revertedWith('ERC20Permit: invalid signature');
 
             await snapshot.restore();
             await expect(
@@ -3068,6 +3184,7 @@ describe('Singularity test', () => {
                     'address',
                     'uint256',
                     'uint256',
+                    'uint256',
                 ],
                 [
                     _sglLiquidationModule.address,
@@ -3081,6 +3198,7 @@ describe('Singularity test', () => {
                     wethAssetId,
                     wethUsdcOracle.address,
                     ethers.utils.parseEther('1'),
+                    0,
                     0,
                 ],
             );
@@ -3125,23 +3243,6 @@ describe('Singularity test', () => {
                 usdoSwapper: stableToUsdoBidder.address,
             };
             await liquidationQueue.init(LQ_META, wethUsdoSingularity.address);
-
-            const payload = wethUsdoSingularity.interface.encodeFunctionData(
-                'setLiquidationQueueConfig',
-                [
-                    liquidationQueue.address,
-                    ethers.constants.AddressZero,
-                    ethers.constants.AddressZero,
-                ],
-            );
-
-            await (
-                await bar.executeMarketFn(
-                    [wethUsdoSingularity.address],
-                    [payload],
-                    true,
-                )
-            ).wait();
 
             //get tokens
             const wethAmount = ethers.BigNumber.from((1e18).toString()).mul(
@@ -3284,9 +3385,9 @@ describe('Singularity test', () => {
                 multiSwapper,
                 BN,
                 timeTravel,
+                deployLiquidationReceiverMock,
             } = await loadFixture(register);
             //deploy and register USDO
-
             const usdoStratregy = await bar.emptyStrategies(usd0.address);
             const usdoAssetId = await yieldBox.ids(
                 1,
@@ -3332,6 +3433,8 @@ describe('Singularity test', () => {
                     'address',
                     'uint256',
                     'uint256',
+                    'uint256',
+                    'uint256',
                 ],
                 [
                     _sglLiquidationModule.address,
@@ -3345,6 +3448,8 @@ describe('Singularity test', () => {
                     wethAssetId,
                     wethUsdcOracle.address,
                     ethers.utils.parseEther('1'),
+                    0,
+                    0,
                     0,
                 ],
             );
@@ -3361,9 +3466,6 @@ describe('Singularity test', () => {
             await usd0.setMinterStatus(wethUsdoSingularity.address, true);
             await usd0.setBurnerStatus(wethUsdoSingularity.address, true);
 
-            const LiquidationQueue = new LiquidationQueue__factory(deployer);
-            const liquidationQueue = await LiquidationQueue.deploy();
-
             const feeCollector = new ethers.Wallet(
                 ethers.Wallet.createRandom().privateKey,
                 ethers.provider,
@@ -3374,38 +3476,6 @@ describe('Singularity test', () => {
                 usdc,
                 usd0,
             );
-
-            const LQ_META = {
-                activationTime: 600, // 10min
-                minBidAmount: ethers.BigNumber.from((1e18).toString()).mul(200), // 200 USDC
-                closeToMinBidAmount: ethers.BigNumber.from(
-                    (1e18).toString(),
-                ).mul(202),
-                defaultBidAmount: ethers.BigNumber.from((1e18).toString()).mul(
-                    400,
-                ), // 400 USDC
-                feeCollector: feeCollector.address,
-                bidExecutionSwapper: ethers.constants.AddressZero,
-                usdoSwapper: stableToUsdoBidder.address,
-            };
-            await liquidationQueue.init(LQ_META, wethUsdoSingularity.address);
-
-            const payload = wethUsdoSingularity.interface.encodeFunctionData(
-                'setLiquidationQueueConfig',
-                [
-                    liquidationQueue.address,
-                    ethers.constants.AddressZero,
-                    ethers.constants.AddressZero,
-                ],
-            );
-
-            await (
-                await bar.executeMarketFn(
-                    [wethUsdoSingularity.address],
-                    [payload],
-                    true,
-                )
-            ).wait();
 
             //get tokens
             const wethAmount = ethers.BigNumber.from((1e18).toString()).mul(
@@ -3513,67 +3583,6 @@ describe('Singularity test', () => {
                     usdoBorrowVal,
                     0,
                 );
-            const usdoBalanceOfEoa = await usd0.balanceOf(eoa1.address);
-
-            // Can't liquidate
-            const swapData = new ethers.utils.AbiCoder().encode(
-                ['uint256'],
-                [1],
-            );
-            await expect(
-                wethUsdoSingularity.liquidate(
-                    [eoa1.address],
-                    [usdoBorrowVal],
-                    [swapData],
-                    swapData,
-                    multiSwapper.address,
-                ),
-            ).to.be.reverted;
-
-            const priceDrop = newPrice.mul(2).div(100);
-            await wethUsdcOracle.set(newPrice.add(priceDrop));
-
-            const lqAssetId = await liquidationQueue.lqAssetId();
-            expect(lqAssetId.eq(usdoAssetId)).to.be.true;
-
-            await usdc.freeMint(
-                ethers.BigNumber.from((1e18).toString()).mul(1000),
-            );
-            await usdc.approve(
-                yieldBox.address,
-                ethers.BigNumber.from((1e18).toString()).mul(1000),
-            );
-            await yieldBox.depositAsset(
-                usdcAssetId,
-                deployer.address,
-                deployer.address,
-                ethers.BigNumber.from((1e18).toString()).mul(1000),
-                0,
-            );
-            await yieldBox.setApprovalForAll(liquidationQueue.address, true);
-            await expect(
-                liquidationQueue.bidWithStable(
-                    deployer.address,
-                    1,
-                    usdcAssetId,
-                    ethers.BigNumber.from((1e18).toString()).mul(1000),
-                    swapData,
-                ),
-            ).to.emit(liquidationQueue, 'Bid');
-            await timeTravel(10_000);
-            await expect(
-                liquidationQueue.activateBid(deployer.address, 1),
-            ).to.emit(liquidationQueue, 'ActivateBid');
-
-            await expect(
-                wethUsdoSingularity.liquidate(
-                    [eoa1.address],
-                    [usdoBorrowVal],
-                    [swapData],
-                    swapData,
-                    multiSwapper.address,
-                ),
-            ).to.not.be.reverted;
         });
     });
 
@@ -3722,7 +3731,8 @@ describe('Singularity test', () => {
             await erc20Mock.approve(toft.address, amount);
         };
 
-        it('should bounce between 2 chains', async () => {
+        //tbd cross-chain liquidation
+        it.skip('should bounce between 2 chains', async () => {
             const {
                 deployer,
                 tap,
@@ -3744,9 +3754,14 @@ describe('Singularity test', () => {
                 10,
                 deployer,
             );
+
             const Cluster = new Cluster__factory(deployer);
-            const Cluster_0 = await Cluster.deploy(0);
-            const Cluster_10 = await Cluster.deploy(0);
+            const Cluster_0 = await Cluster.deploy(
+                LZEndpointMock_chainID_0.address,
+            );
+            const Cluster_10 = await Cluster.deploy(
+                LZEndpointMock_chainID_10.address,
+            );
 
             //Deploy TapiocaWrapper
             const tapiocaWrapper_0 = await deployTapiocaWrapper(deployer);

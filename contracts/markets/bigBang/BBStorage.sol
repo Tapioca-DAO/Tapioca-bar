@@ -51,24 +51,24 @@ contract BBStorage is BoringOwnable, Market {
     // *** EVENTS *** //
     // ************** //
     /// @notice event emitted when accrue is called
-    event LogAccrue(uint256 accruedAmount, uint64 rate);
+    event LogAccrue(uint256 indexed accruedAmount, uint64 indexed rate);
     /// @notice event emitted when collateral is added
     event LogAddCollateral(
         address indexed from,
         address indexed to,
-        uint256 share
+        uint256 indexed share
     );
     /// @notice event emitted when collateral is removed
     event LogRemoveCollateral(
         address indexed from,
         address indexed to,
-        uint256 share
+        uint256 indexed share
     );
     /// @notice event emitted when borrow is performed
     event LogBorrow(
         address indexed from,
         address indexed to,
-        uint256 amount,
+        uint256 indexed amount,
         uint256 feeAmount,
         uint256 part
     );
@@ -76,15 +76,18 @@ contract BBStorage is BoringOwnable, Market {
     event LogRepay(
         address indexed from,
         address indexed to,
-        uint256 amount,
+        uint256 indexed amount,
         uint256 part
     );
     /// @notice event emitted when the minimum debt rate is updated
-    event MinDebtRateUpdated(uint256 oldVal, uint256 newVal);
+    event MinDebtRateUpdated(uint256 indexed oldVal, uint256 indexed newVal);
     /// @notice event emitted when the maximum debt rate is updated
-    event MaxDebtRateUpdated(uint256 oldVal, uint256 newVal);
+    event MaxDebtRateUpdated(uint256 indexed oldVal, uint256 indexed newVal);
     /// @notice event emitted when the debt rate against the main market is updated
-    event DebtRateAgainstEthUpdated(uint256 oldVal, uint256 newVal);
+    event DebtRateAgainstEthUpdated(
+        uint256 indexed oldVal,
+        uint256 indexed newVal
+    );
 
     constructor() MarketERC20("Tapioca BigBang") {}
 

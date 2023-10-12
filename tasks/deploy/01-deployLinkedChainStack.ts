@@ -72,7 +72,7 @@ export const deployLinkedChainStack__task = async (
     VM.add(ybURI).add(yieldBox);
 
     // 01 - Deploy Cluster
-    const cluster = await buildCluster(hre, chainInfo.lzChainId);
+    const cluster = await buildCluster(hre, chainInfo.address);
     VM.add(cluster);
 
     // 02 USDO
