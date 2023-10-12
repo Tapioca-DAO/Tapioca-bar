@@ -103,10 +103,15 @@ contract USDOLeverageModule is USDOCommon {
         }
         require(swapData.tokenOut != address(this), "USDO: not valid");
         _assureMaxSlippage(amount, swapData.amountOutMin);
-        require(
-            cluster.isWhitelisted(lzData.lzDstChainId, externalData.swapper),
-            "USDO: auth"
-        ); //fail fast
+        if (externalData.swapper != address(0)) {
+            require(
+                cluster.isWhitelisted(
+                    lzData.lzDstChainId,
+                    externalData.swapper
+                ),
+                "USDO: auth"
+            ); //fail fast
+        }
         bytes32 senderBytes = LzLib.addressToBytes32(msg.sender);
         (amount, ) = _removeDust(amount);
         _debitFrom(msg.sender, lzEndpoint.getChainId(), senderBytes, amount);

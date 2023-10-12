@@ -107,10 +107,12 @@ contract USDOLeverageDestinationModule is USDOCommon {
     ) public payable {
         require(msg.sender == address(this), "USDO: not valid");
         //swap from USDO
-        require(
-            cluster.isWhitelisted(0, externalData.swapper),
-            "USDO: not authorized"
-        );
+        if (externalData.swapper != address(0)) {
+            require(
+                cluster.isWhitelisted(0, externalData.swapper),
+                "USDO: not authorized"
+            );
+        }
         _approve(address(this), externalData.swapper, amount);
         ISwapper.SwapData memory _swapperData = ISwapper(externalData.swapper)
             .buildSwapData(

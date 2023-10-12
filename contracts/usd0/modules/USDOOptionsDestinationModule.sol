@@ -56,10 +56,12 @@ contract USDOOptionsDestinationModule is USDOCommon {
                     uint256
                 )
             );
-        require(
-            cluster.isWhitelisted(0, tapSendData.tapOftAddress),
-            "USDO: not authorized"
-        );
+        if (tapSendData.tapOftAddress != address(0)) {
+            require(
+                cluster.isWhitelisted(0, tapSendData.tapOftAddress),
+                "USDO: not authorized"
+            );
+        }
         optionsData.paymentTokenAmount = _sd2ld(amountSD);
         uint256 balanceBefore = balanceOf(address(this));
         bool credited = creditedPackets[_srcChainId][_srcAddress][_nonce];

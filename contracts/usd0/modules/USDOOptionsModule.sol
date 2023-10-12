@@ -31,13 +31,15 @@ contract USDOOptionsModule is USDOCommon {
         ICommonData.IApproval[] calldata approvals,
         bytes calldata adapterParams
     ) external payable {
-        require(
-            cluster.isWhitelisted(
-                lzData.lzDstChainId,
-                tapSendData.tapOftAddress
-            ),
-            "USDO: not authorized"
-        ); //fail fast
+        if (tapSendData.tapOftAddress != address(0)) {
+            require(
+                cluster.isWhitelisted(
+                    lzData.lzDstChainId,
+                    tapSendData.tapOftAddress
+                ),
+                "USDO: not authorized"
+            ); //fail fast
+        }
 
         // allowance is also checked on SGL
         // check it here as well because tokens are moved over layers
