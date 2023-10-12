@@ -185,6 +185,23 @@ function permit(address owner, address spender, uint256 value, uint256 deadline,
 | r | bytes32 | undefined |
 | s | bytes32 | undefined |
 
+### permitAction
+
+```solidity
+function permitAction(bytes data, uint16 actionType) external nonpayable
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| data | bytes | undefined |
+| actionType | uint16 | undefined |
+
 ### permitBorrow
 
 ```solidity
@@ -296,7 +313,7 @@ event Approval(address indexed owner, address indexed spender, uint256 value)
 ### ApprovalBorrow
 
 ```solidity
-event ApprovalBorrow(address indexed owner, address indexed spender, uint256 value)
+event ApprovalBorrow(address indexed owner, address indexed spender, uint256 indexed value)
 ```
 
 event emitted when borrow approval is performed
@@ -309,7 +326,7 @@ event emitted when borrow approval is performed
 |---|---|---|
 | owner `indexed` | address | undefined |
 | spender `indexed` | address | undefined |
-| value  | uint256 | undefined |
+| value `indexed` | uint256 | undefined |
 
 ### Transfer
 

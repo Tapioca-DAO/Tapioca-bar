@@ -354,6 +354,10 @@ async function getSGLPermitSignature(
 
     const permit = [
         {
+            name: 'actionType',
+            type: 'uint16',
+        },
+        {
             name: 'owner',
             type: 'address',
         },
@@ -385,6 +389,7 @@ async function getSGLPermitSignature(
             },
             type === 'Permit' ? { Permit: permit } : { PermitBorrow: permit },
             {
+                actionType: 0,
                 owner: wallet.address,
                 spender,
                 value,
