@@ -828,54 +828,6 @@ cached rate is valid only for the `rateValidDuration` time
 |---|---|---|
 | _0 | uint256 | undefined |
 
-### setBorrowCap
-
-```solidity
-function setBorrowCap(uint256 _cap) external nonpayable
-```
-
-sets max borrowable amount
-
-*can only be called by the owner*
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| _cap | uint256 | the new value |
-
-### setBorrowOpeningFee
-
-```solidity
-function setBorrowOpeningFee(uint256 _val) external nonpayable
-```
-
-sets the borrowing opening fee
-
-*can only be called by the owner*
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| _val | uint256 | the new value |
-
-### setExchangeRateDuration
-
-```solidity
-function setExchangeRateDuration(uint256 _duration) external nonpayable
-```
-
-
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| _duration | uint256 | undefined |
-
 ### setMarketConfig
 
 ```solidity
