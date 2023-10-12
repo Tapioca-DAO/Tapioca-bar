@@ -677,22 +677,6 @@ function minDstGasLookup(uint16, uint16) external view returns (uint256)
 |---|---|---|
 | _0 | uint256 | undefined |
 
-### multiHop
-
-```solidity
-function multiHop(bytes _payload) external nonpayable
-```
-
-
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| _payload | bytes | undefined |
-
 ### name
 
 ```solidity
@@ -1198,7 +1182,7 @@ function transferOwnership(address newOwner) external nonpayable
 ### triggerSendFrom
 
 ```solidity
-function triggerSendFrom(uint16 lzDstChainId, bytes airdropAdapterParams, address zroPaymentAddress, uint256 amount, ISendFrom.LzCallParams sendFromData, ICommonData.IApproval[] approvals) external payable
+function triggerSendFrom(uint16 lzDstChainId, bytes airdropAdapterParams, uint256 amount, ISendFrom.LzCallParams sendFromData, ICommonData.IApproval[] approvals) external payable
 ```
 
 
@@ -1211,7 +1195,6 @@ function triggerSendFrom(uint16 lzDstChainId, bytes airdropAdapterParams, addres
 |---|---|---|
 | lzDstChainId | uint16 | undefined |
 | airdropAdapterParams | bytes | undefined |
-| zroPaymentAddress | address | undefined |
 | amount | uint256 | undefined |
 | sendFromData | ISendFrom.LzCallParams | undefined |
 | approvals | ICommonData.IApproval[] | undefined |

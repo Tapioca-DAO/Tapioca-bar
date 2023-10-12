@@ -767,6 +767,7 @@ async function registerSingularity(
             'address',
             'uint256',
             'uint256',
+            'uint256',
         ],
         [
             _sglLiquidationModule.address,
@@ -780,6 +781,7 @@ async function registerSingularity(
             usdcAssetId,
             wethUsdcOracle.address,
             exchangeRatePrecision ?? 0,
+            0,
             0,
         ],
     );
@@ -975,6 +977,7 @@ async function createWethUsd0Singularity(
             'address',
             'uint256',
             'uint256',
+            'uint256',
         ],
         [
             _sglLiquidationModule.address,
@@ -988,6 +991,7 @@ async function createWethUsd0Singularity(
             wethAssetId,
             wethUsd0Oracle.address,
             exchangePrecision,
+            0,
             0,
         ],
     );
@@ -1189,6 +1193,7 @@ async function registerBigBangMarket(
             'uint256',
             'uint256',
             'uint256',
+            'uint256',
         ],
         [
             _bbLiquidationModule.address,
@@ -1204,6 +1209,7 @@ async function registerBigBangMarket(
             debtRateMin,
             debtRateMax,
             debtStartPoint,
+            0,
             0,
         ],
     );
@@ -1318,6 +1324,7 @@ export async function getSGLPermitSignature(
     spender: string,
     value: BigNumberish = ethers.constants.MaxUint256,
     deadline = ethers.constants.MaxUint256,
+    actionType: BigNumberish = 0,
     permitConfig?: {
         nonce?: BigNumberish;
         name?: string;
@@ -1333,6 +1340,10 @@ export async function getSGLPermitSignature(
     ]);
 
     const permit = [
+        {
+            name: 'actionType',
+            type: 'uint16',
+        },
         {
             name: 'owner',
             type: 'address',
@@ -1365,6 +1376,7 @@ export async function getSGLPermitSignature(
             },
             type === 'Permit' ? { Permit: permit } : { PermitBorrow: permit },
             {
+                actionType,
                 owner: wallet.address,
                 spender,
                 value,
@@ -1475,8 +1487,12 @@ export async function register(staging?: boolean) {
         'chainId',
         await hre.getChainId(),
     );
+    const LZEndpointMock = new LZEndpointMock__factory(deployer);
+    const clusterLzEndpoint = await LZEndpointMock.deploy(
+        await hre.getChainId(),
+    );
     const Cluster = new Cluster__factory(deployer);
-    const cluster = await Cluster.deploy(chainInfo?.lzChainId ?? 1, {
+    const cluster = await Cluster.deploy(clusterLzEndpoint.address, {
         gasPrice: gasPrice,
     });
     log(

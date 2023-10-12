@@ -65,7 +65,8 @@ contract BigBang is BBCommon {
             uint256 _debtRateMin,
             uint256 _debtRateMax,
             uint256 _debtStartPoint,
-            uint256 _collateralizationRate
+            uint256 _collateralizationRate,
+            uint256 _liquidationCollateralizationRate
         ) = abi.decode(
                 data,
                 (
@@ -77,6 +78,7 @@ contract BigBang is BBCommon {
                     IERC20,
                     uint256,
                     IOracle,
+                    uint256,
                     uint256,
                     uint256,
                     uint256,
@@ -97,7 +99,8 @@ contract BigBang is BBCommon {
             _collateralId,
             _oracle,
             _exchangeRatePrecision,
-            _collateralizationRate
+            _collateralizationRate,
+            _liquidationCollateralizationRate
         );
         _initDebtStorage(
             _debtRateAgainstEth,
@@ -105,6 +108,8 @@ contract BigBang is BBCommon {
             _debtRateMax,
             _debtStartPoint
         );
+
+        rateValidDuration = 24 hours;
     }
 
     function _initModules(
@@ -147,7 +152,8 @@ contract BigBang is BBCommon {
         uint256 _collateralId,
         IOracle _oracle,
         uint256 _exchangeRatePrecision,
-        uint256 _collateralizationRate
+        uint256 _collateralizationRate,
+        uint256 _liquidationCollateralizationRate
     ) private {
         penrose = _penrose;
         yieldBox = YieldBox(_penrose.yieldBox());
@@ -166,16 +172,23 @@ contract BigBang is BBCommon {
         oracle = _oracle;
         updateExchangeRate();
         callerFee = 90000; // 90%
-        protocolFee = 10000; // 10%
+        protocolFee = 0; // 10%; used for accrual
         collateralizationRate = _collateralizationRate > 0
             ? _collateralizationRate
             : 75000;
+        liquidationCollateralizationRate = _liquidationCollateralizationRate > 0
+            ? _liquidationCollateralizationRate
+            : 80000;
+        require(
+            liquidationCollateralizationRate > collateralizationRate,
+            "BB: liquidation collateralization rate not valid"
+        );
         EXCHANGE_RATE_PRECISION = _exchangeRatePrecision > 0
             ? _exchangeRatePrecision
             : 1e18;
 
-        minLiquidatorReward = 1e3;
-        maxLiquidatorReward = 1e4;
+        minLiquidatorReward = 8e4;
+        maxLiquidatorReward = 9e4;
         liquidationBonusAmount = 1e4;
         borrowOpeningFee = 50; // 0.05%
         liquidationMultiplier = 12000; //12%
@@ -194,7 +207,7 @@ contract BigBang is BBCommon {
     ) external returns (bool[] memory successes, string[] memory results) {
         successes = new bool[](calls.length);
         results = new string[](calls.length);
-        for (uint256 i = 0; i < calls.length; i++) {
+        for (uint256 i; i < calls.length; i++) {
             (bool success, bytes memory result) = address(this).delegatecall(
                 calls[i]
             );
@@ -512,9 +525,8 @@ contract BigBang is BBCommon {
         bytes memory _data
     ) private returns (bytes memory returnData) {
         bool success = true;
-        address module = _extractModule(_module);
 
-        (success, returnData) = module.delegatecall(_data);
+        (success, returnData) = _extractModule(_module).delegatecall(_data);
         if (!success) {
             revert(_getRevertMsg(returnData));
         }
@@ -525,9 +537,8 @@ contract BigBang is BBCommon {
         bytes memory _data
     ) private view returns (bytes memory returnData) {
         bool success = true;
-        address module = _extractModule(_module);
 
-        (success, returnData) = module.staticcall(_data);
+        (success, returnData) = _extractModule(_module).staticcall(_data);
         if (!success) {
             revert(_getRevertMsg(returnData));
         }
