@@ -251,6 +251,14 @@ contract BBLiquidation is BBCommon {
         bytes calldata _liquidatorReceiverData,
         uint256 _exchangeRate
     ) private {
+        if (_isSolvent(user, _exchangeRate)) return;
+
+        // Closed liquidation using a pre-approved swapper
+        require(
+            _isWhitelisted(penrose.hostLzChainId(), address(swapper)),
+            "BigBang: Invalid swapper"
+        );
+
         uint256 callerReward = _getCallerReward(user, _exchangeRate);
 
         (
@@ -304,9 +312,9 @@ contract BBLiquidation is BBCommon {
         uint256 _exchangeRate
     ) private {
         uint256 liquidatedCount = 0;
-        for (uint256 i = 0; i < users.length; i++) {
+        for (uint256 i; i < users.length; i++) {
             address user = users[i];
-            if (!_isSolvent(user, _exchangeRate)) {
+            if (!_isSolvent(user, _exchangeRate, true)) {
                 liquidatedCount++;
                 _liquidateUser(
                     user,
@@ -318,6 +326,6 @@ contract BBLiquidation is BBCommon {
             }
         }
 
-        require(liquidatedCount > 0, "BB: no users found");
+        require(liquidatedCount != 0, "BB: no users found");
     }
 }

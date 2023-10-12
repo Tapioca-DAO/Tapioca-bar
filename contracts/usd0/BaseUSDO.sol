@@ -160,14 +160,12 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
     /// @notice triggers a sendFrom to another layer from destination
     /// @param lzDstChainId LZ destination id
     /// @param airdropAdapterParams airdrop params
-    /// @param zroPaymentAddress ZRO payment address
     /// @param amount amount to send back
     /// @param sendFromData data needed to trigger sendFrom on destination
     /// @param approvals approvals array
     function triggerSendFrom(
         uint16 lzDstChainId,
         bytes calldata airdropAdapterParams,
-        address zroPaymentAddress,
         uint256 amount,
         ISendFrom.LzCallParams calldata sendFromData,
         ICommonData.IApproval[] calldata approvals
@@ -178,7 +176,6 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
                 USDOOptionsModule.triggerSendFrom.selector,
                 lzDstChainId,
                 airdropAdapterParams,
-                zroPaymentAddress,
                 amount,
                 sendFromData,
                 approvals
@@ -215,40 +212,40 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
         );
     }
 
-    /// @notice inits multiHopBuyCollateral
-    /// @param from The user who sells
-    /// @param collateralAmount Extra collateral to be added
-    /// @param borrowAmount Borrowed amount that will be swapped into collateral
-    /// @param swapData Swap data used on destination chain for swapping USDO to the underlying TOFT token
-    /// @param lzData LayerZero specific data
-    /// @param externalData External contracts used for the cross chain operation
-    /// @param approvals array
-    function initMultiHopBuy(
-        address from,
-        uint256 collateralAmount,
-        uint256 borrowAmount,
-        IUSDOBase.ILeverageSwapData calldata swapData,
-        IUSDOBase.ILeverageLZData calldata lzData,
-        IUSDOBase.ILeverageExternalContractsData calldata externalData,
-        bytes calldata airdropAdapterParams,
-        ICommonData.IApproval[] memory approvals
-    ) external payable {
-        _executeModule(
-            Module.Leverage,
-            abi.encodeWithSelector(
-                USDOLeverageModule.initMultiHopBuy.selector,
-                from,
-                collateralAmount,
-                borrowAmount,
-                swapData,
-                lzData,
-                externalData,
-                airdropAdapterParams,
-                approvals
-            ),
-            false
-        );
-    }
+    // /// @notice inits multiHopBuyCollateral
+    // /// @param from The user who sells
+    // /// @param collateralAmount Extra collateral to be added
+    // /// @param borrowAmount Borrowed amount that will be swapped into collateral
+    // /// @param swapData Swap data used on destination chain for swapping USDO to the underlying TOFT token
+    // /// @param lzData LayerZero specific data
+    // /// @param externalData External contracts used for the cross chain operation
+    // /// @param approvals array
+    // function initMultiHopBuy(
+    //     address from,
+    //     uint256 collateralAmount,
+    //     uint256 borrowAmount,
+    //     IUSDOBase.ILeverageSwapData calldata swapData,
+    //     IUSDOBase.ILeverageLZData calldata lzData,
+    //     IUSDOBase.ILeverageExternalContractsData calldata externalData,
+    //     bytes calldata airdropAdapterParams,
+    //     ICommonData.IApproval[] memory approvals
+    // ) external payable {
+    //     _executeModule(
+    //         Module.Leverage,
+    //         abi.encodeWithSelector(
+    //             USDOLeverageModule.initMultiHopBuy.selector,
+    //             from,
+    //             collateralAmount,
+    //             borrowAmount,
+    //             swapData,
+    //             lzData,
+    //             externalData,
+    //             airdropAdapterParams,
+    //             approvals
+    //         ),
+    //         false
+    //     );
+    // }
 
     /// @notice calls removeAssetAndRepay on Magnetar from the destination layer
     /// @param from sending address
@@ -459,19 +456,21 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
                 _nonce,
                 _payload
             );
-        } else if (packetType == PT_MARKET_MULTIHOP_BUY) {
-            _executeOnDestination(
-                Module.Leverage,
-                abi.encodeWithSelector(
-                    USDOOptionsModule.multiHop.selector,
-                    _payload
-                ),
-                _srcChainId,
-                _srcAddress,
-                _nonce,
-                _payload
-            );
-        } else if (packetType == PT_TAP_EXERCISE) {
+        }
+        // else if (packetType == PT_MARKET_MULTIHOP_BUY) {
+        //     _executeOnDestination(
+        //         Module.Leverage,
+        //         abi.encodeWithSelector(
+        //             USDOOptionsModule.multiHop.selector,
+        //             _payload
+        //         ),
+        //         _srcChainId,
+        //         _srcAddress,
+        //         _nonce,
+        //         _payload
+        //     );
+        // }
+        else if (packetType == PT_TAP_EXERCISE) {
             _executeOnDestination(
                 Module.Options,
                 abi.encodeWithSelector(

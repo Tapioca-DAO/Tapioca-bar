@@ -5,8 +5,6 @@ import "@boringcrypto/boring-solidity/contracts/BoringOwnable.sol";
 import "@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol";
 import "@boringcrypto/boring-solidity/contracts/libraries/BoringRebase.sol";
 
-import "tapioca-periph/contracts/interfaces/ISwapper.sol";
-import "tapioca-periph/contracts/interfaces/IPenrose.sol";
 import "tapioca-periph/contracts/interfaces/ISingularity.sol";
 import "tapioca-periph/contracts/interfaces/ILiquidationQueue.sol";
 import "tapioca-sdk/dist/contracts/YieldBox/contracts/YieldBox.sol";
@@ -64,42 +62,42 @@ contract SGLStorage is BoringOwnable, Market {
     // ************** //
     /// @notice event emitted when accrual happens
     event LogAccrue(
-        uint256 accruedAmount,
-        uint256 feeFraction,
-        uint64 rate,
+        uint256 indexed accruedAmount,
+        uint256 indexed feeFraction,
+        uint64 indexed rate,
         uint256 utilization
     );
     /// @notice event emitted when collateral is added
     event LogAddCollateral(
         address indexed from,
         address indexed to,
-        uint256 share
+        uint256 indexed share
     );
     /// @notice event emitted when asset is added
     event LogAddAsset(
         address indexed from,
         address indexed to,
-        uint256 share,
+        uint256 indexed share,
         uint256 fraction
     );
     /// @notice event emitted when collateral is removed
     event LogRemoveCollateral(
         address indexed from,
         address indexed to,
-        uint256 share
+        uint256 indexed share
     );
     /// @notice event emitted when asset is removed
     event LogRemoveAsset(
         address indexed from,
         address indexed to,
-        uint256 share,
+        uint256 indexed share,
         uint256 fraction
     );
     /// @notice event emitted when asset is borrowed
     event LogBorrow(
         address indexed from,
         address indexed to,
-        uint256 amount,
+        uint256 indexed amount,
         uint256 feeAmount,
         uint256 part
     );
@@ -107,27 +105,54 @@ contract SGLStorage is BoringOwnable, Market {
     event LogRepay(
         address indexed from,
         address indexed to,
-        uint256 amount,
+        uint256 indexed amount,
         uint256 part
     );
     /// @notice event emitted when fees are extracted
-    event LogWithdrawFees(address indexed feeTo, uint256 feesEarnedFraction);
+    event LogWithdrawFees(
+        address indexed feeTo,
+        uint256 indexed feesEarnedFraction
+    );
     /// @notice event emitted when fees are deposited to YieldBox
-    event LogYieldBoxFeesDeposit(uint256 feeShares, uint256 ethAmount);
+    event LogYieldBoxFeesDeposit(
+        uint256 indexed feeShares,
+        uint256 indexed ethAmount
+    );
     /// @notice event emitted when the minimum target utilization is updated
-    event MinimumTargetUtilizationUpdated(uint256 oldVal, uint256 newVal);
+    event MinimumTargetUtilizationUpdated(
+        uint256 indexed oldVal,
+        uint256 indexed newVal
+    );
     /// @notice event emitted when the maximum target utilization is updated
-    event MaximumTargetUtilizationUpdated(uint256 oldVal, uint256 newVal);
+    event MaximumTargetUtilizationUpdated(
+        uint256 indexed oldVal,
+        uint256 indexed newVal
+    );
     /// @notice event emitted when the minimum interest per second is updated
-    event MinimumInterestPerSecondUpdated(uint256 oldVal, uint256 newVal);
+    event MinimumInterestPerSecondUpdated(
+        uint256 indexed oldVal,
+        uint256 indexed newVal
+    );
     /// @notice event emitted when the maximum interest per second is updated
-    event MaximumInterestPerSecondUpdated(uint256 oldVal, uint256 newVal);
+    event MaximumInterestPerSecondUpdated(
+        uint256 indexed oldVal,
+        uint256 indexed newVal
+    );
     /// @notice event emitted when the interest elasticity updated
-    event InterestElasticityUpdated(uint256 oldVal, uint256 newVal);
+    event InterestElasticityUpdated(
+        uint256 indexed oldVal,
+        uint256 indexed newVal
+    );
     /// @notice event emitted when the LQ collateralization rate is updated
-    event LqCollateralizationRateUpdated(uint256 oldVal, uint256 newVal);
+    event LqCollateralizationRateUpdated(
+        uint256 indexed oldVal,
+        uint256 indexed newVal
+    );
     /// @notice event emitted when the order book liquidation multiplier rate is updated
-    event OrderBookLiquidationMultiplierUpdated(uint256 oldVal, uint256 newVal);
+    event OrderBookLiquidationMultiplierUpdated(
+        uint256 indexed oldVal,
+        uint256 indexed newVal
+    );
     /// @notice event emitted when the bid execution swapper is updated
     event BidExecutionSwapperUpdated(address indexed newAddress);
     /// @notice event emitted when the usdo swapper is updated

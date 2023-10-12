@@ -159,12 +159,11 @@ contract SGLLiquidation is SGLCommon {
 
         require(_exchangeRate > 0, "SGL: exchangeRate not valid");
 
-        uint256 collateralShare = userCollateralShare[user];
         Rebase memory _totalBorrow = totalBorrow;
 
         uint256 collateralAmountInAsset = yieldBox.toAmount(
             collateralId,
-            (collateralShare *
+            (userCollateralShare[user] *
                 (EXCHANGE_RATE_PRECISION / FEE_PRECISION) *
                 lqCollateralizationRate),
             false
@@ -176,6 +175,113 @@ contract SGLLiquidation is SGLCommon {
             borrowPart >= collateralAmountInAsset
                 ? borrowPart - collateralAmountInAsset
                 : 0;
+    }
+
+    function _orderBookLiquidation(
+        address[] calldata users,
+        uint256 _exchangeRate,
+        bytes memory swapData
+    ) private {
+        uint256 allCollateralShare;
+        uint256 allBorrowAmount;
+        uint256 allBorrowPart;
+        Rebase memory _totalBorrow = totalBorrow;
+
+        for (uint256 i = 0; i < users.length; i++) {
+            address user = users[i];
+            if (!_isSolvent(user, _exchangeRate)) {
+                uint256 borrowAmount = _computeAssetAmountToSolvency(
+                    user,
+                    _exchangeRate
+                );
+
+                if (borrowAmount == 0) {
+                    continue;
+                }
+
+                uint256 borrowPart;
+                {
+                    uint256 availableBorrowPart = userBorrowPart[user];
+                    borrowPart = _totalBorrow.toBase(borrowAmount, false);
+                    userBorrowPart[user] = availableBorrowPart - borrowPart;
+                }
+                uint256 amountWithBonus = borrowAmount +
+                    (borrowAmount * liquidationMultiplier) /
+                    FEE_PRECISION;
+                uint256 collateralShare = yieldBox.toShare(
+                    collateralId,
+                    (amountWithBonus * _exchangeRate) / EXCHANGE_RATE_PRECISION,
+                    false
+                );
+                userCollateralShare[user] -= collateralShare;
+                emit LogRemoveCollateral(
+                    user,
+                    address(liquidationQueue),
+                    collateralShare
+                );
+                emit LogRepay(
+                    address(liquidationQueue),
+                    user,
+                    borrowAmount,
+                    borrowPart
+                );
+
+                // Keep totals
+                allCollateralShare += collateralShare;
+                allBorrowAmount += borrowAmount;
+                allBorrowPart += borrowPart;
+            }
+        }
+        require(allBorrowAmount != 0, "SGL: solvent");
+
+        _totalBorrow.elastic -= uint128(allBorrowAmount);
+        _totalBorrow.base -= uint128(allBorrowPart);
+        totalBorrow = _totalBorrow;
+        totalCollateralShare -= allCollateralShare;
+
+        uint256 allBorrowShare = yieldBox.toShare(
+            assetId,
+            allBorrowAmount,
+            true
+        );
+
+        // Transfer collateral to be liquidated
+        yieldBox.transfer(
+            address(this),
+            address(liquidationQueue),
+            collateralId,
+            allCollateralShare
+        );
+
+        // LiquidationQueue pay debt
+        liquidationQueue.executeBids(
+            yieldBox.toAmount(collateralId, allCollateralShare, true),
+            swapData
+        );
+
+        uint256 returnedShare = yieldBox.balanceOf(address(this), assetId) -
+            uint256(totalAsset.elastic);
+        uint256 extraShare = returnedShare - allBorrowShare;
+        uint256 callerShare = (extraShare * callerFee) / FEE_PRECISION; // 1% goes to caller
+
+        emit Liquidated(
+            msg.sender,
+            users,
+            callerShare,
+            returnedShare - callerShare,
+            allBorrowAmount,
+            allCollateralShare
+        );
+
+        yieldBox.transfer(address(this), msg.sender, assetId, callerShare);
+
+        totalAsset.elastic += uint128(returnedShare - callerShare);
+        emit LogAddAsset(
+            address(liquidationQueue),
+            address(this),
+            returnedShare - callerShare,
+            0
+        );
     }
 
     function _updateBorrowAndCollateralShare(
@@ -254,8 +360,9 @@ contract SGLLiquidation is SGLCommon {
         uint256 extraShare = returnedShare > borrowShare
             ? returnedShare - borrowShare
             : 0;
-        feeShare = (extraShare * protocolFee) / FEE_PRECISION; // x% of profit goes to fee.
+
         callerShare = (extraShare * callerReward) / FEE_PRECISION; //  y%  of profit goes to caller.
+        feeShare = extraShare - callerShare; // rest goes to the fee
 
         if (feeShare > 0) {
             asset.approve(address(yieldBox), 0);
@@ -298,14 +405,18 @@ contract SGLLiquidation is SGLCommon {
         uint256 _exchangeRate
     ) private {
         uint256 callerReward = _getCallerReward(user, _exchangeRate);
-
         (
             uint256 borrowAmount,
             ,
             uint256 collateralShare
         ) = _updateBorrowAndCollateralShare(user, maxBorrowPart, _exchangeRate);
-
         uint256 borrowShare = yieldBox.toShare(assetId, borrowAmount, true);
+
+        // Closed liquidation using a pre-approved swapper
+        require(
+            _isWhitelisted(penrose.hostLzChainId(), address(swapper)),
+            "SGL: Invalid swapper"
+        );
 
         totalCollateralShare = totalCollateralShare > collateralShare
             ? totalCollateralShare - collateralShare
@@ -315,7 +426,6 @@ contract SGLLiquidation is SGLCommon {
         } else {
             _yieldBoxShares[user][COLLATERAL_SIG] -= collateralShare;
         }
-
         if (borrowShare > _yieldBoxShares[user][ASSET_SIG]) {
             _yieldBoxShares[user][ASSET_SIG] = 0; //some assets accrue in time
         } else {
@@ -333,7 +443,6 @@ contract SGLLiquidation is SGLCommon {
             borrowShare,
             callerReward
         );
-
         address[] memory _users = new address[](1);
         _users[0] = user;
         emit Liquidated(
@@ -354,9 +463,9 @@ contract SGLLiquidation is SGLCommon {
         uint256 _exchangeRate
     ) private {
         uint256 liquidatedCount = 0;
-        for (uint256 i = 0; i < users.length; i++) {
+        for (uint256 i; i < users.length; i++) {
             address user = users[i];
-            if (!_isSolvent(user, _exchangeRate)) {
+            if (!_isSolvent(user, _exchangeRate, true)) {
                 liquidatedCount++;
                 _liquidateUser(
                     user,

@@ -5,7 +5,7 @@ import ClusterArtifact from '../../gitsub_tapioca-sdk/src/artifacts/tapioca-peri
 
 export const buildCluster = async (
     hre: HardhatRuntimeEnvironment,
-    lzChainId: string,
+    lzEndpoint: string,
 ): Promise<IDeployerVMAdd<Cluster__factory>> => {
     const Cluster = (await hre.ethers.getContractFactoryFromArtifact(
         ClusterArtifact,
@@ -14,7 +14,7 @@ export const buildCluster = async (
     return {
         contract: Cluster,
         deploymentName: 'Cluster',
-        args: [lzChainId],
+        args: [lzEndpoint],
         runStaticSimulation: false,
     };
 };

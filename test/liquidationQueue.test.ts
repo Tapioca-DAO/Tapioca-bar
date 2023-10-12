@@ -384,7 +384,7 @@ describe.skip('LiquidationQueue test', () => {
             ).to.be.revertedWith('SGL: solvent');
 
             // Make some price movement and liquidate
-            const priceDrop = __wethUsdcPrice.mul(5).div(100);
+            const priceDrop = __wethUsdcPrice.mul(15).div(100);
             await wethUsdcOracle.set(__wethUsdcPrice.add(priceDrop));
             await wethUsdcSingularity.updateExchangeRate();
 

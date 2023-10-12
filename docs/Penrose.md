@@ -66,6 +66,28 @@ Registers an existing Singularity market (without deployment)
 | mc | address | The address of the master contract which must be already registered |
 | _contract | address | undefined |
 
+### allBigBangMarkets
+
+```solidity
+function allBigBangMarkets(uint256) external view returns (address)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | uint256 | undefined |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | address | undefined |
+
 ### bigBangEthDebtRate
 
 ```solidity
@@ -508,6 +530,17 @@ function pendingOwner() external view returns (address)
 |---|---|---|
 | _0 | address | undefined |
 
+### reAccrueBigBangMarkets
+
+```solidity
+function reAccrueBigBangMarkets() external nonpayable
+```
+
+Calls `accrue()` on all BigBang registered markets
+
+*callable by BigBang ETH market only*
+
+
 ### registerBigBang
 
 ```solidity
@@ -854,7 +887,7 @@ returns the YieldBox contract
 ### BigBangEthMarketDebtRate
 
 ```solidity
-event BigBangEthMarketDebtRate(uint256 _rate)
+event BigBangEthMarketDebtRate(uint256 indexed _rate)
 ```
 
 event emitted when BigBang ETH market debt rate is updated
@@ -865,7 +898,7 @@ event emitted when BigBang ETH market debt rate is updated
 
 | Name | Type | Description |
 |---|---|---|
-| _rate  | uint256 | undefined |
+| _rate `indexed` | uint256 | undefined |
 
 ### BigBangEthMarketSet
 
@@ -921,7 +954,7 @@ event LogDeploy(address indexed masterContract, bytes data, address indexed clon
 ### LogTwTapFeesDeposit
 
 ```solidity
-event LogTwTapFeesDeposit(uint256 feeShares, uint256 ethAmount)
+event LogTwTapFeesDeposit(uint256 indexed feeShares, uint256 indexed ethAmount)
 ```
 
 event emitted when fees are deposited to twTap
@@ -932,8 +965,8 @@ event emitted when fees are deposited to twTap
 
 | Name | Type | Description |
 |---|---|---|
-| feeShares  | uint256 | undefined |
-| ethAmount  | uint256 | undefined |
+| feeShares `indexed` | uint256 | undefined |
+| ethAmount `indexed` | uint256 | undefined |
 
 ### OwnershipTransferred
 
@@ -955,7 +988,7 @@ event OwnershipTransferred(address indexed previousOwner, address indexed newOwn
 ### PausedUpdated
 
 ```solidity
-event PausedUpdated(bool oldState, bool newState)
+event PausedUpdated(bool indexed oldState, bool indexed newState)
 ```
 
 event emitted when pause state is updated
@@ -966,13 +999,13 @@ event emitted when pause state is updated
 
 | Name | Type | Description |
 |---|---|---|
-| oldState  | bool | undefined |
-| newState  | bool | undefined |
+| oldState `indexed` | bool | undefined |
+| newState `indexed` | bool | undefined |
 
 ### ProtocolWithdrawal
 
 ```solidity
-event ProtocolWithdrawal(contract IMarket[] markets, uint256 timestamp)
+event ProtocolWithdrawal(contract IMarket[] indexed markets, uint256 indexed timestamp)
 ```
 
 event emitted when fees are extracted
@@ -983,8 +1016,8 @@ event emitted when fees are extracted
 
 | Name | Type | Description |
 |---|---|---|
-| markets  | contract IMarket[] | undefined |
-| timestamp  | uint256 | undefined |
+| markets `indexed` | contract IMarket[] | undefined |
+| timestamp `indexed` | uint256 | undefined |
 
 ### RegisterBigBang
 
@@ -1006,7 +1039,7 @@ event emitted when BigBang is registered
 ### RegisterBigBangMasterContract
 
 ```solidity
-event RegisterBigBangMasterContract(address indexed location, enum IPenrose.ContractType risk)
+event RegisterBigBangMasterContract(address indexed location, enum IPenrose.ContractType indexed risk)
 ```
 
 event emitted when BigBang master contract is registered
@@ -1018,7 +1051,7 @@ event emitted when BigBang master contract is registered
 | Name | Type | Description |
 |---|---|---|
 | location `indexed` | address | undefined |
-| risk  | enum IPenrose.ContractType | undefined |
+| risk `indexed` | enum IPenrose.ContractType | undefined |
 
 ### RegisterSingularity
 
@@ -1040,7 +1073,7 @@ event emitted when Singularity is registered
 ### RegisterSingularityMasterContract
 
 ```solidity
-event RegisterSingularityMasterContract(address indexed location, enum IPenrose.ContractType risk)
+event RegisterSingularityMasterContract(address indexed location, enum IPenrose.ContractType indexed risk)
 ```
 
 event emitted when Singularity master contract is registered
@@ -1052,12 +1085,12 @@ event emitted when Singularity master contract is registered
 | Name | Type | Description |
 |---|---|---|
 | location `indexed` | address | undefined |
-| risk  | enum IPenrose.ContractType | undefined |
+| risk `indexed` | enum IPenrose.ContractType | undefined |
 
 ### SwapperUpdate
 
 ```solidity
-event SwapperUpdate(address indexed swapper, uint16 indexed id, bool isRegistered)
+event SwapperUpdate(address indexed swapper, uint16 indexed id, bool indexed isRegistered)
 ```
 
 event emitted when ISwapper address is updated
@@ -1070,12 +1103,12 @@ event emitted when ISwapper address is updated
 |---|---|---|
 | swapper `indexed` | address | undefined |
 | id `indexed` | uint16 | undefined |
-| isRegistered  | bool | undefined |
+| isRegistered `indexed` | bool | undefined |
 
 ### UsdoTokenUpdated
 
 ```solidity
-event UsdoTokenUpdated(address indexed usdoToken, uint256 assetId)
+event UsdoTokenUpdated(address indexed usdoToken, uint256 indexed assetId)
 ```
 
 event emitted when USDO address is updated
@@ -1087,7 +1120,7 @@ event emitted when USDO address is updated
 | Name | Type | Description |
 |---|---|---|
 | usdoToken `indexed` | address | undefined |
-| assetId  | uint256 | undefined |
+| assetId `indexed` | uint256 | undefined |
 
 
 
