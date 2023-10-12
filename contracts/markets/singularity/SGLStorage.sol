@@ -38,8 +38,6 @@ contract SGLStorage is BoringOwnable, Market {
     ISingularity.AccrueInfo public accrueInfo;
     /// @notice total assets share & amount
     Rebase public totalAsset; // elastic = yieldBox shares held by the Singularity, base = Total fractions held by asset suppliers
-    /// @notice liquidation queue address
-    ILiquidationQueue public liquidationQueue;
 
     // YieldBox shares, from -> Yb asset type -> shares
     mapping(address => mapping(bytes32 => uint256)) internal _yieldBoxShares;

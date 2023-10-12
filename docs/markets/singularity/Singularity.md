@@ -690,27 +690,26 @@ returns the leverage module
 ### liquidate
 
 ```solidity
-function liquidate(address[] users, uint256[] maxBorrowParts, bytes[] collateralToAssetSwapDatas, bytes usdoToBorrowedSwapData, contract ISwapper swapper) external nonpayable
+function liquidate(address[] users, uint256[] maxBorrowParts, contract IMarketLiquidatorReceiver[] liquidatorReceivers, bytes[] liquidatorReceiverDatas) external nonpayable
 ```
 
 Entry point for liquidations.
 
-*Will call `closedLiquidation()` if not LQ exists or no LQ bid avail exists. Otherwise use LQ.*
+
 
 #### Parameters
 
 | Name | Type | Description |
 |---|---|---|
 | users | address[] | An array of user addresses. |
-| maxBorrowParts | uint256[] | A one-to-one mapping to `users`, contains maximum (partial) borrow amounts (to liquidate) of the respective user.        Ignore for `orderBookLiquidation()` |
-| collateralToAssetSwapDatas | bytes[] | Extra swap data        Ignore for `orderBookLiquidation()` |
-| usdoToBorrowedSwapData | bytes | Extra swap data        Ignore for `closedLiquidation()` |
-| swapper | contract ISwapper | Contract address of the `ISwapper` implementation.        Ignore for `orderBookLiquidation()` |
+| maxBorrowParts | uint256[] | A one-to-one mapping to `users`, contains maximum (partial) borrow amounts (to liquidate) of the respective user. |
+| liquidatorReceivers | contract IMarketLiquidatorReceiver[] | undefined |
+| liquidatorReceiverDatas | bytes[] | undefined |
 
 ### liquidateBadDebt
 
 ```solidity
-function liquidateBadDebt(address user, address receiver, contract ISwapper swapper, bytes collateralToAssetSwapData) external nonpayable
+function liquidateBadDebt(address user, address receiver, contract IMarketLiquidatorReceiver liquidatorReceiver, bytes liquidatorReceiverData) external nonpayable
 ```
 
 liquidates a position where collateral value is less than the borrowed amount
@@ -723,8 +722,8 @@ liquidates a position where collateral value is less than the borrowed amount
 |---|---|---|
 | user | address | to liquidate |
 | receiver | address | funds receiver |
-| swapper | contract ISwapper | contract address of the `ISwapper` implementation. |
-| collateralToAssetSwapData | bytes | extra swap data |
+| liquidatorReceiver | contract IMarketLiquidatorReceiver | undefined |
+| liquidatorReceiverData | bytes | undefined |
 
 ### liquidationBonusAmount
 
@@ -775,41 +774,7 @@ returns the liquidation module
 
 | Name | Type | Description |
 |---|---|---|
-| _0 | contract SGLLiquidation | undefined |
-
-### liquidationMultiplier
-
-```solidity
-function liquidationMultiplier() external view returns (uint256)
-```
-
-liquidation multiplier used to compute liquidator rewards
-
-
-
-
-#### Returns
-
-| Name | Type | Description |
-|---|---|---|
 | _0 | uint256 | undefined |
-
-### liquidationQueue
-
-```solidity
-function liquidationQueue() external view returns (contract ILiquidationQueue)
-```
-
-liquidation queue address
-
-
-
-
-#### Returns
-
-| Name | Type | Description |
-|---|---|---|
-| _0 | contract ILiquidationQueue | undefined |
 
 ### lqCollateralizationRate
 
@@ -1358,23 +1323,37 @@ Lever down: Sell collateral to repay debt; excess goes to YB
 |---|---|---|
 | amountOut | uint256 | Actual asset amount received in the sale |
 
-### setLiquidationQueueConfig
+### setBorrowCap
 
 ```solidity
-function setLiquidationQueueConfig(contract ILiquidationQueue _liquidationQueue, address _bidExecutionSwapper, address _usdoSwapper) external nonpayable
+function setBorrowCap(uint256 _cap) external nonpayable
 ```
 
-sets LQ specific confinguration
+sets max borrowable amount
 
-
+*can only be called by the owner*
 
 #### Parameters
 
 | Name | Type | Description |
 |---|---|---|
-| _liquidationQueue | contract ILiquidationQueue | undefined |
-| _bidExecutionSwapper | address | undefined |
-| _usdoSwapper | address | undefined |
+| _cap | uint256 | the new value |
+
+### setBorrowOpeningFee
+
+```solidity
+function setBorrowOpeningFee(uint256 _val) external nonpayable
+```
+
+sets the borrowing opening fee
+
+*can only be called by the owner*
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| _val | uint256 | the new value |
 
 ### setMarketConfig
 

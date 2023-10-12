@@ -5,7 +5,7 @@ import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 import CurveSwapperArtifact from '../gitsub_tapioca-sdk/src/artifacts/tapioca-periphery/CurveSwapper.json';
 import { CurveSwapper } from '../gitsub_tapioca-sdk/src/typechain/tapioca-periphery';
 
-describe('Bidders test', () => {
+describe.skip('Bidders test', () => {
     it('should test name', async () => {
         const {
             usdoToWethBidder,

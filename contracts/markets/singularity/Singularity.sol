@@ -488,13 +488,11 @@ contract Singularity is SGLCommon, ReentrancyGuard {
     /// @notice liquidates a position where collateral value is less than the borrowed amount
     /// @param user to liquidate
     /// @param receiver funds receiver
-    /// @param swapper contract address of the `ISwapper` implementation.
-    /// @param collateralToAssetSwapData extra swap data
     function liquidateBadDebt(
         address user,
         address receiver,
-        ISwapper swapper,
-        bytes calldata collateralToAssetSwapData
+        IMarketLiquidatorReceiver liquidatorReceiver,
+        bytes calldata liquidatorReceiverData
     ) external {
         _executeModule(
             Module.Liquidation,
@@ -502,29 +500,20 @@ contract Singularity is SGLCommon, ReentrancyGuard {
                 SGLLiquidation.liquidateBadDebt.selector,
                 user,
                 receiver,
-                swapper,
-                collateralToAssetSwapData
+                liquidatorReceiver,
+                liquidatorReceiverData
             )
         );
     }
 
     /// @notice Entry point for liquidations.
-    /// @dev Will call `closedLiquidation()` if not LQ exists or no LQ bid avail exists. Otherwise use LQ.
     /// @param users An array of user addresses.
     /// @param maxBorrowParts A one-to-one mapping to `users`, contains maximum (partial) borrow amounts (to liquidate) of the respective user.
-    ///        Ignore for `orderBookLiquidation()`
-    /// @param swapper Contract address of the `ISwapper` implementation.
-    ///        Ignore for `orderBookLiquidation()`
-    /// @param collateralToAssetSwapDatas Extra swap data
-    ///        Ignore for `orderBookLiquidation()`
-    /// @param usdoToBorrowedSwapData Extra swap data
-    ///        Ignore for `closedLiquidation()`
     function liquidate(
         address[] calldata users,
         uint256[] calldata maxBorrowParts,
-        bytes[] calldata collateralToAssetSwapDatas,
-        bytes calldata usdoToBorrowedSwapData,
-        ISwapper swapper
+        IMarketLiquidatorReceiver[] calldata liquidatorReceivers,
+        bytes[] calldata liquidatorReceiverDatas
     ) external {
         _executeModule(
             Module.Liquidation,
@@ -532,9 +521,8 @@ contract Singularity is SGLCommon, ReentrancyGuard {
                 SGLLiquidation.liquidate.selector,
                 users,
                 maxBorrowParts,
-                collateralToAssetSwapDatas,
-                usdoToBorrowedSwapData,
-                swapper
+                liquidatorReceivers,
+                liquidatorReceiverDatas
             )
         );
     }
@@ -657,28 +645,6 @@ contract Singularity is SGLCommon, ReentrancyGuard {
                 _liquidationMultiplier
             );
             liquidationMultiplier = _liquidationMultiplier;
-        }
-    }
-
-    /// @notice sets LQ specific confinguration
-    function setLiquidationQueueConfig(
-        ILiquidationQueue _liquidationQueue,
-        address _bidExecutionSwapper,
-        address _usdoSwapper
-    ) external onlyOwner {
-        if (address(_liquidationQueue) != address(0)) {
-            require(_liquidationQueue.onlyOnce(), "SGL: LQ not initalized");
-            liquidationQueue = _liquidationQueue;
-        }
-
-        if (_bidExecutionSwapper != address(0)) {
-            emit BidExecutionSwapperUpdated(_bidExecutionSwapper);
-            liquidationQueue.setBidExecutionSwapper(_bidExecutionSwapper);
-        }
-
-        if (_usdoSwapper != address(0)) {
-            emit UsdoSwapperUpdated(_usdoSwapper);
-            liquidationQueue.setUsdoSwapper(_usdoSwapper);
         }
     }
 

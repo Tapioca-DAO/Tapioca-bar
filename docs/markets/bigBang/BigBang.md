@@ -657,7 +657,7 @@ returns the leverage module
 ### liquidate
 
 ```solidity
-function liquidate(address[] users, uint256[] maxBorrowParts, bytes[] collateralToAssetSwapDatas, contract ISwapper swapper) external nonpayable
+function liquidate(address[] users, uint256[] maxBorrowParts, contract IMarketLiquidatorReceiver[] liquidatorReceivers, bytes[] liquidatorReceiverDatas) external nonpayable
 ```
 
 Entry point for liquidations.
@@ -670,13 +670,13 @@ Entry point for liquidations.
 |---|---|---|
 | users | address[] | An array of user addresses. |
 | maxBorrowParts | uint256[] | A one-to-one mapping to `users`, contains maximum (partial) borrow amounts (to liquidate) of the respective user. |
-| collateralToAssetSwapDatas | bytes[] | Extra swap data |
-| swapper | contract ISwapper | Contract address of the `MultiSwapper` implementation. |
+| liquidatorReceivers | contract IMarketLiquidatorReceiver[] | undefined |
+| liquidatorReceiverDatas | bytes[] | undefined |
 
 ### liquidateBadDebt
 
 ```solidity
-function liquidateBadDebt(address user, address receiver, contract ISwapper swapper, bytes collateralToAssetSwapData) external nonpayable
+function liquidateBadDebt(address user, address receiver, contract IMarketLiquidatorReceiver liquidatorReceiver, bytes liquidatorReceiverData) external nonpayable
 ```
 
 
@@ -689,8 +689,8 @@ function liquidateBadDebt(address user, address receiver, contract ISwapper swap
 |---|---|---|
 | user | address | undefined |
 | receiver | address | undefined |
-| swapper | contract ISwapper | undefined |
-| collateralToAssetSwapData | bytes | undefined |
+| liquidatorReceiver | contract IMarketLiquidatorReceiver | undefined |
+| liquidatorReceiverData | bytes | undefined |
 
 ### liquidationBonusAmount
 
