@@ -150,7 +150,6 @@ contract Singularity is SGLCommon, ReentrancyGuard {
         accrueInfo.interestPerSecond = uint64(startingInterestPerSecond); // 1% APR, with 1e18 being 100%
         updateExchangeRate();
         //default fees
-
         callerFee = 1000; // 1%
         protocolFee = 0; // 10%; used for accrual
         borrowOpeningFee = 50; // 0.05%

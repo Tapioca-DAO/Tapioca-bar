@@ -1042,6 +1042,22 @@ sets/unsets address as burner
 | _for | address | role receiver |
 | _status | bool | true/false |
 
+### setCluster
+
+```solidity
+function setCluster(contract ICluster _cluster) external nonpayable
+```
+
+updates the cluster address
+
+*can only be called by the owner*
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| _cluster | contract ICluster | the new address |
+
 ### setConfig
 
 ```solidity
