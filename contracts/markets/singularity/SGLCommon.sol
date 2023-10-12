@@ -100,15 +100,16 @@ contract SGLCommon is SGLStorage {
             1e18;
         _totalBorrow.elastic += uint128(extraAmount);
 
+        //take accrued values into account
+        fullAssetAmount =
+            yieldBox.toAmount(assetId, _totalAsset.elastic, false) +
+            _totalBorrow.elastic;
+
         uint256 feeAmount = (extraAmount * protocolFee) / FEE_PRECISION; // % of interest paid goes to fee
         feeFraction = (feeAmount * _totalBorrow.base) / fullAssetAmount;
         _accrueInfo.feesEarnedFraction += uint128(feeFraction);
         _totalAsset.base = _totalAsset.base + uint128(feeFraction);
 
-        //take accrued values into account
-        fullAssetAmount =
-            yieldBox.toAmount(assetId, _totalAsset.elastic, false) +
-            _totalBorrow.elastic;
         utilization = fullAssetAmount == 0
             ? 0
             : (uint256(_totalBorrow.elastic) * UTILIZATION_PRECISION) /
