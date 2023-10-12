@@ -543,7 +543,7 @@ function lend(address module, uint16 _srcChainId, bytes _srcAddress, uint64 _non
 ### lendInternal
 
 ```solidity
-function lendInternal(address to, IUSDOBase.ILendOrRepayParams lendParams, ICommonData.IApproval[] approvals, ICommonData.IWithdrawParams withdrawParams) external payable
+function lendInternal(address to, IUSDOBase.ILendOrRepayParams lendParams, ICommonData.IApproval[] approvals, ICommonData.IWithdrawParams withdrawParams, uint256 airdropAmount) external payable
 ```
 
 
@@ -558,6 +558,7 @@ function lendInternal(address to, IUSDOBase.ILendOrRepayParams lendParams, IComm
 | lendParams | IUSDOBase.ILendOrRepayParams | undefined |
 | approvals | ICommonData.IApproval[] | undefined |
 | withdrawParams | ICommonData.IWithdrawParams | undefined |
+| airdropAmount | uint256 | undefined |
 
 ### lzEndpoint
 

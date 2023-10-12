@@ -42,7 +42,8 @@ contract USDOMarketDestinationModule is USDOCommon {
             uint64 lendAmountSD,
             IUSDOBase.ILendOrRepayParams memory lendParams,
             ICommonData.IApproval[] memory approvals,
-            ICommonData.IWithdrawParams memory withdrawParams
+            ICommonData.IWithdrawParams memory withdrawParams,
+            uint256 airdropAmount
         ) = abi.decode(
                 _payload,
                 (
@@ -51,7 +52,8 @@ contract USDOMarketDestinationModule is USDOCommon {
                     uint64,
                     IUSDOBase.ILendOrRepayParams,
                     ICommonData.IApproval[],
-                    ICommonData.IWithdrawParams
+                    ICommonData.IWithdrawParams,
+                    uint256
                 )
             );
 
@@ -70,7 +72,8 @@ contract USDOMarketDestinationModule is USDOCommon {
                 to,
                 lendParams,
                 approvals,
-                withdrawParams
+                withdrawParams,
+                airdropAmount
             )
         );
 
@@ -97,7 +100,8 @@ contract USDOMarketDestinationModule is USDOCommon {
         address to,
         IUSDOBase.ILendOrRepayParams memory lendParams,
         ICommonData.IApproval[] memory approvals,
-        ICommonData.IWithdrawParams memory withdrawParams
+        ICommonData.IWithdrawParams memory withdrawParams,
+        uint256 airdropAmount
     ) public payable {
         require(msg.sender == address(this), "USDO: caller not valid");
 
@@ -117,17 +121,21 @@ contract USDOMarketDestinationModule is USDOCommon {
                     );
             }
             IMagnetar(lendParams.marketHelper)
-                .depositRepayAndRemoveCollateralFromMarket(
-                    lendParams.market,
-                    to,
-                    lendParams.depositAmount,
-                    lendParams.repayAmount,
-                    lendParams.removeCollateralAmount,
-                    true,
-                    withdrawParams
-                );
+                .depositRepayAndRemoveCollateralFromMarket{
+                value: airdropAmount
+            }(
+                lendParams.market,
+                to,
+                lendParams.depositAmount,
+                lendParams.repayAmount,
+                lendParams.removeCollateralAmount,
+                true,
+                withdrawParams
+            );
         } else {
-            IMagnetar(lendParams.marketHelper).mintFromBBAndLendOnSGL(
+            IMagnetar(lendParams.marketHelper).mintFromBBAndLendOnSGL{
+                value: airdropAmount
+            }(
                 to,
                 lendParams.depositAmount,
                 IUSDOBase.IMintData({
@@ -163,7 +171,8 @@ contract USDOMarketDestinationModule is USDOCommon {
             address to,
             ICommonData.ICommonExternalContracts memory externalData,
             IUSDOBase.IRemoveAndRepay memory removeAndRepayData,
-            ICommonData.IApproval[] memory approvals
+            ICommonData.IApproval[] memory approvals,
+            uint256 airdropAmount
         ) = abi.decode(
                 _payload,
                 (
@@ -171,7 +180,8 @@ contract USDOMarketDestinationModule is USDOCommon {
                     address,
                     ICommonData.ICommonExternalContracts,
                     IUSDOBase.IRemoveAndRepay,
-                    ICommonData.IApproval[]
+                    ICommonData.IApproval[],
+                    uint256
                 )
             );
 
@@ -180,10 +190,8 @@ contract USDOMarketDestinationModule is USDOCommon {
             _callApproval(approvals, PT_MARKET_REMOVE_ASSET);
         }
 
-        IMagnetar(externalData.magnetar).exitPositionAndRemoveCollateral(
-            to,
-            externalData,
-            removeAndRepayData
-        );
+        IMagnetar(externalData.magnetar).exitPositionAndRemoveCollateral{
+            value: airdropAmount
+        }(to, externalData, removeAndRepayData);
     }
 }

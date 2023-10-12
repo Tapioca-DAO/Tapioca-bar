@@ -59,12 +59,16 @@ contract USDOMarketModule is USDOCommon {
             }
         }
 
+        (, , uint256 airdropAmount, ) = LzLib.decodeAdapterParams(
+            adapterParams
+        );
         bytes memory lzPayload = abi.encode(
             PT_MARKET_REMOVE_ASSET,
             to,
             externalData,
             removeAndRepayData,
-            approvals
+            approvals,
+            airdropAmount
         );
 
         _checkGasLimit(
@@ -114,13 +118,17 @@ contract USDOMarketModule is USDOCommon {
             lendParams.depositAmount
         );
 
+        (, , uint256 airdropAmount, ) = LzLib.decodeAdapterParams(
+            adapterParams
+        );
         bytes memory lzPayload = abi.encode(
             PT_YB_SEND_SGL_LEND_OR_REPAY,
             _to,
             _ld2sd(lendParams.depositAmount),
             lendParams,
             approvals,
-            withdrawParams
+            withdrawParams,
+            airdropAmount
         );
 
         _checkGasLimit(
