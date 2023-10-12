@@ -13,7 +13,7 @@ abstract contract USDOCommon is BaseUSDOStorage {
         uint16 actionType
     ) internal {
         for (uint256 i; i < approvals.length; ) {
-            if (approvals[i].approveOnYieldBox) {
+            if (approvals[i].yieldBoxTypeApproval) {
                 _permitOnYieldBox(approvals[i]);
             } else {
                 require(
