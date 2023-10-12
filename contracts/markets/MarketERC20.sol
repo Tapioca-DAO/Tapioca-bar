@@ -70,7 +70,9 @@ contract MarketERC20 is IERC20, IERC20Permit, EIP712 {
                 allowance[from][msg.sender] >= share,
                 "Market: not approved"
             );
-            allowance[from][msg.sender] -= share;
+            if (allowance[from][msg.sender] != type(uint256).max) {
+                allowance[from][msg.sender] -= share;
+            }
         }
     }
 
@@ -80,7 +82,9 @@ contract MarketERC20 is IERC20, IERC20Permit, EIP712 {
                 allowanceBorrow[from][msg.sender] >= share,
                 "Market: not approved"
             );
-            allowanceBorrow[from][msg.sender] -= share;
+            if (allowanceBorrow[from][msg.sender] != type(uint256).max) {
+                allowanceBorrow[from][msg.sender] -= share;
+            }
         }
     }
 
