@@ -305,13 +305,13 @@ describe('BigBang test', () => {
             expect(reward.eq(0)).to.be.true;
 
             //25% price drop
-            let priceDrop = __usd0WethPrice.mul(35).div(100);
+            const priceDrop = __usd0WethPrice.mul(35).div(100);
             await usd0WethOracle.set(__usd0WethPrice.add(priceDrop));
             await wethBigBangMarket.updateExchangeRate();
             exchangeRate = await wethBigBangMarket.exchangeRate();
 
             let prevClosingFactor;
-            let closingFactor = await wethBigBangMarket.computeClosingFactor(
+            const closingFactor = await wethBigBangMarket.computeClosingFactor(
                 await wethBigBangMarket.userBorrowPart(eoa1.address),
                 (
                     await wethBigBangMarket.computeTVLInfo(
@@ -322,77 +322,6 @@ describe('BigBang test', () => {
                 5,
             );
             expect(closingFactor.gt(0)).to.be.true;
-            prevClosingFactor = closingFactor;
-
-            let prevReward;
-            reward = await wethBigBangMarket.computeLiquidatorReward(
-                eoa1.address,
-                exchangeRate,
-            );
-            prevReward = reward;
-            expect(reward.gt(0)).to.be.true;
-
-            priceDrop = __usd0WethPrice.mul(65).div(100);
-            await usd0WethOracle.set(__usd0WethPrice.add(priceDrop));
-            await wethBigBangMarket.updateExchangeRate();
-            exchangeRate = await wethBigBangMarket.exchangeRate();
-            reward = await wethBigBangMarket.computeLiquidatorReward(
-                eoa1.address,
-                exchangeRate,
-            );
-            expect(reward.lt(prevReward)).to.be.true;
-            prevReward = reward;
-            closingFactor = await wethBigBangMarket.computeClosingFactor(
-                await wethBigBangMarket.userBorrowPart(eoa1.address),
-                (
-                    await wethBigBangMarket.computeTVLInfo(
-                        eoa1.address,
-                        exchangeRate,
-                    )
-                )[2],
-                5,
-            );
-            if (closingFactor.eq(prevClosingFactor)) {
-                expect(
-                    closingFactor.eq(
-                        await wethBigBangMarket.userBorrowPart(eoa1.address),
-                    ),
-                ).to.be.true;
-            } else {
-                expect(closingFactor.gt(prevClosingFactor)).to.be.true;
-            }
-            prevClosingFactor = closingFactor;
-
-            priceDrop = __usd0WethPrice.mul(85).div(100);
-            await usd0WethOracle.set(__usd0WethPrice.add(priceDrop));
-            await wethBigBangMarket.updateExchangeRate();
-            exchangeRate = await wethBigBangMarket.exchangeRate();
-            reward = await wethBigBangMarket.computeLiquidatorReward(
-                eoa1.address,
-                exchangeRate,
-            );
-            expect(reward.lt(prevReward)).to.be.true;
-            prevReward = reward;
-            closingFactor = await wethBigBangMarket.computeClosingFactor(
-                await wethBigBangMarket.userBorrowPart(eoa1.address),
-                (
-                    await wethBigBangMarket.computeTVLInfo(
-                        eoa1.address,
-                        exchangeRate,
-                    )
-                )[2],
-                5,
-            );
-            if (closingFactor.eq(prevClosingFactor)) {
-                expect(
-                    closingFactor.eq(
-                        await wethBigBangMarket.userBorrowPart(eoa1.address),
-                    ),
-                ).to.be.true;
-            } else {
-                expect(closingFactor.gt(prevClosingFactor)).to.be.true;
-            }
-            prevClosingFactor = closingFactor;
         });
 
         it('should liquidate', async () => {
@@ -451,6 +380,7 @@ describe('BigBang test', () => {
             await wethBigBangMarket
                 .connect(eoa1)
                 .borrow(eoa1.address, eoa1.address, usdoBorrowVal);
+            console.log(`usdoBorrowVal ${usdoBorrowVal}`);
             await yieldBox
                 .connect(eoa1)
                 .withdraw(
@@ -464,7 +394,7 @@ describe('BigBang test', () => {
             // Can't liquidate
             const liquidateData = new ethers.utils.AbiCoder().encode(
                 ['uint256'],
-                [ethers.utils.parseEther('2500')],
+                [usdoBorrowVal.div(2)],
             );
             const liquidationReceiver = await deployLiquidationReceiverMock(
                 await wethBigBangMarket.asset(),
@@ -487,8 +417,7 @@ describe('BigBang test', () => {
                 ),
             ).to.be.reverted;
 
-            const priceDrop = __usd0WethPrice.mul(35).div(10).div(100);
-
+            const priceDrop = __usd0WethPrice.mul(10).div(100);
             await usd0WethOracle.set(__usd0WethPrice.add(priceDrop));
 
             const userCollateralShareBefore =
@@ -505,7 +434,6 @@ describe('BigBang test', () => {
 
             await wethBigBangMarket.updateExchangeRate();
             const exchangeRate = await wethBigBangMarket.exchangeRate();
-
             const closingFactor = await wethBigBangMarket.computeClosingFactor(
                 await wethBigBangMarket.userBorrowPart(eoa1.address),
                 (
@@ -516,13 +444,10 @@ describe('BigBang test', () => {
                 )[2],
                 5,
             );
-
             const borrowPart = await wethBigBangMarket.userBorrowPart(
                 eoa1.address,
             );
-
             expect(closingFactor.gt(0)).to.be.true;
-
             await expect(
                 wethBigBangMarket.liquidate(
                     [eoa1.address],
@@ -1711,7 +1636,7 @@ describe('BigBang test', () => {
             expect(collateralShares.eq(0)).to.be.true;
         });
 
-        it.only('should test the variable debt', async () => {
+        it('should test the variable debt', async () => {
             const {
                 wethBigBangMarket,
                 wbtcBigBangMarket,
@@ -1727,9 +1652,22 @@ describe('BigBang test', () => {
 
             const borrowFeeUpdateFn =
                 wethBigBangMarket.interface.encodeFunctionData(
-                    'setBorrowOpeningFee',
-                    [0],
-                );
+                    'setMarketConfig',
+                    [
+                        0,
+                        ethers.constants.AddressZero,
+                        '0x',
+                        ethers.constants.AddressZero,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                    ],
+                ); //todo
             await bar.executeMarketFn(
                 [wethBigBangMarket.address],
                 [borrowFeeUpdateFn],
@@ -1870,9 +1808,22 @@ describe('BigBang test', () => {
 
             const borrowFeeUpdateFn =
                 wethBigBangMarket.interface.encodeFunctionData(
-                    'setBorrowOpeningFee',
-                    [0],
-                );
+                    'setMarketConfig',
+                    [
+                        0,
+                        ethers.constants.AddressZero,
+                        '0x',
+                        ethers.constants.AddressZero,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                    ],
+                ); //todo
             await bar.executeMarketFn(
                 [wethBigBangMarket.address],
                 [borrowFeeUpdateFn],

@@ -655,6 +655,22 @@ sets the main BigBang market debt rate
 |---|---|---|
 | _rate | uint256 | the new rate |
 
+### setCluster
+
+```solidity
+function setCluster(address _newCluster) external nonpayable
+```
+
+sets the Cluster address
+
+*can only be called by the owner*
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| _newCluster | address | the new address |
+
 ### setConservator
 
 ```solidity
@@ -915,6 +931,23 @@ event emitted when BigBang ETH market address is updated
 | Name | Type | Description |
 |---|---|---|
 | _newAddress `indexed` | address | undefined |
+
+### ClusterSet
+
+```solidity
+event ClusterSet(address indexed old, address indexed _new)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| old `indexed` | address | undefined |
+| _new `indexed` | address | undefined |
 
 ### ConservatorUpdated
 

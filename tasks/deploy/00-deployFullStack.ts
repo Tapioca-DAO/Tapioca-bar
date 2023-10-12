@@ -11,9 +11,11 @@ import { buildBigBangModules } from '../deployBuilds/09-buildBigBangModules';
 import { buildSingularityModules } from '../deployBuilds/08-buildSingularityModules';
 import { buildPenroseSetup } from '../setups/01-buildPenroseSetup';
 import { buildMasterContractsSetup } from '../setups/02-buildMasterContractsSetup';
+import { buildUsdoFlashloanSetup } from '../setups/04-buildUsdoFlashloanSetup';
 import { loadVM } from '../utils';
 import SDK from 'tapioca-sdk';
 import { buildUSDOModules } from '../deployBuilds/11-buildUSDOModules';
+import { buildUSDOFlashloanHelper } from '../deployBuilds/13-buildUSDOFlashloanHelper';
 import {
     CURVE_DEPLOYMENTS,
     UNISWAP_DEPLOYMENTS,
@@ -145,14 +147,27 @@ export const deployFullStack__task = async (
     VM.add(bbLiq).add(bbBorrow).add(bbCollateral).add(bbLeverage);
 
     // 07 USDO
-    const [leverageModule, marketModule, optionsModule] =
-        await buildUSDOModules(
-            chainInfo.address,
-            hre,
-            ybAddress,
-            clusterAddress,
-        );
-    VM.add(leverageModule).add(marketModule).add(optionsModule);
+    const [
+        leverageModule,
+        leverageDestinationModule,
+        marketModule,
+        marketDestinationModule,
+        optionsModule,
+        optionsDestinationModule,
+        genericModule,
+    ] = await buildUSDOModules(
+        chainInfo.address,
+        hre,
+        ybAddress,
+        clusterAddress,
+    );
+    VM.add(leverageModule)
+        .add(leverageDestinationModule)
+        .add(marketModule)
+        .add(marketDestinationModule)
+        .add(optionsModule)
+        .add(optionsDestinationModule)
+        .add(genericModule);
 
     const usdo = await buildUSD0(
         hre,
@@ -162,6 +177,12 @@ export const deployFullStack__task = async (
         clusterAddress,
     );
     VM.add(usdo);
+
+    const usdoFlashloanHelper = await buildUSDOFlashloanHelper(
+        hre,
+        signer.address,
+    );
+    VM.add(usdoFlashloanHelper);
 
     // 08 - CurveSwapper-buildStableToUSD0Bidder
     const [curveSwapper, curveStableToUsd0] = await buildStableToUSD0Bidder(
@@ -195,6 +216,7 @@ export const deployFullStack__task = async (
     const calls: Multicall3.CallStruct[] = [
         ...(await buildPenroseSetup(hre, vmList)),
         ...(await buildMasterContractsSetup(hre, vmList)),
+        ...(await buildUsdoFlashloanSetup(hre, vmList)),
     ];
 
     // Execute

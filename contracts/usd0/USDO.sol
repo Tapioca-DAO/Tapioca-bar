@@ -2,7 +2,6 @@
 pragma solidity ^0.8.18;
 
 import "tapioca-sdk/dist/contracts/interfaces/ILayerZeroEndpoint.sol";
-import "tapioca-periph/contracts/interfaces/IERC3156FlashLender.sol";
 import "./BaseUSDO.sol";
 
 /*
@@ -20,9 +19,10 @@ __/\\\\\\\\\\\\\\\_____/\\\\\\\\\_____/\\\\\\\\\\\\\____/\\\\\\\\\\\_______/\\\\
 */
 
 /// @title USDO OFT contract
-contract USDO is BaseUSDO, IERC3156FlashLender {
+contract USDO is BaseUSDO {
     uint256 private _fees;
-    bool private _flashloanEntered = false;
+
+    address public flashLoanHelper;
 
     modifier notPaused() {
         require(!paused, "USDO: paused");
@@ -40,8 +40,12 @@ contract USDO is BaseUSDO, IERC3156FlashLender {
         ICluster _cluster,
         address _owner,
         address payable _leverageModule,
+        address payable _leverageDestinationModule,
         address payable _marketModule,
-        address payable _optionsModule
+        address payable _marketDestinationModule,
+        address payable _optionsModule,
+        address payable _optionsDestinationModule,
+        address payable _genericModule
     )
         BaseUSDO(
             _lzEndpoint,
@@ -49,78 +53,18 @@ contract USDO is BaseUSDO, IERC3156FlashLender {
             _cluster,
             _owner,
             _leverageModule,
+            _leverageDestinationModule,
             _marketModule,
-            _optionsModule
+            _marketDestinationModule,
+            _optionsModule,
+            _optionsDestinationModule,
+            _genericModule
         )
     {}
-
-    // ********************** //
-    // *** VIEW FUNCTIONS *** //
-    // ********************** //
-    /// @notice returns the maximum amount of tokens available for a flash mint
-    function maxFlashLoan(address) public view override returns (uint256) {
-        if (totalSupply() > maxFlashMint) {
-            return maxFlashMint;
-        } else {
-            return totalSupply();
-        }
-    }
-
-    /// @notice returns the flash mint fee
-    /// @param token USDO address
-    /// @param amount the amount for which fee is computed
-    function flashFee(
-        address token,
-        uint256 amount
-    ) public view override returns (uint256) {
-        require(token == address(this), "USDO: token not valid");
-        return (amount * flashMintFee) / FLASH_MINT_FEE_PRECISION;
-    }
 
     // ************************ //
     // *** PUBLIC FUNCTIONS *** //
     // ************************ //
-    /// @notice performs a USDO flashloan
-    /// @param receiver the IERC3156FlashBorrower receiver
-    /// @param token USDO address
-    /// @param amount the amount to flashloan
-    /// @param data flashloan data
-    /// @return operation execution status
-    function flashLoan(
-        IERC3156FlashBorrower receiver,
-        address token,
-        uint256 amount,
-        bytes calldata data
-    ) external override notPaused returns (bool) {
-        if (address(receiver) != msg.sender) {
-            require(
-                allowance(address(receiver), msg.sender) >= amount,
-                "USDO: repay not approved"
-            );
-            _spendAllowance(address(receiver), msg.sender, amount);
-        }
-
-        require(!_flashloanEntered, "USDO: reentrancy");
-        _flashloanEntered = true;
-        require(maxFlashLoan(token) >= amount, "USDO: amount too big");
-        uint256 fee = flashFee(token, amount);
-        _mint(address(receiver), amount);
-
-        require(
-            receiver.onFlashLoan(msg.sender, token, amount, fee, data) ==
-                FLASH_MINT_CALLBACK_SUCCESS,
-            "USDO: failed"
-        );
-        uint256 _allowance = allowance(address(receiver), address(this));
-        require(_allowance >= (amount + fee), "USDO: repay not approved");
-        _spendAllowance(address(receiver), address(this), amount + fee);
-        _burn(address(receiver), amount + fee);
-        _mint(address(this), fee);
-        _fees += fee;
-        _flashloanEntered = false;
-        return true;
-    }
-
     /// @notice mints USDO
     /// @param _to receiver address
     /// @param _amount the amount to mint
@@ -137,9 +81,18 @@ contract USDO is BaseUSDO, IERC3156FlashLender {
         _burn(_from, _amount);
     }
 
+    function addFlashloanFee(uint256 _fee) external {
+        require(msg.sender == flashLoanHelper, "USDO: unauthorized");
+        _fees += _fee;
+    }
+
     // ************************ //
     // *** OWNER FUNCTIONS *** //
     // ************************ //
+    function setFlashloanHelper(address _helper) external onlyOwner {
+        flashLoanHelper = _helper;
+    }
+
     function extractFees() external onlyOwner {
         if (_fees > 0) {
             uint256 balance = balanceOf(address(this));

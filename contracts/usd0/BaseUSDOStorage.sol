@@ -29,16 +29,19 @@ contract BaseUSDOStorage is OFTV2 {
     /// @notice returns the pause state of the contract
     bool public paused;
 
-    /// @notice returns the flash mint fee
-    uint256 public flashMintFee;
-    /// @notice returns the maximum amount of USDO that can be minted through the EIP-3156 flow
-    uint256 public maxFlashMint;
+    enum Module {
+        NonModule, //0
+        Generic,
+        Leverage,
+        LeverageDestination,
+        Market,
+        MarketDestination,
+        Options,
+        OptionsDestination
+    }
 
-    mapping(address moduleAddr => bool isValid) internal validModules;
-
-    uint256 internal constant FLASH_MINT_FEE_PRECISION = 1e6;
-    bytes32 internal constant FLASH_MINT_CALLBACK_SUCCESS =
-        keccak256("ERC3156FlashBorrower.onFlashLoan");
+    /// @notice returns whitelisted modules
+    mapping(Module module => address moduleAddress) internal _moduleAddresses;
 
     uint16 internal constant PT_MARKET_MULTIHOP_BUY = 772;
     uint16 internal constant PT_MARKET_REMOVE_ASSET = 773;
@@ -59,10 +62,6 @@ contract BaseUSDOStorage is OFTV2 {
     event SetBurnerStatus(address indexed _for, bool _status);
     /// @notice event emitted when pause state is updated
     event PausedUpdated(bool oldState, bool newState);
-    /// @notice event emitted when flash mint fee is updated
-    event FlashMintFeeUpdated(uint256 _old, uint256 _new);
-    /// @notice event emitted when max flash mintable amount is updated
-    event MaxFlashMintUpdated(uint256 _old, uint256 _new);
 
     receive() external payable {}
 
@@ -74,8 +73,6 @@ contract BaseUSDOStorage is OFTV2 {
         uint256 chain = _getChainId();
         allowedMinter[chain][msg.sender] = true;
         allowedBurner[chain][msg.sender] = true;
-        flashMintFee = 10; // 0.001%
-        maxFlashMint = 100_000 * 1e18; // 100k USDO
 
         yieldBox = _yieldBox;
         cluster = _cluster;
@@ -83,15 +80,6 @@ contract BaseUSDOStorage is OFTV2 {
 
     function _getChainId() internal view returns (uint256) {
         return ILayerZeroEndpoint(lzEndpoint).getChainId();
-    }
-
-    function _assureMaxSlippage(
-        uint256 amount,
-        uint256 minAmount
-    ) internal pure {
-        uint256 slippageMinAmount = amount -
-            ((SWAP_MAX_SLIPPAGE * amount) / SLIPPAGE_PRECISION);
-        require(minAmount >= slippageMinAmount, "USDO: slippage");
     }
 
     function _getRevertMsg(

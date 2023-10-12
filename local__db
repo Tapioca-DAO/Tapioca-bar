@@ -101,18 +101,6 @@
                 }
             },
             {
-                "name": "Cluster",
-                "address": "0xBe012A9A9881226ac8606b83a4FcB4C3f36C9294",
-                "meta": {
-                    "args": [
-                        "0x7dcAD72640F835B0FA36EFD3D6d3ec902C7E5acf",
-                        "0x40282d3Cf4890D9806BC1853e97a59C93D813653"
-                    ],
-                    "salt": "0xa1d9bfb4d16474b0b61dd3f7ded4a09740d1364344a07dcbd30f416ef99a17f1",
-                    "create2": true
-                }
-            },
-            {
                 "name": "USDOLeverageModule",
                 "address": "0x7A1E4c74badA3aa511023Bdc9f92Bc594813b49a",
                 "meta": {

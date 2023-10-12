@@ -222,14 +222,6 @@ contract BBLiquidation is BBCommon {
         uint256 borrowShare,
         uint256 callerReward
     ) private returns (uint256 feeShare, uint256 callerShare) {
-        yieldBox.withdraw(
-            assetId,
-            address(this),
-            address(this),
-            0,
-            returnedShare
-        );
-
         uint256 extraShare = returnedShare > borrowShare
             ? returnedShare - borrowShare
             : 0;

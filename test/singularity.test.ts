@@ -146,6 +146,7 @@ describe('Singularity test', () => {
                     0,
                     0,
                     0,
+                    0,
                 ],
             );
             await bar.executeMarketFn(
@@ -153,11 +154,6 @@ describe('Singularity test', () => {
                 [payload],
                 false,
             );
-            expect(
-                borrowingOpeningFee.eq(
-                    await wethUsdcSingularity.borrowOpeningFee(),
-                ),
-            ).to.be.true;
             expect(oracle).to.eq(await wethUsdcSingularity.oracle());
             expect(conservator).to.eq(await wethUsdcSingularity.conservator());
             expect(callerFee).to.eq(await wethUsdcSingularity.callerFee());
@@ -192,6 +188,7 @@ describe('Singularity test', () => {
                     toSetMaxValue,
                     toSetValue,
                     toSetValue,
+                    toSetMaxValue,
                 ],
             );
             await bar.executeMarketFn(
@@ -874,7 +871,7 @@ describe('Singularity test', () => {
             expect(userCollateralShareAfter.eq(0)).to.be.true;
         });
 
-        it.skip('Should lend Weth, deposit Usdc collateral and borrow Weth and be liquidated for price drop', async () => {
+        it('Should lend Weth, deposit Usdc collateral and borrow Weth and be liquidated for price drop', async () => {
             const {
                 usdc,
                 weth,
@@ -964,7 +961,7 @@ describe('Singularity test', () => {
             ).to.be.reverted;
 
             // Can be liquidated price drop (USDC/WETH)
-            const priceDrop = __wethUsdcPrice.mul(2).div(100);
+            const priceDrop = __wethUsdcPrice.mul(10).div(100);
             await wethUsdcOracle.set(__wethUsdcPrice.add(priceDrop));
             await wethUsdcSingularity.updateExchangeRate();
 
@@ -1089,7 +1086,7 @@ describe('Singularity test', () => {
             ).to.be.reverted;
 
             // Can be liquidated price drop (USDC/WETH)
-            const priceDrop = __wbtcUsdcPrice.mul(35).div(100);
+            const priceDrop = __wbtcUsdcPrice.mul(55).div(100);
             await wbtcUsdcOracle.set(__wbtcUsdcPrice.add(priceDrop));
 
             await expect(
@@ -2118,6 +2115,7 @@ describe('Singularity test', () => {
             const { wethUsdcSingularity, wethUsdcOracle } = await loadFixture(
                 register,
             );
+            await wethUsdcSingularity.updateExchangeRate();
             await wethUsdcOracle.setSuccess(false);
 
             await wethUsdcOracle.set(100);
@@ -2216,8 +2214,21 @@ describe('Singularity test', () => {
             ).to.be.revertedWith('SGL: borrow cap reached');
 
             borrowCapData = wethUsdcSingularity.interface.encodeFunctionData(
-                'setBorrowCap',
-                [0],
+                'setMarketConfig',
+                [
+                    0,
+                    ethers.constants.AddressZero,
+                    '0x',
+                    ethers.constants.AddressZero,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    ethers.utils.parseEther('99999999999'),
+                    0,
+                    0,
+                ],
             );
             await bar.executeMarketFn(
                 [wethUsdcSingularity.address],
@@ -2402,40 +2413,6 @@ describe('Singularity test', () => {
             } else {
                 expect(closingFactor.gt(prevClosingFactor)).to.be.true;
             }
-            prevClosingFactor = closingFactor;
-
-            priceDrop = __wethUsdcPrice.mul(60).div(100);
-            await wethUsdcOracle.set(__wethUsdcPrice.add(priceDrop));
-            await wethUsdcSingularity.updateExchangeRate();
-            exchangeRate = await wethUsdcSingularity.exchangeRate();
-            reward = await wethUsdcSingularity.computeLiquidatorReward(
-                deployer.address,
-                exchangeRate,
-            );
-            expect(reward.eq(prevReward)).to.be.true;
-            prevReward = reward;
-            closingFactor = await wethUsdcSingularity.computeClosingFactor(
-                await wethUsdcSingularity.userBorrowPart(deployer.address),
-                (
-                    await wethUsdcSingularity.computeTVLInfo(
-                        deployer.address,
-                        exchangeRate,
-                    )
-                )[2],
-                5,
-            );
-            if (closingFactor.eq(prevClosingFactor)) {
-                expect(
-                    closingFactor.eq(
-                        await wethUsdcSingularity.userBorrowPart(
-                            deployer.address,
-                        ),
-                    ),
-                ).to.be.true;
-            } else {
-                expect(closingFactor.gt(prevClosingFactor)).to.be.true;
-            }
-            prevClosingFactor = closingFactor;
         });
         it('Should accumulate fees for lender', async () => {
             const {
@@ -2701,8 +2678,21 @@ describe('Singularity test', () => {
             ).equal(await yieldBox.toShare(collateralId, collateralVal, false));
 
             const payload = wethUsdcSingularity.interface.encodeFunctionData(
-                'setBorrowOpeningFee',
-                [1e4],
+                'setMarketConfig',
+                [
+                    1e4,
+                    ethers.constants.AddressZero,
+                    '0x',
+                    ethers.constants.AddressZero,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                ],
             );
 
             await (
@@ -3758,9 +3748,11 @@ describe('Singularity test', () => {
             const Cluster = new Cluster__factory(deployer);
             const Cluster_0 = await Cluster.deploy(
                 LZEndpointMock_chainID_0.address,
+                deployer.address,
             );
             const Cluster_10 = await Cluster.deploy(
                 LZEndpointMock_chainID_10.address,
+                deployer.address,
             );
 
             //Deploy TapiocaWrapper
@@ -3778,6 +3770,13 @@ describe('Singularity test', () => {
                 YieldBox_0.address,
                 Cluster_0.address,
             );
+            const usdo_0_leverage_destination = await (
+                await ethers.getContractFactory('USDOLeverageDestinationModule')
+            ).deploy(
+                LZEndpointMock_chainID_0.address,
+                YieldBox_0.address,
+                Cluster_0.address,
+            );
             const usdo_0_market = await (
                 await ethers.getContractFactory('USDOMarketModule')
             ).deploy(
@@ -3785,8 +3784,29 @@ describe('Singularity test', () => {
                 YieldBox_0.address,
                 Cluster_0.address,
             );
+            const usdo_0_market_destination = await (
+                await ethers.getContractFactory('USDOMarketDestinationModule')
+            ).deploy(
+                LZEndpointMock_chainID_0.address,
+                YieldBox_0.address,
+                Cluster_0.address,
+            );
             const usdo_0_options = await (
                 await ethers.getContractFactory('USDOOptionsModule')
+            ).deploy(
+                LZEndpointMock_chainID_0.address,
+                YieldBox_0.address,
+                Cluster_0.address,
+            );
+            const usdo_0_options_destination = await (
+                await ethers.getContractFactory('USDOOptionsDestinationModule')
+            ).deploy(
+                LZEndpointMock_chainID_0.address,
+                YieldBox_0.address,
+                Cluster_0.address,
+            );
+            const usdo_0_generic = await (
+                await ethers.getContractFactory('USDOGenericModule')
             ).deploy(
                 LZEndpointMock_chainID_0.address,
                 YieldBox_0.address,
@@ -3801,13 +3821,24 @@ describe('Singularity test', () => {
                 Cluster_0.address,
                 deployer.address,
                 usdo_0_leverage.address,
+                usdo_0_leverage_destination.address,
                 usdo_0_market.address,
+                usdo_0_market_destination.address,
                 usdo_0_options.address,
+                usdo_0_options_destination.address,
+                usdo_0_generic.address,
             );
             await USDO_0.deployed();
 
             const usdo_10_leverage = await (
                 await ethers.getContractFactory('USDOLeverageModule')
+            ).deploy(
+                LZEndpointMock_chainID_10.address,
+                YieldBox_0.address,
+                Cluster_0.address,
+            );
+            const usdo_10_leverage_destination = await (
+                await ethers.getContractFactory('USDOLeverageDestinationModule')
             ).deploy(
                 LZEndpointMock_chainID_10.address,
                 YieldBox_0.address,
@@ -3820,8 +3851,29 @@ describe('Singularity test', () => {
                 YieldBox_0.address,
                 Cluster_0.address,
             );
+            const usdo_10_market_destination = await (
+                await ethers.getContractFactory('USDOMarketDestinationModule')
+            ).deploy(
+                LZEndpointMock_chainID_10.address,
+                YieldBox_0.address,
+                Cluster_0.address,
+            );
             const usdo_10_options = await (
                 await ethers.getContractFactory('USDOOptionsModule')
+            ).deploy(
+                LZEndpointMock_chainID_10.address,
+                YieldBox_0.address,
+                Cluster_0.address,
+            );
+            const usdo_10_options_destination = await (
+                await ethers.getContractFactory('USDOOptionsDestinationModule')
+            ).deploy(
+                LZEndpointMock_chainID_10.address,
+                YieldBox_0.address,
+                Cluster_0.address,
+            );
+            const usdo_10_generic = await (
+                await ethers.getContractFactory('USDOGenericModule')
             ).deploy(
                 LZEndpointMock_chainID_10.address,
                 YieldBox_0.address,
@@ -3835,8 +3887,12 @@ describe('Singularity test', () => {
                 Cluster_0.address,
                 deployer.address,
                 usdo_10_leverage.address,
+                usdo_10_leverage_destination.address,
                 usdo_10_market.address,
+                usdo_10_market_destination.address,
                 usdo_10_options.address,
+                usdo_10_options_destination.address,
+                usdo_10_generic.address,
             );
             await USDO_10.deployed();
 

@@ -94,11 +94,23 @@ async function registerUsd0Contract(
     const usdo_leverage = await (
         await ethers.getContractFactory('USDOLeverageModule')
     ).deploy(lzEndpointContract.address, yieldBox, cluster);
+    const usdo_leverage_destination = await (
+        await ethers.getContractFactory('USDOLeverageDestinationModule')
+    ).deploy(lzEndpointContract.address, yieldBox, cluster);
     const usdo_market = await (
         await ethers.getContractFactory('USDOMarketModule')
     ).deploy(lzEndpointContract.address, yieldBox, cluster);
+    const usdo_market_destination = await (
+        await ethers.getContractFactory('USDOMarketDestinationModule')
+    ).deploy(lzEndpointContract.address, yieldBox, cluster);
     const usdo_options = await (
         await ethers.getContractFactory('USDOOptionsModule')
+    ).deploy(lzEndpointContract.address, yieldBox, cluster);
+    const usdo_options_destination = await (
+        await ethers.getContractFactory('USDOOptionsDestinationModule')
+    ).deploy(lzEndpointContract.address, yieldBox, cluster);
+    const usdo_generic = await (
+        await ethers.getContractFactory('USDOGenericModule')
     ).deploy(lzEndpointContract.address, yieldBox, cluster);
 
     const usd0 = await (
@@ -109,8 +121,12 @@ async function registerUsd0Contract(
         cluster,
         owner,
         usdo_leverage.address,
+        usdo_leverage_destination.address,
         usdo_market.address,
+        usdo_market_destination.address,
         usdo_options.address,
+        usdo_options_destination.address,
+        usdo_generic.address,
         {
             gasPrice: gasPrice,
         },
@@ -126,7 +142,24 @@ async function registerUsd0Contract(
         staging,
     );
 
-    return { usd0, lzEndpointContract };
+    const usd0Flashloan = await (
+        await ethers.getContractFactory('USDOFlashloanHelper')
+    ).deploy(usd0.address, owner);
+    await usd0Flashloan.deployed();
+    log(
+        `Deployed USDOFlashloanHelper ${usd0Flashloan.address} with args [${usd0.address},${owner}]`,
+        staging,
+    );
+
+    await usd0.setMinterStatus(usd0Flashloan.address, true);
+    await usd0.setBurnerStatus(usd0Flashloan.address, true);
+    await verifyEtherscan(
+        usd0Flashloan.address,
+        [usd0.address, owner],
+        staging,
+    );
+
+    return { usd0, lzEndpointContract, usd0Flashloan };
 }
 async function registerUniswapV2(staging?: boolean) {
     const deployer = (await ethers.getSigners())[0];
@@ -1399,9 +1432,13 @@ export async function register(staging?: boolean) {
         await hre.getChainId(),
     );
     const Cluster = new Cluster__factory(deployer);
-    const cluster = await Cluster.deploy(clusterLzEndpoint.address, {
-        gasPrice: gasPrice,
-    });
+    const cluster = await Cluster.deploy(
+        clusterLzEndpoint.address,
+        deployer.address,
+        {
+            gasPrice: gasPrice,
+        },
+    );
     log(
         `Deployed Cluster ${cluster.address} with args [${chainInfo?.lzChainId}]`,
         staging,
@@ -1558,13 +1595,14 @@ export async function register(staging?: boolean) {
     // ------------------- 10 Deploy USDO -------------------
     log('Registering USDO', staging);
     const chainId = await hre.getChainId();
-    const { usd0, lzEndpointContract } = await registerUsd0Contract(
-        chainId,
-        yieldBox.address,
-        cluster.address,
-        deployer.address,
-        staging,
-    );
+    const { usd0, lzEndpointContract, usd0Flashloan } =
+        await registerUsd0Contract(
+            chainId,
+            yieldBox.address,
+            cluster.address,
+            deployer.address,
+            staging,
+        );
     log(`USDO registered ${usd0.address}`, staging);
 
     // ------------------- 11 Set USDO on Penrose -------------------
@@ -1737,6 +1775,7 @@ export async function register(staging?: boolean) {
         deployer,
         eoas,
         usd0,
+        usd0Flashloan,
         lzEndpointContract,
         usdc,
         usdcAssetId,

@@ -410,23 +410,6 @@ function failedMessages(uint16, bytes, uint64) external view returns (bytes32)
 |---|---|---|
 | _0 | bytes32 | undefined |
 
-### flashMintFee
-
-```solidity
-function flashMintFee() external view returns (uint256)
-```
-
-returns the flash mint fee
-
-
-
-
-#### Returns
-
-| Name | Type | Description |
-|---|---|---|
-| _0 | uint256 | undefined |
-
 ### forceResumeReceive
 
 ```solidity
@@ -514,6 +497,29 @@ function increaseAllowance(address spender, uint256 addedValue) external nonpaya
 |---|---|---|
 | _0 | bool | undefined |
 
+### initMultiHopBuy
+
+```solidity
+function initMultiHopBuy(address from, uint256 collateralAmount, uint256 borrowAmount, IUSDOBase.ILeverageSwapData swapData, IUSDOBase.ILeverageLZData lzData, IUSDOBase.ILeverageExternalContractsData externalData, bytes airdropAdapterParams, ICommonData.IApproval[] approvals) external payable
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| from | address | undefined |
+| collateralAmount | uint256 | undefined |
+| borrowAmount | uint256 | undefined |
+| swapData | IUSDOBase.ILeverageSwapData | undefined |
+| lzData | IUSDOBase.ILeverageLZData | undefined |
+| externalData | IUSDOBase.ILeverageExternalContractsData | undefined |
+| airdropAdapterParams | bytes | undefined |
+| approvals | ICommonData.IApproval[] | undefined |
+
 ### isTrustedRemote
 
 ```solidity
@@ -536,47 +542,6 @@ function isTrustedRemote(uint16 _srcChainId, bytes _srcAddress) external view re
 | Name | Type | Description |
 |---|---|---|
 | _0 | bool | undefined |
-
-### leverageUp
-
-```solidity
-function leverageUp(address module, uint16 _srcChainId, bytes _srcAddress, uint64 _nonce, bytes _payload) external nonpayable
-```
-
-
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| module | address | undefined |
-| _srcChainId | uint16 | undefined |
-| _srcAddress | bytes | undefined |
-| _nonce | uint64 | undefined |
-| _payload | bytes | undefined |
-
-### leverageUpInternal
-
-```solidity
-function leverageUpInternal(uint256 amount, IUSDOBase.ILeverageSwapData swapData, IUSDOBase.ILeverageExternalContractsData externalData, IUSDOBase.ILeverageLZData lzData, address leverageFor, uint256 airdropAmount) external payable
-```
-
-
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| amount | uint256 | undefined |
-| swapData | IUSDOBase.ILeverageSwapData | undefined |
-| externalData | IUSDOBase.ILeverageExternalContractsData | undefined |
-| lzData | IUSDOBase.ILeverageLZData | undefined |
-| leverageFor | address | undefined |
-| airdropAmount | uint256 | undefined |
 
 ### lzEndpoint
 
@@ -613,23 +578,6 @@ function lzReceive(uint16 _srcChainId, bytes _srcAddress, uint64 _nonce, bytes _
 | _srcAddress | bytes | undefined |
 | _nonce | uint64 | undefined |
 | _payload | bytes | undefined |
-
-### maxFlashMint
-
-```solidity
-function maxFlashMint() external view returns (uint256)
-```
-
-returns the maximum amount of USDO that can be minted through the EIP-3156 flow
-
-
-
-
-#### Returns
-
-| Name | Type | Description |
-|---|---|---|
-| _0 | uint256 | undefined |
 
 ### minDstGasLookup
 
@@ -762,22 +710,6 @@ function precrime() external view returns (address)
 | Name | Type | Description |
 |---|---|---|
 | _0 | address | undefined |
-
-### remove
-
-```solidity
-function remove(bytes _payload) external nonpayable
-```
-
-
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| _payload | bytes | undefined |
 
 ### renounceOwnership
 
@@ -1272,40 +1204,6 @@ event CallOFTReceivedSuccess(uint16 indexed _srcChainId, bytes _srcAddress, uint
 | _srcAddress  | bytes | undefined |
 | _nonce  | uint64 | undefined |
 | _hash  | bytes32 | undefined |
-
-### FlashMintFeeUpdated
-
-```solidity
-event FlashMintFeeUpdated(uint256 _old, uint256 _new)
-```
-
-event emitted when flash mint fee is updated
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| _old  | uint256 | undefined |
-| _new  | uint256 | undefined |
-
-### MaxFlashMintUpdated
-
-```solidity
-event MaxFlashMintUpdated(uint256 _old, uint256 _new)
-```
-
-event emitted when max flash mintable amount is updated
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| _old  | uint256 | undefined |
-| _new  | uint256 | undefined |
 
 ### MessageFailed
 

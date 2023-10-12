@@ -14,9 +14,13 @@ import {IUSDOBase} from "tapioca-periph/contracts/interfaces/IUSDO.sol";
 import "tapioca-periph/contracts/interfaces/ICommonData.sol";
 
 import "./BaseUSDOStorage.sol";
+import "./modules/USDOGenericModule.sol";
 import "./modules/USDOLeverageModule.sol";
+import "./modules/USDOLeverageDestinationModule.sol";
 import "./modules/USDOMarketModule.sol";
+import "./modules/USDOMarketDestinationModule.sol";
 import "./modules/USDOOptionsModule.sol";
+import "./modules/USDOOptionsDestinationModule.sol";
 
 //
 //                 .(%%%%%%%%%%%%*       *
@@ -46,37 +50,97 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
     // ************ //
     // *** VARS *** //
     // ************ //
-    enum Module {
-        Leverage,
-        Market,
-        Options
-    }
-
     /// @notice returns the leverage module
-    USDOLeverageModule public leverageModule;
+    USDOLeverageModule private _leverageModule;
+    /// @notice returns the leverage destination module
+    USDOLeverageDestinationModule private _leverageDestinationModule;
 
     /// @notice returns the market module
-    USDOMarketModule public marketModule;
+    USDOMarketModule private _marketModule;
+    /// @notice returns the market destination module
+    USDOMarketDestinationModule private _marketDestinationModule;
 
     /// @notice returns the options module
-    USDOOptionsModule public optionsModule;
+    USDOOptionsModule private _optionsModule;
+    /// @notice returns the options destination module
+    USDOOptionsDestinationModule private _optionsDestinationModule;
+
+    /// @notice returns the generic module
+    USDOGenericModule private _genericModule;
+
+    struct DestinationCall {
+        Module module;
+        bytes4 functionSelector;
+    }
+    // Define a mapping from packetType to destination module and function selector.
+    mapping(uint256 => DestinationCall) private _destinationMappings;
 
     constructor(
         address _lzEndpoint,
         IYieldBoxBase _yieldBox,
         ICluster _cluster,
         address _owner,
-        address payable _leverageModule,
-        address payable _marketModule,
-        address payable _optionsModule
+        address payable __leverageModule,
+        address payable __leverageDestinationModule,
+        address payable __marketModule,
+        address payable __marketDestinationModule,
+        address payable __optionsModule,
+        address payable __optionsDestinationModule,
+        address payable __genericModule
     ) BaseUSDOStorage(_lzEndpoint, _yieldBox, _cluster) ERC20Permit("USDO") {
-        leverageModule = USDOLeverageModule(_leverageModule);
-        marketModule = USDOMarketModule(_marketModule);
-        optionsModule = USDOOptionsModule(_optionsModule);
+        //Set modules
+        _leverageModule = USDOLeverageModule(__leverageModule);
+        _leverageDestinationModule = USDOLeverageDestinationModule(
+            __leverageDestinationModule
+        );
+        _marketModule = USDOMarketModule(__marketModule);
+        _marketDestinationModule = USDOMarketDestinationModule(
+            __marketDestinationModule
+        );
+        _optionsModule = USDOOptionsModule(__optionsModule);
+        _optionsDestinationModule = USDOOptionsDestinationModule(
+            __optionsDestinationModule
+        );
+        _genericModule = USDOGenericModule(__genericModule);
 
-        validModules[_leverageModule] = true;
-        validModules[_marketModule] = true;
-        validModules[_optionsModule] = true;
+        //Set modules' addresses
+        _moduleAddresses[Module.Generic] = __genericModule;
+        _moduleAddresses[Module.Options] = __optionsModule;
+        _moduleAddresses[
+            Module.OptionsDestination
+        ] = __optionsDestinationModule;
+        _moduleAddresses[Module.Leverage] = __leverageModule;
+        _moduleAddresses[
+            Module.LeverageDestination
+        ] = __leverageDestinationModule;
+        _moduleAddresses[Module.Market] = __marketModule;
+        _moduleAddresses[Module.MarketDestination] = __marketDestinationModule;
+
+        //Set destination mappings
+        _destinationMappings[PT_YB_SEND_SGL_LEND_OR_REPAY] = DestinationCall({
+            module: Module.MarketDestination,
+            functionSelector: USDOMarketDestinationModule.lend.selector
+        });
+        _destinationMappings[PT_LEVERAGE_MARKET_UP] = DestinationCall({
+            module: Module.LeverageDestination,
+            functionSelector: USDOLeverageDestinationModule.leverageUp.selector
+        });
+        _destinationMappings[PT_MARKET_REMOVE_ASSET] = DestinationCall({
+            module: Module.MarketDestination,
+            functionSelector: USDOMarketDestinationModule.remove.selector
+        });
+        _destinationMappings[PT_MARKET_MULTIHOP_BUY] = DestinationCall({
+            module: Module.LeverageDestination,
+            functionSelector: USDOLeverageDestinationModule.multiHop.selector
+        });
+        _destinationMappings[PT_TAP_EXERCISE] = DestinationCall({
+            module: Module.OptionsDestination,
+            functionSelector: USDOOptionsDestinationModule.exercise.selector
+        });
+        _destinationMappings[PT_SEND_FROM] = DestinationCall({
+            module: Module.Generic,
+            functionSelector: USDOGenericModule.sendFromDestination.selector
+        });
 
         transferOwnership(_owner);
     }
@@ -90,23 +154,6 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
     function rescueEth(uint256 amount, address to) external onlyOwner {
         (bool success, ) = to.call{value: amount}("");
         require(success, "USDO: failed");
-    }
-
-    /// @notice set the max allowed USDO mintable through flashloan
-    /// @dev can only be called by the owner
-    /// @param _val the new amount
-    function setMaxFlashMintable(uint256 _val) external onlyOwner {
-        emit MaxFlashMintUpdated(maxFlashMint, _val);
-        maxFlashMint = _val;
-    }
-
-    /// @notice set the flashloan fee
-    /// @dev can only be called by the owner
-    /// @param _val the new fee
-    function setFlashMintFee(uint256 _val) external onlyOwner {
-        require(_val < FLASH_MINT_FEE_PRECISION, "USDO: big");
-        emit FlashMintFeeUpdated(flashMintFee, _val);
-        flashMintFee = _val;
     }
 
     /// @notice set the Conservator address
@@ -124,6 +171,14 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
         require(msg.sender == conservator, "USDO: unauthorized");
         emit PausedUpdated(paused, val);
         paused = val;
+    }
+
+    /// @notice updates the cluster address
+    /// @dev can only be called by the owner
+    /// @param _cluster the new address
+    function setCluster(ICluster _cluster) external {
+        require(address(_cluster) != address(0), "USDO: not valid");
+        cluster = _cluster;
     }
 
     /// @notice sets/unsets address as minter
@@ -156,97 +211,110 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
     // *** PUBLIC FUNCTIONS *** //
     // ************************ //
 
-    /// @notice triggers a sendFrom to another layer from destination
-    /// @param lzDstChainId LZ destination id
-    /// @param airdropAdapterParams airdrop params
-    /// @param amount amount to send back
-    /// @param sendFromData data needed to trigger sendFrom on destination
-    /// @param approvals approvals array
-    function triggerSendFrom(
-        uint16 lzDstChainId,
+    //----Leverage---
+    /// @notice inits multiHopBuyCollateral
+    /// @dev handled by USDOLeverageModule
+    /// @param from The user who sells
+    /// @param collateralAmount Extra collateral to be added
+    /// @param borrowAmount Borrowed amount that will be swapped into collateral
+    /// @param swapData Swap data used on destination chain for swapping USDO to the underlying TOFT token
+    /// @param lzData LayerZero specific data
+    /// @param externalData External contracts used for the cross chain operation
+    /// @param approvals array
+    function initMultiHopBuy(
+        address from,
+        uint256 collateralAmount,
+        uint256 borrowAmount,
+        IUSDOBase.ILeverageSwapData calldata swapData,
+        IUSDOBase.ILeverageLZData calldata lzData,
+        IUSDOBase.ILeverageExternalContractsData calldata externalData,
         bytes calldata airdropAdapterParams,
-        uint256 amount,
-        ISendFrom.LzCallParams calldata sendFromData,
-        ICommonData.IApproval[] calldata approvals
+        ICommonData.IApproval[] memory approvals
     ) external payable {
         _executeModule(
-            Module.Options,
+            Module.Leverage,
             abi.encodeWithSelector(
-                USDOOptionsModule.triggerSendFrom.selector,
-                lzDstChainId,
+                USDOLeverageModule.initMultiHopBuy.selector,
+                from,
+                collateralAmount,
+                borrowAmount,
+                swapData,
+                lzData,
+                externalData,
                 airdropAdapterParams,
-                amount,
-                sendFromData,
                 approvals
             ),
             false
         );
     }
 
-    /// @notice Exercise an oTAP position
-    /// @param optionsData oTap exerciseOptions data
-    /// @param lzData data needed for the cross chain transer
-    /// @param tapSendData needed for withdrawing Tap token
-    /// @param approvals array
-    function exerciseOption(
-        ITapiocaOptionsBrokerCrossChain.IExerciseOptionsData
-            calldata optionsData,
-        ITapiocaOptionsBrokerCrossChain.IExerciseLZData calldata lzData,
-        ITapiocaOptionsBrokerCrossChain.IExerciseLZSendTapData
-            calldata tapSendData,
+    /// @notice sends USDO to a specific chain and performs a leverage up operation
+    /// @dev handled by USDOLeverageModule
+    /// @param amount the amount to use
+    /// @param leverageFor the receiver address
+    /// @param lzData LZ specific data
+    /// @param swapData ISwapper specific data
+    /// @param externalData external contracts used for the flow
+    function sendForLeverage(
+        uint256 amount,
+        address leverageFor,
+        IUSDOBase.ILeverageLZData calldata lzData,
+        IUSDOBase.ILeverageSwapData calldata swapData,
+        IUSDOBase.ILeverageExternalContractsData calldata externalData
+    ) external payable {
+        _executeModule(
+            Module.Leverage,
+            abi.encodeWithSelector(
+                USDOLeverageModule.sendForLeverage.selector,
+                amount,
+                leverageFor,
+                lzData,
+                swapData,
+                externalData
+            ),
+            false
+        );
+    }
+
+    //----Market---
+    /// @notice sends to YieldBox over layer and lends asset to market
+    /// @dev handled by USDOMarketModule
+    /// @param _from sending address
+    /// @param _to receiver address
+    /// @param lzDstChainId LayerZero destination chain id
+    /// @param lendParams lend specific params
+    /// @param approvals approvals specific params
+    /// @param withdrawParams parameter to withdraw the SGL collateral
+    /// @param adapterParams adapter params of the withdrawn collateral
+    function sendAndLendOrRepay(
+        address _from,
+        address _to,
+        uint16 lzDstChainId,
+        address zroPaymentAddress,
+        IUSDOBase.ILendOrRepayParams calldata lendParams,
         ICommonData.IApproval[] calldata approvals,
+        ICommonData.IWithdrawParams calldata withdrawParams,
         bytes calldata adapterParams
     ) external payable {
         _executeModule(
-            Module.Options,
+            Module.Market,
             abi.encodeWithSelector(
-                USDOOptionsModule.exerciseOption.selector,
-                optionsData,
-                lzData,
-                tapSendData,
+                USDOMarketModule.sendAndLendOrRepay.selector,
+                _from,
+                _to,
+                lzDstChainId,
+                zroPaymentAddress,
+                lendParams,
                 approvals,
+                withdrawParams,
                 adapterParams
             ),
             false
         );
     }
 
-    // /// @notice inits multiHopBuyCollateral
-    // /// @param from The user who sells
-    // /// @param collateralAmount Extra collateral to be added
-    // /// @param borrowAmount Borrowed amount that will be swapped into collateral
-    // /// @param swapData Swap data used on destination chain for swapping USDO to the underlying TOFT token
-    // /// @param lzData LayerZero specific data
-    // /// @param externalData External contracts used for the cross chain operation
-    // /// @param approvals array
-    // function initMultiHopBuy(
-    //     address from,
-    //     uint256 collateralAmount,
-    //     uint256 borrowAmount,
-    //     IUSDOBase.ILeverageSwapData calldata swapData,
-    //     IUSDOBase.ILeverageLZData calldata lzData,
-    //     IUSDOBase.ILeverageExternalContractsData calldata externalData,
-    //     bytes calldata airdropAdapterParams,
-    //     ICommonData.IApproval[] memory approvals
-    // ) external payable {
-    //     _executeModule(
-    //         Module.Leverage,
-    //         abi.encodeWithSelector(
-    //             USDOLeverageModule.initMultiHopBuy.selector,
-    //             from,
-    //             collateralAmount,
-    //             borrowAmount,
-    //             swapData,
-    //             lzData,
-    //             externalData,
-    //             airdropAdapterParams,
-    //             approvals
-    //         ),
-    //         false
-    //     );
-    // }
-
     /// @notice calls removeAssetAndRepay on Magnetar from the destination layer
+    /// @dev handled by USDOMarketModule
     /// @param from sending address
     /// @param to receiver address
     /// @param lzDstChainId LayerZero destination chain id
@@ -282,63 +350,60 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
         );
     }
 
-    /// @notice sends USDO to a specific chain and performs a leverage up operation
-    /// @param amount the amount to use
-    /// @param leverageFor the receiver address
-    /// @param lzData LZ specific data
-    /// @param swapData ISwapper specific data
-    /// @param externalData external contracts used for the flow
-    function sendForLeverage(
-        uint256 amount,
-        address leverageFor,
-        IUSDOBase.ILeverageLZData calldata lzData,
-        IUSDOBase.ILeverageSwapData calldata swapData,
-        IUSDOBase.ILeverageExternalContractsData calldata externalData
+    //----Options---
+    /// @notice Exercise an oTAP position
+    /// @dev handled by USDOOptionsModule
+    /// @param optionsData oTap exerciseOptions data
+    /// @param lzData data needed for the cross chain transer
+    /// @param tapSendData needed for withdrawing Tap token
+    /// @param approvals array
+    function exerciseOption(
+        ITapiocaOptionsBrokerCrossChain.IExerciseOptionsData
+            calldata optionsData,
+        ITapiocaOptionsBrokerCrossChain.IExerciseLZData calldata lzData,
+        ITapiocaOptionsBrokerCrossChain.IExerciseLZSendTapData
+            calldata tapSendData,
+        ICommonData.IApproval[] calldata approvals,
+        bytes calldata adapterParams
     ) external payable {
         _executeModule(
-            Module.Leverage,
+            Module.Options,
             abi.encodeWithSelector(
-                USDOLeverageModule.sendForLeverage.selector,
-                amount,
-                leverageFor,
+                USDOOptionsModule.exerciseOption.selector,
+                optionsData,
                 lzData,
-                swapData,
-                externalData
+                tapSendData,
+                approvals,
+                adapterParams
             ),
             false
         );
     }
 
-    /// @notice sends to YieldBox over layer and lends asset to market
-    /// @param _from sending address
-    /// @param _to receiver address
-    /// @param lzDstChainId LayerZero destination chain id
-    /// @param lendParams lend specific params
-    /// @param approvals approvals specific params
-    /// @param withdrawParams parameter to withdraw the SGL collateral
-    /// @param adapterParams adapter params of the withdrawn collateral
-    function sendAndLendOrRepay(
-        address _from,
-        address _to,
+    //----Generic---
+    /// @notice triggers a sendFrom to another layer from destination
+    /// @dev handled by USDOGenericModule
+    /// @param lzDstChainId LZ destination id
+    /// @param airdropAdapterParams airdrop params
+    /// @param amount amount to send back
+    /// @param sendFromData data needed to trigger sendFrom on destination
+    /// @param approvals approvals array
+    function triggerSendFrom(
         uint16 lzDstChainId,
-        address zroPaymentAddress,
-        IUSDOBase.ILendOrRepayParams calldata lendParams,
-        ICommonData.IApproval[] calldata approvals,
-        ICommonData.IWithdrawParams calldata withdrawParams,
-        bytes calldata adapterParams
+        bytes calldata airdropAdapterParams,
+        uint256 amount,
+        ISendFrom.LzCallParams calldata sendFromData,
+        ICommonData.IApproval[] calldata approvals
     ) external payable {
         _executeModule(
-            Module.Market,
+            Module.Generic,
             abi.encodeWithSelector(
-                USDOMarketModule.sendAndLendOrRepay.selector,
-                _from,
-                _to,
+                USDOGenericModule.triggerSendFrom.selector,
                 lzDstChainId,
-                zroPaymentAddress,
-                lendParams,
-                approvals,
-                withdrawParams,
-                adapterParams
+                airdropAdapterParams,
+                amount,
+                sendFromData,
+                approvals
             ),
             false
         );
@@ -347,20 +412,9 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
     // ************************* //
     // *** PRIVATE FUNCTIONS *** //
     // ************************* //
-
     function _extractModule(Module _module) private view returns (address) {
-        address module;
-        if (_module == Module.Leverage) {
-            module = address(leverageModule);
-        } else if (_module == Module.Market) {
-            module = address(marketModule);
-        } else if (_module == Module.Options) {
-            module = address(optionsModule);
-        }
-
-        if (module == address(0)) {
-            revert("USDO: module not found");
-        }
+        address module = _moduleAddresses[_module];
+        require(module != address(0), "USDO: module not found");
 
         return module;
     }
@@ -411,85 +465,26 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
     ) internal virtual override {
         uint256 packetType = _payload.toUint256(0);
 
-        if (packetType == PT_YB_SEND_SGL_LEND_OR_REPAY) {
+        if (_destinationMappings[packetType].module != Module(0)) {
+            DestinationCall memory callInfo = _destinationMappings[packetType];
             _executeOnDestination(
-                Module.Market,
+                callInfo.module,
                 abi.encodeWithSelector(
-                    USDOMarketModule.lend.selector,
-                    marketModule,
+                    callInfo.functionSelector,
+                    callInfo.module == Module.MarketDestination
+                        ? address(_marketDestinationModule)
+                        : (
+                            callInfo.module == Module.LeverageDestination
+                                ? address(_leverageDestinationModule)
+                                : (
+                                    callInfo.module == Module.OptionsDestination
+                                        ? address(_optionsDestinationModule)
+                                        : address(0)
+                                )
+                        ),
                     _srcChainId,
                     _srcAddress,
                     _nonce,
-                    _payload
-                ),
-                _srcChainId,
-                _srcAddress,
-                _nonce,
-                _payload
-            );
-        } else if (packetType == PT_LEVERAGE_MARKET_UP) {
-            _executeOnDestination(
-                Module.Leverage,
-                abi.encodeWithSelector(
-                    USDOLeverageModule.leverageUp.selector,
-                    leverageModule,
-                    _srcChainId,
-                    _srcAddress,
-                    _nonce,
-                    _payload
-                ),
-                _srcChainId,
-                _srcAddress,
-                _nonce,
-                _payload
-            );
-        } else if (packetType == PT_MARKET_REMOVE_ASSET) {
-            _executeOnDestination(
-                Module.Leverage,
-                abi.encodeWithSelector(
-                    USDOLeverageModule.remove.selector,
-                    _payload
-                ),
-                _srcChainId,
-                _srcAddress,
-                _nonce,
-                _payload
-            );
-        }
-        // else if (packetType == PT_MARKET_MULTIHOP_BUY) {
-        //     _executeOnDestination(
-        //         Module.Leverage,
-        //         abi.encodeWithSelector(
-        //             USDOOptionsModule.multiHop.selector,
-        //             _payload
-        //         ),
-        //         _srcChainId,
-        //         _srcAddress,
-        //         _nonce,
-        //         _payload
-        //     );
-        // }
-        else if (packetType == PT_TAP_EXERCISE) {
-            _executeOnDestination(
-                Module.Options,
-                abi.encodeWithSelector(
-                    USDOOptionsModule.exercise.selector,
-                    optionsModule,
-                    _srcChainId,
-                    _srcAddress,
-                    _nonce,
-                    _payload
-                ),
-                _srcChainId,
-                _srcAddress,
-                _nonce,
-                _payload
-            );
-        } else if (packetType == PT_SEND_FROM) {
-            _executeOnDestination(
-                Module.Options,
-                abi.encodeWithSelector(
-                    USDOOptionsModule.sendFromDestination.selector,
                     _payload
                 ),
                 _srcChainId,
@@ -504,7 +499,7 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
             } else if (packetType == PT_SEND_AND_CALL) {
                 _sendAndCallAck(_srcChainId, _srcAddress, _nonce, _payload);
             } else {
-                revert("OFTCoreV2: unknown packet type");
+                revert("USDO: unknown packet type");
             }
         }
     }
