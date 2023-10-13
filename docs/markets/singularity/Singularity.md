@@ -774,6 +774,23 @@ returns the liquidation module
 
 | Name | Type | Description |
 |---|---|---|
+| _0 | contract SGLLiquidation | undefined |
+
+### liquidationMultiplier
+
+```solidity
+function liquidationMultiplier() external view returns (uint256)
+```
+
+liquidation multiplier used to compute liquidator rewards
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
 | _0 | uint256 | undefined |
 
 ### lqCollateralizationRate
