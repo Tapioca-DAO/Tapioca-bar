@@ -479,7 +479,11 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
                                 : (
                                     callInfo.module == Module.OptionsDestination
                                         ? address(_optionsDestinationModule)
-                                        : address(0)
+                                        : (
+                                            callInfo.module == Module.Generic
+                                                ? address(_genericModule)
+                                                : address(0)
+                                        )
                                 )
                         ),
                     _srcChainId,

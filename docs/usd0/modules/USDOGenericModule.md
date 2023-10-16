@@ -763,7 +763,7 @@ function sendFrom(address _from, uint16 _dstChainId, bytes32 _toAddress, uint256
 ### sendFromDestination
 
 ```solidity
-function sendFromDestination(bytes _payload) external nonpayable
+function sendFromDestination(address, uint16, bytes, uint64, bytes _payload) external nonpayable
 ```
 
 
@@ -774,6 +774,10 @@ function sendFromDestination(bytes _payload) external nonpayable
 
 | Name | Type | Description |
 |---|---|---|
+| _0 | address | undefined |
+| _1 | uint16 | undefined |
+| _2 | bytes | undefined |
+| _3 | uint64 | undefined |
 | _payload | bytes | undefined |
 
 ### setConfig
