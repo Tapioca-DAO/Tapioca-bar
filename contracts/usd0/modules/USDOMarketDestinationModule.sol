@@ -164,7 +164,13 @@ contract USDOMarketDestinationModule is USDOCommon {
     }
 
     /// @dev destination call for USDOMarketModule.removeAsset
-    function remove(bytes memory _payload) public {
+    function remove(
+        address,
+        uint16,
+        bytes memory,
+        uint64,
+        bytes memory _payload
+    ) public {
         require(msg.sender == address(this), "USDO: not valid");
         (
             ,

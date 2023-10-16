@@ -166,7 +166,13 @@ contract USDOLeverageDestinationModule is USDOCommon {
         );
     }
 
-    function multiHop(bytes memory _payload) public {
+    function multiHop(
+        address,
+        uint16,
+        bytes memory,
+        uint64,
+        bytes memory _payload
+    ) public {
         (
             ,
             ,

@@ -64,7 +64,13 @@ contract USDOGenericModule is USDOCommon {
     }
 
     /// @dev destination call for USDOGenericModule.triggerSendFrom
-    function sendFromDestination(bytes memory _payload) public {
+    function sendFromDestination(
+        address,
+        uint16,
+        bytes memory,
+        uint64,
+        bytes memory _payload
+    ) public {
         require(msg.sender == address(this), "USDO: caller not valid");
         (
             ,
