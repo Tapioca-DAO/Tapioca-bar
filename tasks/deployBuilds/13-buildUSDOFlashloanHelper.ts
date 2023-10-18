@@ -8,7 +8,7 @@ export const buildUSDOFlashloanHelper = async (
 ): Promise<IDeployerVMAdd<USDOFlashloanHelper__factory>> => {
     return {
         contract: await hre.ethers.getContractFactory('USDOFlashloanHelper'),
-        deploymentName: 'USDO',
+        deploymentName: 'USDOFlashloanHelper',
         args: [hre.ethers.constants.AddressZero, owner],
         dependsOn: [{ argPosition: 0, deploymentName: 'USDO' }],
         runStaticSimulation: false,
