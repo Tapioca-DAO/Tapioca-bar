@@ -112,23 +112,50 @@ contract USDOFlashloanHelper is IERC3156FlashLender, BoringOwnable {
         );
         uint256 fee = flashFee(token, amount);
         usdo.mint(address(receiver), amount);
+        usdo.addFlashloanFee(fee);
 
         require(
             receiver.onFlashLoan(msg.sender, token, amount, fee, data) ==
                 FLASH_MINT_CALLBACK_SUCCESS,
             "USDOFlashloanHelper: failed"
         );
-        uint256 _allowance = allowance(address(receiver), address(this));
-        require(
-            _allowance >= (amount + fee),
-            "USDOFlashloanHelper: repay not approved"
-        );
-        _spendAllowance(address(receiver), address(this), amount + fee);
-        usdo.burn(address(receiver), amount + fee);
-        usdo.mint(address(this), fee);
-        usdo.transfer(address(usdo), fee);
-        usdo.addFlashloanFee(fee);
+
+        // Stack to deep
+        // usdo.burn(address(receiver), amount)
+        assembly {
+            // Free memory pointer
+            let freeMemPointer := mload(0x40)
+
+            // keccak256("burn(address,uint256)")
+            mstore(freeMemPointer, shl(224, 0x9dc29fac))
+
+            mstore(add(freeMemPointer, 4), receiver)
+            mstore(add(freeMemPointer, 36), amount)
+
+            // Execute the call
+            let success := call(
+                gas(), // Send all gas
+                token, // The address of the usdo contract
+                0, // No ether is sent
+                freeMemPointer, // Input pointer
+                68, // Input length (4 bytes for method ID + 32 bytes for address + 32 bytes for uint256)
+                0,
+                0
+            )
+
+            // Check for failure and revert
+            if iszero(success) {
+                revert(0, 0)
+            }
+
+            // Adjust the free memory pointer
+            mstore(0x40, add(freeMemPointer, 68))
+        }
+
+        usdo.transferFrom(address(receiver), address(usdo), fee);
+
         _flashloanEntered = false;
+
         return true;
     }
 

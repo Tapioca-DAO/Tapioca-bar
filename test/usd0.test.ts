@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { ethers } from 'hardhat';
+import hre, { ethers } from 'hardhat';
 
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 import { BN, getERC20PermitSignature, register } from './test.utils';
@@ -148,17 +148,16 @@ describe('USDO', () => {
             const flashFee = await usd0Flashloan.flashFee(usd0.address, amount);
             await expect(
                 flashBorrower.flashBorrow(usd0.address, amount),
-            ).to.be.revertedWith('ERC20: burn amount exceeds balance');
+            ).to.be.revertedWith('ERC20: transfer amount exceeds balance');
 
             await usd0.connect(deployer).mint(deployer.address, flashFee);
-            const deployerUsd0Balance = await usd0.balanceOf(deployer.address);
-            expect(deployerUsd0Balance.gt(0)).to.be.true;
 
             //send for the fee
             await usd0.transfer(flashBorrower.address, flashFee);
 
             const supplyBefore = await usd0.totalSupply();
             const usdoBalanceBefore = await usd0.balanceOf(usd0.address);
+
             await expect(flashBorrower.flashBorrow(usd0.address, amount)).not.to
                 .be.reverted;
             const supplyAfter = await usd0.totalSupply();
@@ -220,7 +219,7 @@ describe('USDO', () => {
             await usd0.transfer(flashBorrower.address, flashFee);
             await expect(
                 flashBorrower.flashBorrow(usd0.address, amount),
-            ).to.be.revertedWith('USDOFlashloanHelper: repay not approved');
+            ).to.be.revertedWith('ERC20: insufficient allowance');
         });
     });
 });
