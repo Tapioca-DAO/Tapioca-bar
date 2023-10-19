@@ -97,6 +97,7 @@ contract BBLiquidation is BBCommon {
         } else {
             _exchangeRate = exchangeRate; //use stored rate
         }
+        require(_exchangeRate > 0, "BB: current exchangeRate not valid"); //validate stored rate
 
         _accrue();
 
@@ -221,25 +222,23 @@ contract BBLiquidation is BBCommon {
         uint256 borrowShare,
         uint256 callerReward
     ) private returns (uint256 feeShare, uint256 callerShare) {
-        feeShare = 0;
-        callerShare = 0;
-        uint256 extraShare = returnedShare - borrowShare;
-        if (extraShare > 0) {
-            feeShare = (extraShare * protocolFee) / FEE_PRECISION; // x% of profit goes to fee.
-            callerShare = (extraShare * callerReward) / FEE_PRECISION; //  y%  of profit goes to caller.
+        uint256 extraShare = returnedShare > borrowShare
+            ? returnedShare - borrowShare
+            : 0;
+        callerShare = (extraShare * callerReward) / FEE_PRECISION; //  y%  of profit goes to caller.
+        feeShare = extraShare - callerShare; // rest of the profit goes to fee.
 
-            //protocol fees should be kept in the contract as we do a yieldBox.depositAsset when we are extracting the fees using `refreshPenroseFees`
-            if (callerShare > 0) {
-                asset.approve(address(yieldBox), 0);
-                asset.approve(address(yieldBox), type(uint256).max);
-                yieldBox.depositAsset(
-                    assetId,
-                    address(this),
-                    msg.sender,
-                    0,
-                    callerShare
-                );
-            }
+        //protocol fees should be kept in the contract as we do a yieldBox.depositAsset when we are extracting the fees using `refreshPenroseFees`
+        if (callerShare > 0) {
+            asset.approve(address(yieldBox), 0);
+            asset.approve(address(yieldBox), type(uint256).max);
+            yieldBox.depositAsset(
+                assetId,
+                address(this),
+                msg.sender,
+                0,
+                callerShare
+            );
         }
         asset.approve(address(yieldBox), 0);
     }
@@ -251,14 +250,6 @@ contract BBLiquidation is BBCommon {
         bytes calldata _liquidatorReceiverData,
         uint256 _exchangeRate
     ) private {
-        if (_isSolvent(user, _exchangeRate)) return;
-
-        // Closed liquidation using a pre-approved swapper
-        require(
-            _isWhitelisted(penrose.hostLzChainId(), address(swapper)),
-            "BigBang: Invalid swapper"
-        );
-
         uint256 callerReward = _getCallerReward(user, _exchangeRate);
 
         (

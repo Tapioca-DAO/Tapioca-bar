@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { ethers } from 'hardhat';
+import hre, { ethers } from 'hardhat';
 
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 import { BN, getERC20PermitSignature, register } from './test.utils';
@@ -115,41 +115,49 @@ describe('USDO', () => {
                 yieldBox,
                 cluster,
             } = await loadFixture(register);
-            const { usd0 } = await registerUsd0Contract(
+            const { usd0, usd0Flashloan } = await registerUsd0Contract(
                 '1',
                 yieldBox.address,
                 cluster.address,
                 deployer.address,
             );
 
-            let maxLoan = await usd0.maxFlashLoan(ethers.constants.AddressZero);
+            await usd0.setFlashloanHelper(usd0Flashloan.address);
+            expect(await usd0Flashloan.usdo()).eq(usd0.address);
+
+            let maxLoan = await usd0Flashloan.maxFlashLoan(
+                ethers.constants.AddressZero,
+            );
             expect(maxLoan.eq(0)).to.be.true;
 
             const amount = BN(1e18).mul(1000);
             await usd0.mint(deployer.address, amount);
-            maxLoan = await usd0.maxFlashLoan(ethers.constants.AddressZero);
+            maxLoan = await usd0Flashloan.maxFlashLoan(
+                ethers.constants.AddressZero,
+            );
             expect(maxLoan.eq(amount)).to.be.true;
 
             //deploy flash borrower
             const FlashBorrowerMock = new FlashBorrowerMock__factory(deployer);
-            const flashBorrower = await FlashBorrowerMock.deploy(usd0.address);
+            const flashBorrower = await FlashBorrowerMock.deploy(
+                usd0Flashloan.address,
+            );
             await flashBorrower.deployed();
 
             //try to mint usd0
-            const flashFee = await usd0.flashFee(usd0.address, amount);
+            const flashFee = await usd0Flashloan.flashFee(usd0.address, amount);
             await expect(
                 flashBorrower.flashBorrow(usd0.address, amount),
-            ).to.be.revertedWith('ERC20: burn amount exceeds balance');
+            ).to.be.revertedWith('ERC20: transfer amount exceeds balance');
 
             await usd0.connect(deployer).mint(deployer.address, flashFee);
-            const deployerUsd0Balance = await usd0.balanceOf(deployer.address);
-            expect(deployerUsd0Balance.gt(0)).to.be.true;
 
             //send for the fee
             await usd0.transfer(flashBorrower.address, flashFee);
 
             const supplyBefore = await usd0.totalSupply();
             const usdoBalanceBefore = await usd0.balanceOf(usd0.address);
+
             await expect(flashBorrower.flashBorrow(usd0.address, amount)).not.to
                 .be.reverted;
             const supplyAfter = await usd0.totalSupply();
@@ -162,14 +170,14 @@ describe('USDO', () => {
             );
             expect(flashBorrwerUsd0Balance.eq(amount)).to.be.true;
 
-            const maxFlashMint = await usd0.maxFlashMint();
+            const maxFlashMint = await usd0Flashloan.maxFlashMint();
             await expect(
                 flashBorrower.flashBorrow(usd0.address, maxFlashMint.add(1)),
-            ).to.be.revertedWith('USDO: amount too big');
+            ).to.be.revertedWith('USDOFlashloanHelper: amount too big');
 
             await expect(
                 flashBorrower.flashBorrow(weth.address, amount),
-            ).to.be.revertedWith('USDO: token not valid');
+            ).to.be.revertedWith('USDOFlashloanHelper: token not valid');
         });
 
         it('should not flashMint for a malicious operator', async () => {
@@ -181,23 +189,25 @@ describe('USDO', () => {
                 yieldBox,
                 cluster,
             } = await loadFixture(register);
-            const { usd0 } = await registerUsd0Contract(
+            const { usd0, usd0Flashloan } = await registerUsd0Contract(
                 '1',
                 yieldBox.address,
                 cluster.address,
                 deployer.address,
             );
 
+            await usd0.setFlashloanHelper(usd0Flashloan.address);
+
             //deploy flash borrower
             const FlashMaliciousBorrowerMock =
                 new FlashMaliciousBorrowerMock__factory(deployer);
             const flashBorrower = await FlashMaliciousBorrowerMock.deploy(
-                usd0.address,
+                usd0Flashloan.address,
             );
             await flashBorrower.deployed();
 
             const amount = BN(1e18).mul(1000);
-            const flashFee = await usd0.flashFee(usd0.address, amount);
+            const flashFee = await usd0Flashloan.flashFee(usd0.address, amount);
 
             await usd0
                 .connect(deployer)
@@ -209,7 +219,7 @@ describe('USDO', () => {
             await usd0.transfer(flashBorrower.address, flashFee);
             await expect(
                 flashBorrower.flashBorrow(usd0.address, amount),
-            ).to.be.revertedWith('USDO: repay not approved');
+            ).to.be.revertedWith('ERC20: insufficient allowance');
         });
     });
 });

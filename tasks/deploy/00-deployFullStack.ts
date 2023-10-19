@@ -7,21 +7,20 @@ import { buildMasterContracts } from '../deployBuilds/02-buildMasterContracts';
 import { buildMultiSwapper } from '../deployBuilds/04-buildMultiSwapper';
 import { buildUSD0 } from '../deployBuilds/06-buildUSDO';
 import { buildStableToUSD0Bidder } from '../deployBuilds/07-buildStableToUSD0Bidder';
-import {
-    buildBigBangModules,
-    buildSingularityModules,
-} from '../deployBuilds/09-buildBigBangModules';
+import { buildBigBangModules } from '../deployBuilds/09-buildBigBangModules';
+import { buildSingularityModules } from '../deployBuilds/08-buildSingularityModules';
 import { buildPenroseSetup } from '../setups/01-buildPenroseSetup';
 import { buildMasterContractsSetup } from '../setups/02-buildMasterContractsSetup';
+import { buildUsdoFlashloanSetup } from '../setups/04-buildUsdoFlashloanSetup';
 import { loadVM } from '../utils';
 import SDK from 'tapioca-sdk';
 import { buildUSDOModules } from '../deployBuilds/11-buildUSDOModules';
+import { buildUSDOFlashloanHelper } from '../deployBuilds/13-buildUSDOFlashloanHelper';
 import {
     CURVE_DEPLOYMENTS,
     UNISWAP_DEPLOYMENTS,
 } from '../../gitsub_tapioca-sdk/src/api/constants';
 import { buildCluster } from '../deployBuilds/12-buildCluster';
-import { buildClusterSetup } from '../setups/03-buildClusterSetup';
 
 // hh deployFullStack --network goerli
 export const deployFullStack__task = async (
@@ -82,7 +81,7 @@ export const deployFullStack__task = async (
 
     let clusterAddress = hre.ethers.constants.AddressZero;
     let clusterDep = hre.SDK.db
-        .loadGlobalDeployment(tag, 'Cluster', chainInfo.chainId)
+        .loadGlobalDeployment(tag, 'tapioca-periphery', chainInfo.chainId)
         .find((e) => e.name == 'Cluster');
 
     if (!clusterDep) {
@@ -99,8 +98,17 @@ export const deployFullStack__task = async (
     VM.add(ybURI).add(yieldBox);
 
     // 01 - Deploy Cluster
-    const cluster = await buildCluster(hre, chainInfo.address);
-    VM.add(cluster);
+    if (!clusterAddress || clusterAddress == hre.ethers.constants.AddressZero) {
+        console.log('Need to deploy Cluster');
+        const cluster = await buildCluster(
+            hre,
+            chainInfo.address,
+            signer.address,
+        );
+        VM.add(cluster);
+    } else {
+        console.log(`Using deployed Cluster ${clusterAddress}`);
+    }
 
     // 02 - Penrose
     const penrose = await buildPenrose(
@@ -139,14 +147,27 @@ export const deployFullStack__task = async (
     VM.add(bbLiq).add(bbBorrow).add(bbCollateral).add(bbLeverage);
 
     // 07 USDO
-    const [leverageModule, marketModule, optionsModule] =
-        await buildUSDOModules(
-            chainInfo.address,
-            hre,
-            ybAddress,
-            clusterAddress,
-        );
-    VM.add(leverageModule).add(marketModule).add(optionsModule);
+    const [
+        leverageModule,
+        leverageDestinationModule,
+        marketModule,
+        marketDestinationModule,
+        optionsModule,
+        optionsDestinationModule,
+        genericModule,
+    ] = await buildUSDOModules(
+        chainInfo.address,
+        hre,
+        ybAddress,
+        clusterAddress,
+    );
+    VM.add(leverageModule)
+        .add(leverageDestinationModule)
+        .add(marketModule)
+        .add(marketDestinationModule)
+        .add(optionsModule)
+        .add(optionsDestinationModule)
+        .add(genericModule);
 
     const usdo = await buildUSD0(
         hre,
@@ -156,6 +177,12 @@ export const deployFullStack__task = async (
         clusterAddress,
     );
     VM.add(usdo);
+
+    const usdoFlashloanHelper = await buildUSDOFlashloanHelper(
+        hre,
+        signer.address,
+    );
+    VM.add(usdoFlashloanHelper);
 
     // 08 - CurveSwapper-buildStableToUSD0Bidder
     const [curveSwapper, curveStableToUsd0] = await buildStableToUSD0Bidder(
@@ -188,8 +215,8 @@ export const deployFullStack__task = async (
 
     const calls: Multicall3.CallStruct[] = [
         ...(await buildPenroseSetup(hre, vmList)),
-        ...(await buildClusterSetup(hre, vmList)),
         ...(await buildMasterContractsSetup(hre, vmList)),
+        ...(await buildUsdoFlashloanSetup(hre, vmList)),
     ];
 
     // Execute

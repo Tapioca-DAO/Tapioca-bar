@@ -774,6 +774,23 @@ returns the liquidation module
 
 | Name | Type | Description |
 |---|---|---|
+| _0 | contract SGLLiquidation | undefined |
+
+### liquidationMultiplier
+
+```solidity
+function liquidationMultiplier() external view returns (uint256)
+```
+
+liquidation multiplier used to compute liquidator rewards
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
 | _0 | uint256 | undefined |
 
 ### lqCollateralizationRate
@@ -1323,38 +1340,6 @@ Lever down: Sell collateral to repay debt; excess goes to YB
 |---|---|---|
 | amountOut | uint256 | Actual asset amount received in the sale |
 
-### setBorrowCap
-
-```solidity
-function setBorrowCap(uint256 _cap) external nonpayable
-```
-
-sets max borrowable amount
-
-*can only be called by the owner*
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| _cap | uint256 | the new value |
-
-### setBorrowOpeningFee
-
-```solidity
-function setBorrowOpeningFee(uint256 _val) external nonpayable
-```
-
-sets the borrowing opening fee
-
-*can only be called by the owner*
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| _val | uint256 | the new value |
-
 ### setMarketConfig
 
 ```solidity
@@ -1363,7 +1348,7 @@ function setMarketConfig(uint256 _borrowOpeningFee, contract IOracle _oracle, by
 
 sets common market configuration
 
-*values are updated only if &gt; 0 or not address(0)*
+*values are updated only if &gt; 0 or not address(0)     - borrowOpeningFee is always updated!*
 
 #### Parameters
 

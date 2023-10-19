@@ -12,8 +12,8 @@ abstract contract USDOCommon is BaseUSDOStorage {
         ICommonData.IApproval[] memory approvals,
         uint16 actionType
     ) internal {
-        for (uint256 i = 0; i < approvals.length; ) {
-            if (approvals[i].approveOnYieldBox) {
+        for (uint256 i; i < approvals.length; ) {
+            if (approvals[i].yieldBoxTypeApproval) {
                 _permitOnYieldBox(approvals[i]);
             } else {
                 require(

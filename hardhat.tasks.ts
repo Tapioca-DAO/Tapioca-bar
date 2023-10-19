@@ -32,13 +32,13 @@ import { deployLinkedChainStack__task } from './tasks/deploy/01-deployLinkedChai
 import { deploySGLMarket__task } from './tasks/deploy/deploySGLMarket';
 import { deployBigBangMarket__task } from './tasks/deploy/deployBigBangMarket';
 import { testCrossChainBorrow__task } from './tasks/test-borrow';
-import { testCrossChainLend__task } from './tasks/test-lend';
 import { setMinterStatus__task } from './tasks/exec/setMinterStatus';
 import { sameChainFlowTest__task } from './tasks/test-sameChainFlow';
 import { crossChainRepay__task } from './tasks/test-crossChainRepay';
 import { sendFrom__task } from './tasks/exec/sendFrom';
 import { testDeployMockSwapper__task } from './tasks/deploy/1000-testDeployMockSwapper';
 import { fillMockSwapper__test } from './tasks/exec/fillMockSwapper';
+import { fillCluster__task } from './tasks/exec/fillCluster';
 
 task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
     const accounts = await hre.ethers.getSigners();
@@ -319,3 +319,9 @@ task(
 task('fillMockSwapper', 'Fill MockSwapper with tokens', fillMockSwapper__test)
     .addParam('toft', 'tOFT address')
     .addParam('assetid', 'tOFT YB asset id');
+
+task(
+    'fillCluster',
+    'Whitelist contracts on Cluster',
+    fillCluster__task,
+).addVariadicPositionalParam('chains', 'block.chainid array');

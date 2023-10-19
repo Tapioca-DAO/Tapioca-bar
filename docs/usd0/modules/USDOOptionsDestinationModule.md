@@ -1,4 +1,4 @@
-# BaseUSDOStorage
+# USDOOptionsDestinationModule
 
 
 
@@ -109,7 +109,7 @@ function allowedBurner(uint256, address) external view returns (bool)
 
 addresses allowed to burn USDO
 
-*chainId&gt;address&gt;status*
+
 
 #### Parameters
 
@@ -132,7 +132,7 @@ function allowedMinter(uint256, address) external view returns (bool)
 
 addresses allowed to mint USDO
 
-*chainId&gt;address&gt;status*
+
 
 #### Parameters
 
@@ -385,6 +385,50 @@ function estimateSendFee(uint16 _dstChainId, bytes32 _toAddress, uint256 _amount
 |---|---|---|
 | nativeFee | uint256 | undefined |
 | zroFee | uint256 | undefined |
+
+### exercise
+
+```solidity
+function exercise(address module, uint16 _srcChainId, bytes _srcAddress, uint64 _nonce, bytes _payload) external nonpayable
+```
+
+
+
+*destination call for USDOOptionsModule.exerciseOption*
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| module | address | undefined |
+| _srcChainId | uint16 | undefined |
+| _srcAddress | bytes | undefined |
+| _nonce | uint64 | undefined |
+| _payload | bytes | undefined |
+
+### exerciseInternal
+
+```solidity
+function exerciseInternal(address from, uint256 oTAPTokenID, address paymentToken, uint256 tapAmount, address target, ITapiocaOptionsBrokerCrossChain.IExerciseLZSendTapData tapSendData, uint256 paymentTokenAmount, ICommonData.IApproval[] approvals, uint256 airdropAmount) external nonpayable
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| from | address | undefined |
+| oTAPTokenID | uint256 | undefined |
+| paymentToken | address | undefined |
+| tapAmount | uint256 | undefined |
+| target | address | undefined |
+| tapSendData | ITapiocaOptionsBrokerCrossChain.IExerciseLZSendTapData | undefined |
+| paymentTokenAmount | uint256 | undefined |
+| approvals | ICommonData.IApproval[] | undefined |
+| airdropAmount | uint256 | undefined |
 
 ### failedMessages
 

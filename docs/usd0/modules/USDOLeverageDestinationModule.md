@@ -1,4 +1,4 @@
-# BaseUSDOStorage
+# USDOLeverageDestinationModule
 
 
 
@@ -109,7 +109,7 @@ function allowedBurner(uint256, address) external view returns (bool)
 
 addresses allowed to burn USDO
 
-*chainId&gt;address&gt;status*
+
 
 #### Parameters
 
@@ -132,7 +132,7 @@ function allowedMinter(uint256, address) external view returns (bool)
 
 addresses allowed to mint USDO
 
-*chainId&gt;address&gt;status*
+
 
 #### Parameters
 
@@ -520,6 +520,47 @@ function isTrustedRemote(uint16 _srcChainId, bytes _srcAddress) external view re
 |---|---|---|
 | _0 | bool | undefined |
 
+### leverageUp
+
+```solidity
+function leverageUp(address module, uint16 _srcChainId, bytes _srcAddress, uint64 _nonce, bytes _payload) external nonpayable
+```
+
+
+
+*destination call for USDOLeverageModule.sendForLeverage*
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| module | address | undefined |
+| _srcChainId | uint16 | undefined |
+| _srcAddress | bytes | undefined |
+| _nonce | uint64 | undefined |
+| _payload | bytes | undefined |
+
+### leverageUpInternal
+
+```solidity
+function leverageUpInternal(uint256 amount, IUSDOBase.ILeverageSwapData swapData, IUSDOBase.ILeverageExternalContractsData externalData, IUSDOBase.ILeverageLZData lzData, address leverageFor, uint256 airdropAmount) external payable
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| amount | uint256 | undefined |
+| swapData | IUSDOBase.ILeverageSwapData | undefined |
+| externalData | IUSDOBase.ILeverageExternalContractsData | undefined |
+| lzData | IUSDOBase.ILeverageLZData | undefined |
+| leverageFor | address | undefined |
+| airdropAmount | uint256 | undefined |
+
 ### lzEndpoint
 
 ```solidity
@@ -578,6 +619,26 @@ function minDstGasLookup(uint16, uint16) external view returns (uint256)
 | Name | Type | Description |
 |---|---|---|
 | _0 | uint256 | undefined |
+
+### multiHop
+
+```solidity
+function multiHop(address, uint16, bytes, uint64, bytes _payload) external nonpayable
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | address | undefined |
+| _1 | uint16 | undefined |
+| _2 | bytes | undefined |
+| _3 | uint64 | undefined |
+| _payload | bytes | undefined |
 
 ### name
 

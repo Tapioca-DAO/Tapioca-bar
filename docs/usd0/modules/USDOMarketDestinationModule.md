@@ -1,4 +1,4 @@
-# BaseUSDOStorage
+# USDOMarketDestinationModule
 
 
 
@@ -109,7 +109,7 @@ function allowedBurner(uint256, address) external view returns (bool)
 
 addresses allowed to burn USDO
 
-*chainId&gt;address&gt;status*
+
 
 #### Parameters
 
@@ -132,7 +132,7 @@ function allowedMinter(uint256, address) external view returns (bool)
 
 addresses allowed to mint USDO
 
-*chainId&gt;address&gt;status*
+
 
 #### Parameters
 
@@ -520,6 +520,46 @@ function isTrustedRemote(uint16 _srcChainId, bytes _srcAddress) external view re
 |---|---|---|
 | _0 | bool | undefined |
 
+### lend
+
+```solidity
+function lend(address module, uint16 _srcChainId, bytes _srcAddress, uint64 _nonce, bytes _payload) external nonpayable
+```
+
+
+
+*destination call for USDOMarketModule.sendAndLendOrRepay*
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| module | address | undefined |
+| _srcChainId | uint16 | undefined |
+| _srcAddress | bytes | undefined |
+| _nonce | uint64 | undefined |
+| _payload | bytes | undefined |
+
+### lendInternal
+
+```solidity
+function lendInternal(address to, IUSDOBase.ILendOrRepayParams lendParams, ICommonData.IApproval[] approvals, ICommonData.IWithdrawParams withdrawParams, uint256 airdropAmount) external payable
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| to | address | undefined |
+| lendParams | IUSDOBase.ILendOrRepayParams | undefined |
+| approvals | ICommonData.IApproval[] | undefined |
+| withdrawParams | ICommonData.IWithdrawParams | undefined |
+| airdropAmount | uint256 | undefined |
+
 ### lzEndpoint
 
 ```solidity
@@ -687,6 +727,26 @@ function precrime() external view returns (address)
 | Name | Type | Description |
 |---|---|---|
 | _0 | address | undefined |
+
+### remove
+
+```solidity
+function remove(address, uint16, bytes, uint64, bytes _payload) external nonpayable
+```
+
+
+
+*destination call for USDOMarketModule.removeAsset*
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | address | undefined |
+| _1 | uint16 | undefined |
+| _2 | bytes | undefined |
+| _3 | uint64 | undefined |
+| _payload | bytes | undefined |
 
 ### renounceOwnership
 

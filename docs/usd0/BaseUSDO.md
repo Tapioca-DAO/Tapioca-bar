@@ -447,23 +447,6 @@ function failedMessages(uint16, bytes, uint64) external view returns (bytes32)
 |---|---|---|
 | _0 | bytes32 | undefined |
 
-### flashMintFee
-
-```solidity
-function flashMintFee() external view returns (uint256)
-```
-
-returns the flash mint fee
-
-
-
-
-#### Returns
-
-| Name | Type | Description |
-|---|---|---|
-| _0 | uint256 | undefined |
-
 ### forceResumeReceive
 
 ```solidity
@@ -551,6 +534,29 @@ function increaseAllowance(address spender, uint256 addedValue) external nonpaya
 |---|---|---|
 | _0 | bool | undefined |
 
+### initMultiHopBuy
+
+```solidity
+function initMultiHopBuy(address from, uint256 collateralAmount, uint256 borrowAmount, IUSDOBase.ILeverageSwapData swapData, IUSDOBase.ILeverageLZData lzData, IUSDOBase.ILeverageExternalContractsData externalData, bytes airdropAdapterParams, ICommonData.IApproval[] approvals) external payable
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| from | address | undefined |
+| collateralAmount | uint256 | undefined |
+| borrowAmount | uint256 | undefined |
+| swapData | IUSDOBase.ILeverageSwapData | undefined |
+| lzData | IUSDOBase.ILeverageLZData | undefined |
+| externalData | IUSDOBase.ILeverageExternalContractsData | undefined |
+| airdropAdapterParams | bytes | undefined |
+| approvals | ICommonData.IApproval[] | undefined |
+
 ### isTrustedRemote
 
 ```solidity
@@ -573,23 +579,6 @@ function isTrustedRemote(uint16 _srcChainId, bytes _srcAddress) external view re
 | Name | Type | Description |
 |---|---|---|
 | _0 | bool | undefined |
-
-### leverageModule
-
-```solidity
-function leverageModule() external view returns (contract USDOLeverageModule)
-```
-
-returns the leverage module
-
-
-
-
-#### Returns
-
-| Name | Type | Description |
-|---|---|---|
-| _0 | contract USDOLeverageModule | undefined |
 
 ### lzEndpoint
 
@@ -626,40 +615,6 @@ function lzReceive(uint16 _srcChainId, bytes _srcAddress, uint64 _nonce, bytes _
 | _srcAddress | bytes | undefined |
 | _nonce | uint64 | undefined |
 | _payload | bytes | undefined |
-
-### marketModule
-
-```solidity
-function marketModule() external view returns (contract USDOMarketModule)
-```
-
-returns the market module
-
-
-
-
-#### Returns
-
-| Name | Type | Description |
-|---|---|---|
-| _0 | contract USDOMarketModule | undefined |
-
-### maxFlashMint
-
-```solidity
-function maxFlashMint() external view returns (uint256)
-```
-
-returns the maximum amount of USDO that can be minted through the EIP-3156 flow
-
-
-
-
-#### Returns
-
-| Name | Type | Description |
-|---|---|---|
-| _0 | uint256 | undefined |
 
 ### minDstGasLookup
 
@@ -741,23 +696,6 @@ function nonces(address owner) external view returns (uint256)
 | Name | Type | Description |
 |---|---|---|
 | _0 | uint256 | undefined |
-
-### optionsModule
-
-```solidity
-function optionsModule() external view returns (contract USDOOptionsModule)
-```
-
-returns the options module
-
-
-
-
-#### Returns
-
-| Name | Type | Description |
-|---|---|---|
-| _0 | contract USDOOptionsModule | undefined |
 
 ### owner
 
@@ -1026,6 +964,22 @@ sets/unsets address as burner
 | _for | address | role receiver |
 | _status | bool | true/false |
 
+### setCluster
+
+```solidity
+function setCluster(contract ICluster _cluster) external nonpayable
+```
+
+updates the cluster address
+
+*can only be called by the owner*
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| _cluster | contract ICluster | the new address |
+
 ### setConfig
 
 ```solidity
@@ -1060,38 +1014,6 @@ set the Conservator address
 | Name | Type | Description |
 |---|---|---|
 | _conservator | address | the new address |
-
-### setFlashMintFee
-
-```solidity
-function setFlashMintFee(uint256 _val) external nonpayable
-```
-
-set the flashloan fee
-
-*can only be called by the owner*
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| _val | uint256 | the new fee |
-
-### setMaxFlashMintable
-
-```solidity
-function setMaxFlashMintable(uint256 _val) external nonpayable
-```
-
-set the max allowed USDO mintable through flashloan
-
-*can only be called by the owner*
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| _val | uint256 | the new amount |
 
 ### setMinDstGas
 
@@ -1528,57 +1450,6 @@ event CallOFTReceivedSuccess(uint16 indexed _srcChainId, bytes _srcAddress, uint
 | _srcAddress  | bytes | undefined |
 | _nonce  | uint64 | undefined |
 | _hash  | bytes32 | undefined |
-
-### ConservatorUpdated
-
-```solidity
-event ConservatorUpdated(address indexed old, address indexed _new)
-```
-
-event emitted when conservator address is updated
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| old `indexed` | address | undefined |
-| _new `indexed` | address | undefined |
-
-### FlashMintFeeUpdated
-
-```solidity
-event FlashMintFeeUpdated(uint256 _old, uint256 _new)
-```
-
-event emitted when flash mint fee is updated
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| _old  | uint256 | undefined |
-| _new  | uint256 | undefined |
-
-### MaxFlashMintUpdated
-
-```solidity
-event MaxFlashMintUpdated(uint256 _old, uint256 _new)
-```
-
-event emitted when max flash mintable amount is updated
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| _old  | uint256 | undefined |
-| _new  | uint256 | undefined |
 
 ### MessageFailed
 

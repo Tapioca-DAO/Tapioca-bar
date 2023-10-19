@@ -1,4 +1,4 @@
-# BaseUSDOStorage
+# USDOGenericModule
 
 
 
@@ -109,7 +109,7 @@ function allowedBurner(uint256, address) external view returns (bool)
 
 addresses allowed to burn USDO
 
-*chainId&gt;address&gt;status*
+
 
 #### Parameters
 
@@ -132,7 +132,7 @@ function allowedMinter(uint256, address) external view returns (bool)
 
 addresses allowed to mint USDO
 
-*chainId&gt;address&gt;status*
+
 
 #### Parameters
 
@@ -760,6 +760,26 @@ function sendFrom(address _from, uint16 _dstChainId, bytes32 _toAddress, uint256
 | _amount | uint256 | undefined |
 | _callParams | ICommonOFT.LzCallParams | undefined |
 
+### sendFromDestination
+
+```solidity
+function sendFromDestination(address, uint16, bytes, uint64, bytes _payload) external nonpayable
+```
+
+
+
+*destination call for USDOGenericModule.triggerSendFrom*
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | address | undefined |
+| _1 | uint16 | undefined |
+| _2 | bytes | undefined |
+| _3 | uint64 | undefined |
+| _payload | bytes | undefined |
+
 ### setConfig
 
 ```solidity
@@ -1064,6 +1084,26 @@ function transferOwnership(address newOwner) external nonpayable
 | Name | Type | Description |
 |---|---|---|
 | newOwner | address | undefined |
+
+### triggerSendFrom
+
+```solidity
+function triggerSendFrom(uint16 lzDstChainId, bytes airdropAdapterParams, uint256 amount, ISendFrom.LzCallParams sendFromData, ICommonData.IApproval[] approvals) external payable
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| lzDstChainId | uint16 | undefined |
+| airdropAdapterParams | bytes | undefined |
+| amount | uint256 | undefined |
+| sendFromData | ISendFrom.LzCallParams | undefined |
+| approvals | ICommonData.IApproval[] | undefined |
 
 ### trustedRemoteLookup
 

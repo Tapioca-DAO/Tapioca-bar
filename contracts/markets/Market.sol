@@ -174,6 +174,7 @@ abstract contract Market is MarketERC20, BoringOwnable {
     // *********************** //
     /// @notice sets common market configuration
     /// @dev values are updated only if > 0 or not address(0)
+    ///     - borrowOpeningFee is always updated!
     function setMarketConfig(
         uint256 _borrowOpeningFee,
         IOracle _oracle,
@@ -188,11 +189,9 @@ abstract contract Market is MarketERC20, BoringOwnable {
         uint256 _collateralizationRate,
         uint256 _liquidationCollateralizationRate
     ) external onlyOwner {
-        if (_borrowOpeningFee > 0) {
-            require(_borrowOpeningFee <= FEE_PRECISION, "Market: not valid");
-            emit LogBorrowingFee(borrowOpeningFee, _borrowOpeningFee);
-            borrowOpeningFee = _borrowOpeningFee;
-        }
+        require(_borrowOpeningFee <= FEE_PRECISION, "Market: not valid");
+        emit LogBorrowingFee(borrowOpeningFee, _borrowOpeningFee);
+        borrowOpeningFee = _borrowOpeningFee;
 
         if (address(_oracle) != address(0)) {
             oracle = _oracle;
@@ -301,7 +300,6 @@ abstract contract Market is MarketERC20, BoringOwnable {
 
         //compute numerator
         uint256 numerator = borrowPart - liquidationStartsAt;
-
         //compute denominator
         uint256 diff = (collateralizationRate *
             ((10 ** ratesPrecision) + liquidationMultiplier)) /

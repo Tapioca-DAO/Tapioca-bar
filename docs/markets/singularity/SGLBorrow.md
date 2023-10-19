@@ -962,7 +962,7 @@ function setMarketConfig(uint256 _borrowOpeningFee, contract IOracle _oracle, by
 
 sets common market configuration
 
-*values are updated only if &gt; 0 or not address(0)*
+*values are updated only if &gt; 0 or not address(0)     - borrowOpeningFee is always updated!*
 
 #### Parameters
 

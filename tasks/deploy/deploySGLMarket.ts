@@ -80,6 +80,13 @@ export const deploySGLMarket__task = async (
         default: '0',
     });
 
+    const { liquidationCollateralizationRate } = await inquirer.prompt({
+        type: 'input',
+        name: 'liquidationCollateralizationRate',
+        message: 'Liquidation collateralization rate (85000 is 75%)',
+        default: '0',
+    });
+
     const data = new hre.ethers.utils.AbiCoder().encode(
         [
             'address',
@@ -92,6 +99,7 @@ export const deploySGLMarket__task = async (
             'address',
             'uint256',
             'address',
+            'uint256',
             'uint256',
             'uint256',
         ],
@@ -109,6 +117,7 @@ export const deploySGLMarket__task = async (
             exchangeRatePrecision ??
                 hre.ethers.BigNumber.from((1e18).toString()),
             collateralizationRate,
+            liquidationCollateralizationRate,
         ],
     );
 
@@ -144,28 +153,28 @@ export const deploySGLMarket__task = async (
     ]);
     VM.save();
 
-    let clusterAddress = hre.ethers.constants.AddressZero;
-    let clusterDep = hre.SDK.db
-        .loadGlobalDeployment(tag, 'Cluster', chainInfo.chainId)
-        .find((e) => e.name == 'Cluster');
+    // let clusterAddress = hre.ethers.constants.AddressZero;
+    // let clusterDep = hre.SDK.db
+    //     .loadGlobalDeployment(tag, 'Cluster', chainInfo.chainId)
+    //     .find((e) => e.name == 'Cluster');
 
-    if (!clusterDep) {
-        clusterDep = hre.SDK.db
-            .loadLocalDeployment(tag, chainInfo.chainId)
-            .find((e) => e.name == 'Cluster');
-    }
-    if (clusterDep) {
-        clusterAddress = clusterDep.address;
-    }
+    // if (!clusterDep) {
+    //     clusterDep = hre.SDK.db
+    //         .loadLocalDeployment(tag, chainInfo.chainId)
+    //         .find((e) => e.name == 'Cluster');
+    // }
+    // if (clusterDep) {
+    //     clusterAddress = clusterDep.address;
+    // }
 
-    if (clusterAddress != hre.ethers.constants.AddressZero) {
-        const clusterContract = (await hre.ethers.getContractAtFromArtifact(
-            ClusterArtifact,
-            clusterAddress,
-        )) as Cluster;
+    // if (clusterAddress != hre.ethers.constants.AddressZero) {
+    //     const clusterContract = (await hre.ethers.getContractAtFromArtifact(
+    //         ClusterArtifact,
+    //         clusterAddress,
+    //     )) as Cluster;
 
-        await clusterContract.updateContract(0, market.address, true);
-    }
+    //     await clusterContract.updateContract(0, market.address, true);
+    // }
 };
 
 async function loadAssets(

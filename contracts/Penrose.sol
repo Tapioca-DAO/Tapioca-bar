@@ -174,6 +174,7 @@ contract Penrose is BoringOwnable, BoringFactory {
         uint256 indexed feeShares,
         uint256 indexed ethAmount
     );
+    event ClusterSet(address indexed old, address indexed _new);
 
     // ******************//
     // *** MODIFIERS *** //
@@ -254,6 +255,14 @@ contract Penrose is BoringOwnable, BoringFactory {
     // *********************** //
     // *** OWNER FUNCTIONS *** //
     // *********************** //
+    /// @notice sets the Cluster address
+    /// @dev can only be called by the owner
+    /// @param _newCluster the new address
+    function setCluster(address _newCluster) external onlyOwner {
+        emit ClusterSet(address(cluster), _newCluster);
+        cluster = ICluster(_newCluster);
+    }
+
     /// @notice sets the main BigBang market debt rate
     /// @dev can only be called by the owner
     /// @param _rate the new rate
