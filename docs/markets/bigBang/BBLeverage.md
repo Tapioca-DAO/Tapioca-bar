@@ -182,6 +182,40 @@ asset token YieldBox id
 |---|---|---|
 | _0 | uint256 | undefined |
 
+### assetOracle
+
+```solidity
+function assetOracle() external view returns (contract IOracle)
+```
+
+
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | contract IOracle | undefined |
+
+### assetOracleData
+
+```solidity
+function assetOracleData() external view returns (bytes)
+```
+
+
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | bytes | undefined |
+
 ### balanceOf
 
 ```solidity
@@ -197,23 +231,6 @@ owner &gt; balance mapping.
 | Name | Type | Description |
 |---|---|---|
 | _0 | address | undefined |
-
-#### Returns
-
-| Name | Type | Description |
-|---|---|---|
-| _0 | uint256 | undefined |
-
-### borrowOpeningFee
-
-```solidity
-function borrowOpeningFee() external view returns (uint256)
-```
-
-borrowing opening fee
-
-
-
 
 #### Returns
 
@@ -603,6 +620,23 @@ max % a liquidator can receive in rewards
 |---|---|---|
 | _0 | uint256 | undefined |
 
+### maxMintFee
+
+```solidity
+function maxMintFee() external view returns (uint256)
+```
+
+
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | uint256 | undefined |
+
 ### minDebtRate
 
 ```solidity
@@ -627,6 +661,23 @@ function minLiquidatorReward() external view returns (uint256)
 ```
 
 min % a liquidator can receive in rewards
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | uint256 | undefined |
+
+### minMintFee
+
+```solidity
+function minMintFee() external view returns (uint256)
+```
+
+
 
 
 
@@ -929,18 +980,17 @@ Lever down: Sell collateral to repay debt; excess goes to YB
 ### setMarketConfig
 
 ```solidity
-function setMarketConfig(uint256 _borrowOpeningFee, contract IOracle _oracle, bytes _oracleData, address _conservator, uint256 _callerFee, uint256 _protocolFee, uint256 _liquidationBonusAmount, uint256 _minLiquidatorReward, uint256 _maxLiquidatorReward, uint256 _totalBorrowCap, uint256 _collateralizationRate, uint256 _liquidationCollateralizationRate) external nonpayable
+function setMarketConfig(contract IOracle _oracle, bytes _oracleData, address _conservator, uint256 _callerFee, uint256 _protocolFee, uint256 _liquidationBonusAmount, uint256 _minLiquidatorReward, uint256 _maxLiquidatorReward, uint256 _totalBorrowCap, uint256 _collateralizationRate, uint256 _liquidationCollateralizationRate) external nonpayable
 ```
 
 sets common market configuration
 
-*values are updated only if &gt; 0 or not address(0)     - borrowOpeningFee is always updated!*
+*values are updated only if &gt; 0 or not address(0)*
 
 #### Parameters
 
 | Name | Type | Description |
 |---|---|---|
-| _borrowOpeningFee | uint256 | undefined |
 | _oracle | contract IOracle | undefined |
 | _oracleData | bytes | undefined |
 | _conservator | address | undefined |
@@ -1223,6 +1273,34 @@ event emitted when borrow approval is performed
 | spender `indexed` | address | undefined |
 | value `indexed` | uint256 | undefined |
 
+### AssetOracleDataUpdated
+
+```solidity
+event AssetOracleDataUpdated()
+```
+
+event emitted when the asset&#39;s Oracle data is updated
+
+
+
+
+### AssetOracleUpdated
+
+```solidity
+event AssetOracleUpdated(address indexed _oldVal, address indexed _newVal)
+```
+
+event emitted when the asset&#39;s Oracle is updated
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| _oldVal `indexed` | address | undefined |
+| _newVal `indexed` | address | undefined |
+
 ### ConservatorUpdated
 
 ```solidity
@@ -1374,23 +1452,6 @@ event LogBorrowCapUpdated(uint256 indexed _oldVal, uint256 indexed _newVal)
 ```
 
 event emitted when borrow cap is updated
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| _oldVal `indexed` | uint256 | undefined |
-| _newVal `indexed` | uint256 | undefined |
-
-### LogBorrowingFee
-
-```solidity
-event LogBorrowingFee(uint256 indexed _oldVal, uint256 indexed _newVal)
-```
-
-event emitted when borrow opening fee is updated
 
 
 
@@ -1562,6 +1623,25 @@ event Transfer(address indexed from, address indexed to, uint256 value)
 | from `indexed` | address | undefined |
 | to `indexed` | address | undefined |
 | value  | uint256 | undefined |
+
+### UpdateMinMaxMintFee
+
+```solidity
+event UpdateMinMaxMintFee(uint256 indexed oldMin, uint256 indexed newMin, uint256 indexed oldMax, uint256 newMax)
+```
+
+event emitted when min and max mint fees are updated
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| oldMin `indexed` | uint256 | undefined |
+| newMin `indexed` | uint256 | undefined |
+| oldMax `indexed` | uint256 | undefined |
+| newMax  | uint256 | undefined |
 
 
 

@@ -43,9 +43,9 @@ contract BBLendingCommon is BBCommon {
     function _borrow(
         address from,
         address to,
-        uint256 amount
+        uint256 amount,
+        uint256 feeAmount
     ) internal returns (uint256 part, uint256 share) {
-        uint256 feeAmount = _computeOpeningFee(amount);
         openingFees[to] += feeAmount;
 
         (totalBorrow, part) = totalBorrow.add(amount + feeAmount, true);
@@ -64,8 +64,27 @@ contract BBLendingCommon is BBCommon {
         share = _depositAmountToYb(asset, to, assetId, amount);
     }
 
-    function _computeOpeningFee(uint256 amount) private view returns (uint256) {
-        return (amount * borrowOpeningFee) / FEE_PRECISION; // A flat % fee is charged for any borrow
+    function _computeVariableOpeningFee(
+        uint256 amount
+    ) internal returns (uint256) {
+        if (amount == 0) return 0;
+
+        //get asset <> USDC price ( USDO <> USDC )
+        (bool updated, uint256 _exchangeRate) = assetOracle.get(oracleData);
+        require(updated, "BigBang:  asset's oracle call failed");
+
+        if (_exchangeRate >= MIN_MINT_FEE_START) return minMintFee;
+        if (_exchangeRate <= MAX_MINT_FEE_START) return maxMintFee;
+
+        uint256 fee = maxMintFee -
+            (((_exchangeRate - MAX_MINT_FEE_START) *
+                (maxMintFee - minMintFee)) /
+                (MIN_MINT_FEE_START - MAX_MINT_FEE_START));
+
+        if (fee > 0) {
+            return (amount * fee) / FEE_PRECISION;
+        }
+        return 0;
     }
 
     /// @dev Concrete implementation of `repay`.

@@ -31,7 +31,7 @@ contract BBBorrow is BBLendingCommon {
         require(amount >= debtStartPoint, "BigBang: borrow amount too small");
 
         if (amount == 0) return (0, 0);
-        uint256 feeAmount = (amount * borrowOpeningFee) / FEE_PRECISION;
+        uint256 feeAmount = _computeVariableOpeningFee(amount);
         uint256 allowanceShare = _computeAllowanceAmountInAsset(
             from,
             exchangeRate,
@@ -40,7 +40,7 @@ contract BBBorrow is BBLendingCommon {
         );
         require(allowanceShare > 0, "BigBang: allowanceShare not valid");
         _allowedBorrow(from, allowanceShare);
-        (part, share) = _borrow(from, to, amount);
+        (part, share) = _borrow(from, to, amount, feeAmount);
 
         penrose.reAccrueBigBangMarkets();
     }

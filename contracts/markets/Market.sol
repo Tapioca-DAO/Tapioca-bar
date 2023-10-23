@@ -86,8 +86,6 @@ abstract contract Market is MarketERC20, BoringOwnable {
     uint256 public collateralizationRate; // 75%
     /// @notice liquidation collateralization rate
     uint256 public liquidationCollateralizationRate; //80%
-    /// @notice borrowing opening fee
-    uint256 public borrowOpeningFee = 50; //0.05%
     /// @notice liquidation multiplier used to compute liquidator rewards
     uint256 public liquidationMultiplier = 12000; //12%
 
@@ -128,8 +126,6 @@ abstract contract Market is MarketERC20, BoringOwnable {
         uint256 repayedAmount,
         uint256 collateralShareRemoved
     );
-    /// @notice event emitted when borrow opening fee is updated
-    event LogBorrowingFee(uint256 indexed _oldVal, uint256 indexed _newVal);
     /// @notice event emitted when the liquidation multiplier rate is updated
     event LiquidationMultiplierUpdated(
         uint256 indexed oldVal,
@@ -174,9 +170,7 @@ abstract contract Market is MarketERC20, BoringOwnable {
     // *********************** //
     /// @notice sets common market configuration
     /// @dev values are updated only if > 0 or not address(0)
-    ///     - borrowOpeningFee is always updated!
     function setMarketConfig(
-        uint256 _borrowOpeningFee,
         IOracle _oracle,
         bytes calldata _oracleData,
         address _conservator,
@@ -189,10 +183,6 @@ abstract contract Market is MarketERC20, BoringOwnable {
         uint256 _collateralizationRate,
         uint256 _liquidationCollateralizationRate
     ) external onlyOwner {
-        require(_borrowOpeningFee <= FEE_PRECISION, "Market: not valid");
-        emit LogBorrowingFee(borrowOpeningFee, _borrowOpeningFee);
-        borrowOpeningFee = _borrowOpeningFee;
-
         if (address(_oracle) != address(0)) {
             oracle = _oracle;
             emit OracleUpdated();

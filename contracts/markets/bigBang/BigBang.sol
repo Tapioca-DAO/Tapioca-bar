@@ -110,6 +110,8 @@ contract BigBang is BBCommon {
         );
 
         rateValidDuration = 24 hours;
+        minMintFee = 0;
+        maxMintFee = 1000; // 1%
     }
 
     function _initModules(
@@ -190,7 +192,6 @@ contract BigBang is BBCommon {
         minLiquidatorReward = 8e4;
         maxLiquidatorReward = 9e4;
         liquidationBonusAmount = 1e4;
-        borrowOpeningFee = 50; // 0.05%
         liquidationMultiplier = 12000; //12%
     }
 
@@ -422,6 +423,36 @@ contract BigBang is BBCommon {
     // ************************* //
     // *** OWNER FUNCTIONS ***** //
     // ************************* //
+    /// @notice sets min and max mint fee
+    /// @dev can only be called by the owner
+    /// @param _min the new min fee
+    /// @param _max the new max fee
+    function setMinAndMaxMintFee(
+        uint256 _min,
+        uint256 _max
+    ) external onlyOwner {
+        emit UpdateMinMaxMintFee(minMintFee, _min, maxMintFee, _max);
+        minMintFee = _min;
+        maxMintFee = _max;
+    }
+
+    /// @notice updates asset's oracle info
+    /// @dev can only be called by the owner
+    /// @param _oracle the new IOracle address
+    /// @param _oracleData the new IOracle data
+    function setAssetOracle(
+        address _oracle,
+        bytes calldata _oracleData
+    ) external onlyOwner {
+        if (_oracle != address(0)) {
+            emit AssetOracleUpdated(address(assetOracle), _oracle);
+            assetOracle = IOracle(_oracle);
+        }
+        if (_oracleData.length > 0) {
+            assetOracleData = _oracleData;
+            emit AssetOracleDataUpdated();
+        }
+    }
 
     /// @notice rescues unused ETH from the contract
     /// @param amount the amount to rescue

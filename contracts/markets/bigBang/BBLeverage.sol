@@ -59,7 +59,14 @@ contract BBLeverage is BBLendingCommon {
         uint256 supplyShare
     ) private returns (uint256 amountOut) {
         uint256 borrowShare;
-        (, borrowShare) = _borrow(from, address(swapper), borrowAmount);
+
+        uint256 borrowFeeAmount = _computeVariableOpeningFee(borrowAmount);
+        (, borrowShare) = _borrow(
+            from,
+            address(swapper),
+            borrowAmount,
+            borrowFeeAmount
+        );
         ISwapper.SwapData memory swapData = swapper.buildSwapData(
             assetId,
             collateralId,
