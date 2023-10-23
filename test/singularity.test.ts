@@ -133,21 +133,8 @@ describe('Singularity test', () => {
 
             // set common config
             let payload = wethUsdcSingularity.interface.encodeFunctionData(
-                'setMarketConfig',
-                [
-                    0,
-                    ethers.constants.AddressZero,
-                    ethers.utils.toUtf8Bytes(''),
-                    ethers.constants.AddressZero,
-                    0,
-                    0,
-                    0,
-                    0,
-                    0,
-                    0,
-                    0,
-                    0,
-                ],
+                'setSingularityConfig',
+                [0, 0, 0, 0, 0, 0, 0, 0],
             );
             await bar.executeMarketFn(
                 [wethUsdcSingularity.address],
@@ -177,7 +164,6 @@ describe('Singularity test', () => {
             payload = wethUsdcSingularity.interface.encodeFunctionData(
                 'setMarketConfig',
                 [
-                    toSetValue,
                     toSetAddress,
                     ethers.utils.toUtf8Bytes(''),
                     toSetAddress,
@@ -213,7 +199,6 @@ describe('Singularity test', () => {
             collateralizationRate =
                 await wethUsdcSingularity.collateralizationRate();
 
-            expect(borrowingOpeningFee).to.eq(toSetValue);
             expect(oracle).to.eq(toSetAddress);
             expect(conservator).to.eq(toSetAddress);
             expect(callerFee).to.eq(toSetValue);
@@ -280,13 +265,15 @@ describe('Singularity test', () => {
 
             payload = wethUsdcSingularity.interface.encodeFunctionData(
                 'setSingularityConfig',
-                [0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0],
             );
             await bar.executeMarketFn(
                 [wethUsdcSingularity.address],
                 [payload],
                 false,
             );
+            borrowingOpeningFee = await wethUsdcSingularity.borrowOpeningFee();
+            expect(borrowingOpeningFee).to.eq(0);
             expect(lqCollateralizationRate).to.eq(
                 await wethUsdcSingularity.lqCollateralizationRate(),
             );
@@ -315,6 +302,7 @@ describe('Singularity test', () => {
                     toSetValue,
                     toSetValue,
                     toSetValue,
+                    toSetValue,
                     toSetMaxValue,
                     toSetValue,
                     toSetMaxValue,
@@ -327,6 +315,8 @@ describe('Singularity test', () => {
                 false,
             );
 
+            borrowingOpeningFee = await wethUsdcSingularity.borrowOpeningFee();
+            expect(borrowingOpeningFee).to.eq(toSetValue);
             lqCollateralizationRate =
                 await wethUsdcSingularity.lqCollateralizationRate();
             liquidationMultiplier =
@@ -411,7 +401,6 @@ describe('Singularity test', () => {
                 wethUsdcSingularity.interface.encodeFunctionData(
                     'setMarketConfig',
                     [
-                        0,
                         ethers.constants.AddressZero,
                         ethers.utils.toUtf8Bytes(''),
                         deployer.address,
@@ -2185,7 +2174,6 @@ describe('Singularity test', () => {
                 wethUsdcSingularity.interface.encodeFunctionData(
                     'setMarketConfig',
                     [
-                        0,
                         ethers.constants.AddressZero,
                         ethers.utils.toUtf8Bytes(''),
                         ethers.constants.AddressZero,
@@ -2216,7 +2204,6 @@ describe('Singularity test', () => {
             borrowCapData = wethUsdcSingularity.interface.encodeFunctionData(
                 'setMarketConfig',
                 [
-                    0,
                     ethers.constants.AddressZero,
                     '0x',
                     ethers.constants.AddressZero,
@@ -2678,21 +2665,8 @@ describe('Singularity test', () => {
             ).equal(await yieldBox.toShare(collateralId, collateralVal, false));
 
             const payload = wethUsdcSingularity.interface.encodeFunctionData(
-                'setMarketConfig',
-                [
-                    1e4,
-                    ethers.constants.AddressZero,
-                    '0x',
-                    ethers.constants.AddressZero,
-                    0,
-                    0,
-                    0,
-                    0,
-                    0,
-                    0,
-                    0,
-                    0,
-                ],
+                'setSingularityConfig',
+                [1e4, 0, 0, 0, 0, 0, 0, 0],
             );
 
             await (
@@ -3931,6 +3905,14 @@ describe('Singularity test', () => {
                 1,
             );
 
+            const OracleMockFac = new OracleMock__factory(deployer);
+            const usdoUsdcOracle = await OracleMockFac.deploy(
+                'USDOUSDCOracle',
+                'USDOUSDCOracle',
+                (1e18).toString(),
+            );
+            await usdoUsdcOracle.deployed();
+
             const mediumRiskMCBigBang_0 = await (
                 await ethers.getContractFactory('BigBang')
             ).deploy();
@@ -4350,6 +4332,17 @@ describe('Singularity test', () => {
                 0,
                 0,
             );
+
+            const setAssetOracleFn = bigBangMarket.interface.encodeFunctionData(
+                'setAssetOracle',
+                [usdoUsdcOracle.address, '0x'],
+            );
+            await BAR_0.executeMarketFn(
+                [bigBangMarket.address],
+                [setAssetOracleFn],
+                true,
+            );
+
             await weth.freeMint(bigDummyAmount.mul(5));
             await weth.approve(
                 bigBangMarket.address,

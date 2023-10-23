@@ -175,23 +175,6 @@ owner &gt; balance mapping.
 |---|---|---|
 | _0 | uint256 | undefined |
 
-### borrowOpeningFee
-
-```solidity
-function borrowOpeningFee() external view returns (uint256)
-```
-
-borrowing opening fee
-
-
-
-
-#### Returns
-
-| Name | Type | Description |
-|---|---|---|
-| _0 | uint256 | undefined |
-
 ### callerFee
 
 ```solidity
@@ -706,18 +689,17 @@ cached rate is valid only for the `rateValidDuration` time
 ### setMarketConfig
 
 ```solidity
-function setMarketConfig(uint256 _borrowOpeningFee, contract IOracle _oracle, bytes _oracleData, address _conservator, uint256 _callerFee, uint256 _protocolFee, uint256 _liquidationBonusAmount, uint256 _minLiquidatorReward, uint256 _maxLiquidatorReward, uint256 _totalBorrowCap, uint256 _collateralizationRate, uint256 _liquidationCollateralizationRate) external nonpayable
+function setMarketConfig(contract IOracle _oracle, bytes _oracleData, address _conservator, uint256 _callerFee, uint256 _protocolFee, uint256 _liquidationBonusAmount, uint256 _minLiquidatorReward, uint256 _maxLiquidatorReward, uint256 _totalBorrowCap, uint256 _collateralizationRate, uint256 _liquidationCollateralizationRate) external nonpayable
 ```
 
 sets common market configuration
 
-*values are updated only if &gt; 0 or not address(0)     - borrowOpeningFee is always updated!*
+*values are updated only if &gt; 0 or not address(0)*
 
 #### Parameters
 
 | Name | Type | Description |
 |---|---|---|
-| _borrowOpeningFee | uint256 | undefined |
 | _oracle | contract IOracle | undefined |
 | _oracleData | bytes | undefined |
 | _conservator | address | undefined |
@@ -1079,23 +1061,6 @@ event LogBorrowCapUpdated(uint256 indexed _oldVal, uint256 indexed _newVal)
 ```
 
 event emitted when borrow cap is updated
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| _oldVal `indexed` | uint256 | undefined |
-| _newVal `indexed` | uint256 | undefined |
-
-### LogBorrowingFee
-
-```solidity
-event LogBorrowingFee(uint256 indexed _oldVal, uint256 indexed _newVal)
-```
-
-event emitted when borrow opening fee is updated
 
 
 

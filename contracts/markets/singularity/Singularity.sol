@@ -562,7 +562,9 @@ contract Singularity is SGLCommon, ReentrancyGuard {
 
     /// @notice sets Singularity specific configuration
     /// @dev values are updated only if > 0 or not address(0)
+    ///     - borrowOpeningFee is always updated!
     function setSingularityConfig(
+        uint256 _borrowOpeningFee,
         uint256 _lqCollateralizationRate,
         uint256 _liquidationMultiplier,
         uint256 _minimumTargetUtilization,
@@ -571,6 +573,10 @@ contract Singularity is SGLCommon, ReentrancyGuard {
         uint64 _maximumInterestPerSecond,
         uint256 _interestElasticity
     ) external onlyOwner {
+        require(_borrowOpeningFee <= FEE_PRECISION, "Market: not valid");
+        emit LogBorrowingFee(borrowOpeningFee, _borrowOpeningFee);
+        borrowOpeningFee = _borrowOpeningFee;
+
         if (_minimumTargetUtilization > 0) {
             emit MinimumTargetUtilizationUpdated(
                 minimumTargetUtilization,

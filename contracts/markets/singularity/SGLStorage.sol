@@ -57,9 +57,14 @@ contract SGLStorage is BoringOwnable, Market {
     uint256 public interestElasticity;
     uint64 public startingInterestPerSecond;
 
+    /// @notice borrowing opening fee
+    uint256 public borrowOpeningFee = 50; //0.05%
+
     // ************** //
     // *** EVENTS *** //
     // ************** //
+    /// @notice event emitted when borrow opening fee is updated
+    event LogBorrowingFee(uint256 indexed _oldVal, uint256 indexed _newVal);
     /// @notice event emitted when accrual happens
     event LogAccrue(
         uint256 indexed accruedAmount,

@@ -1169,6 +1169,31 @@ async function registerBigBangMarket(
         ),
     );
     await verifyEtherscan(bigBangMarket.address, [], staging);
+
+    //set assets oracle
+    const deployer = (await ethers.getSigners())[0];
+    const OracleMock = new OracleMock__factory(deployer);
+    log('Deploying USDOUSDC mock oracle', staging);
+    const usdoUsdcOracle = await OracleMock.deploy(
+        'USDOUSDCOracle',
+        'USDOUSDCOracle',
+        ethers.utils.parseEther('1'),
+        {
+            gasPrice: gasPrice,
+        },
+    );
+    await usdoUsdcOracle.deployed();
+    await usdoUsdcOracle.set(ethers.utils.parseEther('1'));
+
+    const setAssetOracleFn = bigBangMarket.interface.encodeFunctionData(
+        'setAssetOracle',
+        [usdoUsdcOracle.address, '0x'],
+    );
+    await bar.executeMarketFn(
+        [bigBangMarket.address],
+        [setAssetOracleFn],
+        true,
+    );
     return { bigBangMarket };
 }
 

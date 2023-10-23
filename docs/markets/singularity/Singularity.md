@@ -1343,18 +1343,17 @@ Lever down: Sell collateral to repay debt; excess goes to YB
 ### setMarketConfig
 
 ```solidity
-function setMarketConfig(uint256 _borrowOpeningFee, contract IOracle _oracle, bytes _oracleData, address _conservator, uint256 _callerFee, uint256 _protocolFee, uint256 _liquidationBonusAmount, uint256 _minLiquidatorReward, uint256 _maxLiquidatorReward, uint256 _totalBorrowCap, uint256 _collateralizationRate, uint256 _liquidationCollateralizationRate) external nonpayable
+function setMarketConfig(contract IOracle _oracle, bytes _oracleData, address _conservator, uint256 _callerFee, uint256 _protocolFee, uint256 _liquidationBonusAmount, uint256 _minLiquidatorReward, uint256 _maxLiquidatorReward, uint256 _totalBorrowCap, uint256 _collateralizationRate, uint256 _liquidationCollateralizationRate) external nonpayable
 ```
 
 sets common market configuration
 
-*values are updated only if &gt; 0 or not address(0)     - borrowOpeningFee is always updated!*
+*values are updated only if &gt; 0 or not address(0)*
 
 #### Parameters
 
 | Name | Type | Description |
 |---|---|---|
-| _borrowOpeningFee | uint256 | undefined |
 | _oracle | contract IOracle | undefined |
 | _oracleData | bytes | undefined |
 | _conservator | address | undefined |
@@ -1370,17 +1369,18 @@ sets common market configuration
 ### setSingularityConfig
 
 ```solidity
-function setSingularityConfig(uint256 _lqCollateralizationRate, uint256 _liquidationMultiplier, uint256 _minimumTargetUtilization, uint256 _maximumTargetUtilization, uint64 _minimumInterestPerSecond, uint64 _maximumInterestPerSecond, uint256 _interestElasticity) external nonpayable
+function setSingularityConfig(uint256 _borrowOpeningFee, uint256 _lqCollateralizationRate, uint256 _liquidationMultiplier, uint256 _minimumTargetUtilization, uint256 _maximumTargetUtilization, uint64 _minimumInterestPerSecond, uint64 _maximumInterestPerSecond, uint256 _interestElasticity) external nonpayable
 ```
 
 sets Singularity specific configuration
 
-*values are updated only if &gt; 0 or not address(0)*
+*values are updated only if &gt; 0 or not address(0)     - borrowOpeningFee is always updated!*
 
 #### Parameters
 
 | Name | Type | Description |
 |---|---|---|
+| _borrowOpeningFee | uint256 | undefined |
 | _lqCollateralizationRate | uint256 | undefined |
 | _liquidationMultiplier | uint256 | undefined |
 | _minimumTargetUtilization | uint256 | undefined |

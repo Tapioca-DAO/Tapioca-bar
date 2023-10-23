@@ -45,6 +45,13 @@ contract BBStorage is BoringOwnable, Market {
     uint256 public debtRateAgainstEthMarket;
     uint256 public debtStartPoint;
 
+    IOracle public assetOracle; //USDO/USDC
+    bytes public assetOracleData;
+    uint256 public minMintFee;
+    uint256 public maxMintFee = 1000;
+
+    uint256 internal constant MAX_MINT_FEE_START = 980000000000000000; // 0.98 *1e18
+    uint256 internal constant MIN_MINT_FEE_START = 1020000000000000000; // 1.02 *1e18
     uint256 internal constant DEBT_PRECISION = 1e18;
 
     // ************** //
@@ -87,6 +94,17 @@ contract BBStorage is BoringOwnable, Market {
     event DebtRateAgainstEthUpdated(
         uint256 indexed oldVal,
         uint256 indexed newVal
+    );
+    /// @notice event emitted when the asset's Oracle is updated
+    event AssetOracleUpdated(address indexed _oldVal, address indexed _newVal);
+    /// @notice event emitted when the asset's Oracle data is updated
+    event AssetOracleDataUpdated();
+    /// @notice event emitted when min and max mint fees are updated
+    event UpdateMinMaxMintFee(
+        uint256 indexed oldMin,
+        uint256 indexed newMin,
+        uint256 indexed oldMax,
+        uint256 newMax
     );
 
     constructor() MarketERC20("Tapioca BigBang") {}
