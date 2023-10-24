@@ -92,7 +92,6 @@ abstract contract Market is MarketERC20, BoringOwnable {
     /// @notice returns the leverage executor
     ILeverageExecutor public leverageExecutor;
 
-
     // ***************** //
     // *** CONSTANTS *** //
     // ***************** //
@@ -182,7 +181,6 @@ abstract contract Market is MarketERC20, BoringOwnable {
         emit LeverageExecutorSet(address(leverageExecutor), address(_executor));
         leverageExecutor = _executor;
     }
-
 
     /// @notice sets common market configuration
     /// @dev values are updated only if > 0 or not address(0)
