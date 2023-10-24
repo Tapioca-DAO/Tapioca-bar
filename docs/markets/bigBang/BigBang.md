@@ -303,7 +303,7 @@ returns the borrow module
 ### buyCollateral
 
 ```solidity
-function buyCollateral(address from, uint256 borrowAmount, uint256 supplyAmount, uint256 minAmountOut, contract ISwapper swapper, bytes dexData) external nonpayable returns (uint256 amountOut)
+function buyCollateral(address from, uint256 borrowAmount, uint256 supplyAmount, bytes data) external nonpayable returns (uint256 amountOut)
 ```
 
 Lever up: Borrow more and buy collateral with it.
@@ -317,9 +317,7 @@ Lever up: Borrow more and buy collateral with it.
 | from | address | The user who buys |
 | borrowAmount | uint256 | Amount of extra asset borrowed |
 | supplyAmount | uint256 | Amount of asset supplied (down payment) |
-| minAmountOut | uint256 | Minimal collateral amount to receive |
-| swapper | contract ISwapper | Swapper to execute the purchase |
-| dexData | bytes | Additional data to pass to the swapper |
+| data | bytes | LeverageExecutor data |
 
 #### Returns
 
@@ -654,6 +652,23 @@ function isMainMarket() external view returns (bool)
 |---|---|---|
 | _0 | bool | undefined |
 
+### leverageExecutor
+
+```solidity
+function leverageExecutor() external view returns (contract ILeverageExecutor)
+```
+
+returns the leverage executor
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | contract ILeverageExecutor | undefined |
+
 ### leverageModule
 
 ```solidity
@@ -828,6 +843,23 @@ function maxMintFee() external view returns (uint256)
 |---|---|---|
 | _0 | uint256 | undefined |
 
+### maxMintFeeStart
+
+```solidity
+function maxMintFeeStart() external view returns (uint256)
+```
+
+
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | uint256 | undefined |
+
 ### minDebtRate
 
 ```solidity
@@ -866,6 +898,23 @@ min % a liquidator can receive in rewards
 
 ```solidity
 function minMintFee() external view returns (uint256)
+```
+
+
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | uint256 | undefined |
+
+### minMintFeeStart
+
+```solidity
+function minMintFeeStart() external view returns (uint256)
 ```
 
 
@@ -1222,7 +1271,7 @@ rescues unused ETH from the contract
 ### sellCollateral
 
 ```solidity
-function sellCollateral(address from, uint256 share, uint256 minAmountOut, contract ISwapper swapper, bytes dexData) external nonpayable returns (uint256 amountOut)
+function sellCollateral(address from, uint256 share, bytes data) external nonpayable returns (uint256 amountOut)
 ```
 
 Lever down: Sell collateral to repay debt; excess goes to YB
@@ -1235,9 +1284,7 @@ Lever down: Sell collateral to repay debt; excess goes to YB
 |---|---|---|
 | from | address | The user who sells |
 | share | uint256 | Collateral YieldBox-shares to sell |
-| minAmountOut | uint256 | Minimal proceeds required for the sale |
-| swapper | contract ISwapper | Swapper to execute the sale |
-| dexData | bytes | Additional data to pass to the swapper |
+| data | bytes | LeverageExecutor data |
 
 #### Returns
 
@@ -1281,6 +1328,22 @@ sets BigBang specific configuration
 | _debtRateAgainstEthMarket | uint256 | undefined |
 | _liquidationMultiplier | uint256 | undefined |
 
+### setLeverageExecutor
+
+```solidity
+function setLeverageExecutor(contract ILeverageExecutor _executor) external nonpayable
+```
+
+updates `leverageExecutor`
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| _executor | contract ILeverageExecutor | the new ILeverageExecutor |
+
 ### setMarketConfig
 
 ```solidity
@@ -1323,6 +1386,23 @@ sets min and max mint fee
 |---|---|---|
 | _min | uint256 | the new min fee |
 | _max | uint256 | the new max fee |
+
+### setMinAndMaxMintRange
+
+```solidity
+function setMinAndMaxMintRange(uint256 _min, uint256 _max) external nonpayable
+```
+
+sets min and max mint range
+
+*can only be called by the owner*
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| _min | uint256 | the new min start |
+| _max | uint256 | the new max start |
 
 ### totalBorrow
 
@@ -1608,7 +1688,7 @@ event emitted when the asset&#39;s Oracle data is updated
 ### AssetOracleUpdated
 
 ```solidity
-event AssetOracleUpdated(address indexed _oldVal, address indexed _newVal)
+event AssetOracleUpdated(address indexed oldVal, address indexed newVal)
 ```
 
 event emitted when the asset&#39;s Oracle is updated
@@ -1619,8 +1699,8 @@ event emitted when the asset&#39;s Oracle is updated
 
 | Name | Type | Description |
 |---|---|---|
-| _oldVal `indexed` | address | undefined |
-| _newVal `indexed` | address | undefined |
+| oldVal `indexed` | address | undefined |
+| newVal `indexed` | address | undefined |
 
 ### ConservatorUpdated
 
@@ -1672,6 +1752,23 @@ event emitted when `exchangeRate` validation duration is updated
 |---|---|---|
 | _oldVal  | uint256 | undefined |
 | _newVal  | uint256 | undefined |
+
+### LeverageExecutorSet
+
+```solidity
+event LeverageExecutorSet(address indexed oldVal, address indexed newVal)
+```
+
+event emitted when `leverageExecutor` is updated
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| oldVal `indexed` | address | undefined |
+| newVal `indexed` | address | undefined |
 
 ### Liquidated
 
@@ -1952,6 +2049,25 @@ event UpdateMinMaxMintFee(uint256 indexed oldMin, uint256 indexed newMin, uint25
 ```
 
 event emitted when min and max mint fees are updated
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| oldMin `indexed` | uint256 | undefined |
+| newMin `indexed` | uint256 | undefined |
+| oldMax `indexed` | uint256 | undefined |
+| newMax  | uint256 | undefined |
+
+### UpdateMinMaxMintRange
+
+```solidity
+event UpdateMinMaxMintRange(uint256 indexed oldMin, uint256 indexed newMin, uint256 indexed oldMax, uint256 newMax)
+```
+
+event emitted when min and max mint range values are updated
 
 
 

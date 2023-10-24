@@ -35,7 +35,7 @@ contract SGLBorrow is SGLLendingCommon {
             amount + feeAmount,
             asset.safeDecimals()
         );
-        require(allowanceShare > 0, "BigBang: allowanceShare not valid");
+        require(allowanceShare > 0, "BB: allowanceShare not valid");
         _allowedBorrow(from, allowanceShare);
 
         (part, share) = _borrow(from, to, amount);

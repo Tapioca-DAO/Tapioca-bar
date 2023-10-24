@@ -7,6 +7,7 @@ import "@boringcrypto/boring-solidity/contracts/libraries/BoringRebase.sol";
 import "tapioca-sdk/dist/contracts/YieldBox/contracts/YieldBox.sol";
 import "tapioca-periph/contracts/interfaces/IOracle.sol";
 import "tapioca-periph/contracts/interfaces/IPenrose.sol";
+import "tapioca-periph/contracts/interfaces/ILeverageExecutor.sol";
 import "./MarketERC20.sol";
 
 abstract contract Market is MarketERC20, BoringOwnable {
@@ -88,6 +89,9 @@ abstract contract Market is MarketERC20, BoringOwnable {
     uint256 public liquidationCollateralizationRate; //80%
     /// @notice liquidation multiplier used to compute liquidator rewards
     uint256 public liquidationMultiplier = 12000; //12%
+    /// @notice returns the leverage executor
+    ILeverageExecutor public leverageExecutor;
+
 
     // ***************** //
     // *** CONSTANTS *** //
@@ -99,6 +103,8 @@ abstract contract Market is MarketERC20, BoringOwnable {
     // ************** //
     // *** EVENTS *** //
     // ************** //
+    /// @notice event emitted when `leverageExecutor` is updated
+    event LeverageExecutorSet(address indexed oldVal, address indexed newVal);
     /// @notice event emitted when `exchangeRate` validation duration is updated
     event ExchangeRateDurationUpdated(uint256 _oldVal, uint256 _newVal);
     /// @notice event emitted when conservator is updated
@@ -168,6 +174,16 @@ abstract contract Market is MarketERC20, BoringOwnable {
     // *********************** //
     // *** OWNER FUNCTIONS *** //
     // *********************** //
+    /// @notice updates `leverageExecutor`
+    /// @param _executor the new ILeverageExecutor
+    function setLeverageExecutor(
+        ILeverageExecutor _executor
+    ) external onlyOwner {
+        emit LeverageExecutorSet(address(leverageExecutor), address(_executor));
+        leverageExecutor = _executor;
+    }
+
+
     /// @notice sets common market configuration
     /// @dev values are updated only if > 0 or not address(0)
     function setMarketConfig(

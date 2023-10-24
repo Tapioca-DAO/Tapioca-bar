@@ -54,7 +54,7 @@ contract SGLLeverage is SGLLendingCommon {
             asset.safeDecimals()
         );
         if (from != msg.sender) {
-            require(allowanceShare > 0, "BigBang: allowanceShare not valid");
+            require(allowanceShare > 0, "BB: allowanceShare not valid");
         }
         _allowedBorrow(from, allowanceShare);
         (, uint256 borrowShare) = _borrow(from, from, borrowAmount);
@@ -110,16 +110,12 @@ contract SGLLeverage is SGLLendingCommon {
     /// @notice Lever down: Sell collateral to repay debt; excess goes to YB
     /// @param from The user who sells
     /// @param share Collateral YieldBox-shares to sell
-    /// @param minAmountOut Minimal proceeds required for the sale
-    /// @param swapper Swapper to execute the sale
-    /// @param dexData Additional data to pass to the swapper
+    /// @param data LeverageExecutor data
     /// @return amountOut Actual asset amount received in the sale
     function sellCollateral(
         address from,
         uint256 share,
-        uint256 minAmountOut,
-        ISwapper swapper,
-        bytes calldata dexData
+        bytes calldata data
     )
         external
         optionNotPaused(PauseType.LeverageSell)
@@ -128,31 +124,21 @@ contract SGLLeverage is SGLLendingCommon {
         returns (uint256 amountOut)
     {
         require(
-            _isWhitelisted(penrose.hostLzChainId(), address(swapper)),
-            "SGL: Invalid swapper"
+            address(leverageExecutor) != address(0),
+            "BB: leverage executor not valid"
         );
 
         _allowedBorrow(from, share);
-        _removeCollateral(from, address(swapper), share, false);
-        ISwapper.SwapData memory swapData = swapper.buildSwapData(
-            collateralId,
+        _removeCollateral(from, leverageExecutor.swapper(), share, false);
+        amountOut = leverageExecutor.getAsset(
             assetId,
-            0,
+            collateralId,
             share,
-            true,
-            true
-        );
-        uint256 shareOut;
-        (amountOut, shareOut) = swapper.swap(
-            swapData,
-            minAmountOut,
             from,
-            dexData
+            data
         );
-        // As long as the ratio is correct, we trust `amountOut` resp.
-        // `shareOut`, because all money received by the swapper gets used up
-        // one way or another, or the transaction will revert.
-        require(amountOut >= minAmountOut, "SGL: not enough");
+        uint256 shareOut = yieldBox.toShare(assetId, amountOut, false);
+
         uint256 partOwed = userBorrowPart[from];
         uint256 amountOwed = totalBorrow.toElastic(partOwed, true);
         uint256 shareOwed = yieldBox.toShare(assetId, amountOwed, true);
@@ -169,17 +155,13 @@ contract SGLLeverage is SGLLendingCommon {
     /// @param from The user who buys
     /// @param borrowAmount Amount of extra asset borrowed
     /// @param supplyAmount Amount of asset supplied (down payment)
-    /// @param minAmountOut Minimal collateral amount to receive
-    /// @param swapper Swapper to execute the purchase
-    /// @param dexData Additional data to pass to the swapper
+    /// @param data LeverageExecutor data
     /// @return amountOut Actual collateral amount purchased
     function buyCollateral(
         address from,
         uint256 borrowAmount,
         uint256 supplyAmount,
-        uint256 minAmountOut,
-        ISwapper swapper,
-        bytes calldata dexData
+        bytes calldata data
     )
         external
         optionNotPaused(PauseType.LeverageBuy)
@@ -188,36 +170,39 @@ contract SGLLeverage is SGLLendingCommon {
         returns (uint256 amountOut)
     {
         require(
-            _isWhitelisted(penrose.hostLzChainId(), address(swapper)),
-            "SGL: Invalid swapper"
+            address(leverageExecutor) != address(0),
+            "BB: leverage executor not valid"
         );
 
         // Let this fail first to save gas:
         uint256 supplyShare = yieldBox.toShare(assetId, supplyAmount, true);
         if (supplyShare > 0) {
-            yieldBox.transfer(from, address(swapper), assetId, supplyShare);
+            yieldBox.transfer(
+                from,
+                leverageExecutor.swapper(),
+                assetId,
+                supplyShare
+            );
         }
 
-        uint256 borrowShare;
-        (, borrowShare) = _borrow(from, address(swapper), borrowAmount);
+        (, uint256 borrowShare) = _borrow(
+            from,
+            leverageExecutor.swapper(),
+            borrowAmount
+        );
 
-        ISwapper.SwapData memory swapData = swapper.buildSwapData(
+        amountOut = leverageExecutor.getCollateral(
             assetId,
             collateralId,
-            0,
             supplyShare + borrowShare,
-            true,
-            true
-        );
-
-        uint256 collateralShare;
-        (amountOut, collateralShare) = swapper.swap(
-            swapData,
-            minAmountOut,
             from,
-            dexData
+            data
         );
-        require(amountOut >= minAmountOut, "SGL: not enough");
+        uint256 collateralShare = yieldBox.toShare(
+            collateralId,
+            amountOut,
+            false
+        );
 
         _allowedBorrow(from, collateralShare);
         _addCollateral(from, from, false, 0, collateralShare, false);

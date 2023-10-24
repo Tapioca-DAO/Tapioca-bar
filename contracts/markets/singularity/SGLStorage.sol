@@ -162,6 +162,7 @@ contract SGLStorage is BoringOwnable, Market {
     event BidExecutionSwapperUpdated(address indexed newAddress);
     /// @notice event emitted when the usdo swapper is updated
     event UsdoSwapperUpdated(address indexed newAddress);
+   
 
     // ***************** //
     // *** CONSTANTS *** //

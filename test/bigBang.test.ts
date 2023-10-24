@@ -7,7 +7,7 @@ import {
 } from '@nomicfoundation/hardhat-network-helpers';
 import _ from 'lodash';
 import { bigBang } from '../typechain/contracts/markets';
-import { formatUnits } from 'ethers/lib/utils';
+import { AbiCoder, formatUnits } from 'ethers/lib/utils';
 import {
     ERC20Mock,
     MockSwapper__factory,
@@ -1129,7 +1129,7 @@ describe('BigBang test', () => {
                     deployer.address,
                     usdoBorrowVal,
                 ),
-            ).to.be.revertedWith('BigBang: borrow cap reached');
+            ).to.be.revertedWith('BB: borrow cap reached');
         });
 
         it('actions should not work when paused', async () => {
@@ -1665,6 +1665,7 @@ describe('BigBang test', () => {
                 eoa1,
                 timeTravel,
                 cluster,
+                wethBigBangMarketLeverageExecutor,
             } = await loadFixture(register);
             await initContracts();
 
@@ -1700,6 +1701,10 @@ describe('BigBang test', () => {
             const mockSwapper = await MockSwapper.deploy(yieldBox.address);
             await mockSwapper.deployed();
             await cluster.updateContract(0, mockSwapper.address, true);
+
+            await wethBigBangMarketLeverageExecutor.setSwapper(
+                mockSwapper.address,
+            );
 
             await yieldBox
                 .connect(deployer)
@@ -1801,14 +1806,17 @@ describe('BigBang test', () => {
                 deployer.address,
                 await wethBigBangMarket.assetId(),
             );
+            const encoder = new ethers.utils.AbiCoder();
+            const leverageData = encoder.encode(
+                ['uint256', 'bytes'],
+                [E(10), []],
+            );
             // Buy more collateral
             await wethBigBangMarket.buyCollateral(
                 deployer.address,
                 E(1), // One ETH; in amount
                 0, // No additional payment
-                E(10), // In actual amount again
-                mockSwapper.address,
-                [],
+                leverageData,
             );
             const collateralAfter = await wethBigBangMarket.userCollateralShare(
                 deployer.address,
@@ -1890,12 +1898,16 @@ describe('BigBang test', () => {
                 mockSwapper.address,
                 true,
             );
+            const encoder = new ethers.utils.AbiCoder();
+            const leverageData = encoder.encode(
+                ['uint256', 'bytes'],
+                [E(10), []],
+            );
+
             await wethBigBangMarket.sellCollateral(
                 deployer.address,
                 E(10).mul(1e8),
-                E(10),
-                mockSwapper.address,
-                [],
+                leverageData,
             );
             const collateralAfter = await wethBigBangMarket.userCollateralShare(
                 deployer.address,

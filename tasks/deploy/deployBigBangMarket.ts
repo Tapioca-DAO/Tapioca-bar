@@ -136,6 +136,13 @@ export const deployBigBangMarket__task = async (
     const { contract: bbLeverage } =
         await hre.SDK.hardhatUtils.getLocalContract(hre, 'BBLeverage', tag);
 
+    const { contract: simpleLeverageExecutor } =
+        await hre.SDK.hardhatUtils.getLocalContract(
+            hre,
+            'SimpleLeverageExecutor',
+            tag,
+        );
+
     const { exchangeRatePrecision } = await inquirer.prompt({
         type: 'input',
         name: 'exchangeRatePrecision',
@@ -203,6 +210,7 @@ export const deployBigBangMarket__task = async (
             'uint256', //debtStartPoint
             'uint256', //collateralizationRate
             'uint256', //liquidationCollateralizationRate
+            'address', // simpleLeverageExecutor
         ],
         [
             bbLiquidation.address,
@@ -221,6 +229,7 @@ export const deployBigBangMarket__task = async (
             debtStartPoint,
             collateralizationRate,
             liquidationCollateralizationRate,
+            simpleLeverageExecutor.address,
         ],
     );
 
