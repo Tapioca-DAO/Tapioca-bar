@@ -129,10 +129,6 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
             module: Module.MarketDestination,
             functionSelector: USDOMarketDestinationModule.remove.selector
         });
-        _destinationMappings[PT_MARKET_MULTIHOP_BUY] = DestinationCall({
-            module: Module.LeverageDestination,
-            functionSelector: USDOLeverageDestinationModule.multiHop.selector
-        });
         _destinationMappings[PT_TAP_EXERCISE] = DestinationCall({
             module: Module.OptionsDestination,
             functionSelector: USDOOptionsDestinationModule.exercise.selector
@@ -212,42 +208,6 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
     // ************************ //
 
     //----Leverage---
-    /// @notice inits multiHopBuyCollateral
-    /// @dev handled by USDOLeverageModule
-    /// @param from The user who sells
-    /// @param collateralAmount Extra collateral to be added
-    /// @param borrowAmount Borrowed amount that will be swapped into collateral
-    /// @param swapData Swap data used on destination chain for swapping USDO to the underlying TOFT token
-    /// @param lzData LayerZero specific data
-    /// @param externalData External contracts used for the cross chain operation
-    /// @param approvals array
-    function initMultiHopBuy(
-        address from,
-        uint256 collateralAmount,
-        uint256 borrowAmount,
-        IUSDOBase.ILeverageSwapData calldata swapData,
-        IUSDOBase.ILeverageLZData calldata lzData,
-        IUSDOBase.ILeverageExternalContractsData calldata externalData,
-        bytes calldata airdropAdapterParams,
-        ICommonData.IApproval[] memory approvals
-    ) external payable {
-        _executeModule(
-            Module.Leverage,
-            abi.encodeWithSelector(
-                USDOLeverageModule.initMultiHopBuy.selector,
-                from,
-                collateralAmount,
-                borrowAmount,
-                swapData,
-                lzData,
-                externalData,
-                airdropAdapterParams,
-                approvals
-            ),
-            false
-        );
-    }
-
     /// @notice sends USDO to a specific chain and performs a leverage up operation
     /// @dev handled by USDOLeverageModule
     /// @param amount the amount to use
