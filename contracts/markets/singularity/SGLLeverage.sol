@@ -107,7 +107,6 @@ contract SGLLeverage is SGLLendingCommon {
         }(amountOut, from, lzData, swapData, externalData);
     }
 
-    
     /// @notice Lever up: Borrow more and buy collateral with it.
     /// @param from The user who buys
     /// @param borrowAmount Amount of extra asset borrowed
@@ -144,11 +143,7 @@ contract SGLLeverage is SGLLendingCommon {
             );
         }
 
-        (, uint256 borrowShare) = _borrow(
-            from,
-            address(this),
-            borrowAmount
-        );
+        (, uint256 borrowShare) = _borrow(from, address(this), borrowAmount);
         (uint256 borrowShareToAmount, ) = yieldBox.withdraw(
             assetId,
             address(this),
@@ -198,7 +193,13 @@ contract SGLLeverage is SGLLendingCommon {
 
         _allowedBorrow(from, share);
         _removeCollateral(from, address(this), share);
-        yieldBox.withdraw(collateralId, address(this), address(leverageExecutor), 0, share);
+        yieldBox.withdraw(
+            collateralId,
+            address(this),
+            address(leverageExecutor),
+            0,
+            share
+        );
 
         uint256 leverageAmount = yieldBox.toAmount(collateralId, share, false);
         amountOut = leverageExecutor.getAsset(
@@ -222,5 +223,4 @@ contract SGLLeverage is SGLLendingCommon {
             _repay(from, from, false, partOut);
         }
     }
-
 }
