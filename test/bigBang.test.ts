@@ -1754,7 +1754,7 @@ describe('BigBang test', () => {
             };
         };
 
-        it('Should lever up by buying collateral', async () => {
+        it.only('Should lever up by buying collateral', async () => {
             const {
                 deployer,
                 mockSwapper,

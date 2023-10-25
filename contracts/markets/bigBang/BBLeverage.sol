@@ -32,26 +32,36 @@ contract BBLeverage is BBLendingCommon {
             "BB: leverage executor not valid"
         );
         uint256 supplyShare = yieldBox.toShare(assetId, supplyAmount, true);
+        uint256 supplyShareToAmount;
         if (supplyShare > 0) {
-            yieldBox.transfer(
-                from,
-                leverageExecutor.swapper(),
+            (supplyShareToAmount, ) = yieldBox.withdraw(
                 assetId,
+                from,
+                address(leverageExecutor),
+                0,
                 supplyShare
             );
         }
 
         (, uint256 borrowShare) = _borrow(
             from,
-            leverageExecutor.swapper(),
+            address(this),
             borrowAmount,
             _computeVariableOpeningFee(borrowAmount)
         );
-
-        amountOut = leverageExecutor.getCollateral(
+        (uint256 borrowShareToAmount, ) = yieldBox.withdraw(
             assetId,
+            address(this),
+            address(leverageExecutor),
+            0,
+            borrowShare
+        );
+        
+        amountOut = leverageExecutor.getCollateral(
             collateralId,
-            supplyShare + borrowShare,
+            address(asset),
+            address(collateral),
+            supplyShareToAmount + borrowShareToAmount,
             from,
             data
         );
@@ -82,17 +92,20 @@ contract BBLeverage is BBLendingCommon {
         returns (uint256 amountOut)
     {
         _allowedBorrow(from, share);
-        _removeCollateral(from, leverageExecutor.swapper(), share);
+        _removeCollateral(from, address(this), share);
+        yieldBox.withdraw(collateralId, address(this), address(leverageExecutor), 0, share);
 
+        uint256 leverageAmount = yieldBox.toAmount(collateralId, share, false);
         amountOut = leverageExecutor.getAsset(
             assetId,
-            collateralId,
-            share,
+            address(asset),
+            address(collateral),
+            leverageAmount,
             from,
             data
         );
-        uint256 shareOut = yieldBox.toShare(assetId, amountOut, false);
 
+        uint256 shareOut = yieldBox.toShare(assetId, amountOut, false);
         uint256 partOwed = userBorrowPart[from];
         uint256 amountOwed = totalBorrow.toElastic(partOwed, true);
         uint256 shareOwed = yieldBox.toShare(assetId, amountOwed, true);
