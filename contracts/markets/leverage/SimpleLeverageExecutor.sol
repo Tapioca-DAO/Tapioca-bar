@@ -39,6 +39,12 @@ contract SimpleLeverageExecutor is BaseLeverageExecutor {
             collateralAmountOut >= minAmountOut,
             "LeverageExecutor: not enough"
         );
+
+        IERC20(collateralAddress).approve(address(yieldBox), 0);
+        IERC20(collateralAddress).approve(
+            address(yieldBox),
+            collateralAmountOut
+        );
         yieldBox.depositAsset(
             collateralId,
             address(this),
@@ -50,8 +56,8 @@ contract SimpleLeverageExecutor is BaseLeverageExecutor {
 
     function getAsset(
         uint256 assetId,
-        address assetAddress,
         address collateralAddress,
+        address assetAddress,
         uint256 collateralAmountIn,
         address from,
         bytes calldata data
@@ -71,6 +77,9 @@ contract SimpleLeverageExecutor is BaseLeverageExecutor {
             dexData
         );
         require(assetAmountOut >= minAmountOut, "LeverageExecutor: not enough");
+
+        IERC20(assetAddress).approve(address(yieldBox), 0);
+        IERC20(assetAddress).approve(address(yieldBox), assetAmountOut);
         yieldBox.depositAsset(assetId, address(this), from, assetAmountOut, 0);
     }
 }

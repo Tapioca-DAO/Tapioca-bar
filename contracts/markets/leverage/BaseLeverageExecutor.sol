@@ -62,8 +62,8 @@ abstract contract BaseLeverageExecutor is BoringOwnable {
 
     function getAsset(
         uint256 assetId,
-        address assetAddress,
         address collateralAddress,
+        address assetAddress,
         uint256 collateralAmountIn,
         address from,
         bytes calldata data
@@ -72,6 +72,24 @@ abstract contract BaseLeverageExecutor is BoringOwnable {
     // *********************** //
     // *** INTERNAL MEHODS *** //
     // *********************** //
+    function _buildDefaultData(
+        address tokenIn,
+        address tokenOut,
+        uint256 amountIn,
+        bytes memory dexData
+    ) internal view returns (bytes memory) {
+        ISwapper.SwapData memory swapData = swapper.buildSwapData(
+            tokenIn,
+            tokenOut,
+            amountIn,
+            0,
+            false,
+            false
+        );
+        uint256 minAmount = swapper.getOutputAmount(swapData, dexData);
+        return abi.encode(minAmount, dexData);
+    }
+
     function _swapTokens(
         address tokenIn,
         address tokenOut,
@@ -88,6 +106,10 @@ abstract contract BaseLeverageExecutor is BoringOwnable {
             false
         );
 
+        if (tokenIn != address(0)) {
+            IERC20(tokenIn).approve(address(swapper), 0);
+            IERC20(tokenIn).approve(address(swapper), amountIn);
+        }
         (amountOut, ) = swapper.swap(
             swapData,
             minAmountOut,

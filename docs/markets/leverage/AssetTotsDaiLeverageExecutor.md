@@ -1,4 +1,4 @@
-# SimpleLeverageExecutor
+# AssetTotsDaiLeverageExecutor
 
 
 
@@ -9,6 +9,30 @@
 
 
 ## Methods
+
+### buildSwapDefaultData
+
+```solidity
+function buildSwapDefaultData(address tokenIn, address tokenOut, uint256 amountIn) external view returns (bytes)
+```
+
+returns getCollateral or getAsset for Asset &gt; DAI or DAI &gt; Asset respectively default data parameter
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| tokenIn | address | token in address |
+| tokenOut | address | token out address |
+| amountIn | uint256 | amount to get the minimum for |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | bytes | undefined |
 
 ### claimOwnership
 
@@ -44,20 +68,20 @@ returns ICluster address
 function getAsset(uint256 assetId, address collateralAddress, address assetAddress, uint256 collateralAmountIn, address from, bytes data) external nonpayable returns (uint256 assetAmountOut)
 ```
 
+buys asset with collateral
 
-
-
+*unwrap tsDai &gt; withdraw sDai &gt; Dai &gt; USDO*
 
 #### Parameters
 
 | Name | Type | Description |
 |---|---|---|
-| assetId | uint256 | undefined |
-| collateralAddress | address | undefined |
-| assetAddress | address | undefined |
-| collateralAmountIn | uint256 | undefined |
-| from | address | undefined |
-| data | bytes | undefined |
+| assetId | uint256 | Asset&#39;s YieldBox id; usually USDO asset id |
+| collateralAddress | address | tsDai address (TOFT sDAI) |
+| assetAddress | address | usually USDO address |
+| collateralAmountIn | uint256 | amount to swap |
+| from | address | collateral receiver |
+| data | bytes | AssetTotsDaiLeverageExecutor data |
 
 #### Returns
 
@@ -71,20 +95,20 @@ function getAsset(uint256 assetId, address collateralAddress, address assetAddre
 function getCollateral(uint256 collateralId, address assetAddress, address collateralAddress, uint256 assetAmountIn, address from, bytes data) external nonpayable returns (uint256 collateralAmountOut)
 ```
 
+buys collateral with asset
 
-
-
+*USDO &gt; DAI &gt; sDAi &gt; wrap to tsDai*
 
 #### Parameters
 
 | Name | Type | Description |
 |---|---|---|
-| collateralId | uint256 | undefined |
-| assetAddress | address | undefined |
-| collateralAddress | address | undefined |
-| assetAmountIn | uint256 | undefined |
-| from | address | undefined |
-| data | bytes | undefined |
+| collateralId | uint256 | Collateral&#39;s YieldBox id |
+| assetAddress | address | usually USDO address |
+| collateralAddress | address | tsDai address (TOFT sDAI) |
+| assetAmountIn | uint256 | amount to swap |
+| from | address | collateral receiver |
+| data | bytes | AssetTotsDaiLeverageExecutor data |
 
 #### Returns
 

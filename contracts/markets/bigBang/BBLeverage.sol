@@ -93,7 +93,7 @@ contract BBLeverage is BBLendingCommon {
     {
         _allowedBorrow(from, share);
         _removeCollateral(from, address(this), share);
-        yieldBox.withdraw(
+        (, uint256 obtainedShare) = yieldBox.withdraw(
             collateralId,
             address(this),
             address(leverageExecutor),
@@ -101,11 +101,15 @@ contract BBLeverage is BBLendingCommon {
             share
         );
 
-        uint256 leverageAmount = yieldBox.toAmount(collateralId, share, false);
+        uint256 leverageAmount = yieldBox.toAmount(
+            collateralId,
+            obtainedShare,
+            false
+        );
         amountOut = leverageExecutor.getAsset(
             assetId,
-            address(asset),
             address(collateral),
+            address(asset),
             leverageAmount,
             from,
             data

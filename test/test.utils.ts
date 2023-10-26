@@ -14,6 +14,7 @@ import {
     CurvePoolMock__factory,
     TwTwapMock__factory,
     MarketLiquidationReceiverMock__factory,
+    SavingsDaiMock__factory,
 } from '../gitsub_tapioca-sdk/src/typechain/tapioca-mocks';
 
 import {
@@ -856,6 +857,14 @@ async function registerSingularity(
         _sglLeverage,
         leverageExecutor,
     };
+}
+
+async function registerSDaiMock(dai: string, deployer: any, staging?: boolean) {
+    const SavingsDaiMock = new SavingsDaiMock__factory(deployer);
+    const sDai = await SavingsDaiMock.deploy(dai);
+    log('Deployed sDai', staging);
+
+    return { sDai };
 }
 
 async function registerUniUsdoToWethBidder(
@@ -1890,6 +1899,7 @@ export async function register(staging?: boolean) {
         mediumRiskBigBangMC,
         magnetar,
         registerSingularity,
+        registerSDaiMock,
         __uniFactory,
         __uniRouter,
         __wethUsdcMockPair,

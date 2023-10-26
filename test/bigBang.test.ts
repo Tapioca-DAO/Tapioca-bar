@@ -476,7 +476,6 @@ describe('BigBang test', () => {
             await wethBigBangMarket
                 .connect(eoa1)
                 .borrow(eoa1.address, eoa1.address, usdoBorrowVal);
-            console.log(`usdoBorrowVal ${usdoBorrowVal}`);
             await yieldBox
                 .connect(eoa1)
                 .withdraw(
@@ -1642,13 +1641,20 @@ describe('BigBang test', () => {
                         E(10),
                         0,
                     );
+
+                await yieldBox
+                    .connect(signer)
+                    .withdraw(usdoId, signer.address, signer.address, E(10), 0);
+                await usdo.connect(signer).transfer(swapperAddress, E(10));
             }
             await timeTravel(86401);
             await weth.connect(signer).freeMint(E(10));
             await timeTravel(86401);
+            await weth.connect(signer).freeMint(E(10));
             await yieldBox
                 .connect(signer)
                 .depositAsset(wethId, signer.address, swapperAddress, E(10), 0);
+            await weth.connect(signer).transfer(swapperAddress, E(10));
         };
 
         const setUp = async () => {
@@ -1754,7 +1760,7 @@ describe('BigBang test', () => {
             };
         };
 
-        it.only('Should lever up by buying collateral', async () => {
+        it('Should lever up by buying collateral', async () => {
             const {
                 deployer,
                 mockSwapper,
@@ -1796,6 +1802,10 @@ describe('BigBang test', () => {
                 timeTravel,
                 false,
             );
+
+            // //prefund swapper with some WETH
+            // await weth.freeMint(E(10));
+            // await weth.transfer(mockSwapper.address, E(10));
 
             const collateralBefore =
                 await wethBigBangMarket.userCollateralShare(deployer.address);
@@ -1867,17 +1877,17 @@ describe('BigBang test', () => {
                 ),
             ).to.equal(E(1).mul(1e8)); //borrowed in setUp
 
+            //prefund swapper with some USD0
             await prefundSwapper(
                 mockSwapper.address,
                 yieldBox,
                 wethBigBangMarket,
                 weth,
                 usd0,
-                deployer,
+                eoa1,
                 wethId,
                 await wethBigBangMarket.assetId(),
                 timeTravel,
-                bar,
                 true,
             );
 

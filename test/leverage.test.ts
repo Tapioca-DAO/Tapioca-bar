@@ -178,13 +178,8 @@ describe('Singularity Leverage', () => {
 
             // Populate the mock swapper with enough ETH:
             await weth.approve(yieldBox.address, E(666).div(1000));
-            await yieldBox.depositAsset(
-                wethId,
-                deployer.address,
-                mockSwapper.address,
-                E(666).div(1000),
-                0,
-            );
+            await weth.transfer(mockSwapper.address, E(666).div(1000));
+
             const encoder = new ethers.utils.AbiCoder();
             const leverageData = encoder.encode(
                 ['uint256', 'bytes'],
@@ -240,13 +235,7 @@ describe('Singularity Leverage', () => {
 
             // Populate the mock swapper with enough ETH:
             await weth.approve(yieldBox.address, E(1500).div(1000));
-            await yieldBox.depositAsset(
-                wethId,
-                deployer.address,
-                mockSwapper.address,
-                E(1500).div(1000),
-                0,
-            );
+            await weth.transfer(mockSwapper.address, E(1500).div(1000));
 
             const encoder = new ethers.utils.AbiCoder();
             const leverageData = encoder.encode(
@@ -308,13 +297,7 @@ describe('Singularity Leverage', () => {
 
             // Populate the mock swapper with enough USDC:
             await usdc.approve(yieldBox.address, E(1000));
-            await yieldBox.depositAsset(
-                usdcId,
-                deployer.address,
-                mockSwapper.address,
-                E(1000),
-                0,
-            );
+            await usdc.transfer(mockSwapper.address, E(1000));
 
             const encoder = new ethers.utils.AbiCoder();
             const leverageData = encoder.encode(
@@ -380,13 +363,7 @@ describe('Singularity Leverage', () => {
 
             // Populate the mock swapper with enough USDC:
             await usdc.approve(yieldBox.address, E(5000));
-            await yieldBox.depositAsset(
-                usdcId,
-                deployer.address,
-                mockSwapper.address,
-                E(5000),
-                0,
-            );
+            await usdc.transfer(mockSwapper.address, E(5000));
 
             const encoder = new ethers.utils.AbiCoder();
             const leverageData = encoder.encode(

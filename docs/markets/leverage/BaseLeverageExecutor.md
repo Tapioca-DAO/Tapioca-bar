@@ -41,7 +41,7 @@ returns ICluster address
 ### getAsset
 
 ```solidity
-function getAsset(uint256 assetId, address assetAddress, address collateralAddress, uint256 collateralAmountIn, address from, bytes data) external nonpayable returns (uint256 assetAmountOut)
+function getAsset(uint256 assetId, address collateralAddress, address assetAddress, uint256 collateralAmountIn, address from, bytes data) external nonpayable returns (uint256 assetAmountOut)
 ```
 
 
@@ -53,8 +53,8 @@ function getAsset(uint256 assetId, address assetAddress, address collateralAddre
 | Name | Type | Description |
 |---|---|---|
 | assetId | uint256 | undefined |
-| assetAddress | address | undefined |
 | collateralAddress | address | undefined |
+| assetAddress | address | undefined |
 | collateralAmountIn | uint256 | undefined |
 | from | address | undefined |
 | data | bytes | undefined |

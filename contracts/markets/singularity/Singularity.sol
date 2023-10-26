@@ -415,67 +415,6 @@ contract Singularity is SGLCommon, ReentrancyGuard {
         amountOut = abi.decode(result, (uint256));
     }
 
-    /// @notice Level up cross-chain: Borrow more and buy collateral with it.
-    /// @param from The user who sells
-    /// @param collateralAmount Extra collateral to be added
-    /// @param borrowAmount Borrowed amount that will be swapped into collateral
-    /// @param useAirdropped if true it uses contract's balance to pay for LZ fees
-    /// @param swapData Swap data used on destination chain for swapping USDO to the underlying TOFT token
-    /// @param lzData LayerZero specific data
-    /// @param externalData External contracts used for the cross chain operation
-    function multiHopBuyCollateral(
-        address from,
-        uint256 collateralAmount,
-        uint256 borrowAmount,
-        bool useAirdropped,
-        IUSDOBase.ILeverageSwapData calldata swapData,
-        IUSDOBase.ILeverageLZData calldata lzData,
-        IUSDOBase.ILeverageExternalContractsData calldata externalData
-    ) external payable {
-        _executeModule(
-            Module.Leverage,
-            abi.encodeWithSelector(
-                SGLLeverage.multiHopBuyCollateral.selector,
-                from,
-                collateralAmount,
-                borrowAmount,
-                useAirdropped,
-                swapData,
-                lzData,
-                externalData
-            )
-        );
-    }
-
-    /// @notice Level up cross-chain: Borrow more and buy collateral with it.
-    /// @param from The user who sells
-    /// @param share Collateral YieldBox-shares to sell
-    /// @param useAirdropped if true it uses contract's balance to pay for LZ fees
-    /// @param swapData Swap data used on destination chain for swapping USDO to the underlying TOFT token
-    /// @param lzData LayerZero specific data
-    /// @param externalData External contracts used for the cross chain operation
-    function multiHopSellCollateral(
-        address from,
-        uint256 share,
-        bool useAirdropped,
-        IUSDOBase.ILeverageSwapData calldata swapData,
-        IUSDOBase.ILeverageLZData calldata lzData,
-        IUSDOBase.ILeverageExternalContractsData calldata externalData
-    ) external payable {
-        _executeModule(
-            Module.Leverage,
-            abi.encodeWithSelector(
-                SGLLeverage.multiHopSellCollateral.selector,
-                from,
-                share,
-                useAirdropped,
-                swapData,
-                lzData,
-                externalData
-            )
-        );
-    }
-
     /// @notice liquidates a position where collateral value is less than the borrowed amount
     /// @param user to liquidate
     /// @param receiver funds receiver
