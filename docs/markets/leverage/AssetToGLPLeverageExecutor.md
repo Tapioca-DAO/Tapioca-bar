@@ -1,4 +1,4 @@
-# SimpleLeverageExecutor
+# AssetToGLPLeverageExecutor
 
 
 
@@ -68,20 +68,20 @@ returns ICluster address
 function getAsset(uint256 assetId, address collateralAddress, address assetAddress, uint256 collateralAmountIn, address from, bytes data) external nonpayable returns (uint256 assetAmountOut)
 ```
 
+buys asset with collateral
 
-
-
+*unwrap tGLP &gt; GLP &gt; USDC &gt; USDO*
 
 #### Parameters
 
 | Name | Type | Description |
 |---|---|---|
-| assetId | uint256 | undefined |
-| collateralAddress | address | undefined |
-| assetAddress | address | undefined |
-| collateralAmountIn | uint256 | undefined |
-| from | address | undefined |
-| data | bytes | undefined |
+| assetId | uint256 | Asset&#39;s YieldBox id; usually USDO asset id |
+| collateralAddress | address | tGLP address (TOFT GLP) |
+| assetAddress | address | usually USDO address |
+| collateralAmountIn | uint256 | amount to swap |
+| from | address | collateral receiver |
+| data | bytes | AssetToGLPLeverageExecutor data |
 
 #### Returns
 
@@ -95,20 +95,20 @@ function getAsset(uint256 assetId, address collateralAddress, address assetAddre
 function getCollateral(uint256 collateralId, address assetAddress, address collateralAddress, uint256 assetAmountIn, address from, bytes data) external nonpayable returns (uint256 collateralAmountOut)
 ```
 
+buys collateral with asset
 
-
-
+*USDO &gt; USDC &gt; GLP &gt; wrap to tGLP*
 
 #### Parameters
 
 | Name | Type | Description |
 |---|---|---|
-| collateralId | uint256 | undefined |
-| assetAddress | address | undefined |
-| collateralAddress | address | undefined |
-| assetAmountIn | uint256 | undefined |
-| from | address | undefined |
-| data | bytes | undefined |
+| collateralId | uint256 | Collateral&#39;s YieldBox id |
+| assetAddress | address | usually USDO address |
+| collateralAddress | address | tGLP address (TOFT GLP) |
+| assetAmountIn | uint256 | amount to swap |
+| from | address | collateral receiver |
+| data | bytes | AssetToGLPLeverageExecutor data |
 
 #### Returns
 
@@ -216,6 +216,23 @@ Transfers ownership to `newOwner`. Either directly or claimable by the new pendi
 | newOwner | address | Address of the new owner. |
 | direct | bool | True if `newOwner` should be set immediately. False if `newOwner` needs to use `claimOwnership`. |
 | renounce | bool | Allows the `newOwner` to be `address(0)` if `direct` and `renounce` is True. Has no effect otherwise. |
+
+### usdc
+
+```solidity
+function usdc() external view returns (contract IERC20)
+```
+
+
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | contract IERC20 | undefined |
 
 ### yieldBox
 

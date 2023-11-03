@@ -4,40 +4,39 @@ import { register } from './test.utils';
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 import _ from 'lodash';
 import {
+    BalancerVaultMock__factory,
     ERC20Mock__factory,
     MockSwapper__factory,
     TOFTMock__factory,
 } from '../gitsub_tapioca-sdk/src/typechain/tapioca-mocks';
 
-describe('USDOsDaiLeverageExecutor test', () => {
+describe('AssetToWstEthLeverageExecutor test', () => {
     async function setUp() {
         const {
-            registerSDaiMock,
             yieldBox,
             cluster,
             deployer,
             usdc,
-            createTokenEmptyStrategy,
-            usd0,
             usdcAssetId,
+            createTokenEmptyStrategy,
+            weth,
+            wethAssetId,
         } = await loadFixture(register);
 
+        const MockSwapper = new MockSwapper__factory(deployer);
+        const swapper = await MockSwapper.deploy(yieldBox.address);
+
         const ERC20Mock = new ERC20Mock__factory(deployer);
-        const dai = await ERC20Mock.deploy(
-            'DAI Token',
-            'DAI',
+        const wstEth = await ERC20Mock.deploy(
+            'wstETH Token',
+            'wstETH',
             0,
             18,
             deployer.address,
         );
 
-        const { sDai } = await registerSDaiMock(dai.address, deployer);
-
-        const MockSwapper = new MockSwapper__factory(deployer);
-        const swapper = await MockSwapper.deploy(yieldBox.address);
-
         const TOFTMock = new TOFTMock__factory(deployer);
-        const toft = await TOFTMock.deploy(sDai.address);
+        const toft = await TOFTMock.deploy(wstEth.address);
 
         const toftStrategy = await createTokenEmptyStrategy(
             yieldBox.address,
@@ -50,80 +49,92 @@ describe('USDOsDaiLeverageExecutor test', () => {
             toftStrategy.address,
             0,
         );
-        const AssetTotsDaiLeverageExecutorFactory =
-            await ethers.getContractFactory('AssetTotsDaiLeverageExecutor');
-        const assetTotsDaiLeverageExecutor =
-            await AssetTotsDaiLeverageExecutorFactory.deploy(
+
+        const BalancerVaultMock = new BalancerVaultMock__factory(deployer);
+        const balancerVault = await BalancerVaultMock.deploy();
+
+        const AssetToWstethLeverageExecutorFactory =
+            await ethers.getContractFactory('AssetToWstethLeverageExecutor');
+        const assetToWstethLeverageExecutor =
+            await AssetToWstethLeverageExecutorFactory.deploy(
                 yieldBox.address,
                 swapper.address,
                 cluster.address,
+                weth.address,
+                balancerVault.address, //IBalancerVault
+                '0x9791d590788598535278552eecd4b211bfc790cb000000000000000000000498', //pool id
             );
-        await assetTotsDaiLeverageExecutor.deployed();
+        await assetToWstethLeverageExecutor.deployed();
 
         await cluster.updateContract(0, swapper.address, true);
 
         return {
             usdc,
-            dai,
-            sDai,
+            usdcAssetId,
+            weth,
+            wethAssetId,
             swapper,
             toft,
             toftStrategy,
             yieldBox,
             toftAssetId,
-            assetTotsDaiLeverageExecutor,
+            assetToWstethLeverageExecutor,
             deployer,
-            usd0,
-            usdcAssetId,
+            wstEth,
+            balancerVault,
         };
     }
 
     it('should build default data', async () => {
-        const { dai, assetTotsDaiLeverageExecutor, usdc } = await loadFixture(
+        const { usdc, assetToWstethLeverageExecutor } = await loadFixture(
             setUp,
         );
 
         const defaultData =
-            await assetTotsDaiLeverageExecutor.buildSwapDefaultData(
+            await assetToWstethLeverageExecutor.buildSwapDefaultData(
                 usdc.address,
-                dai.address,
+                ethers.constants.AddressZero,
                 ethers.utils.parseEther('10'),
             );
         expect(defaultData.length).to.be.gt(0);
-
-        // const decoded = new ethers.utils.AbiCoder().decode(
-        //     ['uint256', 'bytes'],
-        //     defaultData,
-        // );
     });
 
     it('should get collateral', async () => {
         const {
-            dai,
+            usdc,
+            weth,
             swapper,
             toft,
             yieldBox,
             toftAssetId,
-            assetTotsDaiLeverageExecutor,
+            assetToWstethLeverageExecutor,
             deployer,
-            usdc,
+            wstEth,
+            balancerVault,
         } = await loadFixture(setUp);
 
         const balanceBefore = await toft.balanceOf(deployer.address);
         expect(balanceBefore.eq(0)).to.be.true;
 
-        const amountIn = ethers.utils.parseEther('10');
+        const amountIn = ethers.utils.parseEther('1');
 
-        await dai.toggleRestrictions();
-        await dai.freeMint(amountIn);
+        await usdc.toggleRestrictions();
+        await usdc.freeMint(amountIn);
 
-        await dai.transfer(swapper.address, amountIn);
+        await weth.toggleRestrictions();
+        await weth.freeMint(amountIn);
+
+        await wstEth.toggleRestrictions();
+        await wstEth.freeMint(amountIn);
+
+        await weth.transfer(swapper.address, amountIn);
+        await wstEth.transfer(balancerVault.address, amountIn);
 
         const data = new ethers.utils.AbiCoder().encode(
-            ['uint256', 'bytes'],
-            [amountIn, '0x'],
+            ['uint256', 'bytes', 'uint256'],
+            [amountIn, '0x', amountIn],
         );
-        await assetTotsDaiLeverageExecutor.getCollateral(
+        await assetToWstethLeverageExecutor.getCollateral(
             toftAssetId,
             usdc.address,
             toft.address,
@@ -146,44 +157,46 @@ describe('USDOsDaiLeverageExecutor test', () => {
     it('should get asset', async () => {
         const {
             usdc,
-            dai,
-            sDai,
+            usdcAssetId,
+            weth,
             swapper,
             toft,
             yieldBox,
-            assetTotsDaiLeverageExecutor,
+            assetToWstethLeverageExecutor,
             deployer,
-            usdcAssetId,
+            wstEth,
+            balancerVault,
         } = await loadFixture(setUp);
 
-        const balanceBefore = await toft.balanceOf(deployer.address);
+        const balanceBefore = await usdc.balanceOf(deployer.address);
         expect(balanceBefore.eq(0)).to.be.true;
 
-        const amountIn = ethers.utils.parseEther('10');
+        const amountIn = ethers.utils.parseEther('1');
 
         await usdc.toggleRestrictions();
         await usdc.freeMint(amountIn);
+
+        await weth.toggleRestrictions();
+        await weth.freeMint(amountIn);
+
+        await wstEth.toggleRestrictions();
+        await wstEth.freeMint(amountIn);
+
         await usdc.transfer(swapper.address, amountIn);
+        await weth.transfer(balancerVault.address, amountIn);
 
-        await dai.toggleRestrictions();
-        await dai.freeMint(amountIn);
-        await dai.approve(sDai.address, amountIn);
-        await sDai.deposit(amountIn, deployer.address);
-        expect((await sDai.balanceOf(deployer.address)).eq(amountIn)).to.be
-            .true;
-
-        await sDai.approve(toft.address, amountIn);
+        await wstEth.approve(toft.address, amountIn);
         await toft.wrap(deployer.address, deployer.address, amountIn);
         expect((await toft.balanceOf(deployer.address)).eq(amountIn)).to.be
             .true;
 
-        await toft.transfer(assetTotsDaiLeverageExecutor.address, amountIn);
+        await toft.transfer(assetToWstethLeverageExecutor.address, amountIn);
 
         const data = new ethers.utils.AbiCoder().encode(
-            ['uint256', 'bytes'],
-            [amountIn, '0x'],
+            ['uint256', 'uint256', 'bytes'],
+            [amountIn, amountIn, '0x'],
         );
-        await assetTotsDaiLeverageExecutor.getAsset(
+        await assetToWstethLeverageExecutor.getAsset(
             usdcAssetId,
             toft.address,
             usdc.address,

@@ -51,6 +51,18 @@ abstract contract BaseLeverageExecutor is BoringOwnable {
     // ********************* //
     // *** PUBLIC MEHODS *** //
     // ********************* //
+    /// @notice returns getCollateral or getAsset for Asset > DAI or DAI > Asset respectively default data parameter
+    /// @param tokenIn token in address
+    /// @param tokenOut token out address
+    /// @param amountIn amount to get the minimum for
+    function buildSwapDefaultData(
+        address tokenIn,
+        address tokenOut,
+        uint256 amountIn
+    ) external view returns (bytes memory) {
+        return _buildDefaultData(tokenIn, tokenOut, amountIn, "0x");
+    }
+
     function getCollateral(
         uint256 collateralId,
         address assetAddress,
@@ -110,7 +122,7 @@ abstract contract BaseLeverageExecutor is BoringOwnable {
             IERC20(tokenIn).approve(address(swapper), 0);
             IERC20(tokenIn).approve(address(swapper), amountIn);
         }
-        (amountOut, ) = swapper.swap(
+        (amountOut, ) = swapper.swap{value: msg.value}(
             swapData,
             minAmountOut,
             address(this),

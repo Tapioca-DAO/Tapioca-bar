@@ -15,21 +15,6 @@ contract AssetTotsDaiLeverageExecutor is BaseLeverageExecutor {
     ) BaseLeverageExecutor(_yb, _swapper, _cluster) {}
 
     // ********************* //
-    // *** VIEW MEHODS ***** //
-    // ********************* //
-    /// @notice returns getCollateral or getAsset for Asset > DAI or DAI > Asset respectively default data parameter
-    /// @param tokenIn token in address
-    /// @param tokenOut token out address
-    /// @param amountIn amount to get the minimum for
-    function buildSwapDefaultData(
-        address tokenIn,
-        address tokenOut,
-        uint256 amountIn
-    ) external view returns (bytes memory) {
-        return _buildDefaultData(tokenIn, tokenOut, amountIn, "0x");
-    }
-
-    // ********************* //
     // *** PUBLIC MEHODS *** //
     // ********************* //
     /// @notice buys collateral with asset
@@ -69,7 +54,7 @@ contract AssetTotsDaiLeverageExecutor is BaseLeverageExecutor {
         );
         require(
             daiAmount >= minAmountOut,
-            "USDOsDaiLeverageExecutor: not enough"
+            "AssetTotsDaiLeverageExecutor: not enough"
         );
 
         //obtain sDai
@@ -156,7 +141,7 @@ contract AssetTotsDaiLeverageExecutor is BaseLeverageExecutor {
         );
         require(
             assetAmountOut >= minAmountOut,
-            "USDOsDaiLeverageExecutor: not enough"
+            "AssetTotsDaiLeverageExecutor: not enough"
         );
 
         IERC20(assetAddress).approve(address(yieldBox), 0);
@@ -164,6 +149,9 @@ contract AssetTotsDaiLeverageExecutor is BaseLeverageExecutor {
         yieldBox.depositAsset(assetId, address(this), from, assetAmountOut, 0);
     }
 
+    // ********************** //
+    // *** PRIVATE MEHODS *** //
+    // ********************** //
     function _getAddresses(
         address collateralAddress
     ) private view returns (address sDaiAddress, address daiAddress) {
@@ -171,7 +159,7 @@ contract AssetTotsDaiLeverageExecutor is BaseLeverageExecutor {
         sDaiAddress = ITapiocaOFTBase(collateralAddress).erc20();
         require(
             sDaiAddress != address(0),
-            "USDOsDaiLeverageExecutor: sDAI not valid"
+            "AssetTotsDaiLeverageExecutor: sDAI not valid"
         );
 
         //retrieve DAI address from sDAI

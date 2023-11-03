@@ -1,4 +1,4 @@
-# SimpleLeverageExecutor
+# AssetToGmxEthUsdcLpLeverageExecutor
 
 
 
@@ -62,26 +62,43 @@ returns ICluster address
 |---|---|---|
 | _0 | contract ICluster | undefined |
 
-### getAsset
+### exchangeRouter
 
 ```solidity
-function getAsset(uint256 assetId, address collateralAddress, address assetAddress, uint256 collateralAmountIn, address from, bytes data) external nonpayable returns (uint256 assetAmountOut)
+function exchangeRouter() external view returns (contract IGmxExchangeRouter)
 ```
 
 
 
 
 
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | contract IGmxExchangeRouter | undefined |
+
+### getAsset
+
+```solidity
+function getAsset(uint256 assetId, address collateralAddress, address assetAddress, uint256 collateralAmountIn, address from, bytes data) external nonpayable returns (uint256 assetAmountOut)
+```
+
+buys asset with collateral
+
+*unwrap tLP &gt; USDC &gt; Asset `data` param needs the following `(uint256, bytes, uint256, uint256, uint256)`     - minAssetAmountOut &amp; dexAssetData (for swapping USDC to Asset)     - minWethAmount &amp; minUsdcAmount (for unstaking GM LP; it can be queried )     - minWethToUsdcAmount &amp; dexWethToUsdcData (for swapping WETH to USDC)*
+
 #### Parameters
 
 | Name | Type | Description |
 |---|---|---|
-| assetId | uint256 | undefined |
-| collateralAddress | address | undefined |
-| assetAddress | address | undefined |
-| collateralAmountIn | uint256 | undefined |
-| from | address | undefined |
-| data | bytes | undefined |
+| assetId | uint256 | Asset&#39;s YieldBox id; usually USDO asset id |
+| collateralAddress | address | tLP address (TOFT GMX-ETH-USDC LP) |
+| assetAddress | address | usually USDO address |
+| collateralAmountIn | uint256 | amount to swap |
+| from | address | collateral receiver |
+| data | bytes | AssetToGmxEthUsdcLpLeverageExecutor data |
 
 #### Returns
 
@@ -95,26 +112,43 @@ function getAsset(uint256 assetId, address collateralAddress, address assetAddre
 function getCollateral(uint256 collateralId, address assetAddress, address collateralAddress, uint256 assetAmountIn, address from, bytes data) external nonpayable returns (uint256 collateralAmountOut)
 ```
 
+buys collateral with asset
 
-
-
+*USDO &gt; USDC &gt; GMX-ETH-USDC LP &gt; wrap &#39;data&#39; param needs the following `(uint256, bytes, uint256)`      - min USDC amount (for swapping Asset with USDC), dexUsdcData (for swapping Asset with USDC; it can be empty), lpMinAmountOut (GM LP minimum amout to obtain when staking USDC)      - lpMinAmountOut can be obtained by querying `gmMarket`*
 
 #### Parameters
 
 | Name | Type | Description |
 |---|---|---|
-| collateralId | uint256 | undefined |
-| assetAddress | address | undefined |
-| collateralAddress | address | undefined |
-| assetAmountIn | uint256 | undefined |
-| from | address | undefined |
-| data | bytes | undefined |
+| collateralId | uint256 | Collateral&#39;s YieldBox id |
+| assetAddress | address | usually USDO address |
+| collateralAddress | address | tLP address (TOFT GMX-ETH-USDC LP) |
+| assetAmountIn | uint256 | amount to swap |
+| from | address | collateral receiver |
+| data | bytes | AssetToGmxEthUsdcLpLeverageExecutor data |
 
 #### Returns
 
 | Name | Type | Description |
 |---|---|---|
 | collateralAmountOut | uint256 | undefined |
+
+### gmMarket
+
+```solidity
+function gmMarket() external view returns (address)
+```
+
+
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | address | undefined |
 
 ### owner
 
@@ -137,6 +171,23 @@ function owner() external view returns (address)
 
 ```solidity
 function pendingOwner() external view returns (address)
+```
+
+
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | address | undefined |
+
+### router
+
+```solidity
+function router() external view returns (address)
 ```
 
 
@@ -216,6 +267,57 @@ Transfers ownership to `newOwner`. Either directly or claimable by the new pendi
 | newOwner | address | Address of the new owner. |
 | direct | bool | True if `newOwner` should be set immediately. False if `newOwner` needs to use `claimOwnership`. |
 | renounce | bool | Allows the `newOwner` to be `address(0)` if `direct` and `renounce` is True. Has no effect otherwise. |
+
+### usdc
+
+```solidity
+function usdc() external view returns (contract IERC20)
+```
+
+
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | contract IERC20 | undefined |
+
+### weth
+
+```solidity
+function weth() external view returns (contract IERC20)
+```
+
+
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | contract IERC20 | undefined |
+
+### withdrawalVault
+
+```solidity
+function withdrawalVault() external view returns (address)
+```
+
+
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | address | undefined |
 
 ### yieldBox
 

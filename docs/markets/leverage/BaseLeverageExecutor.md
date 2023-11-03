@@ -10,6 +10,30 @@
 
 ## Methods
 
+### buildSwapDefaultData
+
+```solidity
+function buildSwapDefaultData(address tokenIn, address tokenOut, uint256 amountIn) external view returns (bytes)
+```
+
+returns getCollateral or getAsset for Asset &gt; DAI or DAI &gt; Asset respectively default data parameter
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| tokenIn | address | token in address |
+| tokenOut | address | token out address |
+| amountIn | uint256 | amount to get the minimum for |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | bytes | undefined |
+
 ### claimOwnership
 
 ```solidity
