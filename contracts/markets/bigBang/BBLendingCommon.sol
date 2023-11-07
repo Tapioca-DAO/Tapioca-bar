@@ -80,6 +80,9 @@ contract BBLendingCommon is BBCommon {
             (((_exchangeRate - maxMintFeeStart) * (maxMintFee - minMintFee)) /
                 (minMintFeeStart - maxMintFeeStart));
 
+        if (fee > maxMintFee) return maxMintFee;
+        if (fee < minMintFee) return minMintFee;
+
         if (fee > 0) {
             return (amount * fee) / FEE_PRECISION;
         }
