@@ -75,13 +75,14 @@ describe('USDOsDaiLeverageExecutor test', () => {
             deployer,
             usd0,
             usdcAssetId,
+            cluster,
         };
     }
 
     it('should build default data', async () => {
-        const { dai, assetTotsDaiLeverageExecutor, usdc } = await loadFixture(
-            setUp,
-        );
+        const { dai, assetTotsDaiLeverageExecutor, usdc, cluster, deployer } =
+            await loadFixture(setUp);
+        await cluster.updateContract(0, deployer.address, true);
 
         const defaultData =
             await assetTotsDaiLeverageExecutor.buildSwapDefaultData(
@@ -107,7 +108,9 @@ describe('USDOsDaiLeverageExecutor test', () => {
             assetTotsDaiLeverageExecutor,
             deployer,
             usdc,
+            cluster,
         } = await loadFixture(setUp);
+        await cluster.updateContract(0, deployer.address, true);
 
         const balanceBefore = await toft.balanceOf(deployer.address);
         expect(balanceBefore.eq(0)).to.be.true;
@@ -154,7 +157,9 @@ describe('USDOsDaiLeverageExecutor test', () => {
             assetTotsDaiLeverageExecutor,
             deployer,
             usdcAssetId,
+            cluster,
         } = await loadFixture(setUp);
+        await cluster.updateContract(0, deployer.address, true);
 
         const balanceBefore = await toft.balanceOf(deployer.address);
         expect(balanceBefore.eq(0)).to.be.true;

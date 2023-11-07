@@ -62,6 +62,23 @@ returns ICluster address
 |---|---|---|
 | _0 | contract ICluster | undefined |
 
+### depositVault
+
+```solidity
+function depositVault() external view returns (address)
+```
+
+
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | address | undefined |
+
 ### exchangeRouter
 
 ```solidity

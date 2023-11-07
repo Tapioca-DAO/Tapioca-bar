@@ -59,7 +59,12 @@ const verifyEtherscanQueue: { address: string; args: any[] }[] = [];
 async function resetVM() {
     await ethers.provider.send('hardhat_reset', []);
 }
-
+export async function impersonateAccount(address: string) {
+    await hre.network.provider.request({
+        method: 'hardhat_impersonateAccount',
+        params: [address],
+    });
+}
 export function BN(n: BigNumberish) {
     return ethers.BigNumber.from(n.toString());
 }
@@ -1400,12 +1405,12 @@ export async function getSGLPermitSignature(
     );
 }
 
-const gasPrice = 22000000000; //55gwei
+const gasPrice = 45000000000; //55gwei
 const log = (message: string, staging?: boolean) =>
     staging && console.log(message);
 export async function register(staging?: boolean) {
     if (!staging) {
-        await resetVM();
+        // await resetVM();
     }
 
     /**

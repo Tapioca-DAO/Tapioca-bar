@@ -20,7 +20,7 @@ contract SimpleLeverageExecutor is BaseLeverageExecutor {
         uint256 assetAmountIn,
         address from,
         bytes calldata data
-    ) external override returns (uint256 collateralAmountOut) {
+    ) external payable override returns (uint256 collateralAmountOut) {
         _assureSwapperValidity();
 
         (uint256 minAmountOut, bytes memory dexData) = abi.decode(
@@ -33,7 +33,8 @@ contract SimpleLeverageExecutor is BaseLeverageExecutor {
             collateralAddress,
             assetAmountIn,
             minAmountOut,
-            dexData
+            dexData,
+            0
         );
         require(
             collateralAmountOut >= minAmountOut,
@@ -74,7 +75,8 @@ contract SimpleLeverageExecutor is BaseLeverageExecutor {
             assetAddress,
             collateralAmountIn,
             minAmountOut,
-            dexData
+            dexData,
+            0
         );
         require(assetAmountOut >= minAmountOut, "LeverageExecutor: not enough");
 

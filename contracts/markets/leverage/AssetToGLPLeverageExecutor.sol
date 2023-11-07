@@ -36,7 +36,11 @@ contract AssetToGLPLeverageExecutor is BaseLeverageExecutor {
         uint256 assetAmountIn,
         address from,
         bytes calldata data
-    ) external override returns (uint256 collateralAmountOut) {
+    ) external payable override returns (uint256 collateralAmountOut) {
+        require(
+            cluster.isWhitelisted(0, msg.sender),
+            "LeverageExecutor: sender not valid"
+        );
         _assureSwapperValidity();
 
         //decode data
@@ -53,7 +57,8 @@ contract AssetToGLPLeverageExecutor is BaseLeverageExecutor {
             address(usdc),
             assetAmountIn,
             minUsdcAmountOut,
-            dexUsdcData
+            dexUsdcData,
+            0
         );
         require(
             usdcAmount >= minUsdcAmountOut,
@@ -73,7 +78,8 @@ contract AssetToGLPLeverageExecutor is BaseLeverageExecutor {
             glpAddress,
             usdcAmount,
             minGlpAmountOut,
-            dexGlpData
+            dexGlpData,
+            0
         );
         require(
             collateralAmountOut >= minGlpAmountOut,
@@ -120,6 +126,10 @@ contract AssetToGLPLeverageExecutor is BaseLeverageExecutor {
         address from,
         bytes calldata data
     ) external override returns (uint256 assetAmountOut) {
+        require(
+            cluster.isWhitelisted(0, msg.sender),
+            "LeverageExecutor: sender not valid"
+        );
         _assureSwapperValidity();
 
         //decode data
@@ -147,7 +157,8 @@ contract AssetToGLPLeverageExecutor is BaseLeverageExecutor {
             address(usdc),
             collateralAmountIn,
             minUsdcAmountOut,
-            dexUsdcData
+            dexUsdcData,
+            0
         );
         require(
             usdcAmount >= minUsdcAmountOut,
@@ -160,7 +171,8 @@ contract AssetToGLPLeverageExecutor is BaseLeverageExecutor {
             assetAddress,
             usdcAmount,
             minAssetAmountOut,
-            dexAssetData
+            dexAssetData,
+            0
         );
         require(
             assetAmountOut >= minAssetAmountOut,

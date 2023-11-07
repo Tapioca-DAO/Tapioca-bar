@@ -32,7 +32,11 @@ contract AssetTotsDaiLeverageExecutor is BaseLeverageExecutor {
         uint256 assetAmountIn,
         address from,
         bytes calldata data
-    ) external override returns (uint256 collateralAmountOut) {
+    ) external payable override returns (uint256 collateralAmountOut) {
+        require(
+            cluster.isWhitelisted(0, msg.sender),
+            "LeverageExecutor: sender not valid"
+        );
         _assureSwapperValidity();
         (uint256 minAmountOut, bytes memory dexData) = abi.decode(
             data,
@@ -50,7 +54,8 @@ contract AssetTotsDaiLeverageExecutor is BaseLeverageExecutor {
             daiAddress,
             assetAmountIn,
             minAmountOut,
-            dexData
+            dexData,
+            0
         );
         require(
             daiAmount >= minAmountOut,
@@ -105,6 +110,10 @@ contract AssetTotsDaiLeverageExecutor is BaseLeverageExecutor {
         address from,
         bytes calldata data
     ) external override returns (uint256 assetAmountOut) {
+        require(
+            cluster.isWhitelisted(0, msg.sender),
+            "LeverageExecutor: sender not valid"
+        );
         _assureSwapperValidity();
         (uint256 minAmountOut, bytes memory dexData) = abi.decode(
             data,
@@ -137,7 +146,8 @@ contract AssetTotsDaiLeverageExecutor is BaseLeverageExecutor {
             assetAddress,
             obtainedDai,
             minAmountOut,
-            dexData
+            dexData,
+            0
         );
         require(
             assetAmountOut >= minAmountOut,

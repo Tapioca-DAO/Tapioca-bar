@@ -23,6 +23,12 @@ contract Test {
         return fee;
     }
 
+    function getRevert(
+        bytes4 _returnData
+    ) external pure returns (string memory result) {
+        result = string(abi.encodePacked(_returnData));
+    }
+
     // function getCallerRewardNewMethod(
     //     uint256 borrowed,
     //     uint256 startTVLInAsset,

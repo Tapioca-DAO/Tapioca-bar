@@ -80,9 +80,9 @@ describe('usdoToGlpLeverageExecutors.test test', () => {
     }
 
     it('should build default data', async () => {
-        const { assetToGLPLeverageExecutor, usdc, weth } = await loadFixture(
-            setUp,
-        );
+        const { assetToGLPLeverageExecutor, usdc, weth, cluster, deployer } =
+            await loadFixture(setUp);
+        await cluster.updateContract(0, deployer.address, true);
 
         const defaultData =
             await assetToGLPLeverageExecutor.buildSwapDefaultData(
@@ -104,7 +104,9 @@ describe('usdoToGlpLeverageExecutors.test test', () => {
             toft,
             toftAssetId,
             swapper,
+            cluster,
         } = await loadFixture(setUp);
+        await cluster.updateContract(0, deployer.address, true);
 
         const balanceBefore = await toft.balanceOf(deployer.address);
         expect(balanceBefore.eq(0)).to.be.true;
@@ -159,7 +161,9 @@ describe('usdoToGlpLeverageExecutors.test test', () => {
             toft,
             swapper,
             wethAssetId,
+            cluster,
         } = await loadFixture(setUp);
+        await cluster.updateContract(0, deployer.address, true);
 
         const amountIn = ethers.utils.parseEther('10');
 
