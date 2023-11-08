@@ -10,6 +10,19 @@ contract SGLLiquidation is SGLCommon {
     using RebaseLibrary for Rebase;
     using BoringERC20 for IERC20;
 
+    // ************** //
+    // *** ERRORS *** //
+    // ************** //
+    error AmountNotValid();
+    error ExchangeRateNotValid();
+    error ForbiddenAction();
+    error NothingToLiquidate();
+    error LengthMismatch();
+    error OnCollateralReceiverFailed();
+    error BadDebt();
+    error NotEnoughCollateral();
+    error Solvent();
+
     // *********************** //
     // *** OWNER FUNCTIONS *** //
     // *********************** //
@@ -25,12 +38,14 @@ contract SGLLiquidation is SGLCommon {
         } else {
             _exchangeRate = exchangeRate; //use stored rate
         }
-        require(_exchangeRate > 0, "BB: current exchangeRate not valid"); //validate stored rate
+        if (_exchangeRate == 0) revert ExchangeRateNotValid();
 
         _accrue();
 
-        uint256 borrowAmountWithBonus = userBorrowPart[user] +
-            (userBorrowPart[user] * liquidationMultiplier) /
+        uint256 _userBorrowPart = userBorrowPart[user];
+
+        uint256 borrowAmountWithBonus = _userBorrowPart +
+            (_userBorrowPart * liquidationMultiplier) /
             FEE_PRECISION;
         uint256 requiredCollateral = yieldBox.toShare(
             collateralId,
@@ -39,19 +54,14 @@ contract SGLLiquidation is SGLCommon {
         );
 
         // equality is included in the require to minimize risk and liquidate as soon as possible
-        require(
-            requiredCollateral >= userCollateralShare[user],
-            "BigBang: Cannot force liquidated"
-        );
+        if (requiredCollateral < userCollateralShare[user])
+            revert ForbiddenAction();
 
         uint256 collateralShare = userCollateralShare[user];
 
         // everything will be liquidated; set borrow part and collateral share to 0
         uint256 borrowAmount;
-        (totalBorrow, borrowAmount) = totalBorrow.sub(
-            userBorrowPart[user],
-            true
-        );
+        (totalBorrow, borrowAmount) = totalBorrow.sub(_userBorrowPart, true);
         userBorrowPart[user] = 0;
         _yieldBoxShares[user][ASSET_SIG] = 0;
 
@@ -82,16 +92,11 @@ contract SGLLiquidation is SGLCommon {
         IMarketLiquidatorReceiver[] calldata liquidatorReceivers,
         bytes[] calldata liquidatorReceiverDatas
     ) external optionNotPaused(PauseType.Liquidation) {
-        require(users.length > 0, "BB: nothing to liquidate");
-        require(users.length == maxBorrowParts.length, "BB: length mismatch");
-        require(
-            users.length == liquidatorReceivers.length,
-            "BigBang: length mismatch"
-        );
-        require(
-            liquidatorReceiverDatas.length == liquidatorReceivers.length,
-            "BigBang: length mismatch"
-        );
+        if (users.length == 0) revert NothingToLiquidate();
+        if (users.length != maxBorrowParts.length) revert LengthMismatch();
+        if (users.length != liquidatorReceivers.length) revert LengthMismatch();
+        if (liquidatorReceiverDatas.length != liquidatorReceivers.length)
+            revert LengthMismatch();
 
         // Oracle can fail but we still need to allow liquidations
         (bool updated, uint256 _exchangeRate) = oracle.get(oracleData);
@@ -145,7 +150,7 @@ contract SGLLiquidation is SGLCommon {
         uint256 assetBalanceAfter = asset.balanceOf(address(this));
 
         returnedAmount = assetBalanceAfter - assetBalanceBefore;
-        require(returnedAmount > 0, "SGL: onCollateralReceiver failed");
+        if (returnedAmount == 0) revert OnCollateralReceiverFailed();
         returnedShare = yieldBox.toShare(assetId, returnedAmount, false);
     }
 
@@ -157,7 +162,7 @@ contract SGLLiquidation is SGLCommon {
         uint256 borrowPart = userBorrowPart[user];
         if (borrowPart == 0) return 0;
 
-        require(_exchangeRate > 0, "SGL: exchangeRate not valid");
+        if (_exchangeRate == 0) revert ExchangeRateNotValid();
 
         Rebase memory _totalBorrow = totalBorrow;
 
@@ -189,7 +194,7 @@ contract SGLLiquidation is SGLCommon {
             uint256 collateralShare
         )
     {
-        require(_exchangeRate > 0, "SGL: exchangeRate not valid");
+        if (_exchangeRate == 0) revert ExchangeRateNotValid();
         uint256 collateralPartInAsset = (yieldBox.toAmount(
             collateralId,
             userCollateralShare[user],
@@ -216,7 +221,7 @@ contract SGLLiquidation is SGLCommon {
             ? userBorrowPart[user]
             : borrowPartWithBonus;
 
-        require(collateralPartInAsset > borrowPartWithBonus, "SGL: bad debt");
+        if (collateralPartInAsset <= borrowPartWithBonus) revert BadDebt();
 
         borrowPart = maxBorrowPart > borrowPart ? borrowPart : maxBorrowPart;
         borrowPart = borrowPart > userBorrowPart[user]
@@ -233,12 +238,10 @@ contract SGLLiquidation is SGLCommon {
             false
         );
 
-        require(
-            collateralShare <= userCollateralShare[user],
-            "SGL: not enough collateral"
-        );
+        if (collateralShare > userCollateralShare[user])
+            revert NotEnoughCollateral();
         userCollateralShare[user] -= collateralShare;
-        require(borrowAmount != 0, "SGL: solvent");
+        if (borrowAmount == 0) revert Solvent();
 
         totalBorrow.elastic -= uint128(borrowAmount);
         totalBorrow.base -= uint128(borrowPart);
@@ -324,8 +327,7 @@ contract SGLLiquidation is SGLCommon {
             _liquidatorReceiverData
         );
 
-        require(returnedShare >= borrowShare, "SGL: asset amount not valid");
-
+        if (returnedShare < borrowShare) revert AmountNotValid();
         (uint256 feeShare, uint256 callerShare) = _extractLiquidationFees(
             borrowShare,
             callerReward
@@ -350,20 +352,21 @@ contract SGLLiquidation is SGLCommon {
         uint256 _exchangeRate
     ) private {
         uint256 liquidatedCount = 0;
-        for (uint256 i; i < users.length; i++) {
-            address user = users[i];
-            if (!_isSolvent(user, _exchangeRate, true)) {
-                liquidatedCount++;
-                _liquidateUser(
-                    user,
-                    maxBorrowParts[i],
-                    liquidatorReceivers[i],
-                    liquidatorReceiverDatas[i],
-                    _exchangeRate
-                );
+        unchecked {
+            for (uint256 i; i < users.length; i++) {
+                address user = users[i];
+                if (!_isSolvent(user, _exchangeRate, true)) {
+                    liquidatedCount++;
+                    _liquidateUser(
+                        user,
+                        maxBorrowParts[i],
+                        liquidatorReceivers[i],
+                        liquidatorReceiverDatas[i],
+                        _exchangeRate
+                    );
+                }
             }
         }
-
-        require(liquidatedCount != 0, "SGL: no users found");
+        if (liquidatedCount == 0) revert NothingToLiquidate();
     }
 }

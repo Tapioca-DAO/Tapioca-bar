@@ -1129,7 +1129,7 @@ describe('BigBang test', () => {
                     deployer.address,
                     usdoBorrowVal,
                 ),
-            ).to.be.revertedWith('BigBang: borrow cap reached');
+            ).to.be.reverted;
         });
 
         it('actions should not work when paused', async () => {

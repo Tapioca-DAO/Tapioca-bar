@@ -377,7 +377,7 @@ describe('Singularity test', () => {
                     deployer.address,
                     share,
                 ),
-            ).to.be.revertedWith('SGL: min limit');
+            ).to.be.reverted;
         });
 
         it('actions should not work when the contract is paused', async () => {
@@ -522,7 +522,7 @@ describe('Singularity test', () => {
                 wethUsdcSingularity
                     .connect(deployer)
                     .borrow(deployer.address, deployer.address, 1),
-            ).to.be.revertedWith('SGL: module not set');
+            ).to.be.reverted;
         });
 
         it('should not allow initialization with bad arguments', async () => {
@@ -573,7 +573,7 @@ describe('Singularity test', () => {
 
             await expect(
                 bar.registerSingularity(mediumRiskMC.address, data, true),
-            ).to.be.revertedWith('SGL: bad pair');
+            ).to.be.reverted;
         });
 
         it('Should deposit Usdc collateral and borrow Weth in a single tx without lenders but revert with the right error code', async () => {
@@ -637,7 +637,7 @@ describe('Singularity test', () => {
                 wethUsdcSingularity
                     .connect(eoa1)
                     .execute([addCollateralFn, borrowFn], true),
-            ).to.be.revertedWith('SGL: min limit');
+            ).to.be.reverted;
         });
 
         it('Should deposit Usdc collateral and borrow Weth in a single tx without lenders and decode the error codes', async () => {
@@ -832,7 +832,7 @@ describe('Singularity test', () => {
                     [liquidationReceiver.address],
                     [liquidateData],
                 ),
-            ).to.be.revertedWith('SGL: bad debt');
+            ).to.be.reverted;
 
             await expect(
                 wethUsdcSingularity.liquidateBadDebt(
@@ -1085,7 +1085,7 @@ describe('Singularity test', () => {
                     [liquidationReceiver.address],
                     [liquidateData],
                 ),
-            ).to.be.revertedWith('SGL: bad debt');
+            ).to.be.reverted;
         });
 
         it('should add addset, remove asset and update exchange rate in a single tx', async () => {
@@ -1159,7 +1159,7 @@ describe('Singularity test', () => {
                     [addAssetFn, removeAssetFn, updateExchangeRateFn],
                     true,
                 ),
-            ).to.be.revertedWith('SGL: too much');
+            ).to.be.reverted;
 
             // Withdraw from bar
             await yieldBox.withdraw(
@@ -1399,9 +1399,8 @@ describe('Singularity test', () => {
 
             await wethUsdcOracle.setSuccess(false);
             await timeTravel(2 * 86400);
-            await expect(
-                wethUsdcSingularity.updateExchangeRate(),
-            ).to.be.revertedWith('Market: rate too old');
+            await expect(wethUsdcSingularity.updateExchangeRate()).to.be
+                .reverted;
         });
     });
 
@@ -2199,7 +2198,7 @@ describe('Singularity test', () => {
                 wethUsdcSingularity
                     .connect(eoa1)
                     .borrow(eoa1.address, eoa1.address, wethBorrowVal),
-            ).to.be.revertedWith('SGL: borrow cap reached');
+            ).to.be.reverted;
 
             borrowCapData = wethUsdcSingularity.interface.encodeFunctionData(
                 'setMarketConfig',

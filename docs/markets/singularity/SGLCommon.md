@@ -1768,3 +1768,28 @@ event emitted when the usdo swapper is updated
 
 
 
+## Errors
+
+### MinLimit
+
+```solidity
+error MinLimit()
+```
+
+
+
+
+
+
+### TooMuch
+
+```solidity
+error TooMuch()
+```
+
+
+
+
+
+
+

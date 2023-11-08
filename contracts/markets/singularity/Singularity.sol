@@ -54,6 +54,14 @@ contract Singularity is SGLCommon, ReentrancyGuard {
     /// @notice returns the leverage module
     SGLLeverage public leverageModule;
 
+    // ************** //
+    // *** ERRORS *** //
+    // ************** //
+    error BadPair();
+    error TransferFailed();
+    error NotValid();
+    error ModuleNotSet();
+
     /// @notice The init function that acts as a constructor
     function init(bytes calldata data) external onlyOnce {
         (
@@ -92,12 +100,10 @@ contract Singularity is SGLCommon, ReentrancyGuard {
         penrose = tapiocaBar_;
         yieldBox = YieldBox(tapiocaBar_.yieldBox());
         owner = address(penrose);
-        require(
-            address(_collateral) != address(0) &&
-                address(_asset) != address(0) &&
-                address(_oracle) != address(0),
-            "SGL: bad pair"
-        );
+        if (address(_collateral) == address(0)) revert BadPair();
+        if (address(_asset) == address(0)) revert BadPair();
+        if (address(_oracle) == address(0)) revert BadPair();
+
         _initModules(
             _liquidationModule,
             _borrowModule,
@@ -143,6 +149,16 @@ contract Singularity is SGLCommon, ReentrancyGuard {
         uint256 _liquidationCollateralizationRate,
         uint256 _exchangeRatePrecision
     ) private {
+        collateralizationRate = _collateralizationRate > 0
+            ? _collateralizationRate
+            : 75000;
+        liquidationCollateralizationRate = _liquidationCollateralizationRate > 0
+            ? _liquidationCollateralizationRate
+            : 80000;
+        require(
+            liquidationCollateralizationRate > collateralizationRate,
+            "SGL: liquidationCollateralizationRate not valid"
+        );
         minimumInterestPerSecond = 158548960; // approx 0.5% APR
         maximumInterestPerSecond = 317097920000; // approx 1000% APR
         interestElasticity = 28800e36; // Half or double in 28800 seconds (8 hours) if linear
@@ -155,16 +171,6 @@ contract Singularity is SGLCommon, ReentrancyGuard {
         borrowOpeningFee = 50; // 0.05%
         //liquidation
         liquidationMultiplier = 12000; //12%
-        collateralizationRate = _collateralizationRate > 0
-            ? _collateralizationRate
-            : 75000;
-        liquidationCollateralizationRate = _liquidationCollateralizationRate > 0
-            ? _liquidationCollateralizationRate
-            : 80000;
-        require(
-            liquidationCollateralizationRate > collateralizationRate,
-            "SGL: liquidationCollateralizationRate not valid"
-        );
         lqCollateralizationRate = 25000;
         EXCHANGE_RATE_PRECISION = _exchangeRatePrecision > 0
             ? _exchangeRatePrecision
@@ -225,16 +231,17 @@ contract Singularity is SGLCommon, ReentrancyGuard {
     {
         successes = new bool[](calls.length);
         results = new string[](calls.length);
-        for (uint256 i; i < calls.length; i++) {
-            (bool success, bytes memory result) = address(this).delegatecall(
-                calls[i]
-            );
+        unchecked {
+            for (uint256 i; i < calls.length; i++) {
+                (bool success, bytes memory result) = address(this)
+                    .delegatecall(calls[i]);
 
-            if (!success && revertOnFail) {
-                revert(_getRevertMsg(result));
+                if (!success && revertOnFail) {
+                    revert(_getRevertMsg(result));
+                }
+                successes[i] = success;
+                results[i] = _getRevertMsg(result);
             }
-            successes[i] = success;
-            results[i] = _getRevertMsg(result);
         }
     }
 
@@ -536,7 +543,7 @@ contract Singularity is SGLCommon, ReentrancyGuard {
     /// @param to the recipient
     function rescueEth(uint256 amount, address to) external onlyOwner {
         (bool success, ) = to.call{value: amount}("");
-        require(success, "SGL: transfer failed.");
+        if (!success) revert TransferFailed();
     }
 
     /// @notice Transfers fees to penrose
@@ -573,7 +580,7 @@ contract Singularity is SGLCommon, ReentrancyGuard {
         uint64 _maximumInterestPerSecond,
         uint256 _interestElasticity
     ) external onlyOwner {
-        require(_borrowOpeningFee <= FEE_PRECISION, "Market: not valid");
+        if (_borrowOpeningFee > FEE_PRECISION) revert NotValid();
         emit LogBorrowingFee(borrowOpeningFee, _borrowOpeningFee);
         borrowOpeningFee = _borrowOpeningFee;
 
@@ -586,10 +593,9 @@ contract Singularity is SGLCommon, ReentrancyGuard {
         }
 
         if (_maximumTargetUtilization > 0) {
-            require(
-                _maximumTargetUtilization < FULL_UTILIZATION,
-                "SGL: not valid"
-            );
+            if (_maximumTargetUtilization >= FULL_UTILIZATION)
+                revert NotValid();
+
             emit MaximumTargetUtilizationUpdated(
                 maximumTargetUtilization,
                 _maximumTargetUtilization
@@ -601,10 +607,8 @@ contract Singularity is SGLCommon, ReentrancyGuard {
         }
 
         if (_minimumInterestPerSecond > 0) {
-            require(
-                _minimumInterestPerSecond < maximumInterestPerSecond,
-                "SGL: not valid"
-            );
+            if (_minimumInterestPerSecond >= maximumInterestPerSecond)
+                revert NotValid();
             emit MinimumInterestPerSecondUpdated(
                 minimumInterestPerSecond,
                 _minimumInterestPerSecond
@@ -613,10 +617,8 @@ contract Singularity is SGLCommon, ReentrancyGuard {
         }
 
         if (_maximumInterestPerSecond > 0) {
-            require(
-                _maximumInterestPerSecond > minimumInterestPerSecond,
-                "SGL: not valid"
-            );
+            if (_maximumInterestPerSecond <= minimumInterestPerSecond)
+                revert NotValid();
             emit MaximumInterestPerSecondUpdated(
                 maximumInterestPerSecond,
                 _maximumInterestPerSecond
@@ -633,10 +635,7 @@ contract Singularity is SGLCommon, ReentrancyGuard {
         }
 
         if (_lqCollateralizationRate > 0) {
-            require(
-                _lqCollateralizationRate <= FEE_PRECISION,
-                "SGL: not valid"
-            );
+            if (_lqCollateralizationRate > FEE_PRECISION) revert NotValid();
             emit LqCollateralizationRateUpdated(
                 lqCollateralizationRate,
                 _lqCollateralizationRate
@@ -645,7 +644,7 @@ contract Singularity is SGLCommon, ReentrancyGuard {
         }
 
         if (_liquidationMultiplier > 0) {
-            require(_liquidationMultiplier < FEE_PRECISION, "SGL: not valid");
+            if (_liquidationMultiplier > FEE_PRECISION) revert NotValid();
             emit LiquidationMultiplierUpdated(
                 liquidationMultiplier,
                 _liquidationMultiplier
@@ -668,9 +667,7 @@ contract Singularity is SGLCommon, ReentrancyGuard {
         } else if (_module == Module.Leverage) {
             module = address(leverageModule);
         }
-        if (module == address(0)) {
-            revert("SGL: module not set");
-        }
+        if (module == address(0)) revert ModuleNotSet();
 
         return module;
     }

@@ -9,6 +9,13 @@ contract SGLLeverage is SGLLendingCommon {
     using RebaseLibrary for Rebase;
     using BoringERC20 for IERC20;
 
+    // ************** //
+    // *** ERRORS *** //
+    // ************** //
+    error SwapperNotValid();
+    error AllowanceNotValid();
+    error NotEnough();
+
     /// @notice Level up cross-chain: Borrow more and buy collateral with it.
     /// @param from The user who sells
     /// @param collateralAmount Extra collateral to be added
@@ -31,10 +38,8 @@ contract SGLLeverage is SGLLendingCommon {
         solvent(from, false)
         notSelf(from)
     {
-        require(
-            _isWhitelisted(lzData.lzDstChainId, externalData.swapper),
-            "SGL: Invalid swapper"
-        );
+        if (!_isWhitelisted(lzData.lzDstChainId, externalData.swapper))
+            revert SwapperNotValid();
         //add collateral
         if (collateralAmount > 0) {
             uint256 collateralShare = yieldBox.toShare(
@@ -54,7 +59,7 @@ contract SGLLeverage is SGLLendingCommon {
             asset.safeDecimals()
         );
         if (from != msg.sender) {
-            require(allowanceShare > 0, "BigBang: allowanceShare not valid");
+            if (allowanceShare == 0) revert AllowanceNotValid();
         }
         _allowedBorrow(from, allowanceShare);
         (, uint256 borrowShare) = _borrow(from, from, borrowAmount);
@@ -85,10 +90,8 @@ contract SGLLeverage is SGLLendingCommon {
         solvent(from, false)
         notSelf(from)
     {
-        require(
-            _isWhitelisted(lzData.lzDstChainId, externalData.swapper),
-            "SGL: Invalid swapper"
-        );
+        if (!_isWhitelisted(lzData.lzDstChainId, externalData.swapper))
+            revert SwapperNotValid();
 
         uint256 share = yieldBox.toShare(collateralId, amount, false);
         _allowedBorrow(from, share);
@@ -127,10 +130,8 @@ contract SGLLeverage is SGLLendingCommon {
         notSelf(from)
         returns (uint256 amountOut)
     {
-        require(
-            _isWhitelisted(penrose.hostLzChainId(), address(swapper)),
-            "SGL: Invalid swapper"
-        );
+        if (!_isWhitelisted(penrose.hostLzChainId(), address(swapper)))
+            revert SwapperNotValid();
 
         _allowedBorrow(from, share);
         _removeCollateral(from, address(swapper), share, false);
@@ -152,7 +153,7 @@ contract SGLLeverage is SGLLendingCommon {
         // As long as the ratio is correct, we trust `amountOut` resp.
         // `shareOut`, because all money received by the swapper gets used up
         // one way or another, or the transaction will revert.
-        require(amountOut >= minAmountOut, "SGL: not enough");
+        if (amountOut < minAmountOut) revert NotEnough();
         uint256 partOwed = userBorrowPart[from];
         uint256 amountOwed = totalBorrow.toElastic(partOwed, true);
         uint256 shareOwed = yieldBox.toShare(assetId, amountOwed, true);
@@ -187,10 +188,8 @@ contract SGLLeverage is SGLLendingCommon {
         notSelf(from)
         returns (uint256 amountOut)
     {
-        require(
-            _isWhitelisted(penrose.hostLzChainId(), address(swapper)),
-            "SGL: Invalid swapper"
-        );
+        if (!_isWhitelisted(penrose.hostLzChainId(), address(swapper)))
+            revert SwapperNotValid();
 
         // Let this fail first to save gas:
         uint256 supplyShare = yieldBox.toShare(assetId, supplyAmount, true);
@@ -217,7 +216,7 @@ contract SGLLeverage is SGLLendingCommon {
             from,
             dexData
         );
-        require(amountOut >= minAmountOut, "SGL: not enough");
+        if (amountOut < minAmountOut) revert NotEnough();
 
         _allowedBorrow(from, collateralShare);
         _addCollateral(from, from, false, 0, collateralShare, false);

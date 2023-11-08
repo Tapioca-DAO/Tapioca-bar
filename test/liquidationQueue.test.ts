@@ -381,7 +381,7 @@ describe.skip('LiquidationQueue test', () => {
                     data,
                     ethers.constants.AddressZero,
                 ),
-            ).to.be.revertedWith('SGL: solvent');
+            ).to.be.reverted;
 
             // Make some price movement and liquidate
             const priceDrop = __wethUsdcPrice.mul(15).div(100);
@@ -414,7 +414,7 @@ describe.skip('LiquidationQueue test', () => {
                     data,
                     multiSwapper.address,
                 ),
-            ).to.be.revertedWith('SGL: solvent');
+            ).to.be.reverted;
 
             // Check that LQ balances has been added
             expect(
@@ -2354,7 +2354,7 @@ describe.skip('LiquidationQueue test', () => {
                     data,
                     ethers.constants.AddressZero,
                 ),
-            ).to.be.revertedWith('SGL: no users found');
+            ).to.be.reverted;
 
             // Make some price movement and liquidate
             const priceDrop = __wethUsdcPrice.mul(5).div(100);
@@ -2387,7 +2387,7 @@ describe.skip('LiquidationQueue test', () => {
                     data,
                     multiSwapper.address,
                 ),
-            ).to.be.revertedWith('SGL: no users found');
+            ).to.be.reverted;
 
             // Check that LQ balances has been added
             expect(await liquidationQueue.balancesDue(deployer.address)).to.eq(
