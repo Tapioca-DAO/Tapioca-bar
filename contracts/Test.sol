@@ -4,8 +4,8 @@ pragma solidity ^0.8.18;
 contract Test {
     uint256 public x = 1;
 
-    uint256 internal constant MAX_MINT_FEE_START = 980000000000000000; // 0.98 *1e18
-    uint256 internal constant MIN_MINT_FEE_START = 1020000000000000000; // 1.02 *1e18
+    uint256 internal constant MAX_MINT_FEE_START = 975000000000000000; // 0.975 *1e18
+    uint256 internal constant MIN_MINT_FEE_START = 1000000000000000000; // 1 *1e18
     uint256 internal constant FEE_PRECISION = 1e5;
 
     function computeMintFeeTest(

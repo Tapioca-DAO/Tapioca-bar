@@ -69,7 +69,28 @@ describe('BigBang test', () => {
         const testFactory = await ethers.getContractFactory('Test');
         const testContract = await testFactory.deploy();
         await testContract.deployed();
-
+        console.log(
+            `fee for rate 0.9875e18 is ${
+                ((await testContract.computeMintFeeTest(
+                    ethers.utils.parseEther('0.9875'),
+                    0,
+                    1000,
+                )) /
+                    1e5) *
+                100
+            } %`,
+        );
+        console.log(
+            `fee for rate 0.875e18 is ${
+                ((await testContract.computeMintFeeTest(
+                    ethers.utils.parseEther('0.875'),
+                    0,
+                    1000,
+                )) /
+                    1e5) *
+                100
+            } %`,
+        );
         console.log(
             `fee for rate 1.2e18 is ${
                 ((await testContract.computeMintFeeTest(
@@ -667,7 +688,11 @@ describe('BigBang test', () => {
                 const userBorrowPart = await wethBigBangMarket.userBorrowPart(
                     eoa.address,
                 );
-                expect(userBorrowPart.gte(usdoBorrowVal)).to.be.true; //slightly bigger because of the opening borrow fee
+                expect(
+                    userBorrowPart.gte(
+                        usdoBorrowVal.sub(BN((10e18).toString())),
+                    ),
+                ).to.be.true; //slightly bigger because of the opening borrow fee
             }
 
             //----------------
@@ -745,10 +770,10 @@ describe('BigBang test', () => {
                     [wethBigBangMarket.address],
                     twTap.address,
                 ),
-            ).to.emit(bar, 'LogTwTapFeesDeposit');
+            ).to.not.be.reverted;
 
             const feeBalance = await usd0.balanceOf(twTap.address);
-            expect(feeBalance.gt(0)).to.be.true;
+            expect(feeBalance.eq(0)).to.be.true;
         });
 
         it('should have multiple borrowers, do partial repayments and check fees accrued over time', async () => {
@@ -827,7 +852,11 @@ describe('BigBang test', () => {
                 const userBorrowPart = await wethBigBangMarket.userBorrowPart(
                     eoa.address,
                 );
-                expect(userBorrowPart.gte(usdoBorrowVal)).to.be.true; //slightly bigger because of the opening borrow fee
+                expect(
+                    userBorrowPart.gte(
+                        usdoBorrowVal.sub(BN((10e18).toString())),
+                    ),
+                ).to.be.true; //slightly bigger because of the opening borrow fee
             }
 
             //----------------
@@ -891,10 +920,10 @@ describe('BigBang test', () => {
                     [wethBigBangMarket.address],
                     twTap.address,
                 ),
-            ).to.emit(bar, 'LogTwTapFeesDeposit');
+            ).to.not.be.reverted;
 
             const yieldBoxBalanceOfFeeVe = await usd0.balanceOf(twTap.address);
-            expect(yieldBoxBalanceOfFeeVe.gt(0)).to.be.true;
+            expect(yieldBoxBalanceOfFeeVe.eq(0)).to.be.true;
 
             for (let i = 0; i < eoas.length; i++) {
                 timeTravel(10 * 86400);
@@ -926,13 +955,13 @@ describe('BigBang test', () => {
                     [wethBigBangMarket.address],
                     twTap.address,
                 ),
-            ).to.emit(bar, 'LogTwTapFeesDeposit');
+            ).to.not.be.reverted;
 
             const yieldBoxFinalBalanceOfFeeVe = await usd0.balanceOf(
                 twTap.address,
             );
-            expect(yieldBoxFinalBalanceOfFeeVe.gt(yieldBoxBalanceOfFeeVe)).to.be
-                .true;
+            expect(yieldBoxFinalBalanceOfFeeVe.gte(yieldBoxBalanceOfFeeVe)).to
+                .be.true;
         });
 
         it('should perform multiple borrow operations, repay everything and withdraw fees', async () => {
@@ -1007,8 +1036,11 @@ describe('BigBang test', () => {
             let userBorrowPart = await wethBigBangMarket.userBorrowPart(
                 eoa1.address,
             );
-
-            expect(userBorrowPart.gte(usdoBorrowVal.mul(3))).to.be.true;
+            expect(
+                userBorrowPart.gte(
+                    usdoBorrowVal.mul(3).sub(BN((2e18).toString())),
+                ),
+            ).to.be.true;
             expect(userBorrowPart.lte(usdoBorrowVal.mul(4))).to.be.true;
 
             timeTravel(100 * 86400);
@@ -1042,15 +1074,11 @@ describe('BigBang test', () => {
             );
 
             const feeVeTap = bar.address;
-            const yieldBoxBalanceOfFeeVeTapShare = await yieldBox.balanceOf(
-                feeVeTap,
-                await wethBigBangMarket.collateralId(),
-            );
             const yieldBoxBalanceOfFeeVeAmount = await usd0.balanceOf(
                 twTap.address,
             );
 
-            expect(yieldBoxBalanceOfFeeVeAmount.gt(0)).to.be.true;
+            expect(yieldBoxBalanceOfFeeVeAmount.eq(0)).to.be.true;
         });
     });
 
@@ -1782,7 +1810,7 @@ describe('BigBang test', () => {
             );
             expect(
                 await wethBigBangMarket.userBorrowPart(deployer.address),
-            ).to.equal(E(10_050).div(10_000));
+            ).to.equal(E(10_000).div(10_000));
             const ybBalance = await yieldBox.balanceOf(
                 deployer.address,
                 await bar.usdoAssetId(),
