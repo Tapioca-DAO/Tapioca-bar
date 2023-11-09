@@ -48,6 +48,7 @@ contract BaseUSDOStorage is OFTV2 {
     uint16 internal constant PT_LEVERAGE_MARKET_UP = 775;
     uint16 internal constant PT_TAP_EXERCISE = 777;
     uint16 internal constant PT_SEND_FROM = 778;
+    uint16 internal constant PT_APPROVE = 779;
 
     uint256 internal constant SWAP_MAX_SLIPPAGE = 500; //5%
     uint256 internal constant SLIPPAGE_PRECISION = 1e4;

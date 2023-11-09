@@ -137,6 +137,10 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
             module: Module.Generic,
             functionSelector: USDOGenericModule.sendFromDestination.selector
         });
+        _destinationMappings[PT_APPROVE] = DestinationCall({
+            module: Module.Generic,
+            functionSelector: USDOGenericModule.executeApproval.selector
+        });
 
         transferOwnership(_owner);
     }
@@ -341,6 +345,28 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
     }
 
     //----Generic---
+    /// @notice triggers a cross-chain approval
+    /// @dev handled by USDOGenericModule
+    /// @param lzDstChainId LZ destination id
+    /// @param lzCallParams data needed to trigger triggerApproveOrRevoke on destination
+    /// @param approvals approvals array
+    function triggerApproveOrRevoke(
+        uint16 lzDstChainId,
+        ISendFrom.LzCallParams calldata lzCallParams,
+        ICommonData.IApproval[] calldata approvals
+    ) external payable {
+        _executeModule(
+            Module.Generic,
+            abi.encodeWithSelector(
+                USDOGenericModule.triggerApproveOrRevoke.selector,
+                lzDstChainId,
+                lzCallParams,
+                approvals
+            ),
+            false
+        );
+    }
+
     /// @notice triggers a sendFrom to another layer from destination
     /// @dev handled by USDOGenericModule
     /// @param lzDstChainId LZ destination id
