@@ -3,6 +3,7 @@ pragma solidity ^0.8.18;
 
 //LZ
 import "tapioca-sdk/dist/contracts/libraries/LzLib.sol";
+import {ICommonOFT} from "tapioca-sdk/dist/contracts/token/oft/v2/ICommonOFT.sol";
 
 //TAPIOCA
 import "tapioca-periph/contracts/interfaces/IPermitBorrow.sol";
@@ -158,7 +159,7 @@ contract USDOOptionsDestinationModule is USDOCommon {
                 tapSendData.lzDstChainId,
                 LzLib.addressToBytes32(from),
                 tapAmount,
-                ISendFrom.LzCallParams({
+                ICommonOFT.LzCallParams({
                     refundAddress: payable(from),
                     zroPaymentAddress: tapSendData.zroPaymentAddress,
                     adapterParams: LzLib.buildDefaultAdapterParams(

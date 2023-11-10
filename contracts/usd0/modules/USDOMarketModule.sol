@@ -71,12 +71,13 @@ contract USDOMarketModule is USDOCommon {
             airdropAmount
         );
 
-        _checkGasLimit(
+        _checkAdapterParams(
             lzDstChainId,
             PT_MARKET_REMOVE_ASSET,
             adapterParams,
             NO_EXTRA_GAS
         );
+
         _lzSend(
             lzDstChainId,
             lzPayload,
@@ -111,12 +112,13 @@ contract USDOMarketModule is USDOCommon {
 
         bytes32 toAddress = LzLib.addressToBytes32(_to);
         (lendParams.depositAmount, ) = _removeDust(lendParams.depositAmount);
-        _debitFrom(
+        lendParams.depositAmount = _debitFrom(
             _from,
             lzEndpoint.getChainId(),
             toAddress,
             lendParams.depositAmount
         );
+        require(lendParams.depositAmount > 0, "TOFT_AMOUNT");
 
         (, , uint256 airdropAmount, ) = LzLib.decodeAdapterParams(
             adapterParams
@@ -131,12 +133,13 @@ contract USDOMarketModule is USDOCommon {
             airdropAmount
         );
 
-        _checkGasLimit(
+        _checkAdapterParams(
             lzDstChainId,
             PT_YB_SEND_SGL_LEND_OR_REPAY,
             adapterParams,
             NO_EXTRA_GAS
         );
+
         _lzSend(
             lzDstChainId,
             lzPayload,

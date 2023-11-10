@@ -133,7 +133,7 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
             module: Module.OptionsDestination,
             functionSelector: USDOOptionsDestinationModule.exercise.selector
         });
-        _destinationMappings[PT_SEND_FROM] = DestinationCall({
+        _destinationMappings[PT_TRIGGER_SEND_FROM] = DestinationCall({
             module: Module.Generic,
             functionSelector: USDOGenericModule.sendFromDestination.selector
         });
@@ -352,7 +352,7 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
     /// @param approvals approvals array
     function triggerApproveOrRevoke(
         uint16 lzDstChainId,
-        ISendFrom.LzCallParams calldata lzCallParams,
+        ICommonOFT.LzCallParams calldata lzCallParams,
         ICommonData.IApproval[] calldata approvals
     ) external payable {
         _executeModule(
@@ -378,7 +378,7 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
         uint16 lzDstChainId,
         bytes calldata airdropAdapterParams,
         uint256 amount,
-        ISendFrom.LzCallParams calldata sendFromData,
+        ICommonOFT.LzCallParams calldata sendFromData,
         ICommonData.IApproval[] calldata approvals
     ) external payable {
         _executeModule(
