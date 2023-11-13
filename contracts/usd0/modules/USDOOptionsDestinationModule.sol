@@ -45,6 +45,7 @@ contract USDOOptionsDestinationModule is USDOCommon {
             ITapiocaOptionsBrokerCrossChain.IExerciseLZSendTapData
                 memory tapSendData,
             ICommonData.IApproval[] memory approvals,
+            ICommonData.IApproval[] memory revokes,
             uint256 airdropAmount
         ) = abi.decode(
                 _payload,
@@ -53,6 +54,7 @@ contract USDOOptionsDestinationModule is USDOCommon {
                     uint64,
                     ITapiocaOptionsBrokerCrossChain.IExerciseOptionsData,
                     ITapiocaOptionsBrokerCrossChain.IExerciseLZSendTapData,
+                    ICommonData.IApproval[],
                     ICommonData.IApproval[],
                     uint256
                 )
@@ -87,6 +89,7 @@ contract USDOOptionsDestinationModule is USDOCommon {
                 tapSendData,
                 optionsData.paymentTokenAmount,
                 approvals,
+                revokes,
                 airdropAmount
             )
         );
@@ -126,6 +129,7 @@ contract USDOOptionsDestinationModule is USDOCommon {
             memory tapSendData,
         uint256 paymentTokenAmount,
         ICommonData.IApproval[] memory approvals,
+        ICommonData.IApproval[] memory revokes,
         uint256 airdropAmount
     ) public {
         require(msg.sender == address(this), "USDO: not valid");
@@ -169,6 +173,10 @@ contract USDOOptionsDestinationModule is USDOCommon {
             );
         } else {
             IERC20(tapSendData.tapOftAddress).safeTransfer(from, tapAmount);
+        }
+
+        if (revokes.length > 0) {
+            _callApproval(revokes, PT_TAP_EXERCISE);
         }
     }
 }

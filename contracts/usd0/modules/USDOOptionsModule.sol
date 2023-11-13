@@ -29,6 +29,7 @@ contract USDOOptionsModule is USDOCommon {
         ITapiocaOptionsBrokerCrossChain.IExerciseLZSendTapData
             calldata tapSendData,
         ICommonData.IApproval[] calldata approvals,
+        ICommonData.IApproval[] calldata revokes,
         bytes calldata adapterParams
     ) external payable {
         if (tapSendData.tapOftAddress != address(0)) {
@@ -78,6 +79,7 @@ contract USDOOptionsModule is USDOCommon {
             optionsData,
             tapSendData,
             approvals,
+            revokes,
             airdropAmount
         );
 

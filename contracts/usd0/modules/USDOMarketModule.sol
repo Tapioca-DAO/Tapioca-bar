@@ -28,7 +28,8 @@ contract USDOMarketModule is USDOCommon {
         bytes calldata adapterParams,
         ICommonData.ICommonExternalContracts calldata externalData,
         IUSDOBase.IRemoveAndRepay calldata removeAndRepayData,
-        ICommonData.IApproval[] calldata approvals
+        ICommonData.IApproval[] calldata approvals,
+        ICommonData.IApproval[] calldata revokes
     ) external payable {
         //allowance is also checked on SGl
         if (from != msg.sender) {
@@ -68,6 +69,7 @@ contract USDOMarketModule is USDOCommon {
             externalData,
             removeAndRepayData,
             approvals,
+            revokes,
             airdropAmount
         );
 
@@ -97,6 +99,7 @@ contract USDOMarketModule is USDOCommon {
         address zroPaymentAddress,
         IUSDOBase.ILendOrRepayParams memory lendParams,
         ICommonData.IApproval[] calldata approvals,
+        ICommonData.IApproval[] calldata revokes,
         ICommonData.IWithdrawParams calldata withdrawParams,
         bytes calldata adapterParams
     ) external payable {
@@ -129,6 +132,7 @@ contract USDOMarketModule is USDOCommon {
             _ld2sd(lendParams.depositAmount),
             lendParams,
             approvals,
+            revokes,
             withdrawParams,
             airdropAmount
         );

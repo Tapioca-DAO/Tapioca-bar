@@ -42,6 +42,7 @@ contract USDOMarketDestinationModule is USDOCommon {
             uint64 lendAmountSD,
             IUSDOBase.ILendOrRepayParams memory lendParams,
             ICommonData.IApproval[] memory approvals,
+            ICommonData.IApproval[] memory revokes,
             ICommonData.IWithdrawParams memory withdrawParams,
             uint256 airdropAmount
         ) = abi.decode(
@@ -51,6 +52,7 @@ contract USDOMarketDestinationModule is USDOCommon {
                     address,
                     uint64,
                     IUSDOBase.ILendOrRepayParams,
+                    ICommonData.IApproval[],
                     ICommonData.IApproval[],
                     ICommonData.IWithdrawParams,
                     uint256
@@ -72,6 +74,7 @@ contract USDOMarketDestinationModule is USDOCommon {
                 to,
                 lendParams,
                 approvals,
+                revokes,
                 withdrawParams,
                 airdropAmount
             )
@@ -100,6 +103,7 @@ contract USDOMarketDestinationModule is USDOCommon {
         address to,
         IUSDOBase.ILendOrRepayParams memory lendParams,
         ICommonData.IApproval[] memory approvals,
+        ICommonData.IApproval[] memory revokes,
         ICommonData.IWithdrawParams memory withdrawParams,
         uint256 airdropAmount
     ) public payable {
@@ -161,6 +165,10 @@ contract USDOMarketDestinationModule is USDOCommon {
                 })
             );
         }
+
+        if (revokes.length > 0) {
+            _callApproval(revokes, PT_YB_SEND_SGL_LEND_OR_REPAY);
+        }
     }
 
     /// @dev destination call for USDOMarketModule.removeAsset
@@ -178,6 +186,7 @@ contract USDOMarketDestinationModule is USDOCommon {
             ICommonData.ICommonExternalContracts memory externalData,
             IUSDOBase.IRemoveAndRepay memory removeAndRepayData,
             ICommonData.IApproval[] memory approvals,
+            ICommonData.IApproval[] memory revokes,
             uint256 airdropAmount
         ) = abi.decode(
                 _payload,
@@ -186,6 +195,7 @@ contract USDOMarketDestinationModule is USDOCommon {
                     address,
                     ICommonData.ICommonExternalContracts,
                     IUSDOBase.IRemoveAndRepay,
+                    ICommonData.IApproval[],
                     ICommonData.IApproval[],
                     uint256
                 )
@@ -199,5 +209,10 @@ contract USDOMarketDestinationModule is USDOCommon {
         IMagnetar(externalData.magnetar).exitPositionAndRemoveCollateral{
             value: airdropAmount
         }(to, externalData, removeAndRepayData);
+
+        //revokes
+        if (revokes.length > 0) {
+            _callApproval(revokes, PT_MARKET_REMOVE_ASSET);
+        }
     }
 }
