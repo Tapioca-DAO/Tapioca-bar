@@ -247,7 +247,8 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
     /// @param _to receiver address
     /// @param lzDstChainId LayerZero destination chain id
     /// @param lendParams lend specific params
-    /// @param approvals approvals specific params
+    /// @param approvals the cross chain approval operation data
+    /// @param revokes the cross chain revoke operations data
     /// @param withdrawParams parameter to withdraw the SGL collateral
     /// @param adapterParams adapter params of the withdrawn collateral
     function sendAndLendOrRepay(
@@ -257,6 +258,7 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
         address zroPaymentAddress,
         IUSDOBase.ILendOrRepayParams calldata lendParams,
         ICommonData.IApproval[] calldata approvals,
+        ICommonData.IApproval[] calldata revokes,
         ICommonData.IWithdrawParams calldata withdrawParams,
         bytes calldata adapterParams
     ) external payable {
@@ -270,6 +272,7 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
                 zroPaymentAddress,
                 lendParams,
                 approvals,
+                revokes,
                 withdrawParams,
                 adapterParams
             ),
@@ -286,7 +289,8 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
     /// @param adapterParams LZ adapter params
     /// @param externalData external addresses needed for the operation
     /// @param removeAndRepayData removeAssetAndRepay params
-    /// @param approvals approvals params
+    /// @param approvals the cross chain approval operation data
+    /// @param revokes the cross chain revoke operations data
     function removeAsset(
         address from,
         address to,
@@ -295,7 +299,8 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
         bytes calldata adapterParams,
         ICommonData.ICommonExternalContracts calldata externalData,
         IUSDOBase.IRemoveAndRepay calldata removeAndRepayData,
-        ICommonData.IApproval[] calldata approvals
+        ICommonData.IApproval[] calldata approvals,
+        ICommonData.IApproval[] calldata revokes
     ) external payable {
         _executeModule(
             Module.Market,
@@ -308,7 +313,8 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
                 adapterParams,
                 externalData,
                 removeAndRepayData,
-                approvals
+                approvals,
+                revokes
             ),
             false
         );
@@ -320,7 +326,9 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
     /// @param optionsData oTap exerciseOptions data
     /// @param lzData data needed for the cross chain transer
     /// @param tapSendData needed for withdrawing Tap token
-    /// @param approvals array
+    /// @param approvals the cross chain approval operation data
+    /// @param revokes the cross chain revoke operations data
+    /// @param adapterParams LZ adapter params
     function exerciseOption(
         ITapiocaOptionsBrokerCrossChain.IExerciseOptionsData
             calldata optionsData,
@@ -328,6 +336,7 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
         ITapiocaOptionsBrokerCrossChain.IExerciseLZSendTapData
             calldata tapSendData,
         ICommonData.IApproval[] calldata approvals,
+        ICommonData.IApproval[] calldata revokes,
         bytes calldata adapterParams
     ) external payable {
         _executeModule(
@@ -338,6 +347,7 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
                 lzData,
                 tapSendData,
                 approvals,
+                revokes,
                 adapterParams
             ),
             false
@@ -373,13 +383,15 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
     /// @param airdropAdapterParams airdrop params
     /// @param amount amount to send back
     /// @param sendFromData data needed to trigger sendFrom on destination
-    /// @param approvals approvals array
+    /// @param approvals the cross chain approval operation data
+    /// @param revokes the cross chain revoke operations data
     function triggerSendFrom(
         uint16 lzDstChainId,
         bytes calldata airdropAdapterParams,
         uint256 amount,
         ICommonOFT.LzCallParams calldata sendFromData,
-        ICommonData.IApproval[] calldata approvals
+        ICommonData.IApproval[] calldata approvals,
+        ICommonData.IApproval[] calldata revokes
     ) external payable {
         _executeModule(
             Module.Generic,
@@ -389,7 +401,8 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
                 airdropAdapterParams,
                 amount,
                 sendFromData,
-                approvals
+                approvals,
+                revokes
             ),
             false
         );

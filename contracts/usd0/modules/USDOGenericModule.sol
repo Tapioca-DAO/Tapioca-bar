@@ -74,7 +74,8 @@ contract USDOGenericModule is USDOCommon {
         bytes calldata airdropAdapterParams,
         uint256 amount,
         ICommonOFT.LzCallParams calldata sendFromData,
-        ICommonData.IApproval[] calldata approvals
+        ICommonData.IApproval[] calldata approvals,
+        ICommonData.IApproval[] calldata revokes
     ) external payable {
         (, , uint256 airdropAmount, ) = LzLib.decodeAdapterParams(
             airdropAdapterParams
@@ -88,6 +89,7 @@ contract USDOGenericModule is USDOCommon {
             sendFromData,
             lzEndpoint.getChainId(),
             approvals,
+            revokes,
             airdropAmount
         );
 
@@ -131,6 +133,7 @@ contract USDOGenericModule is USDOCommon {
             ICommonOFT.LzCallParams memory callParams,
             uint16 lzDstChainId,
             ICommonData.IApproval[] memory approvals,
+            ICommonData.IApproval[] memory revokes,
             uint256 airdropAmount
         ) = abi.decode(
                 _payload,
@@ -140,6 +143,7 @@ contract USDOGenericModule is USDOCommon {
                     uint64,
                     ICommonOFT.LzCallParams,
                     uint16,
+                    ICommonData.IApproval[],
                     ICommonData.IApproval[],
                     uint256
                 )
@@ -156,6 +160,10 @@ contract USDOGenericModule is USDOCommon {
             _sd2ld(amount),
             callParams
         );
+
+        if (revokes.length > 0) {
+            _callApproval(revokes, PT_TRIGGER_SEND_FROM);
+        }
 
         emit ReceiveFromChain(lzDstChainId, from, 0);
     }
