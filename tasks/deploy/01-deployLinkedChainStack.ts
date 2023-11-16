@@ -7,6 +7,7 @@ import { buildUSDOModules } from '../deployBuilds/11-buildUSDOModules';
 import { buildCluster } from '../deployBuilds/12-buildCluster';
 import { buildUSDOFlashloanHelper } from '../deployBuilds/13-buildUSDOFlashloanHelper';
 import { buildUsdoFlashloanSetup } from '../setups/04-buildUsdoFlashloanSetup';
+import { buildSimpleLeverageExecutor } from '../deployBuilds/14-buildSimpleLeverageExecutor';
 import { loadVM } from '../utils';
 
 // hh deployLinkedChainStack --network bsc_testnet
@@ -124,6 +125,12 @@ export const deployLinkedChainStack__task = async (
         signer.address,
     );
     VM.add(usdoFlashloanHelper);
+
+    const simpleLeverageExecutor = await buildSimpleLeverageExecutor(
+        hre,
+        clusterAddress,
+    );
+    VM.add(simpleLeverageExecutor);
 
     // Add and execute
     await VM.execute(3, true);

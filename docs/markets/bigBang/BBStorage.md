@@ -463,6 +463,23 @@ function isMainMarket() external view returns (bool)
 |---|---|---|
 | _0 | bool | undefined |
 
+### leverageExecutor
+
+```solidity
+function leverageExecutor() external view returns (contract ILeverageExecutor)
+```
+
+returns the leverage executor
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | contract ILeverageExecutor | undefined |
+
 ### liquidationBonusAmount
 
 ```solidity
@@ -565,6 +582,23 @@ function maxMintFee() external view returns (uint256)
 |---|---|---|
 | _0 | uint256 | undefined |
 
+### maxMintFeeStart
+
+```solidity
+function maxMintFeeStart() external view returns (uint256)
+```
+
+
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | uint256 | undefined |
+
 ### minDebtRate
 
 ```solidity
@@ -603,6 +637,23 @@ min % a liquidator can receive in rewards
 
 ```solidity
 function minMintFee() external view returns (uint256)
+```
+
+
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | uint256 | undefined |
+
+### minMintFeeStart
+
+```solidity
+function minMintFeeStart() external view returns (uint256)
 ```
 
 
@@ -878,6 +929,22 @@ cached rate is valid only for the `rateValidDuration` time
 | Name | Type | Description |
 |---|---|---|
 | _0 | uint256 | undefined |
+
+### setLeverageExecutor
+
+```solidity
+function setLeverageExecutor(contract ILeverageExecutor _executor) external nonpayable
+```
+
+updates `leverageExecutor`
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| _executor | contract ILeverageExecutor | the new ILeverageExecutor |
 
 ### setMarketConfig
 
@@ -1189,7 +1256,7 @@ event emitted when the asset&#39;s Oracle data is updated
 ### AssetOracleUpdated
 
 ```solidity
-event AssetOracleUpdated(address indexed _oldVal, address indexed _newVal)
+event AssetOracleUpdated(address indexed oldVal, address indexed newVal)
 ```
 
 event emitted when the asset&#39;s Oracle is updated
@@ -1200,8 +1267,8 @@ event emitted when the asset&#39;s Oracle is updated
 
 | Name | Type | Description |
 |---|---|---|
-| _oldVal `indexed` | address | undefined |
-| _newVal `indexed` | address | undefined |
+| oldVal `indexed` | address | undefined |
+| newVal `indexed` | address | undefined |
 
 ### ConservatorUpdated
 
@@ -1253,6 +1320,23 @@ event emitted when `exchangeRate` validation duration is updated
 |---|---|---|
 | _oldVal  | uint256 | undefined |
 | _newVal  | uint256 | undefined |
+
+### LeverageExecutorSet
+
+```solidity
+event LeverageExecutorSet(address indexed oldVal, address indexed newVal)
+```
+
+event emitted when `leverageExecutor` is updated
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| oldVal `indexed` | address | undefined |
+| newVal `indexed` | address | undefined |
 
 ### Liquidated
 
@@ -1533,6 +1617,25 @@ event UpdateMinMaxMintFee(uint256 indexed oldMin, uint256 indexed newMin, uint25
 ```
 
 event emitted when min and max mint fees are updated
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| oldMin `indexed` | uint256 | undefined |
+| newMin `indexed` | uint256 | undefined |
+| oldMax `indexed` | uint256 | undefined |
+| newMax  | uint256 | undefined |
+
+### UpdateMinMaxMintRange
+
+```solidity
+event UpdateMinMaxMintRange(uint256 indexed oldMin, uint256 indexed newMin, uint256 indexed oldMax, uint256 newMax)
+```
+
+event emitted when min and max mint range values are updated
 
 
 

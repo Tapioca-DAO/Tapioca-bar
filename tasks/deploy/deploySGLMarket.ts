@@ -87,6 +87,13 @@ export const deploySGLMarket__task = async (
         default: '0',
     });
 
+    const { contract: simpleLeverageExecutor } =
+        await hre.SDK.hardhatUtils.getLocalContract(
+            hre,
+            'SimpleLeverageExecutor',
+            tag,
+        );
+
     const data = new hre.ethers.utils.AbiCoder().encode(
         [
             'address',
@@ -102,6 +109,7 @@ export const deploySGLMarket__task = async (
             'uint256',
             'uint256',
             'uint256',
+            'address',
         ],
         [
             sglLiquidation.address,
@@ -118,6 +126,7 @@ export const deploySGLMarket__task = async (
                 hre.ethers.BigNumber.from((1e18).toString()),
             collateralizationRate,
             liquidationCollateralizationRate,
+            simpleLeverageExecutor.address,
         ],
     );
 

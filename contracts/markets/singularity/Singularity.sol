@@ -69,7 +69,8 @@ contract Singularity is SGLCommon, ReentrancyGuard {
             IOracle _oracle,
             uint256 _exchangeRatePrecision,
             uint256 _collateralizationRate,
-            uint256 _liquidationCollateralizationRate
+            uint256 _liquidationCollateralizationRate,
+            ILeverageExecutor _leverageExecutor
         ) = abi.decode(
                 data,
                 (
@@ -85,13 +86,15 @@ contract Singularity is SGLCommon, ReentrancyGuard {
                     IOracle,
                     uint256,
                     uint256,
-                    uint256
+                    uint256,
+                    ILeverageExecutor
                 )
             );
 
         penrose = tapiocaBar_;
         yieldBox = YieldBox(tapiocaBar_.yieldBox());
         owner = address(penrose);
+        leverageExecutor = _leverageExecutor;
         require(
             address(_collateral) != address(0) &&
                 address(_asset) != address(0) &&
@@ -368,16 +371,12 @@ contract Singularity is SGLCommon, ReentrancyGuard {
     /// @notice Lever down: Sell collateral to repay debt; excess goes to YB
     /// @param from The user who sells
     /// @param share Collateral YieldBox-shares to sell
-    /// @param minAmountOut Minimal proceeds required for the sale
-    /// @param swapper Swapper to execute the sale
-    /// @param dexData Additional data to pass to the swapper
+    /// @param data LeverageExecutor data
     /// @return amountOut Actual asset amount received in the sale
     function sellCollateral(
         address from,
         uint256 share,
-        uint256 minAmountOut,
-        ISwapper swapper,
-        bytes calldata dexData
+        bytes calldata data
     ) external returns (uint256 amountOut) {
         bytes memory result = _executeModule(
             Module.Leverage,
@@ -385,9 +384,7 @@ contract Singularity is SGLCommon, ReentrancyGuard {
                 SGLLeverage.sellCollateral.selector,
                 from,
                 share,
-                minAmountOut,
-                swapper,
-                dexData
+                data
             )
         );
         amountOut = abi.decode(result, (uint256));
@@ -397,17 +394,13 @@ contract Singularity is SGLCommon, ReentrancyGuard {
     /// @param from The user who buys
     /// @param borrowAmount Amount of extra asset borrowed
     /// @param supplyAmount Amount of asset supplied (down payment)
-    /// @param minAmountOut Minimal collateral amount to receive
-    /// @param swapper Swapper to execute the purchase
-    /// @param dexData Additional data to pass to the swapper
+    /// @param data LeverageExecutor data
     /// @return amountOut Actual collateral amount purchased
     function buyCollateral(
         address from,
         uint256 borrowAmount,
         uint256 supplyAmount,
-        uint256 minAmountOut,
-        ISwapper swapper,
-        bytes calldata dexData
+        bytes calldata data
     ) external returns (uint256 amountOut) {
         bytes memory result = _executeModule(
             Module.Leverage,
@@ -416,9 +409,7 @@ contract Singularity is SGLCommon, ReentrancyGuard {
                 from,
                 borrowAmount,
                 supplyAmount,
-                minAmountOut,
-                swapper,
-                dexData
+                data
             )
         );
         amountOut = abi.decode(result, (uint256));
@@ -530,7 +521,6 @@ contract Singularity is SGLCommon, ReentrancyGuard {
     // *********************** //
     // *** OWNER FUNCTIONS *** //
     // *********************** //
-
     /// @notice rescues unused ETH from the contract
     /// @param amount the amount to rescue
     /// @param to the recipient

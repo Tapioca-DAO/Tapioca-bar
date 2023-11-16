@@ -66,7 +66,8 @@ contract BigBang is BBCommon {
             uint256 _debtRateMax,
             uint256 _debtStartPoint,
             uint256 _collateralizationRate,
-            uint256 _liquidationCollateralizationRate
+            uint256 _liquidationCollateralizationRate,
+            ILeverageExecutor _leverageExecutor
         ) = abi.decode(
                 data,
                 (
@@ -84,7 +85,8 @@ contract BigBang is BBCommon {
                     uint256,
                     uint256,
                     uint256,
-                    uint256
+                    uint256,
+                    ILeverageExecutor
                 )
             );
         _initModules(
@@ -100,7 +102,8 @@ contract BigBang is BBCommon {
             _oracle,
             _exchangeRatePrecision,
             _collateralizationRate,
-            _liquidationCollateralizationRate
+            _liquidationCollateralizationRate,
+            _leverageExecutor
         );
         _initDebtStorage(
             _debtRateAgainstEth,
@@ -108,10 +111,6 @@ contract BigBang is BBCommon {
             _debtRateMax,
             _debtStartPoint
         );
-
-        rateValidDuration = 24 hours;
-        minMintFee = 0;
-        maxMintFee = 1000; // 1%
     }
 
     function _initModules(
@@ -155,7 +154,8 @@ contract BigBang is BBCommon {
         IOracle _oracle,
         uint256 _exchangeRatePrecision,
         uint256 _collateralizationRate,
-        uint256 _liquidationCollateralizationRate
+        uint256 _liquidationCollateralizationRate,
+        ILeverageExecutor _leverageExecutor
     ) private {
         penrose = _penrose;
         yieldBox = YieldBox(_penrose.yieldBox());
@@ -193,6 +193,14 @@ contract BigBang is BBCommon {
         maxLiquidatorReward = 9e4;
         liquidationBonusAmount = 1e4;
         liquidationMultiplier = 12000; //12%
+
+        rateValidDuration = 24 hours;
+        minMintFee = 0;
+        maxMintFee = 1000; // 1%
+        maxMintFeeStart = 980000000000000000; // 0.98 *1e18
+        minMintFeeStart = 1020000000000000000; // 1.02 *1e18
+
+        leverageExecutor = _leverageExecutor;
     }
 
     // ************************ //
@@ -313,16 +321,12 @@ contract BigBang is BBCommon {
     /// @notice Lever down: Sell collateral to repay debt; excess goes to YB
     /// @param from The user who sells
     /// @param share Collateral YieldBox-shares to sell
-    /// @param minAmountOut Minimal proceeds required for the sale
-    /// @param swapper Swapper to execute the sale
-    /// @param dexData Additional data to pass to the swapper
+    /// @param data LeverageExecutor data
     /// @return amountOut Actual asset amount received in the sale
     function sellCollateral(
         address from,
         uint256 share,
-        uint256 minAmountOut,
-        ISwapper swapper,
-        bytes calldata dexData
+        bytes calldata data
     ) external returns (uint256 amountOut) {
         bytes memory result = _executeModule(
             Module.Leverage,
@@ -330,9 +334,7 @@ contract BigBang is BBCommon {
                 BBLeverage.sellCollateral.selector,
                 from,
                 share,
-                minAmountOut,
-                swapper,
-                dexData
+                data
             )
         );
         amountOut = abi.decode(result, (uint256));
@@ -342,17 +344,13 @@ contract BigBang is BBCommon {
     /// @param from The user who buys
     /// @param borrowAmount Amount of extra asset borrowed
     /// @param supplyAmount Amount of asset supplied (down payment)
-    /// @param minAmountOut Minimal collateral amount to receive
-    /// @param swapper Swapper to execute the purchase
-    /// @param dexData Additional data to pass to the swapper
+    /// @param data LeverageExecutor data
     /// @return amountOut Actual collateral amount purchased
     function buyCollateral(
         address from,
         uint256 borrowAmount,
         uint256 supplyAmount,
-        uint256 minAmountOut,
-        ISwapper swapper,
-        bytes calldata dexData
+        bytes calldata data
     ) external returns (uint256 amountOut) {
         bytes memory result = _executeModule(
             Module.Leverage,
@@ -361,9 +359,7 @@ contract BigBang is BBCommon {
                 from,
                 borrowAmount,
                 supplyAmount,
-                minAmountOut,
-                swapper,
-                dexData
+                data
             )
         );
         amountOut = abi.decode(result, (uint256));
@@ -423,6 +419,24 @@ contract BigBang is BBCommon {
     // ************************* //
     // *** OWNER FUNCTIONS ***** //
     // ************************* //
+    /// @notice sets min and max mint range
+    /// @dev can only be called by the owner
+    /// @param _min the new min start
+    /// @param _max the new max start
+    function setMinAndMaxMintRange(
+        uint256 _min,
+        uint256 _max
+    ) external onlyOwner {
+        emit UpdateMinMaxMintRange(
+            minMintFeeStart,
+            _min,
+            maxMintFeeStart,
+            _max
+        );
+        minMintFeeStart = _min;
+        maxMintFeeStart = _max;
+    }
+
     /// @notice sets min and max mint fee
     /// @dev can only be called by the owner
     /// @param _min the new min fee

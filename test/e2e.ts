@@ -8,6 +8,7 @@ import { BN, register } from './test.utils';
 
 import OracleMockArtifact from '../gitsub_tapioca-sdk/src/artifacts/tapioca-mocks/OracleMock.json';
 import { MagnetarV2 } from '../gitsub_tapioca-sdk/src/typechain/tapioca-periphery';
+import cluster from 'cluster';
 
 describe('e2e tests', () => {
     /*
@@ -46,6 +47,7 @@ describe('e2e tests', () => {
             multiSwapper,
             deployCurveStableToUsdoBidder,
             timeTravel,
+            cluster,
         } = await loadFixture(register);
 
         const usdoStratregy = await bar.emptyStrategies(usd0.address);
@@ -84,6 +86,8 @@ describe('e2e tests', () => {
             mediumRiskMC,
             yieldBox,
             stableToUsdoBidder,
+            multiSwapper.address,
+            cluster.address,
             ethers.utils.parseEther('1'),
             false,
         );
@@ -193,6 +197,7 @@ describe('e2e tests', () => {
             multiSwapper,
             deployCurveStableToUsdoBidder,
             timeTravel,
+            cluster,
         } = await loadFixture(register);
 
         const usdoStratregy = await bar.emptyStrategies(usd0.address);
@@ -226,6 +231,8 @@ describe('e2e tests', () => {
             mediumRiskMC,
             yieldBox,
             stableToUsdoBidder,
+            multiSwapper.address,
+            cluster.address,
             ethers.utils.parseEther('1'),
             false,
         );

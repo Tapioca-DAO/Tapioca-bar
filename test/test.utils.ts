@@ -751,6 +751,8 @@ async function registerSingularity(
     usdc: ERC20Mock | TapiocaOFTMock,
     usdcAssetId: BigNumberish,
     wethUsdcOracle: OracleMock,
+    swapper: string,
+    cluster: string,
     exchangeRatePrecision?: BigNumberish,
     staging?: boolean,
 ) {
@@ -787,6 +789,14 @@ async function registerSingularity(
         staging,
     );
 
+    const leverageExecutor = await (
+        await ethers.getContractFactory('SimpleLeverageExecutor')
+    ).deploy(yieldBox.address, swapper, cluster, { gasPrice: gasPrice });
+    await leverageExecutor.deployed();
+    log(
+        `Deployed SimpleLeverageExecutor ${leverageExecutor.address} with args`,
+        staging,
+    );
     const data = new ethers.utils.AbiCoder().encode(
         [
             'address',
@@ -802,6 +812,7 @@ async function registerSingularity(
             'uint256',
             'uint256',
             'uint256',
+            'address',
         ],
         [
             _sglLiquidationModule.address,
@@ -817,6 +828,7 @@ async function registerSingularity(
             exchangeRatePrecision ?? 0,
             0,
             0,
+            leverageExecutor.address,
         ],
     );
     await (
@@ -842,6 +854,7 @@ async function registerSingularity(
         _sglBorrow,
         _sglCollateral,
         _sglLeverage,
+        leverageExecutor,
     };
 }
 
@@ -940,6 +953,8 @@ async function createWethUsd0Singularity(
     mediumRiskMC: Singularity,
     yieldBox: YieldBox,
     stableToUsdoBidder: CurveStableToUsdoBidder,
+    swapper: string,
+    cluster: string,
     exchangePrecision?: BigNumberish,
     staging?: boolean,
 ) {
@@ -997,6 +1012,15 @@ async function createWethUsd0Singularity(
     await wethUsd0Oracle.set(newPrice, { gasPrice: gasPrice });
     log('Price was set for WethUsd0 mock oracle', staging);
 
+    const leverageExecutor = await (
+        await ethers.getContractFactory('SimpleLeverageExecutor')
+    ).deploy(yieldBox.address, swapper, cluster, { gasPrice: gasPrice });
+    await leverageExecutor.deployed();
+    log(
+        `Deployed SimpleLeverageExecutor ${leverageExecutor.address} with args`,
+        staging,
+    );
+
     const data = new ethers.utils.AbiCoder().encode(
         [
             'address',
@@ -1012,6 +1036,7 @@ async function createWethUsd0Singularity(
             'uint256',
             'uint256',
             'uint256',
+            'address',
         ],
         [
             _sglLiquidationModule.address,
@@ -1027,6 +1052,7 @@ async function createWethUsd0Singularity(
             exchangePrecision,
             0,
             0,
+            leverageExecutor.address,
         ],
     );
     await bar.registerSingularity(mediumRiskMC.address, data, false, {
@@ -1077,6 +1103,8 @@ async function registerBigBangMarket(
     collateral: ERC20Mock,
     collateralId: BigNumberish,
     oracle: OracleMock,
+    swapper: string,
+    cluster: string,
     exchangeRatePrecision?: BigNumberish,
     debtRateAgainstEth?: BigNumberish,
     debtRateMin?: BigNumberish,
@@ -1117,6 +1145,15 @@ async function registerBigBangMarket(
         staging,
     );
 
+    const leverageExecutor = await (
+        await ethers.getContractFactory('SimpleLeverageExecutor')
+    ).deploy(yieldBox.address, swapper, cluster, { gasPrice: gasPrice });
+    await leverageExecutor.deployed();
+    log(
+        `Deployed SimpleLeverageExecutor ${leverageExecutor.address} with args`,
+        staging,
+    );
+
     const data = new ethers.utils.AbiCoder().encode(
         [
             'address',
@@ -1134,6 +1171,7 @@ async function registerBigBangMarket(
             'uint256',
             'uint256',
             'uint256',
+            'address',
         ],
         [
             _bbLiquidationModule.address,
@@ -1151,6 +1189,7 @@ async function registerBigBangMarket(
             debtStartPoint,
             0,
             0,
+            leverageExecutor.address,
         ],
     );
 
@@ -1194,7 +1233,7 @@ async function registerBigBangMarket(
         [setAssetOracleFn],
         true,
     );
-    return { bigBangMarket };
+    return { bigBangMarket, leverageExecutor };
 }
 
 const verifyEtherscan = async (
@@ -1557,6 +1596,8 @@ export async function register(staging?: boolean) {
         usdc,
         usdcAssetId,
         wethUsdcOracle,
+        multiSwapper.address,
+        cluster.address,
         ethers.utils.parseEther('1'),
         staging,
     );
@@ -1565,6 +1606,7 @@ export async function register(staging?: boolean) {
     const _sglBorrowModule = wethUsdcSingularityData._sglBorrow;
     const _sglLiquidationModule = wethUsdcSingularityData._sglLiquidationModule;
     const _sglLeverageModule = wethUsdcSingularityData._sglLeverage;
+    const sglLeverageExecutor = wethUsdcSingularityData.leverageExecutor;
     log(`Deployed WethUsdcSingularity ${wethUsdcSingularity.address}`, staging);
 
     log('Deploying WbtcUsdcSingularity', staging);
@@ -1578,6 +1620,8 @@ export async function register(staging?: boolean) {
         usdc,
         usdcAssetId,
         wbtcUsdcOracle,
+        multiSwapper.address,
+        cluster.address,
         (1e8).toString(),
         staging,
     );
@@ -1648,6 +1692,8 @@ export async function register(staging?: boolean) {
         weth,
         wethAssetId,
         usd0WethOracle,
+        multiSwapper.address,
+        cluster.address,
         ethers.utils.parseEther('1'),
         0,
         0,
@@ -1655,6 +1701,7 @@ export async function register(staging?: boolean) {
         0, //ignored, as this is the main market
         staging,
     );
+    const wethBigBangMarketLeverageExecutor = bigBangRegData.leverageExecutor;
     const wethBigBangMarket = bigBangRegData.bigBangMarket;
     await bar.setBigBangEthMarket(wethBigBangMarket.address);
     log(`WethMinterSingularity deployed ${wethBigBangMarket.address}`, staging);
@@ -1667,6 +1714,8 @@ export async function register(staging?: boolean) {
         wbtc,
         wbtcAssetId,
         usd0WethOracle,
+        multiSwapper.address,
+        cluster.address,
         ethers.utils.parseEther('1'),
         ethers.utils.parseEther('0.005'),
         ethers.utils.parseEther('0.5'),
@@ -1752,6 +1801,8 @@ export async function register(staging?: boolean) {
             mediumRiskMC,
             yieldBox,
             stableToUsdoBidder,
+            multiSwapper.address,
+            cluster.address,
             ethers.utils.parseEther('1'),
             staging,
         );
@@ -1818,8 +1869,10 @@ export async function register(staging?: boolean) {
         yieldBox,
         bar,
         wethBigBangMarket,
+        wethBigBangMarketLeverageExecutor,
         wbtcBigBangMarket,
         wethUsdcSingularity,
+        sglLeverageExecutor,
         _sglLiquidationModule,
         _sglCollateralModule,
         _sglBorrowModule,

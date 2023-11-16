@@ -34,6 +34,7 @@ describe('Singularity Leverage', () => {
             initContracts,
             __wethUsdcPrice,
             cluster,
+            sglLeverageExecutor,
         } = await loadFixture(register);
         await initContracts();
 
@@ -71,6 +72,8 @@ describe('Singularity Leverage', () => {
         const mockSwapper = await MockSwapper.deploy(yieldBox.address);
         await mockSwapper.deployed();
         await cluster.updateContract(0, mockSwapper.address, true);
+
+        await sglLeverageExecutor.setSwapper(mockSwapper.address);
 
         const [alice, bob, carol] = [0, 0, 0].map(
             () =>
@@ -182,14 +185,16 @@ describe('Singularity Leverage', () => {
                 E(666).div(1000),
                 0,
             );
-
+            const encoder = new ethers.utils.AbiCoder();
+            const leverageData = encoder.encode(
+                ['uint256', 'bytes'],
+                [E(666).div(1000), []],
+            );
             // Sell some collateral
             await wethUsdcSingularity.connect(alice).sellCollateral(
                 alice.address,
                 E(666).mul(1e8), // USDC in YieldBox shares
-                E(666).div(1000), // WETH in actual amount
-                mockSwapper.address,
-                [],
+                leverageData,
             );
 
             // Some interest will have accrued.. but otherwise we expect to have
@@ -243,12 +248,15 @@ describe('Singularity Leverage', () => {
                 0,
             );
 
+            const encoder = new ethers.utils.AbiCoder();
+            const leverageData = encoder.encode(
+                ['uint256', 'bytes'],
+                [E(1500).div(1000), []],
+            );
             await wethUsdcSingularity.connect(alice).sellCollateral(
                 alice.address,
                 E(1500).mul(1e8), // USDC in YieldBox shares
-                E(1500).div(1000), // WETH in actual amount
-                mockSwapper.address,
-                [],
+                leverageData,
             );
 
             // The loan should be paid off:
@@ -308,14 +316,17 @@ describe('Singularity Leverage', () => {
                 0,
             );
 
+            const encoder = new ethers.utils.AbiCoder();
+            const leverageData = encoder.encode(
+                ['uint256', 'bytes'],
+                [E(1000), []],
+            );
             // Buy more collateral
             await wethUsdcSingularity.connect(alice).buyCollateral(
                 alice.address,
                 E(1), // One ETH; in amount
                 0, // No additional payment
-                E(1000), // In actual amount again
-                mockSwapper.address,
-                [],
+                leverageData,
             );
 
             // Some interest will have accrued.. but otherwise we expect to have
@@ -377,14 +388,17 @@ describe('Singularity Leverage', () => {
                 0,
             );
 
+            const encoder = new ethers.utils.AbiCoder();
+            const leverageData = encoder.encode(
+                ['uint256', 'bytes'],
+                [E(5000), []],
+            );
             // Borrow ETH and use it and the down payment to buy collateral:
             await wethUsdcSingularity.connect(carol).buyCollateral(
                 carol.address,
                 E(3), // Three ETH borrowedj; in amount
                 E(2), // Two ETH supplied; in amount
-                E(5000), // 5000 USDC swapped into; in amount
-                mockSwapper.address,
-                [],
+                leverageData,
             );
 
             // Carol borrowed 3 ETH, plus a borrow fee. No accruals have taken

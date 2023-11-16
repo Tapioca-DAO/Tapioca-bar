@@ -25,7 +25,7 @@ contract BBLiquidation is BBCommon {
         } else {
             _exchangeRate = exchangeRate; //use stored rate
         }
-        require(_exchangeRate > 0, "BigBang: current exchangeRate not valid"); //validate stored rate
+        require(_exchangeRate > 0, "BB: current exchangeRate not valid"); //validate stored rate
 
         _accrue();
 
@@ -41,7 +41,7 @@ contract BBLiquidation is BBCommon {
         // equality is included in the require to minimize risk and liquidate as soon as possible
         require(
             requiredCollateral >= userCollateralShare[user],
-            "BigBang: Cannot force liquidated"
+            "BB: Cannot force liquidated"
         );
 
         uint256 collateralShare = userCollateralShare[user];
@@ -83,11 +83,11 @@ contract BBLiquidation is BBCommon {
         require(users.length == maxBorrowParts.length, "BB: length mismatch");
         require(
             users.length == liquidatorReceivers.length,
-            "BigBang: length mismatch"
+            "BB: length mismatch"
         );
         require(
             liquidatorReceiverDatas.length == liquidatorReceivers.length,
-            "BigBang: length mismatch"
+            "BB: length mismatch"
         );
 
         // Oracle can fail but we still need to allow liquidations
@@ -143,7 +143,7 @@ contract BBLiquidation is BBCommon {
         uint256 assetBalanceAfter = asset.balanceOf(address(this));
 
         returnedAmount = assetBalanceAfter - assetBalanceBefore;
-        require(returnedAmount > 0, "BigBang: onCollateralReceiver failed");
+        require(returnedAmount > 0, "BB: onCollateralReceiver failed");
         returnedShare = yieldBox.toShare(assetId, returnedAmount, false);
     }
 
@@ -159,7 +159,7 @@ contract BBLiquidation is BBCommon {
             uint256 collateralShare
         )
     {
-        require(_exchangeRate > 0, "BigBang: exchangeRate not valid");
+        require(_exchangeRate > 0, "BB: exchangeRate not valid");
         uint256 collateralPartInAsset = (yieldBox.toAmount(
             collateralId,
             userCollateralShare[user],
@@ -187,10 +187,7 @@ contract BBLiquidation is BBCommon {
             ? userBorrowPart[user]
             : borrowPartWithBonus;
 
-        require(
-            collateralPartInAsset > borrowPartWithBonus,
-            "BigBang: bad debt"
-        );
+        require(collateralPartInAsset > borrowPartWithBonus, "BB: bad debt");
 
         borrowPart = maxBorrowPart > borrowPart ? borrowPart : maxBorrowPart;
         borrowPart = borrowPart > userBorrowPart[user]
@@ -268,10 +265,7 @@ contract BBLiquidation is BBCommon {
             _liquidatorReceiver,
             _liquidatorReceiverData
         );
-        require(
-            returnedShare >= borrowShare,
-            "BigBang: asset amount not valid"
-        );
+        require(returnedShare >= borrowShare, "BB: asset amount not valid");
 
         (uint256 feeShare, uint256 callerShare) = _extractLiquidationFees(
             returnedShare,

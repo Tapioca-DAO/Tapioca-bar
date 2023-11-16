@@ -51,7 +51,7 @@ contract BBLendingCommon is BBCommon {
         (totalBorrow, part) = totalBorrow.add(amount + feeAmount, true);
         require(
             totalBorrowCap == 0 || totalBorrow.elastic <= totalBorrowCap,
-            "BigBang: borrow cap reached"
+            "BB: borrow cap reached"
         );
 
         userBorrowPart[from] += part;
@@ -71,15 +71,14 @@ contract BBLendingCommon is BBCommon {
 
         //get asset <> USDC price ( USDO <> USDC )
         (bool updated, uint256 _exchangeRate) = assetOracle.get(oracleData);
-        require(updated, "BigBang:  asset's oracle call failed");
+        require(updated, "BB:  asset's oracle call failed");
 
-        if (_exchangeRate >= MIN_MINT_FEE_START) return minMintFee;
-        if (_exchangeRate <= MAX_MINT_FEE_START) return maxMintFee;
+        if (_exchangeRate >= minMintFeeStart) return minMintFee;
+        if (_exchangeRate <= maxMintFeeStart) return maxMintFee;
 
         uint256 fee = maxMintFee -
-            (((_exchangeRate - MAX_MINT_FEE_START) *
-                (maxMintFee - minMintFee)) /
-                (MIN_MINT_FEE_START - MAX_MINT_FEE_START));
+            (((_exchangeRate - maxMintFeeStart) * (maxMintFee - minMintFee)) /
+                (minMintFeeStart - maxMintFeeStart));
 
         if (fee > 0) {
             return (amount * fee) / FEE_PRECISION;

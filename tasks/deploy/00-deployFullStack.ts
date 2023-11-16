@@ -12,6 +12,7 @@ import { buildSingularityModules } from '../deployBuilds/08-buildSingularityModu
 import { buildPenroseSetup } from '../setups/01-buildPenroseSetup';
 import { buildMasterContractsSetup } from '../setups/02-buildMasterContractsSetup';
 import { buildUsdoFlashloanSetup } from '../setups/04-buildUsdoFlashloanSetup';
+import { buildSimpleLeverageExecutor } from '../deployBuilds/14-buildSimpleLeverageExecutor';
 import { loadVM } from '../utils';
 import SDK from 'tapioca-sdk';
 import { buildUSDOModules } from '../deployBuilds/11-buildUSDOModules';
@@ -183,6 +184,12 @@ export const deployFullStack__task = async (
         signer.address,
     );
     VM.add(usdoFlashloanHelper);
+
+    const simpleLeverageExecutor = await buildSimpleLeverageExecutor(
+        hre,
+        clusterAddress,
+    );
+    VM.add(simpleLeverageExecutor);
 
     // 08 - CurveSwapper-buildStableToUSD0Bidder
     const [curveSwapper, curveStableToUsd0] = await buildStableToUSD0Bidder(

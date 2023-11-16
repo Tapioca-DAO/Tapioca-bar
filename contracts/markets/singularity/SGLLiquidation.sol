@@ -41,7 +41,7 @@ contract SGLLiquidation is SGLCommon {
         // equality is included in the require to minimize risk and liquidate as soon as possible
         require(
             requiredCollateral >= userCollateralShare[user],
-            "BigBang: Cannot force liquidated"
+            "BB: Cannot force liquidated"
         );
 
         uint256 collateralShare = userCollateralShare[user];
@@ -86,11 +86,11 @@ contract SGLLiquidation is SGLCommon {
         require(users.length == maxBorrowParts.length, "BB: length mismatch");
         require(
             users.length == liquidatorReceivers.length,
-            "BigBang: length mismatch"
+            "BB: length mismatch"
         );
         require(
             liquidatorReceiverDatas.length == liquidatorReceivers.length,
-            "BigBang: length mismatch"
+            "BB: length mismatch"
         );
 
         // Oracle can fail but we still need to allow liquidations

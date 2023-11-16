@@ -486,6 +486,7 @@ describe('Singularity test', () => {
                     'uint256',
                     'uint256',
                     'uint256',
+                    'address',
                 ],
                 [
                     ethers.constants.AddressZero,
@@ -501,6 +502,7 @@ describe('Singularity test', () => {
                     ethers.utils.parseEther('1'),
                     0,
                     0,
+                    ethers.constants.AddressZero,
                 ],
             );
             await (
@@ -4208,6 +4210,8 @@ describe('Singularity test', () => {
                 mediumRiskMC_0,
                 YieldBox_0,
                 stableToUsdoBidder,
+                ethers.constants.AddressZero,
+                ethers.constants.AddressZero,
                 0,
             );
             const SGL_0 = sglMarketData.wethUsdoSingularity;
@@ -4221,6 +4225,8 @@ describe('Singularity test', () => {
                 mediumRiskMC_0,
                 YieldBox_0,
                 stableToUsdoBidder,
+                ethers.constants.AddressZero,
+                ethers.constants.AddressZero,
                 0,
             );
             const SGL_10 = sglMarketData.wethUsdoSingularity;

@@ -113,7 +113,7 @@ contract BBCommon is BBStorage {
         if (skim) {
             require(
                 share <= yieldBox.balanceOf(address(this), _tokenId) - total,
-                "BigBang: too much"
+                "BB: too much"
             );
         } else {
             yieldBox.transfer(from, address(this), _tokenId, share);

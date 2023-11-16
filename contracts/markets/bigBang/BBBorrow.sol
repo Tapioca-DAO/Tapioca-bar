@@ -28,7 +28,7 @@ contract BBBorrow is BBLendingCommon {
         solvent(from, false)
         returns (uint256 part, uint256 share)
     {
-        require(amount >= debtStartPoint, "BigBang: borrow amount too small");
+        require(amount >= debtStartPoint, "BB: borrow amount too small");
 
         if (amount == 0) return (0, 0);
         uint256 feeAmount = _computeVariableOpeningFee(amount);
@@ -38,7 +38,7 @@ contract BBBorrow is BBLendingCommon {
             amount + feeAmount,
             asset.safeDecimals()
         );
-        require(allowanceShare > 0, "BigBang: allowanceShare not valid");
+        require(allowanceShare > 0, "BB: allowanceShare not valid");
         _allowedBorrow(from, allowanceShare);
         (part, share) = _borrow(from, to, amount, feeAmount);
 
@@ -76,7 +76,7 @@ contract BBBorrow is BBLendingCommon {
             partInAmount,
             asset.safeDecimals()
         );
-        require(allowanceShare > 0, "BigBang: allowanceShare not valid");
+        require(allowanceShare > 0, "BB: allowanceShare not valid");
         _allowedBorrow(from, allowanceShare);
 
         amount = _repay(from, to, part);

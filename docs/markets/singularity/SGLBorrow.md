@@ -501,6 +501,23 @@ function interestElasticity() external view returns (uint256)
 |---|---|---|
 | _0 | uint256 | undefined |
 
+### leverageExecutor
+
+```solidity
+function leverageExecutor() external view returns (contract ILeverageExecutor)
+```
+
+returns the leverage executor
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | contract ILeverageExecutor | undefined |
+
 ### liquidationBonusAmount
 
 ```solidity
@@ -954,6 +971,22 @@ Repays a loan.
 |---|---|---|
 | amount | uint256 | The total amount repayed. |
 
+### setLeverageExecutor
+
+```solidity
+function setLeverageExecutor(contract ILeverageExecutor _executor) external nonpayable
+```
+
+updates `leverageExecutor`
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| _executor | contract ILeverageExecutor | the new ILeverageExecutor |
+
 ### setMarketConfig
 
 ```solidity
@@ -1368,6 +1401,23 @@ event emitted when the interest elasticity updated
 |---|---|---|
 | oldVal `indexed` | uint256 | undefined |
 | newVal `indexed` | uint256 | undefined |
+
+### LeverageExecutorSet
+
+```solidity
+event LeverageExecutorSet(address indexed oldVal, address indexed newVal)
+```
+
+event emitted when `leverageExecutor` is updated
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| oldVal `indexed` | address | undefined |
+| newVal `indexed` | address | undefined |
 
 ### Liquidated
 

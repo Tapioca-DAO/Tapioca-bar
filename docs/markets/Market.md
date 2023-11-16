@@ -360,6 +360,23 @@ Exchange and interest rate tracking. This is &#39;cached&#39; here because calls
 |---|---|---|
 | _0 | uint256 | undefined |
 
+### leverageExecutor
+
+```solidity
+function leverageExecutor() external view returns (contract ILeverageExecutor)
+```
+
+returns the leverage executor
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | contract ILeverageExecutor | undefined |
+
 ### liquidationBonusAmount
 
 ```solidity
@@ -685,6 +702,22 @@ cached rate is valid only for the `rateValidDuration` time
 | Name | Type | Description |
 |---|---|---|
 | _0 | uint256 | undefined |
+
+### setLeverageExecutor
+
+```solidity
+function setLeverageExecutor(contract ILeverageExecutor _executor) external nonpayable
+```
+
+updates `leverageExecutor`
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| _executor | contract ILeverageExecutor | the new ILeverageExecutor |
 
 ### setMarketConfig
 
@@ -1015,6 +1048,23 @@ event emitted when `exchangeRate` validation duration is updated
 |---|---|---|
 | _oldVal  | uint256 | undefined |
 | _newVal  | uint256 | undefined |
+
+### LeverageExecutorSet
+
+```solidity
+event LeverageExecutorSet(address indexed oldVal, address indexed newVal)
+```
+
+event emitted when `leverageExecutor` is updated
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| oldVal `indexed` | address | undefined |
+| newVal `indexed` | address | undefined |
 
 ### Liquidated
 
