@@ -197,8 +197,8 @@ contract BigBang is BBCommon {
         rateValidDuration = 24 hours;
         minMintFee = 0;
         maxMintFee = 1000; // 1%
-        maxMintFeeStart = 980000000000000000; // 0.98 *1e18
-        minMintFeeStart = 1020000000000000000; // 1.02 *1e18
+        maxMintFeeStart = 975000000000000000; // 0.975 *1e18
+        minMintFeeStart = 1000000000000000000; // 1*1e18
 
         leverageExecutor = _leverageExecutor;
     }
