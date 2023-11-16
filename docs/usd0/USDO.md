@@ -595,29 +595,6 @@ function increaseAllowance(address spender, uint256 addedValue) external nonpaya
 |---|---|---|
 | _0 | bool | undefined |
 
-### initMultiHopBuy
-
-```solidity
-function initMultiHopBuy(address from, uint256 collateralAmount, uint256 borrowAmount, IUSDOBase.ILeverageSwapData swapData, IUSDOBase.ILeverageLZData lzData, IUSDOBase.ILeverageExternalContractsData externalData, bytes airdropAdapterParams, ICommonData.IApproval[] approvals) external payable
-```
-
-
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| from | address | undefined |
-| collateralAmount | uint256 | undefined |
-| borrowAmount | uint256 | undefined |
-| swapData | IUSDOBase.ILeverageSwapData | undefined |
-| lzData | IUSDOBase.ILeverageLZData | undefined |
-| externalData | IUSDOBase.ILeverageExternalContractsData | undefined |
-| airdropAdapterParams | bytes | undefined |
-| approvals | ICommonData.IApproval[] | undefined |
-
 ### isTrustedRemote
 
 ```solidity

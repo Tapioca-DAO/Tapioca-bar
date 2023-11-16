@@ -927,49 +927,6 @@ function minimumTargetUtilization() external view returns (uint256)
 |---|---|---|
 | _0 | uint256 | undefined |
 
-### multiHopBuyCollateral
-
-```solidity
-function multiHopBuyCollateral(address from, uint256 collateralAmount, uint256 borrowAmount, bool useAirdropped, IUSDOBase.ILeverageSwapData swapData, IUSDOBase.ILeverageLZData lzData, IUSDOBase.ILeverageExternalContractsData externalData) external payable
-```
-
-
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| from | address | undefined |
-| collateralAmount | uint256 | undefined |
-| borrowAmount | uint256 | undefined |
-| useAirdropped | bool | undefined |
-| swapData | IUSDOBase.ILeverageSwapData | undefined |
-| lzData | IUSDOBase.ILeverageLZData | undefined |
-| externalData | IUSDOBase.ILeverageExternalContractsData | undefined |
-
-### multiHopSellCollateral
-
-```solidity
-function multiHopSellCollateral(address from, uint256 share, bool useAirdropped, IUSDOBase.ILeverageSwapData swapData, IUSDOBase.ILeverageLZData lzData, IUSDOBase.ILeverageExternalContractsData externalData) external payable
-```
-
-
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| from | address | undefined |
-| share | uint256 | undefined |
-| useAirdropped | bool | undefined |
-| swapData | IUSDOBase.ILeverageSwapData | undefined |
-| lzData | IUSDOBase.ILeverageLZData | undefined |
-| externalData | IUSDOBase.ILeverageExternalContractsData | undefined |
-
 ### name
 
 ```solidity
