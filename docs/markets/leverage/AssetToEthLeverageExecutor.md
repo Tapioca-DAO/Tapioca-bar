@@ -1,4 +1,4 @@
-# SimpleLeverageExecutor
+# AssetToEthLeverageExecutor
 
 
 
@@ -68,20 +68,20 @@ returns ICluster address
 function getAsset(uint256 assetId, address collateralAddress, address assetAddress, uint256 collateralAmountIn, address from, bytes data) external nonpayable returns (uint256 assetAmountOut)
 ```
 
+buys asset with collateral
 
-
-
+*unwrap tETH &gt; ETH &gt; USDO*
 
 #### Parameters
 
 | Name | Type | Description |
 |---|---|---|
-| assetId | uint256 | undefined |
-| collateralAddress | address | undefined |
-| assetAddress | address | undefined |
-| collateralAmountIn | uint256 | undefined |
-| from | address | undefined |
-| data | bytes | undefined |
+| assetId | uint256 | Asset&#39;s YieldBox id; usually USDO asset id |
+| collateralAddress | address | tETH address (TOFT ETH) |
+| assetAddress | address | usually USDO address |
+| collateralAmountIn | uint256 | amount to swap |
+| from | address | collateral receiver |
+| data | bytes | AssetToEthLeverageExecutor data |
 
 #### Returns
 
@@ -95,20 +95,20 @@ function getAsset(uint256 assetId, address collateralAddress, address assetAddre
 function getCollateral(uint256 collateralId, address assetAddress, address collateralAddress, uint256 assetAmountIn, address from, bytes data) external nonpayable returns (uint256 collateralAmountOut)
 ```
 
+buys collateral with asset
 
-
-
+*USDO &gt; ETH &gt; wrap to tETH*
 
 #### Parameters
 
 | Name | Type | Description |
 |---|---|---|
-| collateralId | uint256 | undefined |
-| assetAddress | address | undefined |
-| collateralAddress | address | undefined |
-| assetAmountIn | uint256 | undefined |
-| from | address | undefined |
-| data | bytes | undefined |
+| collateralId | uint256 | Collateral&#39;s YieldBox id |
+| assetAddress | address | usually USDO address |
+| collateralAddress | address | tETH address (TOFT ETH) |
+| assetAmountIn | uint256 | amount to swap |
+| from | address | collateral receiver |
+| data | bytes | AssetToEthLeverageExecutor data |
 
 #### Returns
 

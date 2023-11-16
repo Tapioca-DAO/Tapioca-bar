@@ -43,14 +43,10 @@ contract SGLLendingCommon is SGLCommon {
     function _removeCollateral(
         address from,
         address to,
-        uint256 share,
-        bool multiHopLeverage
+        uint256 share
     ) internal {
         userCollateralShare[from] -= share;
         totalCollateralShare -= share;
-        if (!multiHopLeverage) {
-            yieldBox.transfer(address(this), to, collateralId, share);
-        }
         emit LogRemoveCollateral(from, to, share);
         if (share > _yieldBoxShares[from][COLLATERAL_SIG]) {
             _yieldBoxShares[from][COLLATERAL_SIG] = 0; //accrues in time

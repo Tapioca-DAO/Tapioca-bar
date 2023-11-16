@@ -39,6 +39,7 @@ import { sendFrom__task } from './tasks/exec/sendFrom';
 import { testDeployMockSwapper__task } from './tasks/deploy/1000-testDeployMockSwapper';
 import { fillMockSwapper__test } from './tasks/exec/fillMockSwapper';
 import { fillCluster__task } from './tasks/exec/fillCluster';
+import { testGmxEarnCall__task } from './tasks/test-decode-gmx-call';
 
 task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
     const accounts = await hre.ethers.getSigners();
@@ -325,3 +326,8 @@ task(
     'Whitelist contracts on Cluster',
     fillCluster__task,
 ).addVariadicPositionalParam('chains', 'block.chainid array');
+
+task('testGmxCall', 'decode gmx call', testGmxEarnCall__task).addParam(
+    'tx',
+    'TX hash',
+);

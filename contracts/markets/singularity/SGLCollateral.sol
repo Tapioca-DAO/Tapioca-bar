@@ -46,6 +46,6 @@ contract SGLCollateral is SGLLendingCommon {
         allowedBorrow(from, share)
         notSelf(to)
     {
-        _removeCollateral(from, to, share, false);
+        _removeCollateral(from, to, share);
     }
 }
