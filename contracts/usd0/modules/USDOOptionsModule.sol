@@ -61,12 +61,14 @@ contract USDOOptionsModule is USDOCommon {
         (uint256 paymentTokenAmount, ) = _removeDust(
             optionsData.paymentTokenAmount
         );
-        _debitFrom(
+        paymentTokenAmount = _debitFrom(
             optionsData.from,
             lzEndpoint.getChainId(),
             toAddress,
             paymentTokenAmount
         );
+        require(paymentTokenAmount > 0, "TOFT_AMOUNT");
+
         (, , uint256 airdropAmount, ) = LzLib.decodeAdapterParams(
             adapterParams
         );
@@ -79,12 +81,13 @@ contract USDOOptionsModule is USDOCommon {
             airdropAmount
         );
 
-        _checkGasLimit(
+        _checkAdapterParams(
             lzData.lzDstChainId,
             PT_TAP_EXERCISE,
             adapterParams,
             NO_EXTRA_GAS
         );
+
         _lzSend(
             lzData.lzDstChainId,
             lzPayload,

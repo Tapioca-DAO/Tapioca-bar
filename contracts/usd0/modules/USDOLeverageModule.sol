@@ -46,7 +46,14 @@ contract USDOLeverageModule is USDOCommon {
         }
         bytes32 senderBytes = LzLib.addressToBytes32(msg.sender);
         (amount, ) = _removeDust(amount);
-        _debitFrom(msg.sender, lzEndpoint.getChainId(), senderBytes, amount);
+        amount = _debitFrom(
+            msg.sender,
+            lzEndpoint.getChainId(),
+            senderBytes,
+            amount
+        );
+        require(amount > 0, "TOFT_AMOUNT");
+
         (, , uint256 airdropAmount, ) = LzLib.decodeAdapterParams(
             lzData.dstAirdropAdapterParam
         );
@@ -59,12 +66,14 @@ contract USDOLeverageModule is USDOCommon {
             leverageFor,
             airdropAmount
         );
-        _checkGasLimit(
+
+        _checkAdapterParams(
             lzData.lzDstChainId,
             PT_LEVERAGE_MARKET_UP,
             lzData.dstAirdropAdapterParam,
             NO_EXTRA_GAS
         );
+
         _lzSend(
             lzData.lzDstChainId,
             lzPayload,

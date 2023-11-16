@@ -156,7 +156,8 @@ contract USDOLeverageDestinationModule is USDOCommon {
                 withdrawLzFeeAmount: 0,
                 withdrawOnOtherChain: false,
                 withdrawLzChainId: 0,
-                withdrawAdapterParams: "0x"
+                withdrawAdapterParams: "0x",
+                unwrap: false
             }),
             ICommonData.ISendOptions({
                 extraGasLimit: lzData.srcExtraGasLimit,

@@ -20,17 +20,18 @@ contract USDOGenericModule is USDOCommon {
 
     function triggerApproveOrRevoke(
         uint16 lzDstChainId,
-        ISendFrom.LzCallParams calldata lzCallParams,
+        ICommonOFT.LzCallParams calldata lzCallParams,
         ICommonData.IApproval[] calldata approvals
     ) external payable {
         bytes memory lzPayload = abi.encode(PT_APPROVE, msg.sender, approvals);
 
-        _checkGasLimit(
+        _checkAdapterParams(
             lzDstChainId,
             PT_APPROVE,
             lzCallParams.adapterParams,
             NO_EXTRA_GAS
         );
+
         _lzSend(
             lzDstChainId,
             lzPayload,
@@ -72,7 +73,7 @@ contract USDOGenericModule is USDOCommon {
         uint16 lzDstChainId,
         bytes calldata airdropAdapterParams,
         uint256 amount,
-        ISendFrom.LzCallParams calldata sendFromData,
+        ICommonOFT.LzCallParams calldata sendFromData,
         ICommonData.IApproval[] calldata approvals
     ) external payable {
         (, , uint256 airdropAmount, ) = LzLib.decodeAdapterParams(
@@ -81,7 +82,7 @@ contract USDOGenericModule is USDOCommon {
 
         (amount, ) = _removeDust(amount);
         bytes memory lzPayload = abi.encode(
-            PT_SEND_FROM,
+            PT_TRIGGER_SEND_FROM,
             msg.sender,
             _ld2sd(amount),
             sendFromData,
@@ -90,12 +91,13 @@ contract USDOGenericModule is USDOCommon {
             airdropAmount
         );
 
-        _checkGasLimit(
+        _checkAdapterParams(
             lzDstChainId,
-            PT_SEND_FROM,
+            PT_TRIGGER_SEND_FROM,
             airdropAdapterParams,
             NO_EXTRA_GAS
         );
+
         _lzSend(
             lzDstChainId,
             lzPayload,
@@ -126,7 +128,7 @@ contract USDOGenericModule is USDOCommon {
             ,
             address from,
             uint64 amount,
-            ISendFrom.LzCallParams memory callParams,
+            ICommonOFT.LzCallParams memory callParams,
             uint16 lzDstChainId,
             ICommonData.IApproval[] memory approvals,
             uint256 airdropAmount
@@ -136,7 +138,7 @@ contract USDOGenericModule is USDOCommon {
                     uint16,
                     address,
                     uint64,
-                    ISendFrom.LzCallParams,
+                    ICommonOFT.LzCallParams,
                     uint16,
                     ICommonData.IApproval[],
                     uint256
@@ -144,7 +146,7 @@ contract USDOGenericModule is USDOCommon {
             );
 
         if (approvals.length > 0) {
-            _callApproval(approvals, PT_SEND_FROM);
+            _callApproval(approvals, PT_TRIGGER_SEND_FROM);
         }
 
         ISendFrom(address(this)).sendFrom{value: airdropAmount}(
