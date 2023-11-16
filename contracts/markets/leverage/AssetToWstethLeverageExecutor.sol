@@ -46,7 +46,11 @@ contract AssetToWstethLeverageExecutor is BaseLeverageExecutor {
         uint256 assetAmountIn,
         address from,
         bytes calldata data
-    ) external override returns (uint256 collateralAmountOut) {
+    ) external payable override returns (uint256 collateralAmountOut) {
+        require(
+            cluster.isWhitelisted(0, msg.sender),
+            "LeverageExecutor: sender not valid"
+        );
         _assureSwapperValidity();
 
         //decode data
@@ -62,7 +66,8 @@ contract AssetToWstethLeverageExecutor is BaseLeverageExecutor {
             weth,
             assetAmountIn,
             minWethAmount,
-            dexWEthData
+            dexWEthData,
+            0
         );
         require(
             wethAmount >= minWethAmount,
@@ -128,6 +133,10 @@ contract AssetToWstethLeverageExecutor is BaseLeverageExecutor {
         address from,
         bytes calldata data
     ) external override returns (uint256 assetAmountOut) {
+        require(
+            cluster.isWhitelisted(0, msg.sender),
+            "LeverageExecutor: sender not valid"
+        );
         _assureSwapperValidity();
 
         //decode data
@@ -165,7 +174,8 @@ contract AssetToWstethLeverageExecutor is BaseLeverageExecutor {
             assetAddress,
             wethAmount,
             minAssetAmount,
-            dexAssetData
+            dexAssetData,
+            0
         );
         require(
             assetAmountOut >= minAssetAmount,

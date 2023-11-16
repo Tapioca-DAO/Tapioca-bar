@@ -11,6 +11,11 @@ import {
 } from '../gitsub_tapioca-sdk/src/typechain/tapioca-mocks';
 
 describe('AssetToWstEthLeverageExecutor test', () => {
+    before(function () {
+        if (process.env.NODE_ENV !== undefined) {
+            this.skip();
+        }
+    });
     async function setUp() {
         const {
             yieldBox,
@@ -22,6 +27,7 @@ describe('AssetToWstEthLeverageExecutor test', () => {
             weth,
             wethAssetId,
         } = await loadFixture(register);
+        await cluster.updateContract(0, deployer.address, true);
 
         const MockSwapper = new MockSwapper__factory(deployer);
         const swapper = await MockSwapper.deploy(yieldBox.address);

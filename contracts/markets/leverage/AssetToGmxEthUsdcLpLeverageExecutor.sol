@@ -14,8 +14,9 @@ contract AssetToGmxEthUsdcLpLeverageExecutor is BaseLeverageExecutor {
     address public immutable router; //0x7452c558d45f8afC8c83dAe62C3f8A5BE19c71f6
     IGmxExchangeRouter public immutable exchangeRouter; //0x7c68c7866a64fa2160f78eeae12217ffbf871fa8
     address public immutable withdrawalVault; //0x0628d46b5d145f183adb6ef1f2c97ed1c4701c55
+    address public immutable depositVault; //0xF89e77e8Dc11691C9e8757e84aaFbCD8A67d7A55
 
-    uint256 private constant _FEE = 748000000000000;
+    uint256 public constant FEE = 748000000000000;
 
     constructor(
         YieldBox _yb,
@@ -26,7 +27,8 @@ contract AssetToGmxEthUsdcLpLeverageExecutor is BaseLeverageExecutor {
         address _router,
         IGmxExchangeRouter _exchangeRouter,
         address _gmMarket,
-        address _withdrawalVault
+        address _withdrawalVault,
+        address _depositVault
     ) BaseLeverageExecutor(_yb, _swapper, _cluster) {
         usdc = _usdc;
         weth = _weth;
@@ -34,6 +36,7 @@ contract AssetToGmxEthUsdcLpLeverageExecutor is BaseLeverageExecutor {
         exchangeRouter = _exchangeRouter;
         gmMarket = _gmMarket;
         withdrawalVault = _withdrawalVault;
+        depositVault = _depositVault;
     }
 
     // ********************* //
@@ -57,7 +60,11 @@ contract AssetToGmxEthUsdcLpLeverageExecutor is BaseLeverageExecutor {
         uint256 assetAmountIn,
         address from,
         bytes calldata data
-    ) external override returns (uint256 collateralAmountOut) {
+    ) external payable override returns (uint256 collateralAmountOut) {
+        require(
+            cluster.isWhitelisted(0, msg.sender),
+            "LeverageExecutor: sender not valid"
+        );
         _assureSwapperValidity();
 
         //decode data
@@ -73,7 +80,8 @@ contract AssetToGmxEthUsdcLpLeverageExecutor is BaseLeverageExecutor {
             address(usdc),
             assetAmountIn,
             minUsdcAmountOut,
-            dexUsdcData
+            dexUsdcData,
+            0
         );
         require(
             usdcAmount >= minUsdcAmountOut,
@@ -140,6 +148,10 @@ contract AssetToGmxEthUsdcLpLeverageExecutor is BaseLeverageExecutor {
         address from,
         bytes calldata data
     ) external override returns (uint256 assetAmountOut) {
+        require(
+            cluster.isWhitelisted(0, msg.sender),
+            "LeverageExecutor: sender not valid"
+        );
         _assureSwapperValidity();
 
         //decode data
@@ -180,7 +192,8 @@ contract AssetToGmxEthUsdcLpLeverageExecutor is BaseLeverageExecutor {
             address(usdc),
             wethAmount,
             minWethToUsdcAmount,
-            dexWethToUsdcData
+            dexWethToUsdcData,
+            0
         );
 
         //swap USDC with Asset
@@ -189,7 +202,8 @@ contract AssetToGmxEthUsdcLpLeverageExecutor is BaseLeverageExecutor {
             assetAddress,
             usdcAmount + obtainedUsdc,
             minAssetAmountOut,
-            dexAssetData
+            dexAssetData,
+            0
         );
         require(
             assetAmountOut >= minAssetAmountOut,
@@ -217,15 +231,15 @@ contract AssetToGmxEthUsdcLpLeverageExecutor is BaseLeverageExecutor {
         //create sendWnt
         data[0] = abi.encodeWithSelector(
             IGmxExchangeRouter.sendWnt.selector,
-            address(this),
-            _FEE //this seems to be hardcoded
+            depositVault,
+            1e18 //TODO: compute
         );
 
         //create sendTokens
         data[1] = abi.encodeWithSelector(
             IGmxExchangeRouter.sendTokens.selector,
             usdc,
-            address(this), //TODO: check this
+            depositVault,
             usdcAmount
         );
 
@@ -244,7 +258,7 @@ contract AssetToGmxEthUsdcLpLeverageExecutor is BaseLeverageExecutor {
                     shortTokenSwapPath: emptyPath,
                     minMarketTokens: lpMinAmount,
                     shouldUnwrapNativeToken: false,
-                    executionFee: _FEE, //this seems to be hardcoded
+                    executionFee: 1e18, //TODO: compute
                     callbackGasLimit: 0
                 });
         data[2] = abi.encodeWithSelector(
@@ -256,7 +270,7 @@ contract AssetToGmxEthUsdcLpLeverageExecutor is BaseLeverageExecutor {
         uint256 lpBalanceBefore = IERC20(lp).balanceOf(address(this));
         usdc.approve(router, 0);
         usdc.approve(router, usdcAmount);
-        exchangeRouter.multicall(data);
+        exchangeRouter.multicall{value: msg.value}(data);
         collateralAmountOut =
             IERC20(lp).balanceOf(address(this)) -
             lpBalanceBefore;
@@ -280,7 +294,7 @@ contract AssetToGmxEthUsdcLpLeverageExecutor is BaseLeverageExecutor {
         data[0] = abi.encodeWithSelector(
             IGmxExchangeRouter.sendWnt.selector,
             withdrawalVault,
-            _FEE //this seems to be hardcoded
+            FEE //this seems to be hardcoded
         );
 
         //create sendTokens
@@ -305,7 +319,7 @@ contract AssetToGmxEthUsdcLpLeverageExecutor is BaseLeverageExecutor {
                     minLongTokenAmount: minWethAmount,
                     minShortTokenAmount: minUsdcAmount,
                     shouldUnwrapNativeToken: true,
-                    executionFee: _FEE, //this seems to be hardcoded
+                    executionFee: FEE, //this seems to be hardcoded
                     callbackGasLimit: 0
                 });
         data[2] = abi.encodeWithSelector(

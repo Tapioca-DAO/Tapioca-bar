@@ -46,7 +46,7 @@ contract BBStorage is BoringOwnable, Market {
 
     IOracle public assetOracle; //USDO/USDC
     bytes public assetOracleData;
-    uint256 public minMintFee;
+    uint256 public minMintFee = 0;
     uint256 public maxMintFee = 1000;
 
     uint256 public maxMintFeeStart;
