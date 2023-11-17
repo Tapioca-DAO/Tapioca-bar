@@ -75,6 +75,12 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
     // Define a mapping from packetType to destination module and function selector.
     mapping(uint256 => DestinationCall) private _destinationMappings;
 
+    // ************** //
+    // *** ERRORS *** //
+    // ************** //
+    error Failed();
+    error NotAuthorized();
+
     constructor(
         address _lzEndpoint,
         IYieldBoxBase _yieldBox,
@@ -153,14 +159,14 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
     /// @param to the recipient
     function rescueEth(uint256 amount, address to) external onlyOwner {
         (bool success, ) = to.call{value: amount}("");
-        require(success, "USDO: failed");
+        if (!success) revert Failed();
     }
 
     /// @notice set the Conservator address
     /// @dev conservator can pause the contract
     /// @param _conservator the new address
     function setConservator(address _conservator) external onlyOwner {
-        require(_conservator != address(0), "USDO: unauthorized");
+        if (_conservator == address(0)) revert NotAuthorized();
         conservator = _conservator;
     }
 
@@ -168,7 +174,7 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
     /// @dev can only be called by the conservator
     /// @param val the new value
     function updatePause(bool val) external {
-        require(msg.sender == conservator, "USDO: unauthorized");
+        if (msg.sender != conservator) revert NotAuthorized();
         emit PausedUpdated(paused, val);
         paused = val;
     }
@@ -177,7 +183,7 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
     /// @dev can only be called by the owner
     /// @param _cluster the new address
     function setCluster(ICluster _cluster) external {
-        require(address(_cluster) != address(0), "USDO: not valid");
+        if (address(_cluster) == address(0)) revert NotAuthorized();
         cluster = _cluster;
     }
 
@@ -413,7 +419,7 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
     // ************************* //
     function _extractModule(Module _module) private view returns (address) {
         address module = _moduleAddresses[_module];
-        require(module != address(0), "USDO: module not found");
+        if (module == address(0)) revert NotAuthorized();
 
         return module;
     }

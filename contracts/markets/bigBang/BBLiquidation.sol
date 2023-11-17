@@ -10,6 +10,19 @@ contract BBLiquidation is BBCommon {
     using RebaseLibrary for Rebase;
     using BoringERC20 for IERC20;
 
+    // ************** //
+    // *** ERRORS *** //
+    // ************** //
+    error NothingToLiquidate();
+    error LengthMismatch();
+    error ExchangeRateNotValid();
+    error ForbiddenAction();
+    error OnCollateralReceiverFailed();
+    error BadDebt();
+    error NotEnoughCollateral();
+    error Solvent();
+    error AmountNotValid();
+
     // *********************** //
     // *** OWNER FUNCTIONS *** //
     // *********************** //
@@ -25,7 +38,7 @@ contract BBLiquidation is BBCommon {
         } else {
             _exchangeRate = exchangeRate; //use stored rate
         }
-        require(_exchangeRate > 0, "BB: current exchangeRate not valid"); //validate stored rate
+        if (_exchangeRate == 0) revert ExchangeRateNotValid();
 
         _accrue();
 
@@ -39,10 +52,8 @@ contract BBLiquidation is BBCommon {
         );
 
         // equality is included in the require to minimize risk and liquidate as soon as possible
-        require(
-            requiredCollateral >= userCollateralShare[user],
-            "BB: Cannot force liquidated"
-        );
+        if (requiredCollateral < userCollateralShare[user])
+            revert ForbiddenAction();
 
         uint256 collateralShare = userCollateralShare[user];
 
@@ -79,16 +90,11 @@ contract BBLiquidation is BBCommon {
         IMarketLiquidatorReceiver[] calldata liquidatorReceivers,
         bytes[] calldata liquidatorReceiverDatas
     ) external optionNotPaused(PauseType.Liquidation) {
-        require(users.length > 0, "BB: nothing to liquidate");
-        require(users.length == maxBorrowParts.length, "BB: length mismatch");
-        require(
-            users.length == liquidatorReceivers.length,
-            "BB: length mismatch"
-        );
-        require(
-            liquidatorReceiverDatas.length == liquidatorReceivers.length,
-            "BB: length mismatch"
-        );
+        if (users.length == 0) revert NothingToLiquidate();
+        if (users.length != maxBorrowParts.length) revert LengthMismatch();
+        if (users.length != liquidatorReceivers.length) revert LengthMismatch();
+        if (liquidatorReceiverDatas.length != liquidatorReceivers.length)
+            revert LengthMismatch();
 
         // Oracle can fail but we still need to allow liquidations
         (bool updated, uint256 _exchangeRate) = oracle.get(oracleData);
@@ -97,7 +103,7 @@ contract BBLiquidation is BBCommon {
         } else {
             _exchangeRate = exchangeRate; //use stored rate
         }
-        require(_exchangeRate > 0, "BB: current exchangeRate not valid"); //validate stored rate
+        if (_exchangeRate == 0) revert ExchangeRateNotValid();
 
         _accrue();
 
@@ -143,7 +149,7 @@ contract BBLiquidation is BBCommon {
         uint256 assetBalanceAfter = asset.balanceOf(address(this));
 
         returnedAmount = assetBalanceAfter - assetBalanceBefore;
-        require(returnedAmount > 0, "BB: onCollateralReceiver failed");
+        if (returnedAmount == 0) revert OnCollateralReceiverFailed();
         returnedShare = yieldBox.toShare(assetId, returnedAmount, false);
     }
 
@@ -159,7 +165,7 @@ contract BBLiquidation is BBCommon {
             uint256 collateralShare
         )
     {
-        require(_exchangeRate > 0, "BB: exchangeRate not valid");
+        if (_exchangeRate == 0) revert ExchangeRateNotValid();
         uint256 collateralPartInAsset = (yieldBox.toAmount(
             collateralId,
             userCollateralShare[user],
@@ -187,7 +193,7 @@ contract BBLiquidation is BBCommon {
             ? userBorrowPart[user]
             : borrowPartWithBonus;
 
-        require(collateralPartInAsset > borrowPartWithBonus, "BB: bad debt");
+        if (collateralPartInAsset <= borrowPartWithBonus) revert BadDebt();
 
         borrowPart = maxBorrowPart > borrowPart ? borrowPart : maxBorrowPart;
         borrowPart = borrowPart > userBorrowPart[user]
@@ -203,12 +209,10 @@ contract BBLiquidation is BBCommon {
             false
         );
 
-        require(
-            collateralShare <= userCollateralShare[user],
-            "BB: not enough collateral"
-        );
+        if (collateralShare > userCollateralShare[user])
+            revert NotEnoughCollateral();
         userCollateralShare[user] -= collateralShare;
-        require(borrowAmount != 0, "BB: solvent");
+        if (borrowAmount == 0) revert Solvent();
 
         totalBorrow.elastic -= uint128(borrowAmount);
         totalBorrow.base -= uint128(borrowPart);
@@ -265,7 +269,7 @@ contract BBLiquidation is BBCommon {
             _liquidatorReceiver,
             _liquidatorReceiverData
         );
-        require(returnedShare >= borrowShare, "BB: asset amount not valid");
+        if (returnedShare < borrowShare) revert AmountNotValid();
 
         (uint256 feeShare, uint256 callerShare) = _extractLiquidationFees(
             returnedShare,

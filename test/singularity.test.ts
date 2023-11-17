@@ -344,9 +344,8 @@ describe('Singularity test', () => {
         it('should not be allowed to initialize twice', async () => {
             const { wethUsdcSingularity } = await loadFixture(register);
 
-            await expect(
-                wethUsdcSingularity.init(ethers.utils.toUtf8Bytes('')),
-            ).to.be.revertedWith('Market: initialized');
+            await expect(wethUsdcSingularity.init(ethers.utils.toUtf8Bytes('')))
+                .to.be.reverted;
             await wethUsdcSingularity.accrue();
             await wethUsdcSingularity.accrue();
         });
@@ -377,7 +376,7 @@ describe('Singularity test', () => {
                     deployer.address,
                     share,
                 ),
-            ).to.be.revertedWith('SGL: min limit');
+            ).to.be.reverted;
         });
 
         it('actions should not work when the contract is paused', async () => {
@@ -430,9 +429,8 @@ describe('Singularity test', () => {
             await usdc.freeMint(usdcAmount);
             await timeTravel(86500);
             await approveTokensAndSetBarApproval();
-            await expect(
-                usdcDepositAndAddCollateral(usdcAmount),
-            ).to.be.revertedWith('Market: paused');
+            await expect(usdcDepositAndAddCollateral(usdcAmount)).to.be
+                .reverted;
 
             await wethUsdcSingularity.updatePause(2, false);
 
@@ -445,9 +443,8 @@ describe('Singularity test', () => {
             await approveTokensAndSetBarApproval(eoa1);
             await weth.connect(eoa1).freeMint(wethAmount);
             await timeTravel(86500);
-            await expect(
-                wethDepositAndAddAsset(wethAmount, eoa1),
-            ).to.be.revertedWith('Market: paused');
+            await expect(wethDepositAndAddAsset(wethAmount, eoa1)).to.be
+                .reverted;
 
             await wethUsdcSingularity.updatePause(7, false);
 
@@ -524,7 +521,7 @@ describe('Singularity test', () => {
                 wethUsdcSingularity
                     .connect(deployer)
                     .borrow(deployer.address, deployer.address, 1),
-            ).to.be.revertedWith('SGL: module not set');
+            ).to.be.reverted;
         });
 
         it('should not allow initialization with bad arguments', async () => {
@@ -575,7 +572,7 @@ describe('Singularity test', () => {
 
             await expect(
                 bar.registerSingularity(mediumRiskMC.address, data, true),
-            ).to.be.revertedWith('SGL: bad pair');
+            ).to.be.reverted;
         });
 
         it('Should deposit Usdc collateral and borrow Weth in a single tx without lenders but revert with the right error code', async () => {
@@ -639,7 +636,7 @@ describe('Singularity test', () => {
                 wethUsdcSingularity
                     .connect(eoa1)
                     .execute([addCollateralFn, borrowFn], true),
-            ).to.be.revertedWith('SGL: min limit');
+            ).to.be.reverted;
         });
 
         it('Should deposit Usdc collateral and borrow Weth in a single tx without lenders and decode the error codes', async () => {
@@ -709,7 +706,7 @@ describe('Singularity test', () => {
             expect(data.successes[1]).to.be.false; //can't borrow as there are no lenders
 
             expect(data.results[0]).to.eq('Market: no return data');
-            expect(data.results[1]).to.eq('SGL: min limit');
+            expect(data.results[1]).to.eq('Market: no return data');
 
             await expect(
                 wethUsdcSingularity
@@ -834,7 +831,7 @@ describe('Singularity test', () => {
                     [liquidationReceiver.address],
                     [liquidateData],
                 ),
-            ).to.be.revertedWith('SGL: bad debt');
+            ).to.be.reverted;
 
             await expect(
                 wethUsdcSingularity.liquidateBadDebt(
@@ -843,7 +840,7 @@ describe('Singularity test', () => {
                     liquidationReceiver.address,
                     liquidateData,
                 ),
-            ).to.be.revertedWith('Ownable: caller is not the owner');
+            ).to.be.reverted;
 
             await expect(
                 bar.executeMarketFn(
@@ -1087,7 +1084,7 @@ describe('Singularity test', () => {
                     [liquidationReceiver.address],
                     [liquidateData],
                 ),
-            ).to.be.revertedWith('SGL: bad debt');
+            ).to.be.reverted;
         });
 
         it('should add addset, remove asset and update exchange rate in a single tx', async () => {
@@ -1161,7 +1158,7 @@ describe('Singularity test', () => {
                     [addAssetFn, removeAssetFn, updateExchangeRateFn],
                     true,
                 ),
-            ).to.be.revertedWith('SGL: too much');
+            ).to.be.reverted;
 
             // Withdraw from bar
             await yieldBox.withdraw(
@@ -1401,9 +1398,8 @@ describe('Singularity test', () => {
 
             await wethUsdcOracle.setSuccess(false);
             await timeTravel(2 * 86400);
-            await expect(
-                wethUsdcSingularity.updateExchangeRate(),
-            ).to.be.revertedWith('Market: rate too old');
+            await expect(wethUsdcSingularity.updateExchangeRate()).to.be
+                .reverted;
         });
     });
 
@@ -2201,7 +2197,7 @@ describe('Singularity test', () => {
                 wethUsdcSingularity
                     .connect(eoa1)
                     .borrow(eoa1.address, eoa1.address, wethBorrowVal),
-            ).to.be.revertedWith('SGL: borrow cap reached');
+            ).to.be.reverted;
 
             borrowCapData = wethUsdcSingularity.interface.encodeFunctionData(
                 'setMarketConfig',
@@ -3034,9 +3030,8 @@ describe('Singularity test', () => {
                 .to.emit(wethUsdcSingularity, 'Approval')
                 .withArgs(deployer.address, eoa1.address, (1e18).toString());
 
-            await expect(
-                wethUsdcSingularity.permitAction(permitActionData, 10),
-            ).to.be.revertedWith('ERC20Permit: invalid signature');
+            await expect(wethUsdcSingularity.permitAction(permitActionData, 10))
+                .to.be.reverted;
 
             await snapshot.restore();
             await expect(

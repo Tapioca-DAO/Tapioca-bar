@@ -461,7 +461,7 @@ async function depositAddCollateralAndBorrowPlug(
                     withdrawData,
                 ),
             // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        ).to.be.revertedWith(revertMessage!);
+        ).to.be.reverted;
         return { share, amount };
     }
 
@@ -534,7 +534,7 @@ async function depositAndRepayPlug(
                         withdrawAdapterParams: ethers.utils.toUtf8Bytes(''),
                     },
                 ),
-        ).to.be.revertedWith(revertMessage!);
+        ).to.be.reverted;
         return;
     }
 
@@ -654,7 +654,7 @@ async function liquidatePlug(
                 data,
                 multiSwapper.address,
             ),
-        ).to.be.revertedWith(revertMessage!);
+        ).to.be.reverted;
         return;
     }
     await Singularity.liquidate(

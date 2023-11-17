@@ -16,6 +16,11 @@ import "./USDOCommon.sol";
 contract USDOOptionsModule is USDOCommon {
     using SafeERC20 for IERC20;
 
+    // ************** //
+    // *** ERRORS *** //
+    // ************** //
+    error AllowanceNotValid();
+
     constructor(
         address _lzEndpoint,
         IYieldBoxBase _yieldBox,
@@ -33,23 +38,21 @@ contract USDOOptionsModule is USDOCommon {
         bytes calldata adapterParams
     ) external payable {
         if (tapSendData.tapOftAddress != address(0)) {
-            require(
-                cluster.isWhitelisted(
+            if (
+                !cluster.isWhitelisted(
                     lzData.lzDstChainId,
                     tapSendData.tapOftAddress
-                ),
-                "USDO: not authorized"
-            ); //fail fast
+                )
+            ) revert SenderNotAuthorized();
         }
 
         // allowance is also checked on SGL
         // check it here as well because tokens are moved over layers
         if (optionsData.from != msg.sender) {
-            require(
-                allowance(optionsData.from, msg.sender) >=
-                    optionsData.paymentTokenAmount,
-                "UDSO: sender not approved"
-            );
+            if (
+                allowance(optionsData.from, msg.sender) <
+                optionsData.paymentTokenAmount
+            ) revert AllowanceNotValid();
             _spendAllowance(
                 optionsData.from,
                 msg.sender,
@@ -68,7 +71,7 @@ contract USDOOptionsModule is USDOCommon {
             toAddress,
             paymentTokenAmount
         );
-        require(paymentTokenAmount > 0, "TOFT_AMOUNT");
+        if (paymentTokenAmount == 0) revert NotValid();
 
         (, , uint256 airdropAmount, ) = LzLib.decodeAdapterParams(
             adapterParams

@@ -9,6 +9,11 @@ contract SGLLeverage is SGLLendingCommon {
     using RebaseLibrary for Rebase;
     using BoringERC20 for IERC20;
 
+    // ************** //
+    // *** ERRORS *** //
+    // ************** //
+    error LeverageExecutorNotValid();
+
     /// @notice Lever up: Borrow more and buy collateral with it.
     /// @param from The user who buys
     /// @param borrowAmount Amount of extra asset borrowed
@@ -27,11 +32,8 @@ contract SGLLeverage is SGLLendingCommon {
         notSelf(from)
         returns (uint256 amountOut)
     {
-        require(
-            address(leverageExecutor) != address(0),
-            "BB: leverage executor not valid"
-        );
-
+        if (address(leverageExecutor) == address(0))
+            revert LeverageExecutorNotValid();
         // Let this fail first to save gas:
         uint256 supplyShare = yieldBox.toShare(assetId, supplyAmount, true);
         uint256 supplyShareToAmount;
@@ -44,7 +46,6 @@ contract SGLLeverage is SGLLendingCommon {
                 supplyShare
             );
         }
-
         (, uint256 borrowShare) = _borrow(from, address(this), borrowAmount);
         (uint256 borrowShareToAmount, ) = yieldBox.withdraw(
             assetId,
@@ -53,7 +54,6 @@ contract SGLLeverage is SGLLendingCommon {
             0,
             borrowShare
         );
-
         amountOut = leverageExecutor.getCollateral(
             collateralId,
             address(asset),
@@ -67,7 +67,6 @@ contract SGLLeverage is SGLLendingCommon {
             amountOut,
             false
         );
-
         _allowedBorrow(from, collateralShare);
         _addCollateral(from, from, false, 0, collateralShare, false);
     }
@@ -88,11 +87,8 @@ contract SGLLeverage is SGLLendingCommon {
         notSelf(from)
         returns (uint256 amountOut)
     {
-        require(
-            address(leverageExecutor) != address(0),
-            "BB: leverage executor not valid"
-        );
-
+        if (address(leverageExecutor) == address(0))
+            revert LeverageExecutorNotValid();
         _allowedBorrow(from, share);
         _removeCollateral(from, address(this), share);
         yieldBox.withdraw(
@@ -102,7 +98,6 @@ contract SGLLeverage is SGLLendingCommon {
             0,
             share
         );
-
         uint256 leverageAmount = yieldBox.toAmount(collateralId, share, false);
         amountOut = leverageExecutor.getAsset(
             assetId,
@@ -112,7 +107,6 @@ contract SGLLeverage is SGLLendingCommon {
             from,
             data
         );
-
         uint256 shareOut = yieldBox.toShare(assetId, amountOut, false);
         uint256 partOwed = userBorrowPart[from];
         uint256 amountOwed = totalBorrow.toElastic(partOwed, true);

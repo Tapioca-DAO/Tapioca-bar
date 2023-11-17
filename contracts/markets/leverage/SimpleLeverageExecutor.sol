@@ -4,6 +4,13 @@ pragma solidity ^0.8.18;
 import "./BaseLeverageExecutor.sol";
 
 contract SimpleLeverageExecutor is BaseLeverageExecutor {
+    // ************** //
+    // *** ERRORS *** //
+    // ************** //
+    error SenderNotValid();
+    error TokenNotValid();
+    error NotEnough(address token);
+
     constructor(
         YieldBox _yb,
         ISwapper _swapper,
@@ -21,6 +28,7 @@ contract SimpleLeverageExecutor is BaseLeverageExecutor {
         address from,
         bytes calldata data
     ) external payable override returns (uint256 collateralAmountOut) {
+        if (!cluster.isWhitelisted(0, msg.sender)) revert SenderNotValid();
         _assureSwapperValidity();
 
         (uint256 minAmountOut, bytes memory dexData) = abi.decode(
@@ -36,10 +44,8 @@ contract SimpleLeverageExecutor is BaseLeverageExecutor {
             dexData,
             0
         );
-        require(
-            collateralAmountOut >= minAmountOut,
-            "LeverageExecutor: not enough"
-        );
+        if (collateralAmountOut < minAmountOut)
+            revert NotEnough(collateralAddress);
 
         IERC20(collateralAddress).approve(address(yieldBox), 0);
         IERC20(collateralAddress).approve(
@@ -63,6 +69,7 @@ contract SimpleLeverageExecutor is BaseLeverageExecutor {
         address from,
         bytes calldata data
     ) external override returns (uint256 assetAmountOut) {
+        if (!cluster.isWhitelisted(0, msg.sender)) revert SenderNotValid();
         _assureSwapperValidity();
 
         (uint256 minAmountOut, bytes memory dexData) = abi.decode(
@@ -78,7 +85,7 @@ contract SimpleLeverageExecutor is BaseLeverageExecutor {
             dexData,
             0
         );
-        require(assetAmountOut >= minAmountOut, "LeverageExecutor: not enough");
+        if (assetAmountOut < minAmountOut) revert NotEnough(assetAddress);
 
         IERC20(assetAddress).approve(address(yieldBox), 0);
         IERC20(assetAddress).approve(address(yieldBox), assetAmountOut);

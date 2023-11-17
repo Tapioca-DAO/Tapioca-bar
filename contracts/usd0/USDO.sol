@@ -24,8 +24,13 @@ contract USDO is BaseUSDO {
 
     address public flashLoanHelper;
 
+    // ************** //
+    // *** ERRORS *** //
+    // ************** //
+    error Paused();
+
     modifier notPaused() {
-        require(!paused, "USDO: paused");
+        if (paused) revert Paused();
         _;
     }
 
@@ -69,7 +74,7 @@ contract USDO is BaseUSDO {
     /// @param _to receiver address
     /// @param _amount the amount to mint
     function mint(address _to, uint256 _amount) external notPaused {
-        require(allowedMinter[_getChainId()][msg.sender], "USDO: unauthorized");
+        if (!allowedMinter[_getChainId()][msg.sender]) revert NotAuthorized();
         _mint(_to, _amount);
     }
 
@@ -77,12 +82,12 @@ contract USDO is BaseUSDO {
     /// @param _from address to burn from
     /// @param _amount the amount to burn
     function burn(address _from, uint256 _amount) external notPaused {
-        require(allowedBurner[_getChainId()][msg.sender], "USDO: unauthorized");
+        if (!allowedBurner[_getChainId()][msg.sender]) revert NotAuthorized();
         _burn(_from, _amount);
     }
 
     function addFlashloanFee(uint256 _fee) external {
-        require(msg.sender == flashLoanHelper, "USDO: unauthorized");
+        if (msg.sender != flashLoanHelper) revert NotAuthorized();
         _fees += _fee;
     }
 
@@ -99,7 +104,7 @@ contract USDO is BaseUSDO {
 
             uint256 toExtract = balance >= _fees ? _fees : balance;
             _fees -= toExtract;
-            transfer(msg.sender, toExtract); //owner calls it; no need for a require check
+            if (!transfer(msg.sender, toExtract)) revert Failed();
         }
     }
 }

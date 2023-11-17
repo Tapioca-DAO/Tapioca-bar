@@ -31,11 +31,9 @@ contract USDOOptionsDestinationModule is USDOCommon {
         uint64 _nonce,
         bytes memory _payload
     ) public {
-        require(msg.sender == address(this), "USDO: caller not valid");
-        require(
-            _moduleAddresses[Module.OptionsDestination] == module,
-            "USDO: module not valid"
-        );
+        if (msg.sender != address(this)) revert SenderNotAuthorized();
+        if (_moduleAddresses[Module.OptionsDestination] != module)
+            revert NotValid();
 
         (
             ,
@@ -60,10 +58,8 @@ contract USDOOptionsDestinationModule is USDOCommon {
                 )
             );
         if (tapSendData.tapOftAddress != address(0)) {
-            require(
-                cluster.isWhitelisted(0, tapSendData.tapOftAddress),
-                "USDO: not authorized"
-            );
+            if (!cluster.isWhitelisted(0, tapSendData.tapOftAddress))
+                revert SenderNotAuthorized();
         }
         optionsData.paymentTokenAmount = _sd2ld(amountSD);
         uint256 balanceBefore = balanceOf(address(this));
@@ -132,7 +128,7 @@ contract USDOOptionsDestinationModule is USDOCommon {
         ICommonData.IApproval[] memory revokes,
         uint256 airdropAmount
     ) public {
-        require(msg.sender == address(this), "USDO: not valid");
+        if (msg.sender != address(this)) revert SenderNotAuthorized();
 
         if (approvals.length > 0) {
             _callApproval(approvals, PT_TAP_EXERCISE);

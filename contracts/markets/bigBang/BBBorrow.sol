@@ -7,6 +7,11 @@ contract BBBorrow is BBLendingCommon {
     using RebaseLibrary for Rebase;
     using BoringERC20 for IERC20;
 
+    // ************** //
+    // *** ERRORS *** //
+    // ************** //
+    error AllowanceNotValid();
+
     // ************************ //
     // *** PUBLIC FUNCTIONS *** //
     // ************************ //
@@ -28,7 +33,7 @@ contract BBBorrow is BBLendingCommon {
         solvent(from, false)
         returns (uint256 part, uint256 share)
     {
-        require(amount >= debtStartPoint, "BB: borrow amount too small");
+        if (amount < debtStartPoint) revert NotEnough();
 
         if (amount == 0) return (0, 0);
         uint256 feeAmount = _computeVariableOpeningFee(amount);
@@ -38,7 +43,7 @@ contract BBBorrow is BBLendingCommon {
             amount + feeAmount,
             asset.safeDecimals()
         );
-        require(allowanceShare > 0, "BB: allowanceShare not valid");
+        if (allowanceShare == 0) revert AllowanceNotValid();
         _allowedBorrow(from, allowanceShare);
         (part, share) = _borrow(from, to, amount, feeAmount);
 
@@ -76,7 +81,8 @@ contract BBBorrow is BBLendingCommon {
             partInAmount,
             asset.safeDecimals()
         );
-        require(allowanceShare > 0, "BB: allowanceShare not valid");
+
+        if (allowanceShare == 0) revert AllowanceNotValid();
         _allowedBorrow(from, allowanceShare);
 
         amount = _repay(from, to, part);

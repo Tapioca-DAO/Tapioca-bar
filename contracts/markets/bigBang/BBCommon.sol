@@ -7,6 +7,11 @@ import "./BBStorage.sol";
 contract BBCommon is BBStorage {
     using RebaseLibrary for Rebase;
 
+    // ************** //
+    // *** ERRORS *** //
+    // ************** //
+    error NotEnough();
+
     // ********************** //
     // *** VIEW FUNCTIONS *** //
     // ********************** //

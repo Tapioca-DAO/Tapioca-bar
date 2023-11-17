@@ -18,6 +18,14 @@ contract AssetToGmxEthUsdcLpLeverageExecutor is BaseLeverageExecutor {
 
     uint256 public constant FEE = 748000000000000;
 
+    // ************** //
+    // *** ERRORS *** //
+    // ************** //
+    error SenderNotValid();
+    error TokenNotValid();
+    error NotEnough(address token);
+    error Failed();
+
     constructor(
         YieldBox _yb,
         ISwapper _swapper,
@@ -61,10 +69,7 @@ contract AssetToGmxEthUsdcLpLeverageExecutor is BaseLeverageExecutor {
         address from,
         bytes calldata data
     ) external payable override returns (uint256 collateralAmountOut) {
-        require(
-            cluster.isWhitelisted(0, msg.sender),
-            "LeverageExecutor: sender not valid"
-        );
+        if (!cluster.isWhitelisted(0, msg.sender)) revert SenderNotValid();
         _assureSwapperValidity();
 
         //decode data
@@ -83,17 +88,11 @@ contract AssetToGmxEthUsdcLpLeverageExecutor is BaseLeverageExecutor {
             dexUsdcData,
             0
         );
-        require(
-            usdcAmount >= minUsdcAmountOut,
-            "AssetToGmxEthUsdcLpLeverageExecutor: not enough USDC"
-        );
+        if (usdcAmount < minUsdcAmountOut) revert NotEnough(address(usdc));
 
         //get GMX-ETH-USDC LP address
         address lpAddress = ITapiocaOFTBase(collateralAddress).erc20();
-        require(
-            lpAddress != address(0),
-            "AssetToGmxEthUsdcLpLeverageExecutor: LP not valid"
-        );
+        if (lpAddress == address(0)) revert TokenNotValid();
 
         //stake USDC and get GMX-ETH-USDC LP
         collateralAmountOut = _stakeUsdc(
@@ -148,10 +147,7 @@ contract AssetToGmxEthUsdcLpLeverageExecutor is BaseLeverageExecutor {
         address from,
         bytes calldata data
     ) external override returns (uint256 assetAmountOut) {
-        require(
-            cluster.isWhitelisted(0, msg.sender),
-            "LeverageExecutor: sender not valid"
-        );
+        if (!cluster.isWhitelisted(0, msg.sender)) revert SenderNotValid();
         _assureSwapperValidity();
 
         //decode data
@@ -168,10 +164,7 @@ contract AssetToGmxEthUsdcLpLeverageExecutor is BaseLeverageExecutor {
             );
 
         address lpAddress = ITapiocaOFTBase(collateralAddress).erc20();
-        require(
-            lpAddress != address(0),
-            "AssetToGmxEthUsdcLpLeverageExecutor: LP not valid"
-        );
+        if (lpAddress == address(0)) revert TokenNotValid();
 
         ITapiocaOFTBase(collateralAddress).unwrap(
             address(this),
@@ -205,10 +198,7 @@ contract AssetToGmxEthUsdcLpLeverageExecutor is BaseLeverageExecutor {
             dexAssetData,
             0
         );
-        require(
-            assetAmountOut >= minAssetAmountOut,
-            "AssetToGmxEthUsdcLpLeverageExecutor: not enough Asset"
-        );
+        if (assetAmountOut < minAssetAmountOut) revert NotEnough(assetAddress);
 
         IERC20(assetAddress).approve(address(yieldBox), 0);
         IERC20(assetAddress).approve(address(yieldBox), assetAmountOut);
@@ -274,10 +264,7 @@ contract AssetToGmxEthUsdcLpLeverageExecutor is BaseLeverageExecutor {
         collateralAmountOut =
             IERC20(lp).balanceOf(address(this)) -
             lpBalanceBefore;
-        require(
-            collateralAmountOut > 0,
-            "AssetToGmxEthUsdcLpLeverageExecutor: multicall failed"
-        );
+        if (collateralAmountOut == 0) revert Failed();
     }
 
     /// @dev remove liquidity from GMX market

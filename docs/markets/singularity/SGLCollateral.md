@@ -1856,3 +1856,50 @@ event emitted when the usdo swapper is updated
 
 
 
+## Errors
+
+### BorrowCapReached
+
+```solidity
+error BorrowCapReached()
+```
+
+
+
+
+
+
+### MinLimit
+
+```solidity
+error MinLimit()
+```
+
+
+
+
+
+
+### NothingToRepay
+
+```solidity
+error NothingToRepay()
+```
+
+
+
+
+
+
+### TooMuch
+
+```solidity
+error TooMuch()
+```
+
+
+
+
+
+
+

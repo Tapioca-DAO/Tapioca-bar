@@ -7,6 +7,13 @@ import {ITapiocaOFTBase} from "tapioca-periph/contracts/interfaces/ITapiocaOFT.s
 import "./BaseLeverageExecutor.sol";
 
 contract AssetToEthLeverageExecutor is BaseLeverageExecutor {
+    // ************** //
+    // *** ERRORS *** //
+    // ************** //
+    error SenderNotValid();
+    error TokenNotValid();
+    error NotEnough();
+
     constructor(
         YieldBox _yb,
         ISwapper _swapper,
@@ -32,10 +39,7 @@ contract AssetToEthLeverageExecutor is BaseLeverageExecutor {
         address from,
         bytes calldata data
     ) external payable override returns (uint256 collateralAmountOut) {
-        require(
-            cluster.isWhitelisted(0, msg.sender),
-            "LeverageExecutor: sender not valid"
-        );
+        if (!cluster.isWhitelisted(0, msg.sender)) revert SenderNotValid();
         _assureSwapperValidity();
 
         //decode data
@@ -46,10 +50,7 @@ contract AssetToEthLeverageExecutor is BaseLeverageExecutor {
 
         //verify ETH
         address eth = ITapiocaOFTBase(collateralAddress).erc20();
-        require(
-            eth == address(0),
-            "AssetToEthLeverageExecutor: token not valid"
-        );
+        if (eth != address(0)) revert TokenNotValid();
 
         //swap Asset with ETH
         collateralAmountOut = _swapTokens(
@@ -60,10 +61,8 @@ contract AssetToEthLeverageExecutor is BaseLeverageExecutor {
             dexEthData,
             0
         );
-        require(
-            collateralAmountOut >= minETh,
-            "AssetToEthLeverageExecutor: not enough ETH"
-        );
+
+        if (collateralAmountOut < minETh) revert NotEnough();
 
         //wrap and transfer to user
         ITapiocaOFTBase(collateralAddress).wrap{value: collateralAmountOut}(
@@ -101,10 +100,8 @@ contract AssetToEthLeverageExecutor is BaseLeverageExecutor {
         address from,
         bytes calldata data
     ) external override returns (uint256 assetAmountOut) {
-        require(
-            cluster.isWhitelisted(0, msg.sender),
-            "LeverageExecutor: sender not valid"
-        );
+        if (!cluster.isWhitelisted(0, msg.sender)) revert SenderNotValid();
+
         _assureSwapperValidity();
 
         //decode data
@@ -115,10 +112,7 @@ contract AssetToEthLeverageExecutor is BaseLeverageExecutor {
 
         //verify ETH
         address eth = ITapiocaOFTBase(collateralAddress).erc20();
-        require(
-            eth == address(0),
-            "AssetToEthLeverageExecutor: token not valid"
-        );
+        if (eth != address(0)) revert TokenNotValid();
 
         ITapiocaOFTBase(collateralAddress).unwrap(
             address(this),
@@ -134,10 +128,7 @@ contract AssetToEthLeverageExecutor is BaseLeverageExecutor {
             dexAssetData,
             collateralAmountIn
         );
-        require(
-            assetAmountOut >= minAssetAmount,
-            "AssetToEthLeverageExecutor: not enough"
-        );
+        if (assetAmountOut < minAssetAmount) revert NotEnough();
 
         IERC20(assetAddress).approve(address(yieldBox), 0);
         IERC20(assetAddress).approve(address(yieldBox), assetAmountOut);

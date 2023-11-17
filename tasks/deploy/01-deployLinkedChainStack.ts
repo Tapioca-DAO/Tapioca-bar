@@ -8,6 +8,8 @@ import { buildCluster } from '../deployBuilds/12-buildCluster';
 import { buildUSDOFlashloanHelper } from '../deployBuilds/13-buildUSDOFlashloanHelper';
 import { buildUsdoFlashloanSetup } from '../setups/04-buildUsdoFlashloanSetup';
 import { buildSimpleLeverageExecutor } from '../deployBuilds/14-buildSimpleLeverageExecutor';
+import { buildMultiSwapper } from '../deployBuilds/04-buildMultiSwapper';
+import { UNISWAP_DEPLOYMENTS } from '../../gitsub_tapioca-sdk/src/api/constants';
 import { loadVM } from '../utils';
 
 // hh deployLinkedChainStack --network bsc_testnet
@@ -125,6 +127,14 @@ export const deployLinkedChainStack__task = async (
         signer.address,
     );
     VM.add(usdoFlashloanHelper);
+
+    const multiSwapper = await buildMultiSwapper(
+        hre,
+        UNISWAP_DEPLOYMENTS[chainInfo?.chainId as EChainID]?.v2Router,
+        UNISWAP_DEPLOYMENTS[chainInfo?.chainId as EChainID]?.v2factory,
+        ybAddress,
+    );
+    VM.add(multiSwapper);
 
     const simpleLeverageExecutor = await buildSimpleLeverageExecutor(
         hre,

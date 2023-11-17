@@ -30,11 +30,9 @@ contract USDOMarketDestinationModule is USDOCommon {
         uint64 _nonce,
         bytes memory _payload
     ) public {
-        require(msg.sender == address(this), "USDO: caller not valid");
-        require(
-            _moduleAddresses[Module.MarketDestination] == module,
-            "USDO: module not valid"
-        );
+        if (msg.sender != address(this)) revert SenderNotAuthorized();
+        if (_moduleAddresses[Module.MarketDestination] != module)
+            revert NotValid();
 
         (
             ,
@@ -107,7 +105,7 @@ contract USDOMarketDestinationModule is USDOCommon {
         ICommonData.IWithdrawParams memory withdrawParams,
         uint256 airdropAmount
     ) public payable {
-        require(msg.sender == address(this), "USDO: caller not valid");
+        if (msg.sender != address(this)) revert SenderNotAuthorized();
 
         if (approvals.length > 0) {
             _callApproval(approvals, PT_YB_SEND_SGL_LEND_OR_REPAY);
@@ -179,7 +177,7 @@ contract USDOMarketDestinationModule is USDOCommon {
         uint64,
         bytes memory _payload
     ) public {
-        require(msg.sender == address(this), "USDO: not valid");
+        if (msg.sender != address(this)) revert SenderNotAuthorized();
         (
             ,
             address to,

@@ -1156,7 +1156,7 @@ describe('BigBang test', () => {
                     deployer.address,
                     usdoBorrowVal,
                 ),
-            ).to.be.revertedWith('BB: borrow cap reached');
+            ).to.be.reverted;
         });
 
         it('actions should not work when paused', async () => {
@@ -1228,7 +1228,7 @@ describe('BigBang test', () => {
                     0,
                     valShare,
                 ),
-            ).to.be.revertedWith('Market: paused');
+            ).to.be.reverted;
 
             await wethBigBangMarket.updatePause(2, false);
 
@@ -1254,7 +1254,7 @@ describe('BigBang test', () => {
                     deployer.address,
                     usdoBorrowVal,
                 ),
-            ).to.be.revertedWith('Market: paused');
+            ).to.be.reverted;
 
             await wethBigBangMarket.updatePause(0, false);
 
@@ -1289,7 +1289,7 @@ describe('BigBang test', () => {
                     false,
                     userBorrowPart,
                 ),
-            ).to.be.revertedWith('Market: paused');
+            ).to.be.reverted;
 
             await wethBigBangMarket.updatePause(1, false);
 
@@ -1316,7 +1316,7 @@ describe('BigBang test', () => {
                     deployer.address,
                     collateralShares,
                 ),
-            ).to.be.revertedWith('Market: paused');
+            ).to.be.reverted;
 
             await wethBigBangMarket.updatePause(3, false);
 
@@ -1734,7 +1734,11 @@ describe('BigBang test', () => {
             const MockSwapper = new MockSwapper__factory(deployer);
             const mockSwapper = await MockSwapper.deploy(yieldBox.address);
             await mockSwapper.deployed();
-            await cluster.updateContract(0, mockSwapper.address, true);
+            await cluster.updateContract(
+                await hre.getChainId(),
+                mockSwapper.address,
+                true,
+            );
 
             await wethBigBangMarketLeverageExecutor.setSwapper(
                 mockSwapper.address,
@@ -1804,8 +1808,14 @@ describe('BigBang test', () => {
             } = await loadFixture(setUp);
 
             await cluster.updateContract(
-                await bar.hostLzChainId(),
+                await hre.getChainId(),
                 mockSwapper.address,
+                true,
+            );
+
+            await cluster.updateContract(
+                await hre.getChainId(),
+                wethBigBangMarket.address,
                 true,
             );
             expect(
@@ -1898,6 +1908,17 @@ describe('BigBang test', () => {
                 cluster,
             } = await loadFixture(setUp);
 
+            await cluster.updateContract(
+                await hre.getChainId(),
+                mockSwapper.address,
+                true,
+            );
+            await cluster.updateContract(
+                await hre.getChainId(),
+                wethBigBangMarket.address,
+                true,
+            );
+
             expect(
                 await yieldBox.balanceOf(
                     deployer.address,
@@ -1932,7 +1953,7 @@ describe('BigBang test', () => {
                 await wethBigBangMarket.assetId(),
             );
             await cluster.updateContract(
-                await bar.hostLzChainId(),
+                await hre.getChainId(),
                 mockSwapper.address,
                 true,
             );

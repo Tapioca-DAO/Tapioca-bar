@@ -56,7 +56,7 @@ contract USDOGenericModule is USDOCommon {
         uint64,
         bytes memory _payload
     ) public {
-        require(msg.sender == address(this), "USDO: caller not valid");
+        if (msg.sender != address(this)) revert SenderNotAuthorized();
         (, address from, ICommonData.IApproval[] memory approvals) = abi.decode(
             _payload,
             (uint16, address, ICommonData.IApproval[])
@@ -125,7 +125,7 @@ contract USDOGenericModule is USDOCommon {
         uint64,
         bytes memory _payload
     ) public {
-        require(msg.sender == address(this), "USDO: caller not valid");
+        if (msg.sender != address(this)) revert SenderNotAuthorized();
         (
             ,
             address from,

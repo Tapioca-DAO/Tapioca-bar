@@ -1828,9 +1828,14 @@ export async function register(staging?: boolean) {
 
     // ------------------- 19 Set multiswapper -------------------
     await (
-        await cluster.updateContract(0, multiSwapper.address, true, {
-            gasPrice: gasPrice,
-        })
+        await cluster.updateContract(
+            await hre.getChainId(),
+            multiSwapper.address,
+            true,
+            {
+                gasPrice: gasPrice,
+            },
+        )
     ).wait();
 
     // ------------------- 20 ReceiverMock -------------------

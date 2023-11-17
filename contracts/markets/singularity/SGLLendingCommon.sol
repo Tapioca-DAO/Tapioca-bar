@@ -7,6 +7,12 @@ contract SGLLendingCommon is SGLCommon {
     using RebaseLibrary for Rebase;
     using BoringERC20 for IERC20;
 
+    // ************** //
+    // *** ERRORS *** //
+    // ************** //
+    error BorrowCapReached();
+    error NothingToRepay();
+
     // ************************** //
     // *** PRIVATE FUNCTIONS *** //
     // ************************* //
@@ -22,9 +28,11 @@ contract SGLLendingCommon is SGLCommon {
         if (share == 0) {
             share = yieldBox.toShare(collateralId, amount, false);
         }
-        userCollateralShare[to] += share;
         uint256 oldTotalCollateralShare = totalCollateralShare;
+        userCollateralShare[to] += share;
         totalCollateralShare = oldTotalCollateralShare + share;
+        _yieldBoxShares[to][COLLATERAL_SIG] += share;
+
         if (!multiHopLeverage) {
             _addTokens(
                 from,
@@ -35,7 +43,6 @@ contract SGLLendingCommon is SGLCommon {
                 skim
             );
         }
-        _yieldBoxShares[to][COLLATERAL_SIG] += share;
         emit LogAddCollateral(skim ? address(yieldBox) : from, to, share);
     }
 
@@ -61,25 +68,25 @@ contract SGLLendingCommon is SGLCommon {
         address to,
         uint256 amount
     ) internal returns (uint256 part, uint256 share) {
+        share = yieldBox.toShare(assetId, amount, false);
+        Rebase memory _totalAsset = totalAsset;
+        if (_totalAsset.base < 1000) revert MinLimit();
+        _totalAsset.elastic -= uint128(share);
+        totalAsset = _totalAsset;
+
         uint256 feeAmount = (amount * borrowOpeningFee) / FEE_PRECISION; // A flat % fee is charged for any borrow
 
         (totalBorrow, part) = totalBorrow.add(amount + feeAmount, true);
-        require(
-            totalBorrowCap == 0 || totalBorrow.elastic <= totalBorrowCap,
-            "SGL: borrow cap reached"
-        );
+
+        if (totalBorrowCap != 0) {
+            if (totalBorrow.elastic > totalBorrowCap) revert BorrowCapReached();
+        }
         userBorrowPart[from] += part;
         emit LogBorrow(from, to, amount, feeAmount, part);
 
         if (feeAmount > 0) {
             balanceOf[address(penrose)] += feeAmount;
         }
-
-        share = yieldBox.toShare(assetId, amount, false);
-        Rebase memory _totalAsset = totalAsset;
-        require(_totalAsset.base >= 1000, "SGL: min limit");
-        _totalAsset.elastic -= uint128(share);
-        totalAsset = _totalAsset;
 
         yieldBox.transfer(address(this), to, assetId, share);
     }
@@ -94,7 +101,7 @@ contract SGLLendingCommon is SGLCommon {
         if (part > userBorrowPart[to]) {
             part = userBorrowPart[to];
         }
-        require(part > 0, "SGL: nothing to repay");
+        if (part == 0) revert NothingToRepay();
 
         (totalBorrow, amount) = totalBorrow.sub(part, true);
 

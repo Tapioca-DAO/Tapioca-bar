@@ -29,11 +29,10 @@ contract USDOLeverageDestinationModule is USDOCommon {
         uint64 _nonce,
         bytes memory _payload
     ) public {
-        require(
-            msg.sender == address(this) &&
-                _moduleAddresses[Module.LeverageDestination] == module,
-            "USDO: not valid"
-        );
+        if (msg.sender != address(this)) revert SenderNotAuthorized();
+        if (_moduleAddresses[Module.LeverageDestination] != module)
+            revert NotValid();
+
         (
             ,
             uint64 amountSD,
@@ -105,14 +104,14 @@ contract USDOLeverageDestinationModule is USDOCommon {
         address leverageFor,
         uint256 airdropAmount
     ) public payable {
-        require(msg.sender == address(this), "USDO: not valid");
+        if (msg.sender != address(this)) revert SenderNotAuthorized();
+
         //swap from USDO
         if (externalData.swapper != address(0)) {
-            require(
-                cluster.isWhitelisted(0, externalData.swapper),
-                "USDO: not authorized"
-            );
+            if (!cluster.isWhitelisted(0, externalData.swapper))
+                revert SwapperNotAuthorized();
         }
+
         _approve(address(this), externalData.swapper, amount);
         ISwapper.SwapData memory _swapperData = ISwapper(externalData.swapper)
             .buildSwapData(
