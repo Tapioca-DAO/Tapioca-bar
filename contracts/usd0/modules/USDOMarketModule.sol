@@ -14,6 +14,12 @@ contract USDOMarketModule is USDOCommon {
     // using RebaseLibrary for Rebase;
     using SafeERC20 for IERC20;
 
+    // ************** //
+    // *** ERRORS *** //
+    // ************** //
+    error AllowanceNotValid();
+    error AmountTooLow();
+
     constructor(
         address _lzEndpoint,
         IYieldBoxBase _yieldBox,
@@ -34,11 +40,11 @@ contract USDOMarketModule is USDOCommon {
         //allowance is also checked on SGl
         if (from != msg.sender) {
             if (removeAndRepayData.removeAssetFromSGL) {
-                require(
-                    allowance(from, msg.sender) >=
-                        removeAndRepayData.removeAmount,
-                    "UDSO: sender not approved"
-                );
+                if (
+                    allowance(from, msg.sender) <
+                    removeAndRepayData.removeAmount
+                ) revert AllowanceNotValid();
+
                 _spendAllowance(
                     from,
                     msg.sender,
@@ -47,11 +53,11 @@ contract USDOMarketModule is USDOCommon {
             }
 
             if (removeAndRepayData.removeCollateralFromBB) {
-                require(
-                    allowance(from, msg.sender) >=
-                        removeAndRepayData.collateralAmount,
-                    "UDSO: sender not approved"
-                );
+                if (
+                    allowance(from, msg.sender) <
+                    removeAndRepayData.collateralAmount
+                ) revert AllowanceNotValid();
+
                 _spendAllowance(
                     from,
                     msg.sender,
@@ -106,10 +112,9 @@ contract USDOMarketModule is USDOCommon {
         // allowance is also checked on SGL
         // check it here as well because tokens are moved over layers
         if (_from != msg.sender) {
-            require(
-                allowance(_from, msg.sender) >= lendParams.depositAmount,
-                "UDSO: not approved"
-            );
+            if (allowance(_from, msg.sender) < lendParams.depositAmount)
+                revert AllowanceNotValid();
+
             _spendAllowance(_from, msg.sender, lendParams.depositAmount);
         }
 
@@ -121,7 +126,7 @@ contract USDOMarketModule is USDOCommon {
             toAddress,
             lendParams.depositAmount
         );
-        require(lendParams.depositAmount > 0, "TOFT_AMOUNT");
+        if (lendParams.depositAmount == 0) revert NotValid();
 
         (, , uint256 airdropAmount, ) = LzLib.decodeAdapterParams(
             adapterParams

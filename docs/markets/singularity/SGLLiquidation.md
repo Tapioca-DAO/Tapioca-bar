@@ -1856,3 +1856,127 @@ event emitted when the usdo swapper is updated
 
 
 
+## Errors
+
+### AmountNotValid
+
+```solidity
+error AmountNotValid()
+```
+
+
+
+
+
+
+### BadDebt
+
+```solidity
+error BadDebt()
+```
+
+
+
+
+
+
+### ExchangeRateNotValid
+
+```solidity
+error ExchangeRateNotValid()
+```
+
+
+
+
+
+
+### ForbiddenAction
+
+```solidity
+error ForbiddenAction()
+```
+
+
+
+
+
+
+### LengthMismatch
+
+```solidity
+error LengthMismatch()
+```
+
+
+
+
+
+
+### MinLimit
+
+```solidity
+error MinLimit()
+```
+
+
+
+
+
+
+### NotEnoughCollateral
+
+```solidity
+error NotEnoughCollateral()
+```
+
+
+
+
+
+
+### NothingToLiquidate
+
+```solidity
+error NothingToLiquidate()
+```
+
+
+
+
+
+
+### OnCollateralReceiverFailed
+
+```solidity
+error OnCollateralReceiverFailed()
+```
+
+
+
+
+
+
+### Solvent
+
+```solidity
+error Solvent()
+```
+
+
+
+
+
+
+### TooMuch
+
+```solidity
+error TooMuch()
+```
+
+
+
+
+
+
+

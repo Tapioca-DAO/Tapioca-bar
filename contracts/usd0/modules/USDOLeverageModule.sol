@@ -13,6 +13,12 @@ import "./USDOCommon.sol";
 contract USDOLeverageModule is USDOCommon {
     using SafeERC20 for IERC20;
 
+    // ************** //
+    // *** ERRORS *** //
+    // ************** //
+    error AllowanceNotValid();
+    error AmountTooLow();
+
     constructor(
         address _lzEndpoint,
         IYieldBoxBase _yieldBox,
@@ -27,22 +33,19 @@ contract USDOLeverageModule is USDOCommon {
         IUSDOBase.ILeverageExternalContractsData calldata externalData
     ) external payable {
         if (leverageFor != msg.sender) {
-            require(
-                allowance(leverageFor, msg.sender) >= amount,
-                "UDSO: approval"
-            );
+            if (allowance(leverageFor, msg.sender) < amount)
+                revert AllowanceNotValid();
             _spendAllowance(leverageFor, msg.sender, amount);
         }
-        require(swapData.tokenOut != address(this), "USDO: not valid");
+        if (swapData.tokenOut == address(this)) revert NotValid();
         _assureMaxSlippage(amount, swapData.amountOutMin);
         if (externalData.swapper != address(0)) {
-            require(
-                cluster.isWhitelisted(
+            if (
+                !cluster.isWhitelisted(
                     lzData.lzDstChainId,
                     externalData.swapper
-                ),
-                "USDO: auth"
-            ); //fail fast
+                )
+            ) revert SwapperNotAuthorized();
         }
         bytes32 senderBytes = LzLib.addressToBytes32(msg.sender);
         (amount, ) = _removeDust(amount);
@@ -52,7 +55,7 @@ contract USDOLeverageModule is USDOCommon {
             senderBytes,
             amount
         );
-        require(amount > 0, "TOFT_AMOUNT");
+        if (amount == 0) revert NotValid();
 
         (, , uint256 airdropAmount, ) = LzLib.decodeAdapterParams(
             lzData.dstAirdropAdapterParam
@@ -91,6 +94,6 @@ contract USDOLeverageModule is USDOCommon {
     ) internal pure {
         uint256 slippageMinAmount = amount -
             ((SWAP_MAX_SLIPPAGE * amount) / SLIPPAGE_PRECISION);
-        require(minAmount >= slippageMinAmount, "USDO: slippage");
+        if (minAmount < slippageMinAmount) revert AmountTooLow();
     }
 }

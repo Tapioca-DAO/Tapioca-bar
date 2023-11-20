@@ -90,7 +90,7 @@ describe('USDO', () => {
 
             await expect(
                 usd0.connect(normalUser).mint(normalUser.address, amount),
-            ).to.be.revertedWith('USDO: unauthorized');
+            ).to.be.reverted;
             await usd0.connect(deployer).mint(normalUser.address, amount);
 
             usd0Balance = await usd0.balanceOf(normalUser.address);
@@ -98,7 +98,7 @@ describe('USDO', () => {
 
             await expect(
                 usd0.connect(normalUser).burn(normalUser.address, amount),
-            ).to.be.revertedWith('USDO: unauthorized');
+            ).to.be.reverted;
             await usd0.connect(deployer).burn(normalUser.address, amount);
             usd0Balance = await usd0.balanceOf(normalUser.address);
             expect(usd0Balance.eq(0)).to.be.true;
@@ -146,9 +146,8 @@ describe('USDO', () => {
 
             //try to mint usd0
             const flashFee = await usd0Flashloan.flashFee(usd0.address, amount);
-            await expect(
-                flashBorrower.flashBorrow(usd0.address, amount),
-            ).to.be.revertedWith('ERC20: transfer amount exceeds balance');
+            await expect(flashBorrower.flashBorrow(usd0.address, amount)).to.be
+                .reverted;
 
             await usd0.connect(deployer).mint(deployer.address, flashFee);
 
@@ -173,11 +172,10 @@ describe('USDO', () => {
             const maxFlashMint = await usd0Flashloan.maxFlashMint();
             await expect(
                 flashBorrower.flashBorrow(usd0.address, maxFlashMint.add(1)),
-            ).to.be.revertedWith('USDOFlashloanHelper: amount too big');
+            ).to.be.revertedWithoutReason;
 
-            await expect(
-                flashBorrower.flashBorrow(weth.address, amount),
-            ).to.be.revertedWith('USDOFlashloanHelper: token not valid');
+            await expect(flashBorrower.flashBorrow(weth.address, amount)).to.be
+                .reverted;
         });
 
         it('should not flashMint for a malicious operator', async () => {
@@ -217,9 +215,8 @@ describe('USDO', () => {
 
             //send for the fee
             await usd0.transfer(flashBorrower.address, flashFee);
-            await expect(
-                flashBorrower.flashBorrow(usd0.address, amount),
-            ).to.be.revertedWith('ERC20: insufficient allowance');
+            await expect(flashBorrower.flashBorrow(usd0.address, amount)).to.be
+                .reverted;
         });
     });
 });

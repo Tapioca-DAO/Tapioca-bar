@@ -5,7 +5,11 @@ import "./SGLLendingCommon.sol";
 
 contract SGLBorrow is SGLLendingCommon {
     using RebaseLibrary for Rebase;
-    using BoringERC20 for IERC20;
+
+    // ************** //
+    // *** ERRORS *** //
+    // ************** //
+    error AllowanceNotValid();
 
     // ************************ //
     // *** PUBLIC FUNCTIONS *** //
@@ -33,9 +37,11 @@ contract SGLBorrow is SGLLendingCommon {
             from,
             exchangeRate,
             amount + feeAmount,
-            asset.safeDecimals()
+            _safeDecimals(asset)
         );
-        require(allowanceShare > 0, "BB: allowanceShare not valid");
+
+        if (allowanceShare == 0) revert AllowanceNotValid();
+
         _allowedBorrow(from, allowanceShare);
 
         (part, share) = _borrow(from, to, amount);
@@ -71,11 +77,18 @@ contract SGLBorrow is SGLLendingCommon {
             to,
             exchangeRate,
             partInAmount,
-            asset.safeDecimals()
+            _safeDecimals(asset)
         );
-        require(allowanceShare > 0, "SGL: allowanceShare not valid");
+        if (allowanceShare == 0) revert AllowanceNotValid();
         _allowedBorrow(from, allowanceShare);
 
         amount = _repay(from, to, skim, part);
+    }
+
+    function _safeDecimals(IERC20 token) private view returns (uint8) {
+        (bool success, bytes memory data) = address(token).staticcall(
+            abi.encodeWithSelector(0x313ce567)
+        ); //decimals() selector
+        return success && data.length == 32 ? abi.decode(data, (uint8)) : 18;
     }
 }

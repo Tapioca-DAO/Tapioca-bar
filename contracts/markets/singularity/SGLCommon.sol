@@ -6,10 +6,15 @@ import "./SGLStorage.sol";
 contract SGLCommon is SGLStorage {
     using RebaseLibrary for Rebase;
 
+    // ************** //
+    // *** ERRORS *** //
+    // ************** //
+    error TooMuch();
+    error MinLimit();
+
     // ************************ //
     // *** PUBLIC FUNCTIONS *** //
     // ************************ //
-
     /// @notice Accrues the interest on the borrowed tokens and handles the accumulation of fees.
     function accrue() external {
         _accrue();
@@ -195,10 +200,8 @@ contract SGLCommon is SGLStorage {
         bool skim
     ) internal {
         if (skim) {
-            require(
-                share <= yieldBox.balanceOf(address(this), _assetId) - total,
-                "SGL: too much"
-            );
+            if (share > yieldBox.balanceOf(address(this), _assetId) - total)
+                revert TooMuch();
         } else {
             yieldBox.transfer(from, address(this), _assetId, share);
         }
@@ -222,11 +225,12 @@ contract SGLCommon is SGLStorage {
             return 0;
         }
         totalAsset = _totalAsset.add(share, fraction);
+
         balanceOf[to] += fraction;
         emit Transfer(address(0), to, fraction);
+        _yieldBoxShares[to][ASSET_SIG] += share;
 
         _addTokens(from, to, assetId, share, totalAssetShare, skim);
-        _yieldBoxShares[to][ASSET_SIG] += share;
         emit LogAddAsset(skim ? address(yieldBox) : from, to, share, fraction);
     }
 
@@ -245,11 +249,13 @@ contract SGLCommon is SGLStorage {
         uint256 allShare = _totalAsset.elastic +
             yieldBox.toShare(assetId, totalBorrow.elastic, true);
         share = (fraction * allShare) / _totalAsset.base;
+
+        _totalAsset.base -= uint128(fraction);
+        if (_totalAsset.base < 1000) revert MinLimit();
+
         balanceOf[from] -= fraction;
         emit Transfer(from, address(0), fraction);
         _totalAsset.elastic -= uint128(share);
-        _totalAsset.base -= uint128(fraction);
-        require(_totalAsset.base >= 1000, "SGL: min limit");
         totalAsset = _totalAsset;
         emit LogRemoveAsset(from, to, share, fraction);
         yieldBox.transfer(address(this), to, assetId, share);

@@ -9,6 +9,14 @@ import "./BaseLeverageExecutor.sol";
 contract AssetToGLPLeverageExecutor is BaseLeverageExecutor {
     IERC20 public immutable usdc;
 
+    // ************** //
+    // *** ERRORS *** //
+    // ************** //
+    error SenderNotValid();
+    error TokenNotValid();
+    error NotEnough(address token);
+    error GlpNotValid();
+
     constructor(
         YieldBox _yb,
         ISwapper _swapper,
@@ -37,10 +45,7 @@ contract AssetToGLPLeverageExecutor is BaseLeverageExecutor {
         address from,
         bytes calldata data
     ) external payable override returns (uint256 collateralAmountOut) {
-        require(
-            cluster.isWhitelisted(0, msg.sender),
-            "LeverageExecutor: sender not valid"
-        );
+        if (!cluster.isWhitelisted(0, msg.sender)) revert SenderNotValid();
         _assureSwapperValidity();
 
         //decode data
@@ -60,17 +65,12 @@ contract AssetToGLPLeverageExecutor is BaseLeverageExecutor {
             dexUsdcData,
             0
         );
-        require(
-            usdcAmount >= minUsdcAmountOut,
-            "AssetToGLPLeverageExecutor: not enough USDC"
-        );
+
+        if (usdcAmount < minUsdcAmountOut) revert NotEnough(address(usdc));
 
         //get GLP address
         address glpAddress = ITapiocaOFTBase(collateralAddress).erc20();
-        require(
-            glpAddress != address(0),
-            "AssetToGLPLeverageExecutor: glp not valid"
-        );
+        if (glpAddress == address(0)) revert GlpNotValid();
 
         //swap USDC with GLP
         collateralAmountOut = _swapTokens(
@@ -81,10 +81,7 @@ contract AssetToGLPLeverageExecutor is BaseLeverageExecutor {
             dexGlpData,
             0
         );
-        require(
-            collateralAmountOut >= minGlpAmountOut,
-            "AssetToGLPLeverageExecutor: not enough GLP"
-        );
+        if (collateralAmountOut < minGlpAmountOut) revert NotEnough(glpAddress);
 
         //wrap into tGLP
         IERC20(glpAddress).approve(collateralAddress, 0);
@@ -126,10 +123,7 @@ contract AssetToGLPLeverageExecutor is BaseLeverageExecutor {
         address from,
         bytes calldata data
     ) external override returns (uint256 assetAmountOut) {
-        require(
-            cluster.isWhitelisted(0, msg.sender),
-            "LeverageExecutor: sender not valid"
-        );
+        if (!cluster.isWhitelisted(0, msg.sender)) revert SenderNotValid();
         _assureSwapperValidity();
 
         //decode data
@@ -141,10 +135,7 @@ contract AssetToGLPLeverageExecutor is BaseLeverageExecutor {
         ) = abi.decode(data, (uint256, bytes, uint256, bytes));
 
         address glpAddress = ITapiocaOFTBase(collateralAddress).erc20();
-        require(
-            glpAddress != address(0),
-            "AssetToGLPLeverageExecutor: glp not valid"
-        );
+        if (glpAddress == address(0)) revert TokenNotValid();
 
         ITapiocaOFTBase(collateralAddress).unwrap(
             address(this),
@@ -160,10 +151,7 @@ contract AssetToGLPLeverageExecutor is BaseLeverageExecutor {
             dexUsdcData,
             0
         );
-        require(
-            usdcAmount >= minUsdcAmountOut,
-            "AssetToGLPLeverageExecutor: not enough UDSC"
-        );
+        if (usdcAmount < minUsdcAmountOut) revert NotEnough(address(usdc));
 
         //swap USDC with Asset
         assetAmountOut = _swapTokens(
@@ -174,10 +162,7 @@ contract AssetToGLPLeverageExecutor is BaseLeverageExecutor {
             dexAssetData,
             0
         );
-        require(
-            assetAmountOut >= minAssetAmountOut,
-            "AssetToGLPLeverageExecutor: not enough Asset"
-        );
+        if (assetAmountOut < minAssetAmountOut) revert NotEnough(assetAddress);
 
         IERC20(assetAddress).approve(address(yieldBox), 0);
         IERC20(assetAddress).approve(address(yieldBox), assetAmountOut);

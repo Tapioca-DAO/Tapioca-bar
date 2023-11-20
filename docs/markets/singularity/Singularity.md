@@ -2253,3 +2253,72 @@ event emitted when the usdo swapper is updated
 
 
 
+## Errors
+
+### BadPair
+
+```solidity
+error BadPair()
+```
+
+
+
+
+
+
+### MinLimit
+
+```solidity
+error MinLimit()
+```
+
+
+
+
+
+
+### ModuleNotSet
+
+```solidity
+error ModuleNotSet()
+```
+
+
+
+
+
+
+### NotValid
+
+```solidity
+error NotValid()
+```
+
+
+
+
+
+
+### TooMuch
+
+```solidity
+error TooMuch()
+```
+
+
+
+
+
+
+### TransferFailed
+
+```solidity
+error TransferFailed()
+```
+
+
+
+
+
+
+

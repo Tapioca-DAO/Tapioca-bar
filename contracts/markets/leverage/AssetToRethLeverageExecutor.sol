@@ -13,6 +13,14 @@ contract AssetToRethLeverageExecutor is BaseLeverageExecutor {
     IBalancerVault public vault;
     bytes32 public poolId; //0xade4a71bb62bec25154cfc7e6ff49a513b491e81000000000000000000000497
 
+    // ************** //
+    // *** ERRORS *** //
+    // ************** //
+    error SenderNotValid();
+    error TokenNotValid();
+    error NotEnough(address token);
+    error Failed();
+
     constructor(
         YieldBox _yb,
         ISwapper _swapper,
@@ -47,10 +55,7 @@ contract AssetToRethLeverageExecutor is BaseLeverageExecutor {
         address from,
         bytes calldata data
     ) external payable override returns (uint256 collateralAmountOut) {
-        require(
-            cluster.isWhitelisted(0, msg.sender),
-            "LeverageExecutor: sender not valid"
-        );
+        if (!cluster.isWhitelisted(0, msg.sender)) revert SenderNotValid();
         _assureSwapperValidity();
 
         //decode data
@@ -69,17 +74,11 @@ contract AssetToRethLeverageExecutor is BaseLeverageExecutor {
             dexWEthData,
             0
         );
-        require(
-            wethAmount >= minWethAmount,
-            "AssetToRethLeverageExecutor: not enough WETH"
-        );
+        if (wethAmount < minWethAmount) revert NotEnough(weth);
 
         //verify rETH
         address rEth = ITapiocaOFTBase(collateralAddress).erc20();
-        require(
-            rEth != address(0),
-            "AssetToRethLeverageExecutor: rETH not valid"
-        );
+        if (rEth == address(0)) revert TokenNotValid();
 
         //Swap WETH with rETH on BalancerV2
         IERC20(weth).approve(address(vault), 0);
@@ -133,10 +132,7 @@ contract AssetToRethLeverageExecutor is BaseLeverageExecutor {
         address from,
         bytes calldata data
     ) external override returns (uint256 assetAmountOut) {
-        require(
-            cluster.isWhitelisted(0, msg.sender),
-            "LeverageExecutor: sender not valid"
-        );
+        if (!cluster.isWhitelisted(0, msg.sender)) revert SenderNotValid();
         _assureSwapperValidity();
 
         //decode data
@@ -154,10 +150,7 @@ contract AssetToRethLeverageExecutor is BaseLeverageExecutor {
 
         //verify rETH
         address rEth = ITapiocaOFTBase(collateralAddress).erc20();
-        require(
-            rEth != address(0),
-            "AssetToRethLeverageExecutor: rETH not valid"
-        );
+        if (rEth == address(0)) revert TokenNotValid();
 
         //swap rETH with WETH
         uint256 wethAmount = _swap(
@@ -177,10 +170,7 @@ contract AssetToRethLeverageExecutor is BaseLeverageExecutor {
             dexAssetData,
             0
         );
-        require(
-            assetAmountOut >= minAssetAmount,
-            "AssetToRethLeverageExecutor: not enough"
-        );
+        if (assetAmountOut < minAssetAmount) revert NotEnough(assetAddress);
 
         IERC20(assetAddress).approve(address(yieldBox), 0);
         IERC20(assetAddress).approve(address(yieldBox), assetAmountOut);
@@ -227,9 +217,6 @@ contract AssetToRethLeverageExecutor is BaseLeverageExecutor {
             minAmountOut,
             deadline
         );
-        require(
-            collateralAmountOut >= minAmountOut,
-            "AssetToRethLeverageExecutor: rETH swap failed"
-        );
+        if (collateralAmountOut < minAmountOut) revert Failed();
     }
 }

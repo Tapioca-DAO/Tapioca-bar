@@ -57,7 +57,7 @@ describe('MarketLiquidatorReceiver test', () => {
                     ethers.utils.parseEther('10'),
                     defaultAbiCoder.encode(['uint256'], [50]),
                 ),
-        ).to.be.revertedWith('MarketLiquidatorReceiver: sender not allowed');
+        ).to.be.reverted;
         await liquidator.increaseAllowance(
             eoa1.address,
             usdc.address,
@@ -73,7 +73,7 @@ describe('MarketLiquidatorReceiver test', () => {
                     ethers.utils.parseEther('10'),
                     defaultAbiCoder.encode(['uint256'], [50]),
                 ),
-        ).to.be.revertedWith('MarketLiquidatorReceiver: sender not allowed');
+        ).to.be.reverted;
         await liquidator.increaseAllowance(
             eoa1.address,
             usdc.address,

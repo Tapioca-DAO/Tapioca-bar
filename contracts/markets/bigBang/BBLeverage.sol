@@ -9,6 +9,11 @@ contract BBLeverage is BBLendingCommon {
     using RebaseLibrary for Rebase;
     using BoringERC20 for IERC20;
 
+    // ************** //
+    // *** ERRORS *** //
+    // ************** //
+    error LeverageExecutorNotValid();
+
     /// @notice Lever up: Borrow more and buy collateral with it.
     /// @param from The user who buys
     /// @param borrowAmount Amount of extra asset borrowed
@@ -27,10 +32,8 @@ contract BBLeverage is BBLendingCommon {
         notSelf(from)
         returns (uint256 amountOut)
     {
-        require(
-            address(leverageExecutor) != address(0),
-            "BB: leverage executor not valid"
-        );
+        if (address(leverageExecutor) == address(0))
+            revert LeverageExecutorNotValid();
         uint256 supplyShare = yieldBox.toShare(assetId, supplyAmount, true);
         uint256 supplyShareToAmount;
         if (supplyShare > 0) {
@@ -42,7 +45,6 @@ contract BBLeverage is BBLendingCommon {
                 supplyShare
             );
         }
-
         (, uint256 borrowShare) = _borrow(
             from,
             address(this),
@@ -56,7 +58,6 @@ contract BBLeverage is BBLendingCommon {
             0,
             borrowShare
         );
-
         amountOut = leverageExecutor.getCollateral(
             collateralId,
             address(asset),
@@ -70,7 +71,6 @@ contract BBLeverage is BBLendingCommon {
             amountOut,
             false
         );
-
         _allowedBorrow(from, collateralShare);
         _addCollateral(from, from, false, 0, collateralShare);
     }
@@ -91,6 +91,8 @@ contract BBLeverage is BBLendingCommon {
         notSelf(from)
         returns (uint256 amountOut)
     {
+        if (address(leverageExecutor) == address(0))
+            revert LeverageExecutorNotValid();
         _allowedBorrow(from, share);
         _removeCollateral(from, address(this), share);
         (, uint256 obtainedShare) = yieldBox.withdraw(
@@ -100,7 +102,6 @@ contract BBLeverage is BBLendingCommon {
             0,
             share
         );
-
         uint256 leverageAmount = yieldBox.toAmount(
             collateralId,
             obtainedShare,
@@ -114,7 +115,6 @@ contract BBLeverage is BBLendingCommon {
             from,
             data
         );
-
         uint256 shareOut = yieldBox.toShare(assetId, amountOut, false);
         uint256 partOwed = userBorrowPart[from];
         uint256 amountOwed = totalBorrow.toElastic(partOwed, true);

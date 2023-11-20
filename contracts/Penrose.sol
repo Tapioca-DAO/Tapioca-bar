@@ -176,27 +176,34 @@ contract Penrose is BoringOwnable, BoringFactory {
     );
     event ClusterSet(address indexed old, address indexed _new);
 
+    // ************** //
+    // *** ERRORS *** //
+    // ************** //
+    error NotRegistered();
+    error NotValid();
+    error Paused();
+    error NotAuthorized();
+    error Registered();
+    error ZeroAddress();
+    error Failed();
+    error AlreadyAdded();
+    error LengthMismatch();
+
     // ******************//
     // *** MODIFIERS *** //
     // ***************** //
     modifier registeredSingularityMasterContract(address mc) {
-        require(
-            isSingularityMasterContractRegistered[mc] == true,
-            "Penrose: MC not registered"
-        );
+        if (!isSingularityMasterContractRegistered[mc]) revert NotRegistered();
         _;
     }
 
     modifier registeredBigBangMasterContract(address mc) {
-        require(
-            isBigBangMasterContractRegistered[mc] == true,
-            "Penrose: MC not registered"
-        );
+        if (!isBigBangMasterContractRegistered[mc]) revert NotRegistered();
         _;
     }
 
     modifier notPaused() {
-        require(!paused, "Penrose: paused");
+        if (paused) revert Paused();
         _;
     }
 
@@ -239,7 +246,7 @@ contract Penrose is BoringOwnable, BoringFactory {
         IMarket[] calldata markets_,
         ITwTap twTap
     ) external onlyOwner notPaused {
-        require(address(twTap) != address(0), "Penrose: twTap not valid");
+        if (address(twTap) == address(0)) revert NotValid();
 
         uint256 length = markets_.length;
         unchecked {
@@ -282,8 +289,8 @@ contract Penrose is BoringOwnable, BoringFactory {
     /// @dev can only be called by the conservator
     /// @param val the new value
     function updatePause(bool val) external {
-        require(msg.sender == conservator, "Penrose: unauthorized");
-        require(val != paused, "Penrose: same state");
+        if (msg.sender != conservator) revert NotAuthorized();
+        if (val == paused) revert NotValid();
         emit PausedUpdated(paused, val);
         paused = val;
     }
@@ -292,7 +299,7 @@ contract Penrose is BoringOwnable, BoringFactory {
     /// @dev Conservator can pause the contract
     /// @param _conservator The new address
     function setConservator(address _conservator) external onlyOwner {
-        require(_conservator != address(0), "Penrose: address not valid");
+        if (_conservator == address(0)) revert NotValid();
         emit ConservatorUpdated(conservator, _conservator);
         conservator = _conservator;
     }
@@ -331,10 +338,8 @@ contract Penrose is BoringOwnable, BoringFactory {
         address mcAddress,
         IPenrose.ContractType contractType_
     ) external onlyOwner {
-        require(
-            isSingularityMasterContractRegistered[mcAddress] == false,
-            "Penrose: MC registered"
-        );
+        if (isSingularityMasterContractRegistered[mcAddress])
+            revert Registered();
 
         IPenrose.MasterContract memory mc;
         mc.location = mcAddress;
@@ -353,10 +358,7 @@ contract Penrose is BoringOwnable, BoringFactory {
         address mcAddress,
         IPenrose.ContractType contractType_
     ) external onlyOwner {
-        require(
-            isBigBangMasterContractRegistered[mcAddress] == false,
-            "Penrose: MC registered"
-        );
+        if (isBigBangMasterContractRegistered[mcAddress]) revert Registered();
 
         IPenrose.MasterContract memory mc;
         mc.location = mcAddress;
@@ -384,8 +386,8 @@ contract Penrose is BoringOwnable, BoringFactory {
         returns (address _contract)
     {
         _contract = deploy(mc, data, useCreate2);
-        require(_contract != address(0), "Penrose: zero address");
-        require(_contract.code.length > 0, "Penrose: deployment failed");
+        if (_contract == address(0)) revert ZeroAddress();
+        if (_contract.code.length == 0) revert Failed();
         isMarketRegistered[_contract] = true;
         emit RegisterSingularity(_contract, mc);
     }
@@ -397,10 +399,7 @@ contract Penrose is BoringOwnable, BoringFactory {
         address mc,
         address _contract
     ) external onlyOwner registeredSingularityMasterContract(mc) {
-        require(
-            !isMarketRegistered[_contract],
-            "Penrose: market already added"
-        );
+        if (isMarketRegistered[_contract]) revert AlreadyAdded();
         isMarketRegistered[_contract] = true;
         clonesOf[mc].push(_contract);
         masterContractOf[_contract] = mc;
@@ -424,8 +423,8 @@ contract Penrose is BoringOwnable, BoringFactory {
         returns (address _contract)
     {
         _contract = deploy(mc, data, useCreate2);
-        require(_contract != address(0), "Penrose: zero address");
-        require(_contract.code.length > 0, "Penrose: deployment failed");
+        if (_contract == address(0)) revert ZeroAddress();
+        if (_contract.code.length == 0) revert Failed();
         isMarketRegistered[_contract] = true;
         allBigBangMarkets.push(_contract);
         emit RegisterBigBang(_contract, mc);
@@ -438,10 +437,7 @@ contract Penrose is BoringOwnable, BoringFactory {
         address mc,
         address _contract
     ) external onlyOwner registeredBigBangMasterContract(mc) {
-        require(
-            !isMarketRegistered[_contract],
-            "Penrose: market already added"
-        );
+        if (isMarketRegistered[_contract]) revert AlreadyAdded();
         isMarketRegistered[_contract] = true;
         clonesOf[mc].push(_contract);
         masterContractOf[_contract] = mc;
@@ -460,17 +456,16 @@ contract Penrose is BoringOwnable, BoringFactory {
         returns (bool[] memory success, bytes[] memory result)
     {
         uint256 len = mc.length;
-        require(len == data.length, "Penrose: length mismatch");
+        if (len != data.length) revert LengthMismatch();
         success = new bool[](len);
         result = new bytes[](len);
         for (uint256 i; i < len; ) {
-            require(
-                isSingularityMasterContractRegistered[
+            if (
+                !isSingularityMasterContractRegistered[
                     masterContractOf[mc[i]]
-                ] || isBigBangMasterContractRegistered[masterContractOf[mc[i]]],
-                "Penrose: MC not registered"
-            );
-            require(address(mc[i]).code.length > 0, "Penrose: no contract");
+                ] && !isBigBangMasterContractRegistered[masterContractOf[mc[i]]]
+            ) revert NotAuthorized();
+            if (address(mc[i]).code.length == 0) revert NotValid();
             (success[i], result[i]) = mc[i].call(data[i]);
             if (forceSuccess) {
                 require(success[i], _getRevertMsg(result[i]));
@@ -482,10 +477,7 @@ contract Penrose is BoringOwnable, BoringFactory {
     /// @notice Calls `accrue()` on all BigBang registered markets
     /// @dev callable by BigBang ETH market only
     function reAccrueBigBangMarkets() external notPaused {
-        require(
-            isMarketRegistered[msg.sender] == true,
-            "Penrose: unauthorized"
-        );
+        if (!isMarketRegistered[msg.sender]) revert NotAuthorized();
         if (msg.sender == bigBangEthMarket) {
             uint256 len = allBigBangMarkets.length;
             address[] memory markets = allBigBangMarkets;
@@ -517,7 +509,7 @@ contract Penrose is BoringOwnable, BoringFactory {
     }
 
     function _depositFeesToTwTap(IMarket market, ITwTap twTap) private {
-        require(isMarketRegistered[address(market)], "Penrose: Invalid market");
+        if (!isMarketRegistered[address(market)]) revert NotValid();
 
         uint256 feeShares = market.refreshPenroseFees();
         if (feeShares == 0) return;

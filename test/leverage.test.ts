@@ -160,6 +160,16 @@ describe('Singularity Leverage', () => {
                 bar,
             } = await loadFixture(setUp);
 
+            await cluster.updateContract(
+                await hre.getChainId(),
+                mockSwapper.address,
+                true,
+            );
+            await cluster.updateContract(
+                await hre.getChainId(),
+                wethUsdcSingularity.address,
+                true,
+            );
             // Alice now has a LTV ratio of a little over 50%; this equates to
             // 2x leverage (on a "USDC long", or "ETH short")
             // - $1000 worth of ETH (plus a little interest) borrowed, and
@@ -224,6 +234,12 @@ describe('Singularity Leverage', () => {
                 cluster,
             } = await loadFixture(setUp);
 
+            await cluster.updateContract(
+                await hre.getChainId(),
+                wethUsdcSingularity.address,
+                true,
+            );
+
             // Alice is the first borrower and interest has not yet accrued
             expect(
                 await wethUsdcSingularity.userBorrowPart(alice.address),
@@ -278,7 +294,14 @@ describe('Singularity Leverage', () => {
                 usdcId,
                 yieldBox,
                 wethUsdcSingularity,
+                cluster,
             } = await loadFixture(setUp);
+
+            await cluster.updateContract(
+                await hre.getChainId(),
+                wethUsdcSingularity.address,
+                true,
+            );
 
             // Alice now has a LTV ratio of a little over 50%; this equates to
             // 2x leverage (on a "USDC long", or "ETH short")
@@ -345,7 +368,19 @@ describe('Singularity Leverage', () => {
                 usdcId,
                 yieldBox,
                 wethUsdcSingularity,
+                cluster,
             } = await loadFixture(setUp);
+
+            await cluster.updateContract(
+                await hre.getChainId(),
+                mockSwapper.address,
+                true,
+            );
+            await cluster.updateContract(
+                await hre.getChainId(),
+                wethUsdcSingularity.address,
+                true,
+            );
 
             // Carol has no previous interactions with the protocol*, and wants to
             // go "long USDC" 2.5x: control $5000 of USDC by supplying $2000 of ETH

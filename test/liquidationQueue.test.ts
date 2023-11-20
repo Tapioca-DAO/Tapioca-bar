@@ -15,9 +15,8 @@ describe.skip('LiquidationQueue test', () => {
                 liquidationQueue.bid(deployer.address, 40, 1),
             ).to.be.revertedWith('LQ: premium too high');
 
-            await expect(
-                liquidationQueue.bid(deployer.address, 10, 1),
-            ).to.be.revertedWith('LQ: bid too low');
+            await expect(liquidationQueue.bid(deployer.address, 10, 1)).to.be
+                .reverted;
         });
 
         it('should now allow bid on uninitialized contract', async () => {
@@ -381,7 +380,7 @@ describe.skip('LiquidationQueue test', () => {
                     data,
                     ethers.constants.AddressZero,
                 ),
-            ).to.be.revertedWith('SGL: solvent');
+            ).to.be.reverted;
 
             // Make some price movement and liquidate
             const priceDrop = __wethUsdcPrice.mul(15).div(100);
@@ -414,7 +413,7 @@ describe.skip('LiquidationQueue test', () => {
                     data,
                     multiSwapper.address,
                 ),
-            ).to.be.revertedWith('SGL: solvent');
+            ).to.be.reverted;
 
             // Check that LQ balances has been added
             expect(
@@ -2354,7 +2353,7 @@ describe.skip('LiquidationQueue test', () => {
                     data,
                     ethers.constants.AddressZero,
                 ),
-            ).to.be.revertedWith('SGL: no users found');
+            ).to.be.reverted;
 
             // Make some price movement and liquidate
             const priceDrop = __wethUsdcPrice.mul(5).div(100);
@@ -2387,7 +2386,7 @@ describe.skip('LiquidationQueue test', () => {
                     data,
                     multiSwapper.address,
                 ),
-            ).to.be.revertedWith('SGL: no users found');
+            ).to.be.reverted;
 
             // Check that LQ balances has been added
             expect(await liquidationQueue.balancesDue(deployer.address)).to.eq(

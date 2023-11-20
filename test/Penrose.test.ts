@@ -46,7 +46,7 @@ describe('Penrose test', () => {
                     ethers.utils.toUtf8Bytes(''),
                     false,
                 ),
-            ).to.be.revertedWith('Penrose: MC not registered');
+            ).to.be.reverted;
         });
 
         it('should not allow registering the same master contract twice', async () => {
@@ -54,7 +54,7 @@ describe('Penrose test', () => {
 
             await expect(
                 bar.registerSingularityMasterContract(mediumRiskMC.address, 1),
-            ).to.be.revertedWith('Penrose: MC registered');
+            ).to.be.reverted;
         });
 
         it('should not allow executing without a proper master contract', async () => {
@@ -66,7 +66,7 @@ describe('Penrose test', () => {
                     [ethers.utils.toUtf8Bytes('')],
                     true,
                 ),
-            ).to.be.revertedWith('Penrose: MC not registered');
+            ).to.be.reverted;
         });
 
         it('should not allow to call withdraw when paused', async () => {
@@ -78,14 +78,14 @@ describe('Penrose test', () => {
                     [ethers.constants.AddressZero],
                     ethers.constants.AddressZero,
                 ),
-            ).to.be.revertedWith('Penrose: paused');
+            ).to.be.reverted;
 
             await expect(
                 bar.withdrawAllMarketFees(
                     [ethers.constants.AddressZero],
                     ethers.constants.AddressZero,
                 ),
-            ).to.be.revertedWith('Penrose: paused');
+            ).to.be.reverted;
         });
 
         it('should not allow to call execute when paused', async () => {
@@ -98,7 +98,7 @@ describe('Penrose test', () => {
                     [ethers.utils.toUtf8Bytes('')],
                     true,
                 ),
-            ).to.be.revertedWith('Penrose: paused');
+            ).to.be.reverted;
         });
     });
 

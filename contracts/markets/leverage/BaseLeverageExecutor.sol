@@ -13,6 +13,12 @@ import "tapioca-periph/contracts/interfaces/ICluster.sol";
 import "tapioca-periph/contracts/interfaces/ILeverageExecutor.sol";
 
 abstract contract BaseLeverageExecutor is BoringOwnable {
+    // ************** //
+    // *** ERRORS *** //
+    // ************** //
+    error SwapperNotValid();
+    error SwapperNotAuthorized();
+
     // ************ //
     // *** VARS *** //
     // ************ //
@@ -132,13 +138,8 @@ abstract contract BaseLeverageExecutor is BoringOwnable {
     }
 
     function _assureSwapperValidity() internal view {
-        require(
-            address(swapper) != address(0),
-            "LeverageExecutor: swapper not valid"
-        );
-        require(
-            cluster.isWhitelisted(0, address(swapper)),
-            "LeverageExecutor: swapper not authorized"
-        );
+        if (address(swapper) == address(0)) revert SwapperNotValid();
+        if (!cluster.isWhitelisted(0, address(swapper)))
+            revert SwapperNotAuthorized();
     }
 }

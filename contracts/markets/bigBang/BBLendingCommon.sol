@@ -7,6 +7,14 @@ contract BBLendingCommon is BBCommon {
     using RebaseLibrary for Rebase;
     using BoringERC20 for IERC20;
 
+    // ************** //
+    // *** ERRORS *** //
+    // ************** //
+    error BorrowCapReached();
+    error OracleCallFailed();
+    error NothingToRepay();
+    error RepayAmountNotValid();
+
     // ************************** //
     // *** PRIVATE FUNCTIONS *** //
     // ************************* //
@@ -54,6 +62,11 @@ contract BBLendingCommon is BBCommon {
             "BB: borrow cap reached"
         );
 
+        if (totalBorrowCap > 0) {
+            if (totalBorrow.elastic <= totalBorrowCap)
+                revert BorrowCapReached();
+        }
+
         userBorrowPart[from] += part;
         emit LogBorrow(from, to, amount, feeAmount, part);
 
@@ -71,7 +84,7 @@ contract BBLendingCommon is BBCommon {
 
         //get asset <> USDC price ( USDO <> USDC )
         (bool updated, uint256 _exchangeRate) = assetOracle.get(oracleData);
-        require(updated, "BB:  asset's oracle call failed");
+        if (!updated) revert OracleCallFailed();
 
         if (_exchangeRate >= minMintFeeStart) return minMintFee;
         if (_exchangeRate <= maxMintFeeStart) return maxMintFee;
@@ -98,11 +111,11 @@ contract BBLendingCommon is BBCommon {
         if (part > userBorrowPart[to]) {
             part = userBorrowPart[to];
         }
-        require(part > 0, "SGL: nothing to repay");
+        if (part == 0) revert NothingToRepay();
 
         uint256 openingFee = _computeRepayFee(to, part);
+        if (openingFee >= part) revert RepayAmountNotValid();
 
-        require(openingFee < part, "BB: repayment too low");
         openingFees[to] -= openingFee;
 
         uint256 amount;

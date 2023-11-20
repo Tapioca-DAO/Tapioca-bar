@@ -48,7 +48,7 @@ describe.skip('Bidders test', () => {
                     1,
                     ethers.utils.toUtf8Bytes(''),
                 ),
-            ).to.be.revertedWith('token not valid');
+            ).to.be.reverted;
 
             const { stableToUsdoBidder } = await deployCurveStableToUsdoBidder(
                 yieldBox,
@@ -172,7 +172,7 @@ describe.skip('Bidders test', () => {
                     1,
                     ethers.utils.toUtf8Bytes(''),
                 ),
-            ).to.be.revertedWith('token not valid');
+            ).to.be.reverted;
 
             const usdoStratregy = await bar.emptyStrategies(usd0.address);
             const usdoAssetId = await yieldBox.ids(
@@ -189,7 +189,7 @@ describe.skip('Bidders test', () => {
                     1,
                     ethers.utils.toUtf8Bytes(''),
                 ),
-            ).to.be.revertedWith('only LQ');
+            ).to.be.reverted;
 
             await expect(
                 usdoToWethBidder.swap(
@@ -198,7 +198,7 @@ describe.skip('Bidders test', () => {
                     1,
                     ethers.utils.toUtf8Bytes(''),
                 ),
-            ).to.be.revertedWith('only LQ');
+            ).to.be.reverted;
         });
     });
 });

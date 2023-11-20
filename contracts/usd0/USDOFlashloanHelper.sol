@@ -25,6 +25,17 @@ contract USDOFlashloanHelper is IERC3156FlashLender, BoringOwnable {
     bool private _flashloanEntered = false;
 
     // ************** //
+    // *** ERRORS *** //
+    // ************** //
+    error NotValid();
+    error Paused();
+    error AllowanceNotValid();
+    error Reentrancy();
+    error Failed();
+    error AddressZero();
+    error AmountTooBig();
+
+    // ************** //
     // *** EVENTS *** //
     // ************** //
     /// @notice event emitted when flash mint fee is updated
@@ -68,7 +79,7 @@ contract USDOFlashloanHelper is IERC3156FlashLender, BoringOwnable {
         address token,
         uint256 amount
     ) public view override returns (uint256) {
-        require(token == address(usdo), "USDOFlashloanHelper: token not valid");
+        if (token != address(usdo)) revert NotValid();
         return (amount * flashMintFee) / FLASH_MINT_FEE_PRECISION;
     }
 
@@ -95,30 +106,24 @@ contract USDOFlashloanHelper is IERC3156FlashLender, BoringOwnable {
         uint256 amount,
         bytes calldata data
     ) external override returns (bool) {
-        require(!usdo.paused(), "USDOFlashloanHelper: paused");
+        if (usdo.paused()) revert Paused();
         if (address(receiver) != msg.sender) {
-            require(
-                allowance(address(receiver), msg.sender) >= amount,
-                "USDOFlashloanHelper: repay not approved"
-            );
+            if (allowance(address(receiver), msg.sender) < amount)
+                revert AllowanceNotValid();
             _spendAllowance(address(receiver), msg.sender, amount);
         }
 
-        require(!_flashloanEntered, "USDOFlashloanHelper: reentrancy");
+        if (_flashloanEntered) revert Reentrancy();
         _flashloanEntered = true;
-        require(
-            maxFlashLoan(token) >= amount,
-            "USDOFlashloanHelper: amount too big"
-        );
+        if (maxFlashLoan(token) < amount) revert AmountTooBig();
         uint256 fee = flashFee(token, amount);
         usdo.mint(address(receiver), amount);
         usdo.addFlashloanFee(fee);
 
-        require(
-            receiver.onFlashLoan(msg.sender, token, amount, fee, data) ==
-                FLASH_MINT_CALLBACK_SUCCESS,
-            "USDOFlashloanHelper: failed"
-        );
+        if (
+            receiver.onFlashLoan(msg.sender, token, amount, fee, data) !=
+            FLASH_MINT_CALLBACK_SUCCESS
+        ) revert Failed();
 
         // Stack to deep
         // usdo.burn(address(receiver), amount)
@@ -174,7 +179,7 @@ contract USDOFlashloanHelper is IERC3156FlashLender, BoringOwnable {
     /// @dev can only be called by the owner
     /// @param _val the new fee
     function setFlashMintFee(uint256 _val) external onlyOwner {
-        require(_val < FLASH_MINT_FEE_PRECISION, "USDO: big");
+        if (_val >= FLASH_MINT_FEE_PRECISION) revert NotValid();
         emit FlashMintFeeUpdated(flashMintFee, _val);
         flashMintFee = _val;
     }
@@ -189,10 +194,8 @@ contract USDOFlashloanHelper is IERC3156FlashLender, BoringOwnable {
     ) private {
         uint256 currentAllowance = allowance(owner, spender);
         if (currentAllowance != type(uint256).max) {
-            require(
-                currentAllowance >= amount,
-                "USDOFlashloanHelper: insufficient allowance"
-            );
+            if (currentAllowance < amount) revert AllowanceNotValid();
+
             unchecked {
                 _approve(owner, spender, currentAllowance - amount);
             }
@@ -200,14 +203,8 @@ contract USDOFlashloanHelper is IERC3156FlashLender, BoringOwnable {
     }
 
     function _approve(address owner, address spender, uint256 amount) private {
-        require(
-            owner != address(0),
-            "USDOFlashloanHelper: approve from the zero address"
-        );
-        require(
-            spender != address(0),
-            "USDOFlashloanHelper: approve to the zero address"
-        );
+        if (owner == address(0)) revert AddressZero();
+        if (spender == address(0)) revert AddressZero();
 
         _allowances[owner][spender] = amount;
     }

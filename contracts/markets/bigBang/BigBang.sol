@@ -28,6 +28,16 @@ contract BigBang is BBCommon {
     using RebaseLibrary for Rebase;
     using BoringERC20 for IERC20;
 
+    // ************** //
+    // *** ERRORS *** //
+    // ************** //
+    error BadPair();
+    error DebtRatesNotValid();
+    error MaxDebtRateNotValid();
+    error TransferFailed();
+    error NotValid();
+    error ModuleNotSet();
+
     // ************ //
     // *** VARS *** //
     // ************ //
@@ -134,11 +144,8 @@ contract BigBang is BBCommon {
         isMainMarket = collateralId == penrose.mainAssetId();
         if (!isMainMarket) {
             if (minDebtRate != 0 && maxDebtRate != 0) {
-                require(
-                    _debtRateMin < _debtRateMax,
-                    "BB: debt rates not valid"
-                );
-                require(_debtRateMax <= 1e18, "BB: max debt rate not valid");
+                if (_debtRateMin >= _debtRateMax) revert DebtRatesNotValid();
+                if (_debtRateMax > 1e18) revert MaxDebtRateNotValid();
             }
             debtRateAgainstEthMarket = _debtRateAgainstEth;
             maxDebtRate = _debtRateMax;
@@ -161,12 +168,11 @@ contract BigBang is BBCommon {
         yieldBox = YieldBox(_penrose.yieldBox());
         owner = address(penrose);
         address _asset = penrose.usdoToken();
-        require(
-            address(_collateral) != address(0) &&
-                address(_asset) != address(0) &&
-                address(_oracle) != address(0),
-            "BB: bad pair"
-        );
+
+        if (address(_collateral) == address(0)) revert BadPair();
+        if (address(_asset) == address(0)) revert BadPair();
+        if (address(_oracle) == address(0)) revert BadPair();
+
         asset = IERC20(_asset);
         assetId = penrose.usdoAssetId();
         collateral = _collateral;
@@ -473,7 +479,7 @@ contract BigBang is BBCommon {
     /// @param to the recipient
     function rescueEth(uint256 amount, address to) external onlyOwner {
         (bool success, ) = to.call{value: amount}("");
-        require(success, "BB: transfer failed.");
+        if (!success) revert TransferFailed();
     }
 
     /// @notice Transfers fees to penrose
@@ -509,13 +515,14 @@ contract BigBang is BBCommon {
         if (!isMainMarket) {
             _accrue();
             if (_minDebtRate > 0) {
-                require(_minDebtRate < maxDebtRate, "BB: not valid");
+                if (_minDebtRate >= maxDebtRate) revert DebtRatesNotValid();
                 emit MinDebtRateUpdated(minDebtRate, _minDebtRate);
                 minDebtRate = _minDebtRate;
             }
 
             if (_maxDebtRate > 0) {
-                require(_maxDebtRate > minDebtRate, "BB: not valid");
+                if (_maxDebtRate <= minDebtRate) revert DebtRatesNotValid();
+                if (_maxDebtRate > 1e18) revert DebtRatesNotValid();
                 emit MaxDebtRateUpdated(maxDebtRate, _maxDebtRate);
                 maxDebtRate = _maxDebtRate;
             }
@@ -529,10 +536,7 @@ contract BigBang is BBCommon {
             }
 
             if (_liquidationMultiplier > 0) {
-                require(
-                    _liquidationMultiplier < FEE_PRECISION,
-                    "BB: not valid"
-                );
+                if (_liquidationMultiplier >= FEE_PRECISION) revert NotValid();
                 emit LiquidationMultiplierUpdated(
                     liquidationMultiplier,
                     _liquidationMultiplier
@@ -556,9 +560,8 @@ contract BigBang is BBCommon {
         } else if (_module == Module.Leverage) {
             module = address(leverageModule);
         }
-        if (module == address(0)) {
-            revert("BB: module not set");
-        }
+
+        if (module == address(0)) revert ModuleNotSet();
 
         return module;
     }

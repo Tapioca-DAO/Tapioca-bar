@@ -9,6 +9,14 @@ import "tapioca-periph/contracts/interfaces/ICommonData.sol";
 import "../BaseUSDOStorage.sol";
 
 abstract contract USDOCommon is BaseUSDOStorage {
+    // ************** //
+    // *** ERRORS *** //
+    // ************** //
+    error ActionTypeNotValid();
+    error SenderNotAuthorized();
+    error NotValid();
+    error SwapperNotAuthorized();
+
     function _callApproval(
         ICommonData.IApproval[] memory approvals,
         uint16 actionType
@@ -21,10 +29,9 @@ abstract contract USDOCommon is BaseUSDOStorage {
                     _permitOnYieldBox(approvals[i]);
                 }
             } else {
-                require(
-                    approvals[i].actionType == actionType,
-                    "USDO: actionType is not valid"
-                );
+                if (approvals[i].actionType != actionType)
+                    revert ActionTypeNotValid();
+
                 bytes memory sigData = abi.encode(
                     approvals[i].permitBorrow,
                     approvals[i].owner,
