@@ -162,7 +162,8 @@ contract USDOLeverageDestinationModule is USDOCommon {
                 extraGasLimit: lzData.srcExtraGasLimit,
                 zroPaymentAddress: lzData.zroPaymentAddress
             }),
-            approvals
+            approvals, // Empty array
+            approvals // Empty array
         );
     }
 }
