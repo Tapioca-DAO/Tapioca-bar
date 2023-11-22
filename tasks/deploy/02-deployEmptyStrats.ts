@@ -35,7 +35,7 @@ export const deployEmptyStrats__task = async (
     let project: 'tapiocaz' | 'tap-token' | 'tapioca-bar';
     let name: string;
     let tokens: TContract[];
-    let predicate = (e) => e.name == name;
+    let predicate = (e: any) => e.name == name;
     switch (type) {
         case StratType.TOFT:
             project = SDK.API.config.TAPIOCA_PROJECTS_NAME.TapiocaZ;

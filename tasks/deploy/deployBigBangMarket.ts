@@ -11,12 +11,24 @@ import { Cluster } from '../../gitsub_tapioca-sdk/src/typechain/tapioca-peripher
 
 export const deployBigBangMarket__task = async (
     taskArgs: {
+        executorName?: string;
+        tokenStrategyName?: string;
+        oracleName?: string;
+        assetOracleName?: string;
         overrideOptions?: boolean;
     },
     hre: HardhatRuntimeEnvironment,
 ) => {
     console.log('[+] Deploying: BigBang market');
     const tag = await hre.SDK.hardhatUtils.askForTag(hre, 'local');
+
+    const chainInfo = hre.SDK.utils.getChainBy(
+        'chainId',
+        await hre.getChainId(),
+    );
+    if (!chainInfo) {
+        throw new Error('Chain not found');
+    }
 
     const { contract: yieldBox } =
         await hre.SDK.hardhatUtils.getLocalContract<YieldBox>(
@@ -60,14 +72,22 @@ export const deployBigBangMarket__task = async (
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const token = tokens.find((e) => e.name === tokenName)!;
 
-    const tokenStrategy = hre.SDK.db.getLocalDeployment(
+    const tokenStrategyFilter =
+        taskArgs.tokenStrategyName ?? `ERC20WithoutStrategy-${token.name}`;
+    let tokenStrategy = hre.SDK.db.getLocalDeployment(
         await hre.getChainId(),
-        `ERC20WithoutStrategy-${token.name}`,
+        tokenStrategyFilter,
         tag,
     );
     if (!tokenStrategy) {
+        tokenStrategy = hre.SDK.db
+            .loadGlobalDeployment(tag, 'tapioca-strategies', chainInfo.chainId)
+            .find((e) => e.name === tokenStrategyFilter);
+    }
+    if (!tokenStrategy) {
         throw '[-] Token strategy not found. Use deployEmptyStrategy to create one';
     }
+
     const collateral = {
         collateralAddress: token.address,
         collateralStrategyAddress: tokenStrategy.address,
@@ -80,19 +100,22 @@ export const deployBigBangMarket__task = async (
         0,
     );
 
-    const chainInfo = hre.SDK.utils.getChainBy(
-        'chainId',
-        await hre.getChainId(),
-    );
-    if (!chainInfo) {
-        throw new Error('Chain not found');
-    }
+    const isTestnet = chainInfo.tags[0] == 'testnet';
+
+    const oracleFilterName = taskArgs.oracleName ?? 'OracleMock-' + token.name;
     let oracle = hre.SDK.db
         .loadLocalDeployment(tag, chainInfo.chainId)
-        .find((e) => e.name.startsWith('OracleMock-' + token.name));
+        .find((e) => e.name.startsWith(oracleFilterName));
 
+    if (!oracle) {
+        oracle = hre.SDK.db
+            .loadGlobalDeployment(tag, 'tapioca-periphery', chainInfo.chainId)
+            .find((e) => e.name === oracleFilterName);
+    }
     const VM = await loadVM(hre, tag);
     if (!oracle) {
+        if (!isTestnet) throw new Error('[-] Oracle not found');
+
         const { oracleRate } = await inquirer.prompt({
             type: 'input',
             name: 'oracleRate',
@@ -108,6 +131,29 @@ export const deployBigBangMarket__task = async (
                 hre.ethers.utils.parseEther(oracleRate),
             ),
         );
+    }
+
+    const assetOracleFilterName = taskArgs.assetOracleName ?? 'AssetOracleMock';
+    let assetOracle = hre.SDK.db
+        .loadLocalDeployment(tag, chainInfo.chainId)
+        .find((e) => e.name == assetOracleFilterName);
+    if (!assetOracle) {
+        assetOracle = hre.SDK.db
+            .loadGlobalDeployment(tag, 'tapioca-periphery', chainInfo.chainId)
+            .find((e) => e.name === assetOracleFilterName);
+    }
+    if (!assetOracle) {
+        if (!isTestnet) throw new Error('[-] Asset oracle not found');
+        VM.add(
+            await buildOracleMock(
+                hre,
+                'AssetOracleMock',
+                'OCM-' + token.name,
+                hre.ethers.utils.parseEther('1'),
+            ),
+        );
+    }
+    if (VM.list.length > 0) {
         await VM.execute(3);
         VM.save();
         try {
@@ -118,7 +164,10 @@ export const deployBigBangMarket__task = async (
 
         oracle = hre.SDK.db
             .loadLocalDeployment(tag, chainInfo.chainId)
-            .find((e) => e.name.startsWith('WETHMock'));
+            .find((e) => e.name.startsWith('OracleMock-' + token.name));
+        assetOracle = hre.SDK.db
+            .loadLocalDeployment(tag, chainInfo.chainId)
+            .find((e) => e.name == 'AssetOracleMock');
     }
 
     const { contract: bbLiquidation } =
@@ -136,12 +185,13 @@ export const deployBigBangMarket__task = async (
     const { contract: bbLeverage } =
         await hre.SDK.hardhatUtils.getLocalContract(hre, 'BBLeverage', tag);
 
-    const { contract: simpleLeverageExecutor } =
-        await hre.SDK.hardhatUtils.getLocalContract(
-            hre,
-            'SimpleLeverageExecutor',
-            tag,
-        );
+    const leverageExecutorFilter =
+        taskArgs.executorName ?? 'SimpleLeverageExecutor';
+    const leverageExecutor = hre.SDK.db.getLocalDeployment(
+        await hre.getChainId(),
+        leverageExecutorFilter,
+        tag,
+    );
 
     const { exchangeRatePrecision } = await inquirer.prompt({
         type: 'input',
@@ -229,7 +279,7 @@ export const deployBigBangMarket__task = async (
             debtStartPoint,
             collateralizationRate,
             liquidationCollateralizationRate,
-            simpleLeverageExecutor.address,
+            leverageExecutor.address,
         ],
     );
 
@@ -249,7 +299,6 @@ export const deployBigBangMarket__task = async (
         'BigBang',
         await penrose.clonesOf(mediumRiskMC.address, marketsLength - 1),
     );
-
     console.log(`[+] BigBang market for ${token.name} deployed! 🥳`);
     VM.load([
         {
@@ -263,50 +312,34 @@ export const deployBigBangMarket__task = async (
     ]);
     VM.save();
 
+    console.log('[+] Setting asset oracle');
+    const setAssetOracleFn = market.interface.encodeFunctionData(
+        'setAssetOracle',
+        [assetOracle?.address, '0x'],
+    );
+    await (
+        await penrose.executeMarketFn(
+            [market.address],
+            [setAssetOracleFn],
+            true,
+        )
+    ).wait(3);
+
     console.log('[+] Setting the market as a minter & burner for USDO');
     const usdoDeployment = hre.SDK.db
         .loadLocalDeployment(tag, chainInfo.chainId)
         .find((e) => e.name == 'USDO');
+    if (!usdoDeployment) throw new Error('[-] USDO deployment not found');
+
     const usdo = await hre.ethers.getContractAt(
         'USDO',
         usdoDeployment?.address,
     );
-    await usdo.setMinterStatus(market.address, true);
-    await usdo.setBurnerStatus(market.address, true);
+    await (await usdo.setMinterStatus(market.address, true)).wait(3);
+    await (await usdo.setBurnerStatus(market.address, true)).wait(3);
 
     if (debtRateAgainstEth == '0') {
         console.log('[+] Setting the main market on Penrose');
-        const penroseDeployment = hre.SDK.db
-            .loadLocalDeployment(tag, chainInfo.chainId)
-            .find((e) => e.name == 'Penrose');
-        const penrose = await hre.ethers.getContractAt(
-            'Penrose',
-            penroseDeployment?.address,
-        );
-
         await penrose.setBigBangEthMarket(market.address);
     }
-
-    // let clusterAddress = hre.ethers.constants.AddressZero;
-    // let clusterDep = hre.SDK.db
-    //     .loadGlobalDeployment(tag, 'Cluster', chainInfo.chainId)
-    //     .find((e) => e.name == 'Cluster');
-
-    // if (!clusterDep) {
-    //     clusterDep = hre.SDK.db
-    //         .loadLocalDeployment(tag, chainInfo.chainId)
-    //         .find((e) => e.name == 'Cluster');
-    // }
-    // if (clusterDep) {
-    //     clusterAddress = clusterDep.address;
-    // }
-
-    // if (clusterAddress != hre.ethers.constants.AddressZero) {
-    //     const clusterContract = (await hre.ethers.getContractAtFromArtifact(
-    //         ClusterArtifact,
-    //         clusterAddress,
-    //     )) as Cluster;
-
-    //     await clusterContract.updateContract(0, market.address, true);
-    // }
 };

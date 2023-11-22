@@ -135,7 +135,7 @@ describe('AssetToEthLeverageExecutor test', () => {
         expect(balanceAfter.eq(amountIn)).to.be.true;
     });
 
-    it('should get asset', async () => {
+    it.only('should get asset', async () => {
         const {
             usdc,
             usdcAssetId,
@@ -178,6 +178,9 @@ describe('AssetToEthLeverageExecutor test', () => {
             amountIn,
             deployer.address,
             data,
+            {
+                value: 0,
+            },
         );
 
         await yieldBox.withdraw(

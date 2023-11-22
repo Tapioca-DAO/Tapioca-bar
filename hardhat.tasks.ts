@@ -128,11 +128,15 @@ task(
  * Deploy
  */
 
-task(
-    'deploySGLMarket',
-    'Deploy a Singularity market',
-    deploySGLMarket__task,
-).addOptionalParam('overrideOptions', 'Override options');
+task('deploySGLMarket', 'Deploy a Singularity market', deploySGLMarket__task)
+    .addOptionalParam('overrideOptions', 'Override options')
+    .addOptionalParam(
+        'executorName',
+        'Deployed leverage executor contract name',
+    )
+    .addOptionalParam('oracleName', 'Deployed oracle name')
+    .addOptionalParam('tokenStrategyName', 'Deployed token strategy name');
+
 task(
     'deployBigBangMarket',
     'Deploy a BigBang market',
@@ -166,8 +170,8 @@ task(
 );
 
 task('setBorrowCap', 'Set borrow cap for Singularity', setBorrowCap__task)
-    .addParam('singularity', 'Singularity address', ' ')
-    .addParam('bigBang', 'BigBang address', ' ')
+    .addOptionalParam('singularity', 'Singularity address', ' ')
+    .addOptionalParam('bigBang', 'BigBang address', ' ')
     .addParam('cap', 'Borrow cap value');
 
 task(

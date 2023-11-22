@@ -85,7 +85,7 @@ export const getSingularityContract = async (
     taskArgs: any,
     hre: HardhatRuntimeEnvironment,
 ) => {
-    const singularityAddress = taskArgs['market'];
+    const singularityAddress = taskArgs['singularity'];
     if (!hre.ethers.utils.isAddress(singularityAddress)) {
         throw new Error('[-] Singularity address not valid');
     }
@@ -101,7 +101,7 @@ export const getBigBangContract = async (
     taskArgs: any,
     hre: HardhatRuntimeEnvironment,
 ) => {
-    const bigBangAddress = taskArgs['market'];
+    const bigBangAddress = taskArgs['bigBang'];
     if (!hre.ethers.utils.isAddress(bigBangAddress)) {
         throw new Error('[-] BigBang address not valid');
     }

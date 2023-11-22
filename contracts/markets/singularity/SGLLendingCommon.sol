@@ -55,6 +55,7 @@ contract SGLLendingCommon is SGLCommon {
         userCollateralShare[from] -= share;
         totalCollateralShare -= share;
         emit LogRemoveCollateral(from, to, share);
+        yieldBox.transfer(address(this), to, collateralId, share);
         if (share > _yieldBoxShares[from][COLLATERAL_SIG]) {
             _yieldBoxShares[from][COLLATERAL_SIG] = 0; //accrues in time
         } else {
