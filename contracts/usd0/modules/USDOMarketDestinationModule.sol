@@ -92,6 +92,7 @@ contract USDOMarketDestinationModule is USDOCommon {
                 _payload,
                 reason
             );
+            emit CallFailedBytes(_srcChainId, _payload, reason);
         }
 
         emit ReceiveFromChain(_srcChainId, to, lendParams.depositAmount);

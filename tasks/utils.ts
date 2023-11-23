@@ -8,6 +8,7 @@ import {
 } from 'tapioca-sdk/dist/ethers/hardhat/DeployerVM';
 import { TContract } from 'tapioca-sdk/dist/shared';
 import { getDeployments } from './view/getDeployments';
+import { EChainID } from 'tapioca-sdk/dist/api/config';
 
 export const loadVM = async (
     hre: HardhatRuntimeEnvironment,

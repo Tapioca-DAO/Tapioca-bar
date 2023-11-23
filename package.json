@@ -10,7 +10,7 @@
         "coverage": "NODE_ENV=compile hardhat compile --quiet && hardhat coverage --network hardhat",
         "contracts_size": "npm run compile && NODE_ENV=hardhat hardhat size-contracts",
         "typechain": "npx hardhat typechain",
-        "test": "npx hardhat test --vvvv",
+        "test": "npx hardhat test",
         "test:arb": "NODE_ENV=arbitrum hardhat test",
         "test:main": "NODE_ENV=mainnet hardhat test",
         "sdk-gen": "npx hardhat exportSDK",
@@ -92,7 +92,7 @@
         "inquirer": "^8.2.5",
         "load-json-file": "^7.0.1",
         "lodash": "^4.17.21",
-        "tapioca-sdk": "^1.4.9",
+        "tapioca-sdk": "^1.5.5",
         "uuid": "^9.0.0"
     }
 }

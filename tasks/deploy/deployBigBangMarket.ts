@@ -113,6 +113,7 @@ export const deployBigBangMarket__task = async (
             .find((e) => e.name === oracleFilterName);
     }
     const VM = await loadVM(hre, tag);
+    let shouldSave = false;
     if (!oracle) {
         if (!isTestnet) throw new Error('[-] Oracle not found');
 
@@ -131,6 +132,7 @@ export const deployBigBangMarket__task = async (
                 hre.ethers.utils.parseEther(oracleRate),
             ),
         );
+        shouldSave = true;
     }
 
     const assetOracleFilterName = taskArgs.assetOracleName ?? 'AssetOracleMock';
@@ -152,8 +154,9 @@ export const deployBigBangMarket__task = async (
                 hre.ethers.utils.parseEther('1'),
             ),
         );
+        shouldSave = true;
     }
-    if (VM.list.length > 0) {
+    if (shouldSave) {
         await VM.execute(3);
         VM.save();
         try {

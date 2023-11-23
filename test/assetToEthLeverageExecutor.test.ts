@@ -135,7 +135,7 @@ describe('AssetToEthLeverageExecutor test', () => {
         expect(balanceAfter.eq(amountIn)).to.be.true;
     });
 
-    it.only('should get asset', async () => {
+    it('should get asset', async () => {
         const {
             usdc,
             usdcAssetId,

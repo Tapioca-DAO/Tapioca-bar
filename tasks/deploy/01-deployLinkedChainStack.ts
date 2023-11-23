@@ -25,22 +25,23 @@ export const deployLinkedChainStack__task = async (
         'chainId',
         await hre.getChainId(),
     );
-
     if (!chainInfo) {
         throw new Error('Chain not found');
     }
+    const isTestnet = chainInfo.tags[0] == 'testnet';
 
-    let weth = hre.SDK.db
-        .loadGlobalDeployment(tag, 'tapioca-mocks', chainInfo.chainId)
-        .find((e) => e.name.startsWith('WETHMock'));
+    let weth = isTestnet
+        ? hre.SDK.db
+              .loadGlobalDeployment(tag, 'tapioca-mocks', chainInfo.chainId)
+              .find((e) => e.name.startsWith('WETHMock'))
+        : { address: TOKENS_DEPLOYMENTS[chainInfo?.chainId as EChainID]?.weth };
 
-    if (!weth) {
+    if (!weth && isTestnet) {
         //try to take it again from local deployment
         weth = hre.SDK.db
             .loadLocalDeployment(tag, chainInfo.chainId)
             .find((e) => e.name.startsWith('WETHMock'));
     }
-
     if (!weth) {
         throw new Error('[-] Token not found');
     }
@@ -55,9 +56,8 @@ export const deployLinkedChainStack__task = async (
             .loadLocalDeployment(tag, chainInfo.chainId)
             .find((e) => e.name == 'YieldBox');
     }
-    if (yb) {
-        ybAddress = yb.address;
-    }
+    if (!yb && !isTestnet) throw new Error('[-] YieldBox not found');
+    ybAddress = yb.address;
 
     let clusterAddress = hre.ethers.constants.AddressZero;
     let clusterDep = hre.SDK.db
@@ -69,25 +69,31 @@ export const deployLinkedChainStack__task = async (
             .loadLocalDeployment(tag, chainInfo.chainId)
             .find((e) => e.name == 'Cluster');
     }
-    if (clusterDep) {
-        clusterAddress = clusterDep.address;
-    }
+    if (!clusterDep && !isTestnet) throw new Error('[-] Cluster not found');
+    clusterAddress = clusterDep.address;
 
     // 00 YieldBox
-    const [ybURI, yieldBox] = await buildYieldBox(hre, weth.address);
-    VM.add(ybURI).add(yieldBox);
+    if (isTestnet) {
+        const [ybURI, yieldBox] = await buildYieldBox(hre, weth.address);
+        VM.add(ybURI).add(yieldBox);
+    }
 
     // 01 - Deploy Cluster
-    if (!clusterAddress || clusterAddress == hre.ethers.constants.AddressZero) {
-        console.log('Need to deploy Cluster');
-        const cluster = await buildCluster(
-            hre,
-            chainInfo.address,
-            signer.address,
-        );
-        VM.add(cluster);
-    } else {
-        console.log(`Using deployed Cluster ${clusterAddress}`);
+    if (isTestnet) {
+        if (
+            !clusterAddress ||
+            clusterAddress == hre.ethers.constants.AddressZero
+        ) {
+            console.log('Need to deploy Cluster');
+            const cluster = await buildCluster(
+                hre,
+                chainInfo.address,
+                signer.address,
+            );
+            VM.add(cluster);
+        } else {
+            console.log(`Using deployed Cluster ${clusterAddress}`);
+        }
     }
 
     // 02 USDO
@@ -128,13 +134,15 @@ export const deployLinkedChainStack__task = async (
     );
     VM.add(usdoFlashloanHelper);
 
-    const multiSwapper = await buildMultiSwapper(
-        hre,
-        UNISWAP_DEPLOYMENTS[chainInfo?.chainId as EChainID]?.v2Router,
-        UNISWAP_DEPLOYMENTS[chainInfo?.chainId as EChainID]?.v2factory,
-        ybAddress,
-    );
-    VM.add(multiSwapper);
+    if (isTestnet) {
+        const uniswapperV2 = await buildMultiSwapper(
+            hre,
+            UNISWAP_DEPLOYMENTS[chainInfo?.chainId as EChainID]?.v2Router,
+            UNISWAP_DEPLOYMENTS[chainInfo?.chainId as EChainID]?.v2factory,
+            ybAddress,
+        );
+        VM.add(uniswapperV2);
+    }
 
     const simpleLeverageExecutor = await buildSimpleLeverageExecutor(
         hre,

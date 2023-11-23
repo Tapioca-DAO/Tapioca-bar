@@ -63,6 +63,12 @@ contract BaseUSDOStorage is OFTV2 {
     /// @notice event emitted when pause state is updated
     event PausedUpdated(bool oldState, bool newState);
 
+    event CallFailedBytes(
+        uint16 indexed _srcChainId,
+        bytes indexed _payload,
+        bytes indexed _reason
+    );
+
     receive() external payable {}
 
     constructor(
