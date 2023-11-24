@@ -48,7 +48,7 @@ export const deployLinkedChainStack__task = async (
 
     let ybAddress = hre.ethers.constants.AddressZero;
     let yb = hre.SDK.db
-        .loadGlobalDeployment(tag, 'YieldBox', chainInfo.chainId)
+        .loadGlobalDeployment(tag, 'yieldbox', chainInfo.chainId)
         .find((e) => e.name == 'YieldBox');
 
     if (!yb) {
