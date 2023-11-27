@@ -203,7 +203,7 @@ task(
     'registerYbAssets',
     'Register a bunch of YieldBox assets',
     registerYbAssets__task,
-);
+).addVariadicPositionalParam('strategies', 'Specific strategies name');
 
 task(
     'setProxyTrustedRemote',

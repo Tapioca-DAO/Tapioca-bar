@@ -6,7 +6,7 @@ import { TContract } from '../../gitsub_tapioca-sdk/src/shared';
 
 // hh registerYbAssets --network ...
 export const registerYbAssets__task = async (
-    taskArgs: { strategy?: string },
+    taskArgs: { strategies?: string[] },
     hre: HardhatRuntimeEnvironment,
 ) => {
     const chainInfo = hre.SDK.utils.getChainBy(
@@ -31,13 +31,26 @@ export const registerYbAssets__task = async (
     }
     if (!yieldBoxDep) throw new Error('[-] YieldBox not found');
 
-    const localStrats = hre.SDK.db
+    let localStrats = hre.SDK.db
         .loadLocalDeployment(tag, await hre.getChainId())
         .filter((a) => a.name.startsWith('ERC20WithoutStrategy'));
 
     const globalStrats = hre.SDK.db
         .loadGlobalDeployment(tag, 'tapioca-strategies', chainInfo.chainId)
         .filter((e) => e.name.endsWith('Strategy'));
+
+    if (taskArgs.strategies) {
+        // remove empty strategies for same token
+        const specificGlobalStrats = globalStrats
+            .filter((a) => taskArgs.strategies?.indexOf(a.name) >= 0)
+            .map((a) => a.meta.stratFor);
+
+        if (specificGlobalStrats.length > 0) {
+            localStrats = localStrats.filter(
+                (a) => specificGlobalStrats.indexOf(a.meta.stratFor) < 0,
+            );
+        }
+    }
 
     let strats = [...localStrats, ...globalStrats];
 
@@ -57,7 +70,6 @@ export const registerYbAssets__task = async (
             type: 'input',
             name: 'filterTerm',
             message: 'Filtering term',
-            default: taskArgs.strategy,
         });
 
         strats = strats.filter((a) => a.name.includes(filterTerm));
