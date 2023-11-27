@@ -2,10 +2,11 @@ import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { buildYieldBoxAssets } from '../setups/900-buildYieldBoxAssets';
 import { typechain } from 'tapioca-sdk';
 import inquirer from 'inquirer';
+import { TContract } from '../../gitsub_tapioca-sdk/src/shared';
 
 // hh registerYbAssets --network ...
 export const registerYbAssets__task = async (
-    {},
+    taskArgs: { strategy?: string },
     hre: HardhatRuntimeEnvironment,
 ) => {
     const chainInfo = hre.SDK.utils.getChainBy(
@@ -18,14 +19,32 @@ export const registerYbAssets__task = async (
 
     console.log('[+] Registering YieldBox assets...');
     const tag = await hre.SDK.hardhatUtils.askForTag(hre, 'local');
-    const { deployment: yieldBoxDep } =
-        await hre.SDK.hardhatUtils.getLocalContract(hre, 'YieldBox', tag);
 
-    let strats = hre.SDK.db
+    let yieldBoxDep = hre.SDK.db
+        .loadGlobalDeployment(tag, 'yieldbox', chainInfo.chainId)
+        .find((e) => e.name == 'YieldBox');
+
+    if (!yieldBoxDep) {
+        yieldBoxDep = hre.SDK.db
+            .loadLocalDeployment(tag, chainInfo.chainId)
+            .find((e) => e.name == 'YieldBox');
+    }
+    if (!yieldBoxDep) throw new Error('[-] YieldBox not found');
+
+    const localStrats = hre.SDK.db
         .loadLocalDeployment(tag, await hre.getChainId())
         .filter((a) => a.name.startsWith('ERC20WithoutStrategy'));
+
+    const globalStrats = hre.SDK.db
+        .loadGlobalDeployment(tag, 'tapioca-strategies', chainInfo.chainId)
+        .filter((e) => e.name.endsWith('Strategy'));
+
+    let strats = [...localStrats, ...globalStrats];
+
     console.log('[+] Found', strats.length, 'strategies.');
     console.log(strats.map((e) => e.name));
+
+    const isTestnet = chainInfo.tags[0] == 'testnet';
 
     const { wantToFilter } = await inquirer.prompt({
         type: 'confirm',
@@ -38,6 +57,7 @@ export const registerYbAssets__task = async (
             type: 'input',
             name: 'filterTerm',
             message: 'Filtering term',
+            default: taskArgs.strategy,
         });
 
         strats = strats.filter((a) => a.name.includes(filterTerm));
@@ -62,13 +82,16 @@ export const registerYbAssets__task = async (
         )
         .filter((a) => stratForNames.find((e) => a.name.startsWith(e)));
 
-    const mockTokens = hre.SDK.db
-        .loadGlobalDeployment(
-            tag,
-            hre.SDK.config.TAPIOCA_PROJECTS_NAME.TapiocaMocks,
-            await hre.getChainId(),
-        )
-        .filter((a) => stratForNames.find((e) => a.name.startsWith(e)));
+    let mockTokens: Array<TContract> = [];
+    if (isTestnet) {
+        mockTokens = hre.SDK.db
+            .loadGlobalDeployment(
+                tag,
+                hre.SDK.config.TAPIOCA_PROJECTS_NAME.TapiocaMocks,
+                await hre.getChainId(),
+            )
+            .filter((a) => stratForNames.find((e) => a.name.startsWith(e)));
+    }
     const localTokens = hre.SDK.db
         .loadLocalDeployment(tag, await hre.getChainId())
         .filter((a) => stratForNames.find((e) => a.name.startsWith(e)));
@@ -81,6 +104,13 @@ export const registerYbAssets__task = async (
         yieldBoxDep,
     ];
     const calls = await buildYieldBoxAssets(hre, tag, deps);
+
+    const { confirm } = await inquirer.prompt({
+        type: 'confirm',
+        name: 'confirm',
+        message: 'Are calls alright?',
+    });
+    if (!confirm) throw new Error('[-] Aborted');
 
     const signer = (await hre.ethers.getSigners())[0];
     const multiCall =

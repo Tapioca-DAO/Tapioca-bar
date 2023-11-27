@@ -26,28 +26,29 @@ export const buildYieldBoxAssets = async (
     /**
      * Add calls
      */
-    console.log('[+] +Call queue: Adding calls to register assets on YieldBox');
+    console.log(
+        '[+] +Call queue: Adding calls to register assets on YieldBox: ',
+    );
 
     const strategies = deps.filter((e) => e.meta?.stratFor);
 
     for (const strategy of strategies) {
         console.log(`\t+registering ${strategy.name}`);
 
-        const stratForAddress = deps.find(
-            (e) => e.name == strategy.meta.stratFor,
-        )?.address;
-
+        const stratFor = deps.find((e) => e.name == strategy.meta.stratFor);
         calls.push({
             target: yieldBoxAddr,
             callData: yieldBox.interface.encodeFunctionData('registerAsset', [
                 1,
-                stratForAddress,
+                stratFor?.address,
                 strategy.address,
                 0,
             ]),
             allowFailure: false,
         });
+        console.log(
+            `   [*] Strategy: ${strategy.address} (${strategy.name}) for token ${stratFor?.address} (${stratFor?.name})`,
+        );
     }
-
     return calls;
 };
