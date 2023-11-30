@@ -40,6 +40,21 @@ import { testDeployMockSwapper__task } from './tasks/deploy/1000-testDeployMockS
 import { fillMockSwapper__test } from './tasks/exec/fillMockSwapper';
 import { fillCluster__task } from './tasks/exec/fillCluster';
 import { testGmxEarnCall__task } from './tasks/test-decode-gmx-call';
+import { marketUpdatePause__task } from './tasks/exec/01-market-updatePause';
+import { setLeverageExecutor__task } from './tasks/exec/02-market-setLeverageExecutor';
+import { marketRescueEth__task } from './tasks/exec/03-market-rescueEth';
+import { setMarketConfig__task } from './tasks/exec/04-market-setMarketConfig';
+import { setSingularityConfig__task } from './tasks/exec/05-singularity-setSingularityConfig';
+import { setMinAndMaxMintRange__task } from './tasks/exec/06-bb-setMinAndMaxMintRange';
+import { setMinAndMaxMintFee__task } from './tasks/exec/07-bb-setMinAndMaxMintFee';
+import { setAssetOracle__task } from './tasks/exec/08-bb-setAssetOracle';
+import { setBigBangConfig__task } from './tasks/exec/09-bb-setBigBangConfig';
+import { setPenroseCluster__task } from './tasks/exec/10-penrose-setCluster';
+import { setBigBangEthMarketDebtRate__task } from './tasks/exec/11-penrose-setBigBangEthMarketDebtRate';
+import { setBigBangEthMarket__task } from './tasks/exec/12-penrose-setBigBangEthMarket';
+import { withdrawFees__task } from './tasks/exec/13-penrose-withdrawFees';
+import { setUsdoFlashloanHelper__task } from './tasks/exec/14-usdo-setFlashloanHelper';
+import { extractFeesFromUsdo__task } from './tasks/exec/15-usdo-extractFees';
 
 task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
     const accounts = await hre.ethers.getSigners();
@@ -203,7 +218,7 @@ task(
     'registerYbAssets',
     'Register a bunch of YieldBox assets',
     registerYbAssets__task,
-);
+).addVariadicPositionalParam('strategies', 'Specific strategies name');
 
 task(
     'setProxyTrustedRemote',
@@ -334,4 +349,89 @@ task(
 task('testGmxCall', 'decode gmx call', testGmxEarnCall__task).addParam(
     'tx',
     'TX hash',
+);
+
+task(
+    'marketUpdatePause',
+    'Updates pause state of a market',
+    marketUpdatePause__task,
+)
+    .addParam('market', 'Market address')
+    .addParam('type', 'PauseType')
+    .addParam('status', 'Pause status');
+
+task(
+    'setLeverageExecutor',
+    'Sets the leverage executor on a market',
+    setLeverageExecutor__task,
+)
+    .addParam('market', 'Market address')
+    .addParam('executor', 'Leverage exectutor address');
+
+task('marketRescueEth', 'Rescue native from market', marketRescueEth__task)
+    .addParam('market', 'Market address')
+    .addParam('amount', 'The amount to save')
+    .addParam('to', 'Receiver address');
+
+task('setMarketConfig', 'Set config', setMarketConfig__task).addParam(
+    'market',
+    'Market address',
+);
+
+task('setSingularityConfig', 'Set config', setSingularityConfig__task).addParam(
+    'singularity',
+    'Singularity address',
+);
+
+task('setMinAndMaxMintRange', 'Set mint fee range', setMinAndMaxMintRange__task)
+    .addParam('bb', 'BigBang address')
+    .addParam('start', 'Mint fee start')
+    .addParam('end', 'Mint fee end');
+
+task('setMinAndMaxMintFee', 'Set mint fee range', setMinAndMaxMintFee__task)
+    .addParam('bb', 'BigBang address')
+    .addParam('min', 'Mint min fee')
+    .addParam('max', 'Mint max fee');
+
+task('setAssetOracle', 'Set mint fee range', setAssetOracle__task)
+    .addParam('bb', 'BigBang address')
+    .addParam('oracle', 'Oracle address')
+    .addParam('oracleData', 'Oracle data');
+
+task('setBigBangConfig', 'Set config', setBigBangConfig__task).addParam(
+    'bb',
+    'BigBang address',
+);
+
+task('setPenroseCluster', 'Set config', setPenroseCluster__task)
+    .addParam('penrose', 'Penrose address')
+    .addParam('cluster', 'Cluster address');
+
+task(
+    'setBigBangEthMarketDebtRate',
+    'Set config',
+    setBigBangEthMarketDebtRate__task,
+)
+    .addParam('penrose', 'Penrose address')
+    .addParam('rate', 'Rate amount');
+
+task('setBigBangEthMarket', 'Set config', setBigBangEthMarket__task)
+    .addParam('penrose', 'Penrose address')
+    .addParam('bb', 'BB market');
+
+task('withdrawMarketFees', 'Set config', withdrawFees__task)
+    .addParam('penrose', 'Penrose address')
+    .addParam('twTap', 'twTap address')
+    .addVariadicPositionalParam('markets', 'Market addresses');
+
+task(
+    'setUsdoFlashloanHelper',
+    'Set USDO flashloan helper',
+    setUsdoFlashloanHelper__task,
+).addParam('helper', 'Flashloan helper address');
+
+task(
+    'extractFeesFromUsdo',
+    'Extract fees from USDO',
+    extractFeesFromUsdo__task,
 );
