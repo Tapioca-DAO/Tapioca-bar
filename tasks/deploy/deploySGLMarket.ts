@@ -5,11 +5,12 @@ import { TContract } from 'tapioca-sdk/dist/shared';
 import { Penrose, YieldBox } from '../../typechain';
 import { buildOracleMock } from '../deployBuilds/05-buildOracleMock';
 import { loadVM } from '../utils';
-import ClusterArtifact from '../../gitsub_tapioca-sdk/src/artifacts/tapioca-periphery/Cluster.json';
-import { Cluster } from '../../gitsub_tapioca-sdk/src/typechain/tapioca-periphery';
 
 export const deploySGLMarket__task = async (
     taskArgs: {
+        executorName?: string;
+        oracleName?: string;
+        tokenStrategyName?: string;
         overrideOptions?: boolean;
     },
     hre: HardhatRuntimeEnvironment,
@@ -37,13 +38,25 @@ export const deploySGLMarket__task = async (
         token,
     } = await loadContracts(hre, tag);
 
-    const { usd0Strategy, oracleAddress } = await loadStrats(hre, tag, token);
+    const { usd0Strategy, oracleAddress } = await loadStrats(
+        hre,
+        tag,
+        token,
+        taskArgs.oracleName,
+    );
 
-    const tokenStrategy = hre.SDK.db.getLocalDeployment(
+    const tokenStrategyFilter =
+        taskArgs.tokenStrategyName ?? `ERC20WithoutStrategy-${token.name}`;
+    let tokenStrategy = hre.SDK.db.getLocalDeployment(
         await hre.getChainId(),
-        `ERC20WithoutStrategy-${token.name}`,
+        tokenStrategyFilter,
         tag,
     );
+    if (!tokenStrategy) {
+        tokenStrategy = hre.SDK.db
+            .loadGlobalDeployment(tag, 'tapioca-strategies', chainInfo.chainId)
+            .find((e) => e.name === tokenStrategyFilter);
+    }
     if (!tokenStrategy) {
         throw '[-] Token strategy not found. Use deployEmptyStrategy to create one';
     }
@@ -87,12 +100,15 @@ export const deploySGLMarket__task = async (
         default: '0',
     });
 
-    const { contract: simpleLeverageExecutor } =
-        await hre.SDK.hardhatUtils.getLocalContract(
-            hre,
-            'SimpleLeverageExecutor',
-            tag,
-        );
+    const leverageExecutorFilter =
+        taskArgs.executorName ?? 'SimpleLeverageExecutor';
+    const leverageExecutor = hre.SDK.db.getLocalDeployment(
+        await hre.getChainId(),
+        leverageExecutorFilter,
+        tag,
+    );
+
+    if (!leverageExecutor) throw new Error('[-] Leverage executor not found');
 
     const data = new hre.ethers.utils.AbiCoder().encode(
         [
@@ -126,7 +142,7 @@ export const deploySGLMarket__task = async (
                 hre.ethers.BigNumber.from((1e18).toString()),
             collateralizationRate,
             liquidationCollateralizationRate,
-            simpleLeverageExecutor.address,
+            leverageExecutor.address,
         ],
     );
 
@@ -161,29 +177,6 @@ export const deploySGLMarket__task = async (
         },
     ]);
     VM.save();
-
-    // let clusterAddress = hre.ethers.constants.AddressZero;
-    // let clusterDep = hre.SDK.db
-    //     .loadGlobalDeployment(tag, 'Cluster', chainInfo.chainId)
-    //     .find((e) => e.name == 'Cluster');
-
-    // if (!clusterDep) {
-    //     clusterDep = hre.SDK.db
-    //         .loadLocalDeployment(tag, chainInfo.chainId)
-    //         .find((e) => e.name == 'Cluster');
-    // }
-    // if (clusterDep) {
-    //     clusterAddress = clusterDep.address;
-    // }
-
-    // if (clusterAddress != hre.ethers.constants.AddressZero) {
-    //     const clusterContract = (await hre.ethers.getContractAtFromArtifact(
-    //         ClusterArtifact,
-    //         clusterAddress,
-    //     )) as Cluster;
-
-    //     await clusterContract.updateContract(0, market.address, true);
-    // }
 };
 
 async function loadAssets(
@@ -214,6 +207,7 @@ async function loadStrats(
     hre: HardhatRuntimeEnvironment,
     tag: string,
     token: TContract,
+    oracleName?: string,
 ) {
     const VM = await loadVM(hre, tag);
 
@@ -265,11 +259,21 @@ async function loadStrats(
     if (!chainInfo) {
         throw new Error('Chain not found');
     }
-    const oracle = hre.SDK.db
+
+    const oracleFilterName = oracleName ?? 'OracleMock-' + token.name;
+    let oracle = hre.SDK.db
         .loadLocalDeployment(tag, chainInfo.chainId)
-        .find((e) => e.name.startsWith('OracleMock-' + token.name));
+        .find((e) => e.name.startsWith(oracleFilterName));
 
     if (!oracle) {
+        oracle = hre.SDK.db
+            .loadGlobalDeployment(tag, 'tapioca-periphery', chainInfo.chainId)
+            .find((e) => e.name === oracleFilterName);
+    }
+    if (!oracle) {
+        const isTestnet = chainInfo.tags[0] == 'testnet';
+        if (!isTestnet) throw new Error('[-] Oracle not found');
+
         const { oracleRate } = await inquirer.prompt({
             type: 'input',
             name: 'oracleRate',

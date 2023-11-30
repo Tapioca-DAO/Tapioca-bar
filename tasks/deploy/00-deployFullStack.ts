@@ -14,7 +14,6 @@ import { buildMasterContractsSetup } from '../setups/02-buildMasterContractsSetu
 import { buildUsdoFlashloanSetup } from '../setups/04-buildUsdoFlashloanSetup';
 import { buildSimpleLeverageExecutor } from '../deployBuilds/14-buildSimpleLeverageExecutor';
 import { loadVM } from '../utils';
-import SDK from 'tapioca-sdk';
 import { buildUSDOModules } from '../deployBuilds/11-buildUSDOModules';
 import { buildUSDOFlashloanHelper } from '../deployBuilds/13-buildUSDOFlashloanHelper';
 import {
@@ -39,36 +38,36 @@ export const deployFullStack__task = async (
     if (!chainInfo) {
         throw new Error('Chain not found');
     }
-    // const isTestnet = chainInfo.tags.find((a) => a == 'testnet')?.length > 0;
+    const isTestnet = chainInfo.tags[0] == 'testnet';
 
     let tapToken = hre.SDK.db
         .loadGlobalDeployment(tag, 'tap-token', chainInfo.chainId)
         .find((e) => e.name === 'TapOFT');
-
-    let weth = hre.SDK.db
-        .loadGlobalDeployment(tag, 'tapioca-mocks', chainInfo.chainId)
-        .find((e) => e.name.startsWith('WETHMock'));
-
-    if (!weth) {
-        //try to take it again from local deployment
-        weth = hre.SDK.db
-            .loadLocalDeployment(tag, chainInfo.chainId)
-            .find((e) => e.name.startsWith('WETHMock'));
-    }
-    if (!tapToken) {
+    if (!tapToken && isTestnet) {
         //try to take it again from local deployment
         tapToken = hre.SDK.db
             .loadLocalDeployment(tag, chainInfo.chainId)
             .find((e) => e.name.startsWith('TapOFT'));
     }
+    if (!tapToken) throw new Error('[-] TapToken not found');
 
-    if (!tapToken || !weth) {
-        throw new Error(`[-] Token not found: ${tapToken}, ${weth}`);
+    let weth = isTestnet
+        ? hre.SDK.db
+              .loadGlobalDeployment(tag, 'tapioca-mocks', chainInfo.chainId)
+              .find((e) => e.name.startsWith('WETHMock'))
+        : { address: TOKENS_DEPLOYMENTS[chainInfo?.chainId as EChainID]?.weth };
+
+    if (!weth && isTestnet) {
+        //try to take it again from local deployment
+        weth = hre.SDK.db
+            .loadLocalDeployment(tag, chainInfo.chainId)
+            .find((e) => e.name.startsWith('WETHMock'));
     }
+    if (!weth) throw new Error('[-] Weth not found');
 
     let ybAddress = hre.ethers.constants.AddressZero;
     let yb = hre.SDK.db
-        .loadGlobalDeployment(tag, 'YieldBox', chainInfo.chainId)
+        .loadGlobalDeployment(tag, 'yieldbox', chainInfo.chainId)
         .find((e) => e.name == 'YieldBox');
 
     if (!yb) {
@@ -76,9 +75,8 @@ export const deployFullStack__task = async (
             .loadLocalDeployment(tag, chainInfo.chainId)
             .find((e) => e.name == 'YieldBox');
     }
-    if (yb) {
-        ybAddress = yb.address;
-    }
+    if (!yb && !isTestnet) throw new Error('[-] YieldBox not found');
+    ybAddress = yb.address;
 
     let clusterAddress = hre.ethers.constants.AddressZero;
     let clusterDep = hre.SDK.db
@@ -90,25 +88,31 @@ export const deployFullStack__task = async (
             .loadLocalDeployment(tag, chainInfo.chainId)
             .find((e) => e.name == 'Cluster');
     }
-    if (clusterDep) {
-        clusterAddress = clusterDep.address;
-    }
+    if (!clusterDep && !isTestnet) throw new Error('[-] Cluster not found');
+    clusterAddress = clusterDep.address;
 
     // 00 - Deploy YieldBox
-    const [ybURI, yieldBox] = await buildYieldBox(hre, weth.address);
-    VM.add(ybURI).add(yieldBox);
+    if (isTestnet) {
+        const [ybURI, yieldBox] = await buildYieldBox(hre, weth.address);
+        VM.add(ybURI).add(yieldBox);
+    }
 
     // 01 - Deploy Cluster
-    if (!clusterAddress || clusterAddress == hre.ethers.constants.AddressZero) {
-        console.log('Need to deploy Cluster');
-        const cluster = await buildCluster(
-            hre,
-            chainInfo.address,
-            signer.address,
-        );
-        VM.add(cluster);
-    } else {
-        console.log(`Using deployed Cluster ${clusterAddress}`);
+    if (isTestnet) {
+        if (
+            !clusterAddress ||
+            clusterAddress == hre.ethers.constants.AddressZero
+        ) {
+            console.log('Need to deploy Cluster');
+            const cluster = await buildCluster(
+                hre,
+                chainInfo.address,
+                signer.address,
+            );
+            VM.add(cluster);
+        } else {
+            console.log(`Using deployed Cluster ${clusterAddress}`);
+        }
     }
 
     // 02 - Penrose
@@ -128,13 +132,15 @@ export const deployFullStack__task = async (
     VM.add(sgl).add(bb);
 
     // 04 - MultiSwapper
-    const multiSwapper = await buildMultiSwapper(
-        hre,
-        UNISWAP_DEPLOYMENTS[chainInfo?.chainId as EChainID]?.v2Router,
-        UNISWAP_DEPLOYMENTS[chainInfo?.chainId as EChainID]?.v2factory,
-        ybAddress,
-    );
-    VM.add(multiSwapper);
+    if (isTestnet) {
+        const uniswapperV2 = await buildMultiSwapper(
+            hre,
+            UNISWAP_DEPLOYMENTS[chainInfo?.chainId as EChainID]?.v2Router,
+            UNISWAP_DEPLOYMENTS[chainInfo?.chainId as EChainID]?.v2factory,
+            ybAddress,
+        );
+        VM.add(uniswapperV2);
+    }
 
     // 05 - SingularityModules
     const [liq, borrow, collateral, leverage] = await buildSingularityModules(
@@ -191,13 +197,15 @@ export const deployFullStack__task = async (
     );
     VM.add(simpleLeverageExecutor);
 
-    // 08 - CurveSwapper-buildStableToUSD0Bidder
-    const [curveSwapper, curveStableToUsd0] = await buildStableToUSD0Bidder(
-        hre,
-        CURVE_DEPLOYMENTS[chainInfo?.chainId as EChainID]?.stablePool,
-        ybAddress,
-    );
-    VM.add(curveSwapper).add(curveStableToUsd0);
+    if (isTestnet) {
+        // 08 - CurveSwapper-buildStableToUSD0Bidder
+        const [curveSwapper, curveStableToUsd0] = await buildStableToUSD0Bidder(
+            hre,
+            CURVE_DEPLOYMENTS[chainInfo?.chainId as EChainID]?.stablePool,
+            ybAddress,
+        );
+        VM.add(curveSwapper).add(curveStableToUsd0);
+    }
 
     // Add and execute
     await VM.execute(3, false);

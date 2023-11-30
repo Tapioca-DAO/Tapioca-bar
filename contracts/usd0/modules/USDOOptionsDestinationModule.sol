@@ -106,6 +106,7 @@ contract USDOOptionsDestinationModule is USDOCommon {
                 _payload,
                 reason
             );
+            emit CallFailedBytes(_srcChainId, _payload, reason);
         }
 
         emit ReceiveFromChain(

@@ -79,6 +79,7 @@ contract USDOLeverageDestinationModule is USDOCommon {
                 _payload,
                 reason
             );
+            emit CallFailedBytes(_srcChainId, _payload, reason);
         }
         emit ReceiveFromChain(_srcChainId, leverageFor, amount);
     }

@@ -178,6 +178,9 @@ describe('AssetToEthLeverageExecutor test', () => {
             amountIn,
             deployer.address,
             data,
+            {
+                value: 0,
+            },
         );
 
         await yieldBox.withdraw(

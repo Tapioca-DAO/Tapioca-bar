@@ -459,6 +459,7 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
                 _payload,
                 returnData
             );
+            emit CallFailedBytes(_srcChainId, _payload, returnData);
         }
     }
 
