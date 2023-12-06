@@ -115,14 +115,7 @@ contract USDOLeverageDestinationModule is USDOCommon {
 
         _approve(address(this), externalData.swapper, amount);
         ISwapper.SwapData memory _swapperData = ISwapper(externalData.swapper)
-            .buildSwapData(
-                address(this),
-                swapData.tokenOut,
-                amount,
-                0,
-                false,
-                false
-            );
+            .buildSwapData(address(this), swapData.tokenOut, amount, 0);
         (uint256 amountOut, ) = ISwapper(externalData.swapper).swap(
             _swapperData,
             swapData.amountOutMin,

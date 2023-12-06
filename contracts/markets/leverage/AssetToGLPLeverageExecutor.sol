@@ -3,11 +3,43 @@ pragma solidity ^0.8.18;
 
 //interfaces
 import {ITapiocaOFTBase} from "tapioca-periph/contracts/interfaces/ITapiocaOFT.sol";
+import "tapioca-periph/contracts/interfaces/IGmxGlpManager.sol";
 
 import "./BaseLeverageExecutor.sol";
 
+interface IGmxRewardRouterV2 {
+    function mintAndStakeGlp(
+        address _token,
+        uint256 _amount,
+        uint256 _minUsdg,
+        uint256 _minGlp
+    ) external returns (uint256);
+
+    function handleRewards(
+        bool _shouldClaimGmx,
+        bool _shouldStakeGmx,
+        bool _shouldClaimEsGmx,
+        bool _shouldStakeEsGmx,
+        bool _shouldStakeMultiplierPoints,
+        bool _shouldClaimWeth,
+        bool _shouldConvertWethToEth
+    ) external;
+
+    function unstakeAndRedeemGlp(
+        address _tokenOut,
+        uint256 _glpAmount,
+        uint256 _minOut,
+        address _receiver
+    ) external returns (uint256);
+
+    function glpManager() external view returns (address);
+}
+
 contract AssetToGLPLeverageExecutor is BaseLeverageExecutor {
     IERC20 public immutable usdc;
+
+    IGmxGlpManager private immutable glpManager;
+    IGmxRewardRouterV2 private immutable glpRewardRouter;
 
     // ************** //
     // *** ERRORS *** //
@@ -21,9 +53,12 @@ contract AssetToGLPLeverageExecutor is BaseLeverageExecutor {
         YieldBox _yb,
         ISwapper _swapper,
         ICluster _cluster,
-        IERC20 _usdc
+        IERC20 _usdc,
+        IGmxRewardRouterV2 _glpRewardRouter
     ) BaseLeverageExecutor(_yb, _swapper, _cluster) {
         usdc = _usdc;
+        glpRewardRouter = _glpRewardRouter;
+        glpManager = IGmxGlpManager(glpRewardRouter.glpManager());
     }
 
     // ********************* //
@@ -52,9 +87,8 @@ contract AssetToGLPLeverageExecutor is BaseLeverageExecutor {
         (
             uint256 minUsdcAmountOut,
             bytes memory dexUsdcData,
-            uint256 minGlpAmountOut,
-            bytes memory dexGlpData
-        ) = abi.decode(data, (uint256, bytes, uint256, bytes));
+            uint256 minGlpAmountOut
+        ) = abi.decode(data, (uint256, bytes, uint256));
 
         //swap asset with USDC
         uint256 usdcAmount = _swapTokens(
@@ -73,13 +107,10 @@ contract AssetToGLPLeverageExecutor is BaseLeverageExecutor {
         if (glpAddress == address(0)) revert GlpNotValid();
 
         //swap USDC with GLP
-        collateralAmountOut = _swapTokens(
-            address(usdc),
-            glpAddress,
+        collateralAmountOut = _buyGlp(
             usdcAmount,
-            minGlpAmountOut,
-            dexGlpData,
-            0
+            address(usdc),
+            minGlpAmountOut
         );
         if (collateralAmountOut < minGlpAmountOut) revert NotEnough(glpAddress);
 
@@ -129,10 +160,9 @@ contract AssetToGLPLeverageExecutor is BaseLeverageExecutor {
         //decode data
         (
             uint256 minUsdcAmountOut,
-            bytes memory dexUsdcData,
             uint256 minAssetAmountOut,
             bytes memory dexAssetData
-        ) = abi.decode(data, (uint256, bytes, uint256, bytes));
+        ) = abi.decode(data, (uint256, uint256, bytes));
 
         address glpAddress = ITapiocaOFTBase(collateralAddress).erc20();
         if (glpAddress == address(0)) revert TokenNotValid();
@@ -143,13 +173,11 @@ contract AssetToGLPLeverageExecutor is BaseLeverageExecutor {
         );
 
         //swap GLP with USDC
-        uint256 usdcAmount = _swapTokens(
+        uint256 usdcAmount = _sellGlp(
+            collateralAmountIn,
             glpAddress,
             address(usdc),
-            collateralAmountIn,
-            minUsdcAmountOut,
-            dexUsdcData,
-            0
+            minUsdcAmountOut
         );
         if (usdcAmount < minUsdcAmountOut) revert NotEnough(address(usdc));
 
@@ -167,5 +195,39 @@ contract AssetToGLPLeverageExecutor is BaseLeverageExecutor {
         IERC20(assetAddress).approve(address(yieldBox), 0);
         IERC20(assetAddress).approve(address(yieldBox), assetAmountOut);
         yieldBox.depositAsset(assetId, address(this), from, assetAmountOut, 0);
+    }
+
+    // ********************** //
+    // *** PRIVATE MEHODS *** //
+    // ********************** //
+    function _buyGlp(
+        uint256 usdcAmount,
+        address usdcAddress,
+        uint256 minGlpAmountOut
+    ) private returns (uint256 glpAmount) {
+        IERC20(usdcAddress).approve(address(glpManager), 0);
+        IERC20(usdcAddress).approve(address(glpManager), usdcAmount);
+        glpAmount = glpRewardRouter.mintAndStakeGlp(
+            usdcAddress,
+            usdcAmount,
+            0,
+            minGlpAmountOut
+        );
+    }
+
+    function _sellGlp(
+        uint256 glpAmount,
+        address glpAddress,
+        address usdcAddress,
+        uint256 minUsdcAmountOut
+    ) private returns (uint256 usdcAmount) {
+        IERC20(glpAddress).approve(address(glpManager), 0);
+        IERC20(glpAddress).approve(address(glpManager), glpAmount);
+        usdcAmount = glpRewardRouter.unstakeAndRedeemGlp(
+            usdcAddress,
+            glpAmount,
+            minUsdcAmountOut,
+            address(this)
+        );
     }
 }

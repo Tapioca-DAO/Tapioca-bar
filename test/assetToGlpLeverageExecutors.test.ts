@@ -7,9 +7,10 @@ import {
     ERC20Mock__factory,
     MockSwapper__factory,
     TOFTMock__factory,
+    GmxMarketMock__factory,
 } from '../gitsub_tapioca-sdk/src/typechain/tapioca-mocks';
 
-describe('usdoToGlpLeverageExecutors.test test', () => {
+describe('assetToGlpLeverageExecutors.test test', () => {
     async function setUp() {
         const {
             usdc,
@@ -30,6 +31,14 @@ describe('usdoToGlpLeverageExecutors.test test', () => {
             18,
             deployer.address,
         );
+
+        const GmxMarketMock = new GmxMarketMock__factory(deployer);
+        const glpRouter = await GmxMarketMock.deploy(
+            ethers.constants.AddressZero,
+            ethers.constants.AddressZero,
+            ethers.constants.AddressZero,
+        );
+        await glpRouter.setGlp(glp.address);
 
         const MockSwapper = new MockSwapper__factory(deployer);
         const swapper = await MockSwapper.deploy(yieldBox.address);
@@ -57,6 +66,7 @@ describe('usdoToGlpLeverageExecutors.test test', () => {
                 swapper.address,
                 cluster.address,
                 usdc.address,
+                glpRouter.address,
             );
         await assetToGLPLeverageExecutor.deployed();
 
@@ -76,6 +86,7 @@ describe('usdoToGlpLeverageExecutors.test test', () => {
             toftStrategy,
             swapper,
             wethAssetId,
+            glpRouter,
         };
     }
 
@@ -105,6 +116,7 @@ describe('usdoToGlpLeverageExecutors.test test', () => {
             toftAssetId,
             swapper,
             cluster,
+            glpRouter,
         } = await loadFixture(setUp);
         await cluster.updateContract(0, deployer.address, true);
 
@@ -123,11 +135,11 @@ describe('usdoToGlpLeverageExecutors.test test', () => {
         await usdc.freeMint(amountIn);
 
         await usdc.transfer(swapper.address, amountIn);
-        await glp.transfer(swapper.address, amountIn);
+        await glp.transfer(glpRouter.address, amountIn);
 
         const data = new ethers.utils.AbiCoder().encode(
-            ['uint256', 'bytes', 'uint256', 'bytes'],
-            [amountIn, '0x', amountIn, '0x'],
+            ['uint256', 'bytes', 'uint256'],
+            [amountIn, '0x', amountIn],
         );
 
         await assetToGLPLeverageExecutor.getCollateral(
@@ -162,6 +174,7 @@ describe('usdoToGlpLeverageExecutors.test test', () => {
             swapper,
             wethAssetId,
             cluster,
+            glpRouter,
         } = await loadFixture(setUp);
         await cluster.updateContract(0, deployer.address, true);
 
@@ -182,13 +195,13 @@ describe('usdoToGlpLeverageExecutors.test test', () => {
         await glp.approve(toft.address, amountIn);
         await toft.wrap(deployer.address, deployer.address, amountIn);
 
-        await usdc.transfer(swapper.address, amountIn);
+        await usdc.transfer(glpRouter.address, amountIn);
         await weth.transfer(swapper.address, amountIn);
         await toft.transfer(assetToGLPLeverageExecutor.address, amountIn);
 
         const data = new ethers.utils.AbiCoder().encode(
-            ['uint256', 'bytes', 'uint256', 'bytes'],
-            [amountIn, '0x', amountIn, '0x'],
+            ['uint256', 'uint256', 'bytes'],
+            [amountIn, amountIn, '0x'],
         );
 
         await assetToGLPLeverageExecutor.getAsset(
