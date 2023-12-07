@@ -11,14 +11,12 @@ import {IUSDOBase} from "tapioca-periph/contracts/interfaces/IUSDO.sol";
 import "./USDOCommon.sol";
 
 contract USDOMarketModule is USDOCommon {
-    // using RebaseLibrary for Rebase;
     using SafeERC20 for IERC20;
 
     // ************** //
     // *** ERRORS *** //
     // ************** //
     error AllowanceNotValid();
-    error AmountTooLow();
 
     constructor(
         address _lzEndpoint,
@@ -26,6 +24,16 @@ contract USDOMarketModule is USDOCommon {
         ICluster _cluster
     ) BaseUSDOStorage(_lzEndpoint, _yieldBox, _cluster) {}
 
+    /// @natpsec initiated an asset removal on a market from another layer
+    /// @param from the address to substract from
+    /// @param to the receiver
+    /// @param lzDstChainId LayerZero destination chain id
+    /// @param zroPaymentAddress ZRO payment address
+    /// @param adapterParams LZ call adapter parameters
+    /// @param externalData ICommonExternalContracts data
+    /// @param removeAndRepayData IRemoveAndRepay data
+    /// @param approvals approvals array that should be executed on destination
+    /// @param revokes revokes array that should be executed on destination
     function removeAsset(
         address from,
         address to,
