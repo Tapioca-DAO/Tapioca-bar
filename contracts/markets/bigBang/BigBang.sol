@@ -492,6 +492,8 @@ contract BigBang is BBCommon {
     }
 
     /// @notice Transfers fees to penrose
+    /// @dev can only be called by the owner
+    /// @return feeShares the amount of fees in shares withdrawn under Penrose
     function refreshPenroseFees()
         external
         onlyOwner

@@ -184,6 +184,17 @@ abstract contract Market is MarketERC20, BoringOwnable {
 
     /// @notice sets common market configuration
     /// @dev values are updated only if > 0 or not address(0)
+    /// @param _oracle oracle address
+    /// @param _oracleData oracle data
+    /// @param _conservator conservator address; conservator is allowed to pause/unpause the contract
+    /// @param _callerFee deprecated; todo: remove
+    /// @param _protocolFee protocol fee percentage
+    /// @param _liquidationBonusAmount extra amount factored in the closing factor computation
+    /// @param _minLiquidatorReward minimum reward percentage a liquidator can receive
+    /// @param _maxLiquidatorReward maximum reward percentage a liquidator can receive
+    /// @param _totalBorrowCap max amount that can be borrowed from the contract
+    /// @param _collateralizationRate the new collateralization rate value (75000 is 75%)
+    /// @param _liquidationCollateralizationRate the new liquidation collateralization rate value (75000 is 75%)
     function setMarketConfig(
         IOracle _oracle,
         bytes calldata _oracleData,
@@ -276,6 +287,7 @@ abstract contract Market is MarketERC20, BoringOwnable {
 
     /// @notice updates the pause state of the contract
     /// @dev can only be called by the conservator
+    /// @param _type the PauseType value
     /// @param val the new value
     function updatePause(PauseType _type, bool val) external {
         require(msg.sender == conservator, "Market: unauthorized");
@@ -288,6 +300,9 @@ abstract contract Market is MarketERC20, BoringOwnable {
     // *** VIEW FUNCTIONS *** //
     // ********************** //
     /// @notice returns the maximum liquidatable amount for user
+    /// @param borrowPart amount borrowed
+    /// @param collateralPartInAsset collateral's value in borrowed asset
+    /// @param ratesPrecision collateralizationRate and liquidationCollateralizationRate precision
     function computeClosingFactor(
         uint256 borrowPart,
         uint256 collateralPartInAsset,
@@ -327,6 +342,8 @@ abstract contract Market is MarketERC20, BoringOwnable {
     /// @param user The user to check solvency.
     /// @param _exchangeRate the exchange rate asset/collateral.
     /// @return amountToSolvency the amount of collateral to be solvent.
+    /// @return minTVL the asset value of the collateral amount factored by collateralizationRate
+    /// @return maxTVL the asset value of the collateral amount.
     function computeTVLInfo(
         address user,
         uint256 _exchangeRate
@@ -383,7 +400,7 @@ abstract contract Market is MarketERC20, BoringOwnable {
     }
 
     /// @notice computes the possible liquidator reward
-    /// @notice user the user for which a liquidation operation should be performed
+    /// @param user the user for which a liquidation operation should be performed
     /// @param _exchangeRate the exchange rate asset/collateral to use for internal computations
     function computeLiquidatorReward(
         address user,
