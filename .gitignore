@@ -5,7 +5,7 @@ coverage.json
 yarn.lock
 package-lock.json
 typechain
-
+docs
 __MACOSX
 #Hardhat files
 cache
