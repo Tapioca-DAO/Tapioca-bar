@@ -252,6 +252,7 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
     /// @param _from sending address
     /// @param _to receiver address
     /// @param lzDstChainId LayerZero destination chain id
+    /// @param zroPaymentAddress LayerZero ZRO payment address
     /// @param lendParams lend specific params
     /// @param approvals the cross chain approval operation data
     /// @param revokes the cross chain revoke operations data

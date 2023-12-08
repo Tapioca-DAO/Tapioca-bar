@@ -374,6 +374,7 @@ contract Penrose is BoringOwnable, BoringFactory {
     /// @param mc The address of the master contract which must be already registered
     /// @param data The init data of the Singularity
     /// @param useCreate2 Whether to use create2 or not
+    /// @return _contract the created contract
     function registerSingularity(
         address mc,
         bytes calldata data,
@@ -395,6 +396,7 @@ contract Penrose is BoringOwnable, BoringFactory {
     /// @notice Registers an existing Singularity market (without deployment)
     /// @dev can only be called by the owner
     /// @param mc The address of the master contract which must be already registered
+    /// @param _contract The address of SGL
     function addSingularity(
         address mc,
         address _contract
@@ -411,6 +413,7 @@ contract Penrose is BoringOwnable, BoringFactory {
     /// @param mc The address of the master contract which must be already registered
     /// @param data The init data of the BigBang contract
     /// @param useCreate2 Whether to use create2 or not
+    /// @return _contract the created contract
     function registerBigBang(
         address mc,
         bytes calldata data,
@@ -433,6 +436,7 @@ contract Penrose is BoringOwnable, BoringFactory {
     /// @notice Registers an existing BigBang market (without deployment)
     /// @dev can only be called by the owner
     /// @param mc The address of the master contract which must be already registered
+    /// @param _contract The address of BB
     function addBigBang(
         address mc,
         address _contract
@@ -445,6 +449,9 @@ contract Penrose is BoringOwnable, BoringFactory {
     }
 
     /// @notice Execute an only owner function inside of a Singularity or a BigBang market
+    /// @param mc Master contracts array
+    /// @param data array
+    /// @param forceSuccess if true, method reverts in case of an unsuccessful execution
     function executeMarketFn(
         address[] calldata mc,
         bytes[] memory data,
