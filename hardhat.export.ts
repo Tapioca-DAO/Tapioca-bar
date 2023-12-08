@@ -1,5 +1,7 @@
 import * as dotenv from 'dotenv';
 
+import '@nomicfoundation/hardhat-foundry';
+
 import '@nomicfoundation/hardhat-toolbox';
 import '@nomicfoundation/hardhat-chai-matchers';
 import '@nomiclabs/hardhat-vyper';

@@ -14,3 +14,7 @@ artifacts
 .vs
 
 .VSCodeCounter
+
+## Foundry
+out
+cache_forge
