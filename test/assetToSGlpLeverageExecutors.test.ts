@@ -10,7 +10,7 @@ import {
     GmxMarketMock__factory,
 } from '../gitsub_tapioca-sdk/src/typechain/tapioca-mocks';
 
-describe('assetToGlpLeverageExecutors.test test', () => {
+describe('assetToSGlpLeverageExecutors.test test', () => {
     async function setUp() {
         const {
             usdc,
@@ -59,7 +59,7 @@ describe('assetToGlpLeverageExecutors.test test', () => {
         );
 
         const AssetToGLPLeverageExecutorFactory =
-            await ethers.getContractFactory('AssetToGLPLeverageExecutor');
+            await ethers.getContractFactory('AssetToSGLPLeverageExecutor');
         const assetToGLPLeverageExecutor =
             await AssetToGLPLeverageExecutorFactory.deploy(
                 yieldBox.address,

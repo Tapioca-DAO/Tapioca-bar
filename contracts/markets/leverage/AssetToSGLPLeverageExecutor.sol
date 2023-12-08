@@ -4,38 +4,11 @@ pragma solidity ^0.8.18;
 //interfaces
 import {ITapiocaOFTBase} from "tapioca-periph/contracts/interfaces/ITapiocaOFT.sol";
 import "tapioca-periph/contracts/interfaces/IGmxGlpManager.sol";
+import "tapioca-periph/contracts/interfaces/IGmxRewardRouterV2.sol";
 
 import "./BaseLeverageExecutor.sol";
 
-interface IGmxRewardRouterV2 {
-    function mintAndStakeGlp(
-        address _token,
-        uint256 _amount,
-        uint256 _minUsdg,
-        uint256 _minGlp
-    ) external returns (uint256);
-
-    function handleRewards(
-        bool _shouldClaimGmx,
-        bool _shouldStakeGmx,
-        bool _shouldClaimEsGmx,
-        bool _shouldStakeEsGmx,
-        bool _shouldStakeMultiplierPoints,
-        bool _shouldClaimWeth,
-        bool _shouldConvertWethToEth
-    ) external;
-
-    function unstakeAndRedeemGlp(
-        address _tokenOut,
-        uint256 _glpAmount,
-        uint256 _minOut,
-        address _receiver
-    ) external returns (uint256);
-
-    function glpManager() external view returns (address);
-}
-
-contract AssetToGLPLeverageExecutor is BaseLeverageExecutor {
+contract AssetToSGLPLeverageExecutor is BaseLeverageExecutor {
     IERC20 public immutable usdc;
 
     IGmxGlpManager private immutable glpManager;
@@ -71,7 +44,7 @@ contract AssetToGLPLeverageExecutor is BaseLeverageExecutor {
     /// @param collateralAddress tGLP address (TOFT GLP)
     /// @param assetAmountIn amount to swap
     /// @param from collateral receiver
-    /// @param data AssetToGLPLeverageExecutor data
+    /// @param data AssetToSGLPLeverageExecutor data
     function getCollateral(
         uint256 collateralId,
         address assetAddress,
@@ -145,7 +118,7 @@ contract AssetToGLPLeverageExecutor is BaseLeverageExecutor {
     /// @param assetAddress usually USDO address
     /// @param collateralAmountIn amount to swap
     /// @param from collateral receiver
-    /// @param data AssetToGLPLeverageExecutor data
+    /// @param data AssetToSGLPLeverageExecutor data
     function getAsset(
         uint256 assetId,
         address collateralAddress,
