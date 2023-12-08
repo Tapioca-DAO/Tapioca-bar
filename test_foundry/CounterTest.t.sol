@@ -11,7 +11,7 @@ contract CounterTest is Test {
     }
 
     function testIncrement() public {
-      counter += 1;
+      counter += 123;
     }
 
     function testSetNumber(uint256 x) public {
