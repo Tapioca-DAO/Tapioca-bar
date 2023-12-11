@@ -452,7 +452,6 @@ contract Penrose is BoringOwnable, BoringFactory {
     )
         external
         onlyOwner
-        notPaused
         returns (bool[] memory success, bytes[] memory result)
     {
         uint256 len = mc.length;
