@@ -274,6 +274,9 @@ contract Penrose is BoringOwnable, BoringFactory {
     /// @dev can only be called by the owner
     /// @param _rate the new rate
     function setBigBangEthMarketDebtRate(uint256 _rate) external onlyOwner {
+        if (bigBangEthMarket != address(0)) {
+            IBigBang(bigBangEthMarket).accrue();
+        }
         bigBangEthDebtRate = _rate;
         emit BigBangEthMarketDebtRate(_rate);
     }
