@@ -74,7 +74,6 @@ contract BigBang is BBCommon {
             uint256 _debtRateAgainstEth,
             uint256 _debtRateMin,
             uint256 _debtRateMax,
-            uint256 _debtStartPoint,
             uint256 _collateralizationRate,
             uint256 _liquidationCollateralizationRate,
             ILeverageExecutor _leverageExecutor
@@ -89,7 +88,6 @@ contract BigBang is BBCommon {
                     IERC20,
                     uint256,
                     IOracle,
-                    uint256,
                     uint256,
                     uint256,
                     uint256,
@@ -115,12 +113,7 @@ contract BigBang is BBCommon {
             _liquidationCollateralizationRate,
             _leverageExecutor
         );
-        _initDebtStorage(
-            _debtRateAgainstEth,
-            _debtRateMin,
-            _debtRateMax,
-            _debtStartPoint
-        );
+        _initDebtStorage(_debtRateAgainstEth, _debtRateMin, _debtRateMax);
     }
 
     function _initModules(
@@ -138,8 +131,7 @@ contract BigBang is BBCommon {
     function _initDebtStorage(
         uint256 _debtRateAgainstEth,
         uint256 _debtRateMin,
-        uint256 _debtRateMax,
-        uint256 _debtStartPoint
+        uint256 _debtRateMax
     ) private {
         isMainMarket = collateralId == penrose.mainAssetId();
         if (!isMainMarket) {
@@ -150,7 +142,6 @@ contract BigBang is BBCommon {
             debtRateAgainstEthMarket = _debtRateAgainstEth;
             maxDebtRate = _debtRateMax;
             minDebtRate = _debtRateMin;
-            debtStartPoint = _debtStartPoint;
         }
     }
 

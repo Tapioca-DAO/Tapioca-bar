@@ -162,6 +162,155 @@ describe('BigBang test', () => {
             } %`,
         );
     });
+    it('Can bork the pools via the function', async () => {
+        const {
+            wethBigBangMarket,
+            wbtcBigBangMarket,
+            weth,
+            wethAssetId,
+            wbtc,
+            wbtcAssetId,
+            yieldBox,
+            deployer,
+            timeTravel,
+            bar,
+        } = await loadFixture(register);
+
+        //borrow from the main eth market
+        await weth.approve(yieldBox.address, ethers.constants.MaxUint256);
+        await yieldBox.setApprovalForAll(wethBigBangMarket.address, true);
+
+        const wethMintVal = ethers.BigNumber.from((1e18).toString()).mul(50);
+        await weth.updateMintLimit(wethMintVal.mul(100));
+        await timeTravel(86401);
+        await weth.freeMint(wethMintVal);
+        const valShare = await yieldBox.toShare(
+            wethAssetId,
+            wethMintVal,
+            false,
+        );
+        await yieldBox.depositAsset(
+            wethAssetId,
+            deployer.address,
+            deployer.address,
+            0,
+            valShare,
+        );
+        await wethBigBangMarket.addCollateral(
+            deployer.address,
+            deployer.address,
+            false,
+            0,
+            valShare,
+        );
+
+        const usdoBorrowVal = ethers.utils.parseEther('10000');
+        await wethBigBangMarket.borrow(
+            deployer.address,
+            deployer.address,
+            usdoBorrowVal,
+        );
+
+        let userBorrowPart = await wethBigBangMarket.userBorrowPart(
+            deployer.address,
+        );
+
+        const ethMarketTotalDebt = await wethBigBangMarket.getTotalDebt();
+        expect(ethMarketTotalDebt.eq(userBorrowPart)).to.be.true;
+
+        const ethMarketDebtRate = await wethBigBangMarket.getDebtRate();
+        expect(ethMarketDebtRate.eq(ethers.utils.parseEther('0.005'))).to.be
+            .true;
+
+        //wbtc market
+        const initialWbtcDebtRate = await wbtcBigBangMarket.getDebtRate();
+        const minDebtRate = await wbtcBigBangMarket.minDebtRate();
+        expect(initialWbtcDebtRate.eq(minDebtRate)).to.be.true;
+
+        await wbtc.approve(yieldBox.address, ethers.constants.MaxUint256);
+        await yieldBox.setApprovalForAll(wbtcBigBangMarket.address, true);
+
+        const wbtcMintVal = ethers.BigNumber.from((1e18).toString()).mul(50);
+        await wbtc.updateMintLimit(wbtcMintVal.mul(10));
+        await timeTravel(86401);
+        await wbtc.freeMint(wbtcMintVal.mul(5));
+        const wbtcValShare = await yieldBox.toShare(
+            wbtcAssetId,
+            wbtcMintVal,
+            false,
+        );
+        await yieldBox.depositAsset(
+            wbtcAssetId,
+            deployer.address,
+            deployer.address,
+            0,
+            wbtcValShare,
+        );
+        await wbtcBigBangMarket.addCollateral(
+            deployer.address,
+            deployer.address,
+            false,
+            0,
+            wbtcValShare,
+        );
+
+        const wbtcMarketusdoBorrowVal = ethers.utils.parseEther('2987');
+        /// @audit Borrow above minDebtSize
+        await wbtcBigBangMarket.borrow(
+            deployer.address,
+            deployer.address,
+            wbtcMarketusdoBorrowVal,
+        );
+
+        userBorrowPart = await wbtcBigBangMarket.userBorrowPart(
+            deployer.address,
+        );
+
+        const wbtcMarketTotalDebt = await wbtcBigBangMarket.getTotalDebt();
+        expect(wbtcMarketTotalDebt.eq(userBorrowPart)).to.be.true;
+
+        /// @audit Repay to drag totalDebt below minDebtSize
+        await wbtcBigBangMarket.repay(
+            deployer.address,
+            deployer.address,
+            true,
+            wbtcMarketusdoBorrowVal.mul(99).div(100),
+        );
+        console.log('We can repay, less than 100% so we go below min');
+
+        // Accrue should revert now due to this
+        try {
+            await wbtcBigBangMarket.accrue();
+        } catch (e) {
+            console.log('e', e);
+            console.log('And we got the revert we expected');
+        }
+
+        try {
+            // We cannot repay rest
+            await wbtcBigBangMarket.repay(
+                deployer.address,
+                deployer.address,
+                true,
+                wbtcMarketusdoBorrowVal.mul(1).div(100),
+            );
+        } catch (e) {
+            console.log('e', e);
+            console.log('We cannot repay');
+        }
+
+        try {
+            // We cannot borrow anymore due to accrue
+            await wbtcBigBangMarket.borrow(
+                deployer.address,
+                deployer.address,
+                wbtcMarketusdoBorrowVal,
+            );
+        } catch (e) {
+            console.log('e', e);
+            console.log('And we cannot borrow');
+        }
+    });
     it('should test initial values', async () => {
         const { wethBigBangMarket, usd0, bar, weth, wethAssetId } =
             await loadFixture(register);

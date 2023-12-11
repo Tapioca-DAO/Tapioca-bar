@@ -33,8 +33,8 @@ contract BBCommon is BBStorage {
 
         if (_currentDebt >= _maxDebtPoint) return maxDebtRate;
 
-        uint256 debtPercentage = ((_currentDebt - debtStartPoint) *
-            DEBT_PRECISION) / (_maxDebtPoint - debtStartPoint);
+        uint256 debtPercentage = (_currentDebt * DEBT_PRECISION) /
+            _maxDebtPoint;
         uint256 debt = ((maxDebtRate - minDebtRate) * debtPercentage) /
             DEBT_PRECISION +
             minDebtRate;
