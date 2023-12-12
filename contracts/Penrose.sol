@@ -54,7 +54,7 @@ contract Penrose is BoringOwnable, BoringFactory {
     // Used to check if a SGL/BB is a real market
     mapping(address => bool) public isMarketRegistered;
     /// @notice default LZ Chain id
-    uint16 public hostLzChainId;
+    uint16 public immutable hostLzChainId;
 
     /// @notice BigBang ETH market addressf
     address public bigBangEthMarket;
