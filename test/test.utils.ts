@@ -662,7 +662,7 @@ async function registerMagnetar(clusterAddress: string, deployer: any) {
 }
 async function registerMagnetarHelper(deployer: any) {
     const MagnetarHelper = new MagnetarHelper__factory(deployer);
-    const magnetarHelper = await MagnetarHelper.deploy(deployer.address);
+    const magnetarHelper = await MagnetarHelper.deploy();
     return { magnetarHelper };
 }
 
