@@ -7,6 +7,8 @@ import {ITapiocaOFTBase} from "tapioca-periph/contracts/interfaces/ITapiocaOFT.s
 import "./BaseLeverageExecutor.sol";
 
 contract AssetToGLPLeverageExecutor is BaseLeverageExecutor {
+    using SafeApprove for address;
+
     IERC20 public immutable usdc;
 
     // ************** //
@@ -84,8 +86,7 @@ contract AssetToGLPLeverageExecutor is BaseLeverageExecutor {
         if (collateralAmountOut < minGlpAmountOut) revert NotEnough(glpAddress);
 
         //wrap into tGLP
-        IERC20(glpAddress).approve(collateralAddress, 0);
-        IERC20(glpAddress).approve(collateralAddress, collateralAmountOut);
+        glpAddress.safeApprove(collateralAddress, collateralAmountOut);
         ITapiocaOFTBase(collateralAddress).wrap(
             address(this),
             address(this),
@@ -93,11 +94,7 @@ contract AssetToGLPLeverageExecutor is BaseLeverageExecutor {
         );
 
         //deposit tGLP to YieldBox
-        IERC20(collateralAddress).approve(address(yieldBox), 0);
-        IERC20(collateralAddress).approve(
-            address(yieldBox),
-            collateralAmountOut
-        );
+        collateralAddress.safeApprove(address(yieldBox), collateralAmountOut);
         yieldBox.depositAsset(
             collateralId,
             address(this),
@@ -164,8 +161,7 @@ contract AssetToGLPLeverageExecutor is BaseLeverageExecutor {
         );
         if (assetAmountOut < minAssetAmountOut) revert NotEnough(assetAddress);
 
-        IERC20(assetAddress).approve(address(yieldBox), 0);
-        IERC20(assetAddress).approve(address(yieldBox), assetAmountOut);
+        assetAddress.safeApprove(address(yieldBox), assetAmountOut);
         yieldBox.depositAsset(assetId, address(this), from, assetAmountOut, 0);
     }
 }

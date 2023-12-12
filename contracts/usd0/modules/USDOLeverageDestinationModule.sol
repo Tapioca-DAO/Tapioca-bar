@@ -9,11 +9,13 @@ import {IUSDOBase} from "tapioca-periph/contracts/interfaces/IUSDO.sol";
 import "tapioca-periph/contracts/interfaces/ISwapper.sol";
 import "tapioca-periph/contracts/interfaces/ITapiocaOFT.sol";
 import "tapioca-periph/contracts/interfaces/ISingularity.sol";
+import "tapioca-periph/contracts/libraries/SafeApprove.sol";
 
 import "./USDOCommon.sol";
 
 contract USDOLeverageDestinationModule is USDOCommon {
     using SafeERC20 for IERC20;
+    using SafeApprove for address;
 
     constructor(
         address _lzEndpoint,
@@ -132,8 +134,7 @@ contract USDOLeverageDestinationModule is USDOCommon {
         //wrap into tOFT
         if (swapData.tokenOut != address(0)) {
             //skip approval for native
-            IERC20(swapData.tokenOut).approve(externalData.tOft, 0);
-            IERC20(swapData.tokenOut).approve(externalData.tOft, amountOut);
+            swapData.tokenOut.safeApprove(externalData.tOft, amountOut);
         }
         ITapiocaOFTBase(externalData.tOft).wrap{
             value: swapData.tokenOut == address(0) ? amountOut : 0

@@ -27,6 +27,7 @@ __/\\\\\\\\\\\\\\\_____/\\\\\\\\\_____/\\\\\\\\\\\\\____/\\\\\\\\\\\_______/\\\\
 contract BigBang is BBCommon {
     using RebaseLibrary for Rebase;
     using BoringERC20 for IERC20;
+    using SafeApprove for address;
 
     // ************** //
     // *** ERRORS *** //
@@ -491,7 +492,7 @@ contract BigBang is BBCommon {
         uint256 fees = asset.balanceOf(address(this));
         feeShares = yieldBox.toShare(assetId, fees, false);
         if (feeShares > 0) {
-            asset.approve(address(yieldBox), fees);
+            address(asset).safeApprove(address(yieldBox), fees);
             yieldBox.depositAsset(
                 assetId,
                 address(this),
