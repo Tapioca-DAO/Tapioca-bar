@@ -30,10 +30,10 @@ contract AssetToGLPLeverageExecutor is BaseLeverageExecutor {
     // *** PUBLIC MEHODS *** //
     // ********************* //
     /// @notice buys collateral with asset
-    /// @dev USDO > USDC > GLP > wrap to tGLP
+    /// @dev USDO > USDC > GLP
     /// @param collateralId Collateral's YieldBox id
     /// @param assetAddress usually USDO address
-    /// @param collateralAddress tGLP address (TOFT GLP)
+    /// @param collateralAddress GLP address
     /// @param assetAmountIn amount to swap
     /// @param from collateral receiver
     /// @param data AssetToGLPLeverageExecutor data
@@ -68,29 +68,17 @@ contract AssetToGLPLeverageExecutor is BaseLeverageExecutor {
 
         if (usdcAmount < minUsdcAmountOut) revert NotEnough(address(usdc));
 
-        //get GLP address
-        address glpAddress = ITapiocaOFTBase(collateralAddress).erc20();
-        if (glpAddress == address(0)) revert GlpNotValid();
-
         //swap USDC with GLP
         collateralAmountOut = _swapTokens(
             address(usdc),
-            glpAddress,
+            collateralAddress,
             usdcAmount,
             minGlpAmountOut,
             dexGlpData,
             0
         );
-        if (collateralAmountOut < minGlpAmountOut) revert NotEnough(glpAddress);
-
-        //wrap into tGLP
-        IERC20(glpAddress).approve(collateralAddress, 0);
-        IERC20(glpAddress).approve(collateralAddress, collateralAmountOut);
-        ITapiocaOFTBase(collateralAddress).wrap(
-            address(this),
-            address(this),
-            collateralAmountOut
-        );
+        if (collateralAmountOut < minGlpAmountOut)
+            revert NotEnough(collateralAddress);
 
         //deposit tGLP to YieldBox
         IERC20(collateralAddress).approve(address(yieldBox), 0);
@@ -108,9 +96,9 @@ contract AssetToGLPLeverageExecutor is BaseLeverageExecutor {
     }
 
     /// @notice buys asset with collateral
-    /// @dev unwrap tGLP > GLP > USDC > USDO
+    /// @dev GLP > USDC > USDO
     /// @param assetId Asset's YieldBox id; usually USDO asset id
-    /// @param collateralAddress tGLP address (TOFT GLP)
+    /// @param collateralAddress GLP address
     /// @param assetAddress usually USDO address
     /// @param collateralAmountIn amount to swap
     /// @param from collateral receiver
@@ -134,17 +122,9 @@ contract AssetToGLPLeverageExecutor is BaseLeverageExecutor {
             bytes memory dexAssetData
         ) = abi.decode(data, (uint256, bytes, uint256, bytes));
 
-        address glpAddress = ITapiocaOFTBase(collateralAddress).erc20();
-        if (glpAddress == address(0)) revert TokenNotValid();
-
-        ITapiocaOFTBase(collateralAddress).unwrap(
-            address(this),
-            collateralAmountIn
-        );
-
         //swap GLP with USDC
         uint256 usdcAmount = _swapTokens(
-            glpAddress,
+            collateralAddress,
             address(usdc),
             collateralAmountIn,
             minUsdcAmountOut,
