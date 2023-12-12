@@ -477,7 +477,6 @@ contract Penrose is BoringOwnable, BoringFactory {
     /// @notice Calls `accrue()` on all BigBang registered markets
     /// @dev callable by BigBang ETH market only
     function reAccrueBigBangMarkets() external notPaused {
-        if (!isMarketRegistered[msg.sender]) revert NotAuthorized();
         if (msg.sender == bigBangEthMarket) {
             uint256 len = allBigBangMarkets.length;
             address[] memory markets = allBigBangMarkets;
