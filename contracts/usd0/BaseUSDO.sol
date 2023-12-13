@@ -80,6 +80,7 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
     // ************** //
     error Failed();
     error NotAuthorized();
+    error NotValid();
 
     constructor(
         address _lzEndpoint,
@@ -94,6 +95,14 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
         address payable __optionsDestinationModule,
         address payable __genericModule
     ) BaseUSDOStorage(_lzEndpoint, _yieldBox, _cluster) ERC20Permit("USDO") {
+        if (__leverageModule == address(0)) revert NotValid();
+        if (__leverageDestinationModule == address(0)) revert NotValid();
+        if (__marketModule == address(0)) revert NotValid();
+        if (__marketDestinationModule == address(0)) revert NotValid();
+        if (__optionsModule == address(0)) revert NotValid();
+        if (__optionsDestinationModule == address(0)) revert NotValid();
+        if (__genericModule == address(0)) revert NotValid();
+
         //Set modules
         _leverageModule = USDOLeverageModule(__leverageModule);
         _leverageDestinationModule = USDOLeverageDestinationModule(
@@ -166,7 +175,7 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
     /// @dev conservator can pause the contract
     /// @param _conservator the new address
     function setConservator(address _conservator) external onlyOwner {
-        if (_conservator == address(0)) revert NotAuthorized();
+        if (_conservator == address(0)) revert NotValid();
         conservator = _conservator;
     }
 

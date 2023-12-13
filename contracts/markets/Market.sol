@@ -121,7 +121,7 @@ abstract contract Market is MarketERC20, BoringOwnable {
     /// @notice event emitted when oracle data is updated
     event OracleDataUpdated();
     /// @notice event emitted when oracle is updated
-    event OracleUpdated();
+    event OracleUpdated(address newAddr);
     /// @notice event emitted when a position is liquidated
     event Liquidated(
         address indexed liquidator,
@@ -136,6 +136,8 @@ abstract contract Market is MarketERC20, BoringOwnable {
         uint256 indexed oldVal,
         uint256 indexed newVal
     );
+    /// @notice event emitted on setMarketConfig updates
+    event ValueUpdated(uint256 indexed valType, uint256 indexed _newVal);
 
     modifier optionNotPaused(PauseType _type) {
         require(!pauseOptions[_type], "Market: paused");
@@ -210,7 +212,7 @@ abstract contract Market is MarketERC20, BoringOwnable {
     ) external onlyOwner {
         if (address(_oracle) != address(0)) {
             oracle = _oracle;
-            emit OracleUpdated();
+            emit OracleUpdated(address(_oracle));
         }
 
         if (_oracleData.length > 0) {
@@ -226,11 +228,13 @@ abstract contract Market is MarketERC20, BoringOwnable {
         if (_callerFee > 0) {
             require(_callerFee <= FEE_PRECISION, "Market: not valid");
             callerFee = _callerFee;
+            emit ValueUpdated(1, _callerFee);
         }
 
         if (_protocolFee > 0) {
             require(_protocolFee <= FEE_PRECISION, "Market: not valid");
             protocolFee = _protocolFee;
+            emit ValueUpdated(2, _protocolFee);
         }
 
         if (_liquidationBonusAmount > 0) {
@@ -239,6 +243,7 @@ abstract contract Market is MarketERC20, BoringOwnable {
                 "Market: not valid"
             );
             liquidationBonusAmount = _liquidationBonusAmount;
+            emit ValueUpdated(3, _liquidationBonusAmount);
         }
 
         if (_minLiquidatorReward > 0) {
@@ -248,6 +253,7 @@ abstract contract Market is MarketERC20, BoringOwnable {
                 "Market: not valid"
             );
             minLiquidatorReward = _minLiquidatorReward;
+            emit ValueUpdated(4, _minLiquidatorReward);
         }
 
         if (_maxLiquidatorReward > 0) {
@@ -257,11 +263,13 @@ abstract contract Market is MarketERC20, BoringOwnable {
                 "Market: not valid"
             );
             maxLiquidatorReward = _maxLiquidatorReward;
+            emit ValueUpdated(5, _maxLiquidatorReward);
         }
 
         if (_totalBorrowCap > 0) {
             emit LogBorrowCapUpdated(totalBorrowCap, _totalBorrowCap);
             totalBorrowCap = _totalBorrowCap;
+            emit ValueUpdated(6, _totalBorrowCap);
         }
 
         if (_collateralizationRate > 0) {
@@ -274,6 +282,7 @@ abstract contract Market is MarketERC20, BoringOwnable {
                 "Market: collateralizationRate too big"
             );
             collateralizationRate = _collateralizationRate;
+            emit ValueUpdated(7, _collateralizationRate);
         }
 
         if (_liquidationCollateralizationRate > 0) {
@@ -282,6 +291,7 @@ abstract contract Market is MarketERC20, BoringOwnable {
                 "Market: liquidationCollateralizationRate too small"
             );
             liquidationCollateralizationRate = _liquidationCollateralizationRate;
+            emit ValueUpdated(8, _liquidationCollateralizationRate);
         }
     }
 
@@ -539,11 +549,14 @@ abstract contract Market is MarketERC20, BoringOwnable {
         uint256 borrowAmount,
         uint256 assetDecimals
     ) internal view returns (uint256) {
-        uint256 maxBorrowabe = _computeMaxBorrowableAmount(user, _exchangeRate);
+        uint256 maxBorrowable = _computeMaxBorrowableAmount(
+            user,
+            _exchangeRate
+        );
 
         uint256 shareRatio = _getRatio(
             borrowAmount,
-            maxBorrowabe,
+            maxBorrowable,
             assetDecimals
         );
         return (shareRatio * userCollateralShare[user]) / (10 ** assetDecimals);
