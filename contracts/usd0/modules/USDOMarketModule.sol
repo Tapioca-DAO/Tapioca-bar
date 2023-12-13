@@ -109,15 +109,6 @@ contract USDOMarketModule is USDOCommon {
         ICommonData.IWithdrawParams calldata withdrawParams,
         bytes calldata adapterParams
     ) external payable {
-        // allowance is also checked on SGL
-        // check it here as well because tokens are moved over layers
-        if (_from != msg.sender) {
-            if (allowance(_from, msg.sender) < lendParams.depositAmount)
-                revert AllowanceNotValid();
-
-            _spendAllowance(_from, msg.sender, lendParams.depositAmount);
-        }
-
         bytes32 toAddress = LzLib.addressToBytes32(_to);
         (lendParams.depositAmount, ) = _removeDust(lendParams.depositAmount);
         lendParams.depositAmount = _debitFrom(
