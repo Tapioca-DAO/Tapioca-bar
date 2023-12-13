@@ -63,7 +63,7 @@ contract BBLendingCommon is BBCommon {
         );
 
         if (totalBorrowCap > 0) {
-            if (totalBorrow.elastic <= totalBorrowCap)
+            if (totalBorrow.elastic > totalBorrowCap)
                 revert BorrowCapReached();
         }
 
