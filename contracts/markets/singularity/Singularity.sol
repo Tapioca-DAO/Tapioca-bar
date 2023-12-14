@@ -212,19 +212,6 @@ contract Singularity is SGLCommon, ReentrancyGuard {
         share = (amount * allShare) / totalAsset.base;
     }
 
-    /// @notice returns Total yieldBox shares for user
-    /// @param _user The user to check shares for
-    /// @param _assetId The asset id to check shares for
-    /// @return shares value
-    function yieldBoxShares(
-        address _user,
-        uint256 _assetId
-    ) external view returns (uint256) {
-        bytes32 sig = _assetId == assetId ? ASSET_SIG : COLLATERAL_SIG;
-        return
-            yieldBox.balanceOf(_user, _assetId) + _yieldBoxShares[_user][sig];
-    }
-
     // ************************ //
     // *** PUBLIC FUNCTIONS *** //
     // ************************ //
@@ -290,7 +277,7 @@ contract Singularity is SGLCommon, ReentrancyGuard {
         uint256 fraction
     ) external optionNotPaused(PauseType.RemoveAsset) returns (uint256 share) {
         _accrue();
-        share = _removeAsset(from, to, fraction, true);
+        share = _removeAsset(from, to, fraction);
         _allowedLend(from, share);
     }
 
@@ -502,7 +489,7 @@ contract Singularity is SGLCommon, ReentrancyGuard {
             emit LogWithdrawFees(_feeTo, _feesEarnedFraction);
         }
 
-        feeShares = _removeAsset(_feeTo, msg.sender, balanceOf[_feeTo], false);
+        feeShares = _removeAsset(_feeTo, msg.sender, balanceOf[_feeTo]);
     }
 
     /// @notice sets Singularity specific configuration

@@ -63,11 +63,9 @@ contract SGLLiquidation is SGLCommon {
         uint256 borrowAmount;
         (totalBorrow, borrowAmount) = totalBorrow.sub(_userBorrowPart, true);
         userBorrowPart[user] = 0;
-        _yieldBoxShares[user][ASSET_SIG] = 0;
 
         totalCollateralShare -= userCollateralShare[user];
         userCollateralShare[user] = 0;
-        _yieldBoxShares[user][COLLATERAL_SIG] = 0;
 
         (, uint256 returnedAmount) = _swapCollateralWithAsset(
             collateralShare,
@@ -311,16 +309,6 @@ contract SGLLiquidation is SGLCommon {
         totalCollateralShare = totalCollateralShare > collateralShare
             ? totalCollateralShare - collateralShare
             : 0;
-        if (collateralShare > _yieldBoxShares[user][COLLATERAL_SIG]) {
-            _yieldBoxShares[user][COLLATERAL_SIG] = 0; //some assets accrue in time
-        } else {
-            _yieldBoxShares[user][COLLATERAL_SIG] -= collateralShare;
-        }
-        if (borrowShare > _yieldBoxShares[user][ASSET_SIG]) {
-            _yieldBoxShares[user][ASSET_SIG] = 0; //some assets accrue in time
-        } else {
-            _yieldBoxShares[user][ASSET_SIG] -= borrowShare;
-        }
 
         (uint256 returnedShare, ) = _swapCollateralWithAsset(
             collateralShare,
