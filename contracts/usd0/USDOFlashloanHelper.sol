@@ -125,6 +125,9 @@ contract USDOFlashloanHelper is IERC3156FlashLender, BoringOwnable {
             FLASH_MINT_CALLBACK_SUCCESS
         ) revert Failed();
 
+        //consume allowance to respect EIP3156
+        usdo.transferFrom(address(receiver), address(this), amount);
+
         // Stack to deep
         // usdo.burn(address(receiver), amount)
         assembly {
@@ -134,7 +137,7 @@ contract USDOFlashloanHelper is IERC3156FlashLender, BoringOwnable {
             // keccak256("burn(address,uint256)")
             mstore(freeMemPointer, shl(224, 0x9dc29fac))
 
-            mstore(add(freeMemPointer, 4), receiver)
+            mstore(add(freeMemPointer, 4), address(this))
             mstore(add(freeMemPointer, 36), amount)
 
             // Execute the call
