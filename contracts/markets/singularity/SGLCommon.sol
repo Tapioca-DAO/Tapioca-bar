@@ -79,7 +79,7 @@ contract SGLCommon is SGLStorage {
                 logStartingInterest
             );
         }
-        _accrueInfo.lastAccrued = uint64(block.timestamp);
+        _accrueInfo.lastAccrued = block.timestamp.toUint64();
 
         if (_totalBorrow.base == 0) {
             // If there are no borrows, reset the interest rate
@@ -127,10 +127,9 @@ contract SGLCommon is SGLStorage {
                 FACTOR_PRECISION) / minimumTargetUtilization;
             uint256 scale = interestElasticity +
                 (underFactor * underFactor * elapsedTime);
-            _accrueInfo.interestPerSecond = uint64(
-                (uint256(_accrueInfo.interestPerSecond) * interestElasticity) /
-                    scale
-            );
+            _accrueInfo.interestPerSecond = ((uint256(
+                _accrueInfo.interestPerSecond
+            ) * interestElasticity) / scale).toUint64();
             if (_accrueInfo.interestPerSecond < minimumInterestPerSecond) {
                 _accrueInfo.interestPerSecond = minimumInterestPerSecond; // 0.25% APR minimum
             }
@@ -145,7 +144,7 @@ contract SGLCommon is SGLStorage {
             if (newInterestPerSecond > maximumInterestPerSecond) {
                 newInterestPerSecond = maximumInterestPerSecond; // 1000% APR maximum
             }
-            _accrueInfo.interestPerSecond = uint64(newInterestPerSecond);
+            _accrueInfo.interestPerSecond = newInterestPerSecond.toUint64();
         }
     }
 

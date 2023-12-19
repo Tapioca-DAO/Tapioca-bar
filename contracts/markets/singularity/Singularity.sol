@@ -175,7 +175,7 @@ contract Singularity is SGLCommon, ReentrancyGuard {
         maximumInterestPerSecond = 317097920000; // approx 1000% APR
         interestElasticity = 28800e36; // Half or double in 28800 seconds (8 hours) if linear
         startingInterestPerSecond = minimumInterestPerSecond;
-        accrueInfo.interestPerSecond = uint64(startingInterestPerSecond); // 1% APR, with 1e18 being 100%
+        accrueInfo.interestPerSecond = startingInterestPerSecond; // 1% APR, with 1e18 being 100%
         updateExchangeRate();
         //default fees
         callerFee = 1000; // 1%

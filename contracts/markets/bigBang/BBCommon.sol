@@ -67,7 +67,7 @@ contract BBCommon is BBStorage {
         // Calculate fees
         _totalBorrow = totalBorrow;
         uint256 extraAmount = (uint256(_totalBorrow.elastic) *
-            uint64(getDebtRate() / 31536000) *
+            (getDebtRate() / 31536000).toUint64() *
             elapsedTime) / 1e18;
         _totalBorrow.elastic += extraAmount.toUint128();
     }
@@ -81,8 +81,8 @@ contract BBCommon is BBStorage {
         }
         //update debt rate
         uint256 annumDebtRate = getDebtRate();
-        _accrueInfo.debtRate = uint64(annumDebtRate / 31536000); //per second
-        _accrueInfo.lastAccrued = uint64(block.timestamp);
+        _accrueInfo.debtRate = (annumDebtRate / 31536000).toUint64(); //per second
+        _accrueInfo.lastAccrued = block.timestamp.toUint64();
 
         Rebase memory _totalBorrow = totalBorrow;
 
