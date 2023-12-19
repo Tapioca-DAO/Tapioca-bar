@@ -219,7 +219,11 @@ contract BigBang is BBCommon {
     function execute(
         bytes[] calldata calls,
         bool revertOnFail
-    ) external returns (bool[] memory successes, string[] memory results) {
+    )
+        external
+        nonReentrant
+        returns (bool[] memory successes, string[] memory results)
+    {
         successes = new bool[](calls.length);
         results = new string[](calls.length);
         for (uint256 i; i < calls.length; i++) {
