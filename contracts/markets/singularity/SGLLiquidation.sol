@@ -289,7 +289,7 @@ contract SGLLiquidation is SGLCommon {
         emit LogAddAsset(
             address(this),
             address(this),
-            extraShare - feeShare - callerShare,
+            returnedShare - feeShare - callerShare,
             0
         );
     }
