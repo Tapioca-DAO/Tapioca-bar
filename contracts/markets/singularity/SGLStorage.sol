@@ -9,6 +9,8 @@ import "tapioca-periph/contracts/interfaces/ISingularity.sol";
 import "tapioca-periph/contracts/interfaces/ILiquidationQueue.sol";
 import "tapioca-sdk/dist/contracts/YieldBox/contracts/YieldBox.sol";
 
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+
 import "../Market.sol";
 
 // solhint-disable max-line-length
@@ -27,7 +29,7 @@ __/\\\\\\\\\\\\\\\_____/\\\\\\\\\_____/\\\\\\\\\\\\\____/\\\\\\\\\\\_______/\\\\
 
 */
 
-contract SGLStorage is BoringOwnable, Market {
+contract SGLStorage is BoringOwnable, Market, ReentrancyGuard {
     using RebaseLibrary for Rebase;
     using BoringERC20 for IERC20;
 

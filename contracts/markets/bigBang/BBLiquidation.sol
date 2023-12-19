@@ -89,7 +89,7 @@ contract BBLiquidation is BBCommon {
         uint256[] calldata maxBorrowParts,
         IMarketLiquidatorReceiver[] calldata liquidatorReceivers,
         bytes[] calldata liquidatorReceiverDatas
-    ) external optionNotPaused(PauseType.Liquidation) {
+    ) external optionNotPaused(PauseType.Liquidation) nonReentrant {
         if (users.length == 0) revert NothingToLiquidate();
         if (users.length != maxBorrowParts.length) revert LengthMismatch();
         if (users.length != liquidatorReceivers.length) revert LengthMismatch();
