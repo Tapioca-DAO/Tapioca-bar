@@ -273,6 +273,8 @@ contract SGLLiquidation is SGLCommon {
             );
         }
         if (callerShare > 0) {
+            asset.approve(address(yieldBox), 0);
+            asset.approve(address(yieldBox), type(uint256).max);
             yieldBox.depositAsset(
                 assetId,
                 address(this),
