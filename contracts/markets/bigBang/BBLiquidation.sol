@@ -9,6 +9,7 @@ import "tapioca-periph/contracts/interfaces/IMarketLiquidatorReceiver.sol";
 contract BBLiquidation is BBCommon {
     using RebaseLibrary for Rebase;
     using BoringERC20 for IERC20;
+    using SafeCast for uint256;
 
     // ************** //
     // *** ERRORS *** //
@@ -214,8 +215,8 @@ contract BBLiquidation is BBCommon {
         userCollateralShare[user] -= collateralShare;
         if (borrowAmount == 0) revert Solvent();
 
-        totalBorrow.elastic -= uint128(borrowAmount);
-        totalBorrow.base -= uint128(borrowPart);
+        totalBorrow.elastic -= borrowAmount.toUint128();
+        totalBorrow.base -= borrowPart.toUint128();
     }
 
     function _extractLiquidationFees(

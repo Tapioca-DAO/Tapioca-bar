@@ -5,6 +5,8 @@ import "@boringcrypto/boring-solidity/contracts/BoringOwnable.sol";
 import "@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol";
 import "@boringcrypto/boring-solidity/contracts/libraries/BoringRebase.sol";
 
+import "@openzeppelin/contracts/utils/math/SafeCast.sol";
+
 import "tapioca-periph/contracts/interfaces/ISingularity.sol";
 import "tapioca-periph/contracts/interfaces/ILiquidationQueue.sol";
 import "tapioca-sdk/dist/contracts/YieldBox/contracts/YieldBox.sol";
@@ -30,6 +32,7 @@ __/\\\\\\\\\\\\\\\_____/\\\\\\\\\_____/\\\\\\\\\\\\\____/\\\\\\\\\\\_______/\\\\
 contract SGLStorage is BoringOwnable, Market {
     using RebaseLibrary for Rebase;
     using BoringERC20 for IERC20;
+    using SafeCast for uint256;
 
     // ************ //
     // *** VARS *** //
