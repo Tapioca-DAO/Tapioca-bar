@@ -125,11 +125,11 @@ contract USDOFlashloanHelper is IERC3156FlashLender, BoringOwnable {
             FLASH_MINT_CALLBACK_SUCCESS
         ) revert Failed();
 
-        //consume allowance to respect EIP3156
+        //we burn from (this)
         usdo.transferFrom(address(receiver), address(this), amount);
 
         // Stack to deep
-        // usdo.burn(address(receiver), amount)
+        // usdo.burn(address(this), amount)
         assembly {
             // Free memory pointer
             let freeMemPointer := mload(0x40)
