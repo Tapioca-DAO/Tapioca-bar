@@ -369,6 +369,7 @@ abstract contract Market is MarketERC20, BoringOwnable {
         if (updated) {
             require(rate != 0, "Market: invalid rate");
             exchangeRate = rate;
+            rateTimestamp = block.timestamp;
             emit LogExchangeRate(rate);
         } else {
             require(
@@ -378,8 +379,6 @@ abstract contract Market is MarketERC20, BoringOwnable {
             // Return the old rate if fetching wasn't successful & rate isn't too old
             rate = exchangeRate;
         }
-
-        rateTimestamp = block.timestamp;
     }
 
     /// @notice computes the possible liquidator reward
