@@ -32,6 +32,7 @@ __/\\\\\\\\\\\\\\\_____/\\\\\\\\\_____/\\\\\\\\\\\\\____/\\\\\\\\\\\_______/\\\\
 /// @title Tapioca market
 contract Singularity is SGLCommon, ReentrancyGuard {
     using RebaseLibrary for Rebase;
+    using SafeCast for uint256;
 
     // ************ //
     // *** VARS *** //
@@ -61,6 +62,8 @@ contract Singularity is SGLCommon, ReentrancyGuard {
     error TransferFailed();
     error NotValid();
     error ModuleNotSet();
+    error NotAuthorized();
+    error SameState();
 
     /// @notice The init function that acts as a constructor
     function init(bytes calldata data) external onlyOnce {
@@ -476,6 +479,26 @@ contract Singularity is SGLCommon, ReentrancyGuard {
     // *********************** //
     // *** OWNER FUNCTIONS *** //
     // *********************** //
+    /// @notice updates the pause state of the contract
+    /// @dev can only be called by the conservator
+    /// @param val the new value
+    function updatePause(PauseType _type, bool val) external override {
+        if (msg.sender != conservator) revert NotAuthorized();
+        if (val == pauseOptions[_type]) revert SameState();
+        emit PausedUpdated(_type, pauseOptions[_type], val);
+        pauseOptions[_type] = val;
+
+        // In case of 'unpause', `lastAccrued` is set to block.timestamp
+        // Valid for all action types that has an impact on debt or supply
+        if (
+            !val &&
+            (_type != PauseType.AddCollateral &&
+                _type != PauseType.RemoveCollateral)
+        ) {
+            accrueInfo.lastAccrued = block.timestamp.toUint64();
+        }
+    }
+
     /// @notice rescues unused ETH from the contract
     /// @param amount the amount to rescue
     /// @param to the recipient

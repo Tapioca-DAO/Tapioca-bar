@@ -446,7 +446,10 @@ describe('Singularity test', () => {
             await expect(wethDepositAndAddAsset(wethAmount, eoa1)).to.be
                 .reverted;
 
+            const accrueInfoBefore = await wethUsdcSingularity.accrueInfo();
             await wethUsdcSingularity.updatePause(7, false);
+            const accrueInfoAfter = await wethUsdcSingularity.accrueInfo();
+            expect(accrueInfoAfter[1]).not.eq(accrueInfoBefore[1]);
 
             await approveTokensAndSetBarApproval(eoa1);
             await weth.connect(eoa1).freeMint(wethAmount);
