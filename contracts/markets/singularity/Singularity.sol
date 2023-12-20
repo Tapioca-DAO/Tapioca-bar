@@ -482,7 +482,11 @@ contract Singularity is SGLCommon, ReentrancyGuard {
     /// @notice updates the pause state of the contract
     /// @dev can only be called by the conservator
     /// @param val the new value
-    function updatePause(PauseType _type, bool val) external override {
+    function updatePause(
+        PauseType _type,
+        bool val,
+        bool resetAccrueTimestmap
+    ) external {
         if (msg.sender != conservator) revert NotAuthorized();
         if (val == pauseOptions[_type]) revert SameState();
         emit PausedUpdated(_type, pauseOptions[_type], val);
@@ -495,7 +499,9 @@ contract Singularity is SGLCommon, ReentrancyGuard {
             (_type != PauseType.AddCollateral &&
                 _type != PauseType.RemoveCollateral)
         ) {
-            accrueInfo.lastAccrued = block.timestamp.toUint64();
+            accrueInfo.lastAccrued = resetAccrueTimestmap
+                ? block.timestamp.toUint64()
+                : accrueInfo.lastAccrued;
         }
     }
 
