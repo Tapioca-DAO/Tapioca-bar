@@ -12,6 +12,7 @@ import "tapioca-periph/contracts/interfaces/IPenrose.sol";
 import "tapioca-periph/contracts/interfaces/ITwTap.sol";
 import "tapioca-periph/contracts/interfaces/ICluster.sol";
 import "tapioca-periph/contracts/interfaces/IBigBang.sol";
+import "tapioca-periph/contracts/interfaces/IUSDOMintable.sol";
 
 // TODO: Permissionless market deployment
 ///     + asset registration? (toggle to renounce ownership so users can call)
@@ -47,11 +48,11 @@ contract Penrose is BoringOwnable, BoringFactory {
     /// @notice BigBang master contracts
     IPenrose.MasterContract[] public bigbangMasterContracts;
 
-    // Used to check if a Singularity master contract is registered
+    /// @notice Used to check if a Singularity master contract is registered
     mapping(address => bool) public isSingularityMasterContractRegistered;
-    // Used to check if a BigBang master contract is registered
+    /// @notice Used to check if a BigBang master contract is registered
     mapping(address => bool) public isBigBangMasterContractRegistered;
-    // Used to check if a SGL/BB is a real market
+    /// @notice Used to check if a SGL/BB is a real market
     mapping(address => bool) public isMarketRegistered;
     /// @notice default LZ Chain id
     uint16 public hostLzChainId;
@@ -174,7 +175,12 @@ contract Penrose is BoringOwnable, BoringFactory {
         uint256 indexed feeShares,
         uint256 indexed ethAmount
     );
+    /// @notice event emitted when Cluster is set
     event ClusterSet(address indexed old, address indexed _new);
+    /// @notice event emitted when total BB markets debt is computed
+    event TotalUsdoDebt(uint256 indexed amount);
+    /// @notice event emitted when markets are re-accrued
+    event ReaccruedMarkets(bool indexed mainMarketIncluded);
 
     // ************** //
     // *** ERRORS *** //
@@ -236,6 +242,21 @@ contract Penrose is BoringOwnable, BoringFactory {
         return bigbangMasterContracts.length;
     }
 
+    /// @notice Returns total markets debt
+    function viewTotalDebt() public view returns (uint256) {
+        uint256 _totalUsdoDebt = 0;
+        uint256 len = allBigBangMarkets.length;
+        for (uint256 i; i < len; i++) {
+            IMarket market = IMarket(allBigBangMarkets[i]);
+            if (isMarketRegistered[address(market)]) {
+                (uint256 elastic, ) = market.totalBorrow();
+                _totalUsdoDebt += elastic;
+            }
+        }
+
+        return _totalUsdoDebt;
+    }
+
     // ************************ //
     // *** PUBLIC FUNCTIONS *** //
     // ************************ //
@@ -262,6 +283,38 @@ contract Penrose is BoringOwnable, BoringFactory {
     // *********************** //
     // *** OWNER FUNCTIONS *** //
     // *********************** //
+    /// @notice mints USDO based on current open interest
+    /// @dev Penrose should be an allowed minter for USDO
+    /// @param twTap the twTap contract address
+    function mintOpenInterestDebt(address twTap) external onlyOwner {
+        uint256 usdoSupply = usdoToken.totalSupply();
+
+        // nothing to mint when there's no activity
+        if (usdoSupply > 0) {
+            // re-compute latest debt
+            uint256 totalUsdoDebt = computeTotalDebt();
+
+            //debt should always be > USDO supply
+            if (totalUsdoDebt > usdoSupply) {
+                uint256 _amount = totalUsdoDebt - usdoSupply;
+
+                //mint against the open interest; supply should be fully minted now
+                IUSDOMintable(address(usdoToken)).mint(address(this), _amount);
+
+                //send it to twTap
+                uint256 rewardTokenId = ITwTap(twTap).rewardTokenIndex(
+                    address(usdoToken)
+                );
+                _distributeOnTwTap(
+                    _amount,
+                    rewardTokenId,
+                    address(usdoToken),
+                    ITwTap(twTap)
+                );
+            }
+        }
+    }
+
     /// @notice sets the Cluster address
     /// @dev can only be called by the owner
     /// @param _newCluster the new address
@@ -479,15 +532,31 @@ contract Penrose is BoringOwnable, BoringFactory {
     function reAccrueBigBangMarkets() external notPaused {
         if (!isMarketRegistered[msg.sender]) revert NotAuthorized();
         if (msg.sender == bigBangEthMarket) {
-            uint256 len = allBigBangMarkets.length;
-            address[] memory markets = allBigBangMarkets;
-            for (uint256 i = 0; i < len; i++) {
-                address market = markets[i];
-                if (market != bigBangEthMarket && isMarketRegistered[market]) {
-                    IBigBang(market).accrue();
-                }
-            }
+            _reAccrueMarkets(false);
         }
+    }
+
+    /// @notice computes total USDO debt of all BB markets
+    /// @dev this works because all BB markets have USDO as the asset
+    function computeTotalDebt()
+        public
+        notPaused
+        returns (uint256 totalUsdoDebt)
+    {
+        // allow other registered Markets, owner or Penrose to call it
+        if (
+            !isMarketRegistered[msg.sender] &&
+            msg.sender != owner &&
+            msg.sender != address(this)
+        ) revert NotAuthorized();
+
+        //accrue to the latest point in time
+        _reAccrueMarkets(true);
+
+        // compute debt
+        totalUsdoDebt = viewTotalDebt();
+
+        emit TotalUsdoDebt(totalUsdoDebt);
     }
 
     // ************************* //
@@ -508,6 +577,21 @@ contract Penrose is BoringOwnable, BoringFactory {
         return abi.decode(_returnData, (string)); // All that remains is the revert string
     }
 
+    function _reAccrueMarkets(bool includeMainMarket) private {
+        uint256 len = allBigBangMarkets.length;
+        address[] memory markets = allBigBangMarkets;
+        for (uint256 i; i < len; i++) {
+            address market = markets[i];
+            if (isMarketRegistered[market]) {
+                if (includeMainMarket || market != bigBangEthMarket) {
+                    IBigBang(market).accrue();
+                }
+            }
+        }
+
+        emit ReaccruedMarkets(includeMainMarket);
+    }
+
     function _depositFeesToTwTap(IMarket market, ITwTap twTap) private {
         if (!isMarketRegistered[address(market)]) revert NotValid();
 
@@ -518,13 +602,21 @@ contract Penrose is BoringOwnable, BoringFactory {
         uint256 _assetId = market.assetId();
         yieldBox.withdraw(_assetId, address(this), address(this), 0, feeShares);
 
-        //TODO: call twTap.distributeRewards
         uint256 rewardTokenId = twTap.rewardTokenIndex(_asset);
         uint256 feeAmount = yieldBox.toAmount(_assetId, feeShares, false);
+        _distributeOnTwTap(feeAmount, rewardTokenId, _asset, twTap);
+    }
+
+    function _distributeOnTwTap(
+        uint256 amount,
+        uint256 rewardTokenId,
+        address _asset,
+        ITwTap twTap
+    ) private {
         IERC20(_asset).approve(address(twTap), 0);
-        IERC20(_asset).approve(address(twTap), feeAmount);
-        twTap.distributeReward(rewardTokenId, feeAmount);
-        emit LogTwTapFeesDeposit(feeShares, feeAmount);
+        IERC20(_asset).approve(address(twTap), amount);
+        twTap.distributeReward(rewardTokenId, amount);
+        emit LogTwTapFeesDeposit(amount, amount);
     }
 
     function _getMasterContractLength(
