@@ -182,7 +182,7 @@ describe('BigBang test', () => {
     });
 
     describe('open interest', () => {
-        it.only('should view total debt', async () => {
+        it('should view & mint on total debt', async () => {
             const {
                 registerBigBangMarket,
                 weth,
