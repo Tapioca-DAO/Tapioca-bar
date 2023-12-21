@@ -22,8 +22,7 @@ contract SGLLendingCommon is SGLCommon {
         address to,
         bool skim,
         uint256 amount,
-        uint256 share,
-        bool multiHopLeverage
+        uint256 share
     ) internal {
         if (share == 0) {
             share = yieldBox.toShare(collateralId, amount, false);
@@ -31,18 +30,7 @@ contract SGLLendingCommon is SGLCommon {
         uint256 oldTotalCollateralShare = totalCollateralShare;
         userCollateralShare[to] += share;
         totalCollateralShare = oldTotalCollateralShare + share;
-        _yieldBoxShares[to][COLLATERAL_SIG] += share;
 
-        if (!multiHopLeverage) {
-            _addTokens(
-                from,
-                to,
-                collateralId,
-                share,
-                oldTotalCollateralShare,
-                skim
-            );
-        }
         emit LogAddCollateral(skim ? address(yieldBox) : from, to, share);
     }
 
@@ -56,11 +44,6 @@ contract SGLLendingCommon is SGLCommon {
         totalCollateralShare -= share;
         emit LogRemoveCollateral(from, to, share);
         yieldBox.transfer(address(this), to, collateralId, share);
-        if (share > _yieldBoxShares[from][COLLATERAL_SIG]) {
-            _yieldBoxShares[from][COLLATERAL_SIG] = 0; //accrues in time
-        } else {
-            _yieldBoxShares[from][COLLATERAL_SIG] -= share;
-        }
     }
 
     /// @dev Concrete implementation of `borrow`.
@@ -112,12 +95,6 @@ contract SGLLendingCommon is SGLCommon {
         uint128 totalShare = totalAsset.elastic;
         _addTokens(from, to, assetId, share, uint256(totalShare), skim);
         totalAsset.elastic = totalShare + uint128(share);
-
-        if (share > _yieldBoxShares[from][ASSET_SIG]) {
-            _yieldBoxShares[from][ASSET_SIG] = 0; //accrues in time
-        } else {
-            _yieldBoxShares[from][ASSET_SIG] -= share;
-        }
 
         emit LogRepay(skim ? address(yieldBox) : from, to, amount, part);
     }

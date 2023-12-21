@@ -15,6 +15,7 @@ contract SGLCollateral is SGLLendingCommon {
     /// @param to The receiver of the tokens.
     /// @param skim True if the amount should be skimmed from the deposit balance of msg.sender.
     /// False if tokens from msg.sender in `yieldBox` should be transferred.
+    /// @param amount The amount to add for `to`.
     /// @param share The amount of shares to add for `to`.
     function addCollateral(
         address from,
@@ -28,7 +29,7 @@ contract SGLCollateral is SGLLendingCommon {
         }
         _allowedBorrow(from, share);
 
-        _addCollateral(from, to, skim, amount, share, false);
+        _addCollateral(from, to, skim, amount, share);
     }
 
     /// @notice Removes `share` amount of collateral and transfers it to `to`.

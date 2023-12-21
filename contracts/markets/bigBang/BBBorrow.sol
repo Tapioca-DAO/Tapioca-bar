@@ -33,8 +33,6 @@ contract BBBorrow is BBLendingCommon {
         solvent(from, false)
         returns (uint256 part, uint256 share)
     {
-        if (amount < debtStartPoint) revert NotEnough();
-
         if (amount == 0) return (0, 0);
         uint256 feeAmount = _computeVariableOpeningFee(amount);
         uint256 allowanceShare = _computeAllowanceAmountInAsset(
