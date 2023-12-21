@@ -6,6 +6,7 @@ import "./BBStorage.sol";
 
 contract BBCommon is BBStorage {
     using RebaseLibrary for Rebase;
+    using SafeApprove for address;
 
     // ************** //
     // *** ERRORS *** //
@@ -33,8 +34,8 @@ contract BBCommon is BBStorage {
 
         if (_currentDebt >= _maxDebtPoint) return maxDebtRate;
 
-        uint256 debtPercentage = ((_currentDebt - debtStartPoint) *
-            DEBT_PRECISION) / (_maxDebtPoint - debtStartPoint);
+        uint256 debtPercentage = (_currentDebt * DEBT_PRECISION) /
+            _maxDebtPoint;
         uint256 debt = ((maxDebtRate - minDebtRate) * debtPercentage) /
             DEBT_PRECISION +
             minDebtRate;
@@ -125,21 +126,18 @@ contract BBCommon is BBStorage {
         }
     }
 
+    /// @notice deposits an amount to YieldBox
+    /// @param token the IERC20 token to deposit
+    /// @param to the shares receiver
+    /// @param id the IERC20 YieldBox asset id
+    /// @param amount the amount to deposit
     function _depositAmountToYb(
         IERC20 token,
         address to,
         uint256 id,
         uint256 amount
     ) internal returns (uint256 share) {
-        token.approve(address(yieldBox), 0);
-        token.approve(address(yieldBox), amount);
+        address(token).safeApprove(address(yieldBox), amount);
         (, share) = yieldBox.depositAsset(id, address(this), to, amount, 0);
-    }
-
-    function _isWhitelisted(
-        uint16 _chainId,
-        address _contract
-    ) internal view returns (bool) {
-        return ICluster(penrose.cluster()).isWhitelisted(_chainId, _contract);
     }
 }

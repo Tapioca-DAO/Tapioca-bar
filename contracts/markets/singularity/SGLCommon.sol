@@ -228,7 +228,6 @@ contract SGLCommon is SGLStorage {
 
         balanceOf[to] += fraction;
         emit Transfer(address(0), to, fraction);
-        _yieldBoxShares[to][ASSET_SIG] += share;
 
         _addTokens(from, to, assetId, share, totalAssetShare, skim);
         emit LogAddAsset(skim ? address(yieldBox) : from, to, share, fraction);
@@ -239,8 +238,7 @@ contract SGLCommon is SGLStorage {
     function _removeAsset(
         address from,
         address to,
-        uint256 fraction,
-        bool updateYieldBoxShares
+        uint256 fraction
     ) internal returns (uint256 share) {
         if (totalAsset.base == 0) {
             return 0;
@@ -259,13 +257,6 @@ contract SGLCommon is SGLStorage {
         totalAsset = _totalAsset;
         emit LogRemoveAsset(from, to, share, fraction);
         yieldBox.transfer(address(this), to, assetId, share);
-        if (updateYieldBoxShares) {
-            if (share > _yieldBoxShares[from][ASSET_SIG]) {
-                _yieldBoxShares[from][ASSET_SIG] = 0; //some assets accrue in time
-            } else {
-                _yieldBoxShares[from][ASSET_SIG] -= share;
-            }
-        }
     }
 
     /// @dev Return the equivalent of collateral borrow part in asset amount.
