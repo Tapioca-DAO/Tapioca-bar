@@ -37,11 +37,6 @@ contract USDOLeverageModule is USDOCommon {
         IUSDOBase.ILeverageSwapData calldata swapData,
         IUSDOBase.ILeverageExternalContractsData calldata externalData
     ) external payable {
-        if (leverageFor != msg.sender) {
-            if (allowance(leverageFor, msg.sender) < amount)
-                revert AllowanceNotValid();
-            _spendAllowance(leverageFor, msg.sender, amount);
-        }
         if (swapData.tokenOut == address(this)) revert NotValid();
         _assureMaxSlippage(amount, swapData.amountOutMin);
         if (externalData.swapper != address(0)) {
@@ -52,10 +47,10 @@ contract USDOLeverageModule is USDOCommon {
                 )
             ) revert SwapperNotAuthorized();
         }
-        bytes32 senderBytes = LzLib.addressToBytes32(msg.sender);
+        bytes32 senderBytes = LzLib.addressToBytes32(leverageFor);
         (amount, ) = _removeDust(amount);
         amount = _debitFrom(
-            msg.sender,
+            leverageFor,
             lzEndpoint.getChainId(),
             senderBytes,
             amount
