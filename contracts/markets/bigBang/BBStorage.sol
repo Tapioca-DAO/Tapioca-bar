@@ -6,6 +6,7 @@ import "@boringcrypto/boring-solidity/contracts/ERC20.sol";
 
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
+import "tapioca-periph/contracts/libraries/SafeApprove.sol";
 import "tapioca-periph/contracts/interfaces/IBigBang.sol";
 import "tapioca-periph/contracts/interfaces/ISendFrom.sol";
 import "tapioca-periph/contracts/interfaces/ISwapper.sol";
@@ -44,7 +45,6 @@ contract BBStorage is BoringOwnable, Market, ReentrancyGuard {
     uint256 public maxDebtRate;
     uint256 public minDebtRate;
     uint256 public debtRateAgainstEthMarket;
-    uint256 public debtStartPoint;
 
     IOracle public assetOracle; //USDO/USDC
     bytes public assetOracleData;

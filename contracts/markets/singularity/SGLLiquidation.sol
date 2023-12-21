@@ -3,12 +3,14 @@ pragma solidity ^0.8.18;
 
 import "./SGLCommon.sol";
 import "tapioca-periph/contracts/interfaces/IMarketLiquidatorReceiver.sol";
+import "tapioca-periph/contracts/libraries/SafeApprove.sol";
 
 // solhint-disable max-line-length
 
 contract SGLLiquidation is SGLCommon {
     using RebaseLibrary for Rebase;
     using BoringERC20 for IERC20;
+    using SafeApprove for address;
 
     // ************** //
     // *** ERRORS *** //
@@ -42,10 +44,10 @@ contract SGLLiquidation is SGLCommon {
 
         _accrue();
 
-        uint256 _userBorrowPart = userBorrowPart[user];
+        uint256 elastic = totalBorrow.toElastic(userBorrowPart[user], false);
 
-        uint256 borrowAmountWithBonus = _userBorrowPart +
-            (_userBorrowPart * liquidationMultiplier) /
+        uint256 borrowAmountWithBonus = elastic +
+            (elastic * liquidationMultiplier) /
             FEE_PRECISION;
         uint256 requiredCollateral = yieldBox.toShare(
             collateralId,
@@ -61,13 +63,14 @@ contract SGLLiquidation is SGLCommon {
 
         // everything will be liquidated; set borrow part and collateral share to 0
         uint256 borrowAmount;
-        (totalBorrow, borrowAmount) = totalBorrow.sub(_userBorrowPart, true);
+        (totalBorrow, borrowAmount) = totalBorrow.sub(
+            userBorrowPart[user],
+            true
+        );
         userBorrowPart[user] = 0;
-        _yieldBoxShares[user][ASSET_SIG] = 0;
 
         totalCollateralShare -= userCollateralShare[user];
         userCollateralShare[user] = 0;
-        _yieldBoxShares[user][COLLATERAL_SIG] = 0;
 
         (, uint256 returnedAmount) = _swapCollateralWithAsset(
             collateralShare,
@@ -215,12 +218,22 @@ contract SGLLiquidation is SGLCommon {
                 (borrowPartWithBonus * liquidationBonusAmount) /
                 FEE_PRECISION;
         }
-        borrowPartWithBonus = maxBorrowPart > borrowPartWithBonus
-            ? borrowPartWithBonus
-            : maxBorrowPart;
-        borrowPartWithBonus = borrowPartWithBonus > userBorrowPart[user]
-            ? userBorrowPart[user]
-            : borrowPartWithBonus;
+
+        bool convertToElastic = false;
+        if (maxBorrowPart < borrowPartWithBonus) {
+            borrowPartWithBonus = maxBorrowPart;
+            convertToElastic = true;
+        }
+        if (borrowPartWithBonus > userBorrowPart[user]) {
+            borrowPartWithBonus = userBorrowPart[user];
+            convertToElastic = true;
+        }
+        if (convertToElastic) {
+            borrowPartWithBonus = totalBorrow.toElastic(
+                borrowPartWithBonus,
+                false
+            );
+        }
 
         if (collateralPartInAsset <= borrowPartWithBonus) revert BadDebt();
 
@@ -262,8 +275,7 @@ contract SGLLiquidation is SGLCommon {
         feeShare = extraShare - callerShare; // rest goes to the fee
 
         if (feeShare > 0) {
-            asset.approve(address(yieldBox), 0);
-            asset.approve(address(yieldBox), type(uint256).max);
+            address(asset).safeApprove(address(yieldBox), type(uint256).max);
             yieldBox.depositAsset(
                 assetId,
                 address(this),
@@ -284,7 +296,7 @@ contract SGLLiquidation is SGLCommon {
 
         totalAsset.elastic += uint128(returnedShare - feeShare - callerShare);
 
-        asset.approve(address(yieldBox), 0);
+        address(asset).safeApprove(address(yieldBox), 0);
 
         emit LogAddAsset(
             address(this),
@@ -311,16 +323,6 @@ contract SGLLiquidation is SGLCommon {
         totalCollateralShare = totalCollateralShare > collateralShare
             ? totalCollateralShare - collateralShare
             : 0;
-        if (collateralShare > _yieldBoxShares[user][COLLATERAL_SIG]) {
-            _yieldBoxShares[user][COLLATERAL_SIG] = 0; //some assets accrue in time
-        } else {
-            _yieldBoxShares[user][COLLATERAL_SIG] -= collateralShare;
-        }
-        if (borrowShare > _yieldBoxShares[user][ASSET_SIG]) {
-            _yieldBoxShares[user][ASSET_SIG] = 0; //some assets accrue in time
-        } else {
-            _yieldBoxShares[user][ASSET_SIG] -= borrowShare;
-        }
 
         (uint256 returnedShare, ) = _swapCollateralWithAsset(
             collateralShare,
