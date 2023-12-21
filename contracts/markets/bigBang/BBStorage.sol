@@ -42,7 +42,6 @@ contract BBStorage is BoringOwnable, Market {
     uint256 public maxDebtRate;
     uint256 public minDebtRate;
     uint256 public debtRateAgainstEthMarket;
-    uint256 public debtStartPoint;
 
     IOracle public assetOracle; //USDO/USDC
     bytes public assetOracleData;
