@@ -240,6 +240,129 @@ describe('BigBang test', () => {
     });
 
     describe('borrow() & repay()', () => {
+        it('should borrow and repay from different senders', async () => {
+            const {
+                wethBigBangMarket,
+                weth,
+                wethAssetId,
+                yieldBox,
+                deployer,
+                bar,
+                usd0,
+                __wethUsdcPrice,
+                timeTravel,
+                eoa1,
+            } = await loadFixture(register);
+
+            await weth.approve(yieldBox.address, ethers.constants.MaxUint256);
+            await yieldBox.setApprovalForAll(wethBigBangMarket.address, true);
+
+            const wethMintVal = ethers.BigNumber.from((1e18).toString()).mul(
+                10,
+            );
+            await weth.freeMint(wethMintVal);
+            const valShare = await yieldBox.toShare(
+                wethAssetId,
+                wethMintVal,
+                false,
+            );
+            await yieldBox.depositAsset(
+                wethAssetId,
+                deployer.address,
+                deployer.address,
+                0,
+                valShare,
+            );
+
+            await wethBigBangMarket.addCollateral(
+                deployer.address,
+                eoa1.address,
+                false,
+                0,
+                valShare,
+            );
+
+            //borrow
+            const usdoBorrowVal = wethMintVal
+                .mul(74)
+                .div(100)
+                .mul(__wethUsdcPrice.div((1e18).toString()));
+
+            await wethBigBangMarket
+                .connect(eoa1)
+                .approveBorrow(deployer.address, valShare);
+            await wethBigBangMarket.borrow(
+                eoa1.address,
+                eoa1.address,
+                usdoBorrowVal,
+            );
+            let userBorrowPart = await wethBigBangMarket.userBorrowPart(
+                eoa1.address,
+            );
+            expect(userBorrowPart.gt(0)).to.be.true;
+
+            const usd0Balance = await yieldBox.toAmount(
+                await bar.usdoAssetId(),
+                await yieldBox.balanceOf(
+                    eoa1.address,
+                    await wethBigBangMarket.assetId(),
+                ),
+                false,
+            );
+            expect(usd0Balance.gt(0)).to.be.true;
+            expect(usd0Balance.eq(usdoBorrowVal)).to.be.true;
+
+            timeTravel(10 * 86400);
+
+            //repay
+            userBorrowPart = await wethBigBangMarket.userBorrowPart(
+                eoa1.address,
+            );
+            await wethBigBangMarket
+                .connect(eoa1)
+                .approveBorrow(deployer.address, valShare);
+            await expect(
+                wethBigBangMarket.repay(
+                    eoa1.address,
+                    eoa1.address,
+                    false,
+                    userBorrowPart,
+                ),
+            ).to.be.reverted;
+
+            const usd0Extra = ethers.BigNumber.from((1e18).toString()).mul(
+                5000,
+            );
+            await usd0.mint(eoa1.address, usd0Extra);
+            await usd0.connect(eoa1).approve(yieldBox.address, usd0Extra);
+            await yieldBox
+                .connect(eoa1)
+                .depositAsset(
+                    await wethBigBangMarket.assetId(),
+                    eoa1.address,
+                    eoa1.address,
+                    usd0Extra,
+                    0,
+                );
+            await yieldBox
+                .connect(eoa1)
+                .setApprovalForAsset(
+                    wethBigBangMarket.address,
+                    await wethBigBangMarket.assetId(),
+                    true,
+                );
+            await wethBigBangMarket.repay(
+                eoa1.address,
+                eoa1.address,
+                false,
+                userBorrowPart,
+            );
+            userBorrowPart = await wethBigBangMarket.userBorrowPart(
+                eoa1.address,
+            );
+            expect(userBorrowPart.eq(0)).to.be.true;
+        });
+
         it('should borrow and repay', async () => {
             const {
                 wethBigBangMarket,

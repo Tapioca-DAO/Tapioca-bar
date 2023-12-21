@@ -424,7 +424,7 @@ describe('Singularity test', () => {
                 .mul(__wethUsdcPrice.mul(2))
                 .div((1e18).toString());
 
-            await wethUsdcSingularity.updatePause(2, true);
+            await wethUsdcSingularity.updatePause(2, true, true);
 
             await usdc.freeMint(usdcAmount);
             await timeTravel(86500);
@@ -432,13 +432,13 @@ describe('Singularity test', () => {
             await expect(usdcDepositAndAddCollateral(usdcAmount)).to.be
                 .reverted;
 
-            await wethUsdcSingularity.updatePause(2, false);
+            await wethUsdcSingularity.updatePause(2, false, true);
 
             await usdc.freeMint(usdcAmount);
             await approveTokensAndSetBarApproval();
             await usdcDepositAndAddCollateral(usdcAmount);
 
-            await wethUsdcSingularity.updatePause(7, true);
+            await wethUsdcSingularity.updatePause(7, true, true);
 
             await approveTokensAndSetBarApproval(eoa1);
             await weth.connect(eoa1).freeMint(wethAmount);
@@ -446,7 +446,10 @@ describe('Singularity test', () => {
             await expect(wethDepositAndAddAsset(wethAmount, eoa1)).to.be
                 .reverted;
 
-            await wethUsdcSingularity.updatePause(7, false);
+            const accrueInfoBefore = await wethUsdcSingularity.accrueInfo();
+            await wethUsdcSingularity.updatePause(7, false, true);
+            const accrueInfoAfter = await wethUsdcSingularity.accrueInfo();
+            expect(accrueInfoAfter[1]).not.eq(accrueInfoBefore[1]);
 
             await approveTokensAndSetBarApproval(eoa1);
             await weth.connect(eoa1).freeMint(wethAmount);
@@ -2898,6 +2901,99 @@ describe('Singularity test', () => {
     });
 
     describe('borrowing', () => {
+        it('should borrow and repay from different senders', async () => {
+            const {
+                usdc,
+                weth,
+                yieldBox,
+                eoa1,
+                wethUsdcSingularity,
+                deployer,
+                approveTokensAndSetBarApproval,
+                usdcDepositAndAddCollateral,
+                wethDepositAndAddAsset,
+                __wethUsdcPrice,
+                timeTravel,
+            } = await loadFixture(register);
+
+            const assetId = await wethUsdcSingularity.assetId();
+            const collateralId = await wethUsdcSingularity.collateralId();
+            const wethMintVal = ethers.BigNumber.from((1e18).toString()).mul(
+                10,
+            );
+            const usdcMintVal = wethMintVal.mul(
+                __wethUsdcPrice.div((1e18).toString()),
+            );
+
+            // We get asset
+            await weth.freeMint(wethMintVal);
+            await usdc.connect(eoa1).freeMint(usdcMintVal);
+
+            // We approve external operators
+            await approveTokensAndSetBarApproval();
+            await approveTokensAndSetBarApproval(eoa1);
+
+            // We lend WETH as deployer
+            await wethDepositAndAddAsset(wethMintVal);
+            expect(
+                await wethUsdcSingularity.balanceOf(deployer.address),
+            ).to.be.equal(await yieldBox.toShare(assetId, wethMintVal, false));
+
+            // We deposit USDC collateral
+            await usdcDepositAndAddCollateral(usdcMintVal, eoa1);
+            expect(
+                await wethUsdcSingularity.userCollateralShare(eoa1.address),
+            ).equal(await yieldBox.toShare(collateralId, usdcMintVal, false));
+
+            // We borrow 74% collateral, max is 75%
+            const wethBorrowVal = usdcMintVal
+                .mul(74)
+                .div(100)
+                .div(__wethUsdcPrice.div((1e18).toString()));
+            await wethUsdcSingularity
+                .connect(eoa1)
+                .approveBorrow(deployer.address, ethers.constants.MaxUint256);
+            await wethUsdcSingularity.borrow(
+                eoa1.address,
+                eoa1.address,
+                wethBorrowVal,
+            );
+            let userBorrowPart = await wethUsdcSingularity.userBorrowPart(
+                eoa1.address,
+            );
+            expect(userBorrowPart.gt(0)).to.be.true;
+
+            // We jump time to accumulate fees
+            const day = 86400;
+            await timeTravel(180 * day);
+
+            // Repay
+            userBorrowPart = await wethUsdcSingularity.userBorrowPart(
+                eoa1.address,
+            );
+            await weth.connect(eoa1).freeMint(userBorrowPart);
+
+            await yieldBox
+                .connect(eoa1)
+                .depositAsset(
+                    assetId,
+                    eoa1.address,
+                    eoa1.address,
+                    userBorrowPart,
+                    0,
+                );
+            await wethUsdcSingularity.repay(
+                eoa1.address,
+                eoa1.address,
+                false,
+                userBorrowPart,
+            );
+
+            userBorrowPart = await wethUsdcSingularity.userBorrowPart(
+                eoa1.address,
+            );
+            expect(userBorrowPart.eq(0)).to.be.true;
+        });
         it('should allow multiple borrowers', async () => {
             const {
                 usdc,
