@@ -13,11 +13,15 @@ import "tapioca-periph/contracts/interfaces/ITwTap.sol";
 import "tapioca-periph/contracts/interfaces/ICluster.sol";
 import "tapioca-periph/contracts/interfaces/IBigBang.sol";
 
+import "tapioca-periph/contracts/libraries/SafeApprove.sol";
+
 // TODO: Permissionless market deployment
 ///     + asset registration? (toggle to renounce ownership so users can call)
 /// @title Global market registry
 /// @notice Singularity management
 contract Penrose is BoringOwnable, BoringFactory {
+    using SafeApprove for address;
+
     // ************ //
     // *** VARS *** //
     // ************ //
@@ -529,8 +533,7 @@ contract Penrose is BoringOwnable, BoringFactory {
         //TODO: call twTap.distributeRewards
         uint256 rewardTokenId = twTap.rewardTokenIndex(_asset);
         uint256 feeAmount = yieldBox.toAmount(_assetId, feeShares, false);
-        IERC20(_asset).approve(address(twTap), 0);
-        IERC20(_asset).approve(address(twTap), feeAmount);
+        _asset.safeApprove(address(twTap), feeAmount);
         twTap.distributeReward(rewardTokenId, feeAmount);
         emit LogTwTapFeesDeposit(feeShares, feeAmount);
     }

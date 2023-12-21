@@ -6,6 +6,7 @@ import "./BBStorage.sol";
 
 contract BBCommon is BBStorage {
     using RebaseLibrary for Rebase;
+    using SafeApprove for address;
 
     // ************** //
     // *** ERRORS *** //
@@ -136,8 +137,7 @@ contract BBCommon is BBStorage {
         uint256 id,
         uint256 amount
     ) internal returns (uint256 share) {
-        token.approve(address(yieldBox), 0);
-        token.approve(address(yieldBox), amount);
+        address(token).safeApprove(address(yieldBox), amount);
         (, share) = yieldBox.depositAsset(id, address(this), to, amount, 0);
     }
 }
