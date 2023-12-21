@@ -6,6 +6,7 @@ import "./SGLCommon.sol";
 contract SGLLendingCommon is SGLCommon {
     using RebaseLibrary for Rebase;
     using BoringERC20 for IERC20;
+    using SafeCast for uint256;
 
     // ************** //
     // *** ERRORS *** //
@@ -55,7 +56,7 @@ contract SGLLendingCommon is SGLCommon {
         share = yieldBox.toShare(assetId, amount, false);
         Rebase memory _totalAsset = totalAsset;
         if (_totalAsset.base < 1000) revert MinLimit();
-        _totalAsset.elastic -= uint128(share);
+        _totalAsset.elastic -= share.toUint128();
         totalAsset = _totalAsset;
 
         uint256 feeAmount = (amount * borrowOpeningFee) / FEE_PRECISION; // A flat % fee is charged for any borrow
@@ -94,7 +95,7 @@ contract SGLLendingCommon is SGLCommon {
         uint256 share = yieldBox.toShare(assetId, amount, true);
         uint128 totalShare = totalAsset.elastic;
         _addTokens(from, to, assetId, share, uint256(totalShare), skim);
-        totalAsset.elastic = totalShare + uint128(share);
+        totalAsset.elastic = totalShare + share.toUint128();
 
         emit LogRepay(skim ? address(yieldBox) : from, to, amount, part);
     }

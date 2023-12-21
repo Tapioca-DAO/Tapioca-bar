@@ -6,6 +6,7 @@ import "./BBStorage.sol";
 
 contract BBCommon is BBStorage {
     using RebaseLibrary for Rebase;
+    using SafeCast for uint256;
     using SafeApprove for address;
 
     // ************** //
@@ -67,9 +68,9 @@ contract BBCommon is BBStorage {
         // Calculate fees
         _totalBorrow = totalBorrow;
         uint256 extraAmount = (uint256(_totalBorrow.elastic) *
-            uint64(getDebtRate() / 31536000) *
+            (getDebtRate() / 31536000).toUint64() *
             elapsedTime) / 1e18;
-        _totalBorrow.elastic += uint128(extraAmount);
+        _totalBorrow.elastic += extraAmount.toUint128();
     }
 
     function _accrue() internal override {
@@ -81,8 +82,8 @@ contract BBCommon is BBStorage {
         }
         //update debt rate
         uint256 annumDebtRate = getDebtRate();
-        _accrueInfo.debtRate = uint64(annumDebtRate / 31536000); //per second
-        _accrueInfo.lastAccrued = uint64(block.timestamp);
+        _accrueInfo.debtRate = (annumDebtRate / 31536000).toUint64(); //per second
+        _accrueInfo.lastAccrued = block.timestamp.toUint64();
 
         Rebase memory _totalBorrow = totalBorrow;
 
@@ -93,7 +94,7 @@ contract BBCommon is BBStorage {
                 _accrueInfo.debtRate *
                 elapsedTime) /
             1e18;
-        _totalBorrow.elastic += uint128(extraAmount);
+        _totalBorrow.elastic += extraAmount.toUint128();
 
         totalBorrow = _totalBorrow;
         accrueInfo = _accrueInfo;

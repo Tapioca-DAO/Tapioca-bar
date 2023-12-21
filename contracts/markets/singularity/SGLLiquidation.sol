@@ -10,6 +10,7 @@ import "tapioca-periph/contracts/libraries/SafeApprove.sol";
 contract SGLLiquidation is SGLCommon {
     using RebaseLibrary for Rebase;
     using BoringERC20 for IERC20;
+    using SafeCast for uint256;
     using SafeApprove for address;
 
     // ************** //
@@ -257,8 +258,8 @@ contract SGLLiquidation is SGLCommon {
         userCollateralShare[user] -= collateralShare;
         if (borrowAmount == 0) revert Solvent();
 
-        totalBorrow.elastic -= uint128(borrowAmount);
-        totalBorrow.base -= uint128(borrowPart);
+        totalBorrow.elastic -= borrowAmount.toUint128();
+        totalBorrow.base -= borrowPart.toUint128();
     }
 
     function _extractLiquidationFees(
@@ -294,7 +295,8 @@ contract SGLLiquidation is SGLCommon {
             );
         }
 
-        totalAsset.elastic += uint128(returnedShare - feeShare - callerShare);
+        totalAsset.elastic += (returnedShare - feeShare - callerShare)
+            .toUint128();
 
         address(asset).safeApprove(address(yieldBox), 0);
 

@@ -5,6 +5,7 @@ import "./SGLStorage.sol";
 
 contract SGLCommon is SGLStorage {
     using RebaseLibrary for Rebase;
+    using SafeCast for uint256;
 
     // ************** //
     // *** ERRORS *** //
@@ -78,7 +79,7 @@ contract SGLCommon is SGLStorage {
                 logStartingInterest
             );
         }
-        _accrueInfo.lastAccrued = uint64(block.timestamp);
+        _accrueInfo.lastAccrued = block.timestamp.toUint64();
 
         if (_totalBorrow.base == 0) {
             // If there are no borrows, reset the interest rate
@@ -103,7 +104,7 @@ contract SGLCommon is SGLStorage {
                 _accrueInfo.interestPerSecond *
                 elapsedTime) /
             1e18;
-        _totalBorrow.elastic += uint128(extraAmount);
+        _totalBorrow.elastic += extraAmount.toUint128();
 
         //take accrued values into account
         fullAssetAmount =
@@ -112,8 +113,8 @@ contract SGLCommon is SGLStorage {
 
         uint256 feeAmount = (extraAmount * protocolFee) / FEE_PRECISION; // % of interest paid goes to fee
         feeFraction = (feeAmount * _totalBorrow.base) / fullAssetAmount;
-        _accrueInfo.feesEarnedFraction += uint128(feeFraction);
-        _totalAsset.base = _totalAsset.base + uint128(feeFraction);
+        _accrueInfo.feesEarnedFraction += feeFraction.toUint128();
+        _totalAsset.base = _totalAsset.base + feeFraction.toUint128();
 
         utilization = fullAssetAmount == 0
             ? 0
@@ -126,10 +127,9 @@ contract SGLCommon is SGLStorage {
                 FACTOR_PRECISION) / minimumTargetUtilization;
             uint256 scale = interestElasticity +
                 (underFactor * underFactor * elapsedTime);
-            _accrueInfo.interestPerSecond = uint64(
-                (uint256(_accrueInfo.interestPerSecond) * interestElasticity) /
-                    scale
-            );
+            _accrueInfo.interestPerSecond = ((uint256(
+                _accrueInfo.interestPerSecond
+            ) * interestElasticity) / scale).toUint64();
             if (_accrueInfo.interestPerSecond < minimumInterestPerSecond) {
                 _accrueInfo.interestPerSecond = minimumInterestPerSecond; // 0.25% APR minimum
             }
@@ -144,7 +144,7 @@ contract SGLCommon is SGLStorage {
             if (newInterestPerSecond > maximumInterestPerSecond) {
                 newInterestPerSecond = maximumInterestPerSecond; // 1000% APR maximum
             }
-            _accrueInfo.interestPerSecond = uint64(newInterestPerSecond);
+            _accrueInfo.interestPerSecond = newInterestPerSecond.toUint64();
         }
     }
 
@@ -221,7 +221,7 @@ contract SGLCommon is SGLStorage {
         fraction = allShare == 0
             ? share
             : (share * _totalAsset.base) / allShare;
-        if (_totalAsset.base + uint128(fraction) < 1000) {
+        if (_totalAsset.base + fraction.toUint128() < 1000) {
             return 0;
         }
         totalAsset = _totalAsset.add(share, fraction);
@@ -248,12 +248,12 @@ contract SGLCommon is SGLStorage {
             yieldBox.toShare(assetId, totalBorrow.elastic, true);
         share = (fraction * allShare) / _totalAsset.base;
 
-        _totalAsset.base -= uint128(fraction);
+        _totalAsset.base -= fraction.toUint128();
         if (_totalAsset.base < 1000) revert MinLimit();
 
         balanceOf[from] -= fraction;
         emit Transfer(from, address(0), fraction);
-        _totalAsset.elastic -= uint128(share);
+        _totalAsset.elastic -= share.toUint128();
         totalAsset = _totalAsset;
         emit LogRemoveAsset(from, to, share, fraction);
         yieldBox.transfer(address(this), to, assetId, share);

@@ -34,6 +34,7 @@ __/\\\\\\\\\\\\\\\_____/\\\\\\\\\_____/\\\\\\\\\\\\\____/\\\\\\\\\\\_______/\\\\
 contract SGLStorage is BoringOwnable, Market, ReentrancyGuard {
     using RebaseLibrary for Rebase;
     using BoringERC20 for IERC20;
+    using SafeCast for uint256;
 
     // ************ //
     // *** VARS *** //
