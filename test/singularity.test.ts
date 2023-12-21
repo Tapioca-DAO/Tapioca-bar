@@ -424,7 +424,7 @@ describe('Singularity test', () => {
                 .mul(__wethUsdcPrice.mul(2))
                 .div((1e18).toString());
 
-            await wethUsdcSingularity.updatePause(2, true);
+            await wethUsdcSingularity.updatePause(2, true, true);
 
             await usdc.freeMint(usdcAmount);
             await timeTravel(86500);
@@ -432,13 +432,13 @@ describe('Singularity test', () => {
             await expect(usdcDepositAndAddCollateral(usdcAmount)).to.be
                 .reverted;
 
-            await wethUsdcSingularity.updatePause(2, false);
+            await wethUsdcSingularity.updatePause(2, false, true);
 
             await usdc.freeMint(usdcAmount);
             await approveTokensAndSetBarApproval();
             await usdcDepositAndAddCollateral(usdcAmount);
 
-            await wethUsdcSingularity.updatePause(7, true);
+            await wethUsdcSingularity.updatePause(7, true, true);
 
             await approveTokensAndSetBarApproval(eoa1);
             await weth.connect(eoa1).freeMint(wethAmount);
@@ -446,7 +446,10 @@ describe('Singularity test', () => {
             await expect(wethDepositAndAddAsset(wethAmount, eoa1)).to.be
                 .reverted;
 
-            await wethUsdcSingularity.updatePause(7, false);
+            const accrueInfoBefore = await wethUsdcSingularity.accrueInfo();
+            await wethUsdcSingularity.updatePause(7, false, true);
+            const accrueInfoAfter = await wethUsdcSingularity.accrueInfo();
+            expect(accrueInfoAfter[1]).not.eq(accrueInfoBefore[1]);
 
             await approveTokensAndSetBarApproval(eoa1);
             await weth.connect(eoa1).freeMint(wethAmount);

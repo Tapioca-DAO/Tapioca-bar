@@ -425,6 +425,16 @@ contract BigBang is BBCommon {
     // ************************* //
     // *** OWNER FUNCTIONS ***** //
     // ************************* //
+    /// @notice updates the pause state of the contract
+    /// @dev can only be called by the conservator
+    /// @param val the new value
+    function updatePause(PauseType _type, bool val) external virtual {
+        require(msg.sender == conservator, "Market: unauthorized");
+        require(val != pauseOptions[_type], "Market: same state");
+        emit PausedUpdated(_type, pauseOptions[_type], val);
+        pauseOptions[_type] = val;
+    }
+
     /// @notice sets min and max mint range
     /// @dev can only be called by the owner
     /// @param _min the new min start
