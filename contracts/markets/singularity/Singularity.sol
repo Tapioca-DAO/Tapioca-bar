@@ -11,8 +11,6 @@ import "./SGLLeverage.sol";
 import "tapioca-periph/contracts/interfaces/ISendFrom.sol";
 import "tapioca-sdk/dist/contracts/libraries/LzLib.sol";
 
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-
 // solhint-disable max-line-length
 
 /*
@@ -30,7 +28,7 @@ __/\\\\\\\\\\\\\\\_____/\\\\\\\\\_____/\\\\\\\\\\\\\____/\\\\\\\\\\\_______/\\\\
 */
 
 /// @title Tapioca market
-contract Singularity is SGLCommon, ReentrancyGuard {
+contract Singularity is SGLCommon {
     using RebaseLibrary for Rebase;
     using SafeCast for uint256;
 

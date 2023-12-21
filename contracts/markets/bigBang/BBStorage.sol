@@ -4,6 +4,8 @@ pragma solidity ^0.8.18;
 import "@boringcrypto/boring-solidity/contracts/BoringOwnable.sol";
 import "@boringcrypto/boring-solidity/contracts/ERC20.sol";
 
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+
 import "tapioca-periph/contracts/libraries/SafeApprove.sol";
 import "tapioca-periph/contracts/interfaces/IBigBang.sol";
 import "tapioca-periph/contracts/interfaces/ISendFrom.sol";
@@ -28,7 +30,7 @@ __/\\\\\\\\\\\\\\\_____/\\\\\\\\\_____/\\\\\\\\\\\\\____/\\\\\\\\\\\_______/\\\\
 
 */
 
-contract BBStorage is BoringOwnable, Market {
+contract BBStorage is BoringOwnable, Market, ReentrancyGuard {
     using RebaseLibrary for Rebase;
     using BoringERC20 for IERC20;
 
