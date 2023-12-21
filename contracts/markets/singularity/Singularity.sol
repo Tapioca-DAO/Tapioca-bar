@@ -282,8 +282,8 @@ contract Singularity is SGLCommon, ReentrancyGuard {
         fraction = _addAsset(from, to, skim, share);
     }
 
-    /// @notice Removes an asset from msg.sender and transfers it to `to`.
-    /// @param from Account to debit Assets from.
+    /// @notice Removes an asset from `from` and transfers it to `to`.
+    /// @param from Account to debit assets from.
     /// @param to The user that receives the removed assets.
     /// @param fraction The amount/fraction of assets held to remove.
     /// @return share The amount of shares transferred to `to`.
@@ -434,9 +434,12 @@ contract Singularity is SGLCommon, ReentrancyGuard {
         amountOut = abi.decode(result, (uint256));
     }
 
-    /// @notice liquidates a position where collateral value is less than the borrowed amount
-    /// @param user to liquidate
-    /// @param receiver funds receiver
+    /// @notice liquidates a position for which the collateral's value is less than the borrowed value
+    /// @dev liquidation bonus is included in the computation
+    /// @param user the address to liquidate
+    /// @param receiver the address which receives the output
+    /// @param liquidatorReceiver the IMarketLiquidatorReceiver executor
+    /// @param liquidatorReceiverData the IMarketLiquidatorReceiver executor data
     function liquidateBadDebt(
         address user,
         address receiver,
@@ -458,6 +461,8 @@ contract Singularity is SGLCommon, ReentrancyGuard {
     /// @notice Entry point for liquidations.
     /// @param users An array of user addresses.
     /// @param maxBorrowParts A one-to-one mapping to `users`, contains maximum (partial) borrow amounts (to liquidate) of the respective user.
+    /// @param liquidatorReceivers the IMarketLiquidatorReceiver executors list
+    /// @param liquidatorReceiverDatas the IMarketLiquidatorReceiver executors' data list
     function liquidate(
         address[] calldata users,
         uint256[] calldata maxBorrowParts,
@@ -515,6 +520,7 @@ contract Singularity is SGLCommon, ReentrancyGuard {
 
     /// @notice Transfers fees to penrose
     /// @dev can only be called by the owner
+    /// @return feeShares the amount of fees in shares withdrawn under Penrose
     function refreshPenroseFees()
         external
         onlyOwner

@@ -21,7 +21,12 @@ contract USDOLeverageDestinationModule is USDOCommon {
         ICluster _cluster
     ) BaseUSDOStorage(_lzEndpoint, _yieldBox, _cluster) {}
 
-    /// @dev destination call for USDOLeverageModule.sendForLeverage
+    /// @notice destination call for USDOLeverageModule.sendForLeverage
+    /// @param module USDOLeverageDestination module address
+    /// @param _srcChainId LayerZero source chain id
+    /// @param _srcAddress LayerZero source chain address
+    /// @param _nonce LayerZero current nonce
+    /// @param _payload received payload
     function leverageUp(
         address module,
         uint16 _srcChainId,
