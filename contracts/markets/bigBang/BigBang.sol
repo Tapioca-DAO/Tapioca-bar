@@ -164,7 +164,9 @@ contract BigBang is BBCommon {
         if (address(_collateral) == address(0)) revert BadPair();
         if (address(_asset) == address(0)) revert BadPair();
         if (address(_oracle) == address(0)) revert BadPair();
-
+        if (_collateralizationRate > FEE_PRECISION) revert NotValid();
+        if (_liquidationCollateralizationRate > FEE_PRECISION)
+            revert NotValid();
         asset = IERC20(_asset);
         assetId = penrose.usdoAssetId();
         collateral = _collateral;
@@ -179,10 +181,9 @@ contract BigBang is BBCommon {
         liquidationCollateralizationRate = _liquidationCollateralizationRate > 0
             ? _liquidationCollateralizationRate
             : 80000;
-        require(
-            liquidationCollateralizationRate > collateralizationRate,
-            "BB: liquidation collateralization rate not valid"
-        );
+        if (liquidationCollateralizationRate < collateralizationRate)
+            revert NotValid();
+
         EXCHANGE_RATE_PRECISION = _exchangeRatePrecision > 0
             ? _exchangeRatePrecision
             : 1e18;
