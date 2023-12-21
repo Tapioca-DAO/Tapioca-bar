@@ -8,6 +8,7 @@ import "tapioca-periph/contracts/interfaces/ISavingsDai.sol";
 import "./BaseLeverageExecutor.sol";
 
 contract AssetTotsDaiLeverageExecutor is BaseLeverageExecutor {
+    using SafeApprove for address;
     // ************** //
     // *** ERRORS *** //
     // ************** //
@@ -30,14 +31,14 @@ contract AssetTotsDaiLeverageExecutor is BaseLeverageExecutor {
     /// @param assetAddress usually USDO address
     /// @param collateralAddress tsDai address (TOFT sDAI)
     /// @param assetAmountIn amount to swap
-    /// @param from collateral receiver
+    /// @param to collateral receiver
     /// @param data AssetTotsDaiLeverageExecutor data
     function getCollateral(
         uint256 collateralId,
         address assetAddress,
         address collateralAddress,
         uint256 assetAmountIn,
-        address from,
+        address to,
         bytes calldata data
     ) external payable override returns (uint256 collateralAmountOut) {
         if (!cluster.isWhitelisted(0, msg.sender)) revert SenderNotValid();
@@ -61,8 +62,7 @@ contract AssetTotsDaiLeverageExecutor is BaseLeverageExecutor {
         );
         if (daiAmount < minAmountOut) revert NotEnough(daiAddress);
         //obtain sDai
-        IERC20(daiAddress).approve(sDaiAddress, 0);
-        IERC20(daiAddress).approve(sDaiAddress, daiAmount);
+        daiAddress.safeApprove(sDaiAddress, daiAmount);
         collateralAmountOut = ISavingsDai(sDaiAddress).deposit(
             daiAmount,
             address(this)
@@ -71,7 +71,13 @@ contract AssetTotsDaiLeverageExecutor is BaseLeverageExecutor {
         _wrap(sDaiAddress, collateralAddress, collateralAmountOut);
 
         //deposit tsDai to YieldBox
-        _deposit(collateralAddress, collateralAmountOut, from, collateralId);
+        _ybDeposit(
+            collateralId,
+            collateralAddress,
+            address(this),
+            to,
+            collateralAmountOut
+        );
     }
 
     /// @notice buys asset with collateral
@@ -80,14 +86,14 @@ contract AssetTotsDaiLeverageExecutor is BaseLeverageExecutor {
     /// @param collateralAddress tsDai address (TOFT sDAI)
     /// @param assetAddress usually USDO address
     /// @param collateralAmountIn amount to swap
-    /// @param from collateral receiver
+    /// @param to collateral receiver
     /// @param data AssetTotsDaiLeverageExecutor data
     function getAsset(
         uint256 assetId,
         address collateralAddress,
         address assetAddress,
         uint256 collateralAmountIn,
-        address from,
+        address to,
         bytes calldata data
     ) external override returns (uint256 assetAmountOut) {
         if (!cluster.isWhitelisted(0, msg.sender)) revert SenderNotValid();
@@ -121,7 +127,7 @@ contract AssetTotsDaiLeverageExecutor is BaseLeverageExecutor {
         );
         if (assetAmountOut < minAmountOut) revert NotEnough(assetAddress);
 
-        _deposit(assetAddress, assetAmountOut, from, assetId);
+        _ybDeposit(assetId, assetAddress, address(this), to, assetAmountOut);
     }
 
     // ********************** //
@@ -132,24 +138,12 @@ contract AssetTotsDaiLeverageExecutor is BaseLeverageExecutor {
         address collateralAddress,
         uint256 collateralAmountOut
     ) private {
-        IERC20(sDaiAddress).approve(collateralAddress, 0);
-        IERC20(sDaiAddress).approve(collateralAddress, collateralAmountOut);
+        sDaiAddress.safeApprove(collateralAddress, collateralAmountOut);
         ITapiocaOFTBase(collateralAddress).wrap(
             address(this),
             address(this),
             collateralAmountOut
         );
-    }
-
-    function _deposit(
-        address assetAddress,
-        uint256 assetAmountOut,
-        address from,
-        uint256 assetId
-    ) private {
-        IERC20(assetAddress).approve(address(yieldBox), 0);
-        IERC20(assetAddress).approve(address(yieldBox), assetAmountOut);
-        yieldBox.depositAsset(assetId, address(this), from, assetAmountOut, 0);
     }
 
     function _getAddresses(

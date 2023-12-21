@@ -23,7 +23,12 @@ contract USDOOptionsDestinationModule is USDOCommon {
         ICluster _cluster
     ) BaseUSDOStorage(_lzEndpoint, _yieldBox, _cluster) {}
 
-    /// @dev destination call for USDOOptionsModule.exerciseOption
+    /// @notice destination call for USDOOptionsModule.exerciseOption
+    /// @param module USDO OptionsDestination module address
+    /// @param _srcChainId LayerZero source chain id
+    /// @param _srcAddress LayerZero source address
+    /// @param _nonce LayerZero current nonce
+    /// @param _payload received payload
     function exercise(
         address module,
         uint16 _srcChainId,

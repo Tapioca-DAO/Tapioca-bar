@@ -7,6 +7,8 @@ import {ITapiocaOFTBase} from "tapioca-periph/contracts/interfaces/ITapiocaOFT.s
 import "./BaseLeverageExecutor.sol";
 
 contract AssetToEthLeverageExecutor is BaseLeverageExecutor {
+    using SafeApprove for address;
+
     // ************** //
     // *** ERRORS *** //
     // ************** //
@@ -29,14 +31,14 @@ contract AssetToEthLeverageExecutor is BaseLeverageExecutor {
     /// @param assetAddress usually USDO address
     /// @param collateralAddress tETH address (TOFT ETH)
     /// @param assetAmountIn amount to swap
-    /// @param from collateral receiver
+    /// @param to collateral receiver
     /// @param data AssetToEthLeverageExecutor data
     function getCollateral(
         uint256 collateralId,
         address assetAddress,
         address collateralAddress,
         uint256 assetAmountIn,
-        address from,
+        address to,
         bytes calldata data
     ) external payable override returns (uint256 collateralAmountOut) {
         if (!cluster.isWhitelisted(0, msg.sender)) revert SenderNotValid();
@@ -70,17 +72,12 @@ contract AssetToEthLeverageExecutor is BaseLeverageExecutor {
             address(this),
             collateralAmountOut
         );
-        IERC20(collateralAddress).approve(address(yieldBox), 0);
-        IERC20(collateralAddress).approve(
-            address(yieldBox),
-            collateralAmountOut
-        );
-        yieldBox.depositAsset(
+        _ybDeposit(
             collateralId,
+            collateralAddress,
             address(this),
-            from,
-            collateralAmountOut,
-            0
+            to,
+            collateralAmountOut
         );
     }
 
@@ -90,14 +87,14 @@ contract AssetToEthLeverageExecutor is BaseLeverageExecutor {
     /// @param collateralAddress tETH address (TOFT ETH)
     /// @param assetAddress usually USDO address
     /// @param collateralAmountIn amount to swap
-    /// @param from collateral receiver
+    /// @param to collateral receiver
     /// @param data AssetToEthLeverageExecutor data
     function getAsset(
         uint256 assetId,
         address collateralAddress,
         address assetAddress,
         uint256 collateralAmountIn,
-        address from,
+        address to,
         bytes calldata data
     ) external override returns (uint256 assetAmountOut) {
         if (!cluster.isWhitelisted(0, msg.sender)) revert SenderNotValid();
@@ -130,9 +127,7 @@ contract AssetToEthLeverageExecutor is BaseLeverageExecutor {
         );
         if (assetAmountOut < minAssetAmount) revert NotEnough();
 
-        IERC20(assetAddress).approve(address(yieldBox), 0);
-        IERC20(assetAddress).approve(address(yieldBox), assetAmountOut);
-        yieldBox.depositAsset(assetId, address(this), from, assetAmountOut, 0);
+        _ybDeposit(assetId, assetAddress, address(this), to, assetAmountOut);
     }
 
     receive() external payable {}
