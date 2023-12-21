@@ -43,8 +43,12 @@ contract BBLiquidation is BBCommon {
 
         _accrue();
 
-        uint256 borrowAmountWithBonus = userBorrowPart[user] +
-            (userBorrowPart[user] * liquidationMultiplier) /
+        uint256 elasticPart = totalBorrow.toElastic(
+            userBorrowPart[user],
+            false
+        );
+        uint256 borrowAmountWithBonus = elasticPart +
+            (elasticPart * liquidationMultiplier) /
             FEE_PRECISION;
         uint256 requiredCollateral = yieldBox.toShare(
             collateralId,
@@ -187,12 +191,21 @@ contract BBLiquidation is BBCommon {
                 FEE_PRECISION;
         }
 
-        borrowPartWithBonus = maxBorrowPart > borrowPartWithBonus
-            ? borrowPartWithBonus
-            : maxBorrowPart;
-        borrowPartWithBonus = borrowPartWithBonus > userBorrowPart[user]
-            ? userBorrowPart[user]
-            : borrowPartWithBonus;
+        bool convertToElastic = false;
+        if (maxBorrowPart < borrowPartWithBonus) {
+            borrowPartWithBonus = maxBorrowPart;
+            convertToElastic = true;
+        }
+        if (borrowPartWithBonus > userBorrowPart[user]) {
+            borrowPartWithBonus = userBorrowPart[user];
+            convertToElastic = true;
+        }
+        if (convertToElastic) {
+            borrowPartWithBonus = totalBorrow.toElastic(
+                borrowPartWithBonus,
+                false
+            );
+        }
 
         if (collateralPartInAsset <= borrowPartWithBonus) revert BadDebt();
 

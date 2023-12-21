@@ -44,10 +44,10 @@ contract SGLLiquidation is SGLCommon {
 
         _accrue();
 
-        uint256 _userBorrowPart = userBorrowPart[user];
+        uint256 elastic = totalBorrow.toElastic(userBorrowPart[user], false);
 
-        uint256 borrowAmountWithBonus = _userBorrowPart +
-            (_userBorrowPart * liquidationMultiplier) /
+        uint256 borrowAmountWithBonus = elastic +
+            (elastic * liquidationMultiplier) /
             FEE_PRECISION;
         uint256 requiredCollateral = yieldBox.toShare(
             collateralId,
@@ -63,7 +63,10 @@ contract SGLLiquidation is SGLCommon {
 
         // everything will be liquidated; set borrow part and collateral share to 0
         uint256 borrowAmount;
-        (totalBorrow, borrowAmount) = totalBorrow.sub(_userBorrowPart, true);
+        (totalBorrow, borrowAmount) = totalBorrow.sub(
+            userBorrowPart[user],
+            true
+        );
         userBorrowPart[user] = 0;
 
         totalCollateralShare -= userCollateralShare[user];
@@ -215,12 +218,22 @@ contract SGLLiquidation is SGLCommon {
                 (borrowPartWithBonus * liquidationBonusAmount) /
                 FEE_PRECISION;
         }
-        borrowPartWithBonus = maxBorrowPart > borrowPartWithBonus
-            ? borrowPartWithBonus
-            : maxBorrowPart;
-        borrowPartWithBonus = borrowPartWithBonus > userBorrowPart[user]
-            ? userBorrowPart[user]
-            : borrowPartWithBonus;
+
+        bool convertToElastic = false;
+        if (maxBorrowPart < borrowPartWithBonus) {
+            borrowPartWithBonus = maxBorrowPart;
+            convertToElastic = true;
+        }
+        if (borrowPartWithBonus > userBorrowPart[user]) {
+            borrowPartWithBonus = userBorrowPart[user];
+            convertToElastic = true;
+        }
+        if (convertToElastic) {
+            borrowPartWithBonus = totalBorrow.toElastic(
+                borrowPartWithBonus,
+                false
+            );
+        }
 
         if (collateralPartInAsset <= borrowPartWithBonus) revert BadDebt();
 
