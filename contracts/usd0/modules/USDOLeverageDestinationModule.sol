@@ -117,8 +117,14 @@ contract USDOLeverageDestinationModule is USDOCommon {
         //swap from USDO
         if (externalData.swapper != address(0)) {
             if (!cluster.isWhitelisted(0, externalData.swapper))
-                revert SwapperNotAuthorized();
+                revert NotAuthorized(externalData.swapper);
         }
+        if (!cluster.isWhitelisted(0, externalData.tOft))
+            revert NotAuthorized(externalData.tOft);
+        if (!cluster.isWhitelisted(0, externalData.magnetar))
+            revert NotAuthorized(externalData.magnetar);
+        if (!cluster.isWhitelisted(0, externalData.srcMarket))
+            revert NotAuthorized(externalData.srcMarket);
 
         _approve(address(this), externalData.swapper, amount);
         ISwapper.SwapData memory _swapperData = ISwapper(externalData.swapper)
