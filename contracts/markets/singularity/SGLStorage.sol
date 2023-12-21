@@ -42,7 +42,6 @@ contract SGLStorage is BoringOwnable, Market {
     Rebase public totalAsset; // elastic = yieldBox shares held by the Singularity, base = Total fractions held by asset suppliers
 
     // YieldBox shares, from -> Yb asset type -> shares
-    mapping(address => mapping(bytes32 => uint256)) internal _yieldBoxShares;
     bytes32 internal ASSET_SIG =
         0x0bd4060688a1800ae986e4840aebc924bb40b5bf44de4583df2257220b54b77c; // keccak256("asset")
     bytes32 internal COLLATERAL_SIG =
