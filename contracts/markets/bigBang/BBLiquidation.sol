@@ -9,6 +9,8 @@ import "tapioca-periph/contracts/interfaces/IMarketLiquidatorReceiver.sol";
 contract BBLiquidation is BBCommon {
     using RebaseLibrary for Rebase;
     using BoringERC20 for IERC20;
+    using SafeCast for uint256;
+    using SafeApprove for address;
 
     // ************** //
     // *** ERRORS *** //
@@ -42,8 +44,12 @@ contract BBLiquidation is BBCommon {
 
         _accrue();
 
-        uint256 borrowAmountWithBonus = userBorrowPart[user] +
-            (userBorrowPart[user] * liquidationMultiplier) /
+        uint256 elasticPart = totalBorrow.toElastic(
+            userBorrowPart[user],
+            false
+        );
+        uint256 borrowAmountWithBonus = elasticPart +
+            (elasticPart * liquidationMultiplier) /
             FEE_PRECISION;
         uint256 requiredCollateral = yieldBox.toShare(
             collateralId,
@@ -89,7 +95,7 @@ contract BBLiquidation is BBCommon {
         uint256[] calldata maxBorrowParts,
         IMarketLiquidatorReceiver[] calldata liquidatorReceivers,
         bytes[] calldata liquidatorReceiverDatas
-    ) external optionNotPaused(PauseType.Liquidation) {
+    ) external optionNotPaused(PauseType.Liquidation) nonReentrant {
         if (users.length == 0) revert NothingToLiquidate();
         if (users.length != maxBorrowParts.length) revert LengthMismatch();
         if (users.length != liquidatorReceivers.length) revert LengthMismatch();
@@ -186,12 +192,21 @@ contract BBLiquidation is BBCommon {
                 FEE_PRECISION;
         }
 
-        borrowPartWithBonus = maxBorrowPart > borrowPartWithBonus
-            ? borrowPartWithBonus
-            : maxBorrowPart;
-        borrowPartWithBonus = borrowPartWithBonus > userBorrowPart[user]
-            ? userBorrowPart[user]
-            : borrowPartWithBonus;
+        bool convertToElastic = false;
+        if (maxBorrowPart < borrowPartWithBonus) {
+            borrowPartWithBonus = maxBorrowPart;
+            convertToElastic = true;
+        }
+        if (borrowPartWithBonus > userBorrowPart[user]) {
+            borrowPartWithBonus = userBorrowPart[user];
+            convertToElastic = true;
+        }
+        if (convertToElastic) {
+            borrowPartWithBonus = totalBorrow.toElastic(
+                borrowPartWithBonus,
+                false
+            );
+        }
 
         if (collateralPartInAsset <= borrowPartWithBonus) revert BadDebt();
 
@@ -214,8 +229,8 @@ contract BBLiquidation is BBCommon {
         userCollateralShare[user] -= collateralShare;
         if (borrowAmount == 0) revert Solvent();
 
-        totalBorrow.elastic -= uint128(borrowAmount);
-        totalBorrow.base -= uint128(borrowPart);
+        totalBorrow.elastic -= borrowAmount.toUint128();
+        totalBorrow.base -= borrowPart.toUint128();
     }
 
     function _extractLiquidationFees(
@@ -231,8 +246,7 @@ contract BBLiquidation is BBCommon {
 
         //protocol fees should be kept in the contract as we do a yieldBox.depositAsset when we are extracting the fees using `refreshPenroseFees`
         if (callerShare > 0) {
-            asset.approve(address(yieldBox), 0);
-            asset.approve(address(yieldBox), type(uint256).max);
+            address(asset).safeApprove(address(yieldBox), type(uint256).max);
             yieldBox.depositAsset(
                 assetId,
                 address(this),
@@ -241,7 +255,7 @@ contract BBLiquidation is BBCommon {
                 callerShare
             );
         }
-        asset.approve(address(yieldBox), 0);
+        address(asset).safeApprove(address(yieldBox), 0);
     }
 
     function _liquidateUser(

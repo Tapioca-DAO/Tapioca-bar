@@ -1124,7 +1124,6 @@ async function registerBigBangMarket(
     debtRateAgainstEth?: BigNumberish,
     debtRateMin?: BigNumberish,
     debtRateMax?: BigNumberish,
-    debtStartPoint?: BigNumberish,
     staging?: boolean,
 ) {
     const _bbLiquidationModule = await (
@@ -1185,7 +1184,6 @@ async function registerBigBangMarket(
             'uint256',
             'uint256',
             'uint256',
-            'uint256',
             'address',
         ],
         [
@@ -1201,7 +1199,6 @@ async function registerBigBangMarket(
             debtRateAgainstEth,
             debtRateMin,
             debtRateMax,
-            debtStartPoint,
             0,
             0,
             leverageExecutor.address,
@@ -1713,7 +1710,6 @@ export async function register(staging?: boolean) {
         0,
         0,
         0,
-        0, //ignored, as this is the main market
         staging,
     );
     const wethBigBangMarketLeverageExecutor = bigBangRegData.leverageExecutor;
@@ -1735,7 +1731,6 @@ export async function register(staging?: boolean) {
         ethers.utils.parseEther('0.005'),
         ethers.utils.parseEther('0.5'),
         ethers.utils.parseEther('0.035'),
-        0,
         staging,
     );
     const wbtcBigBangMarket = bigBangRegData.bigBangMarket;

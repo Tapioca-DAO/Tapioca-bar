@@ -25,6 +25,11 @@ contract USDOLeverageModule is USDOCommon {
         ICluster _cluster
     ) BaseUSDOStorage(_lzEndpoint, _yieldBox, _cluster) {}
 
+    /// @notice sends USDO to be used for leverage on destination
+    /// @param leverageFor account to leverage for
+    /// @param lzData market's leverage data
+    /// @param swapData market's leverage swap data
+    /// @param externalData external data
     function sendForLeverage(
         uint256 amount,
         address leverageFor,
@@ -32,11 +37,6 @@ contract USDOLeverageModule is USDOCommon {
         IUSDOBase.ILeverageSwapData calldata swapData,
         IUSDOBase.ILeverageExternalContractsData calldata externalData
     ) external payable {
-        if (leverageFor != msg.sender) {
-            if (allowance(leverageFor, msg.sender) < amount)
-                revert AllowanceNotValid();
-            _spendAllowance(leverageFor, msg.sender, amount);
-        }
         if (swapData.tokenOut == address(this)) revert NotValid();
         _assureMaxSlippage(amount, swapData.amountOutMin);
         if (externalData.swapper != address(0)) {
@@ -45,12 +45,12 @@ contract USDOLeverageModule is USDOCommon {
                     lzData.lzDstChainId,
                     externalData.swapper
                 )
-            ) revert SwapperNotAuthorized();
+            ) revert NotAuthorized(externalData.swapper);
         }
-        bytes32 senderBytes = LzLib.addressToBytes32(msg.sender);
+        bytes32 senderBytes = LzLib.addressToBytes32(leverageFor);
         (amount, ) = _removeDust(amount);
         amount = _debitFrom(
-            msg.sender,
+            leverageFor,
             lzEndpoint.getChainId(),
             senderBytes,
             amount

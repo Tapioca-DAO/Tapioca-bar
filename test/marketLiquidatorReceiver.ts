@@ -1,21 +1,10 @@
-import hre, { ethers, network } from 'hardhat';
+import { ethers } from 'hardhat';
 import { expect } from 'chai';
-import { BN, register } from './test.utils';
-import {
-    loadFixture,
-    setBalance,
-} from '@nomicfoundation/hardhat-network-helpers';
+import { register } from './test.utils';
+import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 import _ from 'lodash';
-import { bigBang } from '../typechain/contracts/markets';
-import { AbiCoder, defaultAbiCoder, formatUnits } from 'ethers/lib/utils';
-import {
-    ERC20Mock,
-    MockSwapper__factory,
-} from '../gitsub_tapioca-sdk/src/typechain/tapioca-mocks';
-import { YieldBox } from '../gitsub_tapioca-sdk/src/typechain/YieldBox';
-import { BigBang } from '../typechain';
-import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { BigNumber } from 'ethers';
+import { defaultAbiCoder } from 'ethers/lib/utils';
+import { MockSwapper__factory } from '../gitsub_tapioca-sdk/src/typechain/tapioca-mocks';
 
 describe('MarketLiquidatorReceiver test', () => {
     it('should perform a swap', async () => {
