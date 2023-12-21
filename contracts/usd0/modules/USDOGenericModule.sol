@@ -18,6 +18,10 @@ contract USDOGenericModule is USDOCommon {
         ICluster _cluster
     ) BaseUSDOStorage(_lzEndpoint, _yieldBox, _cluster) {}
 
+    /// @notice executes an approval list or a revoke approval list on destination
+    /// @param lzDstChainId LayerZero chain id
+    /// @param lzCallParams  LayerZero cross chain call parameters
+    /// @param approvals list of approvals or revokes
     function triggerApproveOrRevoke(
         uint16 lzDstChainId,
         ICommonOFT.LzCallParams calldata lzCallParams,
@@ -49,6 +53,9 @@ contract USDOGenericModule is USDOCommon {
         );
     }
 
+    /// @notice executes approval on destination
+    /// @param lzSrcChainId LayerZero source chain id
+    /// @param _payload received payload
     function executeApproval(
         address,
         uint16 lzSrcChainId,
@@ -69,6 +76,13 @@ contract USDOGenericModule is USDOCommon {
         emit ReceiveFromChain(lzSrcChainId, from, 0);
     }
 
+    /// @notice executes a sendFrom on destination back to the current chain
+    /// @param lzDstChainId LayerZero chain id
+    /// @param airdropAdapterParams call adapter parameters
+    /// @param amount amount to send back
+    /// @param sendFromData LayerZero sendFrom data
+    /// @param approvals approvals that should be executed on destination
+    /// @param revokes revokes that should be executed on destination
     function triggerSendFrom(
         uint16 lzDstChainId,
         bytes calldata airdropAdapterParams,
@@ -117,7 +131,8 @@ contract USDOGenericModule is USDOCommon {
         );
     }
 
-    /// @dev destination call for USDOGenericModule.triggerSendFrom
+    /// @notice destination call for USDOGenericModule.triggerSendFrom
+    /// @param _payload received payload
     function sendFromDestination(
         address,
         uint16,

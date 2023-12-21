@@ -22,7 +22,12 @@ contract USDOMarketDestinationModule is USDOCommon {
         ICluster _cluster
     ) BaseUSDOStorage(_lzEndpoint, _yieldBox, _cluster) {}
 
-    /// @dev destination call for USDOMarketModule.sendAndLendOrRepay
+    /// @notice destination call for USDOMarketModule.sendAndLendOrRepay
+    /// @param module USDO MarketDestination module address
+    /// @param _srcChainId LayerZero source chain id
+    /// @param _srcAddress LayerZero sender
+    /// @param _nonce LayerZero current nonce
+    /// @param _payload received payload
     function lend(
         address module,
         uint16 _srcChainId,
@@ -170,7 +175,8 @@ contract USDOMarketDestinationModule is USDOCommon {
         }
     }
 
-    /// @dev destination call for USDOMarketModule.removeAsset
+    /// @notice destination call for USDOMarketModule.removeAsset
+    /// @param _payload received payload
     function remove(
         address,
         uint16,

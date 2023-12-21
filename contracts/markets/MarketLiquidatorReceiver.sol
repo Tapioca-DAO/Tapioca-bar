@@ -81,14 +81,7 @@ contract MarketLiquidatorReceiver is IMarketLiquidatorReceiver, BoringOwnable {
         if (minTokenOutAmount == 0) revert NotValid();
 
         ISwapper.SwapData memory swapData = ISwapper(swappers[tokenIn])
-            .buildSwapData(
-                tokenIn,
-                tokenOut,
-                collateralAmount,
-                0,
-                false,
-                false
-            );
+            .buildSwapData(tokenIn, tokenOut, collateralAmount, 0);
         (, uint256 returnedShare) = ISwapper(swappers[tokenIn]).swap(
             swapData,
             minTokenOutAmount,

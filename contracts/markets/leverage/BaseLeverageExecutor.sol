@@ -100,9 +100,7 @@ abstract contract BaseLeverageExecutor is BoringOwnable {
             tokenIn,
             tokenOut,
             amountIn,
-            0,
-            false,
-            false
+            0
         );
         uint256 minAmount = swapper.getOutputAmount(swapData, dexData);
         return abi.encode(minAmount, dexData);
@@ -120,9 +118,7 @@ abstract contract BaseLeverageExecutor is BoringOwnable {
             tokenIn,
             tokenOut,
             amountIn,
-            0,
-            false,
-            false
+            0
         );
 
         if (tokenIn != address(0)) {

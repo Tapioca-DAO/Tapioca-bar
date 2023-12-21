@@ -74,7 +74,6 @@ contract BigBang is BBCommon {
             uint256 _debtRateAgainstEth,
             uint256 _debtRateMin,
             uint256 _debtRateMax,
-            uint256 _debtStartPoint,
             uint256 _collateralizationRate,
             uint256 _liquidationCollateralizationRate,
             ILeverageExecutor _leverageExecutor
@@ -89,7 +88,6 @@ contract BigBang is BBCommon {
                     IERC20,
                     uint256,
                     IOracle,
-                    uint256,
                     uint256,
                     uint256,
                     uint256,
@@ -115,12 +113,7 @@ contract BigBang is BBCommon {
             _liquidationCollateralizationRate,
             _leverageExecutor
         );
-        _initDebtStorage(
-            _debtRateAgainstEth,
-            _debtRateMin,
-            _debtRateMax,
-            _debtStartPoint
-        );
+        _initDebtStorage(_debtRateAgainstEth, _debtRateMin, _debtRateMax);
     }
 
     function _initModules(
@@ -138,8 +131,7 @@ contract BigBang is BBCommon {
     function _initDebtStorage(
         uint256 _debtRateAgainstEth,
         uint256 _debtRateMin,
-        uint256 _debtRateMax,
-        uint256 _debtStartPoint
+        uint256 _debtRateMax
     ) private {
         isMainMarket = collateralId == penrose.mainAssetId();
         if (!isMainMarket) {
@@ -150,7 +142,6 @@ contract BigBang is BBCommon {
             debtRateAgainstEthMarket = _debtRateAgainstEth;
             maxDebtRate = _debtRateMax;
             minDebtRate = _debtRateMin;
-            debtStartPoint = _debtStartPoint;
         }
     }
 
@@ -240,6 +231,7 @@ contract BigBang is BBCommon {
     /// @param to The receiver of the tokens.
     /// @param skim True if the amount should be skimmed from the deposit balance of msg.sender.
     /// False if tokens from msg.sender in `yieldBox` should be transferred.
+    /// @param amount The amount to add for `to`.
     /// @param share The amount of shares to add for `to`.
     function addCollateral(
         address from,
@@ -371,6 +363,12 @@ contract BigBang is BBCommon {
         amountOut = abi.decode(result, (uint256));
     }
 
+    /// @notice liquidates a position for which the collateral's value is less than the borrowed value
+    /// @dev liquidation bonus is included in the computation
+    /// @param user the address to liquidate
+    /// @param receiver the address which receives the output
+    /// @param liquidatorReceiver the IMarketLiquidatorReceiver executor
+    /// @param liquidatorReceiverData the IMarketLiquidatorReceiver executor data
     function liquidateBadDebt(
         address user,
         address receiver,
@@ -392,6 +390,8 @@ contract BigBang is BBCommon {
     /// @notice Entry point for liquidations.
     /// @param users An array of user addresses.
     /// @param maxBorrowParts A one-to-one mapping to `users`, contains maximum (partial) borrow amounts (to liquidate) of the respective user.
+    /// @param liquidatorReceivers the IMarketLiquidatorReceiver executors list
+    /// @param liquidatorReceiverDatas the IMarketLiquidatorReceiver executors' data list
     function liquidate(
         address[] calldata users,
         uint256[] calldata maxBorrowParts,
@@ -425,6 +425,16 @@ contract BigBang is BBCommon {
     // ************************* //
     // *** OWNER FUNCTIONS ***** //
     // ************************* //
+    /// @notice updates the pause state of the contract
+    /// @dev can only be called by the conservator
+    /// @param val the new value
+    function updatePause(PauseType _type, bool val) external virtual {
+        require(msg.sender == conservator, "Market: unauthorized");
+        require(val != pauseOptions[_type], "Market: same state");
+        emit PausedUpdated(_type, pauseOptions[_type], val);
+        pauseOptions[_type] = val;
+    }
+
     /// @notice sets min and max mint range
     /// @dev can only be called by the owner
     /// @param _min the new min start
@@ -483,6 +493,8 @@ contract BigBang is BBCommon {
     }
 
     /// @notice Transfers fees to penrose
+    /// @dev can only be called by the owner
+    /// @return feeShares the amount of fees in shares withdrawn under Penrose
     function refreshPenroseFees()
         external
         onlyOwner
@@ -504,6 +516,10 @@ contract BigBang is BBCommon {
 
     /// @notice sets BigBang specific configuration
     /// @dev values are updated only if > 0 or not address(0)
+    /// @param _minDebtRate the minimum debt rate (5000000000000000 is 0.5%)
+    /// @param _maxDebtRate the maximum debt rate (50000000000000000 is 5%)
+    /// @param _debtRateAgainstEthMarket the debt ratio against the main BB market (200000000000000000 is 20%)
+    /// @param _liquidationMultiplier the liquidation bonus percentage (12000 is 12%)
     function setBigBangConfig(
         uint256 _minDebtRate,
         uint256 _maxDebtRate,
