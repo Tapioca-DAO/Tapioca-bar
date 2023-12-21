@@ -547,6 +547,8 @@ contract Singularity is SGLCommon, ReentrancyGuard {
         uint64 _maximumInterestPerSecond,
         uint256 _interestElasticity
     ) external onlyOwner {
+        _accrue();
+
         if (_borrowOpeningFee > FEE_PRECISION) revert NotValid();
         emit LogBorrowingFee(borrowOpeningFee, _borrowOpeningFee);
         borrowOpeningFee = _borrowOpeningFee;
