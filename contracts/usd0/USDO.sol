@@ -104,7 +104,7 @@ contract USDO is BaseUSDO {
 
             uint256 toExtract = balance >= _fees ? _fees : balance;
             _fees -= toExtract;
-            if (!transfer(msg.sender, toExtract)) revert Failed();
+            _transfer(address(this), msg.sender, toExtract);
         }
     }
 }
