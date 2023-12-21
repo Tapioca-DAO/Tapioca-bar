@@ -9,6 +9,8 @@ import "./BaseLeverageExecutor.sol";
 
 //Asset > WETH > trETH through BalancerV2
 contract AssetToRethLeverageExecutor is BaseLeverageExecutor {
+    using SafeApprove for address;
+
     address public immutable weth;
     IBalancerVault public vault;
     bytes32 public poolId; //0xade4a71bb62bec25154cfc7e6ff49a513b491e81000000000000000000000497
@@ -45,14 +47,14 @@ contract AssetToRethLeverageExecutor is BaseLeverageExecutor {
     /// @param assetAddress usually USDO address
     /// @param collateralAddress tETH address (TOFT ETH)
     /// @param assetAmountIn amount to swap
-    /// @param from collateral receiver
+    /// @param to collateral receiver
     /// @param data AssetToRethLeverageExecutor data
     function getCollateral(
         uint256 collateralId,
         address assetAddress,
         address collateralAddress,
         uint256 assetAmountIn,
-        address from,
+        address to,
         bytes calldata data
     ) external payable override returns (uint256 collateralAmountOut) {
         if (!cluster.isWhitelisted(0, msg.sender)) revert SenderNotValid();
@@ -81,8 +83,7 @@ contract AssetToRethLeverageExecutor is BaseLeverageExecutor {
         if (rEth == address(0)) revert TokenNotValid();
 
         //Swap WETH with rETH on BalancerV2
-        IERC20(weth).approve(address(vault), 0);
-        IERC20(weth).approve(address(vault), wethAmount);
+        weth.safeApprove(address(vault), wethAmount);
         collateralAmountOut = _swap(
             weth,
             rEth,
@@ -92,25 +93,19 @@ contract AssetToRethLeverageExecutor is BaseLeverageExecutor {
         );
 
         //wrap and transfer to user
-        IERC20(rEth).approve(collateralAddress, 0);
-        IERC20(rEth).approve(collateralAddress, collateralAmountOut);
+        rEth.safeApprove(collateralAddress, collateralAmountOut);
         ITapiocaOFTBase(collateralAddress).wrap(
             address(this),
             address(this),
             collateralAmountOut
         );
 
-        IERC20(collateralAddress).approve(address(yieldBox), 0);
-        IERC20(collateralAddress).approve(
-            address(yieldBox),
-            collateralAmountOut
-        );
-        yieldBox.depositAsset(
+        _ybDeposit(
             collateralId,
+            collateralAddress,
             address(this),
-            from,
-            collateralAmountOut,
-            0
+            to,
+            collateralAmountOut
         );
     }
 
@@ -122,14 +117,14 @@ contract AssetToRethLeverageExecutor is BaseLeverageExecutor {
     /// @param collateralAddress trETH address (TOFT rETH)
     /// @param assetAddress usually USDO address
     /// @param collateralAmountIn amount to swap
-    /// @param from collateral receiver
+    /// @param to collateral receiver
     /// @param data AssetToRethLeverageExecutor data
     function getAsset(
         uint256 assetId,
         address collateralAddress,
         address assetAddress,
         uint256 collateralAmountIn,
-        address from,
+        address to,
         bytes calldata data
     ) external override returns (uint256 assetAmountOut) {
         if (!cluster.isWhitelisted(0, msg.sender)) revert SenderNotValid();
@@ -172,9 +167,7 @@ contract AssetToRethLeverageExecutor is BaseLeverageExecutor {
         );
         if (assetAmountOut < minAssetAmount) revert NotEnough(assetAddress);
 
-        IERC20(assetAddress).approve(address(yieldBox), 0);
-        IERC20(assetAddress).approve(address(yieldBox), assetAmountOut);
-        yieldBox.depositAsset(assetId, address(this), from, assetAmountOut, 0);
+        _ybDeposit(assetId, assetAddress, address(this), to, assetAmountOut);
     }
 
     receive() external payable {}
@@ -207,8 +200,7 @@ contract AssetToRethLeverageExecutor is BaseLeverageExecutor {
             });
 
         if (tokenIn != address(0)) {
-            IERC20(tokenIn).approve(address(vault), 0);
-            IERC20(tokenIn).approve(address(vault), amount);
+            tokenIn.safeApprove(address(vault), amount);
         }
 
         collateralAmountOut = vault.swap(

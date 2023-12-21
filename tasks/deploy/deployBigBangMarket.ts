@@ -239,13 +239,6 @@ export const deployBigBangMarket__task = async (
         default: '0',
     });
 
-    const { debtStartPoint } = await inquirer.prompt({
-        type: 'input',
-        name: 'debtStartPoint',
-        message: 'Debt start point',
-        default: '0',
-    });
-
     const data = new hre.ethers.utils.AbiCoder().encode(
         [
             'address', //bb liquidation
@@ -260,7 +253,6 @@ export const deployBigBangMarket__task = async (
             'uint256', //debtRateAgainstEth
             'uint256', //debtRateMin
             'uint256', //debtRateMax
-            'uint256', //debtStartPoint
             'uint256', //collateralizationRate
             'uint256', //liquidationCollateralizationRate
             'address', // simpleLeverageExecutor
@@ -279,7 +271,6 @@ export const deployBigBangMarket__task = async (
             debtRateAgainstEth,
             debtRateMin,
             debtRateMax,
-            debtStartPoint,
             collateralizationRate,
             liquidationCollateralizationRate,
             leverageExecutor.address,
