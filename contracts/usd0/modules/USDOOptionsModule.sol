@@ -27,6 +27,13 @@ contract USDOOptionsModule is USDOCommon {
         ICluster _cluster
     ) BaseUSDOStorage(_lzEndpoint, _yieldBox, _cluster) {}
 
+    /// @notice exercises oTap
+    /// @param optionsData oTap action data
+    /// @param lzData LayerZero call data
+    /// @param tapSendData tap token send data
+    /// @param approvals approvals array that should be executed on destination
+    /// @param revokes revokes array that should be executed on destination
+    /// @param adapterParams LZ call adapter parameters
     function exerciseOption(
         ITapiocaOptionsBrokerCrossChain.IExerciseOptionsData
             calldata optionsData,
@@ -44,20 +51,6 @@ contract USDOOptionsModule is USDOCommon {
                     tapSendData.tapOftAddress
                 )
             ) revert SenderNotAuthorized();
-        }
-
-        // allowance is also checked on SGL
-        // check it here as well because tokens are moved over layers
-        if (optionsData.from != msg.sender) {
-            if (
-                allowance(optionsData.from, msg.sender) <
-                optionsData.paymentTokenAmount
-            ) revert AllowanceNotValid();
-            _spendAllowance(
-                optionsData.from,
-                msg.sender,
-                optionsData.paymentTokenAmount
-            );
         }
 
         bytes32 toAddress = LzLib.addressToBytes32(optionsData.from);
