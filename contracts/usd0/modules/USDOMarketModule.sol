@@ -11,14 +11,12 @@ import {IUSDOBase} from "tapioca-periph/contracts/interfaces/IUSDO.sol";
 import "./USDOCommon.sol";
 
 contract USDOMarketModule is USDOCommon {
-    // using RebaseLibrary for Rebase;
     using SafeERC20 for IERC20;
 
     // ************** //
     // *** ERRORS *** //
     // ************** //
     error AllowanceNotValid();
-    error AmountTooLow();
 
     constructor(
         address _lzEndpoint,
@@ -26,6 +24,16 @@ contract USDOMarketModule is USDOCommon {
         ICluster _cluster
     ) BaseUSDOStorage(_lzEndpoint, _yieldBox, _cluster) {}
 
+    /// @notice initiates an asset removal on a market from another layer
+    /// @param from the address to substract from
+    /// @param to the receiver
+    /// @param lzDstChainId LayerZero destination chain id
+    /// @param zroPaymentAddress ZRO payment address
+    /// @param adapterParams LZ call adapter parameters
+    /// @param externalData ICommonExternalContracts data
+    /// @param removeAndRepayData IRemoveAndRepay data
+    /// @param approvals approvals array that should be executed on destination
+    /// @param revokes revokes array that should be executed on destination
     function removeAsset(
         address from,
         address to,
@@ -98,6 +106,16 @@ contract USDOMarketModule is USDOCommon {
         emit SendToChain(lzDstChainId, from, LzLib.addressToBytes32(to), 0);
     }
 
+    /// @notice sends USDO to be lent or for repayment on destination
+    /// @param _from address to send from
+    /// @param _to address to repay/lend for
+    /// @param lzDstChainId LayerZero destination chain id
+    /// @param zroPaymentAddress LayerZero ZRO payment address
+    /// @param lendParams market's lending parameters
+    /// @param approvals approval array to be executed on destination
+    /// @param revokes revokes array to be executed on destination
+    /// @param withdrawParams withdraw token parameters
+    /// @param adapterParams LayerZero adapter parameters
     function sendAndLendOrRepay(
         address _from,
         address _to,

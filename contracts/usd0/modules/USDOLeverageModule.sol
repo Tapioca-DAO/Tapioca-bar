@@ -25,6 +25,11 @@ contract USDOLeverageModule is USDOCommon {
         ICluster _cluster
     ) BaseUSDOStorage(_lzEndpoint, _yieldBox, _cluster) {}
 
+    /// @notice sends USDO to be used for leverage on destination
+    /// @param leverageFor account to leverage for
+    /// @param lzData market's leverage data
+    /// @param swapData market's leverage swap data
+    /// @param externalData external data
     function sendForLeverage(
         uint256 amount,
         address leverageFor,
