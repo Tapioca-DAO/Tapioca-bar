@@ -123,20 +123,12 @@ contract BBLendingCommon is BBCommon {
         (totalBorrow, amount) = totalBorrow.sub(part, true);
         userBorrowPart[to] -= part;
 
+        // amount includes the opening & accrued fees
         amountOut = amount;
-
         yieldBox.withdraw(assetId, from, address(this), amount, 0);
 
-        uint256 accruedFees = amount - part;
-        if (accruedFees > 0) {
-            uint256 feeAmount = (accruedFees * protocolFee) / FEE_PRECISION;
-            amount -= feeAmount;
-        }
-        uint256 toBurn = (amount - openingFee); //the opening & accrued fees remain in the contract
         //burn USDO
-        if (toBurn > 0) {
-            IUSDOBase(address(asset)).burn(address(this), toBurn);
-        }
+        IUSDOBase(address(asset)).burn(address(this), amount);
 
         emit LogRepay(from, to, amountOut, part);
     }
