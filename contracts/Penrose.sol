@@ -441,6 +441,7 @@ contract Penrose is BoringOwnable, BoringFactory {
         isMarketRegistered[_contract] = true;
         clonesOf[mc].push(_contract);
         masterContractOf[_contract] = mc;
+        allBigBangMarkets.push(_contract);
         emit RegisterBigBang(_contract, mc);
     }
 
