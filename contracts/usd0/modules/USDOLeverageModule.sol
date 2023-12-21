@@ -45,7 +45,7 @@ contract USDOLeverageModule is USDOCommon {
                     lzData.lzDstChainId,
                     externalData.swapper
                 )
-            ) revert SwapperNotAuthorized();
+            ) revert NotAuthorized(externalData.swapper);
         }
         bytes32 senderBytes = LzLib.addressToBytes32(msg.sender);
         (amount, ) = _removeDust(amount);
