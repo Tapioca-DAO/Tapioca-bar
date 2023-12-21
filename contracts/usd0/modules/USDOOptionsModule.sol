@@ -27,6 +27,13 @@ contract USDOOptionsModule is USDOCommon {
         ICluster _cluster
     ) BaseUSDOStorage(_lzEndpoint, _yieldBox, _cluster) {}
 
+    /// @notice exercises oTap
+    /// @param optionsData oTap action data
+    /// @param lzData LayerZero call data
+    /// @param tapSendData tap token send data
+    /// @param approvals approvals array that should be executed on destination
+    /// @param revokes revokes array that should be executed on destination
+    /// @param adapterParams LZ call adapter parameters
     function exerciseOption(
         ITapiocaOptionsBrokerCrossChain.IExerciseOptionsData
             calldata optionsData,

@@ -125,6 +125,11 @@ contract BBCommon is BBStorage {
         }
     }
 
+    /// @notice deposits an amount to YieldBox
+    /// @param token the IERC20 token to deposit
+    /// @param to the shares receiver
+    /// @param id the IERC20 YieldBox asset id
+    /// @param amount the amount to deposit
     function _depositAmountToYb(
         IERC20 token,
         address to,
@@ -134,12 +139,5 @@ contract BBCommon is BBStorage {
         token.approve(address(yieldBox), 0);
         token.approve(address(yieldBox), amount);
         (, share) = yieldBox.depositAsset(id, address(this), to, amount, 0);
-    }
-
-    function _isWhitelisted(
-        uint16 _chainId,
-        address _contract
-    ) internal view returns (bool) {
-        return ICluster(penrose.cluster()).isWhitelisted(_chainId, _contract);
     }
 }

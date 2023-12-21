@@ -663,6 +663,7 @@ async function registerMagnetar(clusterAddress: string, deployer: any) {
 async function registerMagnetarHelper(deployer: any) {
     const MagnetarHelper = new MagnetarHelper__factory(deployer);
     const magnetarHelper = await MagnetarHelper.deploy();
+
     return { magnetarHelper };
 }
 
@@ -1402,7 +1403,7 @@ export async function getSGLPermitSignature(
     );
 }
 
-const gasPrice = 45000000000; //55gwei
+const gasPrice = 95000000000; //95gwei
 const log = (message: string, staging?: boolean) =>
     staging && console.log(message);
 export async function register(staging?: boolean) {
