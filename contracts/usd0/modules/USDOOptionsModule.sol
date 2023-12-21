@@ -99,7 +99,7 @@ contract USDOOptionsModule is USDOCommon {
             lzData.lzDstChainId,
             optionsData.from,
             toAddress,
-            optionsData.paymentTokenAmount
+            paymentTokenAmount
         );
     }
 }
