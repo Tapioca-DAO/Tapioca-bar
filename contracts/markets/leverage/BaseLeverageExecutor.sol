@@ -11,8 +11,11 @@ import "tapioca-sdk/dist/contracts/YieldBox/contracts/YieldBox.sol";
 import "tapioca-periph/contracts/interfaces/ISwapper.sol";
 import "tapioca-periph/contracts/interfaces/ICluster.sol";
 import "tapioca-periph/contracts/interfaces/ILeverageExecutor.sol";
+import "tapioca-periph/contracts/libraries/SafeApprove.sol";
 
 abstract contract BaseLeverageExecutor is BoringOwnable {
+    using SafeApprove for address;
+
     // ************** //
     // *** ERRORS *** //
     // ************** //
@@ -122,8 +125,7 @@ abstract contract BaseLeverageExecutor is BoringOwnable {
         );
 
         if (tokenIn != address(0)) {
-            IERC20(tokenIn).approve(address(swapper), 0);
-            IERC20(tokenIn).approve(address(swapper), amountIn);
+            tokenIn.safeApprove(address(swapper), amountIn);
         }
         (amountOut, ) = swapper.swap{value: gas}(
             swapData,
@@ -137,5 +139,16 @@ abstract contract BaseLeverageExecutor is BoringOwnable {
         if (address(swapper) == address(0)) revert SwapperNotValid();
         if (!cluster.isWhitelisted(0, address(swapper)))
             revert SwapperNotAuthorized();
+    }
+
+    function _ybDeposit(
+        uint256 id,
+        address token,
+        address from,
+        address to,
+        uint256 amount
+    ) internal {
+        token.safeApprove(address(yieldBox), amount);
+        yieldBox.depositAsset(id, from, to, amount, 0);
     }
 }
