@@ -14,11 +14,15 @@ import "tapioca-periph/contracts/interfaces/ICluster.sol";
 import "tapioca-periph/contracts/interfaces/IBigBang.sol";
 import "tapioca-periph/contracts/interfaces/IUSDOMintable.sol";
 
+import "tapioca-periph/contracts/libraries/SafeApprove.sol";
+
 // TODO: Permissionless market deployment
 ///     + asset registration? (toggle to renounce ownership so users can call)
 /// @title Global market registry
 /// @notice Singularity management
 contract Penrose is BoringOwnable, BoringFactory {
+    using SafeApprove for address;
+
     // ************ //
     // *** VARS *** //
     // ************ //
@@ -55,7 +59,7 @@ contract Penrose is BoringOwnable, BoringFactory {
     /// @notice Used to check if a SGL/BB is a real market
     mapping(address => bool) public isMarketRegistered;
     /// @notice default LZ Chain id
-    uint16 public hostLzChainId;
+    uint16 public immutable hostLzChainId;
 
     /// @notice BigBang ETH market addressf
     address public bigBangEthMarket;
@@ -154,12 +158,6 @@ contract Penrose is BoringOwnable, BoringFactory {
         address indexed location,
         address indexed masterContract
     );
-    /// @notice event emitted when ISwapper address is updated
-    event SwapperUpdate(
-        address indexed swapper,
-        uint16 indexed id,
-        bool indexed isRegistered
-    );
     /// @notice event emitted when USDO address is updated
     event UsdoTokenUpdated(address indexed usdoToken, uint256 indexed assetId);
     /// @notice event emitted when conservator is updated
@@ -167,9 +165,15 @@ contract Penrose is BoringOwnable, BoringFactory {
     /// @notice event emitted when pause state is updated
     event PausedUpdated(bool indexed oldState, bool indexed newState);
     /// @notice event emitted when BigBang ETH market address is updated
-    event BigBangEthMarketSet(address indexed _newAddress);
+    event BigBangEthMarketUpdated(
+        address indexed _oldAddress,
+        address indexed _newAddress
+    );
     /// @notice event emitted when BigBang ETH market debt rate is updated
-    event BigBangEthMarketDebtRate(uint256 indexed _rate);
+    event BigBangEthMarketDebtRateUpdated(
+        uint256 indexed _oldRate,
+        uint256 indexed _newRate
+    );
     /// @notice event emitted when fees are deposited to twTap
     event LogTwTapFeesDeposit(
         uint256 indexed feeShares,
@@ -223,13 +227,13 @@ contract Penrose is BoringOwnable, BoringFactory {
         view
         returns (address[] memory markets)
     {
-        markets = _getMasterContractLength(singularityMasterContracts);
+        markets = getAllMasterContractClones(singularityMasterContracts);
     }
 
     /// @notice Get all the BigBang contract addresses
     /// @return markets list of available markets
     function bigBangMarkets() external view returns (address[] memory markets) {
-        markets = _getMasterContractLength(bigbangMasterContracts);
+        markets = getAllMasterContractClones(bigbangMasterContracts);
     }
 
     /// @notice Get the length of `singularityMasterContracts`
@@ -257,17 +261,17 @@ contract Penrose is BoringOwnable, BoringFactory {
         return _totalUsdoDebt;
     }
 
-    // ************************ //
-    // *** PUBLIC FUNCTIONS *** //
-    // ************************ //
-    /// @notice Loop through the master contracts and call `_depositFeesToYieldBox()` to each one of their clones.
+    // *********************** //
+    // *** OWNER FUNCTIONS *** //
+    // *********************** //
+    /// @notice Loop through the master contracts and call `_depositFeesToTwTap()` to each one of their clones.
     /// @param markets_ Singularity &/ BigBang markets array
     /// @param twTap the TwTap contract
     function withdrawAllMarketFees(
         IMarket[] calldata markets_,
         ITwTap twTap
     ) external onlyOwner notPaused {
-        if (address(twTap) == address(0)) revert NotValid();
+        if (address(twTap) == address(0)) revert ZeroAddress();
 
         uint256 length = markets_.length;
         unchecked {
@@ -319,6 +323,7 @@ contract Penrose is BoringOwnable, BoringFactory {
     /// @dev can only be called by the owner
     /// @param _newCluster the new address
     function setCluster(address _newCluster) external onlyOwner {
+        if (_newCluster == address(0)) revert ZeroAddress();
         emit ClusterSet(address(cluster), _newCluster);
         cluster = ICluster(_newCluster);
     }
@@ -327,15 +332,20 @@ contract Penrose is BoringOwnable, BoringFactory {
     /// @dev can only be called by the owner
     /// @param _rate the new rate
     function setBigBangEthMarketDebtRate(uint256 _rate) external onlyOwner {
+        if (bigBangEthMarket != address(0)) {
+            IBigBang(bigBangEthMarket).accrue();
+        }
         bigBangEthDebtRate = _rate;
-        emit BigBangEthMarketDebtRate(_rate);
+        emit BigBangEthMarketDebtRateUpdated(bigBangEthDebtRate, _rate);
     }
 
     /// @notice sets the main BigBang market
     /// @dev needed for the variable debt computation
+    /// @param _market the new market address
     function setBigBangEthMarket(address _market) external onlyOwner {
+        if (_market == address(0)) revert ZeroAddress();
+        emit BigBangEthMarketUpdated(bigBangEthMarket, _market);
         bigBangEthMarket = _market;
-        emit BigBangEthMarketSet(_market);
     }
 
     /// @notice updates the pause state of the contract
@@ -352,7 +362,7 @@ contract Penrose is BoringOwnable, BoringFactory {
     /// @dev Conservator can pause the contract
     /// @param _conservator The new address
     function setConservator(address _conservator) external onlyOwner {
-        if (_conservator == address(0)) revert NotValid();
+        if (_conservator == address(0)) revert ZeroAddress();
         emit ConservatorUpdated(conservator, _conservator);
         conservator = _conservator;
     }
@@ -427,6 +437,7 @@ contract Penrose is BoringOwnable, BoringFactory {
     /// @param mc The address of the master contract which must be already registered
     /// @param data The init data of the Singularity
     /// @param useCreate2 Whether to use create2 or not
+    /// @return _contract the created contract
     function registerSingularity(
         address mc,
         bytes calldata data,
@@ -448,6 +459,7 @@ contract Penrose is BoringOwnable, BoringFactory {
     /// @notice Registers an existing Singularity market (without deployment)
     /// @dev can only be called by the owner
     /// @param mc The address of the master contract which must be already registered
+    /// @param _contract The address of SGL
     function addSingularity(
         address mc,
         address _contract
@@ -464,6 +476,7 @@ contract Penrose is BoringOwnable, BoringFactory {
     /// @param mc The address of the master contract which must be already registered
     /// @param data The init data of the BigBang contract
     /// @param useCreate2 Whether to use create2 or not
+    /// @return _contract the created contract
     function registerBigBang(
         address mc,
         bytes calldata data,
@@ -486,6 +499,7 @@ contract Penrose is BoringOwnable, BoringFactory {
     /// @notice Registers an existing BigBang market (without deployment)
     /// @dev can only be called by the owner
     /// @param mc The address of the master contract which must be already registered
+    /// @param _contract The address of BB
     function addBigBang(
         address mc,
         address _contract
@@ -498,6 +512,9 @@ contract Penrose is BoringOwnable, BoringFactory {
     }
 
     /// @notice Execute an only owner function inside of a Singularity or a BigBang market
+    /// @param mc Master contracts array
+    /// @param data array
+    /// @param forceSuccess if true, method reverts in case of an unsuccessful execution
     function executeMarketFn(
         address[] calldata mc,
         bytes[] memory data,
@@ -505,7 +522,6 @@ contract Penrose is BoringOwnable, BoringFactory {
     )
         external
         onlyOwner
-        notPaused
         returns (bool[] memory success, bytes[] memory result)
     {
         uint256 len = mc.length;
@@ -530,7 +546,6 @@ contract Penrose is BoringOwnable, BoringFactory {
     /// @notice Calls `accrue()` on all BigBang registered markets
     /// @dev callable by BigBang ETH market only
     function reAccrueBigBangMarkets() external notPaused {
-        if (!isMarketRegistered[msg.sender]) revert NotAuthorized();
         if (msg.sender == bigBangEthMarket) {
             _reAccrueMarkets(false);
         }
@@ -613,13 +628,12 @@ contract Penrose is BoringOwnable, BoringFactory {
         address _asset,
         ITwTap twTap
     ) private {
-        IERC20(_asset).approve(address(twTap), 0);
-        IERC20(_asset).approve(address(twTap), amount);
+        _asset.safeApprove(address(twTap), amount);
         twTap.distributeReward(rewardTokenId, amount);
-        emit LogTwTapFeesDeposit(amount, amount);
+        emit LogTwTapFeesDeposit(feeShares, amount);
     }
 
-    function _getMasterContractLength(
+    function getAllMasterContractClones(
         IPenrose.MasterContract[] memory array
     ) public view returns (address[] memory markets) {
         uint256 _masterContractLength = array.length;

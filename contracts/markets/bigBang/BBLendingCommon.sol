@@ -63,8 +63,7 @@ contract BBLendingCommon is BBCommon {
         );
 
         if (totalBorrowCap > 0) {
-            if (totalBorrow.elastic <= totalBorrowCap)
-                revert BorrowCapReached();
+            if (totalBorrow.elastic > totalBorrowCap) revert BorrowCapReached();
         }
 
         userBorrowPart[from] += part;
@@ -86,15 +85,17 @@ contract BBLendingCommon is BBCommon {
         (bool updated, uint256 _exchangeRate) = assetOracle.get(oracleData);
         if (!updated) revert OracleCallFailed();
 
-        if (_exchangeRate >= minMintFeeStart) return minMintFee;
-        if (_exchangeRate <= maxMintFeeStart) return maxMintFee;
+        if (_exchangeRate >= minMintFeeStart)
+            return (amount * minMintFee) / FEE_PRECISION;
+        if (_exchangeRate <= maxMintFeeStart)
+            return (amount * maxMintFee) / FEE_PRECISION;
 
         uint256 fee = maxMintFee -
             (((_exchangeRate - maxMintFeeStart) * (maxMintFee - minMintFee)) /
                 (minMintFeeStart - maxMintFeeStart));
 
-        if (fee > maxMintFee) return maxMintFee;
-        if (fee < minMintFee) return minMintFee;
+        if (fee > maxMintFee) return (amount * maxMintFee) / FEE_PRECISION;
+        if (fee < minMintFee) return (amount * minMintFee) / FEE_PRECISION;
 
         if (fee > 0) {
             return (amount * fee) / FEE_PRECISION;
