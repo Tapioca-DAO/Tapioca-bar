@@ -241,7 +241,7 @@ describe('BigBang test', () => {
     });
 
     describe('borrow() & repay()', () => {
-        it.only('should borrow and repay on a 100% LTV market', async () => {
+        it('should borrow and repay on a 100% LTV market', async () => {
             const {
                 registerBigBangMarket,
                 weth,
