@@ -163,7 +163,7 @@ contract USDOLeverageDestinationModule is USDOCommon {
                 withdrawLzChainId: 0,
                 withdrawAdapterParams: "0x",
                 unwrap: false,
-                refundAddress: payable(0)
+                refundAddress: payable(lzData.refundAddress)
             }),
             ICommonData.ISendOptions({
                 extraGasLimit: lzData.srcExtraGasLimit,
