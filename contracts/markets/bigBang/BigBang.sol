@@ -181,6 +181,7 @@ contract BigBang is BBCommon {
         liquidationCollateralizationRate = _liquidationCollateralizationRate > 0
             ? _liquidationCollateralizationRate
             : 80000;
+
         if (liquidationCollateralizationRate < collateralizationRate)
             revert NotValid();
 
@@ -200,6 +201,8 @@ contract BigBang is BBCommon {
         minMintFeeStart = 1000000000000000000; // 1*1e18
 
         leverageExecutor = _leverageExecutor;
+
+        conservator = owner;
     }
 
     // ************************ //
