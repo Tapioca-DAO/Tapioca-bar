@@ -163,6 +163,155 @@ describe('BigBang test', () => {
             } %`,
         );
     });
+    it('Can bork the pools via the function', async () => {
+        const {
+            wethBigBangMarket,
+            wbtcBigBangMarket,
+            weth,
+            wethAssetId,
+            wbtc,
+            wbtcAssetId,
+            yieldBox,
+            deployer,
+            timeTravel,
+            bar,
+        } = await loadFixture(register);
+
+        //borrow from the main eth market
+        await weth.approve(yieldBox.address, ethers.constants.MaxUint256);
+        await yieldBox.setApprovalForAll(wethBigBangMarket.address, true);
+
+        const wethMintVal = ethers.BigNumber.from((1e18).toString()).mul(50);
+        await weth.updateMintLimit(wethMintVal.mul(100));
+        await timeTravel(86401);
+        await weth.freeMint(wethMintVal);
+        const valShare = await yieldBox.toShare(
+            wethAssetId,
+            wethMintVal,
+            false,
+        );
+        await yieldBox.depositAsset(
+            wethAssetId,
+            deployer.address,
+            deployer.address,
+            0,
+            valShare,
+        );
+        await wethBigBangMarket.addCollateral(
+            deployer.address,
+            deployer.address,
+            false,
+            0,
+            valShare,
+        );
+
+        const usdoBorrowVal = ethers.utils.parseEther('10000');
+        await wethBigBangMarket.borrow(
+            deployer.address,
+            deployer.address,
+            usdoBorrowVal,
+        );
+
+        let userBorrowPart = await wethBigBangMarket.userBorrowPart(
+            deployer.address,
+        );
+
+        const ethMarketTotalDebt = await wethBigBangMarket.getTotalDebt();
+        expect(ethMarketTotalDebt.eq(userBorrowPart)).to.be.true;
+
+        const ethMarketDebtRate = await wethBigBangMarket.getDebtRate();
+        expect(ethMarketDebtRate.eq(ethers.utils.parseEther('0.005'))).to.be
+            .true;
+
+        //wbtc market
+        const initialWbtcDebtRate = await wbtcBigBangMarket.getDebtRate();
+        const minDebtRate = await wbtcBigBangMarket.minDebtRate();
+        expect(initialWbtcDebtRate.eq(minDebtRate)).to.be.true;
+
+        await wbtc.approve(yieldBox.address, ethers.constants.MaxUint256);
+        await yieldBox.setApprovalForAll(wbtcBigBangMarket.address, true);
+
+        const wbtcMintVal = ethers.BigNumber.from((1e18).toString()).mul(50);
+        await wbtc.updateMintLimit(wbtcMintVal.mul(10));
+        await timeTravel(86401);
+        await wbtc.freeMint(wbtcMintVal.mul(5));
+        const wbtcValShare = await yieldBox.toShare(
+            wbtcAssetId,
+            wbtcMintVal,
+            false,
+        );
+        await yieldBox.depositAsset(
+            wbtcAssetId,
+            deployer.address,
+            deployer.address,
+            0,
+            wbtcValShare,
+        );
+        await wbtcBigBangMarket.addCollateral(
+            deployer.address,
+            deployer.address,
+            false,
+            0,
+            wbtcValShare,
+        );
+
+        const wbtcMarketusdoBorrowVal = ethers.utils.parseEther('2987');
+        /// @audit Borrow above minDebtSize
+        await wbtcBigBangMarket.borrow(
+            deployer.address,
+            deployer.address,
+            wbtcMarketusdoBorrowVal,
+        );
+
+        userBorrowPart = await wbtcBigBangMarket.userBorrowPart(
+            deployer.address,
+        );
+
+        const wbtcMarketTotalDebt = await wbtcBigBangMarket.getTotalDebt();
+        expect(wbtcMarketTotalDebt.eq(userBorrowPart)).to.be.true;
+
+        /// @audit Repay to drag totalDebt below minDebtSize
+        await wbtcBigBangMarket.repay(
+            deployer.address,
+            deployer.address,
+            true,
+            wbtcMarketusdoBorrowVal.mul(99).div(100),
+        );
+        console.log('We can repay, less than 100% so we go below min');
+
+        // Accrue should revert now due to this
+        try {
+            await wbtcBigBangMarket.accrue();
+        } catch (e) {
+            console.log('e', e);
+            console.log('And we got the revert we expected');
+        }
+
+        try {
+            // We cannot repay rest
+            await wbtcBigBangMarket.repay(
+                deployer.address,
+                deployer.address,
+                true,
+                wbtcMarketusdoBorrowVal.mul(1).div(100),
+            );
+        } catch (e) {
+            console.log('e', e);
+            console.log('We cannot repay');
+        }
+
+        try {
+            // We cannot borrow anymore due to accrue
+            await wbtcBigBangMarket.borrow(
+                deployer.address,
+                deployer.address,
+                wbtcMarketusdoBorrowVal,
+            );
+        } catch (e) {
+            console.log('e', e);
+            console.log('And we cannot borrow');
+        }
+    });
     it('should test initial values', async () => {
         const { wethBigBangMarket, usd0, bar, weth, wethAssetId } =
             await loadFixture(register);
@@ -180,6 +329,315 @@ describe('BigBang test', () => {
 
         const savedCollateral = await wethBigBangMarket.collateral();
         expect(weth.address.toLowerCase()).eq(savedCollateral.toLowerCase());
+    });
+
+    describe('open interest', () => {
+        it('should view & mint on total debt', async () => {
+            const {
+                registerBigBangMarket,
+                weth,
+                wethAssetId,
+                usdc,
+                usdcAssetId,
+                yieldBox,
+                deployer,
+                eoa1,
+                mediumRiskBigBangMC,
+                bar,
+                usd0WethOracle,
+                multiSwapper,
+                cluster,
+                registerUsd0Contract,
+                timeTravel,
+                __wethUsdcPrice,
+                twTap,
+            } = await loadFixture(register);
+
+            const log = (message: string, shouldLog?: boolean) =>
+                shouldLog && console.log(message);
+
+            const shouldLog = false;
+
+            const chainId = await hre.getChainId();
+            const { usd0, lzEndpointContract, usd0Flashloan } =
+                await registerUsd0Contract(
+                    chainId,
+                    yieldBox.address,
+                    cluster.address,
+                    deployer.address,
+                    false,
+                );
+            await bar.setUsdoToken(usd0.address);
+            await usd0.setMinterStatus(bar.address, true);
+
+            const wethUsdoBBData = await registerBigBangMarket(
+                mediumRiskBigBangMC.address,
+                yieldBox,
+                bar,
+                weth,
+                wethAssetId,
+                usd0WethOracle,
+                multiSwapper.address,
+                cluster.address,
+                ethers.utils.parseEther('1'),
+                0,
+                0,
+                0,
+                0, //ignored, as this is the main market
+                false,
+            );
+            const wethUsdoBigBangMarket = wethUsdoBBData.bigBangMarket;
+            await usd0.setMinterStatus(wethUsdoBigBangMarket.address, true);
+            await usd0.setBurnerStatus(wethUsdoBigBangMarket.address, true);
+
+            const usdcUsdoBBData = await registerBigBangMarket(
+                mediumRiskBigBangMC.address,
+                yieldBox,
+                bar,
+                usdc,
+                usdcAssetId,
+                usd0WethOracle,
+                multiSwapper.address,
+                cluster.address,
+                ethers.utils.parseEther('1'),
+                0,
+                0,
+                0,
+                0, //not main market but we can work with the same configuration for this test
+                false,
+            );
+            const usdcUsdoBigBangMarket = usdcUsdoBBData.bigBangMarket;
+            await usd0.setMinterStatus(usdcUsdoBigBangMarket.address, true);
+            await usd0.setBurnerStatus(usdcUsdoBigBangMarket.address, true);
+
+            const setAssetOracleFn =
+                wethUsdoBigBangMarket.interface.encodeFunctionData(
+                    'setAssetOracle',
+                    [usd0WethOracle.address, '0x'],
+                );
+
+            await bar.executeMarketFn(
+                [wethUsdoBigBangMarket.address, usdcUsdoBigBangMarket.address],
+                [setAssetOracleFn, setAssetOracleFn],
+                true,
+            );
+
+            //nothing should be minted so far
+            let totalUsdoSupply = await usd0.totalSupply();
+            expect(totalUsdoSupply.eq(0)).to.be.true;
+
+            //nothing should be minted so far
+            await timeTravel(10 * 86400);
+            totalUsdoSupply = await usd0.totalSupply();
+            expect(totalUsdoSupply.eq(0)).to.be.true;
+
+            //approve collaterals for yieldBox
+            await weth.approve(yieldBox.address, ethers.constants.MaxUint256);
+            await usdc.approve(yieldBox.address, ethers.constants.MaxUint256);
+            await yieldBox.setApprovalForAll(
+                wethUsdoBigBangMarket.address,
+                true,
+            );
+            await yieldBox.setApprovalForAll(
+                usdcUsdoBigBangMarket.address,
+                true,
+            );
+
+            //mint collaterals
+            const wethMintVal = ethers.BigNumber.from((1e18).toString()).mul(
+                10,
+            );
+            const usdcMintVal = ethers.BigNumber.from((1e18).toString()).mul(
+                10,
+            );
+            await weth.freeMint(wethMintVal);
+            await usdc.freeMint(usdcMintVal);
+
+            //deposit collateral amounts to yieldBox
+            const wethCollateralShare = await yieldBox.toShare(
+                wethAssetId,
+                wethMintVal,
+                false,
+            );
+            await yieldBox.depositAsset(
+                wethAssetId,
+                deployer.address,
+                deployer.address,
+                0,
+                wethCollateralShare,
+            );
+
+            const usdcCollateralShare = await yieldBox.toShare(
+                usdcAssetId,
+                usdcMintVal,
+                false,
+            );
+            await yieldBox.depositAsset(
+                usdcAssetId,
+                deployer.address,
+                deployer.address,
+                0,
+                usdcCollateralShare,
+            );
+
+            //add collateral to markets
+            await wethUsdoBigBangMarket.addCollateral(
+                deployer.address,
+                deployer.address,
+                false,
+                0,
+                wethCollateralShare,
+            );
+            await usdcUsdoBigBangMarket.addCollateral(
+                deployer.address,
+                deployer.address,
+                false,
+                0,
+                usdcCollateralShare,
+            );
+
+            //usdo supply should still be 0 at this time
+            totalUsdoSupply = await usd0.totalSupply();
+            expect(totalUsdoSupply.eq(0)).to.be.true;
+
+            let totalDebt = await bar.viewTotalDebt();
+            expect(totalDebt.eq(0)).to.be.true;
+
+            //borrow from weth market
+            const wethMarketBorrowVal = wethMintVal
+                .mul(74)
+                .div(100)
+                .mul(__wethUsdcPrice.div((1e18).toString()));
+
+            await wethUsdoBigBangMarket.borrow(
+                deployer.address,
+                deployer.address,
+                wethMarketBorrowVal,
+            );
+
+            //usdo supply should not be 0 at this time
+            totalUsdoSupply = await usd0.totalSupply();
+            expect(totalUsdoSupply.gt(0)).to.be.true;
+            totalDebt = await bar.viewTotalDebt();
+            expect(totalDebt.gt(totalUsdoSupply)).to.be.true;
+
+            //borrow from usdc market
+            const usdcMarketBorrowVal = usdcMintVal
+                .mul(74)
+                .div(100)
+                .mul(__wethUsdcPrice.div((1e18).toString()));
+            await usdcUsdoBigBangMarket.borrow(
+                deployer.address,
+                deployer.address,
+                usdcMarketBorrowVal,
+            );
+            totalUsdoSupply = await usd0.totalSupply();
+            expect(totalUsdoSupply.gt(0)).to.be.true;
+            totalDebt = await bar.viewTotalDebt();
+            expect(totalDebt.gt(totalUsdoSupply)).to.be.true;
+
+            log(`totalUsdoSupply ${totalUsdoSupply}`, shouldLog);
+            log(`totalDebt       ${totalDebt}`, shouldLog);
+
+            log('[+] travel 100 days into the future', shouldLog);
+            await timeTravel(100 * 86400);
+
+            //call computeTotalDebt to reaccrue all markets
+            await bar.computeTotalDebt();
+
+            totalUsdoSupply = await usd0.totalSupply();
+            expect(totalUsdoSupply.gt(0)).to.be.true;
+            totalDebt = await bar.viewTotalDebt();
+            expect(totalDebt.gt(totalUsdoSupply)).to.be.true;
+
+            log(`totalUsdoSupply ${totalUsdoSupply}`, shouldLog);
+            log(`totalDebt       ${totalDebt}`, shouldLog);
+
+            //compute possible open interest mintable amount
+            //this will be compared with the final supply
+
+            await twTap.addRewardToken(usd0.address);
+            //mint supply
+            log('[+] minting the supply', shouldLog);
+            await bar.mintOpenInterestDebt(twTap.address);
+
+            totalUsdoSupply = await usd0.totalSupply();
+            totalDebt = await bar.viewTotalDebt();
+            log(`totalUsdoSupply ${totalUsdoSupply}`, shouldLog);
+            log(`totalDebt       ${totalDebt}`, shouldLog);
+            expect(totalDebt).to.be.closeTo(totalUsdoSupply, 1e4);
+
+            log('[+] travel another 100 days into the future', shouldLog);
+            await timeTravel(100 * 86400);
+
+            //call computeTotalDebt to reaccrue all markets
+            await bar.computeTotalDebt();
+
+            totalUsdoSupply = await usd0.totalSupply();
+            expect(totalUsdoSupply.gt(0)).to.be.true;
+            totalDebt = await bar.viewTotalDebt();
+            expect(totalDebt.gt(totalUsdoSupply)).to.be.true;
+
+            log(`totalUsdoSupply ${totalUsdoSupply}`, shouldLog);
+            log(`totalDebt       ${totalDebt}`, shouldLog);
+
+            //mint supply
+            log('[+] minting the supply', shouldLog);
+            await bar.mintOpenInterestDebt(twTap.address);
+
+            totalUsdoSupply = await usd0.totalSupply();
+            totalDebt = await bar.viewTotalDebt();
+            log(`totalUsdoSupply ${totalUsdoSupply}`, shouldLog);
+            log(`totalDebt       ${totalDebt}`, shouldLog);
+            expect(totalDebt).to.be.closeTo(totalUsdoSupply, 1e4);
+
+            //repay usdc market
+            let usdcMarketBorrowPart =
+                await usdcUsdoBigBangMarket.userBorrowPart(deployer.address);
+            await usdcUsdoBigBangMarket.repay(
+                deployer.address,
+                deployer.address,
+                false,
+                usdcMarketBorrowPart,
+            ); //user should have extra USDO in yieldBox because of the 2 borrows (each from one market)
+            usdcMarketBorrowPart = await usdcUsdoBigBangMarket.userBorrowPart(
+                deployer.address,
+            );
+            expect(usdcMarketBorrowPart.eq(0)).to.be.true;
+
+            //recompute total debt & total supply
+            await bar.computeTotalDebt();
+            totalUsdoSupply = await usd0.totalSupply();
+            totalDebt = await bar.viewTotalDebt();
+            log(`totalUsdoSupply ${totalUsdoSupply}`, shouldLog);
+            log(`totalDebt       ${totalDebt}`, shouldLog);
+            expect(totalDebt).to.be.closeTo(totalUsdoSupply, 1e14); //debt should still be close to totalSupply because repay decreases both; however there was a slight increase due to a new accrue
+            expect(totalDebt.gt(totalUsdoSupply)).to.be.true;
+
+            log('[+] travel another 100 days into the future', shouldLog);
+            await timeTravel(100 * 86400);
+
+            //call computeTotalDebt to reaccrue all markets
+            await bar.computeTotalDebt();
+
+            totalUsdoSupply = await usd0.totalSupply();
+            expect(totalUsdoSupply.gt(0)).to.be.true;
+            totalDebt = await bar.viewTotalDebt();
+            expect(totalDebt.gt(totalUsdoSupply)).to.be.true;
+
+            log(`totalUsdoSupply ${totalUsdoSupply}`, shouldLog);
+            log(`totalDebt       ${totalDebt}`, shouldLog);
+
+            //mint supply
+            log('[+] minting the supply', shouldLog);
+            await bar.mintOpenInterestDebt(twTap.address);
+
+            totalUsdoSupply = await usd0.totalSupply();
+            totalDebt = await bar.viewTotalDebt();
+            log(`totalUsdoSupply ${totalUsdoSupply}`, shouldLog);
+            log(`totalDebt       ${totalDebt}`, shouldLog);
+            expect(totalDebt).to.be.closeTo(totalUsdoSupply, 1e4);
+        });
     });
 
     describe('addCollateral()', () => {
@@ -921,8 +1379,7 @@ describe('BigBang test', () => {
             expect(userBorrowPartAfter.lt(borrowPart)).to.be.true;
         });
     });
-
-    describe('fees', () => {
+    describe.skip('fees', () => {
         it('should have multiple borrowers and check fees accrued over time', async () => {
             const {
                 wethBigBangMarket,

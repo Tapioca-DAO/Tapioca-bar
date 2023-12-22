@@ -15,7 +15,7 @@ abstract contract USDOCommon is BaseUSDOStorage {
     error ActionTypeNotValid();
     error SenderNotAuthorized();
     error NotValid();
-    error SwapperNotAuthorized();
+    error NotAuthorized(address invalidAddress);
 
     function _callApproval(
         ICommonData.IApproval[] memory approvals,

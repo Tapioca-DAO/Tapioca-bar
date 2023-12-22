@@ -6,6 +6,7 @@ import "./SGLCommon.sol";
 contract SGLLendingCommon is SGLCommon {
     using RebaseLibrary for Rebase;
     using BoringERC20 for IERC20;
+    using SafeCast for uint256;
 
     // ************** //
     // *** ERRORS *** //
@@ -22,8 +23,7 @@ contract SGLLendingCommon is SGLCommon {
         address to,
         bool skim,
         uint256 amount,
-        uint256 share,
-        bool multiHopLeverage
+        uint256 share
     ) internal {
         if (share == 0) {
             share = yieldBox.toShare(collateralId, amount, false);
@@ -31,18 +31,16 @@ contract SGLLendingCommon is SGLCommon {
         uint256 oldTotalCollateralShare = totalCollateralShare;
         userCollateralShare[to] += share;
         totalCollateralShare = oldTotalCollateralShare + share;
-        _yieldBoxShares[to][COLLATERAL_SIG] += share;
 
-        if (!multiHopLeverage) {
-            _addTokens(
-                from,
-                to,
-                collateralId,
-                share,
-                oldTotalCollateralShare,
-                skim
-            );
-        }
+        _addTokens(
+            from,
+            to,
+            collateralId,
+            share,
+            oldTotalCollateralShare,
+            skim
+        );
+
         emit LogAddCollateral(skim ? address(yieldBox) : from, to, share);
     }
 
@@ -56,11 +54,6 @@ contract SGLLendingCommon is SGLCommon {
         totalCollateralShare -= share;
         emit LogRemoveCollateral(from, to, share);
         yieldBox.transfer(address(this), to, collateralId, share);
-        if (share > _yieldBoxShares[from][COLLATERAL_SIG]) {
-            _yieldBoxShares[from][COLLATERAL_SIG] = 0; //accrues in time
-        } else {
-            _yieldBoxShares[from][COLLATERAL_SIG] -= share;
-        }
     }
 
     /// @dev Concrete implementation of `borrow`.
@@ -72,7 +65,7 @@ contract SGLLendingCommon is SGLCommon {
         share = yieldBox.toShare(assetId, amount, false);
         Rebase memory _totalAsset = totalAsset;
         if (_totalAsset.base < 1000) revert MinLimit();
-        _totalAsset.elastic -= uint128(share);
+        _totalAsset.elastic -= share.toUint128();
         totalAsset = _totalAsset;
 
         uint256 feeAmount = (amount * borrowOpeningFee) / FEE_PRECISION; // A flat % fee is charged for any borrow
@@ -111,13 +104,7 @@ contract SGLLendingCommon is SGLCommon {
         uint256 share = yieldBox.toShare(assetId, amount, true);
         uint128 totalShare = totalAsset.elastic;
         _addTokens(from, to, assetId, share, uint256(totalShare), skim);
-        totalAsset.elastic = totalShare + uint128(share);
-
-        if (share > _yieldBoxShares[from][ASSET_SIG]) {
-            _yieldBoxShares[from][ASSET_SIG] = 0; //accrues in time
-        } else {
-            _yieldBoxShares[from][ASSET_SIG] -= share;
-        }
+        totalAsset.elastic = totalShare + share.toUint128();
 
         emit LogRepay(skim ? address(yieldBox) : from, to, amount, part);
     }

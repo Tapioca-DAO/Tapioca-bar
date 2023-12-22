@@ -11,8 +11,6 @@ import "./SGLLeverage.sol";
 import "tapioca-periph/contracts/interfaces/ISendFrom.sol";
 import "tapioca-sdk/dist/contracts/libraries/LzLib.sol";
 
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-
 // solhint-disable max-line-length
 
 /*
@@ -30,8 +28,9 @@ __/\\\\\\\\\\\\\\\_____/\\\\\\\\\_____/\\\\\\\\\\\\\____/\\\\\\\\\\\_______/\\\\
 */
 
 /// @title Tapioca market
-contract Singularity is SGLCommon, ReentrancyGuard {
+contract Singularity is SGLCommon {
     using RebaseLibrary for Rebase;
+    using SafeCast for uint256;
 
     // ************ //
     // *** VARS *** //
@@ -61,6 +60,8 @@ contract Singularity is SGLCommon, ReentrancyGuard {
     error TransferFailed();
     error NotValid();
     error ModuleNotSet();
+    error NotAuthorized();
+    error SameState();
 
     /// @notice The init function that acts as a constructor
     function init(bytes calldata data) external onlyOnce {
@@ -175,7 +176,7 @@ contract Singularity is SGLCommon, ReentrancyGuard {
         maximumInterestPerSecond = 317097920000; // approx 1000% APR
         interestElasticity = 28800e36; // Half or double in 28800 seconds (8 hours) if linear
         startingInterestPerSecond = minimumInterestPerSecond;
-        accrueInfo.interestPerSecond = uint64(startingInterestPerSecond); // 1% APR, with 1e18 being 100%
+        accrueInfo.interestPerSecond = startingInterestPerSecond; // 1% APR, with 1e18 being 100%
         updateExchangeRate();
         //default fees
         callerFee = 1000; // 1%
@@ -212,19 +213,6 @@ contract Singularity is SGLCommon, ReentrancyGuard {
         uint256 allShare = totalAsset.elastic +
             yieldBox.toShare(tokenId, totalBorrow.elastic, true);
         share = (amount * allShare) / totalAsset.base;
-    }
-
-    /// @notice returns Total yieldBox shares for user
-    /// @param _user The user to check shares for
-    /// @param _assetId The asset id to check shares for
-    /// @return shares value
-    function yieldBoxShares(
-        address _user,
-        uint256 _assetId
-    ) external view returns (uint256) {
-        bytes32 sig = _assetId == assetId ? ASSET_SIG : COLLATERAL_SIG;
-        return
-            yieldBox.balanceOf(_user, _assetId) + _yieldBoxShares[_user][sig];
     }
 
     // ************************ //
@@ -281,8 +269,8 @@ contract Singularity is SGLCommon, ReentrancyGuard {
         fraction = _addAsset(from, to, skim, share);
     }
 
-    /// @notice Removes an asset from msg.sender and transfers it to `to`.
-    /// @param from Account to debit Assets from.
+    /// @notice Removes an asset from `from` and transfers it to `to`.
+    /// @param from Account to debit assets from.
     /// @param to The user that receives the removed assets.
     /// @param fraction The amount/fraction of assets held to remove.
     /// @return share The amount of shares transferred to `to`.
@@ -292,7 +280,7 @@ contract Singularity is SGLCommon, ReentrancyGuard {
         uint256 fraction
     ) external optionNotPaused(PauseType.RemoveAsset) returns (uint256 share) {
         _accrue();
-        share = _removeAsset(from, to, fraction, true);
+        share = _removeAsset(from, to, fraction);
         _allowedLend(from, share);
     }
 
@@ -433,9 +421,12 @@ contract Singularity is SGLCommon, ReentrancyGuard {
         amountOut = abi.decode(result, (uint256));
     }
 
-    /// @notice liquidates a position where collateral value is less than the borrowed amount
-    /// @param user to liquidate
-    /// @param receiver funds receiver
+    /// @notice liquidates a position for which the collateral's value is less than the borrowed value
+    /// @dev liquidation bonus is included in the computation
+    /// @param user the address to liquidate
+    /// @param receiver the address which receives the output
+    /// @param liquidatorReceiver the IMarketLiquidatorReceiver executor
+    /// @param liquidatorReceiverData the IMarketLiquidatorReceiver executor data
     function liquidateBadDebt(
         address user,
         address receiver,
@@ -457,6 +448,8 @@ contract Singularity is SGLCommon, ReentrancyGuard {
     /// @notice Entry point for liquidations.
     /// @param users An array of user addresses.
     /// @param maxBorrowParts A one-to-one mapping to `users`, contains maximum (partial) borrow amounts (to liquidate) of the respective user.
+    /// @param liquidatorReceivers the IMarketLiquidatorReceiver executors list
+    /// @param liquidatorReceiverDatas the IMarketLiquidatorReceiver executors' data list
     function liquidate(
         address[] calldata users,
         uint256[] calldata maxBorrowParts,
@@ -478,6 +471,32 @@ contract Singularity is SGLCommon, ReentrancyGuard {
     // *********************** //
     // *** OWNER FUNCTIONS *** //
     // *********************** //
+    /// @notice updates the pause state of the contract
+    /// @dev can only be called by the conservator
+    /// @param val the new value
+    function updatePause(
+        PauseType _type,
+        bool val,
+        bool resetAccrueTimestmap
+    ) external {
+        if (msg.sender != conservator) revert NotAuthorized();
+        if (val == pauseOptions[_type]) revert SameState();
+        emit PausedUpdated(_type, pauseOptions[_type], val);
+        pauseOptions[_type] = val;
+
+        // In case of 'unpause', `lastAccrued` is set to block.timestamp
+        // Valid for all action types that has an impact on debt or supply
+        if (
+            !val &&
+            (_type != PauseType.AddCollateral &&
+                _type != PauseType.RemoveCollateral)
+        ) {
+            accrueInfo.lastAccrued = resetAccrueTimestmap
+                ? block.timestamp.toUint64()
+                : accrueInfo.lastAccrued;
+        }
+    }
+
     /// @notice rescues unused ETH from the contract
     /// @param amount the amount to rescue
     /// @param to the recipient
@@ -488,6 +507,7 @@ contract Singularity is SGLCommon, ReentrancyGuard {
 
     /// @notice Transfers fees to penrose
     /// @dev can only be called by the owner
+    /// @return feeShares the amount of fees in shares withdrawn under Penrose
     function refreshPenroseFees()
         external
         onlyOwner
@@ -504,7 +524,7 @@ contract Singularity is SGLCommon, ReentrancyGuard {
             emit LogWithdrawFees(_feeTo, _feesEarnedFraction);
         }
 
-        feeShares = _removeAsset(_feeTo, msg.sender, balanceOf[_feeTo], false);
+        feeShares = _removeAsset(_feeTo, msg.sender, balanceOf[_feeTo]);
     }
 
     /// @notice sets Singularity specific configuration
@@ -520,6 +540,8 @@ contract Singularity is SGLCommon, ReentrancyGuard {
         uint64 _maximumInterestPerSecond,
         uint256 _interestElasticity
     ) external onlyOwner {
+        _accrue();
+
         if (_borrowOpeningFee > FEE_PRECISION) revert NotValid();
         emit LogBorrowingFee(borrowOpeningFee, _borrowOpeningFee);
         borrowOpeningFee = _borrowOpeningFee;

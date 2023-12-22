@@ -9,11 +9,13 @@ import {IUSDOBase} from "tapioca-periph/contracts/interfaces/IUSDO.sol";
 import "tapioca-periph/contracts/interfaces/ISwapper.sol";
 import "tapioca-periph/contracts/interfaces/ITapiocaOFT.sol";
 import "tapioca-periph/contracts/interfaces/ISingularity.sol";
+import "tapioca-periph/contracts/libraries/SafeApprove.sol";
 
 import "./USDOCommon.sol";
 
 contract USDOLeverageDestinationModule is USDOCommon {
     using SafeERC20 for IERC20;
+    using SafeApprove for address;
 
     constructor(
         address _lzEndpoint,
@@ -21,7 +23,12 @@ contract USDOLeverageDestinationModule is USDOCommon {
         ICluster _cluster
     ) BaseUSDOStorage(_lzEndpoint, _yieldBox, _cluster) {}
 
-    /// @dev destination call for USDOLeverageModule.sendForLeverage
+    /// @notice destination call for USDOLeverageModule.sendForLeverage
+    /// @param module USDOLeverageDestination module address
+    /// @param _srcChainId LayerZero source chain id
+    /// @param _srcAddress LayerZero source chain address
+    /// @param _nonce LayerZero current nonce
+    /// @param _payload received payload
     function leverageUp(
         address module,
         uint16 _srcChainId,
@@ -110,8 +117,14 @@ contract USDOLeverageDestinationModule is USDOCommon {
         //swap from USDO
         if (externalData.swapper != address(0)) {
             if (!cluster.isWhitelisted(0, externalData.swapper))
-                revert SwapperNotAuthorized();
+                revert NotAuthorized(externalData.swapper);
         }
+        if (!cluster.isWhitelisted(0, externalData.tOft))
+            revert NotAuthorized(externalData.tOft);
+        if (!cluster.isWhitelisted(0, externalData.magnetar))
+            revert NotAuthorized(externalData.magnetar);
+        if (!cluster.isWhitelisted(0, externalData.srcMarket))
+            revert NotAuthorized(externalData.srcMarket);
 
         _approve(address(this), externalData.swapper, amount);
         ISwapper.SwapData memory _swapperData = ISwapper(externalData.swapper)
@@ -125,8 +138,7 @@ contract USDOLeverageDestinationModule is USDOCommon {
         //wrap into tOFT
         if (swapData.tokenOut != address(0)) {
             //skip approval for native
-            IERC20(swapData.tokenOut).approve(externalData.tOft, 0);
-            IERC20(swapData.tokenOut).approve(externalData.tOft, amountOut);
+            swapData.tokenOut.safeApprove(externalData.tOft, amountOut);
         }
         ITapiocaOFTBase(externalData.tOft).wrap{
             value: swapData.tokenOut == address(0) ? amountOut : 0

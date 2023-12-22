@@ -68,7 +68,7 @@ contract SGLLeverage is SGLLendingCommon {
             false
         );
         _allowedBorrow(from, collateralShare);
-        _addCollateral(from, from, false, 0, collateralShare, false);
+        _addCollateral(from, from, false, 0, collateralShare);
     }
 
     /// @notice Lever down: Sell collateral to repay debt; excess goes to YB
@@ -89,6 +89,7 @@ contract SGLLeverage is SGLLendingCommon {
     {
         if (address(leverageExecutor) == address(0))
             revert LeverageExecutorNotValid();
+
         _allowedBorrow(from, share);
         _removeCollateral(from, address(this), share);
         yieldBox.withdraw(

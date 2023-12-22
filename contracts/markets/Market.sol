@@ -121,7 +121,7 @@ abstract contract Market is MarketERC20, BoringOwnable {
     /// @notice event emitted when oracle data is updated
     event OracleDataUpdated();
     /// @notice event emitted when oracle is updated
-    event OracleUpdated();
+    event OracleUpdated(address newAddr);
     /// @notice event emitted when a position is liquidated
     event Liquidated(
         address indexed liquidator,
@@ -136,6 +136,8 @@ abstract contract Market is MarketERC20, BoringOwnable {
         uint256 indexed oldVal,
         uint256 indexed newVal
     );
+    /// @notice event emitted on setMarketConfig updates
+    event ValueUpdated(uint256 indexed valType, uint256 indexed _newVal);
 
     modifier optionNotPaused(PauseType _type) {
         require(!pauseOptions[_type], "Market: paused");
@@ -184,6 +186,17 @@ abstract contract Market is MarketERC20, BoringOwnable {
 
     /// @notice sets common market configuration
     /// @dev values are updated only if > 0 or not address(0)
+    /// @param _oracle oracle address
+    /// @param _oracleData oracle data
+    /// @param _conservator conservator address; conservator is allowed to pause/unpause the contract
+    /// @param _callerFee deprecated; todo: remove
+    /// @param _protocolFee protocol fee percentage
+    /// @param _liquidationBonusAmount extra amount factored in the closing factor computation
+    /// @param _minLiquidatorReward minimum reward percentage a liquidator can receive
+    /// @param _maxLiquidatorReward maximum reward percentage a liquidator can receive
+    /// @param _totalBorrowCap max amount that can be borrowed from the contract
+    /// @param _collateralizationRate the new collateralization rate value (75000 is 75%)
+    /// @param _liquidationCollateralizationRate the new liquidation collateralization rate value (75000 is 75%)
     function setMarketConfig(
         IOracle _oracle,
         bytes calldata _oracleData,
@@ -199,7 +212,7 @@ abstract contract Market is MarketERC20, BoringOwnable {
     ) external onlyOwner {
         if (address(_oracle) != address(0)) {
             oracle = _oracle;
-            emit OracleUpdated();
+            emit OracleUpdated(address(_oracle));
         }
 
         if (_oracleData.length > 0) {
@@ -215,11 +228,13 @@ abstract contract Market is MarketERC20, BoringOwnable {
         if (_callerFee > 0) {
             require(_callerFee <= FEE_PRECISION, "Market: not valid");
             callerFee = _callerFee;
+            emit ValueUpdated(1, _callerFee);
         }
 
         if (_protocolFee > 0) {
             require(_protocolFee <= FEE_PRECISION, "Market: not valid");
             protocolFee = _protocolFee;
+            emit ValueUpdated(2, _protocolFee);
         }
 
         if (_liquidationBonusAmount > 0) {
@@ -228,6 +243,7 @@ abstract contract Market is MarketERC20, BoringOwnable {
                 "Market: not valid"
             );
             liquidationBonusAmount = _liquidationBonusAmount;
+            emit ValueUpdated(3, _liquidationBonusAmount);
         }
 
         if (_minLiquidatorReward > 0) {
@@ -237,6 +253,7 @@ abstract contract Market is MarketERC20, BoringOwnable {
                 "Market: not valid"
             );
             minLiquidatorReward = _minLiquidatorReward;
+            emit ValueUpdated(4, _minLiquidatorReward);
         }
 
         if (_maxLiquidatorReward > 0) {
@@ -246,11 +263,13 @@ abstract contract Market is MarketERC20, BoringOwnable {
                 "Market: not valid"
             );
             maxLiquidatorReward = _maxLiquidatorReward;
+            emit ValueUpdated(5, _maxLiquidatorReward);
         }
 
         if (_totalBorrowCap > 0) {
             emit LogBorrowCapUpdated(totalBorrowCap, _totalBorrowCap);
             totalBorrowCap = _totalBorrowCap;
+            emit ValueUpdated(6, _totalBorrowCap);
         }
 
         if (_collateralizationRate > 0) {
@@ -263,6 +282,7 @@ abstract contract Market is MarketERC20, BoringOwnable {
                 "Market: collateralizationRate too big"
             );
             collateralizationRate = _collateralizationRate;
+            emit ValueUpdated(7, _collateralizationRate);
         }
 
         if (_liquidationCollateralizationRate > 0) {
@@ -270,24 +290,22 @@ abstract contract Market is MarketERC20, BoringOwnable {
                 _liquidationCollateralizationRate >= collateralizationRate,
                 "Market: liquidationCollateralizationRate too small"
             );
+            require(
+                _liquidationCollateralizationRate <= FEE_PRECISION,
+                "Market: not valid"
+            );
             liquidationCollateralizationRate = _liquidationCollateralizationRate;
+            emit ValueUpdated(8, _liquidationCollateralizationRate);
         }
-    }
-
-    /// @notice updates the pause state of the contract
-    /// @dev can only be called by the conservator
-    /// @param val the new value
-    function updatePause(PauseType _type, bool val) external {
-        require(msg.sender == conservator, "Market: unauthorized");
-        require(val != pauseOptions[_type], "Market: same state");
-        emit PausedUpdated(_type, pauseOptions[_type], val);
-        pauseOptions[_type] = val;
     }
 
     // ********************** //
     // *** VIEW FUNCTIONS *** //
     // ********************** //
     /// @notice returns the maximum liquidatable amount for user
+    /// @param borrowPart amount borrowed
+    /// @param collateralPartInAsset collateral's value in borrowed asset
+    /// @param ratesPrecision collateralizationRate and liquidationCollateralizationRate precision
     function computeClosingFactor(
         uint256 borrowPart,
         uint256 collateralPartInAsset,
@@ -327,6 +345,8 @@ abstract contract Market is MarketERC20, BoringOwnable {
     /// @param user The user to check solvency.
     /// @param _exchangeRate the exchange rate asset/collateral.
     /// @return amountToSolvency the amount of collateral to be solvent.
+    /// @return minTVL the asset value of the collateral amount factored by collateralizationRate
+    /// @return maxTVL the asset value of the collateral amount.
     function computeTVLInfo(
         address user,
         uint256 _exchangeRate
@@ -369,6 +389,7 @@ abstract contract Market is MarketERC20, BoringOwnable {
         if (updated) {
             require(rate != 0, "Market: invalid rate");
             exchangeRate = rate;
+            rateTimestamp = block.timestamp;
             emit LogExchangeRate(rate);
         } else {
             require(
@@ -378,12 +399,10 @@ abstract contract Market is MarketERC20, BoringOwnable {
             // Return the old rate if fetching wasn't successful & rate isn't too old
             rate = exchangeRate;
         }
-
-        rateTimestamp = block.timestamp;
     }
 
     /// @notice computes the possible liquidator reward
-    /// @notice user the user for which a liquidation operation should be performed
+    /// @param user the user for which a liquidation operation should be performed
     /// @param _exchangeRate the exchange rate asset/collateral to use for internal computations
     function computeLiquidatorReward(
         address user,
@@ -496,10 +515,10 @@ abstract contract Market is MarketERC20, BoringOwnable {
         if (borrowed == 0) return 0;
         if (startTVLInAsset == 0) return 0;
 
+        borrowed = (borrowed * totalBorrow.elastic) / totalBorrow.base;
+
         if (borrowed < startTVLInAsset) return 0;
         if (borrowed >= maxTVLInAsset) return minLiquidatorReward;
-
-        borrowed = (borrowed * totalBorrow.elastic) / totalBorrow.base;
 
         uint256 rewardPercentage = ((borrowed - startTVLInAsset) *
             FEE_PRECISION) / (maxTVLInAsset - startTVLInAsset);
@@ -522,11 +541,14 @@ abstract contract Market is MarketERC20, BoringOwnable {
         uint256 borrowAmount,
         uint256 assetDecimals
     ) internal view returns (uint256) {
-        uint256 maxBorrowabe = _computeMaxBorrowableAmount(user, _exchangeRate);
+        uint256 maxBorrowable = _computeMaxBorrowableAmount(
+            user,
+            _exchangeRate
+        );
 
         uint256 shareRatio = _getRatio(
             borrowAmount,
-            maxBorrowabe,
+            maxBorrowable,
             assetDecimals
         );
         return (shareRatio * userCollateralShare[user]) / (10 ** assetDecimals);

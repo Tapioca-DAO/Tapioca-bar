@@ -63,7 +63,7 @@ contract USDOFlashloanHelper is IERC3156FlashLender, BoringOwnable {
         return _allowances[owner][spender];
     }
 
-    /// @notice returns the maximum amount of tokens available for a flash mint
+    /// @notice returns the maximum amount of USDO available for a flash mint
     function maxFlashLoan(address) public view override returns (uint256) {
         if (usdo.totalSupply() > maxFlashMint) {
             return maxFlashMint;
@@ -73,13 +73,13 @@ contract USDOFlashloanHelper is IERC3156FlashLender, BoringOwnable {
     }
 
     /// @notice returns the flash mint fee
-    /// @param token USDO address
+    /// @param _usdo USDO address
     /// @param amount the amount for which fee is computed
     function flashFee(
-        address token,
+        address _usdo,
         uint256 amount
     ) public view override returns (uint256) {
-        if (token != address(usdo)) revert NotValid();
+        if (_usdo != address(usdo)) revert NotValid();
         return (amount * flashMintFee) / FLASH_MINT_FEE_PRECISION;
     }
 
@@ -125,8 +125,11 @@ contract USDOFlashloanHelper is IERC3156FlashLender, BoringOwnable {
             FLASH_MINT_CALLBACK_SUCCESS
         ) revert Failed();
 
+        //we burn from (this)
+        usdo.transferFrom(address(receiver), address(this), amount);
+
         // Stack to deep
-        // usdo.burn(address(receiver), amount)
+        // usdo.burn(address(this), amount)
         assembly {
             // Free memory pointer
             let freeMemPointer := mload(0x40)
@@ -134,7 +137,7 @@ contract USDOFlashloanHelper is IERC3156FlashLender, BoringOwnable {
             // keccak256("burn(address,uint256)")
             mstore(freeMemPointer, shl(224, 0x9dc29fac))
 
-            mstore(add(freeMemPointer, 4), receiver)
+            mstore(add(freeMemPointer, 4), address())
             mstore(add(freeMemPointer, 36), amount)
 
             // Execute the call

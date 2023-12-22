@@ -9,6 +9,7 @@ import "tapioca-periph/contracts/interfaces/IGmxRewardRouterV2.sol";
 import "./BaseLeverageExecutor.sol";
 
 contract AssetToSGLPLeverageExecutor is BaseLeverageExecutor {
+    using SafeApprove for address;
     IERC20 public immutable usdc;
 
     IGmxGlpManager private immutable glpManager;
@@ -150,8 +151,7 @@ contract AssetToSGLPLeverageExecutor is BaseLeverageExecutor {
         uint256 minGlpAmountOut,
         address glpAddress
     ) private returns (uint256 glpAmount) {
-        IERC20(usdcAddress).approve(address(glpManager), 0);
-        IERC20(usdcAddress).approve(address(glpManager), usdcAmount);
+        usdcAddress.safeApprove(address(glpManager), usdcAmount);
         glpAmount = glpRewardRouter.mintAndStakeGlp(
             usdcAddress,
             usdcAmount,
@@ -168,8 +168,7 @@ contract AssetToSGLPLeverageExecutor is BaseLeverageExecutor {
         address usdcAddress,
         uint256 minUsdcAmountOut
     ) private returns (uint256 usdcAmount) {
-        IERC20(glpAddress).approve(address(glpManager), 0);
-        IERC20(glpAddress).approve(address(glpManager), glpAmount);
+        glpAddress.safeApprove(address(glpManager), glpAmount);
         usdcAmount = glpRewardRouter.unstakeAndRedeemGlp(
             usdcAddress,
             glpAmount,
@@ -185,10 +184,8 @@ contract AssetToSGLPLeverageExecutor is BaseLeverageExecutor {
         address from,
         address to,
         uint256 amount
-    ) private {
-        IERC20(token).approve(address(yieldBox), 0);
-        IERC20(token).approve(address(yieldBox), amount);
-
+    ) internal override {
+        token.safeApprove(address(yieldBox), amount);
         yieldBox.depositAsset(id, from, to, amount, 0);
     }
 }

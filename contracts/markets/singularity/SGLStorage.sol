@@ -5,9 +5,13 @@ import "@boringcrypto/boring-solidity/contracts/BoringOwnable.sol";
 import "@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol";
 import "@boringcrypto/boring-solidity/contracts/libraries/BoringRebase.sol";
 
+import "@openzeppelin/contracts/utils/math/SafeCast.sol";
+
 import "tapioca-periph/contracts/interfaces/ISingularity.sol";
 import "tapioca-periph/contracts/interfaces/ILiquidationQueue.sol";
 import "tapioca-sdk/dist/contracts/YieldBox/contracts/YieldBox.sol";
+
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 import "../Market.sol";
 
@@ -27,9 +31,10 @@ __/\\\\\\\\\\\\\\\_____/\\\\\\\\\_____/\\\\\\\\\\\\\____/\\\\\\\\\\\_______/\\\\
 
 */
 
-contract SGLStorage is BoringOwnable, Market {
+contract SGLStorage is BoringOwnable, Market, ReentrancyGuard {
     using RebaseLibrary for Rebase;
     using BoringERC20 for IERC20;
+    using SafeCast for uint256;
 
     // ************ //
     // *** VARS *** //
@@ -40,7 +45,6 @@ contract SGLStorage is BoringOwnable, Market {
     Rebase public totalAsset; // elastic = yieldBox shares held by the Singularity, base = Total fractions held by asset suppliers
 
     // YieldBox shares, from -> Yb asset type -> shares
-    mapping(address => mapping(bytes32 => uint256)) internal _yieldBoxShares;
     bytes32 internal ASSET_SIG =
         0x0bd4060688a1800ae986e4840aebc924bb40b5bf44de4583df2257220b54b77c; // keccak256("asset")
     bytes32 internal COLLATERAL_SIG =

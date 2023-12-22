@@ -6,6 +6,8 @@ import "./BBStorage.sol";
 
 contract BBCommon is BBStorage {
     using RebaseLibrary for Rebase;
+    using SafeCast for uint256;
+    using SafeApprove for address;
 
     // ************** //
     // *** ERRORS *** //
@@ -33,8 +35,8 @@ contract BBCommon is BBStorage {
 
         if (_currentDebt >= _maxDebtPoint) return maxDebtRate;
 
-        uint256 debtPercentage = ((_currentDebt - debtStartPoint) *
-            DEBT_PRECISION) / (_maxDebtPoint - debtStartPoint);
+        uint256 debtPercentage = (_currentDebt * DEBT_PRECISION) /
+            _maxDebtPoint;
         uint256 debt = ((maxDebtRate - minDebtRate) * debtPercentage) /
             DEBT_PRECISION +
             minDebtRate;
@@ -66,9 +68,9 @@ contract BBCommon is BBStorage {
         // Calculate fees
         _totalBorrow = totalBorrow;
         uint256 extraAmount = (uint256(_totalBorrow.elastic) *
-            uint64(getDebtRate() / 31536000) *
+            (getDebtRate() / 31536000).toUint64() *
             elapsedTime) / 1e18;
-        _totalBorrow.elastic += uint128(extraAmount);
+        _totalBorrow.elastic += extraAmount.toUint128();
     }
 
     function _accrue() internal override {
@@ -80,8 +82,8 @@ contract BBCommon is BBStorage {
         }
         //update debt rate
         uint256 annumDebtRate = getDebtRate();
-        _accrueInfo.debtRate = uint64(annumDebtRate / 31536000); //per second
-        _accrueInfo.lastAccrued = uint64(block.timestamp);
+        _accrueInfo.debtRate = (annumDebtRate / 31536000).toUint64(); //per second
+        _accrueInfo.lastAccrued = block.timestamp.toUint64();
 
         Rebase memory _totalBorrow = totalBorrow;
 
@@ -92,7 +94,7 @@ contract BBCommon is BBStorage {
                 _accrueInfo.debtRate *
                 elapsedTime) /
             1e18;
-        _totalBorrow.elastic += uint128(extraAmount);
+        _totalBorrow.elastic += extraAmount.toUint128();
 
         totalBorrow = _totalBorrow;
         accrueInfo = _accrueInfo;
@@ -125,21 +127,18 @@ contract BBCommon is BBStorage {
         }
     }
 
+    /// @notice deposits an amount to YieldBox
+    /// @param token the IERC20 token to deposit
+    /// @param to the shares receiver
+    /// @param id the IERC20 YieldBox asset id
+    /// @param amount the amount to deposit
     function _depositAmountToYb(
         IERC20 token,
         address to,
         uint256 id,
         uint256 amount
     ) internal returns (uint256 share) {
-        token.approve(address(yieldBox), 0);
-        token.approve(address(yieldBox), amount);
+        address(token).safeApprove(address(yieldBox), amount);
         (, share) = yieldBox.depositAsset(id, address(this), to, amount, 0);
-    }
-
-    function _isWhitelisted(
-        uint16 _chainId,
-        address _contract
-    ) internal view returns (bool) {
-        return ICluster(penrose.cluster()).isWhitelisted(_chainId, _contract);
     }
 }
