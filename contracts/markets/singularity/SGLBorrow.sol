@@ -6,11 +6,6 @@ import "./SGLLendingCommon.sol";
 contract SGLBorrow is SGLLendingCommon {
     using RebaseLibrary for Rebase;
 
-    // ************** //
-    // *** ERRORS *** //
-    // ************** //
-    error AllowanceNotValid();
-
     // ************************ //
     // *** PUBLIC FUNCTIONS *** //
     // ************************ //
@@ -69,26 +64,6 @@ contract SGLBorrow is SGLLendingCommon {
 
         _accrue();
 
-        uint256 partInAmount;
-        Rebase memory _totalBorrow = totalBorrow;
-        (_totalBorrow, partInAmount) = _totalBorrow.sub(part, true);
-
-        uint256 allowanceShare = _computeAllowanceAmountInAsset(
-            to,
-            exchangeRate,
-            partInAmount,
-            _safeDecimals(asset)
-        );
-        if (allowanceShare == 0) revert AllowanceNotValid();
-        _allowedBorrow(from, allowanceShare);
-
         amount = _repay(from, to, skim, part);
-    }
-
-    function _safeDecimals(IERC20 token) private view returns (uint8) {
-        (bool success, bytes memory data) = address(token).staticcall(
-            abi.encodeWithSelector(0x313ce567)
-        ); //decimals() selector
-        return success && data.length == 32 ? abi.decode(data, (uint8)) : 18;
     }
 }

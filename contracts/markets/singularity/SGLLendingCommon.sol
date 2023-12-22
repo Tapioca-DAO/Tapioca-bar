@@ -13,6 +13,7 @@ contract SGLLendingCommon is SGLCommon {
     // ************** //
     error BorrowCapReached();
     error NothingToRepay();
+    error AllowanceNotValid();
 
     // ************************** //
     // *** PRIVATE FUNCTIONS *** //
@@ -97,6 +98,19 @@ contract SGLLendingCommon is SGLCommon {
         }
         if (part == 0) revert NothingToRepay();
 
+        uint256 partInAmount;
+        Rebase memory _totalBorrow = totalBorrow;
+        (_totalBorrow, partInAmount) = _totalBorrow.sub(part, true);
+
+        uint256 allowanceShare = _computeAllowanceAmountInAsset(
+            to,
+            exchangeRate,
+            partInAmount,
+            _safeDecimals(asset)
+        );
+        if (allowanceShare == 0) revert AllowanceNotValid();
+        _allowedBorrow(from, allowanceShare);
+
         (totalBorrow, amount) = totalBorrow.sub(part, true);
 
         userBorrowPart[to] -= part;
@@ -107,5 +121,12 @@ contract SGLLendingCommon is SGLCommon {
         totalAsset.elastic = totalShare + share.toUint128();
 
         emit LogRepay(skim ? address(yieldBox) : from, to, amount, part);
+    }
+
+    function _safeDecimals(IERC20 token) internal view returns (uint8) {
+        (bool success, bytes memory data) = address(token).staticcall(
+            abi.encodeWithSelector(0x313ce567)
+        ); //decimals() selector
+        return success && data.length == 32 ? abi.decode(data, (uint8)) : 18;
     }
 }
