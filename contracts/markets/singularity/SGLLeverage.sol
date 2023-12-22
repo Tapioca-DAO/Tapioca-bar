@@ -89,6 +89,7 @@ contract SGLLeverage is SGLLendingCommon {
     {
         if (address(leverageExecutor) == address(0))
             revert LeverageExecutorNotValid();
+
         _allowedBorrow(from, share);
         _removeCollateral(from, address(this), share);
         yieldBox.withdraw(

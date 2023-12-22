@@ -32,6 +32,15 @@ contract SGLLendingCommon is SGLCommon {
         userCollateralShare[to] += share;
         totalCollateralShare = oldTotalCollateralShare + share;
 
+        _addTokens(
+            from,
+            to,
+            collateralId,
+            share,
+            oldTotalCollateralShare,
+            skim
+        );
+
         emit LogAddCollateral(skim ? address(yieldBox) : from, to, share);
     }
 
