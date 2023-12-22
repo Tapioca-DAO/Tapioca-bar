@@ -16,6 +16,7 @@ import { YieldBox } from '../gitsub_tapioca-sdk/src/typechain/YieldBox';
 import { BigBang } from '../typechain';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { BigNumber } from 'ethers';
+import { Market } from 'tapioca-sdk/dist/typechain/tapioca-bar';
 
 describe('BigBang test', () => {
     it.skip('should test liquidator reward', async () => {
@@ -240,6 +241,193 @@ describe('BigBang test', () => {
     });
 
     describe('borrow() & repay()', () => {
+        it.only('should borrow and repay on a 100% LTV market', async () => {
+            const {
+                registerBigBangMarket,
+                weth,
+                wethAssetId,
+                usdc,
+                usdcAssetId,
+                yieldBox,
+                deployer,
+                eoa1,
+                mediumRiskBigBangMC,
+                bar,
+                usd0WethOracle,
+                multiSwapper,
+                cluster,
+                registerUsd0Contract,
+                timeTravel,
+                __wethUsdcPrice,
+                twTap,
+            } = await loadFixture(register);
+
+            const chainId = await hre.getChainId();
+            const { usd0, lzEndpointContract, usd0Flashloan } =
+                await registerUsd0Contract(
+                    chainId,
+                    yieldBox.address,
+                    cluster.address,
+                    deployer.address,
+                    false,
+                );
+            await bar.setUsdoToken(usd0.address);
+            await usd0.setMinterStatus(bar.address, true);
+
+            const wethUsdoBBData = await registerBigBangMarket(
+                mediumRiskBigBangMC.address,
+                yieldBox,
+                bar,
+                weth,
+                wethAssetId,
+                usd0WethOracle,
+                multiSwapper.address,
+                cluster.address,
+                ethers.utils.parseEther('1'),
+                0,
+                0,
+                0,
+                0, //ignored, as this is the main market
+                (1e5).toString(),
+                (1e5).toString(),
+                false,
+            );
+            const wethUsdoBigBangMarket = wethUsdoBBData.bigBangMarket;
+            await usd0.setMinterStatus(wethUsdoBigBangMarket.address, true);
+            await usd0.setBurnerStatus(wethUsdoBigBangMarket.address, true);
+
+            const setAssetOracleFn =
+                wethUsdoBigBangMarket.interface.encodeFunctionData(
+                    'setAssetOracle',
+                    [usd0WethOracle.address, '0x'],
+                );
+
+            await bar.executeMarketFn(
+                [wethUsdoBigBangMarket.address],
+                [setAssetOracleFn],
+                true,
+            );
+
+            const setLiquidationPaused =
+                wethUsdoBigBangMarket.interface.encodeFunctionData(
+                    'updatePause',
+                    [4, true],
+                );
+            await bar.executeMarketFn(
+                [wethUsdoBigBangMarket.address],
+                [setLiquidationPaused],
+                true,
+            );
+
+            //approve collaterals for yieldBox
+            await weth.approve(yieldBox.address, ethers.constants.MaxUint256);
+            await usdc.approve(yieldBox.address, ethers.constants.MaxUint256);
+            await yieldBox.setApprovalForAll(
+                wethUsdoBigBangMarket.address,
+                true,
+            );
+
+            //mint collaterals
+            const wethMintVal = ethers.BigNumber.from((1e18).toString()).mul(
+                10,
+            );
+            await weth.freeMint(wethMintVal);
+
+            //deposit collateral amounts to yieldBox
+            const wethCollateralShare = await yieldBox.toShare(
+                wethAssetId,
+                wethMintVal,
+                false,
+            );
+            await yieldBox.depositAsset(
+                wethAssetId,
+                deployer.address,
+                deployer.address,
+                0,
+                wethCollateralShare,
+            );
+
+            //add collateral to markets
+            await wethUsdoBigBangMarket.addCollateral(
+                deployer.address,
+                deployer.address,
+                false,
+                0,
+                wethCollateralShare,
+            );
+
+            //borrow from weth market
+            const wethMarketBorrowVal = wethMintVal
+                .mul(999)
+                .div(1000)
+                .mul(__wethUsdcPrice.div((1e18).toString()));
+
+            await wethUsdoBigBangMarket.borrow(
+                deployer.address,
+                deployer.address,
+                wethMarketBorrowVal,
+            );
+
+            const collateralShare =
+                await wethUsdoBigBangMarket.userCollateralShare(
+                    deployer.address,
+                );
+
+            const collateralAmount = await yieldBox.toAmount(
+                await wethUsdoBigBangMarket.collateralId(),
+                collateralShare,
+                false,
+            );
+            const exchangeRateData = await usd0WethOracle.peek('0x');
+
+            const collateralAmountInAsset =
+                (collateralAmount * (1e18 / 1e5) * 1e5) /
+                exchangeRateData[1] /
+                1e18;
+            expect(collateralAmountInAsset).to.be.closeTo(
+                wethMarketBorrowVal / 1e18,
+                1e2,
+            );
+
+            await timeTravel(1000 * 86400);
+            await wethUsdoBigBangMarket.accrue();
+
+            const solvencyInfo = await wethUsdoBigBangMarket.computeTVLInfo(
+                deployer.address,
+                exchangeRateData[1],
+            );
+            expect(solvencyInfo[0].gt(0)).to.be.true;
+
+            await expect(
+                wethUsdoBigBangMarket.liquidate(
+                    [deployer.address],
+                    [
+                        await wethUsdoBigBangMarket.userBorrowPart(
+                            deployer.address,
+                        ),
+                    ],
+                    [ethers.constants.AddressZero],
+                    ['0x'],
+                ),
+            ).to.be.revertedWith('Market: paused');
+
+            const part = await wethUsdoBigBangMarket.userBorrowPart(
+                deployer.address,
+            );
+            await wethUsdoBigBangMarket.repay(
+                deployer.address,
+                deployer.address,
+                false,
+                part.div(2),
+            );
+
+            const finalPart = await wethUsdoBigBangMarket.userBorrowPart(
+                deployer.address,
+            );
+
+            expect(finalPart.lt(part)).to.be.true;
+        });
+
         it('should borrow and repay from different senders', async () => {
             const {
                 wethBigBangMarket,

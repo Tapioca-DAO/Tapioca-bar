@@ -194,6 +194,8 @@ contract Singularity is SGLCommon, ReentrancyGuard {
         maximumTargetUtilization = 5e17;
         fullUtilizationMinusMax = FULL_UTILIZATION - maximumTargetUtilization;
         rateValidDuration = 24 hours;
+
+        conservator = owner;
     }
 
     // ********************** //

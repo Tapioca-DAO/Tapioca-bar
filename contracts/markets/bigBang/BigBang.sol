@@ -188,7 +188,7 @@ contract BigBang is BBCommon {
             ? _liquidationCollateralizationRate
             : 80000;
         require(
-            liquidationCollateralizationRate > collateralizationRate,
+            liquidationCollateralizationRate >= collateralizationRate,
             "BB: liquidation collateralization rate not valid"
         );
         EXCHANGE_RATE_PRECISION = _exchangeRatePrecision > 0
@@ -207,6 +207,8 @@ contract BigBang is BBCommon {
         minMintFeeStart = 1000000000000000000; // 1*1e18
 
         leverageExecutor = _leverageExecutor;
+
+        conservator = owner;
     }
 
     // ************************ //
