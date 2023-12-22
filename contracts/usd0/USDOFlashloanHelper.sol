@@ -137,7 +137,7 @@ contract USDOFlashloanHelper is IERC3156FlashLender, BoringOwnable {
             // keccak256("burn(address,uint256)")
             mstore(freeMemPointer, shl(224, 0x9dc29fac))
 
-            mstore(add(freeMemPointer, 4), address(this))
+            mstore(add(freeMemPointer, 4), address())
             mstore(add(freeMemPointer, 36), amount)
 
             // Execute the call

@@ -175,10 +175,7 @@ contract Penrose is BoringOwnable, BoringFactory {
         uint256 indexed _newRate
     );
     /// @notice event emitted when fees are deposited to twTap
-    event LogTwTapFeesDeposit(
-        uint256 indexed feeShares,
-        uint256 indexed ethAmount
-    );
+    event LogTwTapFeesDeposit(uint256 indexed amount);
     /// @notice event emitted when Cluster is set
     event ClusterSet(address indexed old, address indexed _new);
     /// @notice event emitted when total BB markets debt is computed
@@ -631,7 +628,7 @@ contract Penrose is BoringOwnable, BoringFactory {
     ) private {
         _asset.safeApprove(address(twTap), amount);
         twTap.distributeReward(rewardTokenId, amount);
-        emit LogTwTapFeesDeposit(feeShares, amount);
+        emit LogTwTapFeesDeposit(amount);
     }
 
     function getAllMasterContractClones(

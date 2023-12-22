@@ -147,7 +147,7 @@ abstract contract BaseLeverageExecutor is BoringOwnable {
         address from,
         address to,
         uint256 amount
-    ) internal {
+    ) internal virtual {
         token.safeApprove(address(yieldBox), amount);
         yieldBox.depositAsset(id, from, to, amount, 0);
     }

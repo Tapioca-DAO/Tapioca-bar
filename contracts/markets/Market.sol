@@ -303,7 +303,7 @@ abstract contract Market is MarketERC20, BoringOwnable {
     /// @dev can only be called by the conservator
     /// @param _type the PauseType value
     /// @param val the new value
-    function updatePause(PauseType _type, bool val) external {
+    function updatePause(PauseType _type, bool val) external virtual {
         require(msg.sender == conservator, "Market: unauthorized");
         require(val != pauseOptions[_type], "Market: same state");
         emit PausedUpdated(_type, pauseOptions[_type], val);

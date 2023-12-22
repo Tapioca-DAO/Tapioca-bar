@@ -434,7 +434,7 @@ contract BigBang is BBCommon {
     /// @notice updates the pause state of the contract
     /// @dev can only be called by the conservator
     /// @param val the new value
-    function updatePause(PauseType _type, bool val) external virtual {
+    function updatePause(PauseType _type, bool val) external virtual override {
         require(msg.sender == conservator, "Market: unauthorized");
         require(val != pauseOptions[_type], "Market: same state");
         emit PausedUpdated(_type, pauseOptions[_type], val);
