@@ -54,8 +54,6 @@ contract BBLendingCommon is BBCommon {
         uint256 amount,
         uint256 feeAmount
     ) internal returns (uint256 part, uint256 share) {
-        openingFees[to] += feeAmount;
-
         (totalBorrow, part) = totalBorrow.add(amount + feeAmount, true);
         require(
             totalBorrowCap == 0 || totalBorrow.elastic <= totalBorrowCap,
@@ -114,11 +112,6 @@ contract BBLendingCommon is BBCommon {
         }
         if (part == 0) revert NothingToRepay();
 
-        uint256 openingFee = _computeRepayFee(to, part);
-        if (openingFee >= part) revert RepayAmountNotValid();
-
-        openingFees[to] -= openingFee;
-
         uint256 amount;
         (totalBorrow, amount) = totalBorrow.sub(part, true);
         userBorrowPart[to] -= part;
@@ -131,27 +124,5 @@ contract BBLendingCommon is BBCommon {
         IUSDOBase(address(asset)).burn(address(this), amount);
 
         emit LogRepay(from, to, amountOut, part);
-    }
-
-    function _computeRepayFee(
-        address user,
-        uint256 repayPart
-    ) private view returns (uint256) {
-        uint256 _totalPart = userBorrowPart[user];
-
-        if (repayPart == _totalPart) {
-            return openingFees[user];
-        }
-
-        uint256 _assetDecimals = asset.safeDecimals();
-        uint256 repayRatio = _getRatio(repayPart, _totalPart, _assetDecimals);
-        //it can return 0 when numerator is very low compared to the denominator
-        if (repayRatio == 0) return 0;
-
-        uint256 openingFee = (repayRatio * openingFees[user]) /
-            (10 ** _assetDecimals);
-        if (openingFee > openingFees[user]) return openingFees[user];
-
-        return openingFee;
     }
 }
