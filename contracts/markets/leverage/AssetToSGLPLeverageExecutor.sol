@@ -184,7 +184,7 @@ contract AssetToSGLPLeverageExecutor is BaseLeverageExecutor {
         address from,
         address to,
         uint256 amount
-    ) private {
+    ) internal override {
         token.safeApprove(address(yieldBox), amount);
         yieldBox.depositAsset(id, from, to, amount, 0);
     }
