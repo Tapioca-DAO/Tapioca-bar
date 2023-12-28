@@ -71,12 +71,7 @@ contract MarketLiquidatorReceiver is IMarketLiquidatorReceiver, BoringOwnable {
             allowances[msg.sender][tokenIn] -= collateralAmount;
         }
 
-        uint256 _slippage = abi.decode(data, (uint256));
-        uint256 minTokenOutAmount = _getMinAmount(
-            tokenIn,
-            collateralAmount,
-            _slippage
-        );
+        uint256 minTokenOutAmount = abi.decode(data, (uint256));
 
         if (minTokenOutAmount == 0) revert NotValid();
 
@@ -158,26 +153,5 @@ contract MarketLiquidatorReceiver is IMarketLiquidatorReceiver, BoringOwnable {
         uint256 amount
     ) external onlyOwner {
         allowances[sender][tokenIn] -= amount;
-    }
-
-    function _getMinAmount(
-        address _tokenIn,
-        uint256 tokenInAmount,
-        uint256 _slippage
-    ) private returns (uint256 minTokenOutAmount) {
-        IOracle oracle = IOracle(oracles[_tokenIn].target);
-        (bool updated, uint256 rate) = oracle.get(oracles[_tokenIn].data);
-
-        if (updated && rate > 0) {
-            cachedRates[address(oracle)] = rate;
-        } else {
-            rate = cachedRates[address(oracle)];
-        }
-
-        if (rate == 0) revert ExchangeRateNotValid();
-
-        uint256 tokenOutAmount = (tokenInAmount * rate) /
-            oracles[_tokenIn].precision;
-        return tokenOutAmount - ((tokenOutAmount * _slippage) / 10_000); //50 is 0.5%
     }
 }
