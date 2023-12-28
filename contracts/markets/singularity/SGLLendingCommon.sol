@@ -73,6 +73,17 @@ contract SGLLendingCommon is SGLCommon {
 
         (totalBorrow, part) = totalBorrow.add(amount + feeAmount, true);
 
+        uint256 fullAssetAmount = yieldBox.toAmount(
+            assetId,
+            totalAsset.elastic,
+            false
+        ) + totalBorrow.elastic;
+
+        uint256 feeFraction = (feeAmount * totalAsset.base) /
+            (fullAssetAmount - feeAmount);
+        accrueInfo.feesEarnedFraction += uint128(feeFraction);
+        totalAsset.base = totalAsset.base + uint128(feeFraction);
+
         if (totalBorrowCap != 0) {
             if (totalBorrow.elastic > totalBorrowCap) revert BorrowCapReached();
         }
