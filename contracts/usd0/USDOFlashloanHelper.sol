@@ -16,7 +16,7 @@ contract USDOFlashloanHelper is IERC3156FlashLender, BoringOwnable {
     /// @notice returns the maximum amount of USDO that can be minted through the EIP-3156 flow
     uint256 public maxFlashMint;
 
-    uint256 private constant FLASH_MINT_FEE_PRECISION = 1e6;
+    uint256 private constant FLASH_MINT_FEE_PRECISION = 1e5;
     bytes32 private constant FLASH_MINT_CALLBACK_SUCCESS =
         keccak256("ERC3156FlashBorrower.onFlashLoan");
 
@@ -48,7 +48,7 @@ contract USDOFlashloanHelper is IERC3156FlashLender, BoringOwnable {
 
         usdo = _usdo;
 
-        flashMintFee = 10; // 0.001%
+        flashMintFee = 1; // 0.001%
         maxFlashMint = 100_000 * 1e18; // 100k USDO
     }
 
