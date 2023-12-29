@@ -864,6 +864,7 @@ describe('BigBang test', () => {
                             deployer.address,
                         ),
                     ],
+                    [0],
                     [ethers.constants.AddressZero],
                     ['0x'],
                 ),
@@ -1297,6 +1298,7 @@ describe('BigBang test', () => {
                 wethBigBangMarket.liquidate(
                     [eoa1.address],
                     [usdoBorrowVal],
+                    [0],
                     [liquidationReceiver.address],
                     [liquidateData],
                 ),
@@ -1337,6 +1339,7 @@ describe('BigBang test', () => {
                 wethBigBangMarket.liquidate(
                     [eoa1.address],
                     [usdoBorrowVal],
+                    [0],
                     [liquidationReceiver.address],
                     [liquidateData],
                 ),
@@ -1345,6 +1348,7 @@ describe('BigBang test', () => {
                 wethBigBangMarket.liquidate(
                     [eoa1.address],
                     [usdoBorrowVal],
+                    [0],
                     [liquidationReceiver.address],
                     [liquidateData],
                 ),
@@ -1353,6 +1357,7 @@ describe('BigBang test', () => {
                 wethBigBangMarket.liquidate(
                     [eoa1.address],
                     [usdoBorrowVal],
+                    [0],
                     [],
                     [liquidateData],
                 ),
