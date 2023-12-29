@@ -66,24 +66,18 @@ contract SGLLendingCommon is SGLCommon {
         share = yieldBox.toShare(assetId, amount, false);
         Rebase memory _totalAsset = totalAsset;
         if (_totalAsset.base < 1000) revert MinLimit();
+
+        uint256 fullAssetAmountBefore = yieldBox.toAmount(
+            assetId,
+            _totalAsset.elastic,
+            false
+        ) + totalBorrow.elastic;
+
         _totalAsset.elastic -= share.toUint128();
-        totalAsset = _totalAsset;
 
         uint256 feeAmount = (amount * borrowOpeningFee) / FEE_PRECISION; // A flat % fee is charged for any borrow
 
         (totalBorrow, part) = totalBorrow.add(amount + feeAmount, true);
-
-        uint256 fullAssetAmount = yieldBox.toAmount(
-            assetId,
-            totalAsset.elastic,
-            false
-        ) + totalBorrow.elastic;
-
-        uint256 feeFraction = (feeAmount * totalAsset.base) /
-            (fullAssetAmount - feeAmount);
-        accrueInfo.feesEarnedFraction += uint128(feeFraction);
-        totalAsset.base = totalAsset.base + uint128(feeFraction);
-
         if (totalBorrowCap != 0) {
             if (totalBorrow.elastic > totalBorrowCap) revert BorrowCapReached();
         }
@@ -91,8 +85,13 @@ contract SGLLendingCommon is SGLCommon {
         emit LogBorrow(from, to, amount, feeAmount, part);
 
         if (feeAmount > 0) {
-            balanceOf[address(penrose)] += feeAmount;
+            uint256 feeFraction = (feeAmount * _totalAsset.base) /
+                fullAssetAmountBefore;
+            _totalAsset.base += feeFraction.toUint128();
+            balanceOf[address(penrose)] += feeFraction;
         }
+
+        totalAsset = _totalAsset;
 
         yieldBox.transfer(address(this), to, assetId, share);
     }
