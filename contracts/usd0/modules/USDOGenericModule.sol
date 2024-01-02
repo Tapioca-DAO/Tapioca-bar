@@ -39,7 +39,7 @@ contract USDOGenericModule is USDOCommon {
         _lzSend(
             lzDstChainId,
             lzPayload,
-            payable(msg.sender),
+            lzCallParams.refundAddress,
             lzCallParams.zroPaymentAddress,
             lzCallParams.adapterParams,
             msg.value
@@ -117,7 +117,7 @@ contract USDOGenericModule is USDOCommon {
         _lzSend(
             lzDstChainId,
             lzPayload,
-            payable(msg.sender),
+            sendFromData.refundAddress,
             sendFromData.zroPaymentAddress,
             airdropAdapterParams,
             msg.value

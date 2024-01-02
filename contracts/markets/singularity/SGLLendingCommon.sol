@@ -63,16 +63,21 @@ contract SGLLendingCommon is SGLCommon {
         address to,
         uint256 amount
     ) internal returns (uint256 part, uint256 share) {
-        share = yieldBox.toShare(assetId, amount, false);
+        share = yieldBox.toShare(assetId, amount, true);
         Rebase memory _totalAsset = totalAsset;
         if (_totalAsset.base < 1000) revert MinLimit();
+
+        uint256 fullAssetAmountBefore = yieldBox.toAmount(
+            assetId,
+            _totalAsset.elastic,
+            false
+        ) + totalBorrow.elastic;
+
         _totalAsset.elastic -= share.toUint128();
-        totalAsset = _totalAsset;
 
         uint256 feeAmount = (amount * borrowOpeningFee) / FEE_PRECISION; // A flat % fee is charged for any borrow
 
         (totalBorrow, part) = totalBorrow.add(amount + feeAmount, true);
-
         if (totalBorrowCap != 0) {
             if (totalBorrow.elastic > totalBorrowCap) revert BorrowCapReached();
         }
@@ -80,8 +85,13 @@ contract SGLLendingCommon is SGLCommon {
         emit LogBorrow(from, to, amount, feeAmount, part);
 
         if (feeAmount > 0) {
-            balanceOf[address(penrose)] += feeAmount;
+            uint256 feeFraction = (feeAmount * _totalAsset.base) /
+                fullAssetAmountBefore;
+            _totalAsset.base += feeFraction.toUint128();
+            balanceOf[address(penrose)] += feeFraction;
         }
+
+        totalAsset = _totalAsset;
 
         yieldBox.transfer(address(this), to, assetId, share);
     }
@@ -100,7 +110,7 @@ contract SGLLendingCommon is SGLCommon {
 
         uint256 partInAmount;
         Rebase memory _totalBorrow = totalBorrow;
-        (_totalBorrow, partInAmount) = _totalBorrow.sub(part, true);
+        (_totalBorrow, partInAmount) = _totalBorrow.sub(part, false);
 
         uint256 allowanceShare = _computeAllowanceAmountInAsset(
             to,
@@ -111,7 +121,7 @@ contract SGLLendingCommon is SGLCommon {
         if (allowanceShare == 0) revert AllowanceNotValid();
         _allowedBorrow(from, allowanceShare);
 
-        (totalBorrow, amount) = totalBorrow.sub(part, true);
+        (totalBorrow, amount) = totalBorrow.sub(part, false);
 
         userBorrowPart[to] -= part;
 

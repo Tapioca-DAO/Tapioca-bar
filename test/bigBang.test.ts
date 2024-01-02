@@ -343,7 +343,6 @@ describe('BigBang test', () => {
                 deployer,
                 eoa1,
                 mediumRiskBigBangMC,
-                bar,
                 usd0WethOracle,
                 multiSwapper,
                 cluster,
@@ -351,12 +350,22 @@ describe('BigBang test', () => {
                 timeTravel,
                 __wethUsdcPrice,
                 twTap,
+                registerPenrose,
+                tap,
             } = await loadFixture(register);
 
             const log = (message: string, shouldLog?: boolean) =>
                 shouldLog && console.log(message);
 
             const shouldLog = false;
+
+            const { bar } = await registerPenrose(
+                yieldBox.address,
+                cluster.address,
+                tap.address,
+                weth.address,
+                false,
+            );
 
             const chainId = await hre.getChainId();
             const { usd0, lzEndpointContract, usd0Flashloan } =
@@ -710,7 +719,6 @@ describe('BigBang test', () => {
                 deployer,
                 eoa1,
                 mediumRiskBigBangMC,
-                bar,
                 usd0WethOracle,
                 multiSwapper,
                 cluster,
@@ -718,7 +726,17 @@ describe('BigBang test', () => {
                 timeTravel,
                 __wethUsdcPrice,
                 twTap,
+                tap,
+                registerPenrose,
             } = await loadFixture(register);
+
+            const { bar } = await registerPenrose(
+                yieldBox.address,
+                cluster.address,
+                tap.address,
+                weth.address,
+                false,
+            );
 
             const chainId = await hre.getChainId();
             const { usd0, lzEndpointContract, usd0Flashloan } =

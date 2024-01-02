@@ -34,6 +34,8 @@ contract BBBorrow is BBLendingCommon {
         returns (uint256 part, uint256 share)
     {
         if (amount == 0) return (0, 0);
+        penrose.reAccrueBigBangMarkets();
+
         uint256 feeAmount = _computeVariableOpeningFee(amount);
         uint256 allowanceShare = _computeAllowanceAmountInAsset(
             from,
@@ -44,8 +46,6 @@ contract BBBorrow is BBLendingCommon {
         if (allowanceShare == 0) revert AllowanceNotValid();
         _allowedBorrow(from, allowanceShare);
         (part, share) = _borrow(from, to, amount, feeAmount);
-
-        penrose.reAccrueBigBangMarkets();
     }
 
     /// @notice Repays a loan.
@@ -68,6 +68,7 @@ contract BBBorrow is BBLendingCommon {
         updateExchangeRate();
 
         _accrue();
+        penrose.reAccrueBigBangMarkets();
 
         uint256 partInAmount;
         Rebase memory _totalBorrow = totalBorrow;
@@ -84,7 +85,5 @@ contract BBBorrow is BBLendingCommon {
         _allowedBorrow(from, allowanceShare);
 
         amount = _repay(from, to, part);
-
-        penrose.reAccrueBigBangMarkets();
     }
 }

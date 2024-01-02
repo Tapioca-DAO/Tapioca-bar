@@ -50,8 +50,8 @@ contract BaseUSDOStorage is OFTV2 {
     uint16 internal constant PT_TRIGGER_SEND_FROM = 778;
     uint16 internal constant PT_APPROVE = 779;
 
-    uint256 internal constant SWAP_MAX_SLIPPAGE = 500; //5%
-    uint256 internal constant SLIPPAGE_PRECISION = 1e4;
+    uint256 internal constant SWAP_MAX_SLIPPAGE = 5000; //5%
+    uint256 internal constant SLIPPAGE_PRECISION = 1e5;
 
     // ************** //
     // *** EVENTS *** //
@@ -91,6 +91,8 @@ contract BaseUSDOStorage is OFTV2 {
     function _getRevertMsg(
         bytes memory _returnData
     ) internal pure returns (string memory) {
+        if (_returnData.length > 1000) return "USDO: reason too long";
+
         // If the _res length is less than 68, then the transaction failed silently (without a revert message)
         if (_returnData.length < 68) return "USDO: data";
         // solhint-disable-next-line no-inline-assembly

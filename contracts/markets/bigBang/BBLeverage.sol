@@ -13,6 +13,7 @@ contract BBLeverage is BBLendingCommon {
     // *** ERRORS *** //
     // ************** //
     error LeverageExecutorNotValid();
+    error CollateralShareNotValid();
 
     /// @notice Lever up: Borrow more and buy collateral with it.
     /// @param from The user who buys
@@ -71,6 +72,7 @@ contract BBLeverage is BBLendingCommon {
             amountOut,
             false
         );
+        if (collateralShare == 0) revert CollateralShareNotValid();
         _allowedBorrow(from, collateralShare);
         _addCollateral(from, from, false, 0, collateralShare);
     }

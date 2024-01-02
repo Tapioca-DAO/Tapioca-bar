@@ -29,12 +29,15 @@ contract BBLiquidation is BBCommon {
     // *********************** //
     // *** OWNER FUNCTIONS *** //
     // *********************** //
+
     function liquidateBadDebt(
         address user,
         address receiver,
         IMarketLiquidatorReceiver liquidatorReceiver,
-        bytes calldata liquidatorReceiverData
+        bytes calldata liquidatorReceiverData,
+        bool swapCollateral
     ) external onlyOwner {
+        // try-get oracle exchange rate
         (bool updated, uint256 _exchangeRate) = oracle.get(oracleData);
         if (updated && _exchangeRate > 0) {
             exchangeRate = _exchangeRate; //update cached rate
@@ -43,8 +46,10 @@ contract BBLiquidation is BBCommon {
         }
         if (_exchangeRate == 0) revert ExchangeRateNotValid();
 
+        // accrue before liquidation
         _accrue();
 
+        // compute borrow amount with bonus
         uint256 elasticPart = totalBorrow.toElastic(
             userBorrowPart[user],
             false
@@ -58,30 +63,50 @@ contract BBLiquidation is BBCommon {
             false
         );
 
-        // equality is included in the require to minimize risk and liquidate as soon as possible
-        if (requiredCollateral < userCollateralShare[user])
-            revert ForbiddenAction();
-
         uint256 collateralShare = userCollateralShare[user];
+        // equality is included in the require to minimize risk and liquidate as soon as possible
+        if (requiredCollateral < collateralShare) revert ForbiddenAction();
 
-        // everything will be liquidated; set borrow part and collateral share to 0
-        uint256 borrowAmount;
-        (totalBorrow, borrowAmount) = totalBorrow.sub(
+        // update totalBorrow
+        uint256 borrowAmount = totalBorrow.toElastic(
             userBorrowPart[user],
             true
         );
+        totalBorrow.elastic -= borrowAmount.toUint128();
+        totalBorrow.base -= userBorrowPart[user].toUint128();
+
+        // update totalCollateralShare
+        totalCollateralShare -= collateralShare;
+
+        // set user share & part to 0
+        userCollateralShare[user] = 0;
         userBorrowPart[user] = 0;
 
-        totalCollateralShare -= userCollateralShare[user];
-        userCollateralShare[user] = 0;
+        // burn debt amount from `owner`
+        IUSDOBase(address(asset)).burn(msg.sender, borrowAmount);
 
-        (, uint256 returnedAmount) = _swapCollateralWithAsset(
-            collateralShare,
-            liquidatorReceiver,
-            liquidatorReceiverData
-        );
-
-        asset.safeTransfer(receiver, returnedAmount);
+        // swap collateral with asset and send it to `owner`
+        if (swapCollateral) {
+            (, uint256 returnedAmount) = _swapCollateralWithAsset(
+                collateralShare,
+                liquidatorReceiver,
+                liquidatorReceiverData
+            );
+            asset.safeTransfer(receiver, returnedAmount);
+        } else {
+            uint256 collateralAmount = yieldBox.toAmount(
+                collateralId,
+                collateralShare,
+                false
+            );
+            yieldBox.withdraw(
+                collateralId,
+                address(this),
+                receiver,
+                collateralAmount,
+                0
+            );
+        }
     }
 
     // ************************ //
