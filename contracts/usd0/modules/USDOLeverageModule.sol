@@ -74,7 +74,7 @@ contract USDOLeverageModule is USDOCommon {
             lzData.lzDstChainId,
             PT_LEVERAGE_MARKET_UP,
             lzData.dstAirdropAdapterParam,
-            NO_EXTRA_GAS
+            lzData.dstExtraGasLimit
         );
 
         _lzSend(

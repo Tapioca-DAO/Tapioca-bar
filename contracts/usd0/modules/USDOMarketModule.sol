@@ -34,6 +34,7 @@ contract USDOMarketModule is USDOCommon {
     /// @param removeAndRepayData IRemoveAndRepay data
     /// @param approvals approvals array that should be executed on destination
     /// @param revokes revokes array that should be executed on destination
+    /// @param extraGas extra gas to be checked in `checkAdapterParams` call
     function removeAsset(
         address from,
         address to,
@@ -43,7 +44,8 @@ contract USDOMarketModule is USDOCommon {
         ICommonData.ICommonExternalContracts calldata externalData,
         IUSDOBase.IRemoveAndRepay calldata removeAndRepayData,
         ICommonData.IApproval[] calldata approvals,
-        ICommonData.IApproval[] calldata revokes
+        ICommonData.IApproval[] calldata revokes,
+        uint256 extraGas
     ) external payable {
         //allowance is also checked on SGl
         if (from != msg.sender) {
@@ -91,7 +93,7 @@ contract USDOMarketModule is USDOCommon {
             lzDstChainId,
             PT_MARKET_REMOVE_ASSET,
             adapterParams,
-            NO_EXTRA_GAS
+            extraGas
         );
 
         _lzSend(
@@ -116,6 +118,7 @@ contract USDOMarketModule is USDOCommon {
     /// @param revokes revokes array to be executed on destination
     /// @param withdrawParams withdraw token parameters
     /// @param adapterParams LayerZero adapter parameters
+    /// @param extraGas extra gas to be checked in `checkAdapterParams` call
     function sendAndLendOrRepay(
         address _from,
         address _to,
@@ -125,7 +128,8 @@ contract USDOMarketModule is USDOCommon {
         ICommonData.IApproval[] calldata approvals,
         ICommonData.IApproval[] calldata revokes,
         ICommonData.IWithdrawParams calldata withdrawParams,
-        bytes calldata adapterParams
+        bytes calldata adapterParams,
+        uint256 extraGas
     ) external payable {
         bytes32 toAddress = LzLib.addressToBytes32(_to);
         (lendParams.depositAmount, ) = _removeDust(lendParams.depositAmount);
@@ -155,7 +159,7 @@ contract USDOMarketModule is USDOCommon {
             lzDstChainId,
             PT_YB_SEND_SGL_LEND_OR_REPAY,
             adapterParams,
-            NO_EXTRA_GAS
+            extraGas
         );
 
         _lzSend(
