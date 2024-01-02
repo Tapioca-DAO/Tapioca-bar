@@ -369,6 +369,7 @@ contract Penrose is BoringOwnable, BoringFactory {
     ///      can only by called by the owner
     /// @param _usdoToken the USDO token address
     function setUsdoToken(address _usdoToken) external onlyOwner {
+        if (address(usdoToken) != address(0)) revert NotAuthorized();
         usdoToken = IERC20(_usdoToken);
 
         emptyStrategies[_usdoToken] = IStrategy(

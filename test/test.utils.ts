@@ -2128,6 +2128,7 @@ export async function register(staging?: boolean) {
         createWethUsd0Singularity,
         createTokenEmptyStrategy,
         registerBigBangMarket,
+        registerPenrose,
     };
 
     return { ...initialSetup, ...utilFuncs, verifyEtherscanQueue };
