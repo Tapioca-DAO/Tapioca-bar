@@ -267,7 +267,6 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
     /// @param revokes the cross chain revoke operations data
     /// @param withdrawParams parameter to withdraw the SGL collateral
     /// @param adapterParams adapter params of the withdrawn collateral
-    /// @param extraGas extra gas to be checked in `checkAdapterParams` call
     function sendAndLendOrRepay(
         address _from,
         address _to,
@@ -277,8 +276,7 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
         ICommonData.IApproval[] calldata approvals,
         ICommonData.IApproval[] calldata revokes,
         ICommonData.IWithdrawParams calldata withdrawParams,
-        bytes calldata adapterParams,
-        uint256 extraGas
+        bytes calldata adapterParams
     ) external payable {
         _executeModule(
             Module.Market,
@@ -292,8 +290,7 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
                 approvals,
                 revokes,
                 withdrawParams,
-                adapterParams,
-                extraGas
+                adapterParams
             ),
             false
         );
@@ -310,7 +307,6 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
     /// @param removeAndRepayData removeAssetAndRepay params
     /// @param approvals the cross chain approval operation data
     /// @param revokes the cross chain revoke operations data
-    /// @param extraGas extra gas to be checked in `checkAdapterParams` call
     function removeAsset(
         address from,
         address to,
@@ -320,8 +316,7 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
         ICommonData.ICommonExternalContracts calldata externalData,
         IUSDOBase.IRemoveAndRepay calldata removeAndRepayData,
         ICommonData.IApproval[] calldata approvals,
-        ICommonData.IApproval[] calldata revokes,
-        uint256 extraGas
+        ICommonData.IApproval[] calldata revokes
     ) external payable {
         _executeModule(
             Module.Market,
@@ -335,8 +330,7 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
                 externalData,
                 removeAndRepayData,
                 approvals,
-                revokes,
-                extraGas
+                revokes
             ),
             false
         );

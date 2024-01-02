@@ -44,8 +44,7 @@ contract USDOMarketModule is USDOCommon {
         ICommonData.ICommonExternalContracts calldata externalData,
         IUSDOBase.IRemoveAndRepay calldata removeAndRepayData,
         ICommonData.IApproval[] calldata approvals,
-        ICommonData.IApproval[] calldata revokes,
-        uint256 extraGas
+        ICommonData.IApproval[] calldata revokes
     ) external payable {
         //allowance is also checked on SGl
         if (from != msg.sender) {
@@ -76,9 +75,8 @@ contract USDOMarketModule is USDOCommon {
             }
         }
 
-        (, , uint256 airdropAmount, ) = LzLib.decodeAdapterParams(
-            adapterParams
-        );
+        (, uint256 extraGas, uint256 airdropAmount, ) = LzLib
+            .decodeAdapterParams(adapterParams);
         bytes memory lzPayload = abi.encode(
             PT_MARKET_REMOVE_ASSET,
             to,
@@ -118,7 +116,6 @@ contract USDOMarketModule is USDOCommon {
     /// @param revokes revokes array to be executed on destination
     /// @param withdrawParams withdraw token parameters
     /// @param adapterParams LayerZero adapter parameters
-    /// @param extraGas extra gas to be checked in `checkAdapterParams` call
     function sendAndLendOrRepay(
         address _from,
         address _to,
@@ -128,8 +125,7 @@ contract USDOMarketModule is USDOCommon {
         ICommonData.IApproval[] calldata approvals,
         ICommonData.IApproval[] calldata revokes,
         ICommonData.IWithdrawParams calldata withdrawParams,
-        bytes calldata adapterParams,
-        uint256 extraGas
+        bytes calldata adapterParams
     ) external payable {
         bytes32 toAddress = LzLib.addressToBytes32(_to);
         (lendParams.depositAmount, ) = _removeDust(lendParams.depositAmount);
@@ -141,7 +137,7 @@ contract USDOMarketModule is USDOCommon {
         );
         if (lendParams.depositAmount == 0) revert NotValid();
 
-        (, , uint256 airdropAmount, ) = LzLib.decodeAdapterParams(
+        (, uint extraGas, uint256 airdropAmount, ) = LzLib.decodeAdapterParams(
             adapterParams
         );
         bytes memory lzPayload = abi.encode(
