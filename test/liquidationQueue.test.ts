@@ -376,6 +376,7 @@ describe.skip('LiquidationQueue test', () => {
                             deployer.address,
                         ),
                     ],
+                    [0],
                     [data],
                     data,
                     ethers.constants.AddressZero,

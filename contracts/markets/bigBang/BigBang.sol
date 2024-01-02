@@ -401,12 +401,14 @@ contract BigBang is BBCommon {
 
     /// @notice Entry point for liquidations.
     /// @param users An array of user addresses.
-    /// @param maxBorrowParts A one-to-one mapping to `users`, contains maximum (partial) borrow amounts (to liquidate) of the respective user.
-    /// @param liquidatorReceivers the IMarketLiquidatorReceiver executors list
-    /// @param liquidatorReceiverDatas the IMarketLiquidatorReceiver executors' data list
+    /// @param maxBorrowParts A one-to-one mapping to `users`, contains maximum (partial) borrow amounts (to liquidate) of the respective user
+    /// @param minLiquidationBonuses minimum liquidation bonus acceptable
+    /// @param liquidatorReceivers IMarketLiquidatorReceiver array
+    /// @param liquidatorReceiverDatas IMarketLiquidatorReceiver datas
     function liquidate(
         address[] calldata users,
         uint256[] calldata maxBorrowParts,
+        uint256[] calldata minLiquidationBonuses,
         IMarketLiquidatorReceiver[] calldata liquidatorReceivers,
         bytes[] calldata liquidatorReceiverDatas
     ) external {
@@ -416,6 +418,7 @@ contract BigBang is BBCommon {
                 BBLiquidation.liquidate.selector,
                 users,
                 maxBorrowParts,
+                minLiquidationBonuses,
                 liquidatorReceivers,
                 liquidatorReceiverDatas
             )

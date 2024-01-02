@@ -34,7 +34,6 @@ contract USDOMarketModule is USDOCommon {
     /// @param removeAndRepayData IRemoveAndRepay data
     /// @param approvals approvals array that should be executed on destination
     /// @param revokes revokes array that should be executed on destination
-    /// @param extraGas extra gas to be checked in `checkAdapterParams` call
     function removeAsset(
         address from,
         address to,

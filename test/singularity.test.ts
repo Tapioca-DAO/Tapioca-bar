@@ -831,6 +831,7 @@ describe('Singularity test', () => {
                 wethUsdcSingularity.liquidate(
                     [eoa1.address],
                     [wethBorrowVal],
+                    [0],
                     [liquidationReceiver.address],
                     [liquidateData],
                 ),
@@ -946,6 +947,7 @@ describe('Singularity test', () => {
                 wethUsdcSingularity.liquidate(
                     [eoa1.address],
                     [wethBorrowVal],
+                    [0],
                     [liquidationReceiver.address],
                     [liquidateData],
                 ),
@@ -979,6 +981,7 @@ describe('Singularity test', () => {
                 wethUsdcSingularity.liquidate(
                     [eoa1.address],
                     [wethBorrowVal],
+                    [0],
                     [liquidationReceiver.address],
                     [liquidateData],
                 ),
@@ -1071,6 +1074,7 @@ describe('Singularity test', () => {
                 wbtcUsdcSingularity.liquidate(
                     [eoa1.address],
                     [wbtcBorrowVal],
+                    [0],
                     [liquidationReceiver.address],
                     [liquidateData],
                 ),
@@ -1084,6 +1088,7 @@ describe('Singularity test', () => {
                 wbtcUsdcSingularity.liquidate(
                     [eoa1.address],
                     [wbtcBorrowVal],
+                    [0],
                     [liquidationReceiver.address],
                     [liquidateData],
                 ),
