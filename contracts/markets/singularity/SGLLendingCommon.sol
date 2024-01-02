@@ -63,7 +63,7 @@ contract SGLLendingCommon is SGLCommon {
         address to,
         uint256 amount
     ) internal returns (uint256 part, uint256 share) {
-        share = yieldBox.toShare(assetId, amount, false);
+        share = yieldBox.toShare(assetId, amount, true);
         Rebase memory _totalAsset = totalAsset;
         if (_totalAsset.base < 1000) revert MinLimit();
 
@@ -110,7 +110,7 @@ contract SGLLendingCommon is SGLCommon {
 
         uint256 partInAmount;
         Rebase memory _totalBorrow = totalBorrow;
-        (_totalBorrow, partInAmount) = _totalBorrow.sub(part, true);
+        (_totalBorrow, partInAmount) = _totalBorrow.sub(part, false);
 
         uint256 allowanceShare = _computeAllowanceAmountInAsset(
             to,
@@ -121,7 +121,7 @@ contract SGLLendingCommon is SGLCommon {
         if (allowanceShare == 0) revert AllowanceNotValid();
         _allowedBorrow(from, allowanceShare);
 
-        (totalBorrow, amount) = totalBorrow.sub(part, true);
+        (totalBorrow, amount) = totalBorrow.sub(part, false);
 
         userBorrowPart[to] -= part;
 
