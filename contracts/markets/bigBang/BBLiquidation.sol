@@ -215,6 +215,7 @@ contract BBLiquidation is BBCommon {
             ? userBorrowPart[user]
             : borrowPart;
 
+        // accounting
         userBorrowPart[user] = userBorrowPart[user] - borrowPart;
 
         borrowAmount = totalBorrow.toElastic(borrowPart, false);
