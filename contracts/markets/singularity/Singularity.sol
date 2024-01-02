@@ -427,11 +427,13 @@ contract Singularity is SGLCommon {
     /// @param receiver the address which receives the output
     /// @param liquidatorReceiver the IMarketLiquidatorReceiver executor
     /// @param liquidatorReceiverData the IMarketLiquidatorReceiver executor data
+    /// @param swapCollateral true/false
     function liquidateBadDebt(
         address user,
         address receiver,
         IMarketLiquidatorReceiver liquidatorReceiver,
-        bytes calldata liquidatorReceiverData
+        bytes calldata liquidatorReceiverData,
+        bool swapCollateral
     ) external {
         _executeModule(
             Module.Liquidation,
@@ -440,7 +442,8 @@ contract Singularity is SGLCommon {
                 user,
                 receiver,
                 liquidatorReceiver,
-                liquidatorReceiverData
+                liquidatorReceiverData,
+                swapCollateral
             )
         );
     }
