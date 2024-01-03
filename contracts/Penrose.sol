@@ -71,6 +71,9 @@ contract Penrose is BoringOwnable, BoringFactory {
 
     address[] public allBigBangMarkets;
 
+    mapping(address => bool) public isOriginRegistered;
+    address[] public allOriginsMarkets;
+
     /// @notice creates a Penrose contract
     /// @param _yieldBox YieldBox contract address
     /// @param _cluster Cluster contract address
@@ -158,6 +161,8 @@ contract Penrose is BoringOwnable, BoringFactory {
         address indexed location,
         address indexed masterContract
     );
+    /// @notice event emitted when Origins is registered
+    event RegisterOrigins(address indexed location);
     /// @notice event emitted when USDO address is updated
     event UsdoTokenUpdated(address indexed usdoToken, uint256 indexed assetId);
     /// @notice event emitted when conservator is updated
@@ -244,6 +249,7 @@ contract Penrose is BoringOwnable, BoringFactory {
     }
 
     /// @notice Returns total markets debt
+    /// @dev does not include Origins markets
     function viewTotalDebt() public view returns (uint256) {
         uint256 _totalUsdoDebt = 0;
         uint256 len = allBigBangMarkets.length;
@@ -294,6 +300,18 @@ contract Penrose is BoringOwnable, BoringFactory {
         if (usdoSupply > 0) {
             // re-compute latest debt
             uint256 totalUsdoDebt = computeTotalDebt();
+
+            //add Origins debt
+            //Origins market doesn't accrue in time but increases totalSupply
+            //and needs to be taken into account here
+            uint256 len = allOriginsMarkets.length;
+            for (uint256 i; i < len; i++) {
+                IMarket market = IMarket(allOriginsMarkets[i]);
+                if (isOriginRegistered[address(market)]) {
+                    (uint256 elastic, ) = market.totalBorrow();
+                    totalUsdoDebt += elastic;
+                }
+            }
 
             //debt should always be > USDO supply
             if (totalUsdoDebt > usdoSupply) {
@@ -508,6 +526,13 @@ contract Penrose is BoringOwnable, BoringFactory {
         masterContractOf[_contract] = mc;
         allBigBangMarkets.push(_contract);
         emit RegisterBigBang(_contract, mc);
+    }
+
+    function addOriginsMarket(address _contract) external onlyOwner {
+        if (isOriginRegistered[_contract]) revert AlreadyAdded();
+        isOriginRegistered[_contract] = true;
+        allOriginsMarkets.push(_contract);
+        emit RegisterOrigins(_contract);
     }
 
     /// @notice Execute an only owner function inside of a Singularity or a BigBang market

@@ -55,10 +55,6 @@ contract BBLendingCommon is BBCommon {
         uint256 feeAmount
     ) internal returns (uint256 part, uint256 share) {
         (totalBorrow, part) = totalBorrow.add(amount + feeAmount, true);
-        require(
-            totalBorrowCap == 0 || totalBorrow.elastic <= totalBorrowCap,
-            "BB: borrow cap reached"
-        );
 
         if (totalBorrowCap > 0) {
             if (totalBorrow.elastic > totalBorrowCap) revert BorrowCapReached();
