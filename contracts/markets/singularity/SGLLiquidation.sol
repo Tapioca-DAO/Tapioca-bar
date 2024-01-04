@@ -43,6 +43,7 @@ contract SGLLiquidation is SGLCommon {
         (bool updated, uint256 _exchangeRate) = oracle.get(oracleData);
         if (updated && _exchangeRate > 0) {
             exchangeRate = _exchangeRate; //update cached rate
+            rateTimestamp = block.timestamp;
         } else {
             _exchangeRate = exchangeRate; //use stored rate
         }
@@ -151,6 +152,7 @@ contract SGLLiquidation is SGLCommon {
         (bool updated, uint256 _exchangeRate) = oracle.get(oracleData);
         if (updated && _exchangeRate > 0) {
             exchangeRate = _exchangeRate; //update cached rate
+            rateTimestamp = block.timestamp;
         } else {
             _exchangeRate = exchangeRate; //use stored rate
         }
