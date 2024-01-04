@@ -10,7 +10,7 @@
         "coverage": "NODE_ENV=compile hardhat compile --quiet && hardhat coverage --network hardhat",
         "contracts_size": "npm run compile && NODE_ENV=hardhat hardhat size-contracts",
         "typechain": "npx hardhat typechain",
-        "test": "npx hardhat test",
+        "test": "npx hardhat test --vvvv",
         "test:arb": "NODE_ENV=arbitrum hardhat test",
         "test:main": "NODE_ENV=mainnet hardhat test",
         "sdk-gen": "npx hardhat exportSDK",

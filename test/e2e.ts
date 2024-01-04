@@ -91,7 +91,26 @@ describe('e2e tests', () => {
             ethers.utils.parseEther('1'),
             false,
         );
-
+        await cluster['updateContract(uint16,address,bool)'](
+            31337,
+            magnetar.address,
+            true,
+        );
+        await cluster['updateContract(uint16,address,bool)'](
+            31337,
+            wethUsdoSingularity.address,
+            true,
+        );
+        await cluster['updateContract(uint16,address,bool)'](
+            31337,
+            wethBigBangMarket.address,
+            true,
+        );
+        await cluster['updateContract(uint16,address,bool)'](
+            31337,
+            yieldBox.address,
+            true,
+        );
         //get USDO from minter and lent it WETH-USDO Singularity
         await addUsd0Module(
             weth,
@@ -174,6 +193,9 @@ describe('e2e tests', () => {
                         withdrawOnOtherChain: false,
                         withdrawLzChainId: 0,
                         withdrawAdapterParams: ethers.utils.toUtf8Bytes(''),
+                        unwrap: false,
+                        refundAddress: repayer.address,
+                        zroPaymentAddress: ethers.constants.AddressZero,
                     },
                 );
         }
@@ -279,7 +301,6 @@ describe('e2e tests', () => {
                 usdoAssetId,
                 borrowerCollateralValue,
                 borrowerBorrowValue,
-                true,
                 encodeMarketHelperWithdrawData(
                     false,
                     0,
@@ -532,6 +553,9 @@ async function depositAndRepayPlug(
                         withdrawOnOtherChain: false,
                         withdrawLzChainId: 0,
                         withdrawAdapterParams: ethers.utils.toUtf8Bytes(''),
+                        unwrap: false,
+                        refundAddress: signer.address,
+                        zroPaymentAddress: ethers.constants.AddressZero,
                     },
                 ),
         ).to.be.reverted;
@@ -556,6 +580,9 @@ async function depositAndRepayPlug(
                 withdrawOnOtherChain: false,
                 withdrawLzChainId: 0,
                 withdrawAdapterParams: ethers.utils.toUtf8Bytes(''),
+                unwrap: false,
+                refundAddress: signer.address,
+                zroPaymentAddress: ethers.constants.AddressZero,
             },
         );
     const finalBorrowAmount = await Singularity.userBorrowPart(signer.address);
@@ -672,6 +699,9 @@ async function addUsd0Module(
                 withdrawOnOtherChain: false,
                 withdrawLzChainId: 0,
                 withdrawAdapterParams: ethers.utils.toUtf8Bytes(''),
+                unwrap: false,
+                refundAddress: lender.address,
+                zroPaymentAddress: ethers.constants.AddressZero,
             },
             false,
         );
@@ -725,6 +755,9 @@ async function borrowFromSingularityModule(
                 withdrawOnOtherChain: false,
                 withdrawLzChainId: 0,
                 withdrawAdapterParams: ethers.utils.toUtf8Bytes(''),
+                unwrap: false,
+                refundAddress: borrower.address,
+                zroPaymentAddress: ethers.constants.AddressZero,
             },
         );
 
