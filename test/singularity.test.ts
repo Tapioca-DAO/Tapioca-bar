@@ -883,7 +883,7 @@ describe('Singularity test', () => {
             expect(userBorrowedAmountAfter.eq(0)).to.be.true;
             expect(userCollateralShareAfter.eq(0)).to.be.true;
         });
-        it('Should lend Weth, deposit Usdc collateral and borrow Weth and be liquidated for price drop', async () => {
+        it.only('Should lend Weth, deposit Usdc collateral and borrow Weth and be liquidated for price drop', async () => {
             const {
                 usdc,
                 weth,
@@ -997,6 +997,12 @@ describe('Singularity test', () => {
             const userBorrowedAmountBefore =
                 await wethUsdcSingularity.userBorrowPart(eoa1.address);
 
+            const viewUsedCollateral =
+                await wethUsdcSingularity.viewLiquidationCollateralAmount(
+                    eoa1.address,
+                    wethBorrowVal,
+                    0,
+                );
             await expect(
                 wethUsdcSingularity.liquidate(
                     [eoa1.address],

@@ -28,6 +28,39 @@ contract SGLLiquidation is SGLCommon {
     error InsufficientLiquidationBonus();
     error NotAuthorized();
 
+    // ********************** //
+    // *** VIEW FUNCTIONS *** //
+    // ********************** //
+    /// @notice returns the collateral amount used in a liquidation
+    /// @dev useful to compute minAmountOut for collateral to asset swap
+    /// @param user the user to liquidate
+    /// @param maxBorrowPart max borrow part for user
+    /// @param minLiquidationBonus minimum liquidation bonus to accept
+    function viewLiquidationCollateralAmount(
+        address user,
+        uint256 maxBorrowPart,
+        uint256 minLiquidationBonus
+    ) external view returns (uint256 collateralAmount) {
+        (bool updated, uint256 _exchangeRate) = oracle.peek(oracleData);
+        if (!updated || _exchangeRate == 0) {
+            _exchangeRate = exchangeRate; //use stored rate
+        }
+        if (_exchangeRate == 0) revert ExchangeRateNotValid();
+
+        (, , uint256 collateralShare) = _viewLiqudationBorrowAndCollateralShare(
+            user,
+            maxBorrowPart,
+            minLiquidationBonus,
+            _exchangeRate
+        );
+
+        collateralAmount = yieldBox.toAmount(
+            collateralId,
+            collateralShare,
+            false
+        );
+    }
+
     // *********************** //
     // *** OWNER FUNCTIONS *** //
     // *********************** //
@@ -127,7 +160,6 @@ contract SGLLiquidation is SGLCommon {
     // ************************ //
     // *** PUBLIC FUNCTIONS *** //
     // ************************ //
-
     /// @notice Entry point for liquidations.
     /// @dev Will call `closedLiquidation()` if not LQ exists or no LQ bid avail exists. Otherwise use LQ.
     /// @param users An array of user addresses.
@@ -235,13 +267,14 @@ contract SGLLiquidation is SGLCommon {
                 : 0;
     }
 
-    function _updateBorrowAndCollateralShare(
+    function _viewLiqudationBorrowAndCollateralShare(
         address user,
         uint256 maxBorrowPart,
         uint256 minLiquidationBonus, // min liquidation bonus to accept (default 0)
         uint256 _exchangeRate
     )
         private
+        view
         returns (
             uint256 borrowAmount,
             uint256 borrowPart,
@@ -317,6 +350,31 @@ contract SGLLiquidation is SGLCommon {
             if (collateralShare > userCollateralShare[user])
                 revert NotEnoughCollateral();
         }
+    }
+
+    function _updateBorrowAndCollateralShare(
+        address user,
+        uint256 maxBorrowPart,
+        uint256 minLiquidationBonus, // min liquidation bonus to accept (default 0)
+        uint256 _exchangeRate
+    )
+        private
+        returns (
+            uint256 borrowAmount,
+            uint256 borrowPart,
+            uint256 collateralShare
+        )
+    {
+        (
+            borrowAmount,
+            borrowPart,
+            collateralShare
+        ) = _viewLiqudationBorrowAndCollateralShare(
+            user,
+            maxBorrowPart,
+            minLiquidationBonus,
+            _exchangeRate
+        );
 
         userBorrowPart[user] -= borrowPart;
         userCollateralShare[user] -= collateralShare;

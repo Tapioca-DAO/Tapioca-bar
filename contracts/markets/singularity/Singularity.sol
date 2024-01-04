@@ -202,6 +202,32 @@ contract Singularity is SGLCommon {
     // ********************** //
     // *** VIEW FUNCTIONS *** //
     // ********************** //
+    /// @notice returns the collateral amount used in a liquidation
+    /// @dev useful to compute minAmountOut for collateral to asset swap
+    /// @param user the user to liquidate
+    /// @param maxBorrowPart max borrow part for user
+    /// @param minLiquidationBonus minimum liquidation bonus to accept
+    function viewLiquidationCollateralAmount(
+        address user,
+        uint256 maxBorrowPart,
+        uint256 minLiquidationBonus
+    ) external view returns (bytes memory) {
+        (bool success, bytes memory returnData) = address(liquidationModule)
+            .staticcall(
+                abi.encodeWithSelector(
+                    SGLLiquidation.viewLiquidationCollateralAmount.selector,
+                    user,
+                    maxBorrowPart,
+                    minLiquidationBonus
+                )
+            );
+        if (!success) {
+            revert(_getRevertMsg(returnData));
+        }
+
+        return returnData;
+    }
+
     /// @notice transforms amount to shares for a market's permit operation
     /// @param amount the amount to transform
     /// @param tokenId the YieldBox asset id
