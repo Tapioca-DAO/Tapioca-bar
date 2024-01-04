@@ -25,6 +25,7 @@ contract BBLiquidation is BBCommon {
     error Solvent();
     error AmountNotValid();
     error InsufficientLiquidationBonus();
+    error NotAuthorized();
 
     // *********************** //
     // *** OWNER FUNCTIONS *** //
@@ -32,6 +33,7 @@ contract BBLiquidation is BBCommon {
 
     function liquidateBadDebt(
         address user,
+        address from,
         address receiver,
         IMarketLiquidatorReceiver liquidatorReceiver,
         bytes calldata liquidatorReceiverData,
@@ -45,6 +47,10 @@ contract BBLiquidation is BBCommon {
             _exchangeRate = exchangeRate; //use stored rate
         }
         if (_exchangeRate == 0) revert ExchangeRateNotValid();
+
+        //check from whitelist status
+        bool isWhitelisted = ICluster(penrose.cluster()).isWhitelisted(0, from);
+        if (!isWhitelisted) revert NotAuthorized();
 
         // accrue before liquidation
         _accrue();
@@ -82,8 +88,8 @@ contract BBLiquidation is BBCommon {
         userCollateralShare[user] = 0;
         userBorrowPart[user] = 0;
 
-        // burn debt amount from `owner`
-        IUSDOBase(address(asset)).burn(msg.sender, borrowAmount);
+        // burn debt amount from `from`
+        IUSDOBase(address(asset)).burn(from, borrowAmount);
 
         // swap collateral with asset and send it to `owner`
         if (swapCollateral) {

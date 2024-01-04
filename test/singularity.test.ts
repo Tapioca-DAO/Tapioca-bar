@@ -737,11 +737,15 @@ describe('Singularity test', () => {
                 __wethUsdcPrice,
                 deployLiquidationReceiverMock,
                 timeTravel,
+                cluster,
             } = await loadFixture(register);
 
             const liquidationReceiver = await deployLiquidationReceiverMock(
                 await wethUsdcSingularity.asset(),
             );
+
+            await cluster.updateContract(0, deployer.address, true);
+            await cluster.updateContract(31337, deployer.address, true);
 
             const assetId = await wethUsdcSingularity.assetId();
             const collateralId = await wethUsdcSingularity.collateralId();
@@ -811,8 +815,10 @@ describe('Singularity test', () => {
                     [
                         eoa1.address,
                         deployer.address,
+                        deployer.address,
                         liquidationReceiver.address,
                         liquidateData,
+                        true,
                     ],
                 );
             await expect(
@@ -841,11 +847,26 @@ describe('Singularity test', () => {
                 wethUsdcSingularity.liquidateBadDebt(
                     eoa1.address,
                     deployer.address,
+                    deployer.address,
                     liquidationReceiver.address,
                     liquidateData,
+                    true,
                 ),
             ).to.be.reverted;
 
+            await weth.approve(
+                wethUsdcSingularity.address,
+                wethBorrowVal.mul(2),
+            );
+            await usdc.approve(
+                wethUsdcSingularity.address,
+                wethBorrowVal.mul(2),
+            );
+
+            await weth.toggleRestrictions();
+            await usdc.toggleRestrictions();
+            await weth.freeMint(wethBorrowVal.mul(2));
+            await usdc.freeMint(wethBorrowVal.mul(2));
             await expect(
                 bar.executeMarketFn(
                     [wethUsdcSingularity.address],
@@ -862,7 +883,6 @@ describe('Singularity test', () => {
             expect(userBorrowedAmountAfter.eq(0)).to.be.true;
             expect(userCollateralShareAfter.eq(0)).to.be.true;
         });
-
         it('Should lend Weth, deposit Usdc collateral and borrow Weth and be liquidated for price drop', async () => {
             const {
                 usdc,
@@ -2256,7 +2276,6 @@ describe('Singularity test', () => {
             const balanceAfter = await weth.balanceOf(deployer.address);
             expect(balanceAfter.gt(balanceBefore)).to.be.true;
         });
-
         it('Should accumulate opening fees', async () => {
             const {
                 usdc,
@@ -2410,9 +2429,12 @@ describe('Singularity test', () => {
             const sglBalanceOfFeeTo = await wethUsdcSingularity.balanceOf(
                 feeTo,
             );
-
-            expect(sglBalanceOfFeeTo.eq(borrowVal.mul(1e4).div(1e5))).to.be
-                .true;
+            const sglAmountOfFeeTo = await yieldBox.toAmount(
+                assetId,
+                sglBalanceOfFeeTo,
+                false,
+            );
+            expect(sglAmountOfFeeTo.eq(borrowVal.mul(1e4).div(1e5))).to.be.true;
 
             // Withdraw collateral
             await (

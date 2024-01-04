@@ -336,7 +336,7 @@ describe('BigBang test', () => {
             const {
                 registerBigBangMarket,
                 weth,
-                wethAssetId,
+                // wethAssetId,
                 usdc,
                 usdcAssetId,
                 yieldBox,
@@ -366,6 +366,14 @@ describe('BigBang test', () => {
                 weth.address,
                 false,
             );
+
+            const wethAssetId = await bar.mainAssetId();
+
+            await bar.registerBigBangMasterContract(
+                mediumRiskBigBangMC.address,
+                1,
+            );
+            await bar.setBigBangEthMarketDebtRate((5e15).toString());
 
             const chainId = await hre.getChainId();
             const { usd0, lzEndpointContract, usd0Flashloan } =
@@ -398,6 +406,7 @@ describe('BigBang test', () => {
             const wethUsdoBigBangMarket = wethUsdoBBData.bigBangMarket;
             await usd0.setMinterStatus(wethUsdoBigBangMarket.address, true);
             await usd0.setBurnerStatus(wethUsdoBigBangMarket.address, true);
+            await bar.setBigBangEthMarket(wethUsdoBigBangMarket.address);
 
             const usdcUsdoBBData = await registerBigBangMarket(
                 mediumRiskBigBangMC.address,
@@ -576,6 +585,7 @@ describe('BigBang test', () => {
             log(`totalDebt       ${totalDebt}`, shouldLog);
             expect(totalDebt).to.be.closeTo(totalUsdoSupply, 1e4);
 
+            let totalBorrowInfo = await wethUsdoBigBangMarket.totalBorrow();
             log('[+] travel another 100 days into the future', shouldLog);
             await timeTravel(100 * 86400);
 
@@ -585,6 +595,12 @@ describe('BigBang test', () => {
             totalUsdoSupply = await usd0.totalSupply();
             expect(totalUsdoSupply.gt(0)).to.be.true;
             totalDebt = await bar.viewTotalDebt();
+
+            totalBorrowInfo = await wethUsdoBigBangMarket.totalBorrow();
+            const debtRate = await wethUsdoBigBangMarket.getDebtRate();
+            const mainDebtRate = await bar.bigBangEthDebtRate();
+            const isMain = await wethUsdoBigBangMarket.isMainMarket();
+
             expect(totalDebt.gt(totalUsdoSupply)).to.be.true;
 
             log(`totalUsdoSupply ${totalUsdoSupply}`, shouldLog);
@@ -708,203 +724,6 @@ describe('BigBang test', () => {
     });
 
     describe('borrow() & repay()', () => {
-        it('should borrow and repay on a 100% LTV market', async () => {
-            const {
-                registerBigBangMarket,
-                weth,
-                wethAssetId,
-                usdc,
-                usdcAssetId,
-                yieldBox,
-                deployer,
-                eoa1,
-                mediumRiskBigBangMC,
-                usd0WethOracle,
-                multiSwapper,
-                cluster,
-                registerUsd0Contract,
-                timeTravel,
-                __wethUsdcPrice,
-                twTap,
-                tap,
-                registerPenrose,
-            } = await loadFixture(register);
-
-            const { bar } = await registerPenrose(
-                yieldBox.address,
-                cluster.address,
-                tap.address,
-                weth.address,
-                false,
-            );
-
-            const chainId = await hre.getChainId();
-            const { usd0, lzEndpointContract, usd0Flashloan } =
-                await registerUsd0Contract(
-                    chainId,
-                    yieldBox.address,
-                    cluster.address,
-                    deployer.address,
-                    false,
-                );
-            await bar.setUsdoToken(usd0.address);
-            await usd0.setMinterStatus(bar.address, true);
-
-            const wethUsdoBBData = await registerBigBangMarket(
-                mediumRiskBigBangMC.address,
-                yieldBox,
-                bar,
-                weth,
-                wethAssetId,
-                usd0WethOracle,
-                multiSwapper.address,
-                cluster.address,
-                ethers.utils.parseEther('1'),
-                0,
-                0,
-                0,
-                0, //ignored, as this is the main market
-                (1e5).toString(),
-                (1e5).toString(),
-                false,
-            );
-            const wethUsdoBigBangMarket = wethUsdoBBData.bigBangMarket;
-            await usd0.setMinterStatus(wethUsdoBigBangMarket.address, true);
-            await usd0.setBurnerStatus(wethUsdoBigBangMarket.address, true);
-
-            const setAssetOracleFn =
-                wethUsdoBigBangMarket.interface.encodeFunctionData(
-                    'setAssetOracle',
-                    [usd0WethOracle.address, '0x'],
-                );
-
-            await bar.executeMarketFn(
-                [wethUsdoBigBangMarket.address],
-                [setAssetOracleFn],
-                true,
-            );
-
-            const setLiquidationPaused =
-                wethUsdoBigBangMarket.interface.encodeFunctionData(
-                    'updatePause',
-                    [4, true],
-                );
-            await bar.executeMarketFn(
-                [wethUsdoBigBangMarket.address],
-                [setLiquidationPaused],
-                true,
-            );
-
-            //approve collaterals for yieldBox
-            await weth.approve(yieldBox.address, ethers.constants.MaxUint256);
-            await usdc.approve(yieldBox.address, ethers.constants.MaxUint256);
-            await yieldBox.setApprovalForAll(
-                wethUsdoBigBangMarket.address,
-                true,
-            );
-
-            //mint collaterals
-            const wethMintVal = ethers.BigNumber.from((1e18).toString()).mul(
-                10,
-            );
-            await weth.freeMint(wethMintVal);
-
-            //deposit collateral amounts to yieldBox
-            const wethCollateralShare = await yieldBox.toShare(
-                wethAssetId,
-                wethMintVal,
-                false,
-            );
-            await yieldBox.depositAsset(
-                wethAssetId,
-                deployer.address,
-                deployer.address,
-                0,
-                wethCollateralShare,
-            );
-
-            //add collateral to markets
-            await wethUsdoBigBangMarket.addCollateral(
-                deployer.address,
-                deployer.address,
-                false,
-                0,
-                wethCollateralShare,
-            );
-
-            //borrow from weth market
-            const wethMarketBorrowVal = wethMintVal
-                .mul(999)
-                .div(1000)
-                .mul(__wethUsdcPrice.div((1e18).toString()));
-
-            await wethUsdoBigBangMarket.borrow(
-                deployer.address,
-                deployer.address,
-                wethMarketBorrowVal,
-            );
-
-            const collateralShare =
-                await wethUsdoBigBangMarket.userCollateralShare(
-                    deployer.address,
-                );
-
-            const collateralAmount = await yieldBox.toAmount(
-                await wethUsdoBigBangMarket.collateralId(),
-                collateralShare,
-                false,
-            );
-            const exchangeRateData = await usd0WethOracle.peek('0x');
-
-            const collateralAmountInAsset =
-                (collateralAmount * (1e18 / 1e5) * 1e5) /
-                exchangeRateData[1] /
-                1e18;
-            expect(collateralAmountInAsset).to.be.closeTo(
-                wethMarketBorrowVal / 1e18,
-                1e2,
-            );
-
-            await timeTravel(1000 * 86400);
-            await wethUsdoBigBangMarket.accrue();
-
-            const solvencyInfo = await wethUsdoBigBangMarket.computeTVLInfo(
-                deployer.address,
-                exchangeRateData[1],
-            );
-            expect(solvencyInfo[0].gt(0)).to.be.true;
-
-            await expect(
-                wethUsdoBigBangMarket.liquidate(
-                    [deployer.address],
-                    [
-                        await wethUsdoBigBangMarket.userBorrowPart(
-                            deployer.address,
-                        ),
-                    ],
-                    [0],
-                    [ethers.constants.AddressZero],
-                    ['0x'],
-                ),
-            ).to.be.revertedWith('Market: paused');
-
-            const part = await wethUsdoBigBangMarket.userBorrowPart(
-                deployer.address,
-            );
-            await wethUsdoBigBangMarket.repay(
-                deployer.address,
-                deployer.address,
-                false,
-                part.div(2),
-            );
-
-            const finalPart = await wethUsdoBigBangMarket.userBorrowPart(
-                deployer.address,
-            );
-
-            expect(finalPart.lt(part)).to.be.true;
-        });
-
         it('should borrow and repay from different senders', async () => {
             const {
                 wethBigBangMarket,

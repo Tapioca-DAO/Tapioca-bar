@@ -70,6 +70,11 @@ contract BBCommon is BBStorage {
         uint256 extraAmount = (uint256(_totalBorrow.elastic) *
             (getDebtRate() / 31536000).toUint64() *
             elapsedTime) / 1e18;
+        uint256 max = type(uint128).max - totalBorrowCap;
+
+        if (extraAmount > max) {
+            extraAmount = max;
+        }
         _totalBorrow.elastic += extraAmount.toUint128();
     }
 
@@ -97,6 +102,7 @@ contract BBCommon is BBStorage {
 
         // cap `extraAmount` to avoid overflow risk when converting it from uint256 to uint128
         uint256 max = type(uint128).max - totalBorrowCap;
+
         if (extraAmount > max) {
             extraAmount = max;
         }

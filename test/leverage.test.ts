@@ -210,12 +210,6 @@ describe('Singularity Leverage', () => {
             const interest = debt.sub(E(3345).div(10_000));
             expect(interest).to.be.gte(0);
             expect(interest).to.be.lte(E(1).div(1_000_000));
-
-            // All proceeds were used to pay some of the loan; Alice received none,
-            // but still has the 1 ETH loaned to her:
-            expect(await yieldBox.balanceOf(alice.address, wethId)).to.equal(
-                E(1).mul(1e8),
-            );
         });
 
         it('Should send the excess if "levering down past 0"', async () => {

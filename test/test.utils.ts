@@ -1436,7 +1436,7 @@ export async function getSGLPermitSignature(
     );
 }
 
-const gasPrice = 95000000000; //95gwei
+const gasPrice = 195000000000; //95gwei
 const log = (message: string, staging?: boolean) =>
     staging && console.log(message);
 export async function register(staging?: boolean) {

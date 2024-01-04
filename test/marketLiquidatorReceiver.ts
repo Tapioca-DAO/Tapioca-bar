@@ -79,7 +79,10 @@ describe('MarketLiquidatorReceiver test', () => {
                     usdc.address,
                     weth.address,
                     ethers.utils.parseEther('10'),
-                    defaultAbiCoder.encode(['uint256'], [0]),
+                    defaultAbiCoder.encode(
+                        ['uint256'],
+                        [ethers.utils.parseEther('10')],
+                    ),
                 ),
         ).to.not.be.reverted;
         eoa1Balance = await weth.balanceOf(eoa1.address);

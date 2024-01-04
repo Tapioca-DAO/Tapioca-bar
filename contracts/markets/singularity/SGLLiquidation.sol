@@ -26,12 +26,14 @@ contract SGLLiquidation is SGLCommon {
     error NotEnoughCollateral();
     error Solvent();
     error InsufficientLiquidationBonus();
+    error NotAuthorized();
 
     // *********************** //
     // *** OWNER FUNCTIONS *** //
     // *********************** //
     function liquidateBadDebt(
         address user,
+        address from,
         address receiver,
         IMarketLiquidatorReceiver liquidatorReceiver,
         bytes calldata liquidatorReceiverData,
@@ -45,6 +47,10 @@ contract SGLLiquidation is SGLCommon {
             _exchangeRate = exchangeRate; //use stored rate
         }
         if (_exchangeRate == 0) revert ExchangeRateNotValid();
+
+        //check from whitelist status
+        bool isWhitelisted = ICluster(penrose.cluster()).isWhitelisted(0, from);
+        if (!isWhitelisted) revert NotAuthorized();
 
         // accrue before liquidation
         _accrue();
@@ -82,8 +88,8 @@ contract SGLLiquidation is SGLCommon {
         userCollateralShare[user] = 0;
         userBorrowPart[user] = 0;
 
-        // transfer asset from `owner`
-        asset.safeTransferFrom(msg.sender, address(this), borrowAmount);
+        // transfer asset from `from`
+        asset.safeTransferFrom(from, address(this), borrowAmount);
         address(asset).safeApprove(address(yieldBox), borrowAmount);
         yieldBox.depositAsset(
             assetId,
@@ -197,15 +203,6 @@ contract SGLLiquidation is SGLCommon {
         returnedAmount = assetBalanceAfter - assetBalanceBefore;
         if (returnedAmount == 0) revert OnCollateralReceiverFailed();
         returnedShare = yieldBox.toShare(assetId, returnedAmount, false);
-
-        address(asset).safeApprove(address(yieldBox), returnedAmount);
-        yieldBox.depositAsset(
-            assetId,
-            address(this),
-            address(this),
-            0,
-            returnedShare
-        );
     }
 
     function _computeAssetAmountToSolvency(
@@ -324,49 +321,38 @@ contract SGLLiquidation is SGLCommon {
     }
 
     function _extractLiquidationFees(
-        uint256 returnedShare,
-        uint256 borrowShare,
+        uint256 extraShare,
         uint256 callerReward
     ) private returns (uint256 feeShare, uint256 callerShare) {
-        uint256 extraShare = returnedShare > borrowShare
-            ? returnedShare - borrowShare
-            : 0;
-
         callerShare = (extraShare * callerReward) / FEE_PRECISION; //  y%  of profit goes to caller.
         feeShare = extraShare - callerShare; // rest goes to the fee
 
+        address(asset).safeApprove(address(yieldBox), type(uint256).max);
         if (feeShare > 0) {
-            address(asset).safeApprove(address(yieldBox), type(uint256).max);
+            uint256 feeAmount = yieldBox.toAmount(assetId, feeShare, false);
             yieldBox.depositAsset(
                 assetId,
                 address(this),
                 address(penrose),
-                0,
-                feeShare
+                feeAmount,
+                0
             );
         }
         if (callerShare > 0) {
-            address(asset).safeApprove(address(yieldBox), type(uint256).max);
+            uint256 callerAmount = yieldBox.toAmount(
+                assetId,
+                callerShare,
+                false
+            );
             yieldBox.depositAsset(
                 assetId,
                 address(this),
                 msg.sender,
-                0,
-                callerShare
+                callerAmount,
+                0
             );
         }
-
-        totalAsset.elastic += (returnedShare - feeShare - callerShare)
-            .toUint128();
-
         address(asset).safeApprove(address(yieldBox), 0);
-
-        emit LogAddAsset(
-            address(this),
-            address(this),
-            returnedShare - feeShare - callerShare,
-            0
-        );
     }
 
     function _liquidateUser(
@@ -400,9 +386,30 @@ contract SGLLiquidation is SGLCommon {
         );
 
         if (returnedShare < borrowShare) revert AmountNotValid();
+
+        uint256 extraShare = returnedShare > borrowShare
+            ? returnedShare - borrowShare
+            : 0;
+        address(asset).safeApprove(
+            address(yieldBox),
+            returnedShare - extraShare
+        );
+        yieldBox.depositAsset(
+            assetId,
+            address(this),
+            address(this),
+            0,
+            returnedShare - extraShare
+        );
+        totalAsset.elastic += (returnedShare - extraShare).toUint128();
+        emit LogAddAsset(
+            address(this),
+            address(this),
+            (returnedShare - extraShare),
+            0
+        );
         (uint256 feeShare, uint256 callerShare) = _extractLiquidationFees(
-            returnedShare,
-            borrowShare,
+            extraShare,
             callerReward
         );
         address[] memory _users = new address[](1);
