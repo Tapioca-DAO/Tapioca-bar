@@ -8,6 +8,7 @@ export const buildMultiSwapper = async (
     uniV2Router: string,
     uniV2Factory: string,
     yieldBox: string,
+    owner: string,
 ): Promise<IDeployerVMAdd<UniswapV2Swapper__factory>> => {
     const UniswapV2Swapper = (await hre.ethers.getContractFactoryFromArtifact(
         UniswapV2SwapperArtifact,
@@ -16,7 +17,7 @@ export const buildMultiSwapper = async (
     return {
         contract: UniswapV2Swapper,
         deploymentName: 'MultiSwapper',
-        args: [uniV2Router, uniV2Factory, yieldBox],
+        args: [uniV2Router, uniV2Factory, yieldBox, owner],
         dependsOn: [{ argPosition: 2, deploymentName: 'YieldBox' }],
         runStaticSimulation: false,
     };
