@@ -258,6 +258,61 @@
         ],
         "421613": [
             {
+                "name": "ERC20WithoutStrategy-WETHMock",
+                "address": "0x68e7689a34540F965a04B74f3924fd8185835d12",
+                "meta": {
+                    "stratFor": "WETHMock",
+                    "args": [
+                        "0x57DA624533ad9c69fe6270e69078e426f9853B56",
+                        "0x00AAc35Ff4f40FfA2E623D3E341762E75D47927b"
+                    ],
+                    "salt": "0x72dbf8a281f2067b0ef7c0cda75495eb46367a849dc8375ed960ba24afcc55e3",
+                    "create2": true
+                }
+            },
+            {
+                "name": "OracleMock-WETHMock",
+                "address": "0x071A953854563E7e3F8dcb40b38cE5D0f2aaB238",
+                "meta": {
+                    "args": [
+                        "OracleMock-WETHMock",
+                        "OCM-WETHMock",
+                        {
+                            "type": "BigNumber",
+                            "hex": "0x0de0b6b3a7640000"
+                        }
+                    ],
+                    "salt": "0x517f6f13e64f3baf179d7e45637ed255f905b425931a4ec6bbe0280747004e38",
+                    "create2": true
+                }
+            },
+            {
+                "name": "Origins",
+                "address": "0x4011a06267284Ce5370C1b2031AaD9F07ea176aB",
+                "meta": {
+                    "isSGLMarket": false,
+                    "collateral": {
+                        "collateralAddress": "0xd384A44C510795753E92FacB3a09BD401E333c6c",
+                        "collateralStrategyAddress": "0x551aAf0b835eBbDda7B71d72CF3914CE86Ce58E7"
+                    },
+                    "asset": {
+                        "assetAddress": "0x99c76DF5C812acCCe2908387a9C9445dC5D69E10",
+                        "assetStrategyAddress": "0xdaA1b49196d2B3349d26EACc3Fed1368eE112755"
+                    }
+                }
+            },
+            {
+                "name": "BigBang-TapiocaOFT-FTMMock",
+                "address": "0xa588EcaE13a34844A8deCacC8d2ACD2b149Ed3E9",
+                "meta": {
+                    "isBigBangMarket": true,
+                    "collateral": {
+                        "collateralAddress": "0xD2664193E5c64EB10C93259B8ADfc8Ff1147A4E3",
+                        "collateralStrategyAddress": "0xf105b73c81faBE8da43272596A0488855AAA6181"
+                    }
+                }
+            },
+            {
                 "name": "OracleMock-TapiocaOFT-FTMMock",
                 "address": "0xD3d4f94D2B3373779257b09bf2dA874Cbe4B8da1",
                 "meta": {

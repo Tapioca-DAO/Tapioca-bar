@@ -10,6 +10,7 @@ enum StratType {
     USDO = 1,
     TAP = 2,
     Token = 3,
+    TokenAddress = 4,
 }
 // hh 01-deployEmptyStrats --network arbitrum_goerli --type 0/1/2
 export const deployEmptyStrats__task = async (
@@ -36,6 +37,7 @@ export const deployEmptyStrats__task = async (
     let name: string;
     let tokens: TContract[];
     let predicate = (e: any) => e.name == name;
+    let individualTokenAddress;
     switch (type) {
         case StratType.TOFT:
             project = SDK.API.config.TAPIOCA_PROJECTS_NAME.TapiocaZ;
@@ -67,6 +69,21 @@ export const deployEmptyStrats__task = async (
             });
             name = tokenName;
             break;
+        case StratType.TokenAddress:
+            project = SDK.API.config.TAPIOCA_PROJECTS_NAME.TapiocaBar;
+
+            const { tokenAddress } = await inquirer.prompt({
+                type: 'input',
+                name: 'tokenAddress',
+                message: 'Token address',
+            });
+            const token = await hre.ethers.getContractAt(
+                'IERC20Metadata',
+                tokenAddress,
+            );
+            name = await token.name();
+            individualTokenAddress = tokenAddress;
+            break;
         default:
             console.log('Specific deployment:');
             project = SDK.API.config.TAPIOCA_PROJECTS_NAME.TapiocaBar;
@@ -83,14 +100,24 @@ export const deployEmptyStrats__task = async (
 
     const VM = await loadVM(hre, tag, true);
 
-    tokens = hre.SDK.db
-        .loadGlobalDeployment(tag, project, await hre.getChainId())
-        .filter((e) => predicate(e));
-
-    if (tokens.length == 0) {
+    if (type != StratType.TokenAddress) {
         tokens = hre.SDK.db
-            .loadLocalDeployment(tag, await hre.getChainId())
+            .loadGlobalDeployment(tag, project, await hre.getChainId())
             .filter((e) => predicate(e));
+
+        if (tokens.length == 0) {
+            tokens = hre.SDK.db
+                .loadLocalDeployment(tag, await hre.getChainId())
+                .filter((e) => predicate(e));
+        }
+    } else {
+        tokens = [
+            {
+                name: name,
+                address: individualTokenAddress,
+                meta: {},
+            },
+        ];
     }
 
     console.log('[+] Found', tokens.length, 'tokens');

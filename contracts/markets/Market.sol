@@ -469,7 +469,6 @@ abstract contract Market is MarketERC20, BoringOwnable {
             collateralShare,
             false
         );
-
         return
             collateralAmount *
                 (EXCHANGE_RATE_PRECISION / FEE_PRECISION) *

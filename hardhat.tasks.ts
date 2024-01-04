@@ -31,6 +31,7 @@ import { deployFullStack__task } from './tasks/deploy/00-deployFullStack';
 import { deployLinkedChainStack__task } from './tasks/deploy/01-deployLinkedChainStack';
 import { deploySGLMarket__task } from './tasks/deploy/deploySGLMarket';
 import { deployBigBangMarket__task } from './tasks/deploy/deployBigBangMarket';
+import { deployOriginsMarket__task } from './tasks/deploy/deployOriginsMarket';
 import { testCrossChainBorrow__task } from './tasks/test-borrow';
 import { setMinterStatus__task } from './tasks/exec/setMinterStatus';
 import { sameChainFlowTest__task } from './tasks/test-sameChainFlow';
@@ -156,6 +157,12 @@ task(
     'deployBigBangMarket',
     'Deploy a BigBang market',
     deployBigBangMarket__task,
+).addOptionalParam('overrideOptions', 'Override options');
+
+task(
+    'deployOriginsMarket',
+    'Deploy a Origin market',
+    deployOriginsMarket__task,
 ).addOptionalParam('overrideOptions', 'Override options');
 
 task(

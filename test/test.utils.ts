@@ -680,6 +680,7 @@ async function registerMultiSwapper(
         __uniRouterAddress,
         __uniFactoryAddress,
         yieldBox.address,
+        deployer.address,
         {
             gasPrice: gasPrice,
         },
@@ -1109,6 +1110,38 @@ async function createWethUsd0Singularity(
     log(`WethUsd0Singularity feeCollector ${feeCollector.address}`, staging);
 
     return { wethUsdoSingularity };
+}
+
+async function registerOriginMarket(
+    deployerAddress: string,
+    yieldBox: YieldBox,
+    collateral: ERC20Mock,
+    collateralId: BigNumberish,
+    asset: ERC20Mock,
+    assetId: BigNumberish,
+    oracle: OracleMock,
+    collateralizationRate: BigNumberish,
+    exchangeRatePrecision?: BigNumberish,
+    staging?: boolean,
+) {
+    const originFactory = await ethers.getContractFactory('Origins');
+    const origins = await originFactory.deploy(
+        deployerAddress,
+        yieldBox.address,
+        asset.address,
+        assetId,
+        collateral.address,
+        collateralId,
+        oracle.address,
+        exchangeRatePrecision,
+        collateralizationRate,
+    );
+    log(
+        `Deployed Origins ${origins.address} with args [${deployerAddress}]`,
+        staging,
+    );
+
+    return { origins };
 }
 
 async function registerBigBangMarket(
@@ -2128,6 +2161,7 @@ export async function register(staging?: boolean) {
         createWethUsd0Singularity,
         createTokenEmptyStrategy,
         registerBigBangMarket,
+        registerOriginMarket,
         registerPenrose,
     };
 
