@@ -68,7 +68,7 @@ contract BBCommon is BBStorage {
         // Calculate fees
         _totalBorrow = totalBorrow;
         uint256 extraAmount = (uint256(_totalBorrow.elastic) *
-            (getDebtRate() / 31536000).toUint64() *
+            (getDebtRate() / 31536000) *
             elapsedTime) / 1e18;
         uint256 max = type(uint128).max - totalBorrowCap;
 
