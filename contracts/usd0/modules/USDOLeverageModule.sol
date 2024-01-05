@@ -38,7 +38,7 @@ contract USDOLeverageModule is USDOCommon {
         IUSDOBase.ILeverageExternalContractsData calldata externalData
     ) external payable {
         if (swapData.tokenOut == address(this)) revert NotValid();
-        _assureMaxSlippage(amount, swapData.amountOutMin);
+        if (swapData.amountOutMin == 0) revert AmountTooLow();
         if (externalData.swapper != address(0)) {
             if (
                 !cluster.isWhitelisted(
@@ -85,14 +85,5 @@ contract USDOLeverageModule is USDOCommon {
             msg.value
         );
         emit SendToChain(lzData.lzDstChainId, msg.sender, senderBytes, amount);
-    }
-
-    function _assureMaxSlippage(
-        uint256 amount,
-        uint256 minAmount
-    ) internal pure {
-        uint256 slippageMinAmount = amount -
-            ((SWAP_MAX_SLIPPAGE * amount) / SLIPPAGE_PRECISION);
-        if (minAmount < slippageMinAmount) revert AmountTooLow();
     }
 }

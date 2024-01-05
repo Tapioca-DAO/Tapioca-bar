@@ -76,7 +76,7 @@ export const deployFullStack__task = async (
             .find((e) => e.name == 'YieldBox');
     }
     if (!yb && !isTestnet) throw new Error('[-] YieldBox not found');
-    ybAddress = yb.address;
+    ybAddress = yb?.address;
 
     let clusterAddress = hre.ethers.constants.AddressZero;
     let clusterDep = hre.SDK.db
@@ -138,6 +138,7 @@ export const deployFullStack__task = async (
             UNISWAP_DEPLOYMENTS[chainInfo?.chainId as EChainID]?.v2Router,
             UNISWAP_DEPLOYMENTS[chainInfo?.chainId as EChainID]?.v2factory,
             ybAddress,
+            signer.address,
         );
         VM.add(uniswapperV2);
     }
