@@ -84,7 +84,7 @@ contract USDOOptionsDestinationModule is USDOCommon {
                 this.exerciseInternal.selector,
                 optionsData.from,
                 optionsData.oTAPTokenID,
-                optionsData.paymentToken,
+                address(this),
                 optionsData.tapAmount,
                 optionsData.target,
                 tapSendData,
