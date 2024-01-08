@@ -441,11 +441,14 @@ contract SGLLiquidation is SGLCommon {
             ? totalCollateralShare - collateralShare
             : 0;
 
-        (uint256 returnedShare, ) = _swapCollateralWithAsset(
-            collateralShare,
-            _liquidatorReceiver,
-            _liquidatorReceiverData
-        );
+        (
+            uint256 returnedShare,
+            uint256 returnedAmount
+        ) = _swapCollateralWithAsset(
+                collateralShare,
+                _liquidatorReceiver,
+                _liquidatorReceiverData
+            );
 
         if (returnedShare < borrowShare) revert AmountNotValid();
 
@@ -454,7 +457,7 @@ contract SGLLiquidation is SGLCommon {
             : 0;
         address(asset).safeApprove(
             address(yieldBox),
-            returnedShare - extraShare
+            returnedAmount - yieldBox.toAmount(assetId, extraShare, false)
         );
         yieldBox.depositAsset(
             assetId,
