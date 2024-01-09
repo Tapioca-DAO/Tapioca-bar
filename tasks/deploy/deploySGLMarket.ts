@@ -304,12 +304,25 @@ async function loadStrats(
 }
 
 async function loadContracts(hre: HardhatRuntimeEnvironment, tag: string) {
-    const { contract: yieldBox } =
-        await hre.SDK.hardhatUtils.getLocalContract<YieldBox>(
-            hre,
-            'YieldBox',
-            tag,
-        );
+    const chainInfo = hre.SDK.utils.getChainBy(
+        'chainId',
+        await hre.getChainId(),
+    );
+    if (!chainInfo) {
+        throw new Error('Chain not found');
+    }
+
+    let yb = hre.SDK.db
+        .loadGlobalDeployment(tag, 'yieldbox', chainInfo.chainId)
+        .find((e) => e.name == 'YieldBox');
+
+    if (!yb) {
+        yb = hre.SDK.db
+            .loadLocalDeployment(tag, chainInfo.chainId)
+            .find((e) => e.name == 'YieldBox');
+    }
+
+    const yieldBox = await hre.ethers.getContractAt('YieldBox', yb?.address);
 
     const { contract: penrose } =
         await hre.SDK.hardhatUtils.getLocalContract<Penrose>(
