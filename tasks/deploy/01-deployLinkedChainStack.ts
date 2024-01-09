@@ -72,10 +72,15 @@ export const deployLinkedChainStack__task = async (
     if (!clusterDep && !isTestnet) throw new Error('[-] Cluster not found');
     clusterAddress = clusterDep.address;
 
-    // 00 YieldBox
+    // 00 - Deploy YieldBox
     if (isTestnet) {
-        const [ybURI, yieldBox] = await buildYieldBox(hre, weth.address);
-        VM.add(ybURI).add(yieldBox);
+        if (!ybAddress || ybAddress == hre.ethers.constants.AddressZero) {
+            console.log('Need to deploy YieldBox');
+            const [ybURI, yieldBox] = await buildYieldBox(hre, weth.address);
+            VM.add(ybURI).add(yieldBox);
+        } else {
+            console.log(`Using deployed YieldBox ${ybAddress}`);
+        }
     }
 
     // 01 - Deploy Cluster
@@ -148,6 +153,7 @@ export const deployLinkedChainStack__task = async (
     const simpleLeverageExecutor = await buildSimpleLeverageExecutor(
         hre,
         clusterAddress,
+        ybAddress,
     );
     VM.add(simpleLeverageExecutor);
 
