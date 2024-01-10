@@ -150,6 +150,7 @@ contract BBLiquidation is BBCommon {
         if (_exchangeRate == 0) revert ExchangeRateNotValid();
 
         _accrue();
+        penrose.reAccrueBigBangMarkets();
 
         _closedLiquidation(
             users,
