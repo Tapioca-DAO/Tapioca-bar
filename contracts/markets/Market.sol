@@ -281,6 +281,12 @@ abstract contract Market is MarketERC20, BoringOwnable {
                 _collateralizationRate <= liquidationCollateralizationRate,
                 "Market: collateralizationRate too big"
             );
+            require(
+                _collateralizationRate *
+                    (10 ** FEE_PRECISION + liquidationMultiplier) <
+                    10 ** (2 * FEE_PRECISION),
+                "Market: CR * (1 + LM) >= 1"
+            );
             collateralizationRate = _collateralizationRate;
             emit ValueUpdated(7, _collateralizationRate);
         }

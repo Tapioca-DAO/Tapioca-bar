@@ -883,7 +883,7 @@ describe('Singularity test', () => {
             expect(userBorrowedAmountAfter.eq(0)).to.be.true;
             expect(userCollateralShareAfter.eq(0)).to.be.true;
         });
-        it.only('Should lend Weth, deposit Usdc collateral and borrow Weth and be liquidated for price drop', async () => {
+        it('Should lend Weth, deposit Usdc collateral and borrow Weth and be liquidated for price drop', async () => {
             const {
                 usdc,
                 weth,
