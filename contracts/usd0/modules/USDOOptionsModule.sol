@@ -83,7 +83,7 @@ contract USDOOptionsModule is USDOCommon {
             lzData.lzDstChainId,
             PT_TAP_EXERCISE,
             adapterParams,
-            lzData.extraGas
+            NO_EXTRA_GAS
         );
 
         _lzSend(

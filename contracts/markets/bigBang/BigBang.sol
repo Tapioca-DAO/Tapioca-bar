@@ -453,6 +453,52 @@ contract BigBang is BBCommon {
         pauseOptions[_type] = val;
     }
 
+    /// @notice updates the pause state of the contract for all types
+    /// @param val the new val
+    function updatePauseAll(bool val) external {
+        require(msg.sender == conservator, "Market: unauthorized");
+
+        pauseOptions[PauseType.Borrow] = val;
+        pauseOptions[PauseType.Repay] = val;
+        pauseOptions[PauseType.AddCollateral] = val;
+        pauseOptions[PauseType.RemoveCollateral] = val;
+        pauseOptions[PauseType.Liquidation] = val;
+        pauseOptions[PauseType.LeverageBuy] = val;
+        pauseOptions[PauseType.LeverageSell] = val;
+
+        emit PausedUpdated(
+            PauseType.Borrow,
+            pauseOptions[PauseType.Borrow],
+            val
+        );
+        emit PausedUpdated(PauseType.Repay, pauseOptions[PauseType.Repay], val);
+        emit PausedUpdated(
+            PauseType.AddCollateral,
+            pauseOptions[PauseType.AddCollateral],
+            val
+        );
+        emit PausedUpdated(
+            PauseType.RemoveCollateral,
+            pauseOptions[PauseType.RemoveCollateral],
+            val
+        );
+        emit PausedUpdated(
+            PauseType.Liquidation,
+            pauseOptions[PauseType.Liquidation],
+            val
+        );
+        emit PausedUpdated(
+            PauseType.LeverageBuy,
+            pauseOptions[PauseType.LeverageBuy],
+            val
+        );
+        emit PausedUpdated(
+            PauseType.LeverageSell,
+            pauseOptions[PauseType.LeverageSell],
+            val
+        );
+    }
+
     /// @notice sets min and max mint range
     /// @dev can only be called by the owner
     /// @param _min the new min start
