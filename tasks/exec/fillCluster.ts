@@ -139,6 +139,15 @@ const loadAllContracts = (
             hre,
             tag,
             chain,
+            hre.SDK.config.TAPIOCA_PROJECTS_NAME.YieldBox,
+            filter,
+        ),
+    );
+    contracts.push(
+        ...loadContractsFromProject(
+            hre,
+            tag,
+            chain,
             hre.SDK.config.TAPIOCA_PROJECTS_NAME.Generic,
             filter,
         ),

@@ -93,8 +93,13 @@ export const deployFullStack__task = async (
 
     // 00 - Deploy YieldBox
     if (isTestnet) {
-        const [ybURI, yieldBox] = await buildYieldBox(hre, weth.address);
-        VM.add(ybURI).add(yieldBox);
+        if (!ybAddress || ybAddress == hre.ethers.constants.AddressZero) {
+            console.log('Need to deploy YieldBox');
+            const [ybURI, yieldBox] = await buildYieldBox(hre, weth.address);
+            VM.add(ybURI).add(yieldBox);
+        } else {
+            console.log(`Using deployed YieldBox ${ybAddress}`);
+        }
     }
 
     // 01 - Deploy Cluster
@@ -195,6 +200,7 @@ export const deployFullStack__task = async (
     const simpleLeverageExecutor = await buildSimpleLeverageExecutor(
         hre,
         clusterAddress,
+        ybAddress,
     );
     VM.add(simpleLeverageExecutor);
 

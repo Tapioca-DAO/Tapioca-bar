@@ -389,7 +389,6 @@ contract SGLLiquidation is SGLCommon {
         callerShare = (extraShare * callerReward) / FEE_PRECISION; //  y%  of profit goes to caller.
         feeShare = extraShare - callerShare; // rest goes to the fee
 
-        address(asset).safeApprove(address(yieldBox), type(uint256).max);
         if (feeShare > 0) {
             uint256 feeAmount = yieldBox.toAmount(assetId, feeShare, false);
             yieldBox.depositAsset(
@@ -414,7 +413,6 @@ contract SGLLiquidation is SGLCommon {
                 0
             );
         }
-        address(asset).safeApprove(address(yieldBox), 0);
     }
 
     function _liquidateUser(
@@ -455,10 +453,8 @@ contract SGLLiquidation is SGLCommon {
         uint256 extraShare = returnedShare > borrowShare
             ? returnedShare - borrowShare
             : 0;
-        address(asset).safeApprove(
-            address(yieldBox),
-            returnedAmount - yieldBox.toAmount(assetId, extraShare, false)
-        );
+
+        address(asset).safeApprove(address(yieldBox), type(uint256).max);
         yieldBox.depositAsset(
             assetId,
             address(this),
@@ -477,6 +473,7 @@ contract SGLLiquidation is SGLCommon {
             extraShare,
             callerReward
         );
+        address(asset).safeApprove(address(yieldBox), 0);
         address[] memory _users = new address[](1);
         _users[0] = user;
         emit Liquidated(

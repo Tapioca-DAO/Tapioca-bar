@@ -27,9 +27,16 @@ export const deployEmptyStrats__task = async (
 
     const tag = await hre.SDK.hardhatUtils.askForTag(hre, 'local');
 
-    const yieldBox = hre.SDK.db
-        .loadLocalDeployment(tag, chainInfo.chainId)
-        .find((e) => e.name === 'YieldBox');
+    let yieldBox = hre.SDK.db
+        .loadGlobalDeployment(tag, 'yieldbox', chainInfo.chainId)
+        .find((e) => e.name == 'YieldBox');
+
+    if (!yieldBox) {
+        yieldBox = hre.SDK.db
+            .loadLocalDeployment(tag, chainInfo.chainId)
+            .find((e) => e.name == 'YieldBox');
+    }
+    if (!yieldBox) throw new Error('[-] YieldBox not found');
 
     const type: StratType = parseInt(taskArgs.type);
 

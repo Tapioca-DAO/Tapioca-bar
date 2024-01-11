@@ -30,12 +30,17 @@ export const deployBigBangMarket__task = async (
         throw new Error('Chain not found');
     }
 
-    const { contract: yieldBox } =
-        await hre.SDK.hardhatUtils.getLocalContract<YieldBox>(
-            hre,
-            'YieldBox',
-            tag,
-        );
+    let yb = hre.SDK.db
+        .loadGlobalDeployment(tag, 'yieldbox', chainInfo.chainId)
+        .find((e) => e.name == 'YieldBox');
+
+    if (!yb) {
+        yb = hre.SDK.db
+            .loadLocalDeployment(tag, chainInfo.chainId)
+            .find((e) => e.name == 'YieldBox');
+    }
+
+    const yieldBox = await hre.ethers.getContractAt('YieldBox', yb?.address);
 
     const { contract: penrose } =
         await hre.SDK.hardhatUtils.getLocalContract<Penrose>(
@@ -239,6 +244,10 @@ export const deployBigBangMarket__task = async (
         default: '0',
     });
 
+    const bbFactory = await hre.ethers.getContractFactory('BigBang');
+    const bb = await bbFactory.deploy();
+    await bb.deployed();
+
     const data = new hre.ethers.utils.AbiCoder().encode(
         [
             'address', //bb liquidation
@@ -276,17 +285,10 @@ export const deployBigBangMarket__task = async (
             leverageExecutor.address,
         ],
     );
+    await (await bb.init(data)).wait(3);
 
     console.log('[+] +Setting: Register BigBang market in Penrose');
-    const tx = await penrose.registerBigBang(
-        mediumRiskMC.address,
-        data,
-        true,
-        taskArgs.overrideOptions
-            ? getOverrideOptions(String(hre.network.config.chainId))
-            : {},
-    );
-    await tx.wait(3);
+    await (await penrose.addBigBang(mediumRiskMC.address, bb.address)).wait(3);
 
     const marketsLength = (await penrose.bigBangMarkets()).length;
     const market = await hre.ethers.getContractAt(
