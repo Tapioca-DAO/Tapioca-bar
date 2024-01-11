@@ -74,8 +74,9 @@ contract USDOMarketModule is USDOCommon {
             }
         }
 
-        (, uint256 extraGas, uint256 airdropAmount, ) = LzLib
-            .decodeAdapterParams(adapterParams);
+        (, , uint256 airdropAmount, ) = LzLib.decodeAdapterParams(
+            adapterParams
+        );
         bytes memory lzPayload = abi.encode(
             PT_MARKET_REMOVE_ASSET,
             to,
@@ -90,7 +91,7 @@ contract USDOMarketModule is USDOCommon {
             lzDstChainId,
             PT_MARKET_REMOVE_ASSET,
             adapterParams,
-            extraGas
+            NO_EXTRA_GAS
         );
 
         _lzSend(
@@ -136,7 +137,7 @@ contract USDOMarketModule is USDOCommon {
         );
         if (lendParams.depositAmount == 0) revert NotValid();
 
-        (, uint extraGas, uint256 airdropAmount, ) = LzLib.decodeAdapterParams(
+        (, , uint256 airdropAmount, ) = LzLib.decodeAdapterParams(
             adapterParams
         );
         bytes memory lzPayload = abi.encode(
@@ -154,7 +155,7 @@ contract USDOMarketModule is USDOCommon {
             lzDstChainId,
             PT_YB_SEND_SGL_LEND_OR_REPAY,
             adapterParams,
-            extraGas
+            NO_EXTRA_GAS
         );
 
         _lzSend(

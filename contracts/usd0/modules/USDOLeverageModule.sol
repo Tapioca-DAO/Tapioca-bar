@@ -57,8 +57,9 @@ contract USDOLeverageModule is USDOCommon {
         );
         if (amount == 0) revert NotValid();
 
-        (, uint256 dstExtraGas, uint256 airdropAmount, ) = LzLib
-            .decodeAdapterParams(lzData.dstAirdropAdapterParam);
+        (, , uint256 airdropAmount, ) = LzLib.decodeAdapterParams(
+            lzData.dstAirdropAdapterParam
+        );
         bytes memory lzPayload = abi.encode(
             PT_LEVERAGE_MARKET_UP,
             _ld2sd(amount),
@@ -73,7 +74,7 @@ contract USDOLeverageModule is USDOCommon {
             lzData.lzDstChainId,
             PT_LEVERAGE_MARKET_UP,
             lzData.dstAirdropAdapterParam,
-            dstExtraGas
+            NO_EXTRA_GAS
         );
 
         _lzSend(
