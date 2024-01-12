@@ -9,12 +9,14 @@ import "@boringcrypto/boring-solidity/contracts/libraries/BoringRebase.sol";
 import {IUSDOBase} from "tapioca-periph/contracts/interfaces/IUSDO.sol";
 import "tapioca-periph/contracts/interfaces/IMagnetar.sol";
 import "tapioca-periph/contracts/interfaces/IMagnetarHelper.sol";
+import "tapioca-periph/contracts/libraries/SafeApprove.sol";
 
 import "./USDOCommon.sol";
 
 contract USDOMarketDestinationModule is USDOCommon {
     using RebaseLibrary for Rebase;
     using SafeERC20 for IERC20;
+    using SafeApprove for address;
 
     constructor(
         address _lzEndpoint,
@@ -118,14 +120,20 @@ contract USDOMarketDestinationModule is USDOCommon {
         }
 
         // Use market helper to deposit and add asset to market
-        approve(address(lendParams.marketHelper), lendParams.depositAmount);
+        SafeApprove.safeApprove(
+            address(this),
+            address(lendParams.marketHelper),
+            lendParams.repayAmount > lendParams.depositAmount
+                ? lendParams.repayAmount
+                : lendParams.depositAmount
+        );
         if (lendParams.repay) {
             if (lendParams.repayAmount == 0) {
                 lendParams.repayAmount = IMagnetarHelper(
                     IMagnetar(lendParams.marketHelper).helper()
                 ).getBorrowPartForAmount(
                         lendParams.market,
-                        lendParams.depositAmount
+                        lendParams.repayAmount
                     );
             }
             IMagnetar(lendParams.marketHelper)
@@ -156,7 +164,7 @@ contract USDOMarketDestinationModule is USDOCommon {
                     })
                 }),
                 ICommonData.IDepositData({
-                    deposit: true,
+                    deposit: lendParams.depositAmount > 0,
                     amount: lendParams.depositAmount,
                     extractFromSender: true
                 }),
@@ -169,6 +177,11 @@ contract USDOMarketDestinationModule is USDOCommon {
                 })
             );
         }
+        SafeApprove.safeApprove(
+            address(this),
+            address(lendParams.marketHelper),
+            0
+        );
 
         if (revokes.length > 0) {
             _callApproval(revokes, PT_YB_SEND_SGL_LEND_OR_REPAY);

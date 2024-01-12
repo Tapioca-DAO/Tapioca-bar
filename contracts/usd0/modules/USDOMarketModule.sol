@@ -135,8 +135,6 @@ contract USDOMarketModule is USDOCommon {
             toAddress,
             lendParams.depositAmount
         );
-        if (lendParams.depositAmount == 0) revert NotValid();
-
         (, , uint256 airdropAmount, ) = LzLib.decodeAdapterParams(
             adapterParams
         );
