@@ -33,15 +33,6 @@ contract MarketERC20 is IERC20, IERC20Permit, EIP712 {
             "PermitBorrow(uint16 actionType,address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)"
         );
 
-    /**
-     * @dev In previous versions `_PERMIT_TYPEHASH` was declared as `immutable`.
-     * However, to ensure consistency with the upgradeable transpiler, we will continue
-     * to reserve a slot.
-     * @custom:oz-renamed-from _PERMIT_TYPEHASH
-     */
-    // solhint-disable-next-line var-name-mixedcase
-    bytes32 private _PERMIT_TYPEHASH_DEPRECATED_SLOT;
-
     /// @notice owner > balance mapping.
     mapping(address => uint256) public override balanceOf;
     /// @notice owner > spender > allowance mapping.
