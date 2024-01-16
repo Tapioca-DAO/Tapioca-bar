@@ -158,6 +158,10 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
         });
 
         transferOwnership(_owner);
+
+        uint256 chain = _getChainId();
+        allowedMinter[chain][_owner] = true;
+        allowedBurner[chain][_owner] = true;
     }
 
     // *********************** //

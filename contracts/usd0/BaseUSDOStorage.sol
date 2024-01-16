@@ -75,10 +75,6 @@ contract BaseUSDOStorage is OFTV2 {
         IYieldBoxBase _yieldBox,
         ICluster _cluster
     ) OFTV2("USDO", "USDO", 8, _lzEndpoint) {
-        uint256 chain = _getChainId();
-        allowedMinter[chain][msg.sender] = true;
-        allowedBurner[chain][msg.sender] = true;
-
         yieldBox = _yieldBox;
         cluster = _cluster;
     }
