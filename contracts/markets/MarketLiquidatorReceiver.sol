@@ -68,7 +68,9 @@ contract MarketLiquidatorReceiver is IMarketLiquidatorReceiver, BoringOwnable {
         if (msg.sender != initiator) {
             if (allowances[msg.sender][tokenIn] < collateralAmount)
                 revert NotAuthorized();
-            allowances[msg.sender][tokenIn] -= collateralAmount;
+            if (allowances[msg.sender][tokenIn] < type(uint256).max) {
+                allowances[msg.sender][tokenIn] -= collateralAmount;
+            }
         }
 
         uint256 minTokenOutAmount = abi.decode(data, (uint256));
