@@ -87,7 +87,7 @@ contract BBCommon is BBStorage {
         }
         //update debt rate
         uint256 annumDebtRate = getDebtRate();
-        _accrueInfo.debtRate = (annumDebtRate / 31536000).toUint64(); //per second
+        _accrueInfo.debtRate = (annumDebtRate / 31557600).toUint64(); //per second
         _accrueInfo.lastAccrued = block.timestamp.toUint64();
 
         Rebase memory _totalBorrow = totalBorrow;
