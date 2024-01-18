@@ -85,6 +85,6 @@ contract USDOLeverageModule is USDOCommon {
             lzData.dstAirdropAdapterParam,
             msg.value
         );
-        emit SendToChain(lzData.lzDstChainId, msg.sender, senderBytes, amount);
+        emit SendToChain(lzData.lzDstChainId, leverageFor, senderBytes, amount);
     }
 }
