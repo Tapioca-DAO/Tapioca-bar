@@ -302,8 +302,7 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
 
     /// @notice calls removeAssetAndRepay on Magnetar from the destination layer
     /// @dev handled by USDOMarketModule
-    /// @param from sending address
-    /// @param to receiver address
+    /// @param user the address to substract from & the receiver
     /// @param lzDstChainId LayerZero destination chain id
     /// @param zroPaymentAddress ZRO payment address
     /// @param adapterParams LZ adapter params
@@ -312,8 +311,7 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
     /// @param approvals the cross chain approval operation data
     /// @param revokes the cross chain revoke operations data
     function removeAsset(
-        address from,
-        address to,
+        address user,
         uint16 lzDstChainId,
         address zroPaymentAddress,
         bytes calldata adapterParams,
@@ -326,8 +324,7 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
             Module.Market,
             abi.encodeWithSelector(
                 USDOMarketModule.removeAsset.selector,
-                from,
-                to,
+                user,
                 lzDstChainId,
                 zroPaymentAddress,
                 adapterParams,

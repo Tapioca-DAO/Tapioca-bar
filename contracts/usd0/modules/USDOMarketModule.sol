@@ -25,8 +25,7 @@ contract USDOMarketModule is USDOCommon {
     ) BaseUSDOStorage(_lzEndpoint, _yieldBox, _cluster) {}
 
     /// @notice initiates an asset removal on a market from another layer
-    /// @param from the address to substract from
-    /// @param to the receiver
+    /// @param user the address to substract from & the receiver
     /// @param lzDstChainId LayerZero destination chain id
     /// @param zroPaymentAddress ZRO payment address
     /// @param adapterParams LZ call adapter parameters
@@ -35,8 +34,7 @@ contract USDOMarketModule is USDOCommon {
     /// @param approvals approvals array that should be executed on destination
     /// @param revokes revokes array that should be executed on destination
     function removeAsset(
-        address from,
-        address to,
+        address user,
         uint16 lzDstChainId,
         address zroPaymentAddress,
         bytes calldata adapterParams,
@@ -46,15 +44,15 @@ contract USDOMarketModule is USDOCommon {
         ICommonData.IApproval[] calldata revokes
     ) external payable {
         //allowance is also checked on SGl
-        if (from != msg.sender) {
+        if (user != msg.sender) {
             if (removeAndRepayData.removeAssetFromSGL) {
                 if (
-                    allowance(from, msg.sender) <
+                    allowance(user, msg.sender) <
                     removeAndRepayData.removeAmount
                 ) revert AllowanceNotValid();
 
                 _spendAllowance(
-                    from,
+                    user,
                     msg.sender,
                     removeAndRepayData.removeAmount
                 );
@@ -62,12 +60,12 @@ contract USDOMarketModule is USDOCommon {
 
             if (removeAndRepayData.removeCollateralFromBB) {
                 if (
-                    allowance(from, msg.sender) <
+                    allowance(user, msg.sender) <
                     removeAndRepayData.collateralAmount
                 ) revert AllowanceNotValid();
 
                 _spendAllowance(
-                    from,
+                    user,
                     msg.sender,
                     removeAndRepayData.collateralAmount
                 );
@@ -79,7 +77,7 @@ contract USDOMarketModule is USDOCommon {
         );
         bytes memory lzPayload = abi.encode(
             PT_MARKET_REMOVE_ASSET,
-            to,
+            user,
             externalData,
             removeAndRepayData,
             approvals,
@@ -97,13 +95,13 @@ contract USDOMarketModule is USDOCommon {
         _lzSend(
             lzDstChainId,
             lzPayload,
-            payable(from),
+            payable(user),
             zroPaymentAddress,
             adapterParams,
             msg.value
         );
 
-        emit SendToChain(lzDstChainId, from, LzLib.addressToBytes32(to), 0);
+        emit SendToChain(lzDstChainId, user, LzLib.addressToBytes32(user), 0);
     }
 
     /// @notice sends USDO to be lent or for repayment on destination
