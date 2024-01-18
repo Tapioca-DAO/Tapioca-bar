@@ -64,7 +64,9 @@ contract USDOFlashloanHelper is IERC3156FlashLender, BoringOwnable {
     }
 
     /// @notice returns the maximum amount of USDO available for a flash mint
-    function maxFlashLoan(address) public view override returns (uint256) {
+    function maxFlashLoan(address token) public view override returns (uint256) {
+        if (token != address(usdo)) return 0;
+
         if (usdo.totalSupply() > maxFlashMint) {
             return maxFlashMint;
         } else {
