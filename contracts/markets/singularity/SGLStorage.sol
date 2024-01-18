@@ -58,8 +58,8 @@ contract SGLStorage is BoringOwnable, Market, ReentrancyGuard {
 
     uint64 public minimumInterestPerSecond;
     uint64 public maximumInterestPerSecond;
-    uint256 public interestElasticity;
     uint64 public startingInterestPerSecond;
+    uint256 public interestElasticity;
 
     /// @notice borrowing opening fee
     uint256 public borrowOpeningFee = 50; //0.05%

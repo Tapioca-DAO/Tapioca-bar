@@ -43,6 +43,7 @@ contract USDOMarketDestinationModule is USDOCommon {
 
         (
             ,
+            address from,
             address to,
             uint64 lendAmountSD,
             IUSDOBase.ILendOrRepayParams memory lendParams,
@@ -54,6 +55,7 @@ contract USDOMarketDestinationModule is USDOCommon {
                 _payload,
                 (
                     uint16,
+                    address,
                     address,
                     uint64,
                     IUSDOBase.ILendOrRepayParams,
@@ -88,7 +90,7 @@ contract USDOMarketDestinationModule is USDOCommon {
         if (!success) {
             if (balanceAfter - balanceBefore >= lendParams.depositAmount) {
                 IERC20(address(this)).safeTransfer(
-                    to,
+                    from,
                     lendParams.depositAmount
                 );
             }
