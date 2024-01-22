@@ -337,6 +337,13 @@ contract SGLLiquidation is SGLCommon {
         emit Liquidated(msg.sender, _users, callerShare, feeShare, borrowAmount, collateralShare);
     }
 
+    struct __ClosedLiquidationCalldata {
+        address user;
+        uint256 maxBorrowPart;
+        uint256 minLiquidationBonus;
+        IMarketLiquidatorReceiver liquidatorReceiver;
+    }
+
     function _closedLiquidation(
         address[] calldata users,
         uint256[] calldata maxBorrowParts,
@@ -346,22 +353,32 @@ contract SGLLiquidation is SGLCommon {
         uint256 _exchangeRate
     ) private {
         uint256 liquidatedCount = 0;
-        unchecked {
-            for (uint256 i; i < users.length; i++) {
-                address user = users[i];
-                if (!_isSolvent(user, _exchangeRate, true)) {
-                    liquidatedCount++;
-                    _liquidateUser(
-                        user,
-                        maxBorrowParts[i],
-                        liquidatorReceivers[i],
-                        liquidatorReceiverDatas[i],
-                        _exchangeRate,
-                        minLiquidationBonuses[i]
-                    );
-                }
+        uint256 arrLength = users.length;
+
+        __ClosedLiquidationCalldata memory calldata_; // Stack too deep fix
+
+        for (uint256 i; i < arrLength;) {
+            calldata_.user = users[i];
+            calldata_.maxBorrowPart = maxBorrowParts[i];
+            calldata_.minLiquidationBonus = minLiquidationBonuses[i];
+            calldata_.liquidatorReceiver = liquidatorReceivers[i];
+
+            if (!_isSolvent(calldata_.user, _exchangeRate, true)) {
+                liquidatedCount++;
+                _liquidateUser(
+                    calldata_.user,
+                    calldata_.maxBorrowPart,
+                    calldata_.liquidatorReceiver,
+                    liquidatorReceiverDatas[i],
+                    _exchangeRate,
+                    calldata_.minLiquidationBonus
+                );
+            }
+            unchecked {
+                ++i;
             }
         }
-        if (liquidatedCount == 0) revert NothingToLiquidate();
+
+        require(liquidatedCount != 0, "BB: no users found");
     }
 }
