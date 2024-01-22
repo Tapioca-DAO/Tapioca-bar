@@ -50,19 +50,22 @@ contract BBLiquidation is BBCommon {
         bool swapCollateral
     ) external onlyOwner {
         // try-get oracle exchange rate
-        (bool updated, uint256 _exchangeRate) = oracle.get(oracleData);
-        if (updated && _exchangeRate > 0) {
-            exchangeRate = _exchangeRate; //update cached rate
-            rateTimestamp = block.timestamp;
-        } else {
-            _exchangeRate = exchangeRate; //use stored rate
+        {
+            (bool updated, uint256 _exchangeRate) = oracle.get(oracleData);
+            if (updated && _exchangeRate > 0) {
+                exchangeRate = _exchangeRate; //update cached rate
+                rateTimestamp = block.timestamp;
+            } else {
+                _exchangeRate = exchangeRate; //use stored rate
+            }
+            if (_exchangeRate == 0) revert ExchangeRateNotValid();
         }
-        if (_exchangeRate == 0) revert ExchangeRateNotValid();
 
         //check from whitelist status
-        bool isWhitelisted = ICluster(penrose.cluster()).isWhitelisted(0, from);
-        if (!isWhitelisted) revert NotAuthorized();
-
+        {
+            bool isWhitelisted = ICluster(penrose.cluster()).isWhitelisted(0, from);
+            if (!isWhitelisted) revert NotAuthorized();
+        }
         // accrue before liquidation
         _accrue();
 
@@ -276,8 +279,15 @@ contract BBLiquidation is BBCommon {
         emit Liquidated(msg.sender, _users, callerShare, feeShare, borrowAmount, collateralShare);
     }
 
+    struct __ClosedLiquidationCalldata {
+        address user;
+        uint256 maxBorrowPart;
+        uint256 minLiquidationBonus;
+        IMarketLiquidatorReceiver liquidatorReceiver;
+    }
     /// @notice Handles the liquidation of users' balances, once the users' amount of collateral is too low.
     /// @dev Closed liquidations Only, 90% of extra shares goes to caller and 10% to protocol
+
     function _closedLiquidation(
         address[] calldata users,
         uint256[] calldata maxBorrowParts,
@@ -287,18 +297,29 @@ contract BBLiquidation is BBCommon {
         uint256 _exchangeRate
     ) private {
         uint256 liquidatedCount = 0;
-        for (uint256 i; i < users.length; i++) {
-            address user = users[i];
-            if (!_isSolvent(user, _exchangeRate, true)) {
+        uint256 arrLength = users.length;
+
+        __ClosedLiquidationCalldata memory calldata_; // Stack too deep fix
+
+        for (uint256 i; i < arrLength;) {
+            calldata_.user = users[i];
+            calldata_.maxBorrowPart = maxBorrowParts[i];
+            calldata_.minLiquidationBonus = minLiquidationBonuses[i];
+            calldata_.liquidatorReceiver = liquidatorReceivers[i];
+
+            if (!_isSolvent(calldata_.user, _exchangeRate, true)) {
                 liquidatedCount++;
                 _liquidateUser(
-                    user,
-                    maxBorrowParts[i],
-                    liquidatorReceivers[i],
+                    calldata_.user,
+                    calldata_.maxBorrowPart,
+                    calldata_.liquidatorReceiver,
                     liquidatorReceiverDatas[i],
                     _exchangeRate,
-                    minLiquidationBonuses[i]
+                    calldata_.minLiquidationBonus
                 );
+            }
+            unchecked {
+                ++i;
             }
         }
 
