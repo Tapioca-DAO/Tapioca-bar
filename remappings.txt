@@ -1,0 +1,14 @@
+contracts/=contracts/
+solidity-bytes-utils/=node_modules/@layerzerolabs/solidity-bytes-utils/
+tapioca-sdk/=lib/tapioca-sdk/contracts/
+tapioca-periphery/=lib/tapioca-periph/contracts/
+@boringcrypto/=node_modules/@boringcrypto/
+@openzeppelin/=node_modules/@openzeppelin/
+@uniswap/=node_modules/@uniswap/
+base64-sol/=node_modules/base64-sol/
+eth-gas-reporter/=node_modules/eth-gas-reporter/
+forge-std/=lib/forge-std/src/
+hardhat-deploy/=node_modules/hardhat-deploy/
+hardhat/=node_modules/hardhat/
+prb-math/=node_modules/prb-math/
+tapioca-periph/=lib/tapioca-periph/contracts/
