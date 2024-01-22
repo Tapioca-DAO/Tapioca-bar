@@ -1,16 +1,18 @@
+import '@nomicfoundation/hardhat-toolbox';
 import * as dotenv from 'dotenv';
 
-import '@nomicfoundation/hardhat-toolbox';
 import '@nomicfoundation/hardhat-chai-matchers';
-import '@nomiclabs/hardhat-vyper';
-import { HardhatUserConfig } from 'hardhat/config';
-import 'hardhat-deploy';
-import 'hardhat-contract-sizer';
-import 'hardhat-gas-reporter';
-import SDK from 'tapioca-sdk';
-import { HttpNetworkConfig } from 'hardhat/types';
-import 'hardhat-tracer';
 import '@primitivefi/hardhat-dodoc';
+import 'hardhat-contract-sizer';
+import 'hardhat-deploy';
+import { HardhatUserConfig } from 'hardhat/config';
+import { HttpNetworkConfig, NetworksUserConfig } from 'hardhat/types';
+import 'hardhat-tracer';
+
+// Tapioca
+import { TAPIOCA_PROJECTS_NAME } from '@tapioca-sdk/api/config';
+import 'tapioca-sdk'; // Use directly the un-compiled code, no need to wait for the tarball to be published.
+import { SDK, deleteDefaultTasks, loadEnv } from 'tapioca-sdk';
 
 dotenv.config();
 
@@ -19,9 +21,15 @@ declare global {
     namespace NodeJS {
         interface ProcessEnv {
             ALCHEMY_API_KEY: string;
+            NETWORK: string;
+            FROM_BLOCK: string;
+            BINANCE_WALLET_ADDRESS: string;
         }
     }
 }
+
+loadEnv();
+deleteDefaultTasks();
 
 type TNetwork = ReturnType<
     typeof SDK.API.utils.getSupportedChains
@@ -43,127 +51,89 @@ const supportedChains = SDK.API.utils.getSupportedChains().reduce(
     }),
     {} as { [key in TNetwork]: HttpNetworkConfig },
 );
-let chain =
-    supportedChains[
-        process.env.NODE_ENV == 'mainnet' ? 'ethereum' : process.env.NODE_ENV
-    ];
-if (!chain) {
-    chain = supportedChains['ethereum'];
-}
 
-const config: HardhatUserConfig & { dodoc?: any; vyper: any } = {
-    SDK: { project: SDK.API.config.TAPIOCA_PROJECTS_NAME.TapiocaBar },
+const forkNetwork = process.env.NETWORK as TNetwork;
+const forkChainInfo = supportedChains[forkNetwork];
+const forkInfo: NetworksUserConfig['hardhat'] = forkNetwork
+    ? {
+          chainId: forkChainInfo.chainId,
+          forking: {
+              url: forkChainInfo.url,
+              ...(process.env.FROM_BLOCK
+                  ? { blockNumber: Number(process.env.FROM_BLOCK) }
+                  : {}),
+          },
+      }
+    : {};
+
+const config: HardhatUserConfig & { dodoc?: any; typechain?: any } = {
+    SDK: { project: TAPIOCA_PROJECTS_NAME.bar },
     solidity: {
         compilers: [
             {
-                version: '0.6.12',
+                version: '0.8.22',
                 settings: {
+                    evmVersion: 'paris', // Latest before Shanghai
                     optimizer: {
                         enabled: true,
-                        runs: 200,
-                    },
-                },
-            },
-            {
-                version: '0.7.6',
-                settings: {
-                    optimizer: {
-                        enabled: true,
-                        runs: 200,
-                    },
-                },
-            },
-            {
-                version: '0.8.9',
-                settings: {
-                    optimizer: {
-                        enabled: true,
-                        runs: 200,
-                    },
-                },
-            },
-            {
-                version: '0.8.18',
-                settings: {
-                    viaIR: true,
-                    optimizer: {
-                        enabled: true,
-                        runs: 100,
-                    },
-                },
-            },
-            {
-                version: '0.8.19',
-                settings: {
-                    viaIR: true,
-                    optimizer: {
-                        enabled: true,
-                        runs: 20,
+                        runs: 9999,
                     },
                 },
             },
         ],
     },
-    vyper: {
-        compilers: [{ version: '0.2.16' }],
-    },
-    namedAccounts: {
-        deployer: 0,
-    },
-    defaultNetwork: 'hardhat',
-    networks: {
-        ...supportedChains,
-        hardhat: {
-            forking: {
-                url: chain?.url,
-            },
-            hardfork: 'merge',
-            allowUnlimitedContractSize: true,
-            accounts: {
-                mnemonic:
-                    'test test test test test test test test test test test junk',
-                count: 10,
-                accountsBalance: '1000000000000000000000',
-            },
-            tags: ['testnet'],
-        },
-    },
-    etherscan: {
-        apiKey: {
-            sepolia: process.env.BLOCKSCAN_KEY ?? '',
-            arbitrum_sepolia: process.env.ARBITRUM_SEPOLIA_KEY ?? '',
-            avalancheFujiTestnet: process.env.AVALANCHE_FUJI_KEY ?? '',
-            bscTestnet: process.env.BSC_KEY ?? '',
-            polygonMumbai: process.env.POLYGON_MUMBAI ?? '',
-            ftmTestnet: process.env.FTM_TESTNET ?? '',
-        },
-        customChains: [
-            {
-                network: 'arbitrum_sepolia',
-                chainId: Number(
-                    SDK.API.utils.getChainBy('name', 'arbitrum_sepolia')!
-                        .chainId,
-                ),
-                urls: {
-                    apiURL: 'https://api-sepolia.arbiscan.io/api',
-                    browserURL: 'https://sepolia.arbiscan.io',
-                },
-            },
-        ],
-    },
-    typechain: {
-        outDir: 'typechain',
-        target: 'ethers-v5',
-    },
-    gasReporter: {
-        enabled: false,
-    },
-    mocha: {
-        timeout: 4000000,
+    paths: {
+        artifacts: './gen/artifacts',
+        cache: './gen/cache',
+        tests: './hardhat_test',
     },
     dodoc: {
         runOnCompile: false,
-        freshOutput: true,
+        freshOutput: false,
+        outputDir: 'gen/docs',
+    },
+    typechain: {
+        outDir: 'gen/typechain',
+        target: 'ethers-v5',
+    },
+    defaultNetwork: 'hardhat',
+    networks: {
+        hardhat: {
+            allowUnlimitedContractSize: true,
+            accounts: {
+                count: 5,
+            },
+        },
+        ...supportedChains,
+    },
+    etherscan: {
+        apiKey: {
+            sepolia: process.env.SCAN_API_KEY ?? '',
+            arbitrumSepolia: process.env.SCAN_API_KEY ?? '',
+            optimismSepolia: process.env.SCAN_API_KEY ?? '',
+            avalancheFujiTestnet: process.env.SCAN_API_KEY ?? '',
+            bscTestnet: process.env.SCAN_API_KEY ?? '',
+            polygonMumbai: process.env.SCAN_API_KEY ?? '',
+            ftmTestnet: process.env.SCAN_API_KEY ?? '',
+        },
+        customChains: [
+            {
+                network: 'arbitrumSepolia',
+                chainId: 421614,
+                urls: {
+                    apiURL: 'https://api-sepolia.arbiscan.io/api',
+                    browserURL: 'https://sepolia.arbiscan.io/',
+                },
+            },
+            {
+                network: 'optimismSepolia',
+                chainId: 11155420,
+                urls: {
+                    apiURL: 'https://api-sepolia-optimistic.etherscan.io/',
+                    browserURL: 'https://sepolia-optimism.etherscan.io/',
+                },
+            },
+        ],
     },
 };
 

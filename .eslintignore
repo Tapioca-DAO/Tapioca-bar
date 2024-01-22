@@ -1,9 +1,0 @@
-node_modules
-artifacts
-cache
-coverage
-typechain
-deployments
-docs
-tapioca-periph
-gitsub_tapioca-sdk
