@@ -21,6 +21,18 @@ contract BBLeverage is BBLendingCommon {
     error LeverageExecutorNotValid();
     error CollateralShareNotValid();
 
+    struct _BuyCollateralCalldata {
+        address from;
+        uint256 borrowAmount;
+        uint256 supplyAmount;
+        bytes data;
+    }
+
+    struct _BuyCollateralMemoryData {
+        uint256 supplyShareToAmount;
+        uint256 borrowShareToAmount;
+    }
+
     /// @notice Lever up: Borrow more and buy collateral with it.
     /// @param from The user who buys
     /// @param borrowAmount Amount of extra asset borrowed
@@ -34,24 +46,51 @@ contract BBLeverage is BBLendingCommon {
         notSelf(from)
         returns (uint256 amountOut)
     {
+        // Stack too deep fix
+        _BuyCollateralCalldata memory calldata_;
+        {
+            calldata_.from = from;
+            calldata_.borrowAmount = borrowAmount;
+            calldata_.supplyAmount = supplyAmount;
+            calldata_.data = data;
+        }
+
+        _BuyCollateralMemoryData memory memoryData;
         if (address(leverageExecutor) == address(0)) {
             revert LeverageExecutorNotValid();
         }
-        uint256 supplyShare = yieldBox.toShare(assetId, supplyAmount, true);
-        uint256 supplyShareToAmount;
-        if (supplyShare > 0) {
-            (supplyShareToAmount,) = yieldBox.withdraw(assetId, from, address(leverageExecutor), 0, supplyShare);
+        {
+            uint256 supplyShare = yieldBox.toShare(assetId, calldata_.supplyAmount, true);
+            if (supplyShare > 0) {
+                (memoryData.supplyShareToAmount,) =
+                    yieldBox.withdraw(assetId, calldata_.from, address(leverageExecutor), 0, supplyShare);
+            }
         }
-        (, uint256 borrowShare) = _borrow(from, address(this), borrowAmount, _computeVariableOpeningFee(borrowAmount));
-        (uint256 borrowShareToAmount,) =
-            yieldBox.withdraw(assetId, address(this), address(leverageExecutor), 0, borrowShare);
-        amountOut = leverageExecutor.getCollateral(
-            collateralId, address(asset), address(collateral), supplyShareToAmount + borrowShareToAmount, from, data
-        );
+
+        {
+            (, uint256 borrowShare) = _borrow(
+                calldata_.from,
+                address(this),
+                calldata_.borrowAmount,
+                _computeVariableOpeningFee(calldata_.borrowAmount)
+            );
+            (memoryData.borrowShareToAmount,) =
+                yieldBox.withdraw(assetId, address(this), address(leverageExecutor), 0, borrowShare);
+        }
+        {
+            amountOut = leverageExecutor.getCollateral(
+                collateralId,
+                address(asset),
+                address(collateral),
+                memoryData.supplyShareToAmount + memoryData.borrowShareToAmount,
+                calldata_.from,
+                calldata_.data
+            );
+        }
         uint256 collateralShare = yieldBox.toShare(collateralId, amountOut, false);
         if (collateralShare == 0) revert CollateralShareNotValid();
-        _allowedBorrow(from, collateralShare);
-        _addCollateral(from, from, false, 0, collateralShare);
+        _allowedBorrow(calldata_.from, collateralShare);
+        _addCollateral(calldata_.from, calldata_.from, false, 0, collateralShare);
     }
 
     /// @notice Lever down: Sell collateral to repay debt; excess goes to YB
