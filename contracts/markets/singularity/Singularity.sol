@@ -73,54 +73,54 @@ contract Singularity is SGLCommon {
     error NotAuthorized();
     error SameState();
 
+    struct _InitMemoryData {
+        address _liquidationModule;
+        address _borrowModule;
+        address _collateralModule;
+        address _leverageModule;
+        IPenrose tapiocaBar_;
+        IERC20 _asset;
+        uint256 _assetId;
+        IERC20 _collateral;
+        uint256 _collateralId;
+        ITapiocaOracle _oracle;
+        uint256 _exchangeRatePrecision;
+        uint256 _collateralizationRate;
+        uint256 _liquidationCollateralizationRate;
+        ILeverageExecutor _leverageExecutor;
+    }
+
     /// @notice The init function that acts as a constructor
     function init(bytes calldata data) external onlyOnce {
-        (
-            address _liquidationModule,
-            address _borrowModule,
-            address _collateralModule,
-            address _leverageModule,
-            IPenrose tapiocaBar_,
-            IERC20 _asset,
-            uint256 _assetId,
-            IERC20 _collateral,
-            uint256 _collateralId,
-            ITapiocaOracle _oracle,
-            uint256 _exchangeRatePrecision,
-            uint256 _collateralizationRate,
-            uint256 _liquidationCollateralizationRate,
-            ILeverageExecutor _leverageExecutor
-        ) = abi.decode(
-            data,
-            (
-                address,
-                address,
-                address,
-                address,
-                IPenrose,
-                IERC20,
-                uint256,
-                IERC20,
-                uint256,
-                ITapiocaOracle,
-                uint256,
-                uint256,
-                uint256,
-                ILeverageExecutor
-            )
-        );
+        (_InitMemoryData memory _initMemoryData) = abi.decode(data, (_InitMemoryData));
 
-        penrose = tapiocaBar_;
-        yieldBox = IYieldBox(tapiocaBar_.yieldBox());
+        penrose = _initMemoryData.tapiocaBar_;
+        yieldBox = IYieldBox(_initMemoryData.tapiocaBar_.yieldBox());
         owner = address(penrose);
 
-        if (address(_collateral) == address(0)) revert BadPair();
-        if (address(_asset) == address(0)) revert BadPair();
-        if (address(_oracle) == address(0)) revert BadPair();
+        if (address(_initMemoryData._collateral) == address(0)) revert BadPair();
+        if (address(_initMemoryData._asset) == address(0)) revert BadPair();
+        if (address(_initMemoryData._oracle) == address(0)) revert BadPair();
 
-        _initModules(_liquidationModule, _borrowModule, _collateralModule, _leverageModule);
-        _initCoreStorage(_asset, _assetId, _collateral, _collateralId, _oracle, _leverageExecutor);
-        _initDefaultValues(_collateralizationRate, _liquidationCollateralizationRate, _exchangeRatePrecision);
+        _initModules(
+            _initMemoryData._liquidationModule,
+            _initMemoryData._borrowModule,
+            _initMemoryData._collateralModule,
+            _initMemoryData._leverageModule
+        );
+        _initCoreStorage(
+            _initMemoryData._asset,
+            _initMemoryData._assetId,
+            _initMemoryData._collateral,
+            _initMemoryData._collateralId,
+            _initMemoryData._oracle,
+            _initMemoryData._leverageExecutor
+        );
+        _initDefaultValues(
+            _initMemoryData._collateralizationRate,
+            _initMemoryData._liquidationCollateralizationRate,
+            _initMemoryData._exchangeRatePrecision
+        );
     }
 
     function _initModules(
