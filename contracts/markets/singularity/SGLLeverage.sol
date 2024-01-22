@@ -20,6 +20,13 @@ contract SGLLeverage is SGLLendingCommon {
     error LeverageExecutorNotValid();
     error CollateralShareNotValid();
 
+    struct _BuyCollateralCalldata {
+        address from;
+        uint256 borrowAmount;
+        uint256 supplyAmount;
+        bytes data;
+    }
+
     /// @notice Lever up: Borrow more and buy collateral with it.
     /// @param from The user who buys
     /// @param borrowAmount Amount of extra asset borrowed
@@ -36,22 +43,43 @@ contract SGLLeverage is SGLLendingCommon {
         if (address(leverageExecutor) == address(0)) {
             revert LeverageExecutorNotValid();
         }
+        // Stack too deep fix
+        _BuyCollateralCalldata memory calldata_;
+        {
+            calldata_.from = from;
+            calldata_.borrowAmount = borrowAmount;
+            calldata_.supplyAmount = supplyAmount;
+            calldata_.data = data;
+        }
+
         // Let this fail first to save gas:
-        uint256 supplyShare = yieldBox.toShare(assetId, supplyAmount, true);
+        uint256 supplyShare = yieldBox.toShare(assetId, calldata_.supplyAmount, true);
         uint256 supplyShareToAmount;
         if (supplyShare > 0) {
-            (supplyShareToAmount,) = yieldBox.withdraw(assetId, from, address(leverageExecutor), 0, supplyShare);
+            (supplyShareToAmount,) =
+                yieldBox.withdraw(assetId, calldata_.from, address(leverageExecutor), 0, supplyShare);
         }
-        (, uint256 borrowShare) = _borrow(from, address(this), borrowAmount);
+        (, uint256 borrowShare) = _borrow(calldata_.from, address(this), calldata_.borrowAmount);
         (uint256 borrowShareToAmount,) =
             yieldBox.withdraw(assetId, address(this), address(leverageExecutor), 0, borrowShare);
         amountOut = leverageExecutor.getCollateral(
-            collateralId, address(asset), address(collateral), supplyShareToAmount + borrowShareToAmount, from, data
+            collateralId,
+            address(asset),
+            address(collateral),
+            supplyShareToAmount + borrowShareToAmount,
+            calldata_.from,
+            calldata_.data
         );
         uint256 collateralShare = yieldBox.toShare(collateralId, amountOut, false);
         if (collateralShare == 0) revert CollateralShareNotValid();
-        _allowedBorrow(from, collateralShare);
-        _addCollateral(from, from, false, 0, collateralShare);
+        _allowedBorrow(calldata_.from, collateralShare);
+        _addCollateral(calldata_.from, calldata_.from, false, 0, collateralShare);
+    }
+
+    struct _SellCollateralCalldata {
+        address from;
+        uint256 share;
+        bytes data;
     }
 
     /// @notice Lever down: Sell collateral to repay debt; excess goes to YB
@@ -69,22 +97,31 @@ contract SGLLeverage is SGLLendingCommon {
         if (address(leverageExecutor) == address(0)) {
             revert LeverageExecutorNotValid();
         }
+        // Stack too deep fix
+        _SellCollateralCalldata memory calldata_;
+        {
+            calldata_.from = from;
+            calldata_.share = share;
+            calldata_.data = data;
+        }
 
-        _allowedBorrow(from, share);
-        _removeCollateral(from, address(this), share);
-        yieldBox.withdraw(collateralId, address(this), address(leverageExecutor), 0, share);
-        uint256 leverageAmount = yieldBox.toAmount(collateralId, share, false);
-        amountOut = leverageExecutor.getAsset(assetId, address(collateral), address(asset), leverageAmount, from, data);
+        _allowedBorrow(calldata_.from, calldata_.share);
+        _removeCollateral(calldata_.from, address(this), calldata_.share);
+        yieldBox.withdraw(collateralId, address(this), address(leverageExecutor), 0, calldata_.share);
+        uint256 leverageAmount = yieldBox.toAmount(collateralId, calldata_.share, false);
+        amountOut = leverageExecutor.getAsset(
+            assetId, address(collateral), address(asset), leverageAmount, calldata_.from, calldata_.data
+        );
         uint256 shareOut = yieldBox.toShare(assetId, amountOut, false);
-        uint256 partOwed = userBorrowPart[from];
+        uint256 partOwed = userBorrowPart[calldata_.from];
         uint256 amountOwed = totalBorrow.toElastic(partOwed, true);
         uint256 shareOwed = yieldBox.toShare(assetId, amountOwed, true);
         if (shareOwed <= shareOut) {
-            _repay(from, from, false, partOwed);
+            _repay(calldata_.from, calldata_.from, false, partOwed);
         } else {
             //repay as much as we can
             uint256 partOut = totalBorrow.toBase(amountOut, false);
-            _repay(from, from, false, partOut);
+            _repay(calldata_.from, calldata_.from, false, partOut);
         }
     }
 }
