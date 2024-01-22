@@ -1,7 +1,8 @@
 contracts/=contracts/
 solidity-bytes-utils/=node_modules/@layerzerolabs/solidity-bytes-utils/
 tapioca-sdk/=lib/tapioca-sdk/contracts/
-tapioca-periphery/=lib/tapioca-periph/contracts/
+tapioca-periph/=lib/tapioca-periph/contracts/
+yieldbox/=lib/tapioca-yieldbox/contracts/
 @boringcrypto/=node_modules/@boringcrypto/
 @openzeppelin/=node_modules/@openzeppelin/
 @uniswap/=node_modules/@uniswap/
@@ -11,4 +12,4 @@ forge-std/=lib/forge-std/src/
 hardhat-deploy/=node_modules/hardhat-deploy/
 hardhat/=node_modules/hardhat/
 prb-math/=node_modules/prb-math/
-tapioca-periph/=lib/tapioca-periph/contracts/
+tapioca-yieldbox/=lib/tapioca-yieldbox/contracts/
