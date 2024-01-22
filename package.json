@@ -93,6 +93,7 @@
         "load-json-file": "^7.0.1",
         "lodash": "^4.17.21",
         "tapioca-sdk": "^1.5.20-nightly-11",
+        "tsconfig-paths": "^4.2.0",
         "uuid": "^9.0.0"
     }
 }
