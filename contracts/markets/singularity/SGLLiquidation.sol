@@ -72,19 +72,21 @@ contract SGLLiquidation is SGLCommon {
         bool swapCollateral
     ) external onlyOwner {
         // try-get oracle exchange rate
-        (bool updated, uint256 _exchangeRate) = oracle.get(oracleData);
-        if (updated && _exchangeRate > 0) {
-            exchangeRate = _exchangeRate; //update cached rate
-            rateTimestamp = block.timestamp;
-        } else {
-            _exchangeRate = exchangeRate; //use stored rate
+        {
+            (bool updated, uint256 _exchangeRate) = oracle.get(oracleData);
+            if (updated && _exchangeRate > 0) {
+                exchangeRate = _exchangeRate; //update cached rate
+                rateTimestamp = block.timestamp;
+            } else {
+                _exchangeRate = exchangeRate; //use stored rate
+            }
+            if (_exchangeRate == 0) revert ExchangeRateNotValid();
         }
-        if (_exchangeRate == 0) revert ExchangeRateNotValid();
-
         //check from whitelist status
-        bool isWhitelisted = ICluster(penrose.cluster()).isWhitelisted(0, from);
-        if (!isWhitelisted) revert NotAuthorized();
-
+        {
+            bool isWhitelisted = ICluster(penrose.cluster()).isWhitelisted(0, from);
+            if (!isWhitelisted) revert NotAuthorized();
+        }
         // accrue before liquidation
         _accrue();
 
