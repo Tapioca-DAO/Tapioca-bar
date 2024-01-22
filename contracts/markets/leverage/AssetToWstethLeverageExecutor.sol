@@ -8,7 +8,7 @@ import {ISwapper} from "tapioca-periph/interfaces/periph/ISwapper.sol";
 import {ICluster} from "tapioca-periph/interfaces/periph/ICluster.sol";
 import {SafeApprove} from "tapioca-periph/libraries/SafeApprove.sol";
 import {BaseLeverageExecutor} from "./BaseLeverageExecutor.sol";
-import {IYieldBox} from "yieldbox/interfaces/IYieldBox.sol";
+import {IYieldBox} from "tapioca-periph/interfaces/yieldbox/IYieldBox.sol";
 
 //Asset > WETH > twstETH through BalancerV2
 contract AssetToWstethLeverageExecutor is BaseLeverageExecutor {

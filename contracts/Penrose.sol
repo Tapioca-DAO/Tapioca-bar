@@ -2,21 +2,22 @@
 pragma solidity ^0.8.18;
 
 // External
+import {IERC20} from "@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol";
 import {BoringOwnable} from "@boringcrypto/boring-solidity/contracts/BoringOwnable.sol";
 import {BoringFactory} from "@boringcrypto/boring-solidity/contracts/BoringFactory.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // Tapioca
-import {ERC20WithoutStrategy, IStrategy} from "yieldbox/strategies/ERC20WithoutStrategy.sol";
+import {IYieldBox, IYieldBoxTokenType} from "tapioca-periph/interfaces/yieldbox/IYieldBox.sol";
+import {
+    ERC20WithoutStrategy, IStrategy, IYieldBox as IBoringYieldBox
+} from "yieldbox/strategies/ERC20WithoutStrategy.sol";
 import {ISingularity, IMarket} from "tapioca-periph/interfaces/bar/ISingularity.sol";
 import {IUSDOMintable} from "tapioca-periph/interfaces/bar/IUSDOMintable.sol";
-import {IYieldBox, TokenType} from "yieldbox/interfaces/IYieldBox.sol";
 import {ICluster} from "tapioca-periph/interfaces/periph/ICluster.sol";
 import {ITwTap} from "tapioca-periph/interfaces/tap-token/ITwTap.sol";
 import {SafeApprove} from "tapioca-periph/libraries/SafeApprove.sol";
 import {IPenrose} from "tapioca-periph/interfaces/bar/IPenrose.sol";
 import {IBigBang} from "tapioca-periph/interfaces/bar/IBigBang.sol";
-import {YieldBox} from "yieldbox/YieldBox.sol";
 
 // TODO: Permissionless market deployment
 ///     + asset registration? (toggle to renounce ownership so users can call)
@@ -35,7 +36,7 @@ contract Penrose is BoringOwnable, BoringFactory {
     /// @notice returns the Cluster contract
     ICluster public cluster;
     /// @notice returns the YieldBox contract
-    YieldBox public immutable yieldBox;
+    IYieldBox public immutable yieldBox;
     /// @notice returns the TAP contract
     IERC20 public immutable tapToken;
     /// @notice returns TAP asset id registered in the YieldBox contract
@@ -84,7 +85,7 @@ contract Penrose is BoringOwnable, BoringFactory {
     /// @param _hostLzChainId the default protocol's LZ chain id
     /// @param _owner owner address
     constructor(
-        YieldBox _yieldBox,
+        IYieldBox _yieldBox,
         ICluster _cluster,
         IERC20 tapToken_,
         IERC20 mainToken_,
@@ -97,15 +98,20 @@ contract Penrose is BoringOwnable, BoringFactory {
         owner = _owner;
 
         emptyStrategies[address(tapToken_)] =
-            IStrategy(address(new ERC20WithoutStrategy(IYieldBox(address(_yieldBox)), tapToken_)));
-        tapAssetId =
-            uint96(_yieldBox.registerAsset(TokenType.ERC20, address(tapToken_), emptyStrategies[address(tapToken_)], 0));
+            IStrategy(address(new ERC20WithoutStrategy(IBoringYieldBox(address(_yieldBox)), tapToken_)));
+        tapAssetId = uint96(
+            _yieldBox.registerAsset(
+                IYieldBoxTokenType.ERC20, address(tapToken_), address(emptyStrategies[address(tapToken_)]), 0
+            )
+        );
 
         mainToken = mainToken_;
         emptyStrategies[address(mainToken_)] =
-            IStrategy(address(new ERC20WithoutStrategy(IYieldBox(address(_yieldBox)), mainToken_)));
+            IStrategy(address(new ERC20WithoutStrategy(IBoringYieldBox(address(_yieldBox)), mainToken_)));
         mainAssetId = uint96(
-            _yieldBox.registerAsset(TokenType.ERC20, address(mainToken_), emptyStrategies[address(mainToken_)], 0)
+            _yieldBox.registerAsset(
+                IYieldBoxTokenType.ERC20, address(mainToken_), address(emptyStrategies[address(mainToken_)]), 0
+            )
         );
 
         bigBangEthDebtRate = 5e15;
@@ -335,8 +341,10 @@ contract Penrose is BoringOwnable, BoringFactory {
         usdoToken = IERC20(_usdoToken);
 
         emptyStrategies[_usdoToken] =
-            IStrategy(address(new ERC20WithoutStrategy(IYieldBox(address(yieldBox)), IERC20(_usdoToken))));
-        usdoAssetId = uint96(yieldBox.registerAsset(TokenType.ERC20, _usdoToken, emptyStrategies[_usdoToken], 0));
+            IStrategy(address(new ERC20WithoutStrategy(IBoringYieldBox(address(yieldBox)), IERC20(_usdoToken))));
+        usdoAssetId = uint96(
+            yieldBox.registerAsset(IYieldBoxTokenType.ERC20, _usdoToken, address(emptyStrategies[_usdoToken]), 0)
+        );
         emit UsdoTokenUpdated(_usdoToken, usdoAssetId);
     }
 

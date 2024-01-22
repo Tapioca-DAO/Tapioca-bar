@@ -5,15 +5,18 @@ pragma solidity ^0.8.18;
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 // Tapioca
-import {ITapiocaOptionBrokerCrossChain} from "tapioca-periph/interfaces/tap-token/ITapiocaOptionBroker.sol";
-import {ICommonOFT} from "tapioca-periph/layerzero/v1/token/oft/v2/ICommonOFT.sol";
+import {
+    ITapiocaOptionBrokerCrossChain,
+    ITapiocaOptionBroker
+} from "tapioca-periph/interfaces/tap-token/ITapiocaOptionBroker.sol";
+import {ICommonOFT} from "tapioca-periph/interfaces/common/ICommonOFT.sol";
 import {IPermitBorrow} from "tapioca-periph/interfaces/common/IPermitBorrow.sol";
 import {ICommonData} from "tapioca-periph/interfaces/common/ICommonData.sol";
 import {ISingularity} from "tapioca-periph/interfaces/bar/ISingularity.sol";
 import {IPermitAll} from "tapioca-periph/interfaces/common/IPermitAll.sol";
 import {ISendFrom} from "tapioca-periph/interfaces/common/ISendFrom.sol";
 import {ICluster} from "tapioca-periph/interfaces/periph/ICluster.sol";
-import {IYieldBox} from "yieldbox/interfaces/IYieldBox.sol";
+import {IYieldBox} from "tapioca-periph/interfaces/yieldbox/IYieldBox.sol";
 import {BaseUSDOStorage} from "../BaseUSDOStorage.sol";
 import {LzLib} from "contracts/tmp/LzLib.sol";
 import {USDOCommon} from "./USDOCommon.sol";
@@ -123,7 +126,7 @@ contract USDOOptionsDestinationModule is USDOCommon {
         }
 
         uint256 paymentTokenBalanceBefore = IERC20(paymentToken).balanceOf(address(this));
-        ITapiocaOptionBrokerCrossChain(target).exerciseOption(oTAPTokenID, paymentToken, tapAmount);
+        ITapiocaOptionBroker(target).exerciseOption(oTAPTokenID, paymentToken, tapAmount);
         uint256 paymentTokenBalanceAfter = IERC20(paymentToken).balanceOf(address(this));
 
         if (paymentTokenBalanceBefore > paymentTokenBalanceAfter) {

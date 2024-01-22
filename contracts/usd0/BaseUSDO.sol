@@ -4,13 +4,14 @@ pragma solidity ^0.8.18;
 // External
 import {ERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/draft-ERC20Permit.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {BytesLib} from "tapioca-periph/layerzero/v1/util/BytesLib.sol";
 
 // Tapioca
 import {ITapiocaOptionBrokerCrossChain} from "tapioca-periph/interfaces/tap-token/ITapiocaOptionBroker.sol";
 import {USDOLeverageDestinationModule} from "./modules/USDOLeverageDestinationModule.sol";
 import {USDOOptionsDestinationModule} from "./modules/USDOOptionsDestinationModule.sol";
 import {USDOMarketDestinationModule} from "./modules/USDOMarketDestinationModule.sol";
-import {ICommonOFT} from "tapioca-periph/layerzero/v1/token/oft/v2/ICommonOFT.sol";
+import {ICommonOFT} from "tapioca-periph/interfaces/common/ICommonOFT.sol";
 import {ICommonData} from "tapioca-periph/interfaces/common/ICommonData.sol";
 import {IYieldBox} from "tapioca-periph/interfaces/yieldbox/IYieldBox.sol";
 import {ICluster} from "tapioca-periph/interfaces/periph/ICluster.sol";
@@ -45,7 +46,7 @@ import {BaseUSDOStorage} from "./BaseUSDOStorage.sol";
 
 contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
     using SafeERC20 for IERC20;
-    // using BytesLib for bytes;
+    using BytesLib for bytes;
 
     // ************ //
     // *** VARS *** //

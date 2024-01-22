@@ -13,7 +13,7 @@ import {IERC20} from "@boringcrypto/boring-solidity/contracts/ERC20.sol";
 // Tapioca
 import {SafeApprove} from "tapioca-periph/libraries/SafeApprove.sol";
 import {IUSDOBase} from "tapioca-periph/interfaces/bar/IUSDO.sol";
-import {IYieldBox} from "yieldbox/interfaces/IYieldBox.sol";
+import {IYieldBox} from "tapioca-periph/interfaces/yieldbox/IYieldBox.sol";
 import {Market, MarketERC20} from "../Market.sol";
 
 // solhint-disable max-line-length

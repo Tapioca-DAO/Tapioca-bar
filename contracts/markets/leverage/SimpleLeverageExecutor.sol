@@ -13,11 +13,7 @@ contract SimpleLeverageExecutor is BaseLeverageExecutor {
     error TokenNotValid();
     error NotEnough(address token);
 
-    constructor(
-        YieldBox _yb,
-        ISwapper _swapper,
-        ICluster _cluster
-    ) BaseLeverageExecutor(_yb, _swapper, _cluster) {}
+    constructor(IYieldBox _yb, ISwapper _swapper, ICluster _cluster) BaseLeverageExecutor(_yb, _swapper, _cluster) {}
 
     // ********************* //
     // *** PUBLIC MEHODS *** //
@@ -33,29 +29,14 @@ contract SimpleLeverageExecutor is BaseLeverageExecutor {
         if (!cluster.isWhitelisted(0, msg.sender)) revert SenderNotValid();
         _assureSwapperValidity();
 
-        (uint256 minAmountOut, bytes memory dexData) = abi.decode(
-            data,
-            (uint256, bytes)
-        );
+        (uint256 minAmountOut, bytes memory dexData) = abi.decode(data, (uint256, bytes));
 
-        collateralAmountOut = _swapTokens(
-            assetAddress,
-            collateralAddress,
-            assetAmountIn,
-            minAmountOut,
-            dexData,
-            0
-        );
-        if (collateralAmountOut < minAmountOut)
+        collateralAmountOut = _swapTokens(assetAddress, collateralAddress, assetAmountIn, minAmountOut, dexData, 0);
+        if (collateralAmountOut < minAmountOut) {
             revert NotEnough(collateralAddress);
+        }
 
-        _ybDeposit(
-            collateralId,
-            collateralAddress,
-            address(this),
-            to,
-            collateralAmountOut
-        );
+        _ybDeposit(collateralId, collateralAddress, address(this), to, collateralAmountOut);
     }
 
     function getAsset(
@@ -69,19 +50,9 @@ contract SimpleLeverageExecutor is BaseLeverageExecutor {
         if (!cluster.isWhitelisted(0, msg.sender)) revert SenderNotValid();
         _assureSwapperValidity();
 
-        (uint256 minAmountOut, bytes memory dexData) = abi.decode(
-            data,
-            (uint256, bytes)
-        );
+        (uint256 minAmountOut, bytes memory dexData) = abi.decode(data, (uint256, bytes));
 
-        assetAmountOut = _swapTokens(
-            collateralAddress,
-            assetAddress,
-            collateralAmountIn,
-            minAmountOut,
-            dexData,
-            0
-        );
+        assetAmountOut = _swapTokens(collateralAddress, assetAddress, collateralAmountIn, minAmountOut, dexData, 0);
         if (assetAmountOut < minAmountOut) revert NotEnough(assetAddress);
 
         _ybDeposit(assetId, assetAddress, address(this), to, assetAmountOut);

@@ -8,7 +8,7 @@ import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeE
 import {ICommonData} from "tapioca-periph/interfaces/common/ICommonData.sol";
 import {ICluster} from "tapioca-periph/interfaces/periph/ICluster.sol";
 import {IUSDOBase} from "tapioca-periph/interfaces/bar/IUSDO.sol";
-import {IYieldBox} from "yieldbox/interfaces/IYieldBox.sol";
+import {IYieldBox} from "tapioca-periph/interfaces/yieldbox/IYieldBox.sol";
 import {BaseUSDOStorage} from "../BaseUSDOStorage.sol";
 import {LzLib} from "contracts/tmp/LzLib.sol";
 import {USDOCommon} from "./USDOCommon.sol";

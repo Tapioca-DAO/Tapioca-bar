@@ -9,7 +9,7 @@ import {ILeverageExecutor} from "tapioca-periph/interfaces/bar/ILeverageExecutor
 import {SafeApprove} from "tapioca-periph/libraries/SafeApprove.sol";
 import {ISwapper} from "tapioca-periph/interfaces/periph/ISwapper.sol";
 import {ICluster} from "tapioca-periph/interfaces/periph/ICluster.sol";
-import {YieldBox} from "yieldbox/YieldBox.sol";
+import {IYieldBox} from "tapioca-periph/interfaces/yieldbox/IYieldBox.sol";
 
 abstract contract BaseLeverageExecutor is BoringOwnable {
     using SafeApprove for address;
@@ -24,7 +24,7 @@ abstract contract BaseLeverageExecutor is BoringOwnable {
     // *** VARS *** //
     // ************ //
     /// @notice returns YieldBox address
-    YieldBox public immutable yieldBox;
+    IYieldBox public immutable yieldBox;
 
     /// @notice returns ICluster address
     ICluster public cluster;
@@ -32,7 +32,7 @@ abstract contract BaseLeverageExecutor is BoringOwnable {
     /// @notice returns ISwapper address
     ISwapper public swapper;
 
-    constructor(YieldBox _yb, ISwapper _swapper, ICluster _cluster) {
+    constructor(IYieldBox _yb, ISwapper _swapper, ICluster _cluster) {
         yieldBox = _yb;
         swapper = _swapper;
         cluster = _cluster;

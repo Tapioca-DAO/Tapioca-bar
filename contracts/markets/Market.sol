@@ -9,8 +9,8 @@ import {IERC20} from "@boringcrypto/boring-solidity/contracts/ERC20.sol";
 // Tapioca
 import {ILeverageExecutor} from "tapioca-periph/interfaces/bar/ILeverageExecutor.sol";
 import {ITapiocaOracle} from "tapioca-periph/interfaces/periph/ITapiocaOracle.sol";
+import {IYieldBox} from "tapioca-periph/interfaces/yieldbox/IYieldBox.sol";
 import {IPenrose} from "tapioca-periph/interfaces/bar/IPenrose.sol";
-import {YieldBox} from "yieldbox/YieldBox.sol";
 import {MarketERC20} from "./MarketERC20.sol";
 
 abstract contract Market is MarketERC20, BoringOwnable {
@@ -38,7 +38,7 @@ abstract contract Market is MarketERC20, BoringOwnable {
     address public conservator;
 
     /// @notice returns YieldBox address
-    YieldBox public yieldBox;
+    IYieldBox public yieldBox;
     /// @notice returns Penrose address
     IPenrose public penrose;
 
