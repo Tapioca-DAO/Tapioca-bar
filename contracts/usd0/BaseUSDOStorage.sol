@@ -1,21 +1,21 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-//LZ
-import "tapioca-sdk/dist/contracts/token/oft/v2/OFTV2.sol";
+// External
+import {ERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/draft-ERC20Permit.sol";
 
-//OZ
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/extensions/draft-ERC20Permit.sol";
+// LZ
+import {ILayerZeroEndpoint} from "tapioca-periph/layerzero/v1/interfaces/ILayerZeroEndpoint.sol";
+import {OFTV2} from "tapioca-periph/layerzero/v1/token/oft/v2/OFTV2.sol";
 
-//TAPIOCA
-import "tapioca-periph/contracts/interfaces/IYieldBoxBase.sol";
-import {IUSDOBase} from "tapioca-periph/contracts/interfaces/IUSDO.sol";
-import "tapioca-periph/contracts/interfaces/ICluster.sol";
+// Tapioca
+import {IYieldBox} from "tapioca-periph/interfaces/yieldbox/IYieldBox.sol";
+import {ICluster} from "tapioca-periph/interfaces/periph/ICluster.sol";
+import {IUSDOBase} from "tapioca-periph/interfaces/bar/IUSDO.sol";
 
 contract BaseUSDOStorage is OFTV2 {
     /// @notice the YieldBox address.
-    IYieldBoxBase public immutable yieldBox;
+    IYieldBox public immutable yieldBox;
     /// @notice The Cluster address
     ICluster public cluster;
     /// @notice returns the Conservator address
@@ -62,19 +62,11 @@ contract BaseUSDOStorage is OFTV2 {
     /// @notice event emitted when pause state is updated
     event PausedUpdated(bool oldState, bool newState);
 
-    event CallFailedBytes(
-        uint16 indexed _srcChainId,
-        bytes indexed _payload,
-        bytes indexed _reason
-    );
+    event CallFailedBytes(uint16 indexed _srcChainId, bytes indexed _payload, bytes indexed _reason);
 
     receive() external payable {}
 
-    constructor(
-        address _lzEndpoint,
-        IYieldBoxBase _yieldBox,
-        ICluster _cluster
-    ) OFTV2("USDO", "USDO", 8, _lzEndpoint) {
+    constructor(address _lzEndpoint, IYieldBox _yieldBox, ICluster _cluster) OFTV2("USDO", "USDO", 8, _lzEndpoint) {
         uint256 chain = _getChainId();
         allowedMinter[chain][msg.sender] = true;
         allowedBurner[chain][msg.sender] = true;
@@ -87,9 +79,7 @@ contract BaseUSDOStorage is OFTV2 {
         return ILayerZeroEndpoint(lzEndpoint).getChainId();
     }
 
-    function _getRevertMsg(
-        bytes memory _returnData
-    ) internal pure returns (string memory) {
+    function _getRevertMsg(bytes memory _returnData) internal pure returns (string memory) {
         if (_returnData.length > 1000) return "USDO: reason too long";
 
         // If the _res length is less than 68, then the transaction failed silently (without a revert message)

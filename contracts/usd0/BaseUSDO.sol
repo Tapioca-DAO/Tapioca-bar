@@ -1,26 +1,25 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-//LZ
-import "tapioca-sdk/dist/contracts/token/oft/v2/OFTV2.sol";
+// External
+import {ERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/draft-ERC20Permit.sol";
+import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-//OZ
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/extensions/draft-ERC20Permit.sol";
-
-//TAPIOCA
-import "tapioca-periph/contracts/interfaces/IYieldBoxBase.sol";
-import {IUSDOBase} from "tapioca-periph/contracts/interfaces/IUSDO.sol";
-import "tapioca-periph/contracts/interfaces/ICommonData.sol";
-
-import "./BaseUSDOStorage.sol";
-import "./modules/USDOGenericModule.sol";
-import "./modules/USDOLeverageModule.sol";
-import "./modules/USDOLeverageDestinationModule.sol";
-import "./modules/USDOMarketModule.sol";
-import "./modules/USDOMarketDestinationModule.sol";
-import "./modules/USDOOptionsModule.sol";
-import "./modules/USDOOptionsDestinationModule.sol";
+// Tapioca
+import {ITapiocaOptionBrokerCrossChain} from "tapioca-periph/interfaces/tap-token/ITapiocaOptionBroker.sol";
+import {USDOLeverageDestinationModule} from "./modules/USDOLeverageDestinationModule.sol";
+import {USDOOptionsDestinationModule} from "./modules/USDOOptionsDestinationModule.sol";
+import {USDOMarketDestinationModule} from "./modules/USDOMarketDestinationModule.sol";
+import {ICommonOFT} from "tapioca-periph/layerzero/v1/token/oft/v2/ICommonOFT.sol";
+import {ICommonData} from "tapioca-periph/interfaces/common/ICommonData.sol";
+import {IYieldBox} from "tapioca-periph/interfaces/yieldbox/IYieldBox.sol";
+import {ICluster} from "tapioca-periph/interfaces/periph/ICluster.sol";
+import {USDOLeverageModule} from "./modules/USDOLeverageModule.sol";
+import {USDOGenericModule} from "./modules/USDOGenericModule.sol";
+import {USDOOptionsModule} from "./modules/USDOOptionsModule.sol";
+import {IUSDOBase} from "tapioca-periph/interfaces/bar/IUSDO.sol";
+import {USDOMarketModule} from "./modules/USDOMarketModule.sol";
+import {BaseUSDOStorage} from "./BaseUSDOStorage.sol";
 
 //
 //                 .(%%%%%%%%%%%%*       *
@@ -46,11 +45,13 @@ import "./modules/USDOOptionsDestinationModule.sol";
 
 contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
     using SafeERC20 for IERC20;
-    using BytesLib for bytes;
+    // using BytesLib for bytes;
+
     // ************ //
     // *** VARS *** //
     // ************ //
     /// @notice returns the leverage module
+
     USDOLeverageModule private _leverageModule;
     /// @notice returns the leverage destination module
     USDOLeverageDestinationModule private _leverageDestinationModule;
@@ -73,6 +74,7 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
         bytes4 functionSelector;
     }
     // Define a mapping from packetType to destination module and function selector.
+
     mapping(uint256 => DestinationCall) private _destinationMappings;
 
     // ************** //
@@ -84,7 +86,7 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
 
     constructor(
         address _lzEndpoint,
-        IYieldBoxBase _yieldBox,
+        IYieldBox _yieldBox,
         ICluster _cluster,
         address _owner,
         address payable __leverageModule,
@@ -105,29 +107,19 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
 
         //Set modules
         _leverageModule = USDOLeverageModule(__leverageModule);
-        _leverageDestinationModule = USDOLeverageDestinationModule(
-            __leverageDestinationModule
-        );
+        _leverageDestinationModule = USDOLeverageDestinationModule(__leverageDestinationModule);
         _marketModule = USDOMarketModule(__marketModule);
-        _marketDestinationModule = USDOMarketDestinationModule(
-            __marketDestinationModule
-        );
+        _marketDestinationModule = USDOMarketDestinationModule(__marketDestinationModule);
         _optionsModule = USDOOptionsModule(__optionsModule);
-        _optionsDestinationModule = USDOOptionsDestinationModule(
-            __optionsDestinationModule
-        );
+        _optionsDestinationModule = USDOOptionsDestinationModule(__optionsDestinationModule);
         _genericModule = USDOGenericModule(__genericModule);
 
         //Set modules' addresses
         _moduleAddresses[Module.Generic] = __genericModule;
         _moduleAddresses[Module.Options] = __optionsModule;
-        _moduleAddresses[
-            Module.OptionsDestination
-        ] = __optionsDestinationModule;
+        _moduleAddresses[Module.OptionsDestination] = __optionsDestinationModule;
         _moduleAddresses[Module.Leverage] = __leverageModule;
-        _moduleAddresses[
-            Module.LeverageDestination
-        ] = __leverageDestinationModule;
+        _moduleAddresses[Module.LeverageDestination] = __leverageDestinationModule;
         _moduleAddresses[Module.Market] = __marketModule;
         _moduleAddresses[Module.MarketDestination] = __marketDestinationModule;
 
@@ -148,14 +140,10 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
             module: Module.OptionsDestination,
             functionSelector: USDOOptionsDestinationModule.exercise.selector
         });
-        _destinationMappings[PT_TRIGGER_SEND_FROM] = DestinationCall({
-            module: Module.Generic,
-            functionSelector: USDOGenericModule.sendFromDestination.selector
-        });
-        _destinationMappings[PT_APPROVE] = DestinationCall({
-            module: Module.Generic,
-            functionSelector: USDOGenericModule.executeApproval.selector
-        });
+        _destinationMappings[PT_TRIGGER_SEND_FROM] =
+            DestinationCall({module: Module.Generic, functionSelector: USDOGenericModule.sendFromDestination.selector});
+        _destinationMappings[PT_APPROVE] =
+            DestinationCall({module: Module.Generic, functionSelector: USDOGenericModule.executeApproval.selector});
 
         transferOwnership(_owner);
     }
@@ -167,7 +155,7 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
     /// @param amount the amount to rescue
     /// @param to the recipient
     function rescueEth(uint256 amount, address to) external onlyOwner {
-        (bool success, ) = to.call{value: amount}("");
+        (bool success,) = to.call{value: amount}("");
         if (!success) revert Failed();
     }
 
@@ -244,12 +232,7 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
         _executeModule(
             Module.Leverage,
             abi.encodeWithSelector(
-                USDOLeverageModule.sendForLeverage.selector,
-                amount,
-                leverageFor,
-                lzData,
-                swapData,
-                externalData
+                USDOLeverageModule.sendForLeverage.selector, amount, leverageFor, lzData, swapData, externalData
             ),
             false
         );
@@ -346,11 +329,9 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
     /// @param revokes the cross chain revoke operations data
     /// @param adapterParams LZ adapter params
     function exerciseOption(
-        ITapiocaOptionsBrokerCrossChain.IExerciseOptionsData
-            calldata optionsData,
-        ITapiocaOptionsBrokerCrossChain.IExerciseLZData calldata lzData,
-        ITapiocaOptionsBrokerCrossChain.IExerciseLZSendTapData
-            calldata tapSendData,
+        ITapiocaOptionBrokerCrossChain.IExerciseOptionsData calldata optionsData,
+        ITapiocaOptionBrokerCrossChain.IExerciseLZData calldata lzData,
+        ITapiocaOptionBrokerCrossChain.IExerciseLZSendTapData calldata tapSendData,
         ICommonData.IApproval[] calldata approvals,
         ICommonData.IApproval[] calldata revokes,
         bytes calldata adapterParams
@@ -384,10 +365,7 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
         _executeModule(
             Module.Generic,
             abi.encodeWithSelector(
-                USDOGenericModule.triggerApproveOrRevoke.selector,
-                lzDstChainId,
-                lzCallParams,
-                approvals
+                USDOGenericModule.triggerApproveOrRevoke.selector, lzDstChainId, lzCallParams, approvals
             ),
             false
         );
@@ -434,11 +412,10 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
         return module;
     }
 
-    function _executeModule(
-        Module _module,
-        bytes memory _data,
-        bool _forwardRevert
-    ) private returns (bool success, bytes memory returnData) {
+    function _executeModule(Module _module, bytes memory _data, bool _forwardRevert)
+        private
+        returns (bool success, bytes memory returnData)
+    {
         success = true;
         address module = _extractModule(_module);
 
@@ -456,29 +433,18 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
         uint64 _nonce,
         bytes memory _payload
     ) private {
-        (bool success, bytes memory returnData) = _executeModule(
-            _module,
-            _data,
-            true
-        );
+        (bool success, bytes memory returnData) = _executeModule(_module, _data, true);
         if (!success) {
-            _storeFailedMessage(
-                _srcChainId,
-                _srcAddress,
-                _nonce,
-                _payload,
-                returnData
-            );
+            _storeFailedMessage(_srcChainId, _srcAddress, _nonce, _payload, returnData);
             emit CallFailedBytes(_srcChainId, _payload, returnData);
         }
     }
 
-    function _nonblockingLzReceive(
-        uint16 _srcChainId,
-        bytes memory _srcAddress,
-        uint64 _nonce,
-        bytes memory _payload
-    ) internal virtual override {
+    function _nonblockingLzReceive(uint16 _srcChainId, bytes memory _srcAddress, uint64 _nonce, bytes memory _payload)
+        internal
+        virtual
+        override
+    {
         uint256 packetType = _payload.toUint256(0);
 
         if (_destinationMappings[packetType].module != Module(0)) {
@@ -495,11 +461,7 @@ contract BaseUSDO is BaseUSDOStorage, ERC20Permit {
                                 : (
                                     callInfo.module == Module.OptionsDestination
                                         ? address(_optionsDestinationModule)
-                                        : (
-                                            callInfo.module == Module.Generic
-                                                ? address(_genericModule)
-                                                : address(0)
-                                        )
+                                        : (callInfo.module == Module.Generic ? address(_genericModule) : address(0))
                                 )
                         ),
                     _srcChainId,

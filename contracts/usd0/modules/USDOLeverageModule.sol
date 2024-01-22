@@ -1,14 +1,17 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-//LZ
-import "tapioca-sdk/dist/contracts/libraries/LzLib.sol";
+// External
+import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-//TAPIOCA
-import {IUSDOBase} from "tapioca-periph/contracts/interfaces/IUSDO.sol";
-import "tapioca-periph/contracts/interfaces/ISingularity.sol";
-
-import "./USDOCommon.sol";
+// Tapioca
+import {ISingularity} from "tapioca-periph/interfaces/bar/ISingularity.sol";
+import {ICluster} from "tapioca-periph/interfaces/periph/ICluster.sol";
+import {IUSDOBase} from "tapioca-periph/interfaces/bar/IUSDO.sol";
+import {IYieldBox} from "yieldbox/interfaces/IYieldBox.sol";
+import {BaseUSDOStorage} from "../BaseUSDOStorage.sol";
+import {LzLib} from "contracts/tmp/LzLib.sol";
+import {USDOCommon} from "./USDOCommon.sol";
 
 contract USDOLeverageModule is USDOCommon {
     using SafeERC20 for IERC20;
@@ -19,11 +22,9 @@ contract USDOLeverageModule is USDOCommon {
     error AllowanceNotValid();
     error AmountTooLow();
 
-    constructor(
-        address _lzEndpoint,
-        IYieldBoxBase _yieldBox,
-        ICluster _cluster
-    ) BaseUSDOStorage(_lzEndpoint, _yieldBox, _cluster) {}
+    constructor(address _lzEndpoint, IYieldBox _yieldBox, ICluster _cluster)
+        BaseUSDOStorage(_lzEndpoint, _yieldBox, _cluster)
+    {}
 
     /// @notice sends USDO to be used for leverage on destination
     /// @param leverageFor account to leverage for
@@ -40,42 +41,21 @@ contract USDOLeverageModule is USDOCommon {
         if (swapData.tokenOut == address(this)) revert NotValid();
         if (swapData.amountOutMin == 0) revert AmountTooLow();
         if (externalData.swapper != address(0)) {
-            if (
-                !cluster.isWhitelisted(
-                    lzData.lzDstChainId,
-                    externalData.swapper
-                )
-            ) revert NotAuthorized(externalData.swapper);
+            if (!cluster.isWhitelisted(lzData.lzDstChainId, externalData.swapper)) {
+                revert NotAuthorized(externalData.swapper);
+            }
         }
         bytes32 senderBytes = LzLib.addressToBytes32(leverageFor);
-        (amount, ) = _removeDust(amount);
-        amount = _debitFrom(
-            leverageFor,
-            lzEndpoint.getChainId(),
-            senderBytes,
-            amount
-        );
+        (amount,) = _removeDust(amount);
+        amount = _debitFrom(leverageFor, lzEndpoint.getChainId(), senderBytes, amount);
         if (amount == 0) revert NotValid();
 
-        (, , uint256 airdropAmount, ) = LzLib.decodeAdapterParams(
-            lzData.dstAirdropAdapterParam
-        );
+        (,, uint256 airdropAmount,) = LzLib.decodeAdapterParams(lzData.dstAirdropAdapterParam);
         bytes memory lzPayload = abi.encode(
-            PT_LEVERAGE_MARKET_UP,
-            _ld2sd(amount),
-            swapData,
-            externalData,
-            lzData,
-            leverageFor,
-            airdropAmount
+            PT_LEVERAGE_MARKET_UP, _ld2sd(amount), swapData, externalData, lzData, leverageFor, airdropAmount
         );
 
-        _checkAdapterParams(
-            lzData.lzDstChainId,
-            PT_LEVERAGE_MARKET_UP,
-            lzData.dstAirdropAdapterParam,
-            NO_EXTRA_GAS
-        );
+        _checkAdapterParams(lzData.lzDstChainId, PT_LEVERAGE_MARKET_UP, lzData.dstAirdropAdapterParam, NO_EXTRA_GAS);
 
         _lzSend(
             lzData.lzDstChainId,

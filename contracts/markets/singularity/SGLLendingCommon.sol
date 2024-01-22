@@ -1,7 +1,14 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-import "./SGLCommon.sol";
+// External
+import {RebaseLibrary, Rebase} from "@boringcrypto/boring-solidity/contracts/libraries/BoringRebase.sol";
+import {BoringERC20} from "@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol";
+import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
+// Tapioca
+import {SGLCommon} from "./SGLCommon.sol";
 
 contract SGLLendingCommon is SGLCommon {
     using RebaseLibrary for Rebase;
@@ -19,13 +26,7 @@ contract SGLLendingCommon is SGLCommon {
     // *** PRIVATE FUNCTIONS *** //
     // ************************* //
     /// @dev Concrete implementation of `addCollateral`.
-    function _addCollateral(
-        address from,
-        address to,
-        bool skim,
-        uint256 amount,
-        uint256 share
-    ) internal {
+    function _addCollateral(address from, address to, bool skim, uint256 amount, uint256 share) internal {
         if (share == 0) {
             share = yieldBox.toShare(collateralId, amount, false);
         }
@@ -33,24 +34,13 @@ contract SGLLendingCommon is SGLCommon {
         userCollateralShare[to] += share;
         totalCollateralShare = oldTotalCollateralShare + share;
 
-        _addTokens(
-            from,
-            to,
-            collateralId,
-            share,
-            oldTotalCollateralShare,
-            skim
-        );
+        _addTokens(from, to, collateralId, share, oldTotalCollateralShare, skim);
 
         emit LogAddCollateral(skim ? address(yieldBox) : from, to, share);
     }
 
     /// @dev Concrete implementation of `removeCollateral`.
-    function _removeCollateral(
-        address from,
-        address to,
-        uint256 share
-    ) internal {
+    function _removeCollateral(address from, address to, uint256 share) internal {
         userCollateralShare[from] -= share;
         totalCollateralShare -= share;
         emit LogRemoveCollateral(from, to, share);
@@ -58,20 +48,12 @@ contract SGLLendingCommon is SGLCommon {
     }
 
     /// @dev Concrete implementation of `borrow`.
-    function _borrow(
-        address from,
-        address to,
-        uint256 amount
-    ) internal returns (uint256 part, uint256 share) {
+    function _borrow(address from, address to, uint256 amount) internal returns (uint256 part, uint256 share) {
         share = yieldBox.toShare(assetId, amount, true);
         Rebase memory _totalAsset = totalAsset;
         if (_totalAsset.base < 1000) revert MinLimit();
 
-        uint256 fullAssetAmountBefore = yieldBox.toAmount(
-            assetId,
-            _totalAsset.elastic,
-            false
-        ) + totalBorrow.elastic;
+        uint256 fullAssetAmountBefore = yieldBox.toAmount(assetId, _totalAsset.elastic, false) + totalBorrow.elastic;
 
         _totalAsset.elastic -= share.toUint128();
 
@@ -85,8 +67,7 @@ contract SGLLendingCommon is SGLCommon {
         emit LogBorrow(from, to, amount, feeAmount, part);
 
         if (feeAmount > 0) {
-            uint256 feeFraction = (feeAmount * _totalAsset.base) /
-                fullAssetAmountBefore;
+            uint256 feeFraction = (feeAmount * _totalAsset.base) / fullAssetAmountBefore;
             _totalAsset.base += feeFraction.toUint128();
             balanceOf[address(penrose)] += feeFraction;
         }
@@ -97,12 +78,7 @@ contract SGLLendingCommon is SGLCommon {
     }
 
     /// @dev Concrete implementation of `repay`.
-    function _repay(
-        address from,
-        address to,
-        bool skim,
-        uint256 part
-    ) internal returns (uint256 amount) {
+    function _repay(address from, address to, bool skim, uint256 part) internal returns (uint256 amount) {
         if (part > userBorrowPart[to]) {
             part = userBorrowPart[to];
         }
@@ -112,12 +88,7 @@ contract SGLLendingCommon is SGLCommon {
         Rebase memory _totalBorrow = totalBorrow;
         (_totalBorrow, partInAmount) = _totalBorrow.sub(part, false);
 
-        uint256 allowanceShare = _computeAllowanceAmountInAsset(
-            to,
-            exchangeRate,
-            partInAmount,
-            _safeDecimals(asset)
-        );
+        uint256 allowanceShare = _computeAllowanceAmountInAsset(to, exchangeRate, partInAmount, _safeDecimals(asset));
         if (allowanceShare == 0) revert AllowanceNotValid();
         _allowedBorrow(from, allowanceShare);
 
@@ -134,9 +105,7 @@ contract SGLLendingCommon is SGLCommon {
     }
 
     function _safeDecimals(IERC20 token) internal view returns (uint8) {
-        (bool success, bytes memory data) = address(token).staticcall(
-            abi.encodeWithSelector(0x313ce567)
-        ); //decimals() selector
+        (bool success, bytes memory data) = address(token).staticcall(abi.encodeWithSelector(0x313ce567)); //decimals() selector
         return success && data.length == 32 ? abi.decode(data, (uint8)) : 18;
     }
 }

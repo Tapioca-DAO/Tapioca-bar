@@ -1,13 +1,24 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-// BB modules
-import "./BBCommon.sol";
-import "./BBLiquidation.sol";
-import "./BBCollateral.sol";
-import "./BBBorrow.sol";
-import "./BBLeverage.sol";
-import "tapioca-periph/contracts/interfaces/ISendFrom.sol";
+// External
+import {RebaseLibrary, Rebase} from "@boringcrypto/boring-solidity/contracts/libraries/BoringRebase.sol";
+import {BoringERC20} from "@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol";
+import {IERC20} from "@boringcrypto/boring-solidity/contracts/ERC20.sol";
+
+// Tapioca
+import {IMarketLiquidatorReceiver} from "tapioca-periph/interfaces/bar/IMarketLiquidatorReceiver.sol";
+import {ILeverageExecutor} from "tapioca-periph/interfaces/bar/ILeverageExecutor.sol";
+import {ITapiocaOracle} from "tapioca-periph/interfaces/periph/ITapiocaOracle.sol";
+import {ISendFrom} from "tapioca-periph/interfaces/common/ISendFrom.sol";
+import {SafeApprove} from "tapioca-periph/libraries/SafeApprove.sol";
+import {IPenrose} from "tapioca-periph/interfaces/bar/IPenrose.sol";
+import {IYieldBox} from "yieldbox/interfaces/IYieldBox.sol";
+import {BBLiquidation} from "./BBLiquidation.sol";
+import {BBCollateral} from "./BBCollateral.sol";
+import {BBLeverage} from "./BBLeverage.sol";
+import {BBCommon} from "./BBCommon.sol";
+import {BBBorrow} from "./BBBorrow.sol";
 
 // solhint-disable max-line-length
 /*
@@ -52,6 +63,7 @@ contract BigBang is BBCommon {
         Leverage
     }
     /// @notice returns the liquidation module
+
     BBLiquidation public liquidationModule;
     /// @notice returns the borrow module
     BBBorrow public borrowModule;
@@ -70,7 +82,7 @@ contract BigBang is BBCommon {
             IPenrose penrose_,
             IERC20 _collateral,
             uint256 _collateralId,
-            IOracle _oracle,
+            ITapiocaOracle _oracle,
             uint256 _exchangeRatePrecision,
             uint256 _debtRateAgainstEth,
             uint256 _debtRateMin,
@@ -79,31 +91,26 @@ contract BigBang is BBCommon {
             uint256 _liquidationCollateralizationRate,
             ILeverageExecutor _leverageExecutor
         ) = abi.decode(
-                data,
-                (
-                    address,
-                    address,
-                    address,
-                    address,
-                    IPenrose,
-                    IERC20,
-                    uint256,
-                    IOracle,
-                    uint256,
-                    uint256,
-                    uint256,
-                    uint256,
-                    uint256,
-                    uint256,
-                    ILeverageExecutor
-                )
-            );
-        _initModules(
-            _liquidationModule,
-            _borrowModule,
-            _collateralModule,
-            _leverageModule
+            data,
+            (
+                address,
+                address,
+                address,
+                address,
+                IPenrose,
+                IERC20,
+                uint256,
+                ITapiocaOracle,
+                uint256,
+                uint256,
+                uint256,
+                uint256,
+                uint256,
+                uint256,
+                ILeverageExecutor
+            )
         );
+        _initModules(_liquidationModule, _borrowModule, _collateralModule, _leverageModule);
         _initCoreStorage(
             penrose_,
             _collateral,
@@ -129,11 +136,7 @@ contract BigBang is BBCommon {
         leverageModule = BBLeverage(_leverageModule);
     }
 
-    function _initDebtStorage(
-        uint256 _debtRateAgainstEth,
-        uint256 _debtRateMin,
-        uint256 _debtRateMax
-    ) private {
+    function _initDebtStorage(uint256 _debtRateAgainstEth, uint256 _debtRateMin, uint256 _debtRateMax) private {
         isMainMarket = collateralId == penrose.mainAssetId();
         if (!isMainMarket) {
             if (minDebtRate != 0 && maxDebtRate != 0) {
@@ -150,14 +153,14 @@ contract BigBang is BBCommon {
         IPenrose _penrose,
         IERC20 _collateral,
         uint256 _collateralId,
-        IOracle _oracle,
+        ITapiocaOracle _oracle,
         uint256 _exchangeRatePrecision,
         uint256 _collateralizationRate,
         uint256 _liquidationCollateralizationRate,
         ILeverageExecutor _leverageExecutor
     ) private {
         penrose = _penrose;
-        yieldBox = YieldBox(_penrose.yieldBox());
+        yieldBox = IYieldBox(_penrose.yieldBox());
         owner = address(penrose);
         address _asset = penrose.usdoToken();
 
@@ -165,8 +168,9 @@ contract BigBang is BBCommon {
         if (address(_asset) == address(0)) revert BadPair();
         if (address(_oracle) == address(0)) revert BadPair();
         if (_collateralizationRate > FEE_PRECISION) revert NotValid();
-        if (_liquidationCollateralizationRate > FEE_PRECISION)
+        if (_liquidationCollateralizationRate > FEE_PRECISION) {
             revert NotValid();
+        }
         asset = IERC20(_asset);
         assetId = penrose.usdoAssetId();
         collateral = _collateral;
@@ -175,19 +179,15 @@ contract BigBang is BBCommon {
         updateExchangeRate();
         callerFee = 90000; // 90%
         protocolFee = 0; // 10%; used for accrual
-        collateralizationRate = _collateralizationRate > 0
-            ? _collateralizationRate
-            : 75000;
-        liquidationCollateralizationRate = _liquidationCollateralizationRate > 0
-            ? _liquidationCollateralizationRate
-            : 80000;
+        collateralizationRate = _collateralizationRate > 0 ? _collateralizationRate : 75000;
+        liquidationCollateralizationRate =
+            _liquidationCollateralizationRate > 0 ? _liquidationCollateralizationRate : 80000;
 
-        if (liquidationCollateralizationRate < collateralizationRate)
+        if (liquidationCollateralizationRate < collateralizationRate) {
             revert NotValid();
+        }
 
-        EXCHANGE_RATE_PRECISION = _exchangeRatePrecision > 0
-            ? _exchangeRatePrecision
-            : 1e18;
+        EXCHANGE_RATE_PRECISION = _exchangeRatePrecision > 0 ? _exchangeRatePrecision : 1e18;
 
         minLiquidatorReward = 8e4;
         maxLiquidatorReward = 9e4;
@@ -212,10 +212,7 @@ contract BigBang is BBCommon {
     /// @notice Allows batched call to BingBang.
     /// @param calls An array encoded call data.
     /// @param revertOnFail If True then reverts after a failed call and stops doing further calls.
-    function execute(
-        bytes[] calldata calls,
-        bool revertOnFail
-    )
+    function execute(bytes[] calldata calls, bool revertOnFail)
         external
         nonReentrant
         returns (bool[] memory successes, string[] memory results)
@@ -223,9 +220,7 @@ contract BigBang is BBCommon {
         successes = new bool[](calls.length);
         results = new string[](calls.length);
         for (uint256 i; i < calls.length; i++) {
-            (bool success, bytes memory result) = address(this).delegatecall(
-                calls[i]
-            );
+            (bool success, bytes memory result) = address(this).delegatecall(calls[i]);
 
             if (!success && revertOnFail) {
                 revert(_getRevertMsg(result));
@@ -242,23 +237,10 @@ contract BigBang is BBCommon {
     /// False if tokens from msg.sender in `yieldBox` should be transferred.
     /// @param amount The amount to add for `to`.
     /// @param share The amount of shares to add for `to`.
-    function addCollateral(
-        address from,
-        address to,
-        bool skim,
-        uint256 amount,
-        uint256 share
-    ) external {
+    function addCollateral(address from, address to, bool skim, uint256 amount, uint256 share) external {
         _executeModule(
             Module.Collateral,
-            abi.encodeWithSelector(
-                BBCollateral.addCollateral.selector,
-                from,
-                to,
-                skim,
-                amount,
-                share
-            )
+            abi.encodeWithSelector(BBCollateral.addCollateral.selector, from, to, skim, amount, share)
         );
     }
 
@@ -266,19 +248,9 @@ contract BigBang is BBCommon {
     /// @param from Account to debit collateral from.
     /// @param to The receiver of the shares.
     /// @param share Amount of shares to remove.
-    function removeCollateral(
-        address from,
-        address to,
-        uint256 share
-    ) external {
+    function removeCollateral(address from, address to, uint256 share) external {
         _executeModule(
-            Module.Collateral,
-            abi.encodeWithSelector(
-                BBCollateral.removeCollateral.selector,
-                from,
-                to,
-                share
-            )
+            Module.Collateral, abi.encodeWithSelector(BBCollateral.removeCollateral.selector, from, to, share)
         );
     }
 
@@ -288,15 +260,9 @@ contract BigBang is BBCommon {
     /// @param amount Amount to borrow.
     /// @return part Total part of the debt held by borrowers.
     /// @return share Total amount in shares borrowed.
-    function borrow(
-        address from,
-        address to,
-        uint256 amount
-    ) external returns (uint256 part, uint256 share) {
-        bytes memory result = _executeModule(
-            Module.Borrow,
-            abi.encodeWithSelector(BBBorrow.borrow.selector, from, to, amount)
-        );
+    function borrow(address from, address to, uint256 amount) external returns (uint256 part, uint256 share) {
+        bytes memory result =
+            _executeModule(Module.Borrow, abi.encodeWithSelector(BBBorrow.borrow.selector, from, to, amount));
         (part, share) = abi.decode(result, (uint256, uint256));
     }
 
@@ -306,22 +272,9 @@ contract BigBang is BBCommon {
     /// @param to Address of the user this payment should go.
     /// @param part The amount to repay. See `userBorrowPart`.
     /// @return amount The total amount repayed.
-    function repay(
-        address from,
-        address to,
-        bool skim,
-        uint256 part
-    ) external returns (uint256 amount) {
-        bytes memory result = _executeModule(
-            Module.Borrow,
-            abi.encodeWithSelector(
-                BBBorrow.repay.selector,
-                from,
-                to,
-                skim,
-                part
-            )
-        );
+    function repay(address from, address to, bool skim, uint256 part) external returns (uint256 amount) {
+        bytes memory result =
+            _executeModule(Module.Borrow, abi.encodeWithSelector(BBBorrow.repay.selector, from, to, skim, part));
         amount = abi.decode(result, (uint256));
     }
 
@@ -330,19 +283,9 @@ contract BigBang is BBCommon {
     /// @param share Collateral YieldBox-shares to sell
     /// @param data LeverageExecutor data
     /// @return amountOut Actual asset amount received in the sale
-    function sellCollateral(
-        address from,
-        uint256 share,
-        bytes calldata data
-    ) external returns (uint256 amountOut) {
+    function sellCollateral(address from, uint256 share, bytes calldata data) external returns (uint256 amountOut) {
         bytes memory result = _executeModule(
-            Module.Leverage,
-            abi.encodeWithSelector(
-                BBLeverage.sellCollateral.selector,
-                from,
-                share,
-                data
-            )
+            Module.Leverage, abi.encodeWithSelector(BBLeverage.sellCollateral.selector, from, share, data)
         );
         amountOut = abi.decode(result, (uint256));
     }
@@ -353,21 +296,13 @@ contract BigBang is BBCommon {
     /// @param supplyAmount Amount of asset supplied (down payment)
     /// @param data LeverageExecutor data
     /// @return amountOut Actual collateral amount purchased
-    function buyCollateral(
-        address from,
-        uint256 borrowAmount,
-        uint256 supplyAmount,
-        bytes calldata data
-    ) external returns (uint256 amountOut) {
+    function buyCollateral(address from, uint256 borrowAmount, uint256 supplyAmount, bytes calldata data)
+        external
+        returns (uint256 amountOut)
+    {
         bytes memory result = _executeModule(
             Module.Leverage,
-            abi.encodeWithSelector(
-                BBLeverage.buyCollateral.selector,
-                from,
-                borrowAmount,
-                supplyAmount,
-                data
-            )
+            abi.encodeWithSelector(BBLeverage.buyCollateral.selector, from, borrowAmount, supplyAmount, data)
         );
         amountOut = abi.decode(result, (uint256));
     }
@@ -432,11 +367,7 @@ contract BigBang is BBCommon {
         revert("BB: not allowed");
     }
 
-    function transferFrom(
-        address,
-        address,
-        uint256
-    ) public pure override returns (bool) {
+    function transferFrom(address, address, uint256) public pure override returns (bool) {
         revert("BB: not allowed");
     }
 
@@ -466,53 +397,21 @@ contract BigBang is BBCommon {
         pauseOptions[PauseType.LeverageBuy] = val;
         pauseOptions[PauseType.LeverageSell] = val;
 
-        emit PausedUpdated(
-            PauseType.Borrow,
-            pauseOptions[PauseType.Borrow],
-            val
-        );
+        emit PausedUpdated(PauseType.Borrow, pauseOptions[PauseType.Borrow], val);
         emit PausedUpdated(PauseType.Repay, pauseOptions[PauseType.Repay], val);
-        emit PausedUpdated(
-            PauseType.AddCollateral,
-            pauseOptions[PauseType.AddCollateral],
-            val
-        );
-        emit PausedUpdated(
-            PauseType.RemoveCollateral,
-            pauseOptions[PauseType.RemoveCollateral],
-            val
-        );
-        emit PausedUpdated(
-            PauseType.Liquidation,
-            pauseOptions[PauseType.Liquidation],
-            val
-        );
-        emit PausedUpdated(
-            PauseType.LeverageBuy,
-            pauseOptions[PauseType.LeverageBuy],
-            val
-        );
-        emit PausedUpdated(
-            PauseType.LeverageSell,
-            pauseOptions[PauseType.LeverageSell],
-            val
-        );
+        emit PausedUpdated(PauseType.AddCollateral, pauseOptions[PauseType.AddCollateral], val);
+        emit PausedUpdated(PauseType.RemoveCollateral, pauseOptions[PauseType.RemoveCollateral], val);
+        emit PausedUpdated(PauseType.Liquidation, pauseOptions[PauseType.Liquidation], val);
+        emit PausedUpdated(PauseType.LeverageBuy, pauseOptions[PauseType.LeverageBuy], val);
+        emit PausedUpdated(PauseType.LeverageSell, pauseOptions[PauseType.LeverageSell], val);
     }
 
     /// @notice sets min and max mint range
     /// @dev can only be called by the owner
     /// @param _min the new min start
     /// @param _max the new max start
-    function setMinAndMaxMintRange(
-        uint256 _min,
-        uint256 _max
-    ) external onlyOwner {
-        emit UpdateMinMaxMintRange(
-            minMintFeeStart,
-            _min,
-            maxMintFeeStart,
-            _max
-        );
+    function setMinAndMaxMintRange(uint256 _min, uint256 _max) external onlyOwner {
+        emit UpdateMinMaxMintRange(minMintFeeStart, _min, maxMintFeeStart, _max);
         minMintFeeStart = _min;
         maxMintFeeStart = _max;
     }
@@ -521,10 +420,7 @@ contract BigBang is BBCommon {
     /// @dev can only be called by the owner
     /// @param _min the new min fee
     /// @param _max the new max fee
-    function setMinAndMaxMintFee(
-        uint256 _min,
-        uint256 _max
-    ) external onlyOwner {
+    function setMinAndMaxMintFee(uint256 _min, uint256 _max) external onlyOwner {
         emit UpdateMinMaxMintFee(minMintFee, _min, maxMintFee, _max);
         minMintFee = _min;
         maxMintFee = _max;
@@ -532,15 +428,12 @@ contract BigBang is BBCommon {
 
     /// @notice updates asset's oracle info
     /// @dev can only be called by the owner
-    /// @param _oracle the new IOracle address
-    /// @param _oracleData the new IOracle data
-    function setAssetOracle(
-        address _oracle,
-        bytes calldata _oracleData
-    ) external onlyOwner {
+    /// @param _oracle the new ITapiocaOracle address
+    /// @param _oracleData the new ITapiocaOracle data
+    function setAssetOracle(address _oracle, bytes calldata _oracleData) external onlyOwner {
         if (_oracle != address(0)) {
             emit AssetOracleUpdated(address(assetOracle), _oracle);
-            assetOracle = IOracle(_oracle);
+            assetOracle = ITapiocaOracle(_oracle);
         }
         if (_oracleData.length > 0) {
             assetOracleData = _oracleData;
@@ -552,29 +445,19 @@ contract BigBang is BBCommon {
     /// @param amount the amount to rescue
     /// @param to the recipient
     function rescueEth(uint256 amount, address to) external onlyOwner {
-        (bool success, ) = to.call{value: amount}("");
+        (bool success,) = to.call{value: amount}("");
         if (!success) revert TransferFailed();
     }
 
     /// @notice Transfers fees to penrose
     /// @dev can only be called by the owner
     /// @return feeShares the amount of fees in shares withdrawn under Penrose
-    function refreshPenroseFees()
-        external
-        onlyOwner
-        returns (uint256 feeShares)
-    {
+    function refreshPenroseFees() external onlyOwner returns (uint256 feeShares) {
         uint256 fees = asset.balanceOf(address(this));
         feeShares = yieldBox.toShare(assetId, fees, false);
         if (feeShares > 0) {
             address(asset).safeApprove(address(yieldBox), fees);
-            yieldBox.depositAsset(
-                assetId,
-                address(this),
-                msg.sender,
-                0,
-                feeShares
-            );
+            yieldBox.depositAsset(assetId, address(this), msg.sender, 0, feeShares);
         }
     }
 
@@ -608,19 +491,13 @@ contract BigBang is BBCommon {
             }
 
             if (_debtRateAgainstEthMarket > 0) {
-                emit DebtRateAgainstEthUpdated(
-                    debtRateAgainstEthMarket,
-                    _debtRateAgainstEthMarket
-                );
+                emit DebtRateAgainstEthUpdated(debtRateAgainstEthMarket, _debtRateAgainstEthMarket);
                 debtRateAgainstEthMarket = _debtRateAgainstEthMarket;
             }
 
             if (_liquidationMultiplier > 0) {
                 if (_liquidationMultiplier >= FEE_PRECISION) revert NotValid();
-                emit LiquidationMultiplierUpdated(
-                    liquidationMultiplier,
-                    _liquidationMultiplier
-                );
+                emit LiquidationMultiplierUpdated(liquidationMultiplier, _liquidationMultiplier);
                 liquidationMultiplier = _liquidationMultiplier;
             }
         }
@@ -646,10 +523,7 @@ contract BigBang is BBCommon {
         return module;
     }
 
-    function _executeModule(
-        Module _module,
-        bytes memory _data
-    ) private returns (bytes memory returnData) {
+    function _executeModule(Module _module, bytes memory _data) private returns (bytes memory returnData) {
         bool success = true;
 
         (success, returnData) = _extractModule(_module).delegatecall(_data);

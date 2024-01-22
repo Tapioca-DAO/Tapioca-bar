@@ -1,15 +1,22 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-//interfaces
-import {ITapiocaOFTBase} from "tapioca-periph/contracts/interfaces/ITapiocaOFT.sol";
-import "tapioca-periph/contracts/interfaces/IGmxGlpManager.sol";
-import "tapioca-periph/contracts/interfaces/IGmxRewardRouterV2.sol";
+// External
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-import "./BaseLeverageExecutor.sol";
+// Tapioca
+import {IGmxRewardRouterV2} from "tapioca-periph/interfaces/external/gmx/IGmxRewardRouterV2.sol";
+import {IGmxGlpManager} from "tapioca-periph/interfaces/external/gmx/IGmxGlpManager.sol";
+import {ITapiocaOFTBase} from "tapioca-periph/interfaces/tap-token/ITapiocaOFT.sol";
+import {ISwapper} from "tapioca-periph/interfaces/periph/ISwapper.sol";
+import {ICluster} from "tapioca-periph/interfaces/periph/ICluster.sol";
+import {SafeApprove} from "tapioca-periph/libraries/SafeApprove.sol";
+import {BaseLeverageExecutor} from "./BaseLeverageExecutor.sol";
+import {IYieldBox} from "yieldbox/interfaces/IYieldBox.sol";
 
 contract AssetToSGLPLeverageExecutor is BaseLeverageExecutor {
     using SafeApprove for address;
+
     IERC20 public immutable usdc;
 
     IGmxGlpManager private immutable glpManager;
@@ -23,13 +30,9 @@ contract AssetToSGLPLeverageExecutor is BaseLeverageExecutor {
     error NotEnough(address token);
     error GlpNotValid();
 
-    constructor(
-        YieldBox _yb,
-        ISwapper _swapper,
-        ICluster _cluster,
-        IERC20 _usdc,
-        IGmxRewardRouterV2 _glpRewardRouter
-    ) BaseLeverageExecutor(_yb, _swapper, _cluster) {
+    constructor(IYieldBox _yb, ISwapper _swapper, ICluster _cluster, IERC20 _usdc, IGmxRewardRouterV2 _glpRewardRouter)
+        BaseLeverageExecutor(_yb, _swapper, _cluster)
+    {
         usdc = _usdc;
         glpRewardRouter = _glpRewardRouter;
         glpManager = IGmxGlpManager(glpRewardRouter.glpManager());
@@ -58,39 +61,18 @@ contract AssetToSGLPLeverageExecutor is BaseLeverageExecutor {
         _assureSwapperValidity();
 
         //decode data
-        (
-            uint256 minUsdcAmountOut,
-            bytes memory dexUsdcData,
-            uint256 minGlpAmountOut
-        ) = abi.decode(data, (uint256, bytes, uint256));
+        (uint256 minUsdcAmountOut, bytes memory dexUsdcData, uint256 minGlpAmountOut) =
+            abi.decode(data, (uint256, bytes, uint256));
 
         //swap asset with USDC
-        uint256 usdcAmount = _swapTokens(
-            assetAddress,
-            address(usdc),
-            assetAmountIn,
-            minUsdcAmountOut,
-            dexUsdcData,
-            0
-        );
+        uint256 usdcAmount = _swapTokens(assetAddress, address(usdc), assetAmountIn, minUsdcAmountOut, dexUsdcData, 0);
         if (usdcAmount < minUsdcAmountOut) revert NotEnough(address(usdc));
 
         //swap USDC with GLP
-        collateralAmountOut = _buyGlp(
-            usdcAmount,
-            address(usdc),
-            minGlpAmountOut,
-            collateralAddress
-        );
+        collateralAmountOut = _buyGlp(usdcAmount, address(usdc), minGlpAmountOut, collateralAddress);
 
         //deposit GLP to YieldBox
-        _ybDeposit(
-            collateralId,
-            collateralAddress,
-            address(this),
-            to,
-            collateralAmountOut
-        );
+        _ybDeposit(collateralId, collateralAddress, address(this), to, collateralAmountOut);
     }
 
     /// @notice buys asset with collateral
@@ -113,29 +95,14 @@ contract AssetToSGLPLeverageExecutor is BaseLeverageExecutor {
         _assureSwapperValidity();
 
         //decode data
-        (
-            uint256 minUsdcAmountOut,
-            uint256 minAssetAmountOut,
-            bytes memory dexAssetData
-        ) = abi.decode(data, (uint256, uint256, bytes));
+        (uint256 minUsdcAmountOut, uint256 minAssetAmountOut, bytes memory dexAssetData) =
+            abi.decode(data, (uint256, uint256, bytes));
 
         //swap GLP with USDC
-        uint256 usdcAmount = _sellGlp(
-            collateralAmountIn,
-            collateralAddress,
-            address(usdc),
-            minUsdcAmountOut
-        );
+        uint256 usdcAmount = _sellGlp(collateralAmountIn, collateralAddress, address(usdc), minUsdcAmountOut);
 
         //swap USDC with Asset
-        assetAmountOut = _swapTokens(
-            address(usdc),
-            assetAddress,
-            usdcAmount,
-            minAssetAmountOut,
-            dexAssetData,
-            0
-        );
+        assetAmountOut = _swapTokens(address(usdc), assetAddress, usdcAmount, minAssetAmountOut, dexAssetData, 0);
         if (assetAmountOut < minAssetAmountOut) revert NotEnough(assetAddress);
 
         //deposit asset to YieldBox
@@ -145,46 +112,26 @@ contract AssetToSGLPLeverageExecutor is BaseLeverageExecutor {
     // ********************** //
     // *** PRIVATE MEHODS *** //
     // ********************** //
-    function _buyGlp(
-        uint256 usdcAmount,
-        address usdcAddress,
-        uint256 minGlpAmountOut,
-        address glpAddress
-    ) private returns (uint256 glpAmount) {
+    function _buyGlp(uint256 usdcAmount, address usdcAddress, uint256 minGlpAmountOut, address glpAddress)
+        private
+        returns (uint256 glpAmount)
+    {
         usdcAddress.safeApprove(address(glpManager), usdcAmount);
-        glpAmount = glpRewardRouter.mintAndStakeGlp(
-            usdcAddress,
-            usdcAmount,
-            0,
-            minGlpAmountOut
-        );
+        glpAmount = glpRewardRouter.mintAndStakeGlp(usdcAddress, usdcAmount, 0, minGlpAmountOut);
 
         if (glpAmount < minGlpAmountOut) revert NotEnough(glpAddress);
     }
 
-    function _sellGlp(
-        uint256 glpAmount,
-        address glpAddress,
-        address usdcAddress,
-        uint256 minUsdcAmountOut
-    ) private returns (uint256 usdcAmount) {
+    function _sellGlp(uint256 glpAmount, address glpAddress, address usdcAddress, uint256 minUsdcAmountOut)
+        private
+        returns (uint256 usdcAmount)
+    {
         glpAddress.safeApprove(address(glpManager), glpAmount);
-        usdcAmount = glpRewardRouter.unstakeAndRedeemGlp(
-            usdcAddress,
-            glpAmount,
-            minUsdcAmountOut,
-            address(this)
-        );
+        usdcAmount = glpRewardRouter.unstakeAndRedeemGlp(usdcAddress, glpAmount, minUsdcAmountOut, address(this));
         if (usdcAmount < minUsdcAmountOut) revert NotEnough(usdcAddress);
     }
 
-    function _ybDeposit(
-        uint256 id,
-        address token,
-        address from,
-        address to,
-        uint256 amount
-    ) internal override {
+    function _ybDeposit(uint256 id, address token, address from, address to, uint256 amount) internal override {
         token.safeApprove(address(yieldBox), amount);
         yieldBox.depositAsset(id, from, to, amount, 0);
     }

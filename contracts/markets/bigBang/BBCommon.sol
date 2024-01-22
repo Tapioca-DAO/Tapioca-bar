@@ -1,8 +1,15 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-import "tapioca-periph/contracts/interfaces/IBigBang.sol";
-import "./BBStorage.sol";
+// External
+import {RebaseLibrary, Rebase} from "@boringcrypto/boring-solidity/contracts/libraries/BoringRebase.sol";
+import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
+import {IERC20} from "@boringcrypto/boring-solidity/contracts/ERC20.sol";
+
+// Tapioca
+import {SafeApprove} from "tapioca-periph/libraries/SafeApprove.sol";
+import {IBigBang} from "tapioca-periph/interfaces/bar/IBigBang.sol";
+import {BBStorage} from "./BBStorage.sol";
 
 contract BBCommon is BBStorage {
     using RebaseLibrary for Rebase;
@@ -27,19 +34,14 @@ contract BBCommon is BBStorage {
         if (isMainMarket) return penrose.bigBangEthDebtRate(); // default 0.5%
         if (totalBorrow.elastic == 0) return minDebtRate;
 
-        uint256 _ethMarketTotalDebt = IBigBang(penrose.bigBangEthMarket())
-            .getTotalDebt();
+        uint256 _ethMarketTotalDebt = IBigBang(penrose.bigBangEthMarket()).getTotalDebt();
         uint256 _currentDebt = totalBorrow.elastic;
-        uint256 _maxDebtPoint = (_ethMarketTotalDebt *
-            debtRateAgainstEthMarket) / 1e18;
+        uint256 _maxDebtPoint = (_ethMarketTotalDebt * debtRateAgainstEthMarket) / 1e18;
 
         if (_currentDebt >= _maxDebtPoint) return maxDebtRate;
 
-        uint256 debtPercentage = (_currentDebt * DEBT_PRECISION) /
-            _maxDebtPoint;
-        uint256 debt = ((maxDebtRate - minDebtRate) * debtPercentage) /
-            DEBT_PRECISION +
-            minDebtRate;
+        uint256 debtPercentage = (_currentDebt * DEBT_PRECISION) / _maxDebtPoint;
+        uint256 debt = ((maxDebtRate - minDebtRate) * debtPercentage) / DEBT_PRECISION + minDebtRate;
 
         if (debt > maxDebtRate) return maxDebtRate;
 
@@ -54,12 +56,7 @@ contract BBCommon is BBStorage {
         _accrue();
     }
 
-    function _accrueView()
-        internal
-        view
-        override
-        returns (Rebase memory _totalBorrow)
-    {
+    function _accrueView() internal view override returns (Rebase memory _totalBorrow) {
         uint256 elapsedTime = block.timestamp - accrueInfo.lastAccrued;
         if (elapsedTime == 0) {
             return totalBorrow;
@@ -67,9 +64,7 @@ contract BBCommon is BBStorage {
 
         // Calculate fees
         _totalBorrow = totalBorrow;
-        uint256 extraAmount = (uint256(_totalBorrow.elastic) *
-            (getDebtRate() / 31536000) *
-            elapsedTime) / 1e18;
+        uint256 extraAmount = (uint256(_totalBorrow.elastic) * (getDebtRate() / 31536000) * elapsedTime) / 1e18;
         uint256 max = type(uint128).max - totalBorrowCap;
 
         if (extraAmount > max) {
@@ -94,11 +89,7 @@ contract BBCommon is BBStorage {
 
         // Calculate fees
         uint256 extraAmount = 0;
-        extraAmount =
-            (uint256(_totalBorrow.elastic) *
-                _accrueInfo.debtRate *
-                elapsedTime) /
-            1e18;
+        extraAmount = (uint256(_totalBorrow.elastic) * _accrueInfo.debtRate * elapsedTime) / 1e18;
 
         // cap `extraAmount` to avoid overflow risk when converting it from uint256 to uint128
         uint256 max = type(uint128).max - totalBorrowCap;
@@ -122,18 +113,9 @@ contract BBCommon is BBStorage {
     /// Only used for accounting checks.
     /// @param skim If True, only does a balance check on this contract.
     /// False if tokens from msg.sender in `yieldBox` should be transferred.
-    function _addTokens(
-        address from,
-        uint256 _tokenId,
-        uint256 share,
-        uint256 total,
-        bool skim
-    ) internal {
+    function _addTokens(address from, uint256 _tokenId, uint256 share, uint256 total, bool skim) internal {
         if (skim) {
-            require(
-                share <= yieldBox.balanceOf(address(this), _tokenId) - total,
-                "BB: too much"
-            );
+            require(share <= yieldBox.balanceOf(address(this), _tokenId) - total, "BB: too much");
         } else {
             yieldBox.transfer(from, address(this), _tokenId, share);
         }
@@ -144,12 +126,10 @@ contract BBCommon is BBStorage {
     /// @param to the shares receiver
     /// @param id the IERC20 YieldBox asset id
     /// @param amount the amount to deposit
-    function _depositAmountToYb(
-        IERC20 token,
-        address to,
-        uint256 id,
-        uint256 amount
-    ) internal returns (uint256 share) {
+    function _depositAmountToYb(IERC20 token, address to, uint256 id, uint256 amount)
+        internal
+        returns (uint256 share)
+    {
         address(token).safeApprove(address(yieldBox), amount);
         (, share) = yieldBox.depositAsset(id, address(this), to, amount, 0);
     }

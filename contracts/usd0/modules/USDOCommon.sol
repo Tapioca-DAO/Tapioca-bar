@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-import "tapioca-periph/contracts/interfaces/IPermit.sol";
-import "tapioca-periph/contracts/interfaces/IPermitAll.sol";
-import "tapioca-periph/contracts/interfaces/IPermitAction.sol";
-import "tapioca-periph/contracts/interfaces/ICommonData.sol";
-
-import "../BaseUSDOStorage.sol";
+// Tapioca
+import {IPermitAction} from "tapioca-periph/interfaces/common/IPermitAction.sol";
+import {ICommonData} from "tapioca-periph/interfaces/common/ICommonData.sol";
+import {IPermitAll} from "tapioca-periph/interfaces/common/IPermitAll.sol";
+import {IPermit} from "tapioca-periph/interfaces/common/IPermit.sol";
+import {BaseUSDOStorage} from "../BaseUSDOStorage.sol";
 
 abstract contract USDOCommon is BaseUSDOStorage {
     // ************** //
@@ -17,11 +17,8 @@ abstract contract USDOCommon is BaseUSDOStorage {
     error NotValid();
     error NotAuthorized(address invalidAddress);
 
-    function _callApproval(
-        ICommonData.IApproval[] memory approvals,
-        uint16 actionType
-    ) internal {
-        for (uint256 i; i < approvals.length; ) {
+    function _callApproval(ICommonData.IApproval[] memory approvals, uint16 actionType) internal {
+        for (uint256 i; i < approvals.length;) {
             if (approvals[i].yieldBoxTypeApproval) {
                 if (approvals[i].revokeYieldBox) {
                     _revokeOnYieldBox(approvals[i]);
@@ -29,8 +26,9 @@ abstract contract USDOCommon is BaseUSDOStorage {
                     _permitOnYieldBox(approvals[i]);
                 }
             } else {
-                if (approvals[i].actionType != actionType)
+                if (approvals[i].actionType != actionType) {
                     revert ActionTypeNotValid();
+                }
 
                 bytes memory sigData = abi.encode(
                     approvals[i].permitBorrow,
@@ -42,12 +40,8 @@ abstract contract USDOCommon is BaseUSDOStorage {
                     approvals[i].r,
                     approvals[i].s
                 );
-                try
-                    IPermitAction(approvals[i].target).permitAction(
-                        sigData,
-                        approvals[i].actionType
-                    )
-                {} catch Error(string memory reason) {
+                try IPermitAction(approvals[i].target).permitAction(sigData, approvals[i].actionType) {}
+                catch Error(string memory reason) {
                     if (!approvals[i].allowFailure) {
                         revert(reason);
                     }
@@ -66,16 +60,9 @@ abstract contract USDOCommon is BaseUSDOStorage {
 
     function _revokeOnYieldBox(ICommonData.IApproval memory approval) private {
         if (approval.permitAll) {
-            try
-                IPermitAll(approval.target).revokeAll(
-                    approval.owner,
-                    approval.spender,
-                    approval.deadline,
-                    approval.v,
-                    approval.r,
-                    approval.s
-                )
-            {} catch Error(string memory reason) {
+            try IPermitAll(approval.target).revokeAll(
+                approval.owner, approval.spender, approval.deadline, approval.v, approval.r, approval.s
+            ) {} catch Error(string memory reason) {
                 if (!approval.allowFailure) {
                     revert(reason);
                 }
@@ -85,17 +72,9 @@ abstract contract USDOCommon is BaseUSDOStorage {
                 }
             }
         } else {
-            try
-                IPermit(approval.target).revoke(
-                    approval.owner,
-                    approval.spender,
-                    approval.value,
-                    approval.deadline,
-                    approval.v,
-                    approval.r,
-                    approval.s
-                )
-            {} catch Error(string memory reason) {
+            try IPermit(approval.target).revoke(
+                approval.owner, approval.spender, approval.value, approval.deadline, approval.v, approval.r, approval.s
+            ) {} catch Error(string memory reason) {
                 if (!approval.allowFailure) {
                     revert(reason);
                 }
@@ -109,16 +88,9 @@ abstract contract USDOCommon is BaseUSDOStorage {
 
     function _permitOnYieldBox(ICommonData.IApproval memory approval) private {
         if (approval.permitAll) {
-            try
-                IPermitAll(approval.target).permitAll(
-                    approval.owner,
-                    approval.spender,
-                    approval.deadline,
-                    approval.v,
-                    approval.r,
-                    approval.s
-                )
-            {} catch Error(string memory reason) {
+            try IPermitAll(approval.target).permitAll(
+                approval.owner, approval.spender, approval.deadline, approval.v, approval.r, approval.s
+            ) {} catch Error(string memory reason) {
                 if (!approval.allowFailure) {
                     revert(reason);
                 }
@@ -128,17 +100,9 @@ abstract contract USDOCommon is BaseUSDOStorage {
                 }
             }
         } else {
-            try
-                IPermit(approval.target).permit(
-                    approval.owner,
-                    approval.spender,
-                    approval.value,
-                    approval.deadline,
-                    approval.v,
-                    approval.r,
-                    approval.s
-                )
-            {} catch Error(string memory reason) {
+            try IPermit(approval.target).permit(
+                approval.owner, approval.spender, approval.value, approval.deadline, approval.v, approval.r, approval.s
+            ) {} catch Error(string memory reason) {
                 if (!approval.allowFailure) {
                     revert(reason);
                 }

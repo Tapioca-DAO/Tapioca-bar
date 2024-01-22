@@ -1,9 +1,12 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
+// External
+import {EIP712, ECDSA} from "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 import {IERC20} from "@boringcrypto/boring-solidity/contracts/ERC20.sol";
+
+// Tapioca
 import {IERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/draft-ERC20Permit.sol";
-import "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 
 /*
 
@@ -24,14 +27,12 @@ contract MarketERC20 is IERC20, IERC20Permit, EIP712 {
     // *** VARS *** //
     // ************ //
     // solhint-disable-next-line var-name-mixedcase
-    bytes32 private constant _PERMIT_TYPEHASH =
-        keccak256(
-            "Permit(uint16 actionType,address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)"
-        );
-    bytes32 private constant _PERMIT_TYPEHASH_BORROW =
-        keccak256(
-            "PermitBorrow(uint16 actionType,address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)"
-        );
+    bytes32 private constant _PERMIT_TYPEHASH = keccak256(
+        "Permit(uint16 actionType,address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)"
+    );
+    bytes32 private constant _PERMIT_TYPEHASH_BORROW = keccak256(
+        "PermitBorrow(uint16 actionType,address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)"
+    );
 
     /**
      * @dev In previous versions `_PERMIT_TYPEHASH` was declared as `immutable`.
@@ -55,33 +56,23 @@ contract MarketERC20 is IERC20, IERC20Permit, EIP712 {
     // *** EVENTS *** //
     // ************** //
     /// @notice event emitted when borrow approval is performed
-    event ApprovalBorrow(
-        address indexed owner,
-        address indexed spender,
-        uint256 indexed value
-    );
+    event ApprovalBorrow(address indexed owner, address indexed spender, uint256 indexed value);
 
     // ***************** //
     // *** MODIFIERS *** //
     // ***************** //
-    function _allowedLend(address from, uint share) internal {
+    function _allowedLend(address from, uint256 share) internal {
         if (from != msg.sender) {
-            require(
-                allowance[from][msg.sender] >= share,
-                "Market: not approved"
-            );
+            require(allowance[from][msg.sender] >= share, "Market: not approved");
             if (allowance[from][msg.sender] != type(uint256).max) {
                 allowance[from][msg.sender] -= share;
             }
         }
     }
 
-    function _allowedBorrow(address from, uint share) internal {
+    function _allowedBorrow(address from, uint256 share) internal {
         if (from != msg.sender) {
-            require(
-                allowanceBorrow[from][msg.sender] >= share,
-                "Market: not approved"
-            );
+            require(allowanceBorrow[from][msg.sender] >= share, "Market: not approved");
             if (allowanceBorrow[from][msg.sender] != type(uint256).max) {
                 allowanceBorrow[from][msg.sender] -= share;
             }
@@ -89,12 +80,13 @@ contract MarketERC20 is IERC20, IERC20Permit, EIP712 {
     }
 
     /// Check if msg.sender has right to execute Lend operations
-    modifier allowedLend(address from, uint share) virtual {
+    modifier allowedLend(address from, uint256 share) virtual {
         _allowedLend(from, share);
         _;
     }
     /// Check if msg.sender has right to execute borrow operations
-    modifier allowedBorrow(address from, uint share) virtual {
+
+    modifier allowedBorrow(address from, uint256 share) virtual {
         _allowedBorrow(from, share);
         _;
     }
@@ -130,10 +122,7 @@ contract MarketERC20 is IERC20, IERC20Permit, EIP712 {
     /// @param to The address to move the tokens.
     /// @param amount of the tokens to move.
     /// @return (bool) Returns True if succeeded.
-    function transfer(
-        address to,
-        uint256 amount
-    ) external virtual returns (bool) {
+    function transfer(address to, uint256 amount) external virtual returns (bool) {
         // If `amount` is 0, or `msg.sender` is `to` nothing happens
         if (amount != 0 || msg.sender == to) {
             uint256 srcBalance = balanceOf[msg.sender];
@@ -154,11 +143,7 @@ contract MarketERC20 is IERC20, IERC20Permit, EIP712 {
     /// @param to The address to move the tokens.
     /// @param amount The token amount to move.
     /// @return (bool) Returns True if succeeded.
-    function transferFrom(
-        address from,
-        address to,
-        uint256 amount
-    ) external virtual returns (bool) {
+    function transferFrom(address from, address to, uint256 amount) external virtual returns (bool) {
         // If `amount` is 0, or `from` is `to` nothing happens
         if (amount != 0) {
             uint256 srcBalance = balanceOf[from];
@@ -168,10 +153,7 @@ contract MarketERC20 is IERC20, IERC20Permit, EIP712 {
                 uint256 spenderAllowance = allowance[from][msg.sender];
                 // If allowance is infinite, don't decrease it to save on gas (breaks with EIP-20).
                 if (spenderAllowance != type(uint256).max) {
-                    require(
-                        spenderAllowance >= amount,
-                        "ERC20: allowance too low"
-                    );
+                    require(spenderAllowance >= amount, "ERC20: allowance too low");
                     allowance[from][msg.sender] = spenderAllowance - amount; // Underflow is checked
                 }
                 require(to != address(0), "ERC20: no zero address"); // Moved down so other failed calls safe some gas
@@ -188,18 +170,12 @@ contract MarketERC20 is IERC20, IERC20Permit, EIP712 {
     /// @param spender Address of the party that can draw from msg.sender's account.
     /// @param amount The maximum collective amount that `spender` can draw.
     /// @return (bool) Returns True if approved.
-    function approve(
-        address spender,
-        uint256 amount
-    ) public override returns (bool) {
+    function approve(address spender, uint256 amount) public override returns (bool) {
         _approve(msg.sender, spender, amount);
         return true;
     }
 
-    function approveBorrow(
-        address spender,
-        uint256 amount
-    ) external returns (bool) {
+    function approveBorrow(address spender, uint256 amount) external returns (bool) {
         _approveBorrow(msg.sender, spender, amount);
         return true;
     }
@@ -207,44 +183,17 @@ contract MarketERC20 is IERC20, IERC20Permit, EIP712 {
     /**
      * @dev See {IERC20Permit-permit}.
      */
-    function permit(
-        address owner,
-        address spender,
-        uint256 value,
-        uint256 deadline,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) external virtual override(IERC20, IERC20Permit) {
+    function permit(address owner, address spender, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
+        external
+        virtual
+        override(IERC20, IERC20Permit)
+    {
         _permit(0, true, owner, spender, value, deadline, v, r, s);
     }
 
-    function permitAction(
-        bytes memory data,
-        uint16 actionType
-    ) external virtual {
-        (
-            bool borrow,
-            address owner,
-            address spender,
-            uint256 value,
-            uint256 deadline,
-            uint8 v,
-            bytes32 r,
-            bytes32 s
-        ) = abi.decode(
-                data,
-                (
-                    bool,
-                    address,
-                    address,
-                    uint256,
-                    uint256,
-                    uint8,
-                    bytes32,
-                    bytes32
-                )
-            );
+    function permitAction(bytes memory data, uint16 actionType) external virtual {
+        (bool borrow, address owner, address spender, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s) =
+            abi.decode(data, (bool, address, address, uint256, uint256, uint8, bytes32, bytes32));
 
         _permit(actionType, borrow, owner, spender, value, deadline, v, r, s);
     }
@@ -270,9 +219,7 @@ contract MarketERC20 is IERC20, IERC20Permit, EIP712 {
      *
      * _Available since v4.1._
      */
-    function _useNonce(
-        address owner
-    ) internal virtual returns (uint256 current) {
+    function _useNonce(address owner) internal virtual returns (uint256 current) {
         current = _nonces[owner]++;
     }
 
@@ -316,11 +263,7 @@ contract MarketERC20 is IERC20, IERC20Permit, EIP712 {
         }
     }
 
-    function _approveBorrow(
-        address owner,
-        address spender,
-        uint256 amount
-    ) internal {
+    function _approveBorrow(address owner, address spender, uint256 amount) internal {
         allowanceBorrow[owner][spender] = amount;
         emit ApprovalBorrow(owner, spender, amount);
     }

@@ -1,16 +1,20 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-import "@boringcrypto/boring-solidity/contracts/BoringOwnable.sol";
-import "@boringcrypto/boring-solidity/contracts/ERC20.sol";
+// External
+import {RebaseLibrary, Rebase} from "@boringcrypto/boring-solidity/contracts/libraries/BoringRebase.sol";
+import {BoringERC20} from "@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol";
+import {BoringOwnable} from "@boringcrypto/boring-solidity/contracts/BoringOwnable.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import {ITapiocaOracle} from "tapioca-periph/interfaces/periph/ITapiocaOracle.sol";
+import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
+import {IERC20} from "@boringcrypto/boring-solidity/contracts/ERC20.sol";
 
-import "@openzeppelin/contracts/utils/math/SafeCast.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-
-import "tapioca-periph/contracts/libraries/SafeApprove.sol";
-import {IUSDOBase} from "tapioca-periph/contracts/interfaces/IUSDO.sol";
-
-import "../Market.sol";
+// Tapioca
+import {SafeApprove} from "tapioca-periph/libraries/SafeApprove.sol";
+import {IUSDOBase} from "tapioca-periph/interfaces/bar/IUSDO.sol";
+import {IYieldBox} from "yieldbox/interfaces/IYieldBox.sol";
+import {Market, MarketERC20} from "../Market.sol";
 
 // solhint-disable max-line-length
 
@@ -51,31 +55,13 @@ contract Origins is BoringOwnable, Market, ReentrancyGuard {
     // *** EVENTS *** //
     // ************** //
     /// @notice event emitted when collateral is added
-    event LogAddCollateral(
-        address indexed from,
-        address indexed to,
-        uint256 indexed share
-    );
+    event LogAddCollateral(address indexed from, address indexed to, uint256 indexed share);
     /// @notice event emitted when collateral is removed
-    event LogRemoveCollateral(
-        address indexed from,
-        address indexed to,
-        uint256 indexed share
-    );
+    event LogRemoveCollateral(address indexed from, address indexed to, uint256 indexed share);
     /// @notice event emitted when borrow is performed
-    event LogBorrow(
-        address indexed from,
-        address indexed to,
-        uint256 indexed amount,
-        uint256 part
-    );
+    event LogBorrow(address indexed from, address indexed to, uint256 indexed amount, uint256 part);
     /// @notice event emitted when a repay operation is performed
-    event LogRepay(
-        address indexed from,
-        address indexed to,
-        uint256 indexed amount,
-        uint256 part
-    );
+    event LogRepay(address indexed from, address indexed to, uint256 indexed amount, uint256 part);
 
     constructor(
         address _owner,
@@ -84,14 +70,14 @@ contract Origins is BoringOwnable, Market, ReentrancyGuard {
         uint256 _assetId,
         IERC20 _collateral,
         uint256 _collateralId,
-        IOracle _oracle,
+        ITapiocaOracle _oracle,
         uint256 _exchangeRatePrecision,
         uint256 _collateralizationRate
     ) MarketERC20("Origins") {
         owner = _owner;
         allowedParticipants[_owner] = true;
 
-        yieldBox = YieldBox(_yieldBox);
+        yieldBox = IYieldBox(_yieldBox);
 
         if (address(_collateral) == address(0)) revert BadPair();
         if (address(_asset) == address(0)) revert BadPair();
@@ -105,9 +91,7 @@ contract Origins is BoringOwnable, Market, ReentrancyGuard {
         oracle = _oracle;
         updateExchangeRate();
 
-        EXCHANGE_RATE_PRECISION = _exchangeRatePrecision > 0
-            ? _exchangeRatePrecision
-            : 1e18;
+        EXCHANGE_RATE_PRECISION = _exchangeRatePrecision > 0 ? _exchangeRatePrecision : 1e18;
 
         collateralizationRate = _collateralizationRate;
 
@@ -141,44 +125,20 @@ contract Origins is BoringOwnable, Market, ReentrancyGuard {
         pauseOptions[PauseType.LeverageBuy] = val;
         pauseOptions[PauseType.LeverageSell] = val;
 
-        emit PausedUpdated(
-            PauseType.Borrow,
-            pauseOptions[PauseType.Borrow],
-            val
-        );
+        emit PausedUpdated(PauseType.Borrow, pauseOptions[PauseType.Borrow], val);
         emit PausedUpdated(PauseType.Repay, pauseOptions[PauseType.Repay], val);
-        emit PausedUpdated(
-            PauseType.AddCollateral,
-            pauseOptions[PauseType.AddCollateral],
-            val
-        );
-        emit PausedUpdated(
-            PauseType.RemoveCollateral,
-            pauseOptions[PauseType.RemoveCollateral],
-            val
-        );
-        emit PausedUpdated(
-            PauseType.Liquidation,
-            pauseOptions[PauseType.Liquidation],
-            val
-        );
-        emit PausedUpdated(
-            PauseType.LeverageBuy,
-            pauseOptions[PauseType.LeverageBuy],
-            val
-        );
-        emit PausedUpdated(
-            PauseType.LeverageSell,
-            pauseOptions[PauseType.LeverageSell],
-            val
-        );
+        emit PausedUpdated(PauseType.AddCollateral, pauseOptions[PauseType.AddCollateral], val);
+        emit PausedUpdated(PauseType.RemoveCollateral, pauseOptions[PauseType.RemoveCollateral], val);
+        emit PausedUpdated(PauseType.Liquidation, pauseOptions[PauseType.Liquidation], val);
+        emit PausedUpdated(PauseType.LeverageBuy, pauseOptions[PauseType.LeverageBuy], val);
+        emit PausedUpdated(PauseType.LeverageSell, pauseOptions[PauseType.LeverageSell], val);
     }
 
     /// @notice rescues unused ETH from the contract
     /// @param amount the amount to rescue
     /// @param to the recipient
     function rescueEth(uint256 amount, address to) external onlyOwner {
-        (bool success, ) = to.call{value: amount}("");
+        (bool success,) = to.call{value: amount}("");
         if (!success) revert TransferFailed();
     }
 
@@ -189,10 +149,7 @@ contract Origins is BoringOwnable, Market, ReentrancyGuard {
     /// False if tokens from msg.sender in `yieldBox` should be transferred.
     /// @param amount The amount to add for `msg.sender`.
     /// @param share The amount of shares to add for `msg.sender`.
-    function addCollateral(
-        uint256 amount,
-        uint256 share
-    ) external optionNotPaused(PauseType.AddCollateral) {
+    function addCollateral(uint256 amount, uint256 share) external optionNotPaused(PauseType.AddCollateral) {
         if (!allowedParticipants[msg.sender]) revert NotAuthorized();
 
         if (share == 0) {
@@ -204,9 +161,7 @@ contract Origins is BoringOwnable, Market, ReentrancyGuard {
 
     /// @notice Removes `share` amount of collateral
     /// @param share Amount of shares to remove.
-    function removeCollateral(
-        uint256 share
-    )
+    function removeCollateral(uint256 share)
         external
         optionNotPaused(PauseType.RemoveCollateral)
         solvent(msg.sender, false)
@@ -219,9 +174,7 @@ contract Origins is BoringOwnable, Market, ReentrancyGuard {
     /// @param amount Amount to borrow.
     /// @return part Total part of the debt held by borrowers.
     /// @return share Total amount in shares borrowed.
-    function borrow(
-        uint256 amount
-    )
+    function borrow(uint256 amount)
         external
         optionNotPaused(PauseType.Borrow)
         solvent(msg.sender, false)
@@ -237,9 +190,7 @@ contract Origins is BoringOwnable, Market, ReentrancyGuard {
     /// @dev The bool param is not used but we added it to respect the ISingularity interface for MarketsHelper compatibility
     /// @param part The amount to repay. See `userBorrowPart`.
     /// @return amount The total amount repayed.
-    function repay(
-        uint256 part
-    ) external optionNotPaused(PauseType.Repay) returns (uint256 amount) {
+    function repay(uint256 part) external optionNotPaused(PauseType.Repay) returns (uint256 amount) {
         if (!allowedParticipants[msg.sender]) revert NotAuthorized();
 
         updateExchangeRate();
@@ -261,11 +212,7 @@ contract Origins is BoringOwnable, Market, ReentrancyGuard {
     // ************************* //
     // *** PRIVATE FUNCTIONS *** //
     // ************************* //
-    function _repay(
-        address from,
-        address to,
-        uint256 part
-    ) internal returns (uint256 amountOut) {
+    function _repay(address from, address to, uint256 part) internal returns (uint256 amountOut) {
         if (part > userBorrowPart[to]) {
             part = userBorrowPart[to];
         }
@@ -285,11 +232,7 @@ contract Origins is BoringOwnable, Market, ReentrancyGuard {
         emit LogRepay(from, to, amountOut, part);
     }
 
-    function _borrow(
-        address from,
-        address to,
-        uint256 amount
-    ) internal returns (uint256 part, uint256 share) {
+    function _borrow(address from, address to, uint256 amount) internal returns (uint256 part, uint256 share) {
         (totalBorrow, part) = totalBorrow.add(amount, true);
 
         if (totalBorrowCap > 0) {
@@ -306,22 +249,15 @@ contract Origins is BoringOwnable, Market, ReentrancyGuard {
         share = _depositAmountToYb(asset, to, assetId, amount);
     }
 
-    function _depositAmountToYb(
-        IERC20 token,
-        address to,
-        uint256 id,
-        uint256 amount
-    ) internal returns (uint256 share) {
+    function _depositAmountToYb(IERC20 token, address to, uint256 id, uint256 amount)
+        internal
+        returns (uint256 share)
+    {
         address(token).safeApprove(address(yieldBox), amount);
         (, share) = yieldBox.depositAsset(id, address(this), to, amount, 0);
     }
 
-    function _addCollateral(
-        address from,
-        address to,
-        uint256 amount,
-        uint256 share
-    ) internal {
+    function _addCollateral(address from, address to, uint256 amount, uint256 share) internal {
         if (share == 0) {
             share = yieldBox.toShare(collateralId, amount, false);
         }
@@ -332,11 +268,7 @@ contract Origins is BoringOwnable, Market, ReentrancyGuard {
         emit LogAddCollateral(from, to, share);
     }
 
-    function _removeCollateral(
-        address from,
-        address to,
-        uint256 share
-    ) internal {
+    function _removeCollateral(address from, address to, uint256 share) internal {
         userCollateralShare[from] -= share;
         totalCollateralShare -= share;
         emit LogRemoveCollateral(from, to, share);

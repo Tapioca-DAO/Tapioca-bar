@@ -1,14 +1,17 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-//LZ
-import "tapioca-sdk/dist/contracts/libraries/LzLib.sol";
+// External
+import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-//TAPIOCA
-// import "@boringcrypto/boring-solidity/contracts/libraries/BoringRebase.sol";
-import {IUSDOBase} from "tapioca-periph/contracts/interfaces/IUSDO.sol";
-
-import "./USDOCommon.sol";
+// Tapioca
+import {ICommonData} from "tapioca-periph/interfaces/common/ICommonData.sol";
+import {ICluster} from "tapioca-periph/interfaces/periph/ICluster.sol";
+import {IUSDOBase} from "tapioca-periph/interfaces/bar/IUSDO.sol";
+import {IYieldBox} from "yieldbox/interfaces/IYieldBox.sol";
+import {BaseUSDOStorage} from "../BaseUSDOStorage.sol";
+import {LzLib} from "contracts/tmp/LzLib.sol";
+import {USDOCommon} from "./USDOCommon.sol";
 
 contract USDOMarketModule is USDOCommon {
     using SafeERC20 for IERC20;
@@ -18,11 +21,9 @@ contract USDOMarketModule is USDOCommon {
     // ************** //
     error AllowanceNotValid();
 
-    constructor(
-        address _lzEndpoint,
-        IYieldBoxBase _yieldBox,
-        ICluster _cluster
-    ) BaseUSDOStorage(_lzEndpoint, _yieldBox, _cluster) {}
+    constructor(address _lzEndpoint, IYieldBox _yieldBox, ICluster _cluster)
+        BaseUSDOStorage(_lzEndpoint, _yieldBox, _cluster)
+    {}
 
     /// @notice initiates an asset removal on a market from another layer
     /// @param from the address to substract from
@@ -48,60 +49,25 @@ contract USDOMarketModule is USDOCommon {
         //allowance is also checked on SGl
         if (from != msg.sender) {
             if (removeAndRepayData.removeAssetFromSGL) {
-                if (
-                    allowance(from, msg.sender) <
-                    removeAndRepayData.removeAmount
-                ) revert AllowanceNotValid();
+                if (allowance(from, msg.sender) < removeAndRepayData.removeAmount) revert AllowanceNotValid();
 
-                _spendAllowance(
-                    from,
-                    msg.sender,
-                    removeAndRepayData.removeAmount
-                );
+                _spendAllowance(from, msg.sender, removeAndRepayData.removeAmount);
             }
 
             if (removeAndRepayData.removeCollateralFromBB) {
-                if (
-                    allowance(from, msg.sender) <
-                    removeAndRepayData.collateralAmount
-                ) revert AllowanceNotValid();
+                if (allowance(from, msg.sender) < removeAndRepayData.collateralAmount) revert AllowanceNotValid();
 
-                _spendAllowance(
-                    from,
-                    msg.sender,
-                    removeAndRepayData.collateralAmount
-                );
+                _spendAllowance(from, msg.sender, removeAndRepayData.collateralAmount);
             }
         }
 
-        (, , uint256 airdropAmount, ) = LzLib.decodeAdapterParams(
-            adapterParams
-        );
-        bytes memory lzPayload = abi.encode(
-            PT_MARKET_REMOVE_ASSET,
-            to,
-            externalData,
-            removeAndRepayData,
-            approvals,
-            revokes,
-            airdropAmount
-        );
+        (,, uint256 airdropAmount,) = LzLib.decodeAdapterParams(adapterParams);
+        bytes memory lzPayload =
+            abi.encode(PT_MARKET_REMOVE_ASSET, to, externalData, removeAndRepayData, approvals, revokes, airdropAmount);
 
-        _checkAdapterParams(
-            lzDstChainId,
-            PT_MARKET_REMOVE_ASSET,
-            adapterParams,
-            NO_EXTRA_GAS
-        );
+        _checkAdapterParams(lzDstChainId, PT_MARKET_REMOVE_ASSET, adapterParams, NO_EXTRA_GAS);
 
-        _lzSend(
-            lzDstChainId,
-            lzPayload,
-            payable(from),
-            zroPaymentAddress,
-            adapterParams,
-            msg.value
-        );
+        _lzSend(lzDstChainId, lzPayload, payable(from), zroPaymentAddress, adapterParams, msg.value);
 
         emit SendToChain(lzDstChainId, from, LzLib.addressToBytes32(to), 0);
     }
@@ -128,18 +94,11 @@ contract USDOMarketModule is USDOCommon {
         bytes calldata adapterParams
     ) external payable {
         bytes32 toAddress = LzLib.addressToBytes32(_to);
-        (lendParams.depositAmount, ) = _removeDust(lendParams.depositAmount);
-        lendParams.depositAmount = _debitFrom(
-            _from,
-            lzEndpoint.getChainId(),
-            toAddress,
-            lendParams.depositAmount
-        );
+        (lendParams.depositAmount,) = _removeDust(lendParams.depositAmount);
+        lendParams.depositAmount = _debitFrom(_from, lzEndpoint.getChainId(), toAddress, lendParams.depositAmount);
         if (lendParams.depositAmount == 0) revert NotValid();
 
-        (, , uint256 airdropAmount, ) = LzLib.decodeAdapterParams(
-            adapterParams
-        );
+        (,, uint256 airdropAmount,) = LzLib.decodeAdapterParams(adapterParams);
         bytes memory lzPayload = abi.encode(
             PT_YB_SEND_SGL_LEND_OR_REPAY,
             _to,
@@ -151,27 +110,10 @@ contract USDOMarketModule is USDOCommon {
             airdropAmount
         );
 
-        _checkAdapterParams(
-            lzDstChainId,
-            PT_YB_SEND_SGL_LEND_OR_REPAY,
-            adapterParams,
-            NO_EXTRA_GAS
-        );
+        _checkAdapterParams(lzDstChainId, PT_YB_SEND_SGL_LEND_OR_REPAY, adapterParams, NO_EXTRA_GAS);
 
-        _lzSend(
-            lzDstChainId,
-            lzPayload,
-            payable(_from),
-            zroPaymentAddress,
-            adapterParams,
-            msg.value
-        );
+        _lzSend(lzDstChainId, lzPayload, payable(_from), zroPaymentAddress, adapterParams, msg.value);
 
-        emit SendToChain(
-            lzDstChainId,
-            _from,
-            toAddress,
-            lendParams.depositAmount
-        );
+        emit SendToChain(lzDstChainId, _from, toAddress, lendParams.depositAmount);
     }
 }

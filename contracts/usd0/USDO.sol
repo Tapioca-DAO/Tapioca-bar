@@ -1,8 +1,11 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-import "tapioca-sdk/dist/contracts/interfaces/ILayerZeroEndpoint.sol";
-import "./BaseUSDO.sol";
+// Tapioca
+import {ILayerZeroEndpoint} from "tapioca-periph/layerzero/v1/interfaces/ILayerZeroEndpoint.sol";
+import {IYieldBox} from "tapioca-periph/interfaces/yieldbox/IYieldBox.sol";
+import {ICluster} from "tapioca-periph/interfaces/periph/ICluster.sol";
+import {BaseUSDO} from "./BaseUSDO.sol";
 
 /*
 
@@ -41,7 +44,7 @@ contract USDO is BaseUSDO {
     /// @param _leverageModule USDOLeverageModule address
     constructor(
         address _lzEndpoint,
-        IYieldBoxBase _yieldBox,
+        IYieldBox _yieldBox,
         ICluster _cluster,
         address _owner,
         address payable _leverageModule,

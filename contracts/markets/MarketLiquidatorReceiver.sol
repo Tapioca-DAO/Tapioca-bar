@@ -1,12 +1,15 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-import "tapioca-periph/contracts/interfaces/ISwapper.sol";
-import "tapioca-periph/contracts/interfaces/IOracle.sol";
-import "tapioca-periph/contracts/interfaces/IMarketLiquidatorReceiver.sol";
+// External
+import {BoringERC20} from "@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol";
+import {BoringOwnable} from "@boringcrypto/boring-solidity/contracts/BoringOwnable.sol";
+import {IERC20} from "@boringcrypto/boring-solidity/contracts/ERC20.sol";
 
-import "@boringcrypto/boring-solidity/contracts/BoringOwnable.sol";
-import "@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol";
+// Tapioca
+import {IMarketLiquidatorReceiver} from "tapioca-periph/interfaces/bar/IMarketLiquidatorReceiver.sol";
+import {ITapiocaOracle} from "tapioca-periph/interfaces/periph/ITapiocaOracle.sol";
+import {ISwapper} from "tapioca-periph/interfaces/periph/ISwapper.sol";
 
 contract MarketLiquidatorReceiver is IMarketLiquidatorReceiver, BoringOwnable {
     using BoringERC20 for IERC20;
@@ -21,8 +24,7 @@ contract MarketLiquidatorReceiver is IMarketLiquidatorReceiver, BoringOwnable {
     mapping(address oracle => uint256 rate) public cachedRates;
     mapping(address tokenIn => address swapper) public swappers;
 
-    mapping(address sender => mapping(address tokenIn => uint256 allowance))
-        public allowances;
+    mapping(address sender => mapping(address tokenIn => uint256 allowance)) public allowances;
 
     uint256 private _entered;
 
@@ -66,8 +68,9 @@ contract MarketLiquidatorReceiver is IMarketLiquidatorReceiver, BoringOwnable {
         if (swappers[tokenIn] == address(0)) revert NoSwapperAssigned();
 
         if (msg.sender != initiator) {
-            if (allowances[msg.sender][tokenIn] < collateralAmount)
+            if (allowances[msg.sender][tokenIn] < collateralAmount) {
                 revert NotAuthorized();
+            }
             allowances[msg.sender][tokenIn] -= collateralAmount;
         }
 
@@ -75,14 +78,9 @@ contract MarketLiquidatorReceiver is IMarketLiquidatorReceiver, BoringOwnable {
 
         if (minTokenOutAmount == 0) revert NotValid();
 
-        ISwapper.SwapData memory swapData = ISwapper(swappers[tokenIn])
-            .buildSwapData(tokenIn, tokenOut, collateralAmount, 0);
-        (, uint256 returnedShare) = ISwapper(swappers[tokenIn]).swap(
-            swapData,
-            minTokenOutAmount,
-            msg.sender,
-            ""
-        );
+        ISwapper.SwapData memory swapData =
+            ISwapper(swappers[tokenIn]).buildSwapData(tokenIn, tokenOut, collateralAmount, 0);
+        (, uint256 returnedShare) = ISwapper(swappers[tokenIn]).swap(swapData, minTokenOutAmount, msg.sender, "");
         if (returnedShare == 0) revert SwapFailed();
         _entered = 0;
         return true;
@@ -93,7 +91,7 @@ contract MarketLiquidatorReceiver is IMarketLiquidatorReceiver, BoringOwnable {
     function updateRates(address[] calldata _tokens) external onlyOwner {
         uint256 _len = _tokens.length;
         for (uint256 i; i < _len; i++) {
-            IOracle oracle = IOracle(oracles[_tokens[i]].target);
+            ITapiocaOracle oracle = ITapiocaOracle(oracles[_tokens[i]].target);
             (bool updated, uint256 rate) = oracle.get(oracles[_tokens[i]].data);
             if (updated && rate > 0) {
                 cachedRates[address(oracle)] = rate;
@@ -106,27 +104,18 @@ contract MarketLiquidatorReceiver is IMarketLiquidatorReceiver, BoringOwnable {
     /// @param _oracle the oracle address
     /// @param _data the oracle data
     /// @param _precision oracle precision
-    function assignOracle(
-        address _tokenIn,
-        address _oracle,
-        bytes memory _data,
-        uint256 _precision
-    ) external onlyOwner {
-        oracles[_tokenIn] = OracleInfo({
-            data: _data,
-            target: _oracle,
-            precision: _precision
-        });
+    function assignOracle(address _tokenIn, address _oracle, bytes memory _data, uint256 _precision)
+        external
+        onlyOwner
+    {
+        oracles[_tokenIn] = OracleInfo({data: _data, target: _oracle, precision: _precision});
         emit OracleAssigned(_tokenIn, _oracle);
     }
 
     /// @notice assigns swapper for token
     /// @param _tokenIn token to assign the swapper for
     /// @param _swapper the swapper address
-    function assignSwapper(
-        address _tokenIn,
-        address _swapper
-    ) external onlyOwner {
+    function assignSwapper(address _tokenIn, address _swapper) external onlyOwner {
         swappers[_tokenIn] = _swapper;
         emit SwapperAssigned(_tokenIn, _swapper);
     }
@@ -135,11 +124,7 @@ contract MarketLiquidatorReceiver is IMarketLiquidatorReceiver, BoringOwnable {
     /// @param sender the sender address
     /// @param tokenIn token to increase allowance for
     /// @param amount increase allowance by amount
-    function increaseAllowance(
-        address sender,
-        address tokenIn,
-        uint256 amount
-    ) external onlyOwner {
+    function increaseAllowance(address sender, address tokenIn, uint256 amount) external onlyOwner {
         allowances[sender][tokenIn] += amount;
     }
 
@@ -147,11 +132,7 @@ contract MarketLiquidatorReceiver is IMarketLiquidatorReceiver, BoringOwnable {
     /// @param sender the sender address
     /// @param tokenIn token to decrease allowance for
     /// @param amount decrease allowance by amount
-    function decreaseAllowance(
-        address sender,
-        address tokenIn,
-        uint256 amount
-    ) external onlyOwner {
+    function decreaseAllowance(address sender, address tokenIn, uint256 amount) external onlyOwner {
         allowances[sender][tokenIn] -= amount;
     }
 }

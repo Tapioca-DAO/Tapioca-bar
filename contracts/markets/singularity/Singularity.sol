@@ -1,15 +1,24 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-// SGL modules
-import "./SGLCommon.sol";
-import "./SGLLiquidation.sol";
-import "./SGLCollateral.sol";
-import "./SGLBorrow.sol";
-import "./SGLLeverage.sol";
+// External
+import {RebaseLibrary, Rebase} from "@boringcrypto/boring-solidity/contracts/libraries/BoringRebase.sol";
+import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import "tapioca-periph/contracts/interfaces/ISendFrom.sol";
-import "tapioca-sdk/dist/contracts/libraries/LzLib.sol";
+// Tapioca
+import {IMarketLiquidatorReceiver} from "tapioca-periph/interfaces/bar/IMarketLiquidatorReceiver.sol";
+import {ILeverageExecutor} from "tapioca-periph/interfaces/bar/ILeverageExecutor.sol";
+import {ITapiocaOracle} from "tapioca-periph/interfaces/periph/ITapiocaOracle.sol";
+import {ISendFrom} from "tapioca-periph/interfaces/common/ISendFrom.sol";
+import {IPenrose} from "tapioca-periph/interfaces/bar/IPenrose.sol";
+import {IYieldBox} from "yieldbox/interfaces/IYieldBox.sol";
+import {SGLLiquidation} from "./SGLLiquidation.sol";
+import {SGLCollateral} from "./SGLCollateral.sol";
+import {SGLLeverage} from "./SGLLeverage.sol";
+import {LzLib} from "contracts/tmp/LzLib.sol";
+import {SGLCommon} from "./SGLCommon.sol";
+import {SGLBorrow} from "./SGLBorrow.sol";
 
 // solhint-disable max-line-length
 
@@ -45,6 +54,7 @@ contract Singularity is SGLCommon {
         Leverage
     }
     /// @notice returns the liquidation module
+
     SGLLiquidation public liquidationModule;
     /// @notice returns the borrow module
     SGLBorrow public borrowModule;
@@ -75,58 +85,42 @@ contract Singularity is SGLCommon {
             uint256 _assetId,
             IERC20 _collateral,
             uint256 _collateralId,
-            IOracle _oracle,
+            ITapiocaOracle _oracle,
             uint256 _exchangeRatePrecision,
             uint256 _collateralizationRate,
             uint256 _liquidationCollateralizationRate,
             ILeverageExecutor _leverageExecutor
         ) = abi.decode(
-                data,
-                (
-                    address,
-                    address,
-                    address,
-                    address,
-                    IPenrose,
-                    IERC20,
-                    uint256,
-                    IERC20,
-                    uint256,
-                    IOracle,
-                    uint256,
-                    uint256,
-                    uint256,
-                    ILeverageExecutor
-                )
-            );
+            data,
+            (
+                address,
+                address,
+                address,
+                address,
+                IPenrose,
+                IERC20,
+                uint256,
+                IERC20,
+                uint256,
+                ITapiocaOracle,
+                uint256,
+                uint256,
+                uint256,
+                ILeverageExecutor
+            )
+        );
 
         penrose = tapiocaBar_;
-        yieldBox = YieldBox(tapiocaBar_.yieldBox());
+        yieldBox = IYieldBox(tapiocaBar_.yieldBox());
         owner = address(penrose);
 
         if (address(_collateral) == address(0)) revert BadPair();
         if (address(_asset) == address(0)) revert BadPair();
         if (address(_oracle) == address(0)) revert BadPair();
 
-        _initModules(
-            _liquidationModule,
-            _borrowModule,
-            _collateralModule,
-            _leverageModule
-        );
-        _initCoreStorage(
-            _asset,
-            _assetId,
-            _collateral,
-            _collateralId,
-            _oracle,
-            _leverageExecutor
-        );
-        _initDefaultValues(
-            _collateralizationRate,
-            _liquidationCollateralizationRate,
-            _exchangeRatePrecision
-        );
+        _initModules(_liquidationModule, _borrowModule, _collateralModule, _leverageModule);
+        _initCoreStorage(_asset, _assetId, _collateral, _collateralId, _oracle, _leverageExecutor);
+        _initDefaultValues(_collateralizationRate, _liquidationCollateralizationRate, _exchangeRatePrecision);
     }
 
     function _initModules(
@@ -146,7 +140,7 @@ contract Singularity is SGLCommon {
         uint256 _assetId,
         IERC20 _collateral,
         uint256 _collateralId,
-        IOracle _oracle,
+        ITapiocaOracle _oracle,
         ILeverageExecutor _leverageExecutor
     ) private {
         asset = _asset;
@@ -162,15 +156,11 @@ contract Singularity is SGLCommon {
         uint256 _liquidationCollateralizationRate,
         uint256 _exchangeRatePrecision
     ) private {
-        collateralizationRate = _collateralizationRate > 0
-            ? _collateralizationRate
-            : 75000;
-        liquidationCollateralizationRate = _liquidationCollateralizationRate > 0
-            ? _liquidationCollateralizationRate
-            : 80000;
+        collateralizationRate = _collateralizationRate > 0 ? _collateralizationRate : 75000;
+        liquidationCollateralizationRate =
+            _liquidationCollateralizationRate > 0 ? _liquidationCollateralizationRate : 80000;
         require(
-            liquidationCollateralizationRate > collateralizationRate,
-            "SGL: liquidationCollateralizationRate not valid"
+            liquidationCollateralizationRate > collateralizationRate, "SGL: liquidationCollateralizationRate not valid"
         );
         minimumInterestPerSecond = 158548960; // approx 0.5% APR
         maximumInterestPerSecond = 317097920000; // approx 1000% APR
@@ -185,9 +175,7 @@ contract Singularity is SGLCommon {
         //liquidation
         liquidationMultiplier = 12000; //12%
         lqCollateralizationRate = 25000;
-        EXCHANGE_RATE_PRECISION = _exchangeRatePrecision > 0
-            ? _exchangeRatePrecision
-            : 1e18;
+        EXCHANGE_RATE_PRECISION = _exchangeRatePrecision > 0 ? _exchangeRatePrecision : 1e18;
         minLiquidatorReward = 8e4;
         maxLiquidatorReward = 9e4;
         liquidationBonusAmount = 1e4;
@@ -207,20 +195,16 @@ contract Singularity is SGLCommon {
     /// @param user the user to liquidate
     /// @param maxBorrowPart max borrow part for user
     /// @param minLiquidationBonus minimum liquidation bonus to accept
-    function viewLiquidationCollateralAmount(
-        address user,
-        uint256 maxBorrowPart,
-        uint256 minLiquidationBonus
-    ) external view returns (bytes memory) {
-        (bool success, bytes memory returnData) = address(liquidationModule)
-            .staticcall(
-                abi.encodeWithSelector(
-                    SGLLiquidation.viewLiquidationCollateralAmount.selector,
-                    user,
-                    maxBorrowPart,
-                    minLiquidationBonus
-                )
-            );
+    function viewLiquidationCollateralAmount(address user, uint256 maxBorrowPart, uint256 minLiquidationBonus)
+        external
+        view
+        returns (bytes memory)
+    {
+        (bool success, bytes memory returnData) = address(liquidationModule).staticcall(
+            abi.encodeWithSelector(
+                SGLLiquidation.viewLiquidationCollateralAmount.selector, user, maxBorrowPart, minLiquidationBonus
+            )
+        );
         if (!success) {
             revert(_getRevertMsg(returnData));
         }
@@ -232,12 +216,8 @@ contract Singularity is SGLCommon {
     /// @param amount the amount to transform
     /// @param tokenId the YieldBox asset id
     /// @return share amount transformed into shares
-    function computeAllowedLendShare(
-        uint256 amount,
-        uint256 tokenId
-    ) external view returns (uint256 share) {
-        uint256 allShare = totalAsset.elastic +
-            yieldBox.toShare(tokenId, totalBorrow.elastic, true);
+    function computeAllowedLendShare(uint256 amount, uint256 tokenId) external view returns (uint256 share) {
+        uint256 allShare = totalAsset.elastic + yieldBox.toShare(tokenId, totalBorrow.elastic, true);
         share = (amount * allShare) / totalAsset.base;
     }
 
@@ -249,10 +229,7 @@ contract Singularity is SGLCommon {
     /// @param revertOnFail If True then reverts after a failed call and stops doing further calls.
     /// @return successes count of successful operations
     /// @return results array of revert messages
-    function execute(
-        bytes[] calldata calls,
-        bool revertOnFail
-    )
+    function execute(bytes[] calldata calls, bool revertOnFail)
         external
         nonReentrant
         returns (bool[] memory successes, string[] memory results)
@@ -261,8 +238,7 @@ contract Singularity is SGLCommon {
         results = new string[](calls.length);
         unchecked {
             for (uint256 i; i < calls.length; i++) {
-                (bool success, bytes memory result) = address(this)
-                    .delegatecall(calls[i]);
+                (bool success, bytes memory result) = address(this).delegatecall(calls[i]);
 
                 if (!success && revertOnFail) {
                     revert(_getRevertMsg(result));
@@ -280,12 +256,7 @@ contract Singularity is SGLCommon {
     /// False if tokens from msg.sender in `yieldBox` should be transferred.
     /// @param share The amount of shares to add.
     /// @return fraction Total fractions added.
-    function addAsset(
-        address from,
-        address to,
-        bool skim,
-        uint256 share
-    )
+    function addAsset(address from, address to, bool skim, uint256 share)
         external
         optionNotPaused(PauseType.AddAsset)
         allowedLend(from, share)
@@ -300,11 +271,11 @@ contract Singularity is SGLCommon {
     /// @param to The user that receives the removed assets.
     /// @param fraction The amount/fraction of assets held to remove.
     /// @return share The amount of shares transferred to `to`.
-    function removeAsset(
-        address from,
-        address to,
-        uint256 fraction
-    ) external optionNotPaused(PauseType.RemoveAsset) returns (uint256 share) {
+    function removeAsset(address from, address to, uint256 fraction)
+        external
+        optionNotPaused(PauseType.RemoveAsset)
+        returns (uint256 share)
+    {
         _accrue();
         share = _removeAsset(from, to, fraction);
         _allowedLend(from, share);
@@ -316,23 +287,10 @@ contract Singularity is SGLCommon {
     /// @param skim True if the amount should be skimmed from the deposit balance of msg.sender.
     /// False if tokens from msg.sender in `yieldBox` should be transferred.
     /// @param share The amount of shares to add for `to`.
-    function addCollateral(
-        address from,
-        address to,
-        bool skim,
-        uint256 amount,
-        uint256 share
-    ) external {
+    function addCollateral(address from, address to, bool skim, uint256 amount, uint256 share) external {
         _executeModule(
             Module.Collateral,
-            abi.encodeWithSelector(
-                SGLCollateral.addCollateral.selector,
-                from,
-                to,
-                skim,
-                amount,
-                share
-            )
+            abi.encodeWithSelector(SGLCollateral.addCollateral.selector, from, to, skim, amount, share)
         );
     }
 
@@ -340,19 +298,9 @@ contract Singularity is SGLCommon {
     /// @param from Account to debit collateral from.
     /// @param to The receiver of the shares.
     /// @param share Amount of shares to remove.
-    function removeCollateral(
-        address from,
-        address to,
-        uint256 share
-    ) external {
+    function removeCollateral(address from, address to, uint256 share) external {
         _executeModule(
-            Module.Collateral,
-            abi.encodeWithSelector(
-                SGLCollateral.removeCollateral.selector,
-                from,
-                to,
-                share
-            )
+            Module.Collateral, abi.encodeWithSelector(SGLCollateral.removeCollateral.selector, from, to, share)
         );
     }
 
@@ -362,15 +310,9 @@ contract Singularity is SGLCommon {
     /// @param amount Amount to borrow.
     /// @return part Total part of the debt held by borrowers.
     /// @return share Total amount in shares borrowed.
-    function borrow(
-        address from,
-        address to,
-        uint256 amount
-    ) external returns (uint256 part, uint256 share) {
-        bytes memory result = _executeModule(
-            Module.Borrow,
-            abi.encodeWithSelector(SGLBorrow.borrow.selector, from, to, amount)
-        );
+    function borrow(address from, address to, uint256 amount) external returns (uint256 part, uint256 share) {
+        bytes memory result =
+            _executeModule(Module.Borrow, abi.encodeWithSelector(SGLBorrow.borrow.selector, from, to, amount));
         (part, share) = abi.decode(result, (uint256, uint256));
     }
 
@@ -381,22 +323,9 @@ contract Singularity is SGLCommon {
     /// False if tokens from msg.sender in `yieldBox` should be transferred.
     /// @param part The amount to repay. See `userBorrowPart`.
     /// @return amount The total amount repayed.
-    function repay(
-        address from,
-        address to,
-        bool skim,
-        uint256 part
-    ) external returns (uint256 amount) {
-        bytes memory result = _executeModule(
-            Module.Borrow,
-            abi.encodeWithSelector(
-                SGLBorrow.repay.selector,
-                from,
-                to,
-                skim,
-                part
-            )
-        );
+    function repay(address from, address to, bool skim, uint256 part) external returns (uint256 amount) {
+        bytes memory result =
+            _executeModule(Module.Borrow, abi.encodeWithSelector(SGLBorrow.repay.selector, from, to, skim, part));
         amount = abi.decode(result, (uint256));
     }
 
@@ -405,19 +334,9 @@ contract Singularity is SGLCommon {
     /// @param share Collateral YieldBox-shares to sell
     /// @param data LeverageExecutor data
     /// @return amountOut Actual asset amount received in the sale
-    function sellCollateral(
-        address from,
-        uint256 share,
-        bytes calldata data
-    ) external returns (uint256 amountOut) {
+    function sellCollateral(address from, uint256 share, bytes calldata data) external returns (uint256 amountOut) {
         bytes memory result = _executeModule(
-            Module.Leverage,
-            abi.encodeWithSelector(
-                SGLLeverage.sellCollateral.selector,
-                from,
-                share,
-                data
-            )
+            Module.Leverage, abi.encodeWithSelector(SGLLeverage.sellCollateral.selector, from, share, data)
         );
         amountOut = abi.decode(result, (uint256));
     }
@@ -428,21 +347,13 @@ contract Singularity is SGLCommon {
     /// @param supplyAmount Amount of asset supplied (down payment)
     /// @param data LeverageExecutor data
     /// @return amountOut Actual collateral amount purchased
-    function buyCollateral(
-        address from,
-        uint256 borrowAmount,
-        uint256 supplyAmount,
-        bytes calldata data
-    ) external returns (uint256 amountOut) {
+    function buyCollateral(address from, uint256 borrowAmount, uint256 supplyAmount, bytes calldata data)
+        external
+        returns (uint256 amountOut)
+    {
         bytes memory result = _executeModule(
             Module.Leverage,
-            abi.encodeWithSelector(
-                SGLLeverage.buyCollateral.selector,
-                from,
-                borrowAmount,
-                supplyAmount,
-                data
-            )
+            abi.encodeWithSelector(SGLLeverage.buyCollateral.selector, from, borrowAmount, supplyAmount, data)
         );
         amountOut = abi.decode(result, (uint256));
     }
@@ -510,11 +421,7 @@ contract Singularity is SGLCommon {
     /// @notice updates the pause state of the contract
     /// @dev can only be called by the conservator
     /// @param val the new value
-    function updatePause(
-        PauseType _type,
-        bool val,
-        bool resetAccrueTimestmap
-    ) external {
+    function updatePause(PauseType _type, bool val, bool resetAccrueTimestmap) external {
         if (msg.sender != conservator) revert NotAuthorized();
         if (val == pauseOptions[_type]) revert SameState();
         emit PausedUpdated(_type, pauseOptions[_type], val);
@@ -522,14 +429,8 @@ contract Singularity is SGLCommon {
 
         // In case of 'unpause', `lastAccrued` is set to block.timestamp
         // Valid for all action types that has an impact on debt or supply
-        if (
-            !val &&
-            (_type != PauseType.AddCollateral &&
-                _type != PauseType.RemoveCollateral)
-        ) {
-            accrueInfo.lastAccrued = resetAccrueTimestmap
-                ? block.timestamp.toUint64()
-                : accrueInfo.lastAccrued;
+        if (!val && (_type != PauseType.AddCollateral && _type != PauseType.RemoveCollateral)) {
+            accrueInfo.lastAccrued = resetAccrueTimestmap ? block.timestamp.toUint64() : accrueInfo.lastAccrued;
         }
     }
 
@@ -550,9 +451,7 @@ contract Singularity is SGLCommon {
         pauseOptions[PauseType.RemoveAsset] = val;
 
         if (!val) {
-            accrueInfo.lastAccrued = resetAccrueTimestmap
-                ? block.timestamp.toUint64()
-                : accrueInfo.lastAccrued;
+            accrueInfo.lastAccrued = resetAccrueTimestmap ? block.timestamp.toUint64() : accrueInfo.lastAccrued;
         }
     }
 
@@ -560,18 +459,14 @@ contract Singularity is SGLCommon {
     /// @param amount the amount to rescue
     /// @param to the recipient
     function rescueEth(uint256 amount, address to) external onlyOwner {
-        (bool success, ) = to.call{value: amount}("");
+        (bool success,) = to.call{value: amount}("");
         if (!success) revert TransferFailed();
     }
 
     /// @notice Transfers fees to penrose
     /// @dev can only be called by the owner
     /// @return feeShares the amount of fees in shares withdrawn under Penrose
-    function refreshPenroseFees()
-        external
-        onlyOwner
-        returns (uint256 feeShares)
-    {
+    function refreshPenroseFees() external onlyOwner returns (uint256 feeShares) {
         address _feeTo = address(penrose);
         // withdraw the fees accumulated in `accrueInfo.feesEarnedFraction` to the balance of `feeTo`.
         if (accrueInfo.feesEarnedFraction > 0) {
@@ -606,70 +501,50 @@ contract Singularity is SGLCommon {
         borrowOpeningFee = _borrowOpeningFee;
 
         if (_minimumTargetUtilization > 0) {
-            emit MinimumTargetUtilizationUpdated(
-                minimumTargetUtilization,
-                _minimumTargetUtilization
-            );
+            emit MinimumTargetUtilizationUpdated(minimumTargetUtilization, _minimumTargetUtilization);
             minimumTargetUtilization = _minimumTargetUtilization;
         }
 
         if (_maximumTargetUtilization > 0) {
-            if (_maximumTargetUtilization >= FULL_UTILIZATION)
+            if (_maximumTargetUtilization >= FULL_UTILIZATION) {
                 revert NotValid();
+            }
 
-            emit MaximumTargetUtilizationUpdated(
-                maximumTargetUtilization,
-                _maximumTargetUtilization
-            );
+            emit MaximumTargetUtilizationUpdated(maximumTargetUtilization, _maximumTargetUtilization);
             maximumTargetUtilization = _maximumTargetUtilization;
-            fullUtilizationMinusMax =
-                FULL_UTILIZATION -
-                maximumTargetUtilization;
+            fullUtilizationMinusMax = FULL_UTILIZATION - maximumTargetUtilization;
         }
 
         if (_minimumInterestPerSecond > 0) {
-            if (_minimumInterestPerSecond >= maximumInterestPerSecond)
+            if (_minimumInterestPerSecond >= maximumInterestPerSecond) {
                 revert NotValid();
-            emit MinimumInterestPerSecondUpdated(
-                minimumInterestPerSecond,
-                _minimumInterestPerSecond
-            );
+            }
+            emit MinimumInterestPerSecondUpdated(minimumInterestPerSecond, _minimumInterestPerSecond);
             minimumInterestPerSecond = _minimumInterestPerSecond;
         }
 
         if (_maximumInterestPerSecond > 0) {
-            if (_maximumInterestPerSecond <= minimumInterestPerSecond)
+            if (_maximumInterestPerSecond <= minimumInterestPerSecond) {
                 revert NotValid();
-            emit MaximumInterestPerSecondUpdated(
-                maximumInterestPerSecond,
-                _maximumInterestPerSecond
-            );
+            }
+            emit MaximumInterestPerSecondUpdated(maximumInterestPerSecond, _maximumInterestPerSecond);
             maximumInterestPerSecond = _maximumInterestPerSecond;
         }
 
         if (_interestElasticity > 0) {
-            emit InterestElasticityUpdated(
-                interestElasticity,
-                _interestElasticity
-            );
+            emit InterestElasticityUpdated(interestElasticity, _interestElasticity);
             interestElasticity = _interestElasticity;
         }
 
         if (_lqCollateralizationRate > 0) {
             if (_lqCollateralizationRate > FEE_PRECISION) revert NotValid();
-            emit LqCollateralizationRateUpdated(
-                lqCollateralizationRate,
-                _lqCollateralizationRate
-            );
+            emit LqCollateralizationRateUpdated(lqCollateralizationRate, _lqCollateralizationRate);
             lqCollateralizationRate = _lqCollateralizationRate;
         }
 
         if (_liquidationMultiplier > 0) {
             if (_liquidationMultiplier > FEE_PRECISION) revert NotValid();
-            emit LiquidationMultiplierUpdated(
-                liquidationMultiplier,
-                _liquidationMultiplier
-            );
+            emit LiquidationMultiplierUpdated(liquidationMultiplier, _liquidationMultiplier);
             liquidationMultiplier = _liquidationMultiplier;
         }
     }
@@ -693,10 +568,7 @@ contract Singularity is SGLCommon {
         return module;
     }
 
-    function _executeModule(
-        Module _module,
-        bytes memory _data
-    ) private returns (bytes memory returnData) {
+    function _executeModule(Module _module, bytes memory _data) private returns (bytes memory returnData) {
         bool success = true;
 
         (success, returnData) = _extractModule(_module).delegatecall(_data);

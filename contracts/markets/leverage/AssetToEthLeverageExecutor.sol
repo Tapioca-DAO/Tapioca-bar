@@ -1,10 +1,13 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-//interfaces
-import {ITapiocaOFTBase} from "tapioca-periph/contracts/interfaces/ITapiocaOFT.sol";
-
-import "./BaseLeverageExecutor.sol";
+// Tapioca
+import {ITapiocaOFTBase} from "tapioca-periph/interfaces/tap-token/ITapiocaOFT.sol";
+import {ISwapper} from "tapioca-periph/interfaces/periph/ISwapper.sol";
+import {ICluster} from "tapioca-periph/interfaces/periph/ICluster.sol";
+import {SafeApprove} from "tapioca-periph/libraries/SafeApprove.sol";
+import {BaseLeverageExecutor} from "./BaseLeverageExecutor.sol";
+import {IYieldBox} from "yieldbox/interfaces/IYieldBox.sol";
 
 contract AssetToEthLeverageExecutor is BaseLeverageExecutor {
     using SafeApprove for address;
@@ -16,11 +19,7 @@ contract AssetToEthLeverageExecutor is BaseLeverageExecutor {
     error TokenNotValid();
     error NotEnough();
 
-    constructor(
-        YieldBox _yb,
-        ISwapper _swapper,
-        ICluster _cluster
-    ) BaseLeverageExecutor(_yb, _swapper, _cluster) {}
+    constructor(IYieldBox _yb, ISwapper _swapper, ICluster _cluster) BaseLeverageExecutor(_yb, _swapper, _cluster) {}
 
     // ********************* //
     // *** PUBLIC MEHODS *** //
@@ -45,40 +44,22 @@ contract AssetToEthLeverageExecutor is BaseLeverageExecutor {
         _assureSwapperValidity();
 
         //decode data
-        (uint256 minETh, bytes memory dexEthData) = abi.decode(
-            data,
-            (uint256, bytes)
-        );
+        (uint256 minETh, bytes memory dexEthData) = abi.decode(data, (uint256, bytes));
 
         //verify ETH
         address eth = ITapiocaOFTBase(collateralAddress).erc20();
         if (eth != address(0)) revert TokenNotValid();
 
         //swap Asset with ETH
-        collateralAmountOut = _swapTokens(
-            assetAddress,
-            address(0),
-            assetAmountIn,
-            minETh,
-            dexEthData,
-            0
-        );
+        collateralAmountOut = _swapTokens(assetAddress, address(0), assetAmountIn, minETh, dexEthData, 0);
 
         if (collateralAmountOut < minETh) revert NotEnough();
 
         //wrap and transfer to user
         ITapiocaOFTBase(collateralAddress).wrap{value: collateralAmountOut}(
-            address(this),
-            address(this),
-            collateralAmountOut
+            address(this), address(this), collateralAmountOut
         );
-        _ybDeposit(
-            collateralId,
-            collateralAddress,
-            address(this),
-            to,
-            collateralAmountOut
-        );
+        _ybDeposit(collateralId, collateralAddress, address(this), to, collateralAmountOut);
     }
 
     /// @notice buys asset with collateral
@@ -102,29 +83,17 @@ contract AssetToEthLeverageExecutor is BaseLeverageExecutor {
         _assureSwapperValidity();
 
         //decode data
-        (uint256 minAssetAmount, bytes memory dexAssetData) = abi.decode(
-            data,
-            (uint256, bytes)
-        );
+        (uint256 minAssetAmount, bytes memory dexAssetData) = abi.decode(data, (uint256, bytes));
 
         //verify ETH
         address eth = ITapiocaOFTBase(collateralAddress).erc20();
         if (eth != address(0)) revert TokenNotValid();
 
-        ITapiocaOFTBase(collateralAddress).unwrap(
-            address(this),
-            collateralAmountIn
-        );
+        ITapiocaOFTBase(collateralAddress).unwrap(address(this), collateralAmountIn);
 
         //swap ETH with Asset
-        assetAmountOut = _swapTokens(
-            address(0),
-            assetAddress,
-            collateralAmountIn,
-            minAssetAmount,
-            dexAssetData,
-            collateralAmountIn
-        );
+        assetAmountOut =
+            _swapTokens(address(0), assetAddress, collateralAmountIn, minAssetAmount, dexAssetData, collateralAmountIn);
         if (assetAmountOut < minAssetAmount) revert NotEnough();
 
         _ybDeposit(assetId, assetAddress, address(this), to, assetAmountOut);

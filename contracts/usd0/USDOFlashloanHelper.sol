@@ -1,10 +1,13 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-import "@boringcrypto/boring-solidity/contracts/BoringOwnable.sol";
+// External
+import {BoringOwnable} from "@boringcrypto/boring-solidity/contracts/BoringOwnable.sol";
 
-import "tapioca-periph/contracts/interfaces/IERC3156FlashLender.sol";
-import {IUSDO} from "tapioca-periph/contracts/interfaces/IUSDO.sol";
+// Tapioca
+import {IERC3156FlashBorrower} from "tapioca-periph/interfaces/bar/IERC3156FlashBorrower.sol";
+import {IERC3156FlashLender} from "tapioca-periph/interfaces/bar/IERC3156FlashLender.sol";
+import {IUSDO} from "tapioca-periph/interfaces/bar/IUSDO.sol";
 
 contract USDOFlashloanHelper is IERC3156FlashLender, BoringOwnable {
     // ************ //
@@ -17,8 +20,7 @@ contract USDOFlashloanHelper is IERC3156FlashLender, BoringOwnable {
     uint256 public maxFlashMint;
 
     uint256 private constant FLASH_MINT_FEE_PRECISION = 1e5;
-    bytes32 private constant FLASH_MINT_CALLBACK_SUCCESS =
-        keccak256("ERC3156FlashBorrower.onFlashLoan");
+    bytes32 private constant FLASH_MINT_CALLBACK_SUCCESS = keccak256("ERC3156FlashBorrower.onFlashLoan");
 
     mapping(address => mapping(address => uint256)) private _allowances;
 
@@ -56,10 +58,7 @@ contract USDOFlashloanHelper is IERC3156FlashLender, BoringOwnable {
     // *** VIEW METHODS *** //
     // ******************** //
     /// @notice returns the allowance for spender
-    function allowance(
-        address owner,
-        address spender
-    ) public view returns (uint256) {
+    function allowance(address owner, address spender) public view returns (uint256) {
         return _allowances[owner][spender];
     }
 
@@ -75,10 +74,7 @@ contract USDOFlashloanHelper is IERC3156FlashLender, BoringOwnable {
     /// @notice returns the flash mint fee
     /// @param _usdo USDO address
     /// @param amount the amount for which fee is computed
-    function flashFee(
-        address _usdo,
-        uint256 amount
-    ) public view override returns (uint256) {
+    function flashFee(address _usdo, uint256 amount) public view override returns (uint256) {
         if (_usdo != address(usdo)) revert NotValid();
         return (amount * flashMintFee) / FLASH_MINT_FEE_PRECISION;
     }
@@ -100,16 +96,16 @@ contract USDOFlashloanHelper is IERC3156FlashLender, BoringOwnable {
     /// @param amount the amount to flashloan
     /// @param data flashloan data
     /// @return operation execution status
-    function flashLoan(
-        IERC3156FlashBorrower receiver,
-        address token,
-        uint256 amount,
-        bytes calldata data
-    ) external override returns (bool) {
+    function flashLoan(IERC3156FlashBorrower receiver, address token, uint256 amount, bytes calldata data)
+        external
+        override
+        returns (bool)
+    {
         if (usdo.paused()) revert Paused();
         if (address(receiver) != msg.sender) {
-            if (allowance(address(receiver), msg.sender) < amount)
+            if (allowance(address(receiver), msg.sender) < amount) {
                 revert AllowanceNotValid();
+            }
             _spendAllowance(address(receiver), msg.sender, amount);
         }
 
@@ -120,10 +116,7 @@ contract USDOFlashloanHelper is IERC3156FlashLender, BoringOwnable {
         usdo.mint(address(receiver), amount);
         usdo.addFlashloanFee(fee);
 
-        if (
-            receiver.onFlashLoan(msg.sender, token, amount, fee, data) !=
-            FLASH_MINT_CALLBACK_SUCCESS
-        ) revert Failed();
+        if (receiver.onFlashLoan(msg.sender, token, amount, fee, data) != FLASH_MINT_CALLBACK_SUCCESS) revert Failed();
 
         //we burn from (this)
         usdo.transferFrom(address(receiver), address(this), amount);
@@ -141,20 +134,19 @@ contract USDOFlashloanHelper is IERC3156FlashLender, BoringOwnable {
             mstore(add(freeMemPointer, 36), amount)
 
             // Execute the call
-            let success := call(
-                gas(), // Send all gas
-                token, // The address of the usdo contract
-                0, // No ether is sent
-                freeMemPointer, // Input pointer
-                68, // Input length (4 bytes for method ID + 32 bytes for address + 32 bytes for uint256)
-                0,
-                0
-            )
+            let success :=
+                call(
+                    gas(), // Send all gas
+                    token, // The address of the usdo contract
+                    0, // No ether is sent
+                    freeMemPointer, // Input pointer
+                    68, // Input length (4 bytes for method ID + 32 bytes for address + 32 bytes for uint256)
+                    0,
+                    0
+                )
 
             // Check for failure and revert
-            if iszero(success) {
-                revert(0, 0)
-            }
+            if iszero(success) { revert(0, 0) }
 
             // Adjust the free memory pointer
             mstore(0x40, add(freeMemPointer, 68))
@@ -190,11 +182,7 @@ contract USDOFlashloanHelper is IERC3156FlashLender, BoringOwnable {
     // *********************** //
     // *** PRIVATE METHODS *** //
     // *********************** //
-    function _spendAllowance(
-        address owner,
-        address spender,
-        uint256 amount
-    ) private {
+    function _spendAllowance(address owner, address spender, uint256 amount) private {
         uint256 currentAllowance = allowance(owner, spender);
         if (currentAllowance != type(uint256).max) {
             if (currentAllowance < amount) revert AllowanceNotValid();

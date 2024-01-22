@@ -1,20 +1,22 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-import "@boringcrypto/boring-solidity/contracts/BoringOwnable.sol";
-import "@boringcrypto/boring-solidity/contracts/BoringFactory.sol";
+// External
+import {BoringOwnable} from "@boringcrypto/boring-solidity/contracts/BoringOwnable.sol";
+import {BoringFactory} from "@boringcrypto/boring-solidity/contracts/BoringFactory.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import "tapioca-sdk/dist/contracts/YieldBox/contracts/YieldBox.sol";
-import "tapioca-sdk/dist/contracts/YieldBox/contracts/interfaces/IYieldBox.sol";
-import "tapioca-sdk/dist/contracts/YieldBox/contracts/strategies/ERC20WithoutStrategy.sol";
-import "tapioca-periph/contracts/interfaces/ISingularity.sol";
-import "tapioca-periph/contracts/interfaces/IPenrose.sol";
-import "tapioca-periph/contracts/interfaces/ITwTap.sol";
-import "tapioca-periph/contracts/interfaces/ICluster.sol";
-import "tapioca-periph/contracts/interfaces/IBigBang.sol";
-import "tapioca-periph/contracts/interfaces/IUSDOMintable.sol";
-
-import "tapioca-periph/contracts/libraries/SafeApprove.sol";
+// Tapioca
+import {ERC20WithoutStrategy, IStrategy} from "yieldbox/strategies/ERC20WithoutStrategy.sol";
+import {ISingularity, IMarket} from "tapioca-periph/interfaces/bar/ISingularity.sol";
+import {IUSDOMintable} from "tapioca-periph/interfaces/bar/IUSDOMintable.sol";
+import {IYieldBox, TokenType} from "yieldbox/interfaces/IYieldBox.sol";
+import {ICluster} from "tapioca-periph/interfaces/periph/ICluster.sol";
+import {ITwTap} from "tapioca-periph/interfaces/tap-token/ITwTap.sol";
+import {SafeApprove} from "tapioca-periph/libraries/SafeApprove.sol";
+import {IPenrose} from "tapioca-periph/interfaces/bar/IPenrose.sol";
+import {IBigBang} from "tapioca-periph/interfaces/bar/IBigBang.sol";
+import {YieldBox} from "yieldbox/YieldBox.sol";
 
 // TODO: Permissionless market deployment
 ///     + asset registration? (toggle to renounce ownership so users can call)
@@ -94,39 +96,16 @@ contract Penrose is BoringOwnable, BoringFactory {
         tapToken = tapToken_;
         owner = _owner;
 
-        emptyStrategies[address(tapToken_)] = IStrategy(
-            address(
-                new ERC20WithoutStrategy(
-                    IYieldBox(address(_yieldBox)),
-                    tapToken_
-                )
-            )
-        );
-        tapAssetId = uint96(
-            _yieldBox.registerAsset(
-                TokenType.ERC20,
-                address(tapToken_),
-                emptyStrategies[address(tapToken_)],
-                0
-            )
-        );
+        emptyStrategies[address(tapToken_)] =
+            IStrategy(address(new ERC20WithoutStrategy(IYieldBox(address(_yieldBox)), tapToken_)));
+        tapAssetId =
+            uint96(_yieldBox.registerAsset(TokenType.ERC20, address(tapToken_), emptyStrategies[address(tapToken_)], 0));
 
         mainToken = mainToken_;
-        emptyStrategies[address(mainToken_)] = IStrategy(
-            address(
-                new ERC20WithoutStrategy(
-                    IYieldBox(address(_yieldBox)),
-                    mainToken_
-                )
-            )
-        );
+        emptyStrategies[address(mainToken_)] =
+            IStrategy(address(new ERC20WithoutStrategy(IYieldBox(address(_yieldBox)), mainToken_)));
         mainAssetId = uint96(
-            _yieldBox.registerAsset(
-                TokenType.ERC20,
-                address(mainToken_),
-                emptyStrategies[address(mainToken_)],
-                0
-            )
+            _yieldBox.registerAsset(TokenType.ERC20, address(mainToken_), emptyStrategies[address(mainToken_)], 0)
         );
 
         bigBangEthDebtRate = 5e15;
@@ -137,30 +116,15 @@ contract Penrose is BoringOwnable, BoringFactory {
     // *** EVENTS *** //
     // ************** //
     /// @notice event emitted when fees are extracted
-    event ProtocolWithdrawal(
-        IMarket[] indexed markets,
-        uint256 indexed timestamp
-    );
+    event ProtocolWithdrawal(IMarket[] indexed markets, uint256 indexed timestamp);
     /// @notice event emitted when Singularity master contract is registered
-    event RegisterSingularityMasterContract(
-        address indexed location,
-        IPenrose.ContractType indexed risk
-    );
+    event RegisterSingularityMasterContract(address indexed location, IPenrose.ContractType indexed risk);
     /// @notice event emitted when BigBang master contract is registered
-    event RegisterBigBangMasterContract(
-        address indexed location,
-        IPenrose.ContractType indexed risk
-    );
+    event RegisterBigBangMasterContract(address indexed location, IPenrose.ContractType indexed risk);
     /// @notice event emitted when Singularity is registered
-    event RegisterSingularity(
-        address indexed location,
-        address indexed masterContract
-    );
+    event RegisterSingularity(address indexed location, address indexed masterContract);
     /// @notice event emitted when BigBang is registered
-    event RegisterBigBang(
-        address indexed location,
-        address indexed masterContract
-    );
+    event RegisterBigBang(address indexed location, address indexed masterContract);
     /// @notice event emitted when Origins is registered
     event RegisterOrigins(address indexed location);
     /// @notice event emitted when USDO address is updated
@@ -170,15 +134,9 @@ contract Penrose is BoringOwnable, BoringFactory {
     /// @notice event emitted when pause state is updated
     event PausedUpdated(bool indexed oldState, bool indexed newState);
     /// @notice event emitted when BigBang ETH market address is updated
-    event BigBangEthMarketUpdated(
-        address indexed _oldAddress,
-        address indexed _newAddress
-    );
+    event BigBangEthMarketUpdated(address indexed _oldAddress, address indexed _newAddress);
     /// @notice event emitted when BigBang ETH market debt rate is updated
-    event BigBangEthMarketDebtRateUpdated(
-        uint256 indexed _oldRate,
-        uint256 indexed _newRate
-    );
+    event BigBangEthMarketDebtRateUpdated(uint256 indexed _oldRate, uint256 indexed _newRate);
     /// @notice event emitted when fees are deposited to twTap
     event LogTwTapFeesDeposit(uint256 indexed amount);
     /// @notice event emitted when Cluster is set
@@ -224,11 +182,7 @@ contract Penrose is BoringOwnable, BoringFactory {
     // ********************** //
     /// @notice Get all the Singularity contract addresses
     /// @return markets list of available markets
-    function singularityMarkets()
-        external
-        view
-        returns (address[] memory markets)
-    {
+    function singularityMarkets() external view returns (address[] memory markets) {
         markets = getAllMasterContractClones(singularityMasterContracts);
     }
 
@@ -256,7 +210,7 @@ contract Penrose is BoringOwnable, BoringFactory {
         for (uint256 i; i < len; i++) {
             IMarket market = IMarket(allBigBangMarkets[i]);
             if (isMarketRegistered[address(market)]) {
-                (uint256 elastic, ) = market.totalBorrow();
+                (uint256 elastic,) = market.totalBorrow();
                 _totalUsdoDebt += elastic;
             }
         }
@@ -270,15 +224,12 @@ contract Penrose is BoringOwnable, BoringFactory {
     /// @notice Loop through the master contracts and call `_depositFeesToTwTap()` to each one of their clones.
     /// @param markets_ Singularity &/ BigBang markets array
     /// @param twTap the TwTap contract
-    function withdrawAllMarketFees(
-        IMarket[] calldata markets_,
-        ITwTap twTap
-    ) external onlyOwner notPaused {
+    function withdrawAllMarketFees(IMarket[] calldata markets_, ITwTap twTap) external onlyOwner notPaused {
         if (address(twTap) == address(0)) revert ZeroAddress();
 
         uint256 length = markets_.length;
         unchecked {
-            for (uint256 i; i < length; ) {
+            for (uint256 i; i < length;) {
                 _depositFeesToTwTap(markets_[i], twTap);
                 ++i;
             }
@@ -308,7 +259,7 @@ contract Penrose is BoringOwnable, BoringFactory {
             for (uint256 i; i < len; i++) {
                 IMarket market = IMarket(allOriginsMarkets[i]);
                 if (isOriginRegistered[address(market)]) {
-                    (uint256 elastic, ) = market.totalBorrow();
+                    (uint256 elastic,) = market.totalBorrow();
                     totalUsdoDebt += elastic;
                 }
             }
@@ -321,15 +272,8 @@ contract Penrose is BoringOwnable, BoringFactory {
                 IUSDOMintable(address(usdoToken)).mint(address(this), _amount);
 
                 //send it to twTap
-                uint256 rewardTokenId = ITwTap(twTap).rewardTokenIndex(
-                    address(usdoToken)
-                );
-                _distributeOnTwTap(
-                    _amount,
-                    rewardTokenId,
-                    address(usdoToken),
-                    ITwTap(twTap)
-                );
+                uint256 rewardTokenId = ITwTap(twTap).rewardTokenIndex(address(usdoToken));
+                _distributeOnTwTap(_amount, rewardTokenId, address(usdoToken), ITwTap(twTap));
             }
         }
     }
@@ -390,22 +334,9 @@ contract Penrose is BoringOwnable, BoringFactory {
         if (address(usdoToken) != address(0)) revert NotAuthorized();
         usdoToken = IERC20(_usdoToken);
 
-        emptyStrategies[_usdoToken] = IStrategy(
-            address(
-                new ERC20WithoutStrategy(
-                    IYieldBox(address(yieldBox)),
-                    IERC20(_usdoToken)
-                )
-            )
-        );
-        usdoAssetId = uint96(
-            yieldBox.registerAsset(
-                TokenType.ERC20,
-                _usdoToken,
-                emptyStrategies[_usdoToken],
-                0
-            )
-        );
+        emptyStrategies[_usdoToken] =
+            IStrategy(address(new ERC20WithoutStrategy(IYieldBox(address(yieldBox)), IERC20(_usdoToken))));
+        usdoAssetId = uint96(yieldBox.registerAsset(TokenType.ERC20, _usdoToken, emptyStrategies[_usdoToken], 0));
         emit UsdoTokenUpdated(_usdoToken, usdoAssetId);
     }
 
@@ -413,12 +344,13 @@ contract Penrose is BoringOwnable, BoringFactory {
     /// @dev can only be called by the owner
     /// @param mcAddress The address of the contract
     /// @param contractType_ The risk type of the contract
-    function registerSingularityMasterContract(
-        address mcAddress,
-        IPenrose.ContractType contractType_
-    ) external onlyOwner {
-        if (isSingularityMasterContractRegistered[mcAddress])
+    function registerSingularityMasterContract(address mcAddress, IPenrose.ContractType contractType_)
+        external
+        onlyOwner
+    {
+        if (isSingularityMasterContractRegistered[mcAddress]) {
             revert Registered();
+        }
 
         IPenrose.MasterContract memory mc;
         mc.location = mcAddress;
@@ -433,10 +365,7 @@ contract Penrose is BoringOwnable, BoringFactory {
     /// @dev can only be called by the owner
     /// @param mcAddress The address of the contract
     /// @param contractType_ The risk type of the contract
-    function registerBigBangMasterContract(
-        address mcAddress,
-        IPenrose.ContractType contractType_
-    ) external onlyOwner {
+    function registerBigBangMasterContract(address mcAddress, IPenrose.ContractType contractType_) external onlyOwner {
         if (isBigBangMasterContractRegistered[mcAddress]) revert Registered();
 
         IPenrose.MasterContract memory mc;
@@ -454,11 +383,7 @@ contract Penrose is BoringOwnable, BoringFactory {
     /// @param data The init data of the Singularity
     /// @param useCreate2 Whether to use create2 or not
     /// @return _contract the created contract
-    function registerSingularity(
-        address mc,
-        bytes calldata data,
-        bool useCreate2
-    )
+    function registerSingularity(address mc, bytes calldata data, bool useCreate2)
         external
         payable
         onlyOwner
@@ -476,10 +401,7 @@ contract Penrose is BoringOwnable, BoringFactory {
     /// @dev can only be called by the owner
     /// @param mc The address of the master contract which must be already registered
     /// @param _contract The address of SGL
-    function addSingularity(
-        address mc,
-        address _contract
-    ) external onlyOwner registeredSingularityMasterContract(mc) {
+    function addSingularity(address mc, address _contract) external onlyOwner registeredSingularityMasterContract(mc) {
         if (isMarketRegistered[_contract]) revert AlreadyAdded();
         isMarketRegistered[_contract] = true;
         clonesOf[mc].push(_contract);
@@ -493,11 +415,7 @@ contract Penrose is BoringOwnable, BoringFactory {
     /// @param data The init data of the BigBang contract
     /// @param useCreate2 Whether to use create2 or not
     /// @return _contract the created contract
-    function registerBigBang(
-        address mc,
-        bytes calldata data,
-        bool useCreate2
-    )
+    function registerBigBang(address mc, bytes calldata data, bool useCreate2)
         external
         payable
         onlyOwner
@@ -516,10 +434,7 @@ contract Penrose is BoringOwnable, BoringFactory {
     /// @dev can only be called by the owner
     /// @param mc The address of the master contract which must be already registered
     /// @param _contract The address of BB
-    function addBigBang(
-        address mc,
-        address _contract
-    ) external onlyOwner registeredBigBangMasterContract(mc) {
+    function addBigBang(address mc, address _contract) external onlyOwner registeredBigBangMasterContract(mc) {
         if (isMarketRegistered[_contract]) revert AlreadyAdded();
         isMarketRegistered[_contract] = true;
         clonesOf[mc].push(_contract);
@@ -539,11 +454,7 @@ contract Penrose is BoringOwnable, BoringFactory {
     /// @param mc Master contracts array
     /// @param data array
     /// @param forceSuccess if true, method reverts in case of an unsuccessful execution
-    function executeMarketFn(
-        address[] calldata mc,
-        bytes[] memory data,
-        bool forceSuccess
-    )
+    function executeMarketFn(address[] calldata mc, bytes[] memory data, bool forceSuccess)
         external
         onlyOwner
         returns (bool[] memory success, bytes[] memory result)
@@ -552,11 +463,10 @@ contract Penrose is BoringOwnable, BoringFactory {
         if (len != data.length) revert LengthMismatch();
         success = new bool[](len);
         result = new bytes[](len);
-        for (uint256 i; i < len; ) {
+        for (uint256 i; i < len;) {
             if (
-                !isSingularityMasterContractRegistered[
-                    masterContractOf[mc[i]]
-                ] && !isBigBangMasterContractRegistered[masterContractOf[mc[i]]]
+                !isSingularityMasterContractRegistered[masterContractOf[mc[i]]]
+                    && !isBigBangMasterContractRegistered[masterContractOf[mc[i]]]
             ) revert NotAuthorized();
             if (address(mc[i]).code.length == 0) revert NotValid();
             (success[i], result[i]) = mc[i].call(data[i]);
@@ -577,17 +487,11 @@ contract Penrose is BoringOwnable, BoringFactory {
 
     /// @notice computes total USDO debt of all BB markets
     /// @dev this works because all BB markets have USDO as the asset
-    function computeTotalDebt()
-        public
-        notPaused
-        returns (uint256 totalUsdoDebt)
-    {
+    function computeTotalDebt() public notPaused returns (uint256 totalUsdoDebt) {
         // allow other registered Markets, owner or Penrose to call it
-        if (
-            !isMarketRegistered[msg.sender] &&
-            msg.sender != owner &&
-            msg.sender != address(this)
-        ) revert NotAuthorized();
+        if (!isMarketRegistered[msg.sender] && msg.sender != owner && msg.sender != address(this)) {
+            revert NotAuthorized();
+        }
 
         //accrue to the latest point in time
         _reAccrueMarkets(true);
@@ -601,9 +505,7 @@ contract Penrose is BoringOwnable, BoringFactory {
     // ************************* //
     // *** PRIVATE FUNCTIONS *** //
     // ************************* //
-    function _getRevertMsg(
-        bytes memory _returnData
-    ) private pure returns (string memory) {
+    function _getRevertMsg(bytes memory _returnData) private pure returns (string memory) {
         if (_returnData.length > 1000) return "SGL: reason too long";
 
         // If the _res length is less than 68, then the transaction failed silently (without a revert message)
@@ -646,26 +548,23 @@ contract Penrose is BoringOwnable, BoringFactory {
         _distributeOnTwTap(feeAmount, rewardTokenId, _asset, twTap);
     }
 
-    function _distributeOnTwTap(
-        uint256 amount,
-        uint256 rewardTokenId,
-        address _asset,
-        ITwTap twTap
-    ) private {
+    function _distributeOnTwTap(uint256 amount, uint256 rewardTokenId, address _asset, ITwTap twTap) private {
         _asset.safeApprove(address(twTap), amount);
         twTap.distributeReward(rewardTokenId, amount);
         emit LogTwTapFeesDeposit(amount);
     }
 
-    function getAllMasterContractClones(
-        IPenrose.MasterContract[] memory array
-    ) public view returns (address[] memory markets) {
+    function getAllMasterContractClones(IPenrose.MasterContract[] memory array)
+        public
+        view
+        returns (address[] memory markets)
+    {
         uint256 _masterContractLength = array.length;
         uint256 marketsLength = 0;
 
         unchecked {
             // We first compute the length of the markets array
-            for (uint256 i; i < _masterContractLength; ) {
+            for (uint256 i; i < _masterContractLength;) {
                 marketsLength += clonesOfCount(array[i].location);
 
                 ++i;
@@ -679,12 +578,12 @@ contract Penrose is BoringOwnable, BoringFactory {
 
         unchecked {
             // We populate the array
-            for (uint256 i; i < _masterContractLength; ) {
+            for (uint256 i; i < _masterContractLength;) {
                 address mcLocation = array[i].location;
                 clonesOfLength = clonesOfCount(mcLocation);
 
                 // Loop through clones of the current MC.
-                for (uint256 j = 0; j < clonesOfLength; ) {
+                for (uint256 j = 0; j < clonesOfLength;) {
                     markets[marketIndex] = clonesOf[mcLocation][j];
                     ++marketIndex;
                     ++j;

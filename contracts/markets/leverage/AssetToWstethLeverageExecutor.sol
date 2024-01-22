@@ -1,11 +1,14 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-//interfaces
-import {ITapiocaOFTBase} from "tapioca-periph/contracts/interfaces/ITapiocaOFT.sol";
-import "tapioca-periph/contracts/interfaces/IBalancerVault.sol";
-
-import "./BaseLeverageExecutor.sol";
+// Tapioca
+import {IBalancerVault, IBalancerAsset} from "tapioca-periph/interfaces/external/balancer/IBalancerVault.sol";
+import {ITapiocaOFTBase} from "tapioca-periph/interfaces/tap-token/ITapiocaOFT.sol";
+import {ISwapper} from "tapioca-periph/interfaces/periph/ISwapper.sol";
+import {ICluster} from "tapioca-periph/interfaces/periph/ICluster.sol";
+import {SafeApprove} from "tapioca-periph/libraries/SafeApprove.sol";
+import {BaseLeverageExecutor} from "./BaseLeverageExecutor.sol";
+import {IYieldBox} from "yieldbox/interfaces/IYieldBox.sol";
 
 //Asset > WETH > twstETH through BalancerV2
 contract AssetToWstethLeverageExecutor is BaseLeverageExecutor {
@@ -24,7 +27,7 @@ contract AssetToWstethLeverageExecutor is BaseLeverageExecutor {
     error Failed();
 
     constructor(
-        YieldBox _yb,
+        IYieldBox _yb,
         ISwapper _swapper,
         ICluster _cluster,
         address _weth,
@@ -61,21 +64,11 @@ contract AssetToWstethLeverageExecutor is BaseLeverageExecutor {
         _assureSwapperValidity();
 
         //decode data
-        (
-            uint256 minWethAmount,
-            bytes memory dexWEthData,
-            uint256 minWstethAmount
-        ) = abi.decode(data, (uint256, bytes, uint256));
+        (uint256 minWethAmount, bytes memory dexWEthData, uint256 minWstethAmount) =
+            abi.decode(data, (uint256, bytes, uint256));
 
         //swap Asset with WETH
-        uint256 wethAmount = _swapTokens(
-            assetAddress,
-            weth,
-            assetAmountIn,
-            minWethAmount,
-            dexWEthData,
-            0
-        );
+        uint256 wethAmount = _swapTokens(assetAddress, weth, assetAmountIn, minWethAmount, dexWEthData, 0);
         if (wethAmount < minWethAmount) revert NotEnough(assetAddress);
 
         //verify wstETH
@@ -84,29 +77,13 @@ contract AssetToWstethLeverageExecutor is BaseLeverageExecutor {
 
         //Swap WETH with rETH on BalancerV2
         weth.safeApprove(address(vault), wethAmount);
-        collateralAmountOut = _swap(
-            weth,
-            wstEth,
-            wethAmount,
-            minWstethAmount,
-            block.timestamp + 10 minutes
-        );
+        collateralAmountOut = _swap(weth, wstEth, wethAmount, minWstethAmount, block.timestamp + 10 minutes);
 
         //wrap and transfer to user
         wstEth.safeApprove(collateralAddress, collateralAmountOut);
-        ITapiocaOFTBase(collateralAddress).wrap(
-            address(this),
-            address(this),
-            collateralAmountOut
-        );
+        ITapiocaOFTBase(collateralAddress).wrap(address(this), address(this), collateralAmountOut);
 
-        _ybDeposit(
-            collateralId,
-            collateralAddress,
-            address(this),
-            to,
-            collateralAmountOut
-        );
+        _ybDeposit(collateralId, collateralAddress, address(this), to, collateralAmountOut);
     }
 
     /// @notice buys asset with collateral
@@ -131,40 +108,21 @@ contract AssetToWstethLeverageExecutor is BaseLeverageExecutor {
         _assureSwapperValidity();
 
         //decode data
-        (
-            uint256 minWethAmount,
-            uint256 minAssetAmount,
-            bytes memory dexAssetData
-        ) = abi.decode(data, (uint256, uint256, bytes));
+        (uint256 minWethAmount, uint256 minAssetAmount, bytes memory dexAssetData) =
+            abi.decode(data, (uint256, uint256, bytes));
 
         //unwrap twsETH
-        ITapiocaOFTBase(collateralAddress).unwrap(
-            address(this),
-            collateralAmountIn
-        );
+        ITapiocaOFTBase(collateralAddress).unwrap(address(this), collateralAmountIn);
 
         //verify rETH
         address wstEth = ITapiocaOFTBase(collateralAddress).erc20();
         if (wstEth == address(0)) revert TokenNotValid();
 
         //swap rETH with WETH
-        uint256 wethAmount = _swap(
-            wstEth,
-            weth,
-            collateralAmountIn,
-            minWethAmount,
-            block.timestamp + 10 minutes
-        );
+        uint256 wethAmount = _swap(wstEth, weth, collateralAmountIn, minWethAmount, block.timestamp + 10 minutes);
 
         //swap WETH with Asset
-        assetAmountOut = _swapTokens(
-            weth,
-            assetAddress,
-            wethAmount,
-            minAssetAmount,
-            dexAssetData,
-            0
-        );
+        assetAmountOut = _swapTokens(weth, assetAddress, wethAmount, minAssetAmount, dexAssetData, 0);
         if (assetAmountOut < minAssetAmount) revert NotEnough(assetAddress);
 
         _ybDeposit(assetId, assetAddress, address(this), to, assetAmountOut);
@@ -175,39 +133,29 @@ contract AssetToWstethLeverageExecutor is BaseLeverageExecutor {
     // ********************** //
     // *** PRIVATE MEHODS *** //
     // ********************** //
-    function _swap(
-        address tokenIn,
-        address tokenOut,
-        uint256 amount,
-        uint256 minAmountOut,
-        uint256 deadline
-    ) private returns (uint256 collateralAmountOut) {
-        IBalancerVault.FundManagement memory fundManagement = IBalancerVault
-            .FundManagement({
-                sender: address(this),
-                fromInternalBalance: false,
-                recipient: payable(this),
-                toInternalBalance: false
-            });
-        IBalancerVault.SingleSwap memory singleSwap = IBalancerVault
-            .SingleSwap({
-                poolId: poolId,
-                kind: IBalancerVault.SwapKind.GIVEN_IN,
-                assetIn: IAsset(tokenIn),
-                assetOut: IAsset(tokenOut),
-                amount: amount,
-                userData: "0x"
-            });
+    function _swap(address tokenIn, address tokenOut, uint256 amount, uint256 minAmountOut, uint256 deadline)
+        private
+        returns (uint256 collateralAmountOut)
+    {
+        IBalancerVault.FundManagement memory fundManagement = IBalancerVault.FundManagement({
+            sender: address(this),
+            fromInternalBalance: false,
+            recipient: payable(this),
+            toInternalBalance: false
+        });
+        IBalancerVault.SingleSwap memory singleSwap = IBalancerVault.SingleSwap({
+            poolId: poolId,
+            kind: IBalancerVault.SwapKind.GIVEN_IN,
+            assetIn: IBalancerAsset(tokenIn),
+            assetOut: IBalancerAsset(tokenOut),
+            amount: amount,
+            userData: "0x"
+        });
 
         if (tokenIn != address(0)) {
             tokenIn.safeApprove(address(vault), amount);
         }
-        collateralAmountOut = vault.swap(
-            singleSwap,
-            fundManagement,
-            minAmountOut,
-            deadline
-        );
+        collateralAmountOut = vault.swap(singleSwap, fundManagement, minAmountOut, deadline);
         if (collateralAmountOut < minAmountOut) revert Failed();
     }
 }
