@@ -46,8 +46,13 @@ contract BBLeverage is BBLendingCommon {
         notSelf(from)
         returns (uint256 amountOut)
     {
+        if (address(leverageExecutor) == address(0)) {
+            revert LeverageExecutorNotValid();
+        }
+
         // Stack too deep fix
         _BuyCollateralCalldata memory calldata_;
+        _BuyCollateralMemoryData memory memoryData;
         {
             calldata_.from = from;
             calldata_.borrowAmount = borrowAmount;
@@ -55,10 +60,6 @@ contract BBLeverage is BBLendingCommon {
             calldata_.data = data;
         }
 
-        _BuyCollateralMemoryData memory memoryData;
-        if (address(leverageExecutor) == address(0)) {
-            revert LeverageExecutorNotValid();
-        }
         {
             uint256 supplyShare = yieldBox.toShare(assetId, calldata_.supplyAmount, true);
             if (supplyShare > 0) {
@@ -93,6 +94,15 @@ contract BBLeverage is BBLendingCommon {
         _addCollateral(calldata_.from, calldata_.from, false, 0, collateralShare);
     }
 
+    struct _SellCollateralMemoryData {
+        uint256 obtainedShare;
+        uint256 leverageAmount;
+        uint256 shareOut;
+        uint256 partOwed;
+        uint256 amountOwed;
+        uint256 shareOwed;
+    }
+
     /// @notice Lever down: Sell collateral to repay debt; excess goes to YB
     /// @param from The user who sells
     /// @param share Collateral YieldBox-shares to sell
@@ -110,15 +120,22 @@ contract BBLeverage is BBLendingCommon {
         }
         _allowedBorrow(from, share);
         _removeCollateral(from, address(this), share);
-        (, uint256 obtainedShare) = yieldBox.withdraw(collateralId, address(this), address(leverageExecutor), 0, share);
-        uint256 leverageAmount = yieldBox.toAmount(collateralId, obtainedShare, false);
-        amountOut = leverageExecutor.getAsset(assetId, address(collateral), address(asset), leverageAmount, from, data);
-        uint256 shareOut = yieldBox.toShare(assetId, amountOut, false);
-        uint256 partOwed = userBorrowPart[from];
-        uint256 amountOwed = totalBorrow.toElastic(partOwed, true);
-        uint256 shareOwed = yieldBox.toShare(assetId, amountOwed, true);
-        if (shareOwed <= shareOut) {
-            _repay(from, from, partOwed);
+
+        _SellCollateralMemoryData memory memoryData;
+
+        (, memoryData.obtainedShare) =
+            yieldBox.withdraw(collateralId, address(this), address(leverageExecutor), 0, share);
+        memoryData.leverageAmount = yieldBox.toAmount(collateralId, memoryData.obtainedShare, false);
+        amountOut = leverageExecutor.getAsset(
+            assetId, address(collateral), address(asset), memoryData.leverageAmount, from, data
+        );
+
+        memoryData.shareOut = yieldBox.toShare(assetId, amountOut, false);
+        memoryData.partOwed = userBorrowPart[from];
+        memoryData.amountOwed = totalBorrow.toElastic(memoryData.partOwed, true);
+        memoryData.shareOwed = yieldBox.toShare(assetId, memoryData.amountOwed, true);
+        if (memoryData.shareOwed <= memoryData.shareOut) {
+            _repay(from, from, memoryData.partOwed);
         } else {
             //repay as much as we can
             uint256 partOut = totalBorrow.toBase(amountOut, false);
