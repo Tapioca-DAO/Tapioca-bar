@@ -72,56 +72,44 @@ contract BigBang is BBCommon {
     /// @notice returns the leverage module
     BBLeverage public leverageModule;
 
+    struct _InitMemoryData {
+        address _liquidationModule;
+        address _borrowModule;
+        address _collateralModule;
+        address _leverageModule;
+        IPenrose _penrose;
+        IERC20 _collateral;
+        uint256 _collateralId;
+        ITapiocaOracle _oracle;
+        uint256 _exchangeRatePrecision;
+        uint256 _debtRateAgainstEth;
+        uint256 _debtRateMin;
+        uint256 _debtRateMax;
+        uint256 _collateralizationRate;
+        uint256 _liquidationCollateralizationRate;
+        ILeverageExecutor _leverageExecutor;
+    }
+
     /// @notice The init function that acts as a constructor
     function init(bytes calldata data) external onlyOnce {
-        (
-            address _liquidationModule,
-            address _borrowModule,
-            address _collateralModule,
-            address _leverageModule,
-            IPenrose penrose_,
-            IERC20 _collateral,
-            uint256 _collateralId,
-            ITapiocaOracle _oracle,
-            uint256 _exchangeRatePrecision,
-            uint256 _debtRateAgainstEth,
-            uint256 _debtRateMin,
-            uint256 _debtRateMax,
-            uint256 _collateralizationRate,
-            uint256 _liquidationCollateralizationRate,
-            ILeverageExecutor _leverageExecutor
-        ) = abi.decode(
-            data,
-            (
-                address,
-                address,
-                address,
-                address,
-                IPenrose,
-                IERC20,
-                uint256,
-                ITapiocaOracle,
-                uint256,
-                uint256,
-                uint256,
-                uint256,
-                uint256,
-                uint256,
-                ILeverageExecutor
-            )
+        (_InitMemoryData memory initMemoryData) = abi.decode(data, (_InitMemoryData));
+        _initModules(
+            initMemoryData._liquidationModule,
+            initMemoryData._borrowModule,
+            initMemoryData._collateralModule,
+            initMemoryData._leverageModule
         );
-        _initModules(_liquidationModule, _borrowModule, _collateralModule, _leverageModule);
         _initCoreStorage(
-            penrose_,
-            _collateral,
-            _collateralId,
-            _oracle,
-            _exchangeRatePrecision,
-            _collateralizationRate,
-            _liquidationCollateralizationRate,
-            _leverageExecutor
+            initMemoryData._penrose,
+            initMemoryData._collateral,
+            initMemoryData._collateralId,
+            initMemoryData._oracle,
+            initMemoryData._exchangeRatePrecision,
+            initMemoryData._collateralizationRate,
+            initMemoryData._liquidationCollateralizationRate,
+            initMemoryData._leverageExecutor
         );
-        _initDebtStorage(_debtRateAgainstEth, _debtRateMin, _debtRateMax);
+        _initDebtStorage(initMemoryData._debtRateAgainstEth, initMemoryData._debtRateMin, initMemoryData._debtRateMax);
     }
 
     function _initModules(
