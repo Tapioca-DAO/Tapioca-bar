@@ -8,8 +8,8 @@ import {
     ERC20Mock__factory,
     MockSwapper__factory,
     TOFTMock__factory,
-} from '../gitsub_tapioca-sdk/src/typechain/tapioca-mocks';
-import { UniswapV3Swapper__factory } from '../gitsub_tapioca-sdk/src/typechain/tapioca-periphery';
+} from '@tapioca-sdk/typechain/tapioca-mocks';
+import { UniswapV3Swapper__factory } from '@tapioca-sdk/typechain/tapioca-periphery';
 
 describe('assetToWstethLeverageExecutor-fork test', () => {
     before(function () {

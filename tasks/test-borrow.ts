@@ -3,18 +3,18 @@ import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { getSingularityContract } from './utils';
 import inquirer from 'inquirer';
 
-import TapiocaOFTArtifact from '../gitsub_tapioca-sdk/src/artifacts/tapiocaz/TapiocaOFT.json';
-import { TapiocaOFT__factory } from '../gitsub_tapioca-sdk/src/typechain/TapiocaZ/factories/tOFT/TapiocaOFT__factory';
+import TapiocaOFTArtifact from '@tapioca-sdk/artifacts/tapiocaz/TapiocaOFT.json';
+import { TapiocaOFT__factory } from '@tapioca-sdk/typechain/TapiocaZ/factories/tOFT/TapiocaOFT__factory';
 import { TContract } from 'tapioca-sdk/dist/shared';
 import { Singularity, USDO__factory } from '../typechain';
-import { BaseTOFT } from '../gitsub_tapioca-sdk/src/typechain/TapiocaZ/TapiocaOFT';
+import { BaseTOFT } from '@tapioca-sdk/typechain/TapiocaZ/TapiocaOFT';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { splitSignature } from 'ethers/lib/utils';
-import MagnetarV2Artifacts from '../gitsub_tapioca-sdk/src/artifacts/tapioca-periphery/MagnetarV2.json';
-import ERC20MockArtifacts from '../gitsub_tapioca-sdk/src/artifacts/tapioca-mocks/ERC20Mock.json';
-import { ERC20Mock } from '../gitsub_tapioca-sdk/src/typechain/tapioca-mocks/ERC20Mock';
-import { MagnetarV2 } from '../gitsub_tapioca-sdk/src/typechain/tapioca-periphery/Magnetar/MagnetarV2';
-import { TAPIOCA_PROJECTS_NAME } from '../gitsub_tapioca-sdk/src/api/config';
+import MagnetarV2Artifacts from '@tapioca-sdk/artifacts/tapioca-periphery/MagnetarV2.json';
+import ERC20MockArtifacts from '@tapioca-sdk/artifacts/tapioca-mocks/ERC20Mock.json';
+import { ERC20Mock } from '@tapioca-sdk/typechain/tapioca-mocks/ERC20Mock';
+import { MagnetarV2 } from '@tapioca-sdk/typechain/tapioca-periphery/Magnetar/MagnetarV2';
+import { TAPIOCA_PROJECTS_NAME } from '@tapioca-sdk/api/config';
 
 export const testCrossChainBorrow__task = async (
     {},

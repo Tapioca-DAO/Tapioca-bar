@@ -1,9 +1,9 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import _ from 'lodash';
 
-import { TContract } from '../../gitsub_tapioca-sdk/src/shared';
-import { Cluster } from '../../gitsub_tapioca-sdk/src/typechain/tapioca-periphery';
-import ClusterArtifact from '../../gitsub_tapioca-sdk/src/artifacts/tapioca-periphery/Cluster.json';
+import { TContract } from '@tapioca-sdk/shared';
+import { Cluster } from '@tapioca-sdk/typechain/tapioca-periphery';
+import ClusterArtifact from '@tapioca-sdk/artifacts/tapioca-periphery/Cluster.json';
 
 export const fillCluster__task = async (
     data: { chains: [] },

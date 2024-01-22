@@ -6,8 +6,8 @@ import { ethers } from 'hardhat';
 import { BigBang, ERC20, ERC20Mock, USDO, Singularity } from '../typechain';
 import { BN, register } from './test.utils';
 
-import OracleMockArtifact from '../gitsub_tapioca-sdk/src/artifacts/tapioca-mocks/OracleMock.json';
-import { MagnetarV2 } from '../gitsub_tapioca-sdk/src/typechain/tapioca-periphery';
+import OracleMockArtifact from '@tapioca-sdk/artifacts/tapioca-mocks/OracleMock.json';
+import { MagnetarV2 } from '@tapioca-sdk/typechain/tapioca-periphery';
 import cluster from 'cluster';
 
 describe('e2e tests', () => {

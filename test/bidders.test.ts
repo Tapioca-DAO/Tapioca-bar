@@ -2,8 +2,8 @@ import hre, { ethers } from 'hardhat';
 import { expect } from 'chai';
 import { register } from './test.utils';
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
-import CurveSwapperArtifact from '../gitsub_tapioca-sdk/src/artifacts/tapioca-periphery/CurveSwapper.json';
-import { CurveSwapper } from '../gitsub_tapioca-sdk/src/typechain/tapioca-periphery';
+import CurveSwapperArtifact from '@tapioca-sdk/artifacts/tapioca-periphery/CurveSwapper.json';
+import { CurveSwapper } from '@tapioca-sdk/typechain/tapioca-periphery';
 
 describe.skip('Bidders test', () => {
     it('should test name', async () => {

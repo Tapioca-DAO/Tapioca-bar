@@ -1,8 +1,8 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { IDeployerVMAdd } from 'tapioca-sdk/dist/ethers/hardhat/DeployerVM';
-import { MockSwapper__factory } from '../../gitsub_tapioca-sdk/src/typechain/tapioca-mocks';
-import MockSwapperArtifact from '../../gitsub_tapioca-sdk/src/artifacts/tapioca-mocks/MockSwapper.json';
-import { EChainID } from '../../gitsub_tapioca-sdk/src/api/config';
+import { MockSwapper__factory } from '@tapioca-sdk/typechain/tapioca-mocks';
+import MockSwapperArtifact from '@tapioca-sdk/artifacts/tapioca-mocks/MockSwapper.json';
+import { EChainID } from '@tapioca-sdk/api/config';
 import { loadVM } from '../utils';
 
 const buildMockSwapper = async (

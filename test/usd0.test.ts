@@ -6,7 +6,7 @@ import { BN, getERC20PermitSignature, register } from './test.utils';
 import {
     FlashBorrowerMock__factory,
     FlashMaliciousBorrowerMock__factory,
-} from '../gitsub_tapioca-sdk/src/typechain/tapioca-mocks';
+} from '@tapioca-sdk/typechain/tapioca-mocks';
 
 describe('USDO', () => {
     describe('views', () => {

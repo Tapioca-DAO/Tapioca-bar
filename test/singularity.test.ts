@@ -9,14 +9,14 @@ import {
 import {
     LiquidationQueue__factory,
     Cluster__factory,
-} from '../gitsub_tapioca-sdk/src/typechain/tapioca-periphery';
+} from '@tapioca-sdk/typechain/tapioca-periphery';
 import {
     ERC20Mock,
     ERC20Mock__factory,
     LZEndpointMock__factory,
     OracleMock__factory,
     UniswapV3SwapperMock__factory,
-} from '../gitsub_tapioca-sdk/src/typechain/tapioca-mocks';
+} from '@tapioca-sdk/typechain/tapioca-mocks';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import {
     BaseTOFT,
@@ -27,8 +27,8 @@ import {
     TapiocaOFT,
     TapiocaOFT__factory,
     TapiocaWrapper__factory,
-} from '../gitsub_tapioca-sdk/src/typechain/tapiocaz';
-import TapiocaOFTArtifact from '../gitsub_tapioca-sdk/src/artifacts/tapiocaz/TapiocaOFT.json';
+} from '@tapioca-sdk/typechain/tapiocaz';
+import TapiocaOFTArtifact from '@tapioca-sdk/artifacts/tapiocaz/TapiocaOFT.json';
 
 describe('Singularity test', () => {
     describe('test', () => {

@@ -4,7 +4,7 @@ import { register } from './test.utils';
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 import _ from 'lodash';
 import { defaultAbiCoder } from 'ethers/lib/utils';
-import { MockSwapper__factory } from '../gitsub_tapioca-sdk/src/typechain/tapioca-mocks';
+import { MockSwapper__factory } from '@tapioca-sdk/typechain/tapioca-mocks';
 
 describe('MarketLiquidatorReceiver test', () => {
     it('should perform a swap', async () => {

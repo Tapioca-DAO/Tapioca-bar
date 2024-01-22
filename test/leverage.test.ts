@@ -2,7 +2,7 @@ import hre, { ethers } from 'hardhat';
 import { expect } from 'chai';
 import { BN, register, setBalance } from './test.utils';
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
-import { MockSwapper__factory } from '../gitsub_tapioca-sdk/src/typechain/tapioca-mocks';
+import { MockSwapper__factory } from '@tapioca-sdk/typechain/tapioca-mocks';
 
 const { formatUnits } = ethers.utils;
 

@@ -2,7 +2,7 @@ import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { buildYieldBoxAssets } from '../setups/900-buildYieldBoxAssets';
 import { typechain } from 'tapioca-sdk';
 import inquirer from 'inquirer';
-import { TContract } from '../../gitsub_tapioca-sdk/src/shared';
+import { TContract } from '@tapioca-sdk/shared';
 
 // hh registerYbAssets --network ...
 export const registerYbAssets__task = async (

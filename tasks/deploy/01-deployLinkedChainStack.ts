@@ -9,7 +9,7 @@ import { buildUSDOFlashloanHelper } from '../deployBuilds/13-buildUSDOFlashloanH
 import { buildUsdoFlashloanSetup } from '../setups/04-buildUsdoFlashloanSetup';
 import { buildSimpleLeverageExecutor } from '../deployBuilds/14-buildSimpleLeverageExecutor';
 import { buildMultiSwapper } from '../deployBuilds/04-buildMultiSwapper';
-import { UNISWAP_DEPLOYMENTS } from '../../gitsub_tapioca-sdk/src/api/constants';
+import { UNISWAP_DEPLOYMENTS } from '@tapioca-sdk/api/constants';
 import { loadVM } from '../utils';
 
 // hh deployLinkedChainStack --network bsc_testnet

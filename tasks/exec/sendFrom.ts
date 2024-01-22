@@ -1,5 +1,5 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
-import { TAPIOCA_PROJECTS_NAME } from '../../gitsub_tapioca-sdk/src/api/config';
+import { TAPIOCA_PROJECTS_NAME } from '@tapioca-sdk/api/config';
 
 // TODO use the new task arg system
 // to fantom_testnet

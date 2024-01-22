@@ -8,7 +8,7 @@ import {
     ERC20Mock__factory,
     MockSwapper__factory,
     TOFTMock__factory,
-} from '../gitsub_tapioca-sdk/src/typechain/tapioca-mocks';
+} from '@tapioca-sdk/typechain/tapioca-mocks';
 
 describe('AssetToWstEthLeverageExecutor test', () => {
     before(function () {

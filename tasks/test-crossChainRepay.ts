@@ -1,18 +1,18 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import inquirer from 'inquirer';
 import { MagnetarV2 } from 'tapioca-sdk/dist/typechain/tapioca-periphery';
-import TapiocaOFTArtifact from '../gitsub_tapioca-sdk/src/artifacts/tapiocaz/TapiocaOFT.json';
+import TapiocaOFTArtifact from '@tapioca-sdk/artifacts/tapiocaz/TapiocaOFT.json';
 
 import { TContract } from 'tapioca-sdk/dist/shared';
-import { TAPIOCA_PROJECTS_NAME } from '../gitsub_tapioca-sdk/src/api/config';
-import MagnetarV2Artifacts from '../gitsub_tapioca-sdk/src/artifacts/tapioca-periphery/MagnetarV2.json';
-import { TapiocaOFT__factory } from '../gitsub_tapioca-sdk/src/typechain/TapiocaZ/factories/tOFT/TapiocaOFT__factory';
-import { TapiocaOFT } from '../gitsub_tapioca-sdk/src/typechain/TapiocaZ/tOFT/TapiocaOFT';
-import TapiocaOFTArtifacts from '../gitsub_tapioca-sdk/src/artifacts/tapiocaz/TapiocaOFT.json';
+import { TAPIOCA_PROJECTS_NAME } from '@tapioca-sdk/api/config';
+import MagnetarV2Artifacts from '@tapioca-sdk/artifacts/tapioca-periphery/MagnetarV2.json';
+import { TapiocaOFT__factory } from '@tapioca-sdk/typechain/TapiocaZ/factories/tOFT/TapiocaOFT__factory';
+import { TapiocaOFT } from '@tapioca-sdk/typechain/TapiocaZ/tOFT/TapiocaOFT';
+import TapiocaOFTArtifacts from '@tapioca-sdk/artifacts/tapiocaz/TapiocaOFT.json';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { Wallet, BigNumberish, Signature } from 'ethers';
 import { splitSignature } from 'ethers/lib/utils';
-import { BaseTOFT } from '../gitsub_tapioca-sdk/src/typechain/TapiocaZ/TapiocaOFT';
+import { BaseTOFT } from '@tapioca-sdk/typechain/TapiocaZ/TapiocaOFT';
 import { Singularity } from '../typechain';
 
 export const crossChainRepay__task = async (

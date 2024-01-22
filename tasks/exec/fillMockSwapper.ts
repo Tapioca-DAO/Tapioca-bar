@@ -1,19 +1,19 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import _ from 'lodash';
-import { ERC20Mock } from '../../gitsub_tapioca-sdk/src/typechain/tapioca-mocks';
-import { YieldBox } from '../../gitsub_tapioca-sdk/src/typechain/YieldBox';
-import { TapiocaOFT } from '../../gitsub_tapioca-sdk/src/typechain/tapiocaz';
-import TapiocaOFTArtifact from '../../gitsub_tapioca-sdk/src/artifacts/tapiocaz/TapiocaOFT.json';
-import ERC20MockArtifact from '../../gitsub_tapioca-sdk/src/artifacts/tapioca-mocks/ERC20Mock.json';
-import YieldBoxArtifact from '../../gitsub_tapioca-sdk/src/artifacts/YieldBox/contracts/YieldBox.sol/YieldBox.json';
+import { ERC20Mock } from '@tapioca-sdk/typechain/tapioca-mocks';
+import { YieldBox } from '@tapioca-sdk/typechain/YieldBox';
+import { TapiocaOFT } from '@tapioca-sdk/typechain/tapiocaz';
+import TapiocaOFTArtifact from '@tapioca-sdk/artifacts/tapiocaz/TapiocaOFT.json';
+import ERC20MockArtifact from '@tapioca-sdk/artifacts/tapioca-mocks/ERC20Mock.json';
+import YieldBoxArtifact from '@tapioca-sdk/artifacts/YieldBox/contracts/YieldBox.sol/YieldBox.json';
 import {
     EChainID,
     NETWORK_MAPPING_CHAIN_TO_LZ,
     TAPIOCA_PROJECTS_NAME,
-} from '../../gitsub_tapioca-sdk/src/api/config';
+} from '@tapioca-sdk/api/config';
 import inquirer from 'inquirer';
-import { TContract } from '../../gitsub_tapioca-sdk/src/shared';
+import { TContract } from '@tapioca-sdk/shared';
 import { BigNumber } from 'ethers';
 
 const attachTOFT = async (

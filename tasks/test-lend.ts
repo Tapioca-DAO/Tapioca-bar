@@ -5,7 +5,7 @@ import inquirer from 'inquirer';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { splitSignature } from 'ethers/lib/utils';
 import { TContract } from 'tapioca-sdk/dist/shared';
-import { BaseTOFT } from '../gitsub_tapioca-sdk/src/typechain/TapiocaZ/mocks/TapiocaOFTMock';
+import { BaseTOFT } from '@tapioca-sdk/typechain/TapiocaZ/mocks/TapiocaOFTMock';
 import { Singularity } from '../typechain';
 
 export const testCrossChainLend__task = async (

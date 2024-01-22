@@ -15,14 +15,14 @@ import {
     TwTwapMock__factory,
     MarketLiquidationReceiverMock__factory,
     SavingsDaiMock__factory,
-} from '../gitsub_tapioca-sdk/src/typechain/tapioca-mocks';
+} from '@tapioca-sdk/typechain/tapioca-mocks';
 
 import {
     YieldBox__factory,
     YieldBoxURIBuilder__factory,
     ERC20WithoutStrategy__factory,
     YieldBox,
-} from '../gitsub_tapioca-sdk/src/typechain/YieldBox';
+} from '@tapioca-sdk/typechain/YieldBox';
 
 import {
     CurveSwapper__factory,
@@ -35,12 +35,12 @@ import {
     MagnetarV2__factory,
     Cluster__factory,
     MagnetarHelper__factory,
-} from '../gitsub_tapioca-sdk/src/typechain/tapioca-periphery';
+} from '@tapioca-sdk/typechain/tapioca-periphery';
 
 import {
     UniswapV2Factory,
     UniswapV2Router02,
-} from '../gitsub_tapioca-sdk/src/typechain/tapioca-mocks/uniswapv2';
+} from '@tapioca-sdk/typechain/tapioca-mocks/uniswapv2';
 import {
     CurveStableToUsdoBidder,
     ERC20Permit,

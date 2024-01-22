@@ -8,7 +8,7 @@ import {
     MockSwapper__factory,
     TOFTMock__factory,
     GmxMarketMock__factory,
-} from '../gitsub_tapioca-sdk/src/typechain/tapioca-mocks';
+} from '@tapioca-sdk/typechain/tapioca-mocks';
 
 describe('assetToSGlpLeverageExecutors.test test', () => {
     async function setUp() {

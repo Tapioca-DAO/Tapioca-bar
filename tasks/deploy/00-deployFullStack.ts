@@ -19,7 +19,7 @@ import { buildUSDOFlashloanHelper } from '../deployBuilds/13-buildUSDOFlashloanH
 import {
     CURVE_DEPLOYMENTS,
     UNISWAP_DEPLOYMENTS,
-} from '../../gitsub_tapioca-sdk/src/api/constants';
+} from '@tapioca-sdk/api/constants';
 import { buildCluster } from '../deployBuilds/12-buildCluster';
 
 // hh deployFullStack --network goerli

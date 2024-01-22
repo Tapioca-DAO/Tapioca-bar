@@ -3,7 +3,7 @@ import { expect } from 'chai';
 import { register } from './test.utils';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
-import { LiquidationQueue__factory } from '../gitsub_tapioca-sdk/src/typechain/tapioca-periphery';
+import { LiquidationQueue__factory } from '@tapioca-sdk/typechain/tapioca-periphery';
 
 //todo: remove skip when swappers references are updated
 describe.skip('LiquidationQueue test', () => {

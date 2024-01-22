@@ -1,13 +1,13 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import inquirer from 'inquirer';
-import { getOverrideOptions } from '../../gitsub_tapioca-sdk/src/api/utils';
+import { getOverrideOptions } from '@tapioca-sdk/api/utils';
 import { TContract } from 'tapioca-sdk/dist/shared';
 import { Penrose, YieldBox } from '../../typechain';
 import { buildOracleMock } from '../deployBuilds/05-buildOracleMock';
-import ClusterArtifact from '../../gitsub_tapioca-sdk/src/artifacts/tapioca-periphery/Cluster.json';
+import ClusterArtifact from '@tapioca-sdk/artifacts/tapioca-periphery/Cluster.json';
 
 import { loadVM } from '../utils';
-import { Cluster } from '../../gitsub_tapioca-sdk/src/typechain/tapioca-periphery';
+import { Cluster } from '@tapioca-sdk/typechain/tapioca-periphery';
 
 export const deployBigBangMarket__task = async (
     taskArgs: {

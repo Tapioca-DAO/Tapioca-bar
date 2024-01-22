@@ -3,8 +3,8 @@ import { expect } from 'chai';
 import { register, impersonateAccount } from './test.utils';
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 import _ from 'lodash';
-import { TOFTMock__factory } from '../gitsub_tapioca-sdk/src/typechain/tapioca-mocks';
-import { UniswapV3Swapper__factory } from '../gitsub_tapioca-sdk/src/typechain/tapioca-periphery';
+import { TOFTMock__factory } from '@tapioca-sdk/typechain/tapioca-mocks';
+import { UniswapV3Swapper__factory } from '@tapioca-sdk/typechain/tapioca-periphery';
 
 describe('assetToSGlpLeverageExecutors.test test', () => {
     before(function () {
