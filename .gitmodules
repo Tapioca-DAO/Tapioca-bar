@@ -7,3 +7,6 @@
 [submodule "lib/tapioca-periph"]
 	path = lib/tapioca-periph
 	url = https://github.com/Tapioca-DAO/tapioca-periph.git
+[submodule "lib/tapioca-yieldbox"]
+	path = lib/tapioca-yieldbox
+	url = https://github.com/Tapioca-DAO/tap-yieldbox
