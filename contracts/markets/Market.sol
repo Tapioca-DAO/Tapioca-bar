@@ -99,6 +99,8 @@ abstract contract Market is MarketERC20, BoringOwnable {
     uint256 internal constant FEE_PRECISION = 1e5;
     uint256 internal constant FEE_PRECISION_DECIMALS = 5;
 
+    error ExchangeRateNotValid();
+
     // ************** //
     // *** EVENTS *** //
     // ************** //
@@ -423,6 +425,23 @@ abstract contract Market is MarketERC20, BoringOwnable {
     function _accrue() internal virtual;
 
     function _accrueView() internal view virtual returns (Rebase memory);
+
+    function _updateOracleRateForLiquidations() internal {
+        try oracle.get(oracleData) returns (
+            bool _updated,
+            uint256 _exchangeRate
+        ) {
+            if (_updated && _exchangeRate > 0) {
+                exchangeRate = _exchangeRate; //update cached rate
+                rateTimestamp = block.timestamp;
+            } else {
+                _exchangeRate = exchangeRate; //use stored rate
+                if (_exchangeRate == 0) revert ExchangeRateNotValid();
+            }
+        } catch {
+            if (exchangeRate == 0) revert ExchangeRateNotValid();
+        }
+    }
 
     function _getRevertMsg(
         bytes memory _returnData
