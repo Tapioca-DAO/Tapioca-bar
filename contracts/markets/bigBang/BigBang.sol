@@ -513,6 +513,7 @@ contract BigBang is BBCommon {
             maxMintFeeStart,
             _max
         );
+        if (_min >= _max) revert NotValid();
         minMintFeeStart = _min;
         maxMintFeeStart = _max;
     }
@@ -526,6 +527,7 @@ contract BigBang is BBCommon {
         uint256 _max
     ) external onlyOwner {
         emit UpdateMinMaxMintFee(minMintFee, _min, maxMintFee, _max);
+        if (_min >= _max) revert NotValid();
         minMintFee = _min;
         maxMintFee = _max;
     }
