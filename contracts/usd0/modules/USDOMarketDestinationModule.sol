@@ -12,6 +12,7 @@ import {IMagnetar} from "tapioca-periph/interfaces/periph/IMagnetar.sol";
 import {ICluster} from "tapioca-periph/interfaces/periph/ICluster.sol";
 import {IUSDOBase} from "tapioca-periph/interfaces/bar/IUSDO.sol";
 import {IYieldBox} from "tapioca-periph/interfaces/yieldbox/IYieldBox.sol";
+import {USDOMarketModule} from "./USDOMarketModule.sol";
 import {BaseUSDOStorage} from "../BaseUSDOStorage.sol";
 import {LzLib} from "contracts/tmp/LzLib.sol";
 import {USDOCommon} from "./USDOCommon.sol";
@@ -38,53 +39,38 @@ contract USDOMarketDestinationModule is USDOCommon {
             revert NotValid();
         }
 
-        (
-            ,
-            address to,
-            uint64 lendAmountSD,
-            IUSDOBase.ILendOrRepayParams memory lendParams,
-            ICommonData.IApproval[] memory approvals,
-            ICommonData.IApproval[] memory revokes,
-            ICommonData.IWithdrawParams memory withdrawParams,
-            uint256 airdropAmount
-        ) = abi.decode(
-            _payload,
-            (
-                uint16,
-                address,
-                uint64,
-                IUSDOBase.ILendOrRepayParams,
-                ICommonData.IApproval[],
-                ICommonData.IApproval[],
-                ICommonData.IWithdrawParams,
-                uint256
-            )
-        );
+        USDOMarketModule.LendOrRepayData memory _data = abi.decode(_payload, (USDOMarketModule.LendOrRepayData));
 
-        lendParams.depositAmount = _sd2ld(lendAmountSD);
+        _data.lendParams.depositAmount = _sd2ld(_data.lendAmountSD);
         uint256 balanceBefore = balanceOf(address(this));
         bool credited = creditedPackets[_srcChainId][_srcAddress][_nonce];
         if (!credited) {
-            _creditTo(_srcChainId, address(this), lendParams.depositAmount);
+            _creditTo(_srcChainId, address(this), _data.lendParams.depositAmount);
             creditedPackets[_srcChainId][_srcAddress][_nonce] = true;
         }
         uint256 balanceAfter = balanceOf(address(this));
 
         (bool success, bytes memory reason) = module.delegatecall(
             abi.encodeWithSelector(
-                this.lendInternal.selector, to, lendParams, approvals, revokes, withdrawParams, airdropAmount
+                this.lendInternal.selector,
+                _data.to,
+                _data.lendParams,
+                _data.approvals,
+                _data.revokes,
+                _data.withdrawParams,
+                _data.airdropAmount
             )
         );
 
         if (!success) {
-            if (balanceAfter - balanceBefore >= lendParams.depositAmount) {
-                IERC20(address(this)).safeTransfer(to, lendParams.depositAmount);
+            if (balanceAfter - balanceBefore >= _data.lendParams.depositAmount) {
+                IERC20(address(this)).safeTransfer(_data.to, _data.lendParams.depositAmount);
             }
             _storeFailedMessage(_srcChainId, _srcAddress, _nonce, _payload, reason);
             emit CallFailedBytes(_srcChainId, _payload, reason);
         }
 
-        emit ReceiveFromChain(_srcChainId, to, lendParams.depositAmount);
+        emit ReceiveFromChain(_srcChainId, _data.to, _data.lendParams.depositAmount);
     }
 
     function lendInternal(
@@ -146,39 +132,21 @@ contract USDOMarketDestinationModule is USDOCommon {
     /// @param _payload received payload
     function remove(address, uint16, bytes memory, uint64, bytes memory _payload) public {
         if (msg.sender != address(this)) revert SenderNotAuthorized();
-        (
-            ,
-            address to,
-            ICommonData.ICommonExternalContracts memory externalData,
-            IUSDOBase.IRemoveAndRepay memory removeAndRepayData,
-            ICommonData.IApproval[] memory approvals,
-            ICommonData.IApproval[] memory revokes,
-            uint256 airdropAmount
-        ) = abi.decode(
-            _payload,
-            (
-                uint16,
-                address,
-                ICommonData.ICommonExternalContracts,
-                IUSDOBase.IRemoveAndRepay,
-                ICommonData.IApproval[],
-                ICommonData.IApproval[],
-                uint256
-            )
-        );
+
+        USDOMarketModule.RemoveAssetData memory _data = abi.decode(_payload, (USDOMarketModule.RemoveAssetData));
 
         //approvals
-        if (approvals.length > 0) {
-            _callApproval(approvals, PT_MARKET_REMOVE_ASSET);
+        if (_data.approvals.length > 0) {
+            _callApproval(_data.approvals, PT_MARKET_REMOVE_ASSET);
         }
 
-        IMagnetar(externalData.magnetar).exitPositionAndRemoveCollateral{value: airdropAmount}(
-            to, externalData, removeAndRepayData
+        IMagnetar(_data.externalData.magnetar).exitPositionAndRemoveCollateral{value: _data.airdropAmount}(
+            _data.to, _data.externalData, _data.removeAndRepayData
         );
 
         //revokes
-        if (revokes.length > 0) {
-            _callApproval(revokes, PT_MARKET_REMOVE_ASSET);
+        if (_data.revokes.length > 0) {
+            _callApproval(_data.revokes, PT_MARKET_REMOVE_ASSET);
         }
     }
 }

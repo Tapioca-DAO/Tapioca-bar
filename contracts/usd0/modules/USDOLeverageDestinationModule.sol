@@ -25,12 +25,22 @@ contract USDOLeverageDestinationModule is USDOCommon {
         BaseUSDOStorage(_lzEndpoint, _yieldBox, _cluster)
     {}
 
+    struct _LeverageUpData {
+        uint16 packetType;
+        uint64 amountSD;
+        IUSDOBase.ILeverageSwapData swapData;
+        IUSDOBase.ILeverageExternalContractsData externalData;
+        IUSDOBase.ILeverageLZData lzData;
+        address leverageFor;
+        uint256 airdropAmount;
+    }
     /// @notice destination call for USDOLeverageModule.sendForLeverage
     /// @param module USDOLeverageDestination module address
     /// @param _srcChainId LayerZero source chain id
     /// @param _srcAddress LayerZero source chain address
     /// @param _nonce LayerZero current nonce
     /// @param _payload received payload
+
     function leverageUp(
         address module,
         uint16 _srcChainId,
@@ -43,43 +53,30 @@ contract USDOLeverageDestinationModule is USDOCommon {
             revert NotValid();
         }
 
-        (
-            ,
-            uint64 amountSD,
-            IUSDOBase.ILeverageSwapData memory swapData,
-            IUSDOBase.ILeverageExternalContractsData memory externalData,
-            IUSDOBase.ILeverageLZData memory lzData,
-            address leverageFor,
-            uint256 airdropAmount
-        ) = abi.decode(
-            _payload,
-            (
-                uint16,
-                uint64,
-                IUSDOBase.ILeverageSwapData,
-                IUSDOBase.ILeverageExternalContractsData,
-                IUSDOBase.ILeverageLZData,
-                address,
-                uint256
-            )
-        );
-        uint256 amount = _sd2ld(amountSD);
+        _LeverageUpData memory _data = abi.decode(_payload, (_LeverageUpData));
+        uint256 amount = _sd2ld(_data.amountSD);
         uint256 balanceBefore = balanceOf(address(this));
         _checkCredited(_srcChainId, _srcAddress, _nonce, amount);
         uint256 balanceAfter = balanceOf(address(this));
         (bool success, bytes memory reason) = module.delegatecall(
             abi.encodeWithSelector(
-                this.leverageUpInternal.selector, amount, swapData, externalData, lzData, leverageFor, airdropAmount
+                this.leverageUpInternal.selector,
+                amount,
+                _data.swapData,
+                _data.externalData,
+                _data.lzData,
+                _data.leverageFor,
+                _data.airdropAmount
             )
         );
         if (!success) {
             if (balanceAfter - balanceBefore >= amount) {
-                IERC20(address(this)).safeTransfer(leverageFor, amount);
+                IERC20(address(this)).safeTransfer(_data.leverageFor, amount);
             }
             _storeFailedMessage(_srcChainId, _srcAddress, _nonce, _payload, reason);
             emit CallFailedBytes(_srcChainId, _payload, reason);
         }
-        emit ReceiveFromChain(_srcChainId, leverageFor, amount);
+        emit ReceiveFromChain(_srcChainId, _data.leverageFor, amount);
     }
 
     function _checkCredited(uint16 _srcChainId, bytes memory _srcAddress, uint64 _nonce, uint256 amount) private {
@@ -117,10 +114,14 @@ contract USDOLeverageDestinationModule is USDOCommon {
         }
 
         _approve(address(this), externalData.swapper, amount);
-        ISwapper.SwapData memory _swapperData =
-            ISwapper(externalData.swapper).buildSwapData(address(this), swapData.tokenOut, amount, 0);
-        (uint256 amountOut,) =
-            ISwapper(externalData.swapper).swap(_swapperData, swapData.amountOutMin, address(this), swapData.data);
+
+        uint256 amountOut;
+        {
+            ISwapper.SwapData memory _swapperData =
+                ISwapper(externalData.swapper).buildSwapData(address(this), swapData.tokenOut, amount, 0);
+            (amountOut,) =
+                ISwapper(externalData.swapper).swap(_swapperData, swapData.amountOutMin, address(this), swapData.data);
+        }
         //wrap into tOFT
         if (swapData.tokenOut != address(0)) {
             //skip approval for native

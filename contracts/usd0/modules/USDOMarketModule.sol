@@ -25,6 +25,16 @@ contract USDOMarketModule is USDOCommon {
         BaseUSDOStorage(_lzEndpoint, _yieldBox, _cluster)
     {}
 
+    struct RemoveAssetData {
+        uint16 packetType;
+        address to;
+        ICommonData.ICommonExternalContracts externalData;
+        IUSDOBase.IRemoveAndRepay removeAndRepayData;
+        ICommonData.IApproval[] approvals;
+        ICommonData.IApproval[] revokes;
+        uint256 airdropAmount;
+    }
+
     /// @notice initiates an asset removal on a market from another layer
     /// @param from the address to substract from
     /// @param to the receiver
@@ -61,18 +71,39 @@ contract USDOMarketModule is USDOCommon {
             }
         }
 
-        (,, uint256 airdropAmount,) = LzLib.decodeAdapterParams(adapterParams);
-        bytes memory lzPayload =
-            abi.encode(PT_MARKET_REMOVE_ASSET, to, externalData, removeAndRepayData, approvals, revokes, airdropAmount);
+        RemoveAssetData memory payload;
+        {
+            (,, uint256 airdropAmount,) = LzLib.decodeAdapterParams(adapterParams);
+            payload = RemoveAssetData({
+                packetType: PT_MARKET_REMOVE_ASSET,
+                to: to,
+                externalData: externalData,
+                removeAndRepayData: removeAndRepayData,
+                approvals: approvals,
+                revokes: revokes,
+                airdropAmount: airdropAmount
+            });
+        }
 
         _checkAdapterParams(lzDstChainId, PT_MARKET_REMOVE_ASSET, adapterParams, NO_EXTRA_GAS);
 
-        _lzSend(lzDstChainId, lzPayload, payable(from), zroPaymentAddress, adapterParams, msg.value);
+        _lzSend(lzDstChainId, abi.encode(payload), payable(from), zroPaymentAddress, adapterParams, msg.value);
 
         emit SendToChain(lzDstChainId, from, LzLib.addressToBytes32(to), 0);
     }
 
-    /// @notice sends USDO to be lent or for repayment on destination
+    struct LendOrRepayData {
+        uint16 packetType;
+        address to;
+        uint64 lendAmountSD;
+        IUSDOBase.ILendOrRepayParams lendParams;
+        ICommonData.IApproval[] approvals;
+        ICommonData.IApproval[] revokes;
+        ICommonData.IWithdrawParams withdrawParams;
+        uint256 airdropAmount;
+    }
+
+    /// @dev Usage only for sendAndLendOrRepay. ITS JUST A QUICKFIX
     /// @param _from address to send from
     /// @param _to address to repay/lend for
     /// @param lzDstChainId LayerZero destination chain id
@@ -82,38 +113,68 @@ contract USDOMarketModule is USDOCommon {
     /// @param revokes revokes array to be executed on destination
     /// @param withdrawParams withdraw token parameters
     /// @param adapterParams LayerZero adapter parameters
-    function sendAndLendOrRepay(
-        address _from,
-        address _to,
-        uint16 lzDstChainId,
-        address zroPaymentAddress,
-        IUSDOBase.ILendOrRepayParams memory lendParams,
-        ICommonData.IApproval[] calldata approvals,
-        ICommonData.IApproval[] calldata revokes,
-        ICommonData.IWithdrawParams calldata withdrawParams,
-        bytes calldata adapterParams
-    ) external payable {
-        bytes32 toAddress = LzLib.addressToBytes32(_to);
-        (lendParams.depositAmount,) = _removeDust(lendParams.depositAmount);
-        lendParams.depositAmount = _debitFrom(_from, lzEndpoint.getChainId(), toAddress, lendParams.depositAmount);
-        if (lendParams.depositAmount == 0) revert NotValid();
+    struct _SendAndLendOrRepayCalldata {
+        address _from;
+        address _to;
+        uint16 lzDstChainId;
+        address zroPaymentAddress;
+        IUSDOBase.ILendOrRepayParams lendParams;
+        ICommonData.IApproval[] approvals;
+        ICommonData.IApproval[] revokes;
+        ICommonData.IWithdrawParams withdrawParams;
+        bytes adapterParams;
+    }
 
-        (,, uint256 airdropAmount,) = LzLib.decodeAdapterParams(adapterParams);
-        bytes memory lzPayload = abi.encode(
-            PT_YB_SEND_SGL_LEND_OR_REPAY,
-            _to,
-            _ld2sd(lendParams.depositAmount),
-            lendParams,
-            approvals,
-            revokes,
-            withdrawParams,
-            airdropAmount
+    /// @notice sends USDO to be lent or for repayment on destination
+    function sendAndLendOrRepay(
+        address,
+        address,
+        uint16,
+        address,
+        IUSDOBase.ILendOrRepayParams memory,
+        ICommonData.IApproval[] calldata,
+        ICommonData.IApproval[] calldata,
+        ICommonData.IWithdrawParams calldata,
+        bytes calldata
+    ) external payable {
+        // Quickfix to Load calldata directly in memory to avoid stack too deep error
+        _SendAndLendOrRepayCalldata memory _callData = abi.decode(msg.data[4:], (_SendAndLendOrRepayCalldata));
+
+        bytes32 toAddress = LzLib.addressToBytes32(_callData._to);
+        (_callData.lendParams.depositAmount,) = _removeDust(_callData.lendParams.depositAmount);
+        _callData.lendParams.depositAmount =
+            _debitFrom(_callData._from, lzEndpoint.getChainId(), toAddress, _callData.lendParams.depositAmount);
+        if (_callData.lendParams.depositAmount == 0) revert NotValid();
+
+        bytes memory lzPayload;
+        {
+            (,, uint256 airdropAmount,) = LzLib.decodeAdapterParams(_callData.adapterParams);
+            lzPayload = abi.encode(
+                LendOrRepayData({
+                    packetType: PT_YB_SEND_SGL_LEND_OR_REPAY,
+                    to: _callData._to,
+                    lendAmountSD: _ld2sd(_callData.lendParams.depositAmount),
+                    lendParams: _callData.lendParams,
+                    approvals: _callData.approvals,
+                    revokes: _callData.revokes,
+                    withdrawParams: _callData.withdrawParams,
+                    airdropAmount: airdropAmount
+                })
+            );
+            _checkAdapterParams(
+                _callData.lzDstChainId, PT_YB_SEND_SGL_LEND_OR_REPAY, _callData.adapterParams, NO_EXTRA_GAS
+            );
+        }
+
+        _lzSend(
+            _callData.lzDstChainId,
+            lzPayload,
+            payable(_callData._from),
+            _callData.zroPaymentAddress,
+            _callData.adapterParams,
+            msg.value
         );
 
-        _checkAdapterParams(lzDstChainId, PT_YB_SEND_SGL_LEND_OR_REPAY, adapterParams, NO_EXTRA_GAS);
-
-        _lzSend(lzDstChainId, lzPayload, payable(_from), zroPaymentAddress, adapterParams, msg.value);
-
-        emit SendToChain(lzDstChainId, _from, toAddress, lendParams.depositAmount);
+        emit SendToChain(_callData.lzDstChainId, _callData._from, toAddress, _callData.lendParams.depositAmount);
     }
 }
