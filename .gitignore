@@ -2,15 +2,11 @@ node_modules
 .env
 coverage
 coverage.json
-yarn.lock
-package-lock.json
 typechain
+package-lock.json
 docs
-__MACOSX
-#Hardhat files
-cache
-artifacts
 
-.vs
+# Hardhat + forge + typechain
+gen
 
-.VSCodeCounter
+.DS_Store
