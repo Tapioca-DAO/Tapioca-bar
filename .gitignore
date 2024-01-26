@@ -5,7 +5,6 @@ coverage.json
 typechain
 package-lock.json
 docs
-gitmodule
 
 # Hardhat + forge + typechain
 gen
