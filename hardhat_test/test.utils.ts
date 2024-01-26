@@ -1541,11 +1541,14 @@ export async function register(staging?: boolean) {
         await hre.getChainId(),
     );
 
-    const cluster = await (
-        await hre.ethers.getContractFactory('Cluster')
-    ).deploy(await hre.getChainId(), deployer.address, {
-        gasPrice: gasPrice,
-    });
+    const Cluster = new Cluster__factory(deployer);
+    const cluster = await Cluster.deploy(
+        clusterLzEndpoint.address,
+        deployer.address,
+        {
+            gasPrice: gasPrice,
+        },
+    );
     log(
         `Deployed Cluster ${cluster.address} with args [${chainInfo?.lzChainId}]`,
         staging,
