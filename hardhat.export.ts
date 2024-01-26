@@ -34,14 +34,6 @@ declare global {
 loadEnv();
 deleteDefaultTasks();
 
-subtask(TASK_COMPILE_GET_REMAPPINGS).setAction(async (_, __, runSuper) => {
-    // Get the list of source paths that would normally be passed to the Solidity compiler
-    const remappings = await runSuper();
-    fs.cpSync('contracts/', 'gen/contracts/', { recursive: true });
-    remappings['contracts/'] = 'gen/contracts/';
-    return remappings;
-});
-
 type TNetwork = ReturnType<
     typeof SDK.API.utils.getSupportedChains
 >[number]['name'];
