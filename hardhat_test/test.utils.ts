@@ -1,56 +1,45 @@
 import { time } from '@nomicfoundation/hardhat-network-helpers';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
+import {
+    CurvePoolMock__factory,
+    ERC20Mock,
+    ERC20Mock__factory,
+    LZEndpointMock__factory,
+    MarketLiquidationReceiverMock__factory,
+    OracleMock,
+    OracleMock__factory,
+    SavingsDaiMock__factory,
+    TwTwapMock__factory,
+    UniswapV2Factory__factory,
+    UniswapV2Router02__factory,
+} from '@tapioca-sdk/typechain/tapioca-mocks';
 import { BigNumber, BigNumberish, Signature, Wallet } from 'ethers';
 import { splitSignature } from 'ethers/lib/utils';
 import hre, { ethers } from 'hardhat';
-import {
-    OracleMock__factory,
-    OracleMock,
-    ERC20Mock,
-    ERC20Mock__factory,
-    UniswapV2Factory__factory,
-    UniswapV2Router02__factory,
-    LZEndpointMock__factory,
-    CurvePoolMock__factory,
-    TwTwapMock__factory,
-    MarketLiquidationReceiverMock__factory,
-    SavingsDaiMock__factory,
-} from '@tapioca-sdk/typechain/tapioca-mocks';
 
 import {
-    YieldBox__factory,
-    YieldBoxURIBuilder__factory,
     ERC20WithoutStrategy__factory,
     YieldBox,
+    YieldBoxURIBuilder__factory,
+    YieldBox__factory,
 } from '@tapioca-sdk/typechain/YieldBox';
 
 import {
-    CurveSwapper__factory,
-    CurveSwapper,
-    UniswapV2Swapper__factory,
-    LiquidationQueue__factory,
-    UniUsdoToWethBidder__factory,
-    CurveStableToUsdoBidder__factory,
-    MagnetarMarketModule__factory,
-    MagnetarV2__factory,
     Cluster__factory,
+    CurveSwapper__factory,
     MagnetarHelper__factory,
+    MagnetarMarketModule1__factory,
+    MagnetarMarketModule2__factory,
+    MagnetarV2__factory,
+    MagnetarYieldboxModule__factory,
 } from '@tapioca-sdk/typechain/tapioca-periphery';
 
 import {
     UniswapV2Factory,
     UniswapV2Router02,
 } from '@tapioca-sdk/typechain/tapioca-mocks/uniswapv2';
-import {
-    CurveStableToUsdoBidder,
-    ERC20Permit,
-    MultiSwapper,
-    Penrose,
-    SGLERC20,
-    Singularity,
-    USDO,
-} from '../typechain';
-import { TapiocaOFT } from 'tapioca-sdk/dist/typechain/TapiocaZ';
+import { ERC20Permit, Penrose, Singularity, USDO } from '../gen/typechain';
+import { UniswapV2Swapper__factory } from '@tapioca-sdk/typechain/tapioca-periphery';
 
 ethers.utils.Logger.setLogLevel(ethers.utils.Logger.levels.ERROR);
 
@@ -650,13 +639,24 @@ async function registerTwTapMock(deployer: any) {
     return { twTap };
 }
 async function registerMagnetar(clusterAddress: string, deployer: any) {
+    const MagnetarMarketModule1 = await new MagnetarMarketModule1__factory(
+        deployer,
+    ).deploy();
+
+    const MagnetarMarketModule2 = await new MagnetarMarketModule2__factory(
+        deployer,
+    ).deploy();
+    const magnetarYieldboxModule = await new MagnetarYieldboxModule__factory(
+        deployer,
+    ).deploy();
+
     const MagnetarV2 = new MagnetarV2__factory(deployer);
-    const MagnetarMarketMoodule = new MagnetarMarketModule__factory(deployer);
-    const magnetarMarketModule = await MagnetarMarketMoodule.deploy();
     const magnetar = await MagnetarV2.deploy(
         clusterAddress,
         deployer.address,
-        magnetarMarketModule.address,
+        MagnetarMarketModule1.address,
+        MagnetarMarketModule2.address,
+        magnetarYieldboxModule.address,
     );
     return { magnetar };
 }
@@ -874,92 +874,6 @@ async function registerSDaiMock(dai: string, deployer: any, staging?: boolean) {
     return { sDai };
 }
 
-async function registerUniUsdoToWethBidder(
-    uniSwapper: MultiSwapper,
-    wethAssetId: BigNumber,
-    staging?: boolean,
-) {
-    const deployer = (await ethers.getSigners())[0];
-    const UniUsdoToWethBidder = new UniUsdoToWethBidder__factory(deployer);
-    const usdoToWethBidder = await UniUsdoToWethBidder.deploy(
-        uniSwapper.address,
-        wethAssetId,
-    );
-    log(
-        `Deployed UniUsdoToWethBidder ${usdoToWethBidder.address} with args [${uniSwapper.address},${wethAssetId}]`,
-        staging,
-    );
-
-    await verifyEtherscan(
-        usdoToWethBidder.address,
-        [uniSwapper.address, wethAssetId],
-        staging,
-    );
-
-    return { usdoToWethBidder };
-}
-async function deployCurveStableToUsdoBidder(
-    yieldBox: YieldBox,
-    usdc: ERC20Mock,
-    usdo: USDO,
-    staging?: boolean,
-) {
-    const deployer = (await ethers.getSigners())[0];
-    const CurvePoolMock = new CurvePoolMock__factory(deployer);
-    const curvePoolMock = await CurvePoolMock.deploy(
-        usdo.address,
-        usdc.address,
-        { gasPrice: gasPrice },
-    );
-
-    await usdo.setMinterStatus(curvePoolMock.address, true);
-    log(
-        `Deployed CurvePoolMock ${curvePoolMock.address} with args [${usdo.address},${usdc.address}]`,
-        staging,
-    );
-
-    const CurveSwapper = new CurveSwapper__factory(deployer);
-    const curveSwapper = await CurveSwapper.deploy(
-        curvePoolMock.address,
-        yieldBox.address,
-        { gasPrice: gasPrice },
-    );
-    log(
-        `Deployed CurveSwapper ${curveSwapper.address} with args [${curvePoolMock.address}, ${yieldBox.address}]`,
-        staging,
-    );
-
-    const CurveStableToUsdoBidder = new CurveStableToUsdoBidder__factory(
-        deployer,
-    );
-    const stableToUsdoBidder = await CurveStableToUsdoBidder.deploy(
-        curveSwapper.address,
-        2,
-    );
-    log(
-        `Deployed CurveStableToUsdoBidder ${stableToUsdoBidder.address} with args [${curveSwapper.address},2]`,
-        staging,
-    );
-
-    await verifyEtherscan(
-        curvePoolMock.address,
-        [usdo.address, usdc.address],
-        staging,
-    );
-    await verifyEtherscan(
-        curveSwapper.address,
-        [curvePoolMock.address, yieldBox.address],
-        staging,
-    );
-    await verifyEtherscan(
-        stableToUsdoBidder.address,
-        [curveSwapper.address, 2],
-        staging,
-    );
-
-    return { stableToUsdoBidder, curveSwapper };
-}
-
 async function createWethUsd0Singularity(
     usd0: USDO,
     weth: ERC20Mock,
@@ -968,7 +882,6 @@ async function createWethUsd0Singularity(
     wethAssetId: any,
     mediumRiskMC: Singularity,
     yieldBox: YieldBox,
-    stableToUsdoBidder: CurveStableToUsdoBidder,
     swapper: string,
     cluster: string,
     exchangePrecision?: BigNumberish,
@@ -1543,7 +1456,7 @@ export async function register(staging?: boolean) {
 
     const Cluster = new Cluster__factory(deployer);
     const cluster = await Cluster.deploy(
-        clusterLzEndpoint.address,
+        await hre.getChainId(),
         deployer.address,
         {
             gasPrice: gasPrice,
@@ -1803,31 +1716,7 @@ export async function register(staging?: boolean) {
         staging,
     );
 
-    // ------------------- 16 Create UniswapUsdoToWethBidder -------------------
-    log('Deploying UniswapUsdoToWethBidder', staging);
-    const { usdoToWethBidder } = await registerUniUsdoToWethBidder(
-        multiSwapper,
-        wethAssetId,
-        staging,
-    );
-    log(
-        `Deployed UniswapUsdoToWethBidder ${usdoToWethBidder.address}`,
-        staging,
-    );
-
     if (staging) {
-        //------------------- 17 Create CurveStableToUsdoBidder -------------------
-        log('Deploying CurveStableToUsdoBidder', staging);
-        const { stableToUsdoBidder } = await deployCurveStableToUsdoBidder(
-            yieldBox,
-            usdc,
-            usd0,
-            staging,
-        );
-        log(
-            `Deployed CurveStableToUsdoBidder ${stableToUsdoBidder.address}`,
-            staging,
-        );
         // ------------------- 18 Create WethUsd0Singularity -------------------
         log('Deploying WethUsd0Singularty', staging);
         const usd0AssetId = await yieldBox.ids(
@@ -1844,7 +1733,6 @@ export async function register(staging?: boolean) {
             wethAssetId,
             mediumRiskMC,
             yieldBox,
-            stableToUsdoBidder,
             multiSwapper.address,
             cluster.address,
             ethers.utils.parseEther('1'),
@@ -1934,7 +1822,6 @@ export async function register(staging?: boolean) {
         eoa1,
         multiSwapper,
         feeCollector,
-        usdoToWethBidder,
         mediumRiskMC,
         mediumRiskBigBangMC,
         magnetar,
@@ -2156,7 +2043,6 @@ export async function register(staging?: boolean) {
         usdcDepositAndAddCollateralWbtcSingularity,
         initContracts,
         timeTravel,
-        deployCurveStableToUsdoBidder,
         registerUsd0Contract,
         addUniV2UsdoWethLiquidity,
         createWethUsd0Singularity,
