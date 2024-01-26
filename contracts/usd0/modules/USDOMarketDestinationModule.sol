@@ -87,38 +87,49 @@ contract USDOMarketDestinationModule is USDOCommon {
             _callApproval(approvals, PT_YB_SEND_SGL_LEND_OR_REPAY);
         }
 
+        IMagnetar magnetar = IMagnetar(payable(lendParams.marketHelper));
         // Use market helper to deposit and add asset to market
         approve(address(lendParams.marketHelper), lendParams.depositAmount);
         if (lendParams.repay) {
             if (lendParams.repayAmount == 0) {
-                lendParams.repayAmount = IMagnetarHelper(IMagnetar(lendParams.marketHelper).helper())
-                    .getBorrowPartForAmount(lendParams.market, lendParams.depositAmount);
+                lendParams.repayAmount = IMagnetarHelper(magnetar.helper()).getBorrowPartForAmount(
+                    lendParams.market, lendParams.depositAmount
+                );
             }
-            IMagnetar(lendParams.marketHelper).depositRepayAndRemoveCollateralFromMarket{value: airdropAmount}(
-                lendParams.market,
-                to,
-                lendParams.depositAmount,
-                lendParams.repayAmount,
-                lendParams.removeCollateralAmount,
-                true,
-                withdrawParams
+            magnetar.depositRepayAndRemoveCollateralFromMarket{value: airdropAmount}(
+                IMagnetar.DepositRepayAndRemoveCollateralFromMarketData({
+                    market: lendParams.market,
+                    user: to,
+                    depositAmount: lendParams.depositAmount,
+                    repayAmount: lendParams.repayAmount,
+                    collateralAmount: lendParams.removeCollateralAmount,
+                    extractFromSender: true,
+                    withdrawCollateralParams: withdrawParams,
+                    valueAmount: airdropAmount
+                })
             );
         } else {
-            IMagnetar(lendParams.marketHelper).mintFromBBAndLendOnSGL{value: airdropAmount}(
-                to,
-                lendParams.depositAmount,
-                IUSDOBase.IMintData({
-                    mint: false,
-                    mintAmount: 0,
-                    collateralDepositData: ICommonData.IDepositData({deposit: false, amount: 0, extractFromSender: false})
-                }),
-                ICommonData.IDepositData({deposit: true, amount: lendParams.depositAmount, extractFromSender: true}),
-                lendParams.lockData,
-                lendParams.participateData,
-                ICommonData.ICommonExternalContracts({
-                    magnetar: address(0),
-                    singularity: lendParams.market,
-                    bigBang: address(0)
+            magnetar.mintFromBBAndLendOnSGL{value: airdropAmount}(
+                IMagnetar.MintFromBBAndLendOnSGLData({
+                    user: to,
+                    lendAmount: lendParams.depositAmount,
+                    mintData: IUSDOBase.IMintData({
+                        mint: false,
+                        mintAmount: 0,
+                        collateralDepositData: ICommonData.IDepositData({deposit: false, amount: 0, extractFromSender: false})
+                    }),
+                    depositData: ICommonData.IDepositData({
+                        deposit: true,
+                        amount: lendParams.depositAmount,
+                        extractFromSender: true
+                    }),
+                    lockData: lendParams.lockData,
+                    participateData: lendParams.participateData,
+                    externalContracts: ICommonData.ICommonExternalContracts({
+                        magnetar: address(0),
+                        singularity: lendParams.market,
+                        bigBang: address(0)
+                    })
                 })
             );
         }
@@ -140,8 +151,13 @@ contract USDOMarketDestinationModule is USDOCommon {
             _callApproval(_data.approvals, PT_MARKET_REMOVE_ASSET);
         }
 
-        IMagnetar(_data.externalData.magnetar).exitPositionAndRemoveCollateral{value: _data.airdropAmount}(
-            _data.to, _data.externalData, _data.removeAndRepayData
+        IMagnetar(payable(_data.externalData.magnetar)).exitPositionAndRemoveCollateral{value: _data.airdropAmount}(
+            IMagnetar.ExitPositionAndRemoveCollateralData({
+                user: _data.to,
+                externalData: _data.externalData,
+                removeAndRepayData: _data.removeAndRepayData,
+                valueAmount: _data.airdropAmount
+            })
         );
 
         //revokes
