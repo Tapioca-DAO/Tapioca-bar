@@ -1540,14 +1540,12 @@ export async function register(staging?: boolean) {
     const clusterLzEndpoint = await LZEndpointMock.deploy(
         await hre.getChainId(),
     );
-    const Cluster = new Cluster__factory(deployer);
-    const cluster = await Cluster.deploy(
-        clusterLzEndpoint.address,
-        deployer.address,
-        {
-            gasPrice: gasPrice,
-        },
-    );
+
+    const cluster = await (
+        await hre.ethers.getContractFactory('Cluster')
+    ).deploy(await hre.getChainId(), deployer.address, {
+        gasPrice: gasPrice,
+    });
     log(
         `Deployed Cluster ${cluster.address} with args [${chainInfo?.lzChainId}]`,
         staging,
