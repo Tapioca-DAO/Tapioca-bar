@@ -5077,10 +5077,10 @@ table@^6.0.9, table@^6.8.0, table@^6.8.1:
     string-width "^4.2.3"
     strip-ansi "^6.0.1"
 
-tapioca-sdk@^1.5.20-nightly-11:
-  version "1.5.20-nightly-11"
-  resolved "https://registry.yarnpkg.com/tapioca-sdk/-/tapioca-sdk-1.5.20-nightly-11.tgz#c74e6333284d3594c65199fe85aa0ffbafda7efe"
-  integrity sha512-sWjI6Fi9XlkYRSEWJUOzErW/gs6NpntUyUsz4QIO4feNl48kSeDktOPc49CCROanHpSXMm99zyygW2/98eR52g==
+tapioca-sdk@^1.5.20-nightly-14:
+  version "1.5.20-nightly-14"
+  resolved "https://registry.yarnpkg.com/tapioca-sdk/-/tapioca-sdk-1.5.20-nightly-14.tgz#3a734998f2e8cc4488ffcd1add46258ee40549c2"
+  integrity sha512-X7Zz0WlA26jZZWc4y2wtk7dKnZzq0ibMumtwuEhl0ZysajcVipl6jOhXWZuZYzG67LslXPHAWKAcwR+UZRHGJQ==
   dependencies:
     dotenv "^16.3.2"
     ethers "^5.4.7"
