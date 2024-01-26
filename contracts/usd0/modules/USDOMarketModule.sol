@@ -144,7 +144,6 @@ contract USDOMarketModule is USDOCommon {
         (_callData.lendParams.depositAmount,) = _removeDust(_callData.lendParams.depositAmount);
         _callData.lendParams.depositAmount =
             _debitFrom(_callData._from, lzEndpoint.getChainId(), toAddress, _callData.lendParams.depositAmount);
-        if (_callData.lendParams.depositAmount == 0) revert NotValid();
 
         bytes memory lzPayload;
         {
