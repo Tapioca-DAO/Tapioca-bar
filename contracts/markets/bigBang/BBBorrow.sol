@@ -7,11 +7,6 @@ contract BBBorrow is BBLendingCommon {
     using RebaseLibrary for Rebase;
     using BoringERC20 for IERC20;
 
-    // ************** //
-    // *** ERRORS *** //
-    // ************** //
-    error AllowanceNotValid();
-
     // ************************ //
     // *** PUBLIC FUNCTIONS *** //
     // ************************ //
@@ -69,20 +64,6 @@ contract BBBorrow is BBLendingCommon {
 
         _accrue();
         penrose.reAccrueBigBangMarkets();
-
-        uint256 partInAmount;
-        Rebase memory _totalBorrow = totalBorrow;
-        (_totalBorrow, partInAmount) = _totalBorrow.sub(part, true);
-
-        uint256 allowanceShare = _computeAllowanceAmountInAsset(
-            to,
-            exchangeRate,
-            partInAmount,
-            asset.safeDecimals()
-        );
-
-        if (allowanceShare == 0) revert AllowanceNotValid();
-        _allowedBorrow(from, allowanceShare);
 
         amount = _repay(from, to, part);
     }

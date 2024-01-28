@@ -21,6 +21,7 @@ contract BBLendingCommon is BBCommon {
     error OracleCallFailed();
     error NothingToRepay();
     error RepayAmountNotValid();
+    error AllowanceNotValid();
 
     // ************************** //
     // *** PRIVATE FUNCTIONS *** //
@@ -92,23 +93,35 @@ contract BBLendingCommon is BBCommon {
     }
 
     /// @dev Concrete implementation of `repay`.
-    function _repay(address from, address to, uint256 part) internal returns (uint256 amountOut) {
+    function _repay(address from, address to, uint256 part) internal returns (uint256 amount) {
         if (part > userBorrowPart[to]) {
             part = userBorrowPart[to];
         }
         if (part == 0) revert NothingToRepay();
+        
+        // @dev check allowance
+        uint256 partInAmount;
+        Rebase memory _totalBorrow = totalBorrow;
+        (_totalBorrow, partInAmount) = _totalBorrow.sub(part, false);
+        uint256 allowanceShare = _computeAllowanceAmountInAsset(to, exchangeRate, partInAmount, _safeDecimals(asset));
+        if (allowanceShare == 0) revert AllowanceNotValid();
+        _allowedBorrow(from, allowanceShare);
 
-        uint256 amount;
+        // @dev sub `part` of totalBorrow
         (totalBorrow, amount) = totalBorrow.sub(part, true);
         userBorrowPart[to] -= part;
 
-        // amount includes the opening & accrued fees
-        amountOut = amount;
+        // @dev amount includes the opening & accrued fees
         yieldBox.withdraw(assetId, from, address(this), amount, 0);
 
-        //burn USDO
+        // @dev burn USDO
         IUSDOBase(address(asset)).burn(address(this), amount);
 
-        emit LogRepay(from, to, amountOut, part);
+        emit LogRepay(from, to, amount, part);
+    }
+
+    function _safeDecimals(IERC20 token) internal view returns (uint8) {
+        (bool success, bytes memory data) = address(token).staticcall(abi.encodeWithSelector(0x313ce567)); //decimals() selector
+        return success && data.length == 32 ? abi.decode(data, (uint8)) : 18;
     }
 }
