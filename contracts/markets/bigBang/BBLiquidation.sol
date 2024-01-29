@@ -66,8 +66,10 @@ contract BBLiquidation is BBCommon {
             bool isWhitelisted = ICluster(penrose.cluster()).isWhitelisted(0, from);
             if (!isWhitelisted) revert NotAuthorized();
         }
+        
         // accrue before liquidation
         _accrue();
+        penrose.reAccrueBigBangMarkets();
 
         // compute borrow amount with bonus
         uint256 elasticPart = totalBorrow.toElastic(userBorrowPart[user], false);
