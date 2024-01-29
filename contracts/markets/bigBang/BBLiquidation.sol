@@ -76,7 +76,6 @@ contract BBLiquidation is BBCommon {
             yieldBox.toShare(collateralId, (borrowAmountWithBonus * exchangeRate) / EXCHANGE_RATE_PRECISION, false);
 
         uint256 collateralShare = userCollateralShare[user];
-        // equality is included in the require to minimize risk and liquidate as soon as possible
         if (requiredCollateral < collateralShare) revert ForbiddenAction();
 
         // update totalBorrow
