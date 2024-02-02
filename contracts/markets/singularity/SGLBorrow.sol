@@ -15,11 +15,7 @@ contract SGLBorrow is SGLLendingCommon {
     /// @param amount Amount to borrow.
     /// @return part Total part of the debt held by borrowers.
     /// @return share Total amount in shares borrowed.
-    function borrow(
-        address from,
-        address to,
-        uint256 amount
-    )
+    function borrow(address from, address to, uint256 amount)
         external
         optionNotPaused(PauseType.Borrow)
         solvent(from, false)
@@ -28,12 +24,8 @@ contract SGLBorrow is SGLLendingCommon {
     {
         if (amount == 0) return (0, 0);
         uint256 feeAmount = (amount * borrowOpeningFee) / FEE_PRECISION;
-        uint256 allowanceShare = _computeAllowanceAmountInAsset(
-            from,
-            exchangeRate,
-            amount + feeAmount,
-            _safeDecimals(asset)
-        );
+        uint256 allowanceShare =
+            _computeAllowanceAmountInAsset(from, exchangeRate, amount + feeAmount, _safeDecimals(asset));
 
         if (allowanceShare == 0) revert AllowanceNotValid();
 
@@ -49,12 +41,7 @@ contract SGLBorrow is SGLLendingCommon {
     /// False if tokens from msg.sender in `yieldBox` should be transferred.
     /// @param part The amount to repay. See `userBorrowPart`.
     /// @return amount The total amount repayed.
-    function repay(
-        address from,
-        address to,
-        bool skim,
-        uint256 part
-    )
+    function repay(address from, address to, bool skim, uint256 part)
         external
         optionNotPaused(PauseType.Repay)
         notSelf(to)

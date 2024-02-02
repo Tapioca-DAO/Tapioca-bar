@@ -98,7 +98,7 @@ contract BBLendingCommon is BBCommon {
             part = userBorrowPart[to];
         }
         if (part == 0) revert NothingToRepay();
-        
+
         // @dev check allowance
         uint256 partInAmount;
         Rebase memory _totalBorrow = totalBorrow;

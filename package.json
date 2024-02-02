@@ -37,9 +37,14 @@
         "prepare": "husky install"
     },
     "devDependencies": {
-        "@boringcrypto/boring-solidity": "https://github.com/boringcrypto/BoringSolidity#78f4817d9c0d95fe9c45cd42e307ccd22cf5f4fc",
+        "@boringcrypto/boring-solidity": "https://github.com/boringcrypto/BoringSolidity",
         "@ethersproject/abi": "^5.7.0",
         "@ethersproject/providers": "^5.7.0",
+        "@layerzerolabs/lz-evm-messagelib-v2": "^2.0.2",
+        "@layerzerolabs/lz-evm-oapp-v2": "^2.0.2",
+        "@layerzerolabs/lz-evm-protocol-v2": "^2.0.2",
+        "@layerzerolabs/lz-evm-v1-0.7": "^2.0.25",
+        "@layerzerolabs/solidity-bytes-utils": "^0.8.0",
         "@nomicfoundation/hardhat-chai-matchers": "^1.0.3",
         "@nomicfoundation/hardhat-foundry": "^1.1.1",
         "@nomicfoundation/hardhat-network-helpers": "^1.0.4",

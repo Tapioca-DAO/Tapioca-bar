@@ -2,21 +2,34 @@
 pragma solidity ^0.8.18;
 
 // External
-import {BoringOwnable} from "@boringcrypto/boring-solidity/contracts/BoringOwnable.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 // Tapioca
 import {IERC3156FlashBorrower} from "tapioca-periph/interfaces/bar/IERC3156FlashBorrower.sol";
 import {IERC3156FlashLender} from "tapioca-periph/interfaces/bar/IERC3156FlashLender.sol";
 import {IUSDO} from "tapioca-periph/interfaces/bar/IUSDO.sol";
 
-contract USDOFlashloanHelper is IERC3156FlashLender, BoringOwnable {
-    // ************ //
-    // *** VARS *** //
-    // ************ //
+/*
+__/\\\\\\\\\\\\\\\_____/\\\\\\\\\_____/\\\\\\\\\\\\\____/\\\\\\\\\\\_______/\\\\\_____________/\\\\\\\\\_____/\\\\\\\\\____        
+ _\///////\\\/////____/\\\\\\\\\\\\\__\/\\\/////////\\\_\/////\\\///______/\\\///\\\________/\\\////////____/\\\\\\\\\\\\\__       
+  _______\/\\\________/\\\/////////\\\_\/\\\_______\/\\\_____\/\\\_______/\\\/__\///\\\____/\\\/____________/\\\/////////\\\_      
+   _______\/\\\_______\/\\\_______\/\\\_\/\\\\\\\\\\\\\/______\/\\\______/\\\______\//\\\__/\\\_____________\/\\\_______\/\\\_     
+    _______\/\\\_______\/\\\\\\\\\\\\\\\_\/\\\/////////________\/\\\_____\/\\\_______\/\\\_\/\\\_____________\/\\\\\\\\\\\\\\\_    
+     _______\/\\\_______\/\\\/////////\\\_\/\\\_________________\/\\\_____\//\\\______/\\\__\//\\\____________\/\\\/////////\\\_   
+      _______\/\\\_______\/\\\_______\/\\\_\/\\\_________________\/\\\______\///\\\__/\\\_____\///\\\__________\/\\\_______\/\\\_  
+       _______\/\\\_______\/\\\_______\/\\\_\/\\\______________/\\\\\\\\\\\____\///\\\\\/________\////\\\\\\\\\_\/\\\_______\/\\\_ 
+        _______\///________\///________\///__\///______________\///////////_______\/////_____________\/////////__\///________\///__
+
+*/
+
+/**
+ * @title USDOFlashloanHelper
+ * @author TapiocaDAO
+ * @notice The Usdo token flashloan capabilities
+ */
+contract USDOFlashloanHelper is IERC3156FlashLender, Ownable {
     IUSDO public immutable usdo;
-    /// @notice returns the flash mint fee
     uint256 public flashMintFee;
-    /// @notice returns the maximum amount of USDO that can be minted through the EIP-3156 flow
     uint256 public maxFlashMint;
 
     uint256 private constant FLASH_MINT_FEE_PRECISION = 1e5;
@@ -26,9 +39,6 @@ contract USDOFlashloanHelper is IERC3156FlashLender, BoringOwnable {
 
     bool private _flashloanEntered = false;
 
-    // ************** //
-    // *** ERRORS *** //
-    // ************** //
     error NotValid();
     error Paused();
     error AllowanceNotValid();
@@ -37,32 +47,31 @@ contract USDOFlashloanHelper is IERC3156FlashLender, BoringOwnable {
     error AddressZero();
     error AmountTooBig();
 
-    // ************** //
-    // *** EVENTS *** //
-    // ************** //
-    /// @notice event emitted when flash mint fee is updated
     event FlashMintFeeUpdated(uint256 _old, uint256 _new);
-    /// @notice event emitted when max flash mintable amount is updated
     event MaxFlashMintUpdated(uint256 _old, uint256 _new);
 
     constructor(IUSDO _usdo, address _owner) {
-        owner = _owner;
-
         usdo = _usdo;
 
         flashMintFee = 1; // 0.001%
         maxFlashMint = 100_000 * 1e18; // 100k USDO
+
+        _transferOwnership(_owner);
     }
 
-    // ******************** //
-    // *** VIEW METHODS *** //
-    // ******************** //
-    /// @notice returns the allowance for spender
+    /// =====================
+    /// View
+    /// =====================
+    /**
+     * @notice returns the allowance for spender
+     */
     function allowance(address owner, address spender) public view returns (uint256) {
         return _allowances[owner][spender];
     }
 
-    /// @notice returns the maximum amount of USDO available for a flash mint
+    /**
+     * @notice returns the maximum amount of USDO available for a flash mint
+     */
     function maxFlashLoan(address) public view override returns (uint256) {
         if (usdo.totalSupply() > maxFlashMint) {
             return maxFlashMint;
@@ -71,31 +80,37 @@ contract USDOFlashloanHelper is IERC3156FlashLender, BoringOwnable {
         }
     }
 
-    /// @notice returns the flash mint fee
-    /// @param _usdo USDO address
-    /// @param amount the amount for which fee is computed
+    /**
+     * @notice returns the flash mint fee
+     * @param _usdo USDO address
+     * @param amount the amount for which fee is computed
+     */
     function flashFee(address _usdo, uint256 amount) public view override returns (uint256) {
         if (_usdo != address(usdo)) revert NotValid();
         return (amount * flashMintFee) / FLASH_MINT_FEE_PRECISION;
     }
 
-    // ************************ //
-    // *** PUBLIC FUNCTIONS *** //
-    // ************************ //
-    /// @notice approves address for spending
-    /// @param spender the spender's address
-    /// @param amount the allowance amount
+    /// =====================
+    /// External
+    /// =====================
+    /**
+     * @notice approves address for spending
+     * @param spender the spender's address
+     * @param amount the allowance amount
+     */
     function approve(address spender, uint256 amount) external returns (bool) {
         _approve(msg.sender, spender, amount);
         return true;
     }
 
-    /// @notice performs a USDO flashloan
-    /// @param receiver the IERC3156FlashBorrower receiver
-    /// @param token USDO address
-    /// @param amount the amount to flashloan
-    /// @param data flashloan data
-    /// @return operation execution status
+    /**
+     * @notice performs a USDO flashloan
+     * @param receiver the IERC3156FlashBorrower receiver
+     * @param token USDO address
+     * @param amount the amount to flashloan
+     * @param data flashloan data
+     * @return operation execution status
+     */
     function flashLoan(IERC3156FlashBorrower receiver, address token, uint256 amount, bytes calldata data)
         external
         override
@@ -159,20 +174,22 @@ contract USDOFlashloanHelper is IERC3156FlashLender, BoringOwnable {
         return true;
     }
 
-    // ********************* //
-    // *** OWNER METHODS *** //
-    // ********************* //
-    /// @notice set the max allowed USDO mintable through flashloan
-    /// @dev can only be called by the owner
-    /// @param _val the new amount
+    /// =====================
+    /// Owner
+    /// =====================
+    /**
+     * @notice set the max allowed USDO mintable through flashloan
+     * @param _val the new amount
+     */
     function setMaxFlashMintable(uint256 _val) external onlyOwner {
         emit MaxFlashMintUpdated(maxFlashMint, _val);
         maxFlashMint = _val;
     }
 
-    /// @notice set the flashloan fee
-    /// @dev can only be called by the owner
-    /// @param _val the new fee
+    /**
+     * @notice set the flashloan fee
+     * @param _val the new fee
+     */
     function setFlashMintFee(uint256 _val) external onlyOwner {
         if (_val >= FLASH_MINT_FEE_PRECISION) revert NotValid();
         emit FlashMintFeeUpdated(flashMintFee, _val);
