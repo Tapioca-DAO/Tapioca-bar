@@ -16,7 +16,7 @@ import { YieldBox } from '@tapioca-sdk/typechain/YieldBox';
 import { BigBang } from '../typechain';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { BigNumber } from 'ethers';
-import { Market } from 'tapioca-sdk/dist/typechain/tapioca-bar';
+import { Market } from 'tapioca-sdk/dist/typechain/tapioca-penrose';
 
 describe('BigBang test', () => {
     it.skip('should test liquidator reward', async () => {
@@ -174,7 +174,7 @@ describe('BigBang test', () => {
             yieldBox,
             deployer,
             timeTravel,
-            bar,
+            penrose,
         } = await loadFixture(register);
 
         //borrow from the main eth market
@@ -313,15 +313,15 @@ describe('BigBang test', () => {
         }
     });
     it('should test initial values', async () => {
-        const { wethBigBangMarket, usd0, bar, weth, wethAssetId } =
+        const { wethBigBangMarket, usd0, penrose, weth, wethAssetId } =
             await loadFixture(register);
 
         const savedAssetId = await wethBigBangMarket.assetId();
-        const penroseUsd0Id = await bar.usdoAssetId();
+        const penroseUsd0Id = await penrose.usdoAssetId();
         expect(savedAssetId.eq(penroseUsd0Id)).to.be.true;
 
         const savedAsset = await wethBigBangMarket.asset();
-        const barUsd0 = await bar.usdoToken();
+        const barUsd0 = await penrose.usdoToken();
         expect(barUsd0.toLowerCase()).eq(savedAsset.toLowerCase());
 
         const savedCollateralId = await wethBigBangMarket.collateralId();
@@ -359,7 +359,7 @@ describe('BigBang test', () => {
 
             const shouldLog = false;
 
-            const { bar } = await registerPenrose(
+            const { penrose } = await registerPenrose(
                 yieldBox.address,
                 cluster.address,
                 tap.address,
@@ -367,15 +367,15 @@ describe('BigBang test', () => {
                 false,
             );
 
-            const wethAssetId = await bar.mainAssetId();
+            const wethAssetId = await penrose.mainAssetId();
 
-            await bar.registerBigBangMasterContract(
+            await penrose.registerBigBangMasterContract(
                 mediumRiskBigBangMC.address,
                 1,
             );
-            await bar.setBigBangEthMarketDebtRate((5e15).toString());
+            await penrose.setBigBangEthMarketDebtRate((5e15).toString());
 
-            const chainId = await hre.getChainId();
+            const chainId = hre.SDK.eChainId;
             const { usd0, lzEndpointContract, usd0Flashloan } =
                 await registerUsd0Contract(
                     chainId,
@@ -384,13 +384,13 @@ describe('BigBang test', () => {
                     deployer.address,
                     false,
                 );
-            await bar.setUsdoToken(usd0.address);
-            await usd0.setMinterStatus(bar.address, true);
+            await penrose.setUsdoToken(usd0.address);
+            await usd0.setMinterStatus(penrose.address, true);
 
             const wethUsdoBBData = await registerBigBangMarket(
                 mediumRiskBigBangMC.address,
                 yieldBox,
-                bar,
+                penrose,
                 weth,
                 wethAssetId,
                 usd0WethOracle,
@@ -406,12 +406,12 @@ describe('BigBang test', () => {
             const wethUsdoBigBangMarket = wethUsdoBBData.bigBangMarket;
             await usd0.setMinterStatus(wethUsdoBigBangMarket.address, true);
             await usd0.setBurnerStatus(wethUsdoBigBangMarket.address, true);
-            await bar.setBigBangEthMarket(wethUsdoBigBangMarket.address);
+            await penrose.setBigBangEthMarket(wethUsdoBigBangMarket.address);
 
             const usdcUsdoBBData = await registerBigBangMarket(
                 mediumRiskBigBangMC.address,
                 yieldBox,
-                bar,
+                penrose,
                 usdc,
                 usdcAssetId,
                 usd0WethOracle,
@@ -434,7 +434,7 @@ describe('BigBang test', () => {
                     [usd0WethOracle.address, '0x'],
                 );
 
-            await bar.executeMarketFn(
+            await penrose.executeMarketFn(
                 [wethUsdoBigBangMarket.address, usdcUsdoBigBangMarket.address],
                 [setAssetOracleFn, setAssetOracleFn],
                 true,
@@ -518,7 +518,7 @@ describe('BigBang test', () => {
             totalUsdoSupply = await usd0.totalSupply();
             expect(totalUsdoSupply.eq(0)).to.be.true;
 
-            let totalDebt = await bar.viewTotalDebt();
+            let totalDebt = await penrose.viewTotalDebt();
             expect(totalDebt.eq(0)).to.be.true;
 
             //borrow from weth market
@@ -536,7 +536,7 @@ describe('BigBang test', () => {
             //usdo supply should not be 0 at this time
             totalUsdoSupply = await usd0.totalSupply();
             expect(totalUsdoSupply.gt(0)).to.be.true;
-            totalDebt = await bar.viewTotalDebt();
+            totalDebt = await penrose.viewTotalDebt();
             expect(totalDebt.gt(totalUsdoSupply)).to.be.true;
 
             //borrow from usdc market
@@ -551,7 +551,7 @@ describe('BigBang test', () => {
             );
             totalUsdoSupply = await usd0.totalSupply();
             expect(totalUsdoSupply.gt(0)).to.be.true;
-            totalDebt = await bar.viewTotalDebt();
+            totalDebt = await penrose.viewTotalDebt();
             expect(totalDebt.gt(totalUsdoSupply)).to.be.true;
 
             log(`totalUsdoSupply ${totalUsdoSupply}`, shouldLog);
@@ -561,11 +561,11 @@ describe('BigBang test', () => {
             await timeTravel(100 * 86400);
 
             //call computeTotalDebt to reaccrue all markets
-            await bar.computeTotalDebt();
+            await penrose.computeTotalDebt();
 
             totalUsdoSupply = await usd0.totalSupply();
             expect(totalUsdoSupply.gt(0)).to.be.true;
-            totalDebt = await bar.viewTotalDebt();
+            totalDebt = await penrose.viewTotalDebt();
             expect(totalDebt.gt(totalUsdoSupply)).to.be.true;
 
             log(`totalUsdoSupply ${totalUsdoSupply}`, shouldLog);
@@ -577,10 +577,10 @@ describe('BigBang test', () => {
             await twTap.addRewardToken(usd0.address);
             //mint supply
             log('[+] minting the supply', shouldLog);
-            await bar.mintOpenInterestDebt(twTap.address);
+            await penrose.mintOpenInterestDebt(twTap.address);
 
             totalUsdoSupply = await usd0.totalSupply();
-            totalDebt = await bar.viewTotalDebt();
+            totalDebt = await penrose.viewTotalDebt();
             log(`totalUsdoSupply ${totalUsdoSupply}`, shouldLog);
             log(`totalDebt       ${totalDebt}`, shouldLog);
             expect(totalDebt).to.be.closeTo(totalUsdoSupply, 1e4);
@@ -590,15 +590,15 @@ describe('BigBang test', () => {
             await timeTravel(100 * 86400);
 
             //call computeTotalDebt to reaccrue all markets
-            await bar.computeTotalDebt();
+            await penrose.computeTotalDebt();
 
             totalUsdoSupply = await usd0.totalSupply();
             expect(totalUsdoSupply.gt(0)).to.be.true;
-            totalDebt = await bar.viewTotalDebt();
+            totalDebt = await penrose.viewTotalDebt();
 
             totalBorrowInfo = await wethUsdoBigBangMarket.totalBorrow();
             const debtRate = await wethUsdoBigBangMarket.getDebtRate();
-            const mainDebtRate = await bar.bigBangEthDebtRate();
+            const mainDebtRate = await penrose.bigBangEthDebtRate();
             const isMain = await wethUsdoBigBangMarket.isMainMarket();
 
             expect(totalDebt.gt(totalUsdoSupply)).to.be.true;
@@ -608,10 +608,10 @@ describe('BigBang test', () => {
 
             //mint supply
             log('[+] minting the supply', shouldLog);
-            await bar.mintOpenInterestDebt(twTap.address);
+            await penrose.mintOpenInterestDebt(twTap.address);
 
             totalUsdoSupply = await usd0.totalSupply();
-            totalDebt = await bar.viewTotalDebt();
+            totalDebt = await penrose.viewTotalDebt();
             log(`totalUsdoSupply ${totalUsdoSupply}`, shouldLog);
             log(`totalDebt       ${totalDebt}`, shouldLog);
             expect(totalDebt).to.be.closeTo(totalUsdoSupply, 1e4);
@@ -631,9 +631,9 @@ describe('BigBang test', () => {
             expect(usdcMarketBorrowPart.eq(0)).to.be.true;
 
             //recompute total debt & total supply
-            await bar.computeTotalDebt();
+            await penrose.computeTotalDebt();
             totalUsdoSupply = await usd0.totalSupply();
-            totalDebt = await bar.viewTotalDebt();
+            totalDebt = await penrose.viewTotalDebt();
             log(`totalUsdoSupply ${totalUsdoSupply}`, shouldLog);
             log(`totalDebt       ${totalDebt}`, shouldLog);
             expect(totalDebt).to.be.closeTo(totalUsdoSupply, 1e14); //debt should still be close to totalSupply because repay decreases both; however there was a slight increase due to a new accrue
@@ -643,11 +643,11 @@ describe('BigBang test', () => {
             await timeTravel(100 * 86400);
 
             //call computeTotalDebt to reaccrue all markets
-            await bar.computeTotalDebt();
+            await penrose.computeTotalDebt();
 
             totalUsdoSupply = await usd0.totalSupply();
             expect(totalUsdoSupply.gt(0)).to.be.true;
-            totalDebt = await bar.viewTotalDebt();
+            totalDebt = await penrose.viewTotalDebt();
             expect(totalDebt.gt(totalUsdoSupply)).to.be.true;
 
             log(`totalUsdoSupply ${totalUsdoSupply}`, shouldLog);
@@ -655,10 +655,10 @@ describe('BigBang test', () => {
 
             //mint supply
             log('[+] minting the supply', shouldLog);
-            await bar.mintOpenInterestDebt(twTap.address);
+            await penrose.mintOpenInterestDebt(twTap.address);
 
             totalUsdoSupply = await usd0.totalSupply();
-            totalDebt = await bar.viewTotalDebt();
+            totalDebt = await penrose.viewTotalDebt();
             log(`totalUsdoSupply ${totalUsdoSupply}`, shouldLog);
             log(`totalDebt       ${totalDebt}`, shouldLog);
             expect(totalDebt).to.be.closeTo(totalUsdoSupply, 1e4);
@@ -731,7 +731,7 @@ describe('BigBang test', () => {
                 wethAssetId,
                 yieldBox,
                 deployer,
-                bar,
+                penrose,
                 usd0,
                 __wethUsdcPrice,
                 timeTravel,
@@ -786,7 +786,7 @@ describe('BigBang test', () => {
             expect(userBorrowPart.gt(0)).to.be.true;
 
             const usd0Balance = await yieldBox.toAmount(
-                await bar.usdoAssetId(),
+                await penrose.usdoAssetId(),
                 await yieldBox.balanceOf(
                     eoa1.address,
                     await wethBigBangMarket.assetId(),
@@ -854,7 +854,7 @@ describe('BigBang test', () => {
                 wethAssetId,
                 yieldBox,
                 deployer,
-                bar,
+                penrose,
                 usd0,
                 __wethUsdcPrice,
                 timeTravel,
@@ -905,7 +905,7 @@ describe('BigBang test', () => {
             expect(userBorrowPart.gt(0)).to.be.true;
 
             const usd0Balance = await yieldBox.toAmount(
-                await bar.usdoAssetId(),
+                await penrose.usdoAssetId(),
                 await yieldBox.balanceOf(
                     deployer.address,
                     await wethBigBangMarket.assetId(),
@@ -956,7 +956,7 @@ describe('BigBang test', () => {
     describe('liquidate()', () => {
         it('should test liquidator rewards & closing factor', async () => {
             const {
-                bar,
+                penrose,
                 wethBigBangMarket,
                 weth,
                 wethAssetId,
@@ -1233,7 +1233,7 @@ describe('BigBang test', () => {
                 __wethUsdcPrice,
                 multiSwapper,
                 timeTravel,
-                bar,
+                penrose,
                 eoas,
                 twTap,
             } = await loadFixture(register);
@@ -1310,7 +1310,7 @@ describe('BigBang test', () => {
             for (let i = 0; i < eoas.length; i++) {
                 const eoa = eoas[i];
                 const usd0Balance = await yieldBox.toAmount(
-                    await bar.usdoAssetId(),
+                    await penrose.usdoAssetId(),
                     await yieldBox.balanceOf(
                         eoa.address,
                         await wethBigBangMarket.assetId(),
@@ -1348,7 +1348,7 @@ describe('BigBang test', () => {
             for (let i = 0; i < eoas.length; i++) {
                 const eoa = eoas[i];
                 const usd0Balance = await yieldBox.toAmount(
-                    await bar.usdoAssetId(),
+                    await penrose.usdoAssetId(),
                     await yieldBox.balanceOf(
                         eoa.address,
                         await wethBigBangMarket.assetId(),
@@ -1367,7 +1367,7 @@ describe('BigBang test', () => {
             const yieldBoxBalanceOfFeeBefore = await yieldBox.toAmount(
                 await wethBigBangMarket.collateralId(),
                 await yieldBox.balanceOf(
-                    bar.address,
+                    penrose.address,
                     await wethBigBangMarket.collateralId(),
                 ),
                 false,
@@ -1376,7 +1376,7 @@ describe('BigBang test', () => {
 
             //deposit fees to yieldBox
             await expect(
-                bar.withdrawAllMarketFees(
+                penrose.withdrawAllMarketFees(
                     [wethBigBangMarket.address],
                     twTap.address,
                 ),
@@ -1397,7 +1397,7 @@ describe('BigBang test', () => {
                 __wethUsdcPrice,
                 multiSwapper,
                 timeTravel,
-                bar,
+                penrose,
                 eoas,
                 twTap,
             } = await loadFixture(register);
@@ -1473,7 +1473,7 @@ describe('BigBang test', () => {
             for (let i = 0; i < eoas.length; i++) {
                 const eoa = eoas[i];
                 const usd0Balance = await yieldBox.toAmount(
-                    await bar.usdoAssetId(),
+                    await penrose.usdoAssetId(),
                     await yieldBox.balanceOf(
                         eoa.address,
                         await wethBigBangMarket.assetId(),
@@ -1517,7 +1517,7 @@ describe('BigBang test', () => {
             const yieldBoxBalanceOfFeeBefore = await yieldBox.toAmount(
                 await wethBigBangMarket.collateralId(),
                 await yieldBox.balanceOf(
-                    bar.address,
+                    penrose.address,
                     await wethBigBangMarket.collateralId(),
                 ),
                 false,
@@ -1526,7 +1526,7 @@ describe('BigBang test', () => {
 
             //deposit fees to yieldBox
             await expect(
-                bar.withdrawAllMarketFees(
+                penrose.withdrawAllMarketFees(
                     [wethBigBangMarket.address],
                     twTap.address,
                 ),
@@ -1561,7 +1561,7 @@ describe('BigBang test', () => {
 
             const balance = await usd0.balanceOf(wethBigBangMarket.address);
             await expect(
-                bar.withdrawAllMarketFees(
+                penrose.withdrawAllMarketFees(
                     [wethBigBangMarket.address],
                     twTap.address,
                 ),
@@ -1576,7 +1576,7 @@ describe('BigBang test', () => {
 
         it('should perform multiple borrow operations, repay everything and withdraw fees', async () => {
             const {
-                bar,
+                penrose,
                 wethBigBangMarket,
                 weth,
                 usd0,
@@ -1678,12 +1678,12 @@ describe('BigBang test', () => {
             );
             expect(userBorrowPart.eq(0)).to.be.true;
 
-            await bar.withdrawAllMarketFees(
+            await penrose.withdrawAllMarketFees(
                 [wethBigBangMarket.address],
                 twTap.address,
             );
 
-            const feeVeTap = bar.address;
+            const feeVeTap = penrose.address;
             const yieldBoxBalanceOfFeeVeAmount = await usd0.balanceOf(
                 twTap.address,
             );
@@ -1700,7 +1700,7 @@ describe('BigBang test', () => {
                 wethAssetId,
                 yieldBox,
                 deployer,
-                bar,
+                penrose,
                 __wethUsdcPrice,
             } = await loadFixture(register);
 
@@ -1742,13 +1742,12 @@ describe('BigBang test', () => {
                         0,
                         0,
                         0,
-                        0,
                         1,
                         0,
                         0,
                     ],
                 );
-            await bar.executeMarketFn(
+            await penrose.executeMarketFn(
                 [wethBigBangMarket.address],
                 [borrowCapUpdateFn],
                 true,
@@ -1776,7 +1775,7 @@ describe('BigBang test', () => {
                 wethAssetId,
                 yieldBox,
                 deployer,
-                bar,
+                penrose,
                 usd0,
                 __wethUsdcPrice,
                 timeTravel,
@@ -1795,11 +1794,9 @@ describe('BigBang test', () => {
                         0,
                         0,
                         0,
-                        0,
-                        0,
                     ],
                 );
-            await bar.executeMarketFn(
+            await penrose.executeMarketFn(
                 [wethBigBangMarket.address],
                 [setConservatorData],
                 true,
@@ -1955,7 +1952,7 @@ describe('BigBang test', () => {
                 yieldBox,
                 deployer,
                 timeTravel,
-                bar,
+                penrose,
             } = await loadFixture(register);
 
             //borrow from the main eth market
@@ -2071,7 +2068,7 @@ describe('BigBang test', () => {
 
         it('should test debt rate accrual over year', async () => {
             const {
-                bar,
+                penrose,
                 wethBigBangMarket,
                 weth,
                 usd0,
@@ -2154,7 +2151,7 @@ describe('BigBang test', () => {
                 wethAssetId,
                 yieldBox,
                 deployer,
-                bar,
+                penrose,
                 usd0,
                 __wethUsdcPrice,
                 timeTravel,
@@ -2297,7 +2294,7 @@ describe('BigBang test', () => {
 
         const setUp = async () => {
             const {
-                bar,
+                penrose,
                 weth,
                 usdc,
                 usd0,
@@ -2345,7 +2342,7 @@ describe('BigBang test', () => {
             const mockSwapper = await MockSwapper.deploy(yieldBox.address);
             await mockSwapper.deployed();
             await cluster.updateContract(
-                await hre.getChainId(),
+                hre.SDK.eChainId,
                 mockSwapper.address,
                 true,
             );
@@ -2395,7 +2392,7 @@ describe('BigBang test', () => {
                 wethId,
                 wethBigBangMarket,
                 yieldBox,
-                bar,
+                penrose,
                 eoa1,
                 timeTravel,
                 cluster,
@@ -2411,20 +2408,20 @@ describe('BigBang test', () => {
                 wethId,
                 yieldBox,
                 wethBigBangMarket,
-                bar,
+                penrose,
                 eoa1,
                 timeTravel,
                 cluster,
             } = await loadFixture(setUp);
 
             await cluster.updateContract(
-                await hre.getChainId(),
+                hre.SDK.eChainId,
                 mockSwapper.address,
                 true,
             );
 
             await cluster.updateContract(
-                await hre.getChainId(),
+                hre.SDK.eChainId,
                 wethBigBangMarket.address,
                 true,
             );
@@ -2433,7 +2430,7 @@ describe('BigBang test', () => {
             ).to.equal(E(10_000).div(10_000));
             const ybBalance = await yieldBox.balanceOf(
                 deployer.address,
-                await bar.usdoAssetId(),
+                await penrose.usdoAssetId(),
             );
             expect(ybBalance.eq(E(1).mul(1e8))).to.be.true;
 
@@ -2512,19 +2509,19 @@ describe('BigBang test', () => {
                 wethId,
                 yieldBox,
                 wethBigBangMarket,
-                bar,
+                penrose,
                 eoa1,
                 timeTravel,
                 cluster,
             } = await loadFixture(setUp);
 
             await cluster.updateContract(
-                await hre.getChainId(),
+                hre.SDK.eChainId,
                 mockSwapper.address,
                 true,
             );
             await cluster.updateContract(
-                await hre.getChainId(),
+                hre.SDK.eChainId,
                 wethBigBangMarket.address,
                 true,
             );
@@ -2563,7 +2560,7 @@ describe('BigBang test', () => {
                 await wethBigBangMarket.assetId(),
             );
             await cluster.updateContract(
-                await hre.getChainId(),
+                hre.SDK.eChainId,
                 mockSwapper.address,
                 true,
             );

@@ -16,7 +16,7 @@ import { YieldBox } from '@tapioca-sdk/typechain/YieldBox';
 import { Origins } from '../typechain';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { BigNumber } from 'ethers';
-import { Market } from 'tapioca-sdk/dist/typechain/tapioca-bar';
+import { Market } from 'tapioca-sdk/dist/typechain/tapioca-penrose';
 
 describe('Origins test', () => {
     it('should borrow and check values in time', async () => {
@@ -33,10 +33,10 @@ describe('Origins test', () => {
             __wethUsdcPrice,
             timeTravel,
             eoa1,
-            bar,
+            penrose,
         } = await loadFixture(register);
 
-        const chainId = await hre.getChainId();
+        const chainId = hre.SDK.eChainId;
         const { usd0, lzEndpointContract, usd0Flashloan } =
             await registerUsd0Contract(
                 chainId,
@@ -116,7 +116,7 @@ describe('Origins test', () => {
         let usdoSupply = await usd0.totalSupply();
         expect(usdoSupply.eq(borrowVal)).to.be.true; //no fees for this market
 
-        let totalDebt = await bar.viewTotalDebt();
+        let totalDebt = await penrose.viewTotalDebt();
         expect(totalDebt.eq(0)).to.be.true;
 
         totalDebt = totalDebt.add(borrowVal);

@@ -33,7 +33,7 @@ import TapiocaOFTArtifact from '@tapioca-sdk/artifacts/tapiocaz/TapiocaOFT.json'
 describe('Singularity test', () => {
     describe('test', () => {
         it.skip('should compute the right closing factor', async () => {
-            const { wethUsdcSingularity, wbtcBigBangMarket, deployer, bar } =
+            const { wethUsdcSingularity, wbtcBigBangMarket, deployer, penrose } =
                 await loadFixture(register);
 
             // const borrowFeeUpdateFn =
@@ -53,7 +53,7 @@ describe('Singularity test', () => {
             //             80000,
             //         ],
             //     );
-            // await bar.executeMarketFn(
+            // await penrose.executeMarketFn(
             //     [wethUsdcSingularity.address],
             //     [borrowFeeUpdateFn],
             //     true,
@@ -106,7 +106,7 @@ describe('Singularity test', () => {
     });
     describe('setters', () => {
         it('should be able to set mutable properties', async () => {
-            const { wethUsdcSingularity, wbtcBigBangMarket, deployer, bar } =
+            const { wethUsdcSingularity, wbtcBigBangMarket, deployer, penrose } =
                 await loadFixture(register);
 
             const toSetAddress = deployer.address;
@@ -119,7 +119,6 @@ describe('Singularity test', () => {
             let oracle = await wethUsdcSingularity.oracle();
             let oracleData = await wethUsdcSingularity.oracleData();
             let conservator = await wethUsdcSingularity.conservator();
-            let callerFee = await wethUsdcSingularity.callerFee();
             let protocolFee = await wethUsdcSingularity.protocolFee();
             let liquidationBonusAmount =
                 await wethUsdcSingularity.liquidationBonusAmount();
@@ -136,14 +135,13 @@ describe('Singularity test', () => {
                 'setSingularityConfig',
                 [0, 0, 0, 0, 0, 0, 0, 0],
             );
-            await bar.executeMarketFn(
+            await penrose.executeMarketFn(
                 [wethUsdcSingularity.address],
                 [payload],
                 false,
             );
             expect(oracle).to.eq(await wethUsdcSingularity.oracle());
             expect(conservator).to.eq(await wethUsdcSingularity.conservator());
-            expect(callerFee).to.eq(await wethUsdcSingularity.callerFee());
             expect(protocolFee).to.eq(await wethUsdcSingularity.protocolFee());
             expect(liquidationBonusAmount).to.eq(
                 await wethUsdcSingularity.liquidationBonusAmount(),
@@ -170,14 +168,13 @@ describe('Singularity test', () => {
                     toSetValue,
                     toSetValue,
                     toSetValue,
-                    toSetValue,
                     toSetMaxValue,
                     toSetValue,
                     toSetValue,
                     toSetMaxValue,
                 ],
             );
-            await bar.executeMarketFn(
+            await penrose.executeMarketFn(
                 [wethUsdcSingularity.address],
                 [payload],
                 false,
@@ -187,7 +184,6 @@ describe('Singularity test', () => {
             oracle = await wethUsdcSingularity.oracle();
             oracleData = await wethUsdcSingularity.oracleData();
             conservator = await wethUsdcSingularity.conservator();
-            callerFee = await wethUsdcSingularity.callerFee();
             protocolFee = await wethUsdcSingularity.protocolFee();
             liquidationBonusAmount =
                 await wethUsdcSingularity.liquidationBonusAmount();
@@ -201,7 +197,6 @@ describe('Singularity test', () => {
 
             expect(oracle).to.eq(toSetAddress);
             expect(conservator).to.eq(toSetAddress);
-            expect(callerFee).to.eq(toSetValue);
             expect(protocolFee).to.eq(toSetValue);
             expect(liquidationBonusAmount).to.eq(toSetValue);
             expect(minLiquidatorReward).to.eq(toSetValue);
@@ -209,7 +204,7 @@ describe('Singularity test', () => {
             expect(totalBorrowCap).to.eq(toSetValue);
             expect(collateralizationRate).to.eq(toSetValue);
 
-            await bar.setBigBangEthMarket(deployer.address);
+            await penrose.setBigBangEthMarket(deployer.address);
 
             let minDebtRate = await wbtcBigBangMarket.minDebtRate();
             let maxDebtRate = await wbtcBigBangMarket.maxDebtRate();
@@ -220,7 +215,7 @@ describe('Singularity test', () => {
                 'setBigBangConfig',
                 [0, 0, 0, 0],
             );
-            await bar.executeMarketFn(
+            await penrose.executeMarketFn(
                 [wbtcBigBangMarket.address],
                 [payload],
                 false,
@@ -235,7 +230,7 @@ describe('Singularity test', () => {
                 'setBigBangConfig',
                 [toSetValue, toSetMaxValue, toSetValue, toSetValue],
             );
-            await bar.executeMarketFn(
+            await penrose.executeMarketFn(
                 [wbtcBigBangMarket.address],
                 [payload],
                 false,
@@ -267,7 +262,7 @@ describe('Singularity test', () => {
                 'setSingularityConfig',
                 [0, 0, 0, 0, 0, 0, 0, 0],
             );
-            await bar.executeMarketFn(
+            await penrose.executeMarketFn(
                 [wethUsdcSingularity.address],
                 [payload],
                 false,
@@ -309,7 +304,7 @@ describe('Singularity test', () => {
                     toSetValue,
                 ],
             );
-            await bar.executeMarketFn(
+            await penrose.executeMarketFn(
                 [wethUsdcSingularity.address],
                 [payload],
                 false,
@@ -382,7 +377,7 @@ describe('Singularity test', () => {
         it('actions should not work when the contract is paused', async () => {
             const {
                 deployer,
-                bar,
+                penrose,
                 usdc,
                 BN,
                 approveTokensAndSetBarApproval,
@@ -410,10 +405,9 @@ describe('Singularity test', () => {
                         0,
                         0,
                         0,
-                        0,
                     ],
                 );
-            await bar.executeMarketFn(
+            await penrose.executeMarketFn(
                 [wethUsdcSingularity.address],
                 [setConservatorData],
                 true,
@@ -463,7 +457,7 @@ describe('Singularity test', () => {
             const {
                 usdc,
                 weth,
-                bar,
+                penrose,
                 yieldBox,
                 wethAssetId,
                 usdcAssetId,
@@ -493,7 +487,7 @@ describe('Singularity test', () => {
                     ethers.constants.AddressZero,
                     ethers.constants.AddressZero,
                     ethers.constants.AddressZero,
-                    bar.address,
+                    penrose.address,
                     weth.address,
                     wethAssetId,
                     usdc.address,
@@ -506,13 +500,13 @@ describe('Singularity test', () => {
                 ],
             );
             await (
-                await bar.registerSingularity(mediumRiskMC.address, data, true)
+                await penrose.registerSingularity(mediumRiskMC.address, data, true)
             ).wait();
             const wethUsdcSingularity = await ethers.getContractAt(
                 'Singularity',
-                await bar.clonesOf(
+                await penrose.clonesOf(
                     mediumRiskMC.address,
-                    (await bar.clonesOfCount(mediumRiskMC.address)).sub(1),
+                    (await penrose.clonesOfCount(mediumRiskMC.address)).sub(1),
                 ),
             );
 
@@ -529,7 +523,7 @@ describe('Singularity test', () => {
 
         it('should not allow initialization with bad arguments', async () => {
             const {
-                bar,
+                penrose,
                 mediumRiskMC,
                 wethUsdcOracle,
                 _sglCollateralModule,
@@ -560,7 +554,7 @@ describe('Singularity test', () => {
                     _sglBorrowModule.address,
                     _sglCollateralModule.address,
                     _sglLeverageModule.address,
-                    bar.address,
+                    penrose.address,
                     ethers.constants.AddressZero,
                     0,
                     ethers.constants.AddressZero,
@@ -574,7 +568,7 @@ describe('Singularity test', () => {
             );
 
             await expect(
-                bar.registerSingularity(mediumRiskMC.address, data, true),
+                penrose.registerSingularity(mediumRiskMC.address, data, true),
             ).to.be.reverted;
         });
 
@@ -732,7 +726,7 @@ describe('Singularity test', () => {
                 deployer,
                 wethUsdcSingularity,
                 multiSwapper,
-                bar,
+                penrose,
                 wethUsdcOracle,
                 __wethUsdcPrice,
                 deployLiquidationReceiverMock,
@@ -822,7 +816,7 @@ describe('Singularity test', () => {
                     ],
                 );
             await expect(
-                bar.executeMarketFn(
+                penrose.executeMarketFn(
                     [wethUsdcSingularity.address],
                     [liquidateBadDebtFn],
                     true,
@@ -868,7 +862,7 @@ describe('Singularity test', () => {
             await weth.freeMint(wethBorrowVal.mul(2));
             await usdc.freeMint(wethBorrowVal.mul(2));
             await expect(
-                bar.executeMarketFn(
+                penrose.executeMarketFn(
                     [wethUsdcSingularity.address],
                     [liquidateBadDebtFn],
                     true,
@@ -1129,7 +1123,7 @@ describe('Singularity test', () => {
                 wethUsdcSingularity,
                 deployer,
                 initContracts,
-                bar,
+                penrose,
             } = await loadFixture(register);
 
             await initContracts(); // To prevent `Singularity: below minimum`
@@ -1138,7 +1132,7 @@ describe('Singularity test', () => {
             await weth.freeMint(mintVal);
 
             const balanceBefore = await weth.balanceOf(deployer.address);
-            // Deposit assets to bar
+            // Deposit assets to penrose
             const mintValShare = await yieldBox.toShare(
                 await wethUsdcSingularity.assetId(),
                 mintVal,
@@ -1194,7 +1188,7 @@ describe('Singularity test', () => {
                 ),
             ).to.be.reverted;
 
-            // Withdraw from bar
+            // Withdraw from penrose
             await yieldBox.withdraw(
                 await wethUsdcSingularity.assetId(),
                 deployer.address,
@@ -1344,7 +1338,7 @@ describe('Singularity test', () => {
             await weth.freeMint(mintVal);
 
             const balanceBefore = await weth.balanceOf(deployer.address);
-            // Deposit assets to bar
+            // Deposit assets to penrose
             const mintValShare = await yieldBox.toShare(
                 await wethUsdcSingularity.assetId(),
                 mintVal,
@@ -1386,7 +1380,7 @@ describe('Singularity test', () => {
                 )
             ).wait();
 
-            // Withdraw from bar
+            // Withdraw from penrose
             await (
                 await yieldBox.withdraw(
                     await wethUsdcSingularity.assetId(),
@@ -1617,7 +1611,7 @@ describe('Singularity test', () => {
             const {
                 usdc,
                 weth,
-                bar,
+                penrose,
                 wethAssetId,
                 yieldBox,
                 eoa1,
@@ -1710,8 +1704,8 @@ describe('Singularity test', () => {
             const markets = [wethUsdcSingularity.address];
 
             await expect(
-                bar.withdrawAllMarketFees(markets, twTap.address),
-            ).to.emit(bar, 'LogTwTapFeesDeposit');
+                penrose.withdrawAllMarketFees(markets, twTap.address),
+            ).to.emit(penrose, 'LogTwTapFeesDeposit');
 
             const amountHarvested = await weth.balanceOf(twTap.address);
             // 0.31%
@@ -1834,7 +1828,7 @@ describe('Singularity test', () => {
                 approveTokensAndSetBarApproval,
                 deployer,
                 wethUsdcSingularity,
-                bar,
+                penrose,
                 __wethUsdcPrice,
             } = await loadFixture(register);
 
@@ -1883,13 +1877,12 @@ describe('Singularity test', () => {
                         0,
                         0,
                         0,
-                        0,
                         wethBorrowVal.div(2),
                         0,
                         0,
                     ],
                 );
-            await bar.executeMarketFn(
+            await penrose.executeMarketFn(
                 [wethUsdcSingularity.address],
                 [borrowCapData],
                 true,
@@ -1913,13 +1906,12 @@ describe('Singularity test', () => {
                     0,
                     0,
                     0,
-                    0,
                     ethers.utils.parseEther('99999999999'),
                     0,
                     0,
                 ],
             );
-            await bar.executeMarketFn(
+            await penrose.executeMarketFn(
                 [wethUsdcSingularity.address],
                 [borrowCapData],
                 true,
@@ -2137,7 +2129,7 @@ describe('Singularity test', () => {
              * LEND
              */
             const balanceBefore = await weth.balanceOf(deployer.address);
-            // Deposit assets to bar
+            // Deposit assets to penrose
             const lendValShare = await yieldBox.toShare(
                 await wethUsdcSingularity.assetId(),
                 lendVal,
@@ -2294,7 +2286,7 @@ describe('Singularity test', () => {
                 approveTokensAndSetBarApproval,
                 usdcDepositAndAddCollateral,
                 magnetar,
-                bar,
+                penrose,
                 BN,
                 __wethUsdcPrice,
                 magnetarHelper,
@@ -2317,7 +2309,7 @@ describe('Singularity test', () => {
              * LEND
              */
             const balanceBefore = await weth.balanceOf(deployer.address);
-            // Deposit assets to bar
+            // Deposit assets to penrose
             const lendValShare = await yieldBox.toShare(
                 await wethUsdcSingularity.assetId(),
                 lendVal,
@@ -2371,7 +2363,7 @@ describe('Singularity test', () => {
             );
 
             await (
-                await bar.executeMarketFn(
+                await penrose.executeMarketFn(
                     [wethUsdcSingularity.address],
                     [payload],
                     true,
@@ -2431,7 +2423,7 @@ describe('Singularity test', () => {
                 await wethUsdcSingularity.userBorrowPart(eoa1.address),
             ).to.be.eq(BN(0));
 
-            const feeTo = bar.address;
+            const feeTo = penrose.address;
             const sglBalanceOfFeeTo = await wethUsdcSingularity.balanceOf(
                 feeTo,
             );
@@ -2495,7 +2487,7 @@ describe('Singularity test', () => {
             const {
                 usdc,
                 weth,
-                bar,
+                penrose,
                 yieldBox,
                 eoa1,
                 wethUsdcSingularity,
@@ -2583,7 +2575,7 @@ describe('Singularity test', () => {
             // Confirm fees accumulation
             expect(userBorrowPart.gt(wethBorrowVal));
             // Withdraw fees from Penrose
-            const markets = await bar.singularityMarkets();
+            const markets = await penrose.singularityMarkets();
             const swappers = [];
             const swapData = [];
             for (let i = 0; i < markets.length; i++) {
@@ -2591,8 +2583,8 @@ describe('Singularity test', () => {
                 swapData.push({ minAssetAmount: 1 });
             }
             await expect(
-                bar.withdrawAllMarketFees(markets, twTap.address),
-            ).to.emit(bar, 'LogTwTapFeesDeposit');
+                penrose.withdrawAllMarketFees(markets, twTap.address),
+            ).to.emit(penrose, 'LogTwTapFeesDeposit');
 
             const amountHarvested = await weth.balanceOf(twTap.address);
             // 0.31%
@@ -2712,7 +2704,7 @@ describe('Singularity test', () => {
                 wethDepositAndAddAsset,
                 usdcDepositAndAddCollateral,
                 eoas,
-                bar,
+                penrose,
                 twTap,
             } = await loadFixture(register);
 
@@ -2763,7 +2755,7 @@ describe('Singularity test', () => {
             }
 
             timeTravel(10 * 86400);
-            await bar.withdrawAllMarketFees(
+            await penrose.withdrawAllMarketFees(
                 [wethUsdcSingularity.address],
                 twTap.address,
             );
@@ -2872,7 +2864,7 @@ describe('Singularity test', () => {
         it.skip('should test interest rate', async () => {
             const {
                 deployer,
-                bar,
+                penrose,
                 eoa1,
                 yieldBox,
                 weth,
@@ -2887,7 +2879,7 @@ describe('Singularity test', () => {
             } = await loadFixture(register);
             //deploy and register USDO
 
-            const usdoStratregy = await bar.emptyStrategies(usd0.address);
+            const usdoStratregy = await penrose.emptyStrategies(usd0.address);
             const usdoAssetId = await yieldBox.ids(
                 1,
                 usd0.address,
@@ -2939,7 +2931,7 @@ describe('Singularity test', () => {
                     _sglBorrow.address,
                     _sglCollateral.address,
                     _sglLeverage.address,
-                    bar.address,
+                    penrose.address,
                     usd0.address,
                     usdoAssetId,
                     weth.address,
@@ -2950,12 +2942,12 @@ describe('Singularity test', () => {
                     0,
                 ],
             );
-            await bar.registerSingularity(mediumRiskMC.address, data, true);
+            await penrose.registerSingularity(mediumRiskMC.address, data, true);
             const wethUsdoSingularity = await ethers.getContractAt(
                 'Singularity',
-                await bar.clonesOf(
+                await penrose.clonesOf(
                     mediumRiskMC.address,
-                    (await bar.clonesOfCount(mediumRiskMC.address)).sub(1),
+                    (await penrose.clonesOfCount(mediumRiskMC.address)).sub(1),
                 ),
             );
 
@@ -3118,7 +3110,7 @@ describe('Singularity test', () => {
         it('should create and test wethUsd0 singularity', async () => {
             const {
                 deployer,
-                bar,
+                penrose,
                 eoa1,
                 yieldBox,
                 weth,
@@ -3136,7 +3128,7 @@ describe('Singularity test', () => {
                 deployLiquidationReceiverMock,
             } = await loadFixture(register);
             //deploy and register USDO
-            const usdoStratregy = await bar.emptyStrategies(usd0.address);
+            const usdoStratregy = await penrose.emptyStrategies(usd0.address);
             const usdoAssetId = await yieldBox.ids(
                 1,
                 usd0.address,
@@ -3189,7 +3181,7 @@ describe('Singularity test', () => {
                     _sglBorrow.address,
                     _sglCollateral.address,
                     _sglLeverage.address,
-                    bar.address,
+                    penrose.address,
                     usd0.address,
                     usdoAssetId,
                     weth.address,
@@ -3201,12 +3193,12 @@ describe('Singularity test', () => {
                     0,
                 ],
             );
-            await bar.registerSingularity(mediumRiskMC.address, data, true);
+            await penrose.registerSingularity(mediumRiskMC.address, data, true);
             const wethUsdoSingularity = await ethers.getContractAt(
                 'Singularity',
-                await bar.clonesOf(
+                await penrose.clonesOf(
                     mediumRiskMC.address,
-                    (await bar.clonesOfCount(mediumRiskMC.address)).sub(1),
+                    (await penrose.clonesOfCount(mediumRiskMC.address)).sub(1),
                 ),
             );
 

@@ -96,10 +96,17 @@ contract Singularity is SGLCommon {
     }
 
     /// @notice The init function that acts as a constructor
-    function init(bytes calldata moduleData, bytes calldata tokensData, bytes calldata data) external onlyOnce {
-        (_InitMemoryModulesData memory _initMemoryModulesData) = abi.decode(moduleData, (_InitMemoryModulesData));
-        (_InitMemoryTokensData memory _initMemoryTokensData) = abi.decode(tokensData, (_InitMemoryTokensData));
-        (_InitMemoryData memory _initMemoryData) = abi.decode(data, (_InitMemoryData));
+    function init(bytes calldata initData) external onlyOnce {
+        _InitMemoryModulesData memory _initMemoryModulesData;
+        _InitMemoryTokensData memory _initMemoryTokensData;
+        _InitMemoryData memory _initMemoryData;
+        {
+            (bytes memory moduleData, bytes memory tokensData, bytes memory data) = abi.decode(initData, (bytes, bytes, bytes));
+                
+            _initMemoryModulesData = abi.decode(moduleData, (_InitMemoryModulesData));
+            _initMemoryTokensData = abi.decode(tokensData, (_InitMemoryTokensData));
+            _initMemoryData = abi.decode(data, (_InitMemoryData));
+        }
 
         penrose = _initMemoryData.tapiocaBar_;
         yieldBox = IYieldBox(_initMemoryData.tapiocaBar_.yieldBox());

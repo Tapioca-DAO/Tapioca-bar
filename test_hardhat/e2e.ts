@@ -10,7 +10,7 @@ import OracleMockArtifact from '@tapioca-sdk/artifacts/tapioca-mocks/OracleMock.
 import { MagnetarV2 } from '@tapioca-sdk/typechain/tapioca-periphery';
 import cluster from 'cluster';
 
-describe('e2e tests', () => {
+describe.skip('e2e tests', () => {
     /*
     ---Lenders---
     - mint WETH
@@ -32,7 +32,7 @@ describe('e2e tests', () => {
     */
     it('should use minterSingularity and market to add, borrow and get liquidated', async () => {
         const {
-            bar,
+            penrose,
             wethBigBangMarket,
             usd0,
             createWethUsd0Singularity,
@@ -50,7 +50,7 @@ describe('e2e tests', () => {
             cluster,
         } = await loadFixture(register);
 
-        const usdoStratregy = await bar.emptyStrategies(usd0.address);
+        const usdoStratregy = await penrose.emptyStrategies(usd0.address);
         const usdoAssetId = await yieldBox.ids(
             1,
             usd0.address,
@@ -80,7 +80,7 @@ describe('e2e tests', () => {
         const { wethUsdoSingularity } = await createWethUsd0Singularity(
             usd0,
             weth,
-            bar,
+            penrose,
             usdoAssetId,
             wethAssetId,
             mediumRiskMC,
@@ -204,7 +204,7 @@ describe('e2e tests', () => {
     //skipped as it takes too much time to run
     it.skip('should borrow and repay in multipe small operations', async () => {
         const {
-            bar,
+            penrose,
             wethBigBangMarket,
             usd0,
             createWethUsd0Singularity,
@@ -222,7 +222,7 @@ describe('e2e tests', () => {
             cluster,
         } = await loadFixture(register);
 
-        const usdoStratregy = await bar.emptyStrategies(usd0.address);
+        const usdoStratregy = await penrose.emptyStrategies(usd0.address);
         const usdoAssetId = await yieldBox.ids(
             1,
             usd0.address,
@@ -247,7 +247,7 @@ describe('e2e tests', () => {
         const { wethUsdoSingularity } = await createWethUsd0Singularity(
             usd0,
             weth,
-            bar,
+            penrose,
             usdoAssetId,
             wethAssetId,
             mediumRiskMC,

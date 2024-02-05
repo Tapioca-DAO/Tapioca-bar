@@ -6,31 +6,31 @@ import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 describe('Penrose test', () => {
     describe('views', () => {
         it('Should display Tapioca markets', async () => {
-            const { bar } = await loadFixture(register);
+            const { penrose } = await loadFixture(register);
 
-            const markets = await bar.singularityMarkets();
+            const markets = await penrose.singularityMarkets();
 
             expect(markets.length).equal(2); //weth-usdc & wbtc-usdc
         });
 
         it('should return length of master contracts', async () => {
-            const { bar } = await loadFixture(register);
+            const { penrose } = await loadFixture(register);
 
-            const length = await bar.singularityMasterContractLength();
+            const length = await penrose.singularityMasterContractLength();
 
             expect(length.gt(0)).to.be.true;
         });
 
         it('should list all singularity registered markets', async () => {
-            const { bar } = await loadFixture(register);
-            const markets = await bar.singularityMarkets();
+            const { penrose } = await loadFixture(register);
+            const markets = await penrose.singularityMarkets();
             expect(markets[0]).to.not.eq(ethers.constants.AddressZero);
 
-            const isMarketRegistered = await bar.isMarketRegistered(markets[0]);
+            const isMarketRegistered = await penrose.isMarketRegistered(markets[0]);
             expect(isMarketRegistered).to.be.true;
 
-            const nonRegisteredMarket = await bar.isMarketRegistered(
-                bar.address,
+            const nonRegisteredMarket = await penrose.isMarketRegistered(
+                penrose.address,
             );
             expect(nonRegisteredMarket).to.be.false;
         });
@@ -38,10 +38,10 @@ describe('Penrose test', () => {
 
     describe('allowances', () => {
         it('should not allow registering singularity without a proper master contract', async () => {
-            const { bar } = await loadFixture(register);
+            const { penrose } = await loadFixture(register);
 
             await expect(
-                bar.registerSingularity(
+                penrose.registerSingularity(
                     ethers.constants.AddressZero,
                     ethers.utils.toUtf8Bytes(''),
                     false,
@@ -50,18 +50,18 @@ describe('Penrose test', () => {
         });
 
         it('should not allow registering the same master contract twice', async () => {
-            const { bar, mediumRiskMC } = await loadFixture(register);
+            const { penrose, mediumRiskMC } = await loadFixture(register);
 
             await expect(
-                bar.registerSingularityMasterContract(mediumRiskMC.address, 1),
+                penrose.registerSingularityMasterContract(mediumRiskMC.address, 1),
             ).to.be.reverted;
         });
 
         it('should not allow executing without a proper master contract', async () => {
-            const { bar } = await loadFixture(register);
+            const { penrose } = await loadFixture(register);
 
             await expect(
-                bar.executeMarketFn(
+                penrose.executeMarketFn(
                     [ethers.constants.AddressZero],
                     [ethers.utils.toUtf8Bytes('')],
                     true,
@@ -70,18 +70,18 @@ describe('Penrose test', () => {
         });
 
         it('should not allow to call withdraw when paused', async () => {
-            const { bar, deployer } = await loadFixture(register);
-            await bar.setConservator(deployer.address);
-            await bar.updatePause(true);
+            const { penrose, deployer } = await loadFixture(register);
+            await penrose.setConservator(deployer.address);
+            await penrose.updatePause(true);
             await expect(
-                bar.withdrawAllMarketFees(
+                penrose.withdrawAllMarketFees(
                     [ethers.constants.AddressZero],
                     ethers.constants.AddressZero,
                 ),
             ).to.be.reverted;
 
             await expect(
-                bar.withdrawAllMarketFees(
+                penrose.withdrawAllMarketFees(
                     [ethers.constants.AddressZero],
                     ethers.constants.AddressZero,
                 ),
@@ -89,11 +89,11 @@ describe('Penrose test', () => {
         });
 
         it('should not allow to call execute when paused', async () => {
-            const { bar, deployer } = await loadFixture(register);
-            await bar.setConservator(deployer.address);
-            await bar.updatePause(true);
+            const { penrose, deployer } = await loadFixture(register);
+            await penrose.setConservator(deployer.address);
+            await penrose.updatePause(true);
             await expect(
-                bar.executeMarketFn(
+                penrose.executeMarketFn(
                     [ethers.constants.AddressZero],
                     [ethers.utils.toUtf8Bytes('')],
                     true,
@@ -104,20 +104,20 @@ describe('Penrose test', () => {
 
     describe('setters', () => {
         it('should register a master contract', async () => {
-            const { bar } = await loadFixture(register);
+            const { penrose } = await loadFixture(register);
 
             const newMC = await (
                 await ethers.getContractFactory('Singularity')
             ).deploy();
             await newMC.deployed();
 
-            const mcLengthBefore = await bar.singularityMasterContractLength();
+            const mcLengthBefore = await penrose.singularityMasterContractLength();
 
             await (
-                await bar.registerSingularityMasterContract(newMC.address, 1)
+                await penrose.registerSingularityMasterContract(newMC.address, 1)
             ).wait();
 
-            const mcLength = await bar.singularityMasterContractLength();
+            const mcLength = await penrose.singularityMasterContractLength();
             expect(mcLength.eq(mcLengthBefore.add(1))).to.be.true;
         });
     });

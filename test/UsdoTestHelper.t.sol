@@ -108,7 +108,7 @@ contract UsdoTestHelper is TestHelper, TestUtils {
         (bytes memory _modulesData, bytes memory _tokensData, bytes memory _data) =
             _getSingularityInitData(_sgl, address(_penrose));
         {
-            sgl.init(_modulesData, _tokensData, _data);
+            sgl.init(abi.encode(_modulesData, _tokensData, _data));
         }
 
         {

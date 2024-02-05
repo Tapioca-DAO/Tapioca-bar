@@ -36,7 +36,7 @@ describe.skip('Bidders test', () => {
                 wethUsdcSingularity,
                 usdc,
                 usd0,
-                bar,
+                penrose,
                 yieldBox,
                 deployCurveStableToUsdoBidder,
             } = await loadFixture(register);
@@ -63,7 +63,7 @@ describe.skip('Bidders test', () => {
                 usdc,
                 usdcAssetId,
                 usd0,
-                bar,
+                penrose,
                 yieldBox,
                 deployCurveStableToUsdoBidder,
                 deployer,
@@ -74,7 +74,7 @@ describe.skip('Bidders test', () => {
                 usdc,
                 usd0,
             );
-            const usdoStratregy = await bar.emptyStrategies(usd0.address);
+            const usdoStratregy = await penrose.emptyStrategies(usd0.address);
             const usdoAssetId = await yieldBox.ids(
                 1,
                 usd0.address,
@@ -127,7 +127,7 @@ describe.skip('Bidders test', () => {
                 usdoToWethBidder,
                 wethUsdcSingularity,
                 usdc,
-                bar,
+                penrose,
                 yieldBox,
                 multiSwapper,
                 usd0,
@@ -153,7 +153,7 @@ describe.skip('Bidders test', () => {
                 usdoToWethBidder,
                 wethUsdcSingularity,
                 usdc,
-                bar,
+                penrose,
                 deployCurveStableToUsdoBidder,
                 usd0,
                 yieldBox,
@@ -174,7 +174,7 @@ describe.skip('Bidders test', () => {
                 ),
             ).to.be.reverted;
 
-            const usdoStratregy = await bar.emptyStrategies(usd0.address);
+            const usdoStratregy = await penrose.emptyStrategies(usd0.address);
             const usdoAssetId = await yieldBox.ids(
                 1,
                 usd0.address,
