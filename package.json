@@ -91,6 +91,7 @@
     },
     "dependencies": {
         "@nomiclabs/hardhat-vyper": "^3.0.1",
+        "@openzeppelin/contracts-upgradeable": "^4.8.1",
         "@primitivefi/hardhat-dodoc": "^0.2.3",
         "@uniswap/v3-core": "^1.0.1",
         "@uniswap/v3-periphery": "^1.4.3",

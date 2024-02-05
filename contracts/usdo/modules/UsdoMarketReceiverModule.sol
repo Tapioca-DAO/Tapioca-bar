@@ -16,7 +16,12 @@ import {
     MarketRemoveAssetMsg,
     MarketLendOrRepayMsg
 } from "tapioca-periph/interfaces/oft/IUsdo.sol";
-import {ICommonData, IWithdrawParams, IDepositData, ICommonExternalContracts} from "tapioca-periph/interfaces/common/ICommonData.sol";
+import {
+    ICommonData,
+    IWithdrawParams,
+    IDepositData,
+    ICommonExternalContracts
+} from "tapioca-periph/interfaces/common/ICommonData.sol";
 import {ITapiocaOFTBase, ITapiocaOFT, IBorrowParams} from "tapioca-periph/interfaces/tap-token/ITapiocaOFT.sol";
 import {UsdoModuleReceiverHelper} from "contracts/usdo/modules/UsdoModuleReceiverHelper.sol";
 import {IMagnetarHelper} from "tapioca-periph/interfaces/periph/IMagnetarHelper.sol";
@@ -43,7 +48,6 @@ __/\\\\\\\\\\\\\\\_____/\\\\\\\\\_____/\\\\\\\\\\\\\____/\\\\\\\\\\\_______/\\\\
         _______\///________\///________\///__\///______________\///////////_______\/////_____________\/////////__\///________\///__
 
 */
-
 
 /**
  * @title UsdoMarketReceiverModule
@@ -129,11 +133,7 @@ contract UsdoMarketReceiverModule is BaseUsdo, UsdoModuleReceiverHelper {
                     mintAmount: 0,
                     collateralDepositData: IDepositData({deposit: false, amount: 0, extractFromSender: false})
                 }),
-                depositData: IDepositData({
-                    deposit: true,
-                    amount: msg_.lendParams.depositAmount,
-                    extractFromSender: true
-                }),
+                depositData: IDepositData({deposit: true, amount: msg_.lendParams.depositAmount, extractFromSender: false}),
                 lockData: msg_.lendParams.lockData,
                 participateData: msg_.lendParams.participateData,
                 externalContracts: ICommonExternalContracts({

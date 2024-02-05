@@ -72,6 +72,7 @@ contract BigBang is BBCommon {
     /// @notice returns the leverage module
     BBLeverage public leverageModule;
 
+    //TODO: split into 3 structs (see Singularity)
     struct _InitMemoryData {
         address _liquidationModule;
         address _borrowModule;

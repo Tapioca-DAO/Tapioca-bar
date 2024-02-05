@@ -9,7 +9,7 @@ import {ILeverageExecutor} from "tapioca-periph/interfaces/bar/ILeverageExecutor
 import {SafeApprove} from "tapioca-periph/libraries/SafeApprove.sol";
 import {ISwapper} from "tapioca-periph/interfaces/periph/ISwapper.sol";
 import {ICluster} from "tapioca-periph/interfaces/periph/ICluster.sol";
-import {IYieldBox} from "tapioca-periph/interfaces/yieldbox/IYieldBox.sol";
+import {IYieldBox} from "yieldbox/interfaces/IYieldBox.sol";
 
 abstract contract BaseLeverageExecutor is BoringOwnable {
     using SafeApprove for address;

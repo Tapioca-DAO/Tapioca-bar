@@ -73,15 +73,7 @@ contract Singularity is SGLCommon {
     error SameState();
 
     struct _InitMemoryData {
-        address _liquidationModule;
-        address _borrowModule;
-        address _collateralModule;
-        address _leverageModule;
         IPenrose tapiocaBar_;
-        IERC20 _asset;
-        uint256 _assetId;
-        IERC20 _collateral;
-        uint256 _collateralId;
         ITapiocaOracle _oracle;
         uint256 _exchangeRatePrecision;
         uint256 _collateralizationRate;
@@ -89,29 +81,45 @@ contract Singularity is SGLCommon {
         ILeverageExecutor _leverageExecutor;
     }
 
+    struct _InitMemoryModulesData {
+        address _liquidationModule;
+        address _borrowModule;
+        address _collateralModule;
+        address _leverageModule;
+    }
+
+    struct _InitMemoryTokensData {
+        IERC20 _asset;
+        uint256 _assetId;
+        IERC20 _collateral;
+        uint256 _collateralId;
+    }
+
     /// @notice The init function that acts as a constructor
-    function init(bytes calldata data) external onlyOnce {
+    function init(bytes calldata moduleData, bytes calldata tokensData, bytes calldata data) external onlyOnce {
+        (_InitMemoryModulesData memory _initMemoryModulesData) = abi.decode(moduleData, (_InitMemoryModulesData));
+        (_InitMemoryTokensData memory _initMemoryTokensData) = abi.decode(tokensData, (_InitMemoryTokensData));
         (_InitMemoryData memory _initMemoryData) = abi.decode(data, (_InitMemoryData));
 
         penrose = _initMemoryData.tapiocaBar_;
         yieldBox = IYieldBox(_initMemoryData.tapiocaBar_.yieldBox());
         owner = address(penrose);
 
-        if (address(_initMemoryData._collateral) == address(0)) revert BadPair();
-        if (address(_initMemoryData._asset) == address(0)) revert BadPair();
+        if (address(_initMemoryTokensData._collateral) == address(0)) revert BadPair();
+        if (address(_initMemoryTokensData._asset) == address(0)) revert BadPair();
         if (address(_initMemoryData._oracle) == address(0)) revert BadPair();
 
         _initModules(
-            _initMemoryData._liquidationModule,
-            _initMemoryData._borrowModule,
-            _initMemoryData._collateralModule,
-            _initMemoryData._leverageModule
+            _initMemoryModulesData._liquidationModule,
+            _initMemoryModulesData._borrowModule,
+            _initMemoryModulesData._collateralModule,
+            _initMemoryModulesData._leverageModule
         );
         _initCoreStorage(
-            _initMemoryData._asset,
-            _initMemoryData._assetId,
-            _initMemoryData._collateral,
-            _initMemoryData._collateralId,
+            _initMemoryTokensData._asset,
+            _initMemoryTokensData._assetId,
+            _initMemoryTokensData._collateral,
+            _initMemoryTokensData._collateralId,
             _initMemoryData._oracle,
             _initMemoryData._leverageExecutor
         );

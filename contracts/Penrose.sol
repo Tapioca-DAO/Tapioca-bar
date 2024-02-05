@@ -7,7 +7,6 @@ import {BoringOwnable} from "@boringcrypto/boring-solidity/contracts/BoringOwnab
 import {BoringFactory} from "@boringcrypto/boring-solidity/contracts/BoringFactory.sol";
 
 // Tapioca
-import {IYieldBox, IYieldBoxTokenType} from "tapioca-periph/interfaces/yieldbox/IYieldBox.sol";
 import {
     ERC20WithoutStrategy, IStrategy, IYieldBox as IBoringYieldBox
 } from "yieldbox/strategies/ERC20WithoutStrategy.sol";
@@ -18,6 +17,8 @@ import {ITwTap} from "tapioca-periph/interfaces/tap-token/ITwTap.sol";
 import {SafeApprove} from "tapioca-periph/libraries/SafeApprove.sol";
 import {IPenrose} from "tapioca-periph/interfaces/bar/IPenrose.sol";
 import {IBigBang} from "tapioca-periph/interfaces/bar/IBigBang.sol";
+import {TokenType} from "yieldbox/enums/YieldBoxTokenType.sol";
+import {IYieldBox} from "yieldbox/interfaces/IYieldBox.sol";
 
 // TODO: Permissionless market deployment
 ///     + asset registration? (toggle to renounce ownership so users can call)
@@ -62,7 +63,7 @@ contract Penrose is BoringOwnable, BoringFactory {
     /// @notice Used to check if a SGL/BB is a real market
     mapping(address => bool) public isMarketRegistered;
     /// @notice default LZ Chain id
-    uint16 public immutable hostLzChainId;
+    uint32 public immutable hostLzChainId;
 
     /// @notice BigBang ETH market addressf
     address public bigBangEthMarket;
@@ -89,7 +90,7 @@ contract Penrose is BoringOwnable, BoringFactory {
         ICluster _cluster,
         IERC20 tapToken_,
         IERC20 mainToken_,
-        uint16 _hostLzChainId,
+        uint32 _hostLzChainId,
         address _owner
     ) {
         yieldBox = _yieldBox;
@@ -101,7 +102,7 @@ contract Penrose is BoringOwnable, BoringFactory {
             IStrategy(address(new ERC20WithoutStrategy(IBoringYieldBox(address(_yieldBox)), tapToken_)));
         tapAssetId = uint96(
             _yieldBox.registerAsset(
-                IYieldBoxTokenType.ERC20, address(tapToken_), address(emptyStrategies[address(tapToken_)]), 0
+                TokenType.ERC20, address(tapToken_), address(emptyStrategies[address(tapToken_)]), 0
             )
         );
 
@@ -110,12 +111,12 @@ contract Penrose is BoringOwnable, BoringFactory {
             IStrategy(address(new ERC20WithoutStrategy(IBoringYieldBox(address(_yieldBox)), mainToken_)));
         mainAssetId = uint96(
             _yieldBox.registerAsset(
-                IYieldBoxTokenType.ERC20, address(mainToken_), address(emptyStrategies[address(mainToken_)]), 0
+                TokenType.ERC20, address(mainToken_), address(emptyStrategies[address(mainToken_)]), 0
             )
         );
 
         bigBangEthDebtRate = 5e15;
-        hostLzChainId = _hostLzChainId;
+        hostLzChainId = _hostLzChainId; //TODO: do we use this?!
     }
 
     // **************//
@@ -342,9 +343,8 @@ contract Penrose is BoringOwnable, BoringFactory {
 
         emptyStrategies[_usdoToken] =
             IStrategy(address(new ERC20WithoutStrategy(IBoringYieldBox(address(yieldBox)), IERC20(_usdoToken))));
-        usdoAssetId = uint96(
-            yieldBox.registerAsset(IYieldBoxTokenType.ERC20, _usdoToken, address(emptyStrategies[_usdoToken]), 0)
-        );
+        usdoAssetId =
+            uint96(yieldBox.registerAsset(TokenType.ERC20, _usdoToken, address(emptyStrategies[_usdoToken]), 0));
         emit UsdoTokenUpdated(_usdoToken, usdoAssetId);
     }
 
