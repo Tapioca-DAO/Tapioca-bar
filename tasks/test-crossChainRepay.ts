@@ -28,7 +28,7 @@ export const crossChainRepay__task = async (
     // Setup chain info
     const fromChain = hre.SDK.utils.getChainBy(
         'chainId',
-        await hre.getChainId(),
+        hre.SDK.eChainId,
     );
     const toChain = hre.SDK.utils.getChainBy('name', 'arbitrum_goerli');
 

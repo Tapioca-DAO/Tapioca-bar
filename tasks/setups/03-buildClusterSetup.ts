@@ -21,7 +21,7 @@ export const buildClusterSetup = async (
 
     const chainInfo = hre.SDK.utils.getChainBy(
         'chainId',
-        await hre.getChainId(),
+        hre.SDK.eChainId,
     );
 
     /**

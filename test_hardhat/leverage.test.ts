@@ -161,12 +161,12 @@ describe('Singularity Leverage', () => {
             } = await loadFixture(setUp);
 
             await cluster.updateContract(
-                await hre.getChainId(),
+                hre.SDK.eChainId,
                 mockSwapper.address,
                 true,
             );
             await cluster.updateContract(
-                await hre.getChainId(),
+                hre.SDK.eChainId,
                 wethUsdcSingularity.address,
                 true,
             );
@@ -229,7 +229,7 @@ describe('Singularity Leverage', () => {
             } = await loadFixture(setUp);
 
             await cluster.updateContract(
-                await hre.getChainId(),
+                hre.SDK.eChainId,
                 wethUsdcSingularity.address,
                 true,
             );
@@ -292,7 +292,7 @@ describe('Singularity Leverage', () => {
             } = await loadFixture(setUp);
 
             await cluster.updateContract(
-                await hre.getChainId(),
+                hre.SDK.eChainId,
                 wethUsdcSingularity.address,
                 true,
             );
@@ -366,12 +366,12 @@ describe('Singularity Leverage', () => {
             } = await loadFixture(setUp);
 
             await cluster.updateContract(
-                await hre.getChainId(),
+                hre.SDK.eChainId,
                 mockSwapper.address,
                 true,
             );
             await cluster.updateContract(
-                await hre.getChainId(),
+                hre.SDK.eChainId,
                 wethUsdcSingularity.address,
                 true,
             );

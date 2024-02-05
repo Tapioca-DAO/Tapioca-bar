@@ -36,7 +36,7 @@ describe('Origins test', () => {
             bar,
         } = await loadFixture(register);
 
-        const chainId = await hre.getChainId();
+        const chainId = hre.SDK.eChainId;
         const { usd0, lzEndpointContract, usd0Flashloan } =
             await registerUsd0Contract(
                 chainId,

@@ -375,7 +375,7 @@ describe('BigBang test', () => {
             );
             await bar.setBigBangEthMarketDebtRate((5e15).toString());
 
-            const chainId = await hre.getChainId();
+            const chainId = hre.SDK.eChainId;
             const { usd0, lzEndpointContract, usd0Flashloan } =
                 await registerUsd0Contract(
                     chainId,
@@ -2345,7 +2345,7 @@ describe('BigBang test', () => {
             const mockSwapper = await MockSwapper.deploy(yieldBox.address);
             await mockSwapper.deployed();
             await cluster.updateContract(
-                await hre.getChainId(),
+                hre.SDK.eChainId,
                 mockSwapper.address,
                 true,
             );
@@ -2418,13 +2418,13 @@ describe('BigBang test', () => {
             } = await loadFixture(setUp);
 
             await cluster.updateContract(
-                await hre.getChainId(),
+                hre.SDK.eChainId,
                 mockSwapper.address,
                 true,
             );
 
             await cluster.updateContract(
-                await hre.getChainId(),
+                hre.SDK.eChainId,
                 wethBigBangMarket.address,
                 true,
             );
@@ -2519,12 +2519,12 @@ describe('BigBang test', () => {
             } = await loadFixture(setUp);
 
             await cluster.updateContract(
-                await hre.getChainId(),
+                hre.SDK.eChainId,
                 mockSwapper.address,
                 true,
             );
             await cluster.updateContract(
-                await hre.getChainId(),
+                hre.SDK.eChainId,
                 wethBigBangMarket.address,
                 true,
             );
@@ -2563,7 +2563,7 @@ describe('BigBang test', () => {
                 await wethBigBangMarket.assetId(),
             );
             await cluster.updateContract(
-                await hre.getChainId(),
+                hre.SDK.eChainId,
                 mockSwapper.address,
                 true,
             );

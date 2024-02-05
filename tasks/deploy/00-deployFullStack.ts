@@ -33,7 +33,7 @@ export const deployFullStack__task = async (
 
     const chainInfo = hre.SDK.utils.getChainBy(
         'chainId',
-        await hre.getChainId(),
+        hre.SDK.eChainId,
     );
     if (!chainInfo) {
         throw new Error('Chain not found');

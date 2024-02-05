@@ -1445,23 +1445,14 @@ export async function register(staging?: boolean) {
     log(`Deployed YieldBox ${yieldBox.address}`, staging);
 
     // -------------------  2.1 Deploy Yieldbox -------------------
-    const chainInfo = hre.SDK.utils.getChainBy(
-        'chainId',
-        await hre.getChainId(),
-    );
+    const chainInfo = hre.SDK.utils.getChainBy('chainId', hre.SDK.eChainId);
     const LZEndpointMock = new LZEndpointMock__factory(deployer);
-    const clusterLzEndpoint = await LZEndpointMock.deploy(
-        await hre.getChainId(),
-    );
+    const clusterLzEndpoint = await LZEndpointMock.deploy(hre.SDK.eChainId);
 
     const Cluster = new Cluster__factory(deployer);
-    const cluster = await Cluster.deploy(
-        await hre.getChainId(),
-        deployer.address,
-        {
-            gasPrice: gasPrice,
-        },
-    );
+    const cluster = await Cluster.deploy(hre.SDK.eChainId, deployer.address, {
+        gasPrice: gasPrice,
+    });
     log(
         `Deployed Cluster ${cluster.address} with args [${chainInfo?.lzChainId}]`,
         staging,
@@ -1622,7 +1613,7 @@ export async function register(staging?: boolean) {
 
     // ------------------- 10 Deploy USDO -------------------
     log('Registering USDO', staging);
-    const chainId = await hre.getChainId();
+    const chainId = hre.SDK.eChainId;
     const { usd0, lzEndpointContract, usd0Flashloan } =
         await registerUsd0Contract(
             chainId,
@@ -1747,7 +1738,7 @@ export async function register(staging?: boolean) {
     // ------------------- 19 Set multiswapper -------------------
     await (
         await cluster.updateContract(
-            await hre.getChainId(),
+            hre.SDK.eChainId,
             multiSwapper.address,
             true,
             {
