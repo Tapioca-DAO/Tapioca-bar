@@ -79,10 +79,14 @@ contract Usdo is BaseUsdo, Pausable, ReentrancyGuard, ERC20Permit {
         if (_modulesData.optionReceiverModule == address(0)) {
             revert Usdo_NotValid();
         }
+        if (_modulesData.leverageReceiverModule == address(0)) {
+            revert Usdo_NotValid();
+        }
         _setModule(uint8(IUsdo.Module.UsdoSender), _modulesData.usdoSenderModule);
         _setModule(uint8(IUsdo.Module.UsdoReceiver), _modulesData.usdoReceiverModule);
         _setModule(uint8(IUsdo.Module.UsdoMarketReceiver), _modulesData.marketReceiverModule);
         _setModule(uint8(IUsdo.Module.UsdoOptionReceiver), _modulesData.optionReceiverModule);
+        _setModule(uint8(IUsdo.Module.UsdoLeverageReceiver), _modulesData.leverageReceiverModule);
     }
 
     /**

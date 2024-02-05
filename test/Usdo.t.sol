@@ -57,6 +57,7 @@ import {ITapiocaOptionLiquidityProvision} from
 import {ERC20PermitStruct, ERC20PermitApprovalMsg} from "tapioca-periph/interfaces/periph/ITapiocaOmnichainEngine.sol";
 import {TapiocaOmnichainExtExec} from "tapioca-periph/tapiocaOmnichainEngine/extension/TapiocaOmnichainExtExec.sol";
 import {ITapiocaOFT, IBorrowParams, IRemoveParams} from "tapioca-periph/interfaces/tap-token/ITapiocaOFT.sol";
+import {UsdoLeverageReceiverModule} from "contracts/usdo/modules/UsdoLeverageReceiverModule.sol";
 import {ICommonData, IWithdrawParams} from "tapioca-periph/interfaces/common/ICommonData.sol";
 import {UsdoMarketReceiverModule} from "contracts/usdo/modules/UsdoMarketReceiverModule.sol";
 import {UsdoOptionReceiverModule} from "contracts/usdo/modules/UsdoOptionReceiverModule.sol";
@@ -189,16 +190,19 @@ contract UsdoTest is UsdoTestHelper {
         UsdoReceiver aUsdoReceiver = new UsdoReceiver(aUsdoInitStruct);
         UsdoMarketReceiverModule aUsdoMarketReceiverModule = new UsdoMarketReceiverModule(aUsdoInitStruct);
         UsdoOptionReceiverModule aUsdoOptionsReceiverModule = new UsdoOptionReceiverModule(aUsdoInitStruct);
+        UsdoLeverageReceiverModule aUsdoLeverageReceiverModule = new UsdoLeverageReceiverModule(aUsdoInitStruct);
         vm.label(address(aUsdoSender), "aUsdoSender");
         vm.label(address(aUsdoReceiver), "aUsdoReceiver");
         vm.label(address(aUsdoMarketReceiverModule), "aUsdoMarketReceiverModule");
         vm.label(address(aUsdoOptionsReceiverModule), "aUsdoOptionsReceiverModule");
+        vm.label(address(aUsdoLeverageReceiverModule), "aUsdoLeverageReceiverModule");
 
         UsdoModulesInitStruct memory aUsdoModulesInitStruct = UsdoModulesInitStruct({
             usdoSenderModule: address(aUsdoSender),
             usdoReceiverModule: address(aUsdoReceiver),
             marketReceiverModule: address(aUsdoMarketReceiverModule),
-            optionReceiverModule: address(aUsdoOptionsReceiverModule)
+            optionReceiverModule: address(aUsdoOptionsReceiverModule),
+            leverageReceiverModule: address(aUsdoLeverageReceiverModule)
         });
         aUsdo = UsdoMock(
             payable(_deployOApp(type(UsdoMock).creationCode, abi.encode(aUsdoInitStruct, aUsdoModulesInitStruct)))
@@ -216,16 +220,19 @@ contract UsdoTest is UsdoTestHelper {
         UsdoReceiver bUsdoReceiver = new UsdoReceiver(bUsdoInitStruct);
         UsdoMarketReceiverModule bUsdoMarketReceiverModule = new UsdoMarketReceiverModule(bUsdoInitStruct);
         UsdoOptionReceiverModule bUsdoOptionsReceiverModule = new UsdoOptionReceiverModule(bUsdoInitStruct);
+        UsdoLeverageReceiverModule bUsdoLeverageReceiverModule = new UsdoLeverageReceiverModule(bUsdoInitStruct);
         vm.label(address(bUsdoSender), "bUsdoSender");
         vm.label(address(bUsdoReceiver), "bUsdoReceiver");
         vm.label(address(bUsdoMarketReceiverModule), "bUsdoMarketReceiverModule");
         vm.label(address(bUsdoOptionsReceiverModule), "bUsdoOptionsReceiverModule");
+        vm.label(address(bUsdoLeverageReceiverModule), "bUsdoLeverageReceiverModule");
 
         UsdoModulesInitStruct memory bUsdoModulesInitStruct = UsdoModulesInitStruct({
             usdoSenderModule: address(bUsdoSender),
             usdoReceiverModule: address(bUsdoReceiver),
             marketReceiverModule: address(bUsdoMarketReceiverModule),
-            optionReceiverModule: address(bUsdoOptionsReceiverModule)
+            optionReceiverModule: address(bUsdoOptionsReceiverModule),
+            leverageReceiverModule: address(bUsdoLeverageReceiverModule)
         });
         bUsdo = UsdoMock(
             payable(_deployOApp(type(UsdoMock).creationCode, abi.encode(bUsdoInitStruct, bUsdoModulesInitStruct)))

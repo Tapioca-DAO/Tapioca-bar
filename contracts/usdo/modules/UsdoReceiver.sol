@@ -19,6 +19,7 @@ import {
     YieldBoxApproveAssetMsg
 } from "tapioca-periph/interfaces/oft/IUsdo.sol";
 import {TapiocaOmnichainReceiver} from "tapioca-periph/tapiocaOmnichainEngine/TapiocaOmnichainReceiver.sol";
+import {UsdoLeverageReceiverModule} from "./UsdoLeverageReceiverModule.sol";
 import {UsdoMarketReceiverModule} from "./UsdoMarketReceiverModule.sol";
 import {UsdoOptionReceiverModule} from "./UsdoOptionReceiverModule.sol";
 import {UsdoMsgCodec} from "../libraries/UsdoMsgCodec.sol";
@@ -87,7 +88,7 @@ contract UsdoReceiver is BaseUsdo, TapiocaOmnichainReceiver {
         } else if (_msgType == MSG_LEVERAGE_MARKET_UP) {
             _executeModule(
                 uint8(IUsdo.Module.UsdoMarketReceiver),
-                abi.encodeWithSelector(UsdoMarketReceiverModule.marketLeverageUpReceiver.selector, _toeComposeMsg),
+                abi.encodeWithSelector(UsdoLeverageReceiverModule.marketLeverageUpReceiver.selector, _toeComposeMsg),
                 false
             );
         } else if (_msgType == MSG_MARKET_REMOVE_ASSET) {

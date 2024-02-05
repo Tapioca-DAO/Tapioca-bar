@@ -65,7 +65,7 @@ abstract contract UsdoModuleReceiverHelper {
         address _usdoHelper,
         uint256 amount,
         uint16 _composeMsgType,
-        bytes memory _composeMsg, 
+        bytes memory _composeMsg,
         uint128 _composeGas
     ) internal returns (MessagingReceipt memory msgReceipt_) {
         uint16 _sendType = 1;
