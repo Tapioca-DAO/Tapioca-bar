@@ -4,7 +4,7 @@ pragma solidity 0.8.22;
 // Tapioca
 import {TapiocaOmnichainSender} from "tapioca-periph/tapiocaOmnichainEngine/TapiocaOmnichainSender.sol";
 import {IUsdo, UsdoInitStruct} from "tapioca-periph/interfaces/oft/IUsdo.sol";
-import {BaseUsdo} from "contracts/usdo/BaseUsdo.sol";
+import {BaseUsdo} from "../BaseUsdo.sol";
 
 /*
 

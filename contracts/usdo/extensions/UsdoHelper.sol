@@ -17,8 +17,8 @@ import {
 } from "tapioca-periph/interfaces/oft/IUsdo.sol";
 import {TapiocaOmnichainEngineHelper} from
     "tapioca-periph/tapiocaOmnichainEngine/extension/TapiocaOmnichainEngineHelper.sol";
-import {BaseUsdoTokenMsgType} from "contracts/usdo/BaseUsdoTokenMsgType.sol";
-import {UsdoMsgCodec} from "contracts/usdo/libraries/UsdoMsgCodec.sol";
+import {BaseUsdoTokenMsgType} from "../BaseUsdoTokenMsgType.sol";
+import {UsdoMsgCodec} from "../libraries/UsdoMsgCodec.sol";
 
 /*
 __/\\\\\\\\\\\\\\\_____/\\\\\\\\\_____/\\\\\\\\\\\\\____/\\\\\\\\\\\_______/\\\\\_____________/\\\\\\\\\_____/\\\\\\\\\____        

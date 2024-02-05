@@ -19,12 +19,12 @@ import {
     YieldBoxApproveAssetMsg
 } from "tapioca-periph/interfaces/oft/IUsdo.sol";
 import {TapiocaOmnichainReceiver} from "tapioca-periph/tapiocaOmnichainEngine/TapiocaOmnichainReceiver.sol";
-import {UsdoMarketReceiverModule} from "contracts/usdo/modules/UsdoMarketReceiverModule.sol";
-import {UsdoOptionReceiverModule} from "contracts/usdo/modules/UsdoOptionReceiverModule.sol";
-import {UsdoMsgCodec} from "contracts/usdo/libraries/UsdoMsgCodec.sol";
-import {UsdoReceiver} from "contracts/usdo/modules/UsdoReceiver.sol";
-import {UsdoSender} from "contracts/usdo/modules/UsdoSender.sol";
-import {BaseUsdo} from "contracts/usdo/BaseUsdo.sol";
+import {UsdoMarketReceiverModule} from "./UsdoMarketReceiverModule.sol";
+import {UsdoOptionReceiverModule} from "./UsdoOptionReceiverModule.sol";
+import {UsdoMsgCodec} from "../libraries/UsdoMsgCodec.sol";
+import {UsdoReceiver} from "./UsdoReceiver.sol";
+import {UsdoSender} from "./UsdoSender.sol";
+import {BaseUsdo} from "../BaseUsdo.sol";
 
 /*
 

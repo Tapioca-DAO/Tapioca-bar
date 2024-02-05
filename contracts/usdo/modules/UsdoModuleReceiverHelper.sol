@@ -15,8 +15,8 @@ import {
 } from "tapioca-periph/tapiocaOmnichainEngine/extension/TapiocaOmnichainEngineHelper.sol";
 import {ITapiocaOmnichainEngine, LZSendParam} from "tapioca-periph/interfaces/periph/ITapiocaOmnichainEngine.sol";
 import {IOftSender} from "tapioca-periph/interfaces/oft/IOftSender.sol";
-import {UsdoMsgCodec} from "contracts/usdo/libraries/UsdoMsgCodec.sol";
-import {UsdoHelper} from "contracts/usdo/extensions/UsdoHelper.sol";
+import {UsdoMsgCodec} from "../libraries/UsdoMsgCodec.sol";
+import {UsdoHelper} from "../extensions/UsdoHelper.sol";
 
 /*
 __/\\\\\\\\\\\\\\\_____/\\\\\\\\\_____/\\\\\\\\\\\\\____/\\\\\\\\\\\_______/\\\\\_____________/\\\\\\\\\_____/\\\\\\\\\____        
@@ -53,7 +53,7 @@ abstract contract UsdoModuleReceiverHelper {
                 minAmountToCreditLD: amount,
                 msgType: msgType,
                 composeMsgData: composeData,
-                lzReceiveGas: lzReceiveGas, // TODO: what should we input here?
+                lzReceiveGas: lzReceiveGas,
                 lzReceiveValue: lzReceiveValue
             })
         );

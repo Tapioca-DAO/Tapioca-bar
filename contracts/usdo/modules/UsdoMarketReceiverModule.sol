@@ -23,18 +23,18 @@ import {
     ICommonExternalContracts
 } from "tapioca-periph/interfaces/common/ICommonData.sol";
 import {ITapiocaOFTBase, ITapiocaOFT, IBorrowParams} from "tapioca-periph/interfaces/tap-token/ITapiocaOFT.sol";
-import {UsdoModuleReceiverHelper} from "contracts/usdo/modules/UsdoModuleReceiverHelper.sol";
 import {IMagnetarHelper} from "tapioca-periph/interfaces/periph/IMagnetarHelper.sol";
 import {IUSDOBase, IMintData} from "tapioca-periph/interfaces/bar/IUSDO.sol";
 import {IYieldBox} from "tapioca-periph/interfaces/yieldbox/IYieldBox.sol";
 import {IMagnetar} from "tapioca-periph/interfaces/periph/IMagnetar.sol";
 import {MarketBorrowMsg} from "tapioca-periph/interfaces/oft/ITOFT.sol";
 import {IOftSender} from "tapioca-periph/interfaces/oft/IOftSender.sol";
-import {UsdoMsgCodec} from "contracts/usdo/libraries/UsdoMsgCodec.sol";
+import {UsdoModuleReceiverHelper} from "./UsdoModuleReceiverHelper.sol";
 import {ISwapper} from "tapioca-periph/interfaces/periph/ISwapper.sol";
 import {SafeApprove} from "tapioca-periph/libraries/SafeApprove.sol";
 import {IMarket} from "tapioca-periph/interfaces/bar/IMarket.sol";
-import {BaseUsdo} from "contracts/usdo/BaseUsdo.sol";
+import {UsdoMsgCodec} from "../libraries/UsdoMsgCodec.sol";
+import {BaseUsdo} from "../BaseUsdo.sol";
 
 /*
 __/\\\\\\\\\\\\\\\_____/\\\\\\\\\_____/\\\\\\\\\\\\\____/\\\\\\\\\\\_______/\\\\\_____________/\\\\\\\\\_____/\\\\\\\\\____        

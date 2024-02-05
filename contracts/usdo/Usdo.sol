@@ -21,9 +21,9 @@ import {
 } from "tapioca-periph/interfaces/oft/IUsdo.sol";
 import {TapiocaOmnichainSender} from "tapioca-periph/tapiocaOmnichainEngine/TapiocaOmnichainSender.sol";
 import {ICluster} from "tapioca-periph/interfaces/periph/ICluster.sol";
-import {UsdoReceiver} from "contracts/usdo/modules/UsdoReceiver.sol";
-import {UsdoSender} from "contracts/usdo/modules/UsdoSender.sol";
-import {BaseUsdo} from "contracts/usdo/BaseUsdo.sol";
+import {UsdoReceiver} from "./modules/UsdoReceiver.sol";
+import {UsdoSender} from "./modules/UsdoSender.sol";
+import {BaseUsdo} from "./BaseUsdo.sol";
 
 /*
 __/\\\\\\\\\\\\\\\_____/\\\\\\\\\_____/\\\\\\\\\\\\\____/\\\\\\\\\\\_______/\\\\\_____________/\\\\\\\\\_____/\\\\\\\\\____        
@@ -50,6 +50,20 @@ contract Usdo is BaseUsdo, Pausable, ReentrancyGuard, ERC20Permit {
     uint256 private _fees;
 
     address public flashLoanHelper;
+
+    /**
+     * @notice addresses allowed to mint USDO
+     * @dev chainId>address>status
+     */
+    mapping(uint256 => mapping(address => bool)) public allowedMinter;
+    /**
+     * @notice addresses allowed to burn USDO
+     * @dev chainId>address>status
+     */
+    mapping(uint256 => mapping(address => bool)) public allowedBurner;
+
+    event SetMinterStatus(address indexed _for, bool _status);
+    event SetBurnerStatus(address indexed _for, bool _status);
 
     constructor(UsdoInitStruct memory _initData, UsdoModulesInitStruct memory _modulesData)
         BaseUsdo(_initData)
