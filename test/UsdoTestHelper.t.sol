@@ -93,11 +93,7 @@ contract UsdoTestHelper is TestHelper, TestUtils {
 
     function createPenrose(TestPenroseData memory _data) public returns (Penrose pen, Singularity mediumRiskMC) {
         pen = new Penrose(
-            IYieldBox(_data.yb),
-            ICluster(_data.cluster),
-            IERC20(_data.tap),
-            IERC20(_data.token),
-            _data.owner
+            IYieldBox(_data.yb), ICluster(_data.cluster), IERC20(_data.tap), IERC20(_data.token), _data.owner
         );
         mediumRiskMC = new Singularity();
 
@@ -135,27 +131,5 @@ contract UsdoTestHelper is TestHelper, TestUtils {
         tokensData = abi.encode(_sgl.asset, _sgl.assetId, _sgl.collateral, _sgl.collateralId);
 
         data = abi.encode(_penrose, _sgl.oracle, 0, 75000, 80000, _sgl.leverageExecutor);
-    }
-
-    function createInitStruct(address endpoint, address owner, address yieldBox, address cluster)
-        public
-        pure
-        returns (UsdoInitStruct memory)
-    {
-        return UsdoInitStruct({endpoint: endpoint, delegate: owner, yieldBox: yieldBox, cluster: cluster});
-    }
-
-    function createModulesInitStruct(
-        address usdoSenderModule,
-        address usdoReceiverModule,
-        address marketReceiverModule,
-        address optionReceiverModule
-    ) public pure returns (UsdoModulesInitStruct memory) {
-        return UsdoModulesInitStruct({
-            usdoSenderModule: usdoSenderModule,
-            usdoReceiverModule: usdoReceiverModule,
-            marketReceiverModule: marketReceiverModule,
-            optionReceiverModule: optionReceiverModule
-        });
     }
 }

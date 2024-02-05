@@ -96,7 +96,6 @@ contract BigBang is BBCommon {
         uint256 _debtRateMax;
     }
 
-
     /// @notice The init function that acts as a constructor
     function init(bytes calldata modulesData, bytes calldata debtData, bytes calldata data) external onlyOnce {
         (_InitMemoryData memory initMemoryData) = abi.decode(data, (_InitMemoryData));

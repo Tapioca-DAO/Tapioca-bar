@@ -55,6 +55,7 @@ import {
 import {ITapiocaOptionLiquidityProvision} from
     "tapioca-periph/interfaces/tap-token/ITapiocaOptionLiquidityProvision.sol";
 import {ERC20PermitStruct, ERC20PermitApprovalMsg} from "tapioca-periph/interfaces/periph/ITapiocaOmnichainEngine.sol";
+import {TapiocaOmnichainExtExec} from "tapioca-periph/tapiocaOmnichainEngine/extension/TapiocaOmnichainExtExec.sol";
 import {ITapiocaOFT, IBorrowParams, IRemoveParams} from "tapioca-periph/interfaces/tap-token/ITapiocaOFT.sol";
 import {ICommonData, IWithdrawParams} from "tapioca-periph/interfaces/common/ICommonData.sol";
 import {UsdoMarketReceiverModule} from "contracts/usdo/modules/UsdoMarketReceiverModule.sol";
@@ -174,8 +175,16 @@ contract UsdoTest is UsdoTestHelper {
             vm.label(address(magnetar), "Magnetar");
         }
 
-        UsdoInitStruct memory aUsdoInitStruct =
-            createInitStruct(address(endpoints[aEid]), __owner, address(yieldBox), address(cluster));
+        TapiocaOmnichainExtExec extExec = new TapiocaOmnichainExtExec();
+        vm.label(address(extExec), "TapiocaOmnichainExtExec");
+
+        UsdoInitStruct memory aUsdoInitStruct = UsdoInitStruct({
+            endpoint: address(endpoints[aEid]),
+            delegate: __owner,
+            yieldBox: address(yieldBox),
+            cluster: address(cluster),
+            extExec: address(extExec)
+        });
         UsdoSender aUsdoSender = new UsdoSender(aUsdoInitStruct);
         UsdoReceiver aUsdoReceiver = new UsdoReceiver(aUsdoInitStruct);
         UsdoMarketReceiverModule aUsdoMarketReceiverModule = new UsdoMarketReceiverModule(aUsdoInitStruct);
@@ -185,19 +194,24 @@ contract UsdoTest is UsdoTestHelper {
         vm.label(address(aUsdoMarketReceiverModule), "aUsdoMarketReceiverModule");
         vm.label(address(aUsdoOptionsReceiverModule), "aUsdoOptionsReceiverModule");
 
-        UsdoModulesInitStruct memory aUsdoModulesInitStruct = createModulesInitStruct(
-            address(aUsdoSender),
-            address(aUsdoReceiver),
-            address(aUsdoMarketReceiverModule),
-            address(aUsdoOptionsReceiverModule)
-        );
+        UsdoModulesInitStruct memory aUsdoModulesInitStruct = UsdoModulesInitStruct({
+            usdoSenderModule: address(aUsdoSender),
+            usdoReceiverModule: address(aUsdoReceiver),
+            marketReceiverModule: address(aUsdoMarketReceiverModule),
+            optionReceiverModule: address(aUsdoOptionsReceiverModule)
+        });
         aUsdo = UsdoMock(
             payable(_deployOApp(type(UsdoMock).creationCode, abi.encode(aUsdoInitStruct, aUsdoModulesInitStruct)))
         );
         vm.label(address(aUsdo), "aUsdo");
 
-        UsdoInitStruct memory bUsdoInitStruct =
-            createInitStruct(address(endpoints[bEid]), __owner, address(yieldBox), address(cluster));
+        UsdoInitStruct memory bUsdoInitStruct = UsdoInitStruct({
+            endpoint: address(endpoints[bEid]),
+            delegate: __owner,
+            yieldBox: address(yieldBox),
+            cluster: address(cluster),
+            extExec: address(extExec)
+        });
         UsdoSender bUsdoSender = new UsdoSender(bUsdoInitStruct);
         UsdoReceiver bUsdoReceiver = new UsdoReceiver(bUsdoInitStruct);
         UsdoMarketReceiverModule bUsdoMarketReceiverModule = new UsdoMarketReceiverModule(bUsdoInitStruct);
@@ -207,12 +221,12 @@ contract UsdoTest is UsdoTestHelper {
         vm.label(address(bUsdoMarketReceiverModule), "bUsdoMarketReceiverModule");
         vm.label(address(bUsdoOptionsReceiverModule), "bUsdoOptionsReceiverModule");
 
-        UsdoModulesInitStruct memory bUsdoModulesInitStruct = createModulesInitStruct(
-            address(bUsdoSender),
-            address(bUsdoReceiver),
-            address(bUsdoMarketReceiverModule),
-            address(bUsdoOptionsReceiverModule)
-        );
+        UsdoModulesInitStruct memory bUsdoModulesInitStruct = UsdoModulesInitStruct({
+            usdoSenderModule: address(bUsdoSender),
+            usdoReceiverModule: address(bUsdoReceiver),
+            marketReceiverModule: address(bUsdoMarketReceiverModule),
+            optionReceiverModule: address(bUsdoOptionsReceiverModule)
+        });
         bUsdo = UsdoMock(
             payable(_deployOApp(type(UsdoMock).creationCode, abi.encode(bUsdoInitStruct, bUsdoModulesInitStruct)))
         );
@@ -238,9 +252,8 @@ contract UsdoTest is UsdoTestHelper {
 
         swapper = createSwapper(yieldBox);
         leverageExecutor = createLeverageExecutor(address(yieldBox), address(swapper), address(cluster));
-        (penrose, masterContract) = createPenrose(
-            TestPenroseData(address(yieldBox), address(cluster), address(tapOFT), address(weth), __owner)
-        );
+        (penrose, masterContract) =
+            createPenrose(TestPenroseData(address(yieldBox), address(cluster), address(tapOFT), address(weth), __owner));
         oracle = createOracle();
         singularity = createSingularity(
             penrose,
@@ -499,7 +512,7 @@ contract UsdoTest is UsdoTestHelper {
                 composeMsgData: ComposeMsgData({
                     index: 0,
                     gas: 500_000,
-                    value: uint128(remoteMsgFee_.nativeFee), 
+                    value: uint128(remoteMsgFee_.nativeFee),
                     data: remoteTransferMsg_,
                     prevData: bytes(""),
                     prevOptionsData: bytes("")

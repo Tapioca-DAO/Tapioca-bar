@@ -84,13 +84,7 @@ contract Penrose is BoringOwnable, BoringFactory {
     /// @param tapToken_ TapOFT contract address
     /// @param mainToken_ WETH contract address
     /// @param _owner owner address
-    constructor(
-        IYieldBox _yieldBox,
-        ICluster _cluster,
-        IERC20 tapToken_,
-        IERC20 mainToken_,
-        address _owner
-    ) {
+    constructor(IYieldBox _yieldBox, ICluster _cluster, IERC20 tapToken_, IERC20 mainToken_, address _owner) {
         yieldBox = _yieldBox;
         cluster = _cluster;
         tapToken = tapToken_;

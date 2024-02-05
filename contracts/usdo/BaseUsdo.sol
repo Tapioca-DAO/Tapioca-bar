@@ -66,7 +66,7 @@ abstract contract BaseUsdo is ModuleManager, BaseTapiocaOmnichainEngine, BaseUsd
     event SetBurnerStatus(address indexed _for, bool _status);
 
     constructor(UsdoInitStruct memory _data)
-        BaseTapiocaOmnichainEngine("Tapioca Usdo", "USDO", _data.endpoint, _data.delegate)
+        BaseTapiocaOmnichainEngine("Tapioca Usdo", "USDO", _data.endpoint, _data.delegate, _data.extExec)
     {
         yieldBox = IYieldBox(_data.yieldBox);
         cluster = ICluster(_data.cluster);
