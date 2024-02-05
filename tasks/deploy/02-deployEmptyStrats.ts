@@ -19,7 +19,7 @@ export const deployEmptyStrats__task = async (
 ) => {
     const chainInfo = hre.SDK.utils.getChainBy(
         'chainId',
-        await hre.getChainId(),
+        hre.SDK.eChainId,
     );
     if (!chainInfo) {
         throw new Error('Chain not found');
@@ -109,12 +109,12 @@ export const deployEmptyStrats__task = async (
 
     if (type != StratType.TokenAddress) {
         tokens = hre.SDK.db
-            .loadGlobalDeployment(tag, project, await hre.getChainId())
+            .loadGlobalDeployment(tag, project, hre.SDK.eChainId)
             .filter((e) => predicate(e));
 
         if (tokens.length == 0) {
             tokens = hre.SDK.db
-                .loadLocalDeployment(tag, await hre.getChainId())
+                .loadLocalDeployment(tag, hre.SDK.eChainId)
                 .filter((e) => predicate(e));
         }
     } else {

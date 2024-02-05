@@ -13,7 +13,7 @@ export const setCap = async (taskArgs: any, hre: HardhatRuntimeEnvironment) => {
 
     const chainInfo = hre.SDK.utils.getChainBy(
         'chainId',
-        await hre.getChainId(),
+        hre.SDK.eChainId,
     );
 
     // const penroseDeployment = hre.SDK.db

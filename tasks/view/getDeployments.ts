@@ -13,9 +13,9 @@ export const getDeployments = async (
                 SDK.API.utils.PROJECT_RELATIVE_DEPLOYMENT_PATH,
                 'utf8',
             ),
-        )[await hre.getChainId()];
+        )[hre.SDK.eChainId];
     }
-    return SDK.API.utils.getDeployment('Tapioca-Bar', await hre.getChainId());
+    return SDK.API.utils.getDeployment('Tapioca-Bar', hre.SDK.eChainId);
 };
 
 export const getLocalDeployments__task = async function (
@@ -27,7 +27,7 @@ export const getLocalDeployments__task = async function (
     } catch (e) {
         console.log(
             '[-] No local deployments found on chain id',
-            await hre.getChainId(),
+            hre.SDK.eChainId,
         );
     }
 };
@@ -41,7 +41,7 @@ export const getSDKDeployments__task = async function (
     } catch (e) {
         console.log(
             '[-] No SDK deployments found on chain id',
-            await hre.getChainId(),
+            hre.SDK.eChainId,
         );
     }
 };

@@ -19,7 +19,7 @@ export const deployOriginsMarket__task = async (
 
     const chainInfo = hre.SDK.utils.getChainBy(
         'chainId',
-        await hre.getChainId(),
+        hre.SDK.eChainId,
     );
     if (!chainInfo) {
         throw new Error('Chain not found');
@@ -37,7 +37,7 @@ export const deployOriginsMarket__task = async (
     const tokenStrategyFilter =
         taskArgs.tokenStrategyName ?? `ERC20WithoutStrategy-${token.name}`;
     let tokenStrategy = hre.SDK.db.getLocalDeployment(
-        await hre.getChainId(),
+        hre.SDK.eChainId,
         tokenStrategyFilter,
         tag,
     );
@@ -165,7 +165,7 @@ async function loadStrats(
     const VM = await loadVM(hre, tag);
 
     let usd0Strategy = hre.SDK.db.getLocalDeployment(
-        await hre.getChainId(),
+        hre.SDK.eChainId,
         'ERC20WithoutStrategy-USDO',
         tag,
     );
@@ -173,7 +173,7 @@ async function loadStrats(
     //if host chain, USDO strategy might be available in Penrose
     if (!usd0Strategy) {
         const penroseDeployment = hre.SDK.db.getLocalDeployment(
-            await hre.getChainId(),
+            hre.SDK.eChainId,
             'Penrose',
             tag,
         );
@@ -185,7 +185,7 @@ async function loadStrats(
             throw new Error('[-] Penrose not found on host chain');
         }
         const usdoDeployment = hre.SDK.db.getLocalDeployment(
-            await hre.getChainId(),
+            hre.SDK.eChainId,
             'USDO',
             tag,
         );
@@ -207,7 +207,7 @@ async function loadStrats(
 
     const chainInfo = hre.SDK.utils.getChainBy(
         'chainId',
-        await hre.getChainId(),
+        hre.SDK.eChainId,
     );
     if (!chainInfo) {
         throw new Error('Chain not found');

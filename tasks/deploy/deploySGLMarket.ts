@@ -20,7 +20,7 @@ export const deploySGLMarket__task = async (
 
     const chainInfo = hre.SDK.utils.getChainBy(
         'chainId',
-        await hre.getChainId(),
+        hre.SDK.eChainId,
     );
     if (!chainInfo) {
         throw new Error('Chain not found');
@@ -48,7 +48,7 @@ export const deploySGLMarket__task = async (
     const tokenStrategyFilter =
         taskArgs.tokenStrategyName ?? `ERC20WithoutStrategy-${token.name}`;
     let tokenStrategy = hre.SDK.db.getLocalDeployment(
-        await hre.getChainId(),
+        hre.SDK.eChainId,
         tokenStrategyFilter,
         tag,
     );
@@ -103,7 +103,7 @@ export const deploySGLMarket__task = async (
     const leverageExecutorFilter =
         taskArgs.executorName ?? 'SimpleLeverageExecutor';
     const leverageExecutor = hre.SDK.db.getLocalDeployment(
-        await hre.getChainId(),
+        hre.SDK.eChainId,
         leverageExecutorFilter,
         tag,
     );
@@ -212,7 +212,7 @@ async function loadStrats(
     const VM = await loadVM(hre, tag);
 
     let usd0Strategy = hre.SDK.db.getLocalDeployment(
-        await hre.getChainId(),
+        hre.SDK.eChainId,
         'ERC20WithoutStrategy-USDO',
         tag,
     );
@@ -220,7 +220,7 @@ async function loadStrats(
     //if host chain, USDO strategy might be available in Penrose
     if (!usd0Strategy) {
         const penroseDeployment = hre.SDK.db.getLocalDeployment(
-            await hre.getChainId(),
+            hre.SDK.eChainId,
             'Penrose',
             tag,
         );
@@ -232,7 +232,7 @@ async function loadStrats(
             throw new Error('[-] Penrose not found on host chain');
         }
         const usdoDeployment = hre.SDK.db.getLocalDeployment(
-            await hre.getChainId(),
+            hre.SDK.eChainId,
             'USDO',
             tag,
         );
@@ -254,7 +254,7 @@ async function loadStrats(
 
     const chainInfo = hre.SDK.utils.getChainBy(
         'chainId',
-        await hre.getChainId(),
+        hre.SDK.eChainId,
     );
     if (!chainInfo) {
         throw new Error('Chain not found');
@@ -306,7 +306,7 @@ async function loadStrats(
 async function loadContracts(hre: HardhatRuntimeEnvironment, tag: string) {
     const chainInfo = hre.SDK.utils.getChainBy(
         'chainId',
-        await hre.getChainId(),
+        hre.SDK.eChainId,
     );
     if (!chainInfo) {
         throw new Error('Chain not found');
@@ -353,7 +353,7 @@ async function loadContracts(hre: HardhatRuntimeEnvironment, tag: string) {
         await hre.SDK.hardhatUtils.getLocalContract(hre, 'SGLLeverage', tag);
 
     const mediumRiskMC = hre.SDK.db.getLocalDeployment(
-        await hre.getChainId(),
+        hre.SDK.eChainId,
         'MediumRiskMC',
         tag,
     );
@@ -363,7 +363,7 @@ async function loadContracts(hre: HardhatRuntimeEnvironment, tag: string) {
     const tokens = hre.SDK.db.loadGlobalDeployment(
         tag,
         'tapiocaz',
-        await hre.getChainId(),
+        hre.SDK.eChainId,
     );
 
     const { tokenName } = await inquirer.prompt({
