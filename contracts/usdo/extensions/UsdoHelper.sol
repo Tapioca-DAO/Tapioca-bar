@@ -126,6 +126,4 @@ contract UsdoHelper is TapiocaOmnichainEngineHelper, BaseUsdoTokenMsgType {
         }
         return false;
     }
-
-    //TODO: add rest
 }

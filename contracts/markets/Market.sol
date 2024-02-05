@@ -75,8 +75,6 @@ abstract contract Market is MarketERC20, BoringOwnable {
     /// @notice collateral share per user
     mapping(address => uint256) public userCollateralShare;
 
-    /// @notice liquidation caller rewards
-    uint256 public callerFee; // 90%
     /// @notice accrual protocol rewards
     uint256 public protocolFee; // 10%
     /// @notice min % a liquidator can receive in rewards
@@ -178,7 +176,6 @@ abstract contract Market is MarketERC20, BoringOwnable {
     /// @param _oracle oracle address
     /// @param _oracleData oracle data
     /// @param _conservator conservator address; conservator is allowed to pause/unpause the contract
-    /// @param _callerFee deprecated; todo: remove
     /// @param _protocolFee protocol fee percentage
     /// @param _liquidationBonusAmount extra amount factored in the closing factor computation
     /// @param _minLiquidatorReward minimum reward percentage a liquidator can receive
@@ -190,7 +187,6 @@ abstract contract Market is MarketERC20, BoringOwnable {
         ITapiocaOracle _oracle,
         bytes calldata _oracleData,
         address _conservator,
-        uint256 _callerFee,
         uint256 _protocolFee,
         uint256 _liquidationBonusAmount,
         uint256 _minLiquidatorReward,
@@ -212,12 +208,6 @@ abstract contract Market is MarketERC20, BoringOwnable {
         if (_conservator != address(0)) {
             emit ConservatorUpdated(conservator, _conservator);
             conservator = _conservator;
-        }
-
-        if (_callerFee > 0) {
-            require(_callerFee <= FEE_PRECISION, "Market: not valid");
-            callerFee = _callerFee;
-            emit ValueUpdated(1, _callerFee);
         }
 
         if (_protocolFee > 0) {

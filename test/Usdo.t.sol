@@ -239,7 +239,7 @@ contract UsdoTest is UsdoTestHelper {
         swapper = createSwapper(yieldBox);
         leverageExecutor = createLeverageExecutor(address(yieldBox), address(swapper), address(cluster));
         (penrose, masterContract) = createPenrose(
-            TestPenroseData(address(yieldBox), address(cluster), address(tapOFT), address(weth), aEid, __owner)
+            TestPenroseData(address(yieldBox), address(cluster), address(tapOFT), address(weth), __owner)
         );
         oracle = createOracle();
         singularity = createSingularity(
@@ -499,7 +499,7 @@ contract UsdoTest is UsdoTestHelper {
                 composeMsgData: ComposeMsgData({
                     index: 0,
                     gas: 500_000,
-                    value: uint128(remoteMsgFee_.nativeFee), // TODO Should we care about verifying cast boundaries?
+                    value: uint128(remoteMsgFee_.nativeFee), 
                     data: remoteTransferMsg_,
                     prevData: bytes(""),
                     prevOptionsData: bytes("")

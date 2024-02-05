@@ -85,7 +85,6 @@ library UsdoMsgCodec {
         pure
         returns (YieldBoxApproveAssetMsg memory approvalMsg_)
     {
-        // TODO bitwise operators ?
         __offsets memory offsets_ = __offsets({
             tokenOffset: 20,
             ownerOffset: 40,

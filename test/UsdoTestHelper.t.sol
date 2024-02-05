@@ -40,7 +40,6 @@ struct TestPenroseData {
     address cluster;
     address tap;
     address token;
-    uint32 hostEid;
     address owner;
 }
 
@@ -98,7 +97,6 @@ contract UsdoTestHelper is TestHelper, TestUtils {
             ICluster(_data.cluster),
             IERC20(_data.tap),
             IERC20(_data.token),
-            _data.hostEid,
             _data.owner
         );
         mediumRiskMC = new Singularity();

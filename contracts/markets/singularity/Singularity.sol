@@ -176,7 +176,6 @@ contract Singularity is SGLCommon {
         accrueInfo.interestPerSecond = startingInterestPerSecond; // 1% APR, with 1e18 being 100%
         updateExchangeRate();
         //default fees
-        callerFee = 1000; // 1%
         protocolFee = 10000; // 10%; used for accrual
         borrowOpeningFee = 50; // 0.05%
         //liquidation

@@ -83,14 +83,12 @@ contract Penrose is BoringOwnable, BoringFactory {
     /// @param _cluster Cluster contract address
     /// @param tapToken_ TapOFT contract address
     /// @param mainToken_ WETH contract address
-    /// @param _hostLzChainId the default protocol's LZ chain id
     /// @param _owner owner address
     constructor(
         IYieldBox _yieldBox,
         ICluster _cluster,
         IERC20 tapToken_,
         IERC20 mainToken_,
-        uint32 _hostLzChainId,
         address _owner
     ) {
         yieldBox = _yieldBox;
@@ -116,7 +114,6 @@ contract Penrose is BoringOwnable, BoringFactory {
         );
 
         bigBangEthDebtRate = 5e15;
-        hostLzChainId = _hostLzChainId; //TODO: do we use this?!
     }
 
     // **************//
