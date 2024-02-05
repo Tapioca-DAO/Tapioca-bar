@@ -234,7 +234,7 @@ contract UsdoMarketReceiverModule is BaseUsdo, UsdoModuleReceiverHelper {
         }
 
         // @dev prepare LZ call for TOFT
-        _toftSendAndBorrow(msg_, amountOut);
+        _toftSendAndBorrow(msg_, amountOut, msg_.composeGas);
 
         emit LeverageUpReceived(msg_.user, msg_.externalData.srcMarket, msg_.amount);
     }
@@ -247,7 +247,7 @@ contract UsdoMarketReceiverModule is BaseUsdo, UsdoModuleReceiverHelper {
         }
     }
 
-    function _toftSendAndBorrow(MarketLeverageUpMsg memory msg_, uint256 amountOut) private {
+    function _toftSendAndBorrow(MarketLeverageUpMsg memory msg_, uint256 amountOut, uint128 composeGas) private {
         MarketBorrowMsg memory _marketBorrowMsg = MarketBorrowMsg({
             user: msg_.user,
             borrowParams: IBorrowParams({
@@ -270,14 +270,16 @@ contract UsdoMarketReceiverModule is BaseUsdo, UsdoModuleReceiverHelper {
         });
         bytes memory marketBorrowMsg_ = abi.encode(_marketBorrowMsg);
 
-        // TOFT.PT_YB_SEND_SGL_BORROW;  TODO: change to defined type
+        uint16 _tOFTComposeMsgId= 801;
+
         _sendComposed(
             msg_.lzSendParams.sendParam.dstEid,
             msg_.externalData.tOft,
             address(usdoHelper),
             amountOut,
-            801,
-            marketBorrowMsg_
+            _tOFTComposeMsgId,
+            marketBorrowMsg_,
+            composeGas
         );
     }
 }

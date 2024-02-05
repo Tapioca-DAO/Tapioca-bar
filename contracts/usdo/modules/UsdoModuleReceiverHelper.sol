@@ -65,7 +65,8 @@ abstract contract UsdoModuleReceiverHelper {
         address _usdoHelper,
         uint256 amount,
         uint16 _composeMsgType,
-        bytes memory _composeMsg
+        bytes memory _composeMsg, 
+        uint128 _composeGas
     ) internal returns (MessagingReceipt memory msgReceipt_) {
         uint16 _sendType = 1;
 
@@ -99,7 +100,7 @@ abstract contract UsdoModuleReceiverHelper {
             _composeMsgType,
             ComposeMsgData({
                 index: 0,
-                gas: 500_000, //TODO: what should we input here?
+                gas: _composeGas,
                 value: sendParamFee_.nativeFee.toUint128(),
                 data: _composeMsg,
                 prevData: bytes(""),
