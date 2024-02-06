@@ -1794,6 +1794,7 @@ describe('BigBang test', () => {
                         0,
                         0,
                         0,
+                        0,
                     ],
                 );
             await penrose.executeMarketFn(

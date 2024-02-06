@@ -71,6 +71,7 @@ contract Singularity is SGLCommon {
     error ModuleNotSet();
     error NotAuthorized();
     error SameState();
+    error ExchangeRateNotValid();
 
     struct _InitMemoryData {
         IPenrose tapiocaBar_;
@@ -101,8 +102,9 @@ contract Singularity is SGLCommon {
         _InitMemoryTokensData memory _initMemoryTokensData;
         _InitMemoryData memory _initMemoryData;
         {
-            (bytes memory moduleData, bytes memory tokensData, bytes memory data) = abi.decode(initData, (bytes, bytes, bytes));
-                
+            (bytes memory moduleData, bytes memory tokensData, bytes memory data) =
+                abi.decode(initData, (bytes, bytes, bytes));
+
             _initMemoryModulesData = abi.decode(moduleData, (_InitMemoryModulesData));
             _initMemoryTokensData = abi.decode(tokensData, (_InitMemoryTokensData));
             _initMemoryData = abi.decode(data, (_InitMemoryData));
@@ -112,8 +114,12 @@ contract Singularity is SGLCommon {
         yieldBox = IYieldBox(_initMemoryData.tapiocaBar_.yieldBox());
         owner = address(penrose);
 
-        if (address(_initMemoryTokensData._collateral) == address(0)) revert BadPair();
-        if (address(_initMemoryTokensData._asset) == address(0)) revert BadPair();
+        if (address(_initMemoryTokensData._collateral) == address(0)) {
+            revert BadPair();
+        }
+        if (address(_initMemoryTokensData._asset) == address(0)) {
+            revert BadPair();
+        }
         if (address(_initMemoryData._oracle) == address(0)) revert BadPair();
 
         _initModules(
@@ -213,9 +219,19 @@ contract Singularity is SGLCommon {
         view
         returns (bytes memory)
     {
+        (bool updated, uint256 _exchangeRate) = oracle.peek(oracleData);
+        if (!updated || _exchangeRate == 0) {
+            _exchangeRate = exchangeRate; //use stored rate
+        }
+        if (_exchangeRate == 0) revert ExchangeRateNotValid();
+
         (bool success, bytes memory returnData) = address(liquidationModule).staticcall(
             abi.encodeWithSelector(
-                SGLLiquidation.viewLiquidationCollateralAmount.selector, user, maxBorrowPart, minLiquidationBonus
+                SGLLiquidation.viewLiquidationCollateralAmount.selector,
+                user,
+                maxBorrowPart,
+                minLiquidationBonus,
+                _exchangeRate
             )
         );
         if (!success) {

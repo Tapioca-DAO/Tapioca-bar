@@ -69,10 +69,10 @@ contract AssetToEthLeverageExecutor is BaseLeverageExecutor {
         if (collateralAmountOut < minETh) revert NotEnough();
 
         //wrap and transfer to user
-        ITapiocaOFTBase(collateralAddress).wrap{value: collateralAmountOut}(
+        uint256 wrapped = ITapiocaOFTBase(collateralAddress).wrap{value: collateralAmountOut}(
             address(this), address(this), collateralAmountOut
         );
-        _ybDeposit(collateralId, collateralAddress, address(this), to, collateralAmountOut);
+        _ybDeposit(collateralId, collateralAddress, address(this), to, wrapped);
     }
 
     /// @notice buys asset with collateral

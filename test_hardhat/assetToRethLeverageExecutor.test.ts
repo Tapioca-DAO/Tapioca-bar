@@ -42,7 +42,7 @@ describe('AssetToREthLeverageExecutor test', () => {
             deployer.address,
         );
 
-        const TOFTMock = new TOFTMock__factory(deployer);
+        const TOFTMock = await ethers.getContractFactory("TOFTMock");
         const toft = await TOFTMock.deploy(rEth.address);
 
         const toftStrategy = await createTokenEmptyStrategy(

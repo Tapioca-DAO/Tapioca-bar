@@ -234,7 +234,9 @@ contract Usdo is BaseUsdo, Pausable, ReentrancyGuard, ERC20Permit {
      * @param _amount the amount to mint
      */
     function mint(address _to, uint256 _amount) external whenNotPaused {
-        if (!allowedMinter[_getChainId()][msg.sender]) revert Usdo_NotAuthorized();
+        if (!allowedMinter[_getChainId()][msg.sender]) {
+            revert Usdo_NotAuthorized();
+        }
         _mint(_to, _amount);
     }
 
@@ -244,7 +246,9 @@ contract Usdo is BaseUsdo, Pausable, ReentrancyGuard, ERC20Permit {
      * @param _amount the amount to burn
      */
     function burn(address _from, uint256 _amount) external whenNotPaused {
-        if (!allowedBurner[_getChainId()][msg.sender]) revert Usdo_NotAuthorized();
+        if (!allowedBurner[_getChainId()][msg.sender]) {
+            revert Usdo_NotAuthorized();
+        }
         _burn(_from, _amount);
     }
 

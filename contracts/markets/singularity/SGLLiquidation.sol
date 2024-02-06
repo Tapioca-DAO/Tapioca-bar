@@ -51,22 +51,18 @@ contract SGLLiquidation is SGLCommon {
     // ********************** //
     // *** VIEW FUNCTIONS *** //
     // ********************** //
+    //TODO: fix; move to helper
     /// @notice returns the collateral amount used in a liquidation
     /// @dev useful to compute minAmountOut for collateral to asset swap
     /// @param user the user to liquidate
     /// @param maxBorrowPart max borrow part for user
     /// @param minLiquidationBonus minimum liquidation bonus to accept
-    function viewLiquidationCollateralAmount(address user, uint256 maxBorrowPart, uint256 minLiquidationBonus)
-        external
-        view
-        returns (uint256 collateralAmount)
-    {
-        (bool updated, uint256 _exchangeRate) = oracle.peek(oracleData);
-        if (!updated || _exchangeRate == 0) {
-            _exchangeRate = exchangeRate; //use stored rate
-        }
-        if (_exchangeRate == 0) revert ExchangeRateNotValid();
-
+    function viewLiquidationCollateralAmount(
+        address user,
+        uint256 maxBorrowPart,
+        uint256 minLiquidationBonus,
+        uint256 _exchangeRate
+    ) external view returns (uint256 collateralAmount) {
         (,, uint256 collateralShare) =
             _viewLiqudationBorrowAndCollateralShare(user, maxBorrowPart, minLiquidationBonus, _exchangeRate);
 

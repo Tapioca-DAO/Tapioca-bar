@@ -82,6 +82,7 @@ describe('assetToSGlpLeverageExecutors.test test', () => {
             yieldBox.address,
             routerV3,
             factoryV3,
+            deployer.address
         );
         const glpStrategy = await createTokenEmptyStrategy(
             yieldBox.address,
