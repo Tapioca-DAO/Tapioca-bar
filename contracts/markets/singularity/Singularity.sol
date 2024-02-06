@@ -10,9 +10,9 @@ import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {IMarketLiquidatorReceiver} from "tapioca-periph/interfaces/bar/IMarketLiquidatorReceiver.sol";
 import {ILeverageExecutor} from "tapioca-periph/interfaces/bar/ILeverageExecutor.sol";
 import {ITapiocaOracle} from "tapioca-periph/interfaces/periph/ITapiocaOracle.sol";
+import {IYieldBox} from "tapioca-periph/interfaces/yieldbox/IYieldBox.sol";
 import {ISendFrom} from "tapioca-periph/interfaces/common/ISendFrom.sol";
 import {IPenrose} from "tapioca-periph/interfaces/bar/IPenrose.sol";
-import {IYieldBox} from "tapioca-periph/interfaces/yieldbox/IYieldBox.sol";
 import {SGLLiquidation} from "./SGLLiquidation.sol";
 import {SGLCollateral} from "./SGLCollateral.sol";
 import {SGLLeverage} from "./SGLLeverage.sol";
@@ -228,10 +228,22 @@ contract Singularity is SGLCommon {
         (bool success, bytes memory returnData) = address(liquidationModule).staticcall(
             abi.encodeWithSelector(
                 SGLLiquidation.viewLiquidationCollateralAmount.selector,
-                user,
-                maxBorrowPart,
-                minLiquidationBonus,
-                _exchangeRate
+                _ViewLiquidationStruct(
+                    user,
+                    maxBorrowPart,
+                    minLiquidationBonus,
+                    _exchangeRate,
+                    yieldBox,
+                    collateralId,
+                    userCollateralShare[user],
+                    userBorrowPart[user],
+                    totalBorrow,
+                    liquidationBonusAmount,
+                    liquidationCollateralizationRate,
+                    liquidationMultiplier,
+                    EXCHANGE_RATE_PRECISION,
+                    FEE_PRECISION_DECIMALS
+                )
             )
         );
         if (!success) {

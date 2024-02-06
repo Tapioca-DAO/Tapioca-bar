@@ -119,7 +119,6 @@ describe('AssetToEthLeverageExecutor test', () => {
             deployer.address,
             data,
         );
-        console.log('--------------E');
 
         await yieldBox.withdraw(
             toftAssetId,

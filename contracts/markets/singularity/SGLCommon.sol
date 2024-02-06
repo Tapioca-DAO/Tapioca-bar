@@ -7,6 +7,7 @@ import {ISingularity, IMarket} from "tapioca-periph/interfaces/bar/ISingularity.
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 // Tapioca
+import {IYieldBox} from "tapioca-periph/interfaces/yieldbox/IYieldBox.sol";
 import {ICluster} from "tapioca-periph/interfaces/periph/ICluster.sol";
 import {SGLStorage} from "./SGLStorage.sol";
 
@@ -218,5 +219,22 @@ contract SGLCommon is SGLStorage {
 
     function _isWhitelisted(uint16 _chainId, address _contract) internal view returns (bool) {
         return ICluster(penrose.cluster()).isWhitelisted(_chainId, _contract);
+    }
+
+    struct _ViewLiquidationStruct {
+        address user;
+        uint256 maxBorrowPart;
+        uint256 minLiquidationBonus;
+        uint256 exchangeRate;
+        IYieldBox yieldBox;
+        uint256 collateralId;
+        uint256 userCollateralShare;
+        uint256 userBorrowPart;
+        Rebase totalBorrow;
+        uint256 liquidationBonusAmount;
+        uint256 liquidationCollateralizationRate;
+        uint256 liquidationMultiplier;
+        uint256 exchangeRatePrecision;
+        uint256 feeDecimalsPrecision;
     }
 }

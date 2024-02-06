@@ -195,9 +195,7 @@ describe('Singularity test', () => {
             collateralizationRate =
                 await wethUsdcSingularity.collateralizationRate();
 
-                console.log('-----------A');
             expect(oracle).to.eq(toSetAddress);
-                console.log('-----------B');
             expect(conservator).to.eq(toSetAddress);
             expect(protocolFee).to.eq(toSetValue);
             expect(liquidationBonusAmount).to.eq(toSetValue);
@@ -1009,12 +1007,12 @@ describe('Singularity test', () => {
             const userBorrowedAmountBefore =
                 await wethUsdcSingularity.userBorrowPart(eoa1.address);
             
-            // const viewUsedCollateral =
-            //     await wethUsdcSingularity.viewLiquidationCollateralAmount(
-            //         eoa1.address,
-            //         wethBorrowVal,
-            //         0,
-            //     );
+            const viewUsedCollateral =
+                await wethUsdcSingularity.viewLiquidationCollateralAmount(
+                    eoa1.address,
+                    wethBorrowVal,
+                    0,
+                );
             await expect(
                 wethUsdcSingularity.liquidate(
                     [eoa1.address],
