@@ -26,22 +26,12 @@ contract MarketERC20 is IERC20, IERC20Permit, EIP712 {
     // ************ //
     // *** VARS *** //
     // ************ //
-    // solhint-disable-next-line var-name-mixedcase
-    bytes32 private constant _PERMIT_TYPEHASH = keccak256(
-        "Permit(uint16 actionType,address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)"
-    );
-    bytes32 private constant _PERMIT_TYPEHASH_BORROW = keccak256(
-        "PermitBorrow(uint16 actionType,address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)"
-    );
 
-    /**
-     * @dev In previous versions `_PERMIT_TYPEHASH` was declared as `immutable`.
-     * However, to ensure consistency with the upgradeable transpiler, we will continue
-     * to reserve a slot.
-     * @custom:oz-renamed-from _PERMIT_TYPEHASH
-     */
-    // solhint-disable-next-line var-name-mixedcase
-    bytes32 private _PERMIT_TYPEHASH_DEPRECATED_SLOT;
+    // keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
+    bytes32 private constant _PERMIT_TYPEHASH = 0x6e71edae12b1b97f4d1f60370fef10105fa2faae0126114a169c64845d6126c9;
+    // keccak256("PermitBorrow(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)")
+    bytes32 private constant _PERMIT_TYPEHASH_BORROW =
+        0xe9685ff6d48c617fe4f692c50e602cce27cbad0290beb93cfa77eac43968d58c;
 
     /// @notice owner > balance mapping.
     mapping(address => uint256) public override balanceOf;
@@ -188,14 +178,7 @@ contract MarketERC20 is IERC20, IERC20Permit, EIP712 {
         virtual
         override(IERC20, IERC20Permit)
     {
-        _permit(0, true, owner, spender, value, deadline, v, r, s);
-    }
-
-    function permitAction(bytes memory data, uint16 actionType) external virtual {
-        (bool borrow, address owner, address spender, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s) =
-            abi.decode(data, (bool, address, address, uint256, uint256, uint8, bytes32, bytes32));
-
-        _permit(actionType, borrow, owner, spender, value, deadline, v, r, s);
+        _permit(true, owner, spender, value, deadline, v, r, s);
     }
 
     function permitBorrow(
@@ -207,7 +190,7 @@ contract MarketERC20 is IERC20, IERC20Permit, EIP712 {
         bytes32 r,
         bytes32 s
     ) external virtual {
-        _permit(0, false, owner, spender, value, deadline, v, r, s);
+        _permit(false, owner, spender, value, deadline, v, r, s);
     }
 
     // ************************* //
@@ -224,8 +207,7 @@ contract MarketERC20 is IERC20, IERC20Permit, EIP712 {
     }
 
     function _permit(
-        uint16 actionType,
-        bool asset, // 1 = asset, 0 = collateral
+        bool asset, // true = asset, false = collateral
         address owner,
         address spender,
         uint256 value,
@@ -240,13 +222,7 @@ contract MarketERC20 is IERC20, IERC20Permit, EIP712 {
 
         structHash = keccak256(
             abi.encode(
-                asset ? _PERMIT_TYPEHASH : _PERMIT_TYPEHASH_BORROW,
-                actionType,
-                owner,
-                spender,
-                value,
-                _useNonce(owner),
-                deadline
+                asset ? _PERMIT_TYPEHASH : _PERMIT_TYPEHASH_BORROW, owner, spender, value, _useNonce(owner), deadline
             )
         );
 
