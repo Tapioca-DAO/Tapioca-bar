@@ -113,12 +113,15 @@ contract BBLendingCommon is BBCommon {
         if (part == 0) revert NothingToRepay();
 
         // @dev check allowance
-        uint256 partInAmount;
-        Rebase memory _totalBorrow = totalBorrow;
-        (_totalBorrow, partInAmount) = _totalBorrow.sub(part, false);
-        uint256 allowanceShare = _computeAllowanceAmountInAsset(to, exchangeRate, partInAmount, _safeDecimals(asset));
-        if (allowanceShare == 0) revert AllowanceNotValid();
-        _allowedBorrow(from, allowanceShare);
+        if (msg.sender != from) {
+            uint256 partInAmount;
+            Rebase memory _totalBorrow = totalBorrow;
+            (_totalBorrow, partInAmount) = _totalBorrow.sub(part, false);
+            uint256 allowanceShare =
+                _computeAllowanceAmountInAsset(to, exchangeRate, partInAmount, _safeDecimals(asset));
+            if (allowanceShare == 0) revert AllowanceNotValid();
+            _allowedBorrow(from, allowanceShare);
+        }
 
         // @dev sub `part` of totalBorrow
         (totalBorrow, amount) = totalBorrow.sub(part, true);

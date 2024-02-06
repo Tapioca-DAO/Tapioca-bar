@@ -41,7 +41,7 @@ describe('AssetToWstEthLeverageExecutor test', () => {
             deployer.address,
         );
 
-        const TOFTMock = new TOFTMock__factory(deployer);
+        const TOFTMock = await ethers.getContractFactory("TOFTMock");
         const toft = await TOFTMock.deploy(wstEth.address);
 
         const toftStrategy = await createTokenEmptyStrategy(

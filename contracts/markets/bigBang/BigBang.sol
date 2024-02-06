@@ -102,8 +102,9 @@ contract BigBang is BBCommon {
         _InitMemoryModulesData memory initModulesData;
         _InitMemoryDebtData memory initDebtData;
         {
-            (bytes memory moduleData, bytes memory debtData, bytes memory data) = abi.decode(initData, (bytes, bytes, bytes));
-                
+            (bytes memory moduleData, bytes memory debtData, bytes memory data) =
+                abi.decode(initData, (bytes, bytes, bytes));
+
             initModulesData = abi.decode(moduleData, (_InitMemoryModulesData));
             initDebtData = abi.decode(debtData, (_InitMemoryDebtData));
             initMemoryData = abi.decode(data, (_InitMemoryData));

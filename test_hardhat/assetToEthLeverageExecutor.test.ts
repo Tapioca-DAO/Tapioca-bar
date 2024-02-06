@@ -1,15 +1,11 @@
-import hre, { ethers } from 'hardhat';
+import { ethers } from 'hardhat';
 import { expect } from 'chai';
-import { register, impersonateAccount } from './test.utils';
+import { register } from './test.utils';
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 import _ from 'lodash';
 import {
-    ERC20Mock__factory,
     MockSwapper__factory,
-    TOFTMock__factory,
 } from '@tapioca-sdk/typechain/tapioca-mocks';
-import { ERC20 } from '../typechain';
-import { UniswapV3Swapper__factory } from '@tapioca-sdk/typechain/tapioca-periphery';
 
 describe('AssetToEthLeverageExecutor test', () => {
     before(function () {
@@ -34,7 +30,7 @@ describe('AssetToEthLeverageExecutor test', () => {
         const MockSwapper = new MockSwapper__factory(deployer);
         const swapper = await MockSwapper.deploy(yieldBox.address);
 
-        const TOFTMock = new TOFTMock__factory(deployer);
+        const TOFTMock = await ethers.getContractFactory("TOFTMock");
         const toft = await TOFTMock.deploy(ethers.constants.AddressZero);
 
         const toftStrategy = await createTokenEmptyStrategy(
@@ -123,7 +119,6 @@ describe('AssetToEthLeverageExecutor test', () => {
             deployer.address,
             data,
         );
-        console.log('--------------E');
 
         await yieldBox.withdraw(
             toftAssetId,

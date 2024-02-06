@@ -259,7 +259,7 @@ abstract contract Market is MarketERC20, BoringOwnable {
             require(_collateralizationRate <= FEE_PRECISION, "Market: not valid");
             require(_collateralizationRate <= liquidationCollateralizationRate, "Market: collateralizationRate too big");
             require(
-                _collateralizationRate * (10 ** FEE_PRECISION + liquidationMultiplier) < 10 ** (2 * FEE_PRECISION),
+                _collateralizationRate * (FEE_PRECISION + liquidationMultiplier) < FEE_PRECISION * FEE_PRECISION,
                 "Market: CR * (1 + LM) >= 1"
             );
             collateralizationRate = _collateralizationRate;
@@ -289,12 +289,30 @@ abstract contract Market is MarketERC20, BoringOwnable {
         view
         returns (uint256)
     {
+        return _computeClosingFactor(
+            borrowPart,
+            collateralPartInAsset,
+            ratesPrecision,
+            liquidationCollateralizationRate,
+            liquidationMultiplier,
+            totalBorrow
+        );
+    }
+
+    function _computeClosingFactor(
+        uint256 borrowPart,
+        uint256 collateralPartInAsset,
+        uint256 ratesPrecision,
+        uint256 _liquidationCollateralizationRate,
+        uint256 _liquidationMultiplier,
+        Rebase memory _totalBorrow
+    ) internal view returns (uint256) {
         // Obviously it's not `borrowPart` anymore but `borrowAmount`
-        borrowPart = (borrowPart * totalBorrow.elastic) / totalBorrow.base;
+        borrowPart = (borrowPart * _totalBorrow.elastic) / _totalBorrow.base;
 
         //borrowPart and collateralPartInAsset should already be scaled due to the exchange rate computation
         uint256 liquidationStartsAt =
-            (collateralPartInAsset * liquidationCollateralizationRate) / (10 ** ratesPrecision);
+            (collateralPartInAsset * _liquidationCollateralizationRate) / (10 ** ratesPrecision);
 
         if (borrowPart < liquidationStartsAt) return 0;
 
@@ -302,7 +320,7 @@ abstract contract Market is MarketERC20, BoringOwnable {
         uint256 numerator = borrowPart - liquidationStartsAt;
         //compute denominator
         uint256 diff =
-            (collateralizationRate * ((10 ** ratesPrecision) + liquidationMultiplier)) / (10 ** ratesPrecision);
+            (collateralizationRate * ((10 ** ratesPrecision) + _liquidationMultiplier)) / (10 ** ratesPrecision);
         int256 denominator = (int256(10 ** ratesPrecision) - int256(diff)) * int256(1e13);
 
         //compute closing factor
