@@ -1,5 +1,5 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
-import { IDeployerVMAdd } from 'tapioca-sdk/dist/ethers/hardhat/DeployerVM';
+import { IDeployerVMAdd } from '@tapioca-sdk//ethers/hardhat/DeployerVM';
 import { MockSwapper__factory } from '@tapioca-sdk/typechain/tapioca-mocks';
 import MockSwapperArtifact from '@tapioca-sdk/artifacts/tapioca-mocks/MockSwapper.json';
 import { EChainID } from '@tapioca-sdk/api/config';
@@ -31,7 +31,7 @@ export const testDeployMockSwapper__task = async (
 
     const chainInfo = hre.SDK.utils.getChainBy(
         'chainId',
-        await hre.getChainId(),
+        hre.SDK.eChainId,
     );
     if (!chainInfo) {
         throw new Error('Chain not found');

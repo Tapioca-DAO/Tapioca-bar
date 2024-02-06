@@ -10,6 +10,19 @@ import {IERC20} from "@boringcrypto/boring-solidity/contracts/ERC20.sol";
 import {IUSDOBase} from "tapioca-periph/interfaces/bar/IUSDO.sol";
 import {BBCommon} from "./BBCommon.sol";
 
+/*
+__/\\\\\\\\\\\\\\\_____/\\\\\\\\\_____/\\\\\\\\\\\\\____/\\\\\\\\\\\_______/\\\\\_____________/\\\\\\\\\_____/\\\\\\\\\____        
+ _\///////\\\/////____/\\\\\\\\\\\\\__\/\\\/////////\\\_\/////\\\///______/\\\///\\\________/\\\////////____/\\\\\\\\\\\\\__       
+  _______\/\\\________/\\\/////////\\\_\/\\\_______\/\\\_____\/\\\_______/\\\/__\///\\\____/\\\/____________/\\\/////////\\\_      
+   _______\/\\\_______\/\\\_______\/\\\_\/\\\\\\\\\\\\\/______\/\\\______/\\\______\//\\\__/\\\_____________\/\\\_______\/\\\_     
+    _______\/\\\_______\/\\\\\\\\\\\\\\\_\/\\\/////////________\/\\\_____\/\\\_______\/\\\_\/\\\_____________\/\\\\\\\\\\\\\\\_    
+     _______\/\\\_______\/\\\/////////\\\_\/\\\_________________\/\\\_____\//\\\______/\\\__\//\\\____________\/\\\/////////\\\_   
+      _______\/\\\_______\/\\\_______\/\\\_\/\\\_________________\/\\\______\///\\\__/\\\_____\///\\\__________\/\\\_______\/\\\_  
+       _______\/\\\_______\/\\\_______\/\\\_\/\\\______________/\\\\\\\\\\\____\///\\\\\/________\////\\\\\\\\\_\/\\\_______\/\\\_ 
+        _______\///________\///________\///__\///______________\///////////_______\/////_____________\/////////__\///________\///__
+
+*/
+
 contract BBLendingCommon is BBCommon {
     using RebaseLibrary for Rebase;
     using BoringERC20 for IERC20;
@@ -21,6 +34,7 @@ contract BBLendingCommon is BBCommon {
     error OracleCallFailed();
     error NothingToRepay();
     error RepayAmountNotValid();
+    error AllowanceNotValid();
 
     // ************************** //
     // *** PRIVATE FUNCTIONS *** //
@@ -92,23 +106,35 @@ contract BBLendingCommon is BBCommon {
     }
 
     /// @dev Concrete implementation of `repay`.
-    function _repay(address from, address to, uint256 part) internal returns (uint256 amountOut) {
+    function _repay(address from, address to, uint256 part) internal returns (uint256 amount) {
         if (part > userBorrowPart[to]) {
             part = userBorrowPart[to];
         }
         if (part == 0) revert NothingToRepay();
 
-        uint256 amount;
+        // @dev check allowance
+        uint256 partInAmount;
+        Rebase memory _totalBorrow = totalBorrow;
+        (_totalBorrow, partInAmount) = _totalBorrow.sub(part, false);
+        uint256 allowanceShare = _computeAllowanceAmountInAsset(to, exchangeRate, partInAmount, _safeDecimals(asset));
+        if (allowanceShare == 0) revert AllowanceNotValid();
+        _allowedBorrow(from, allowanceShare);
+
+        // @dev sub `part` of totalBorrow
         (totalBorrow, amount) = totalBorrow.sub(part, true);
         userBorrowPart[to] -= part;
 
-        // amount includes the opening & accrued fees
-        amountOut = amount;
+        // @dev amount includes the opening & accrued fees
         yieldBox.withdraw(assetId, from, address(this), amount, 0);
 
-        //burn USDO
+        // @dev burn USDO
         IUSDOBase(address(asset)).burn(address(this), amount);
 
-        emit LogRepay(from, to, amountOut, part);
+        emit LogRepay(from, to, amount, part);
+    }
+
+    function _safeDecimals(IERC20 token) internal view returns (uint8) {
+        (bool success, bytes memory data) = address(token).staticcall(abi.encodeWithSelector(0x313ce567)); //decimals() selector
+        return success && data.length == 32 ? abi.decode(data, (uint8)) : 18;
     }
 }

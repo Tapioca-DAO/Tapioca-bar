@@ -1,7 +1,7 @@
 import { ContractFactory } from 'ethers';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
-import { IDeployerVMAdd } from 'tapioca-sdk/dist/ethers/hardhat/DeployerVM';
-import { TContract } from 'tapioca-sdk/dist/shared';
+import { IDeployerVMAdd } from '@tapioca-sdk//ethers/hardhat/DeployerVM';
+import { TContract } from '@tapioca-sdk//shared';
 
 export const buildEmptyStrat = async (
     hre: HardhatRuntimeEnvironment,

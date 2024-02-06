@@ -14,7 +14,7 @@ export const deployOracleMock__task = async (
     const tokens = hre.SDK.db.loadGlobalDeployment(
         tag,
         'tapiocaz',
-        await hre.getChainId(),
+        hre.SDK.eChainId,
     );
 
     const { oracleMockSuffix } = await inquirer.prompt({

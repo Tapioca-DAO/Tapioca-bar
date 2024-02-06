@@ -13,6 +13,19 @@ import {IYieldBox} from "tapioca-periph/interfaces/yieldbox/IYieldBox.sol";
 import {IPenrose} from "tapioca-periph/interfaces/bar/IPenrose.sol";
 import {MarketERC20} from "./MarketERC20.sol";
 
+/*
+__/\\\\\\\\\\\\\\\_____/\\\\\\\\\_____/\\\\\\\\\\\\\____/\\\\\\\\\\\_______/\\\\\_____________/\\\\\\\\\_____/\\\\\\\\\____        
+ _\///////\\\/////____/\\\\\\\\\\\\\__\/\\\/////////\\\_\/////\\\///______/\\\///\\\________/\\\////////____/\\\\\\\\\\\\\__       
+  _______\/\\\________/\\\/////////\\\_\/\\\_______\/\\\_____\/\\\_______/\\\/__\///\\\____/\\\/____________/\\\/////////\\\_      
+   _______\/\\\_______\/\\\_______\/\\\_\/\\\\\\\\\\\\\/______\/\\\______/\\\______\//\\\__/\\\_____________\/\\\_______\/\\\_     
+    _______\/\\\_______\/\\\\\\\\\\\\\\\_\/\\\/////////________\/\\\_____\/\\\_______\/\\\_\/\\\_____________\/\\\\\\\\\\\\\\\_    
+     _______\/\\\_______\/\\\/////////\\\_\/\\\_________________\/\\\_____\//\\\______/\\\__\//\\\____________\/\\\/////////\\\_   
+      _______\/\\\_______\/\\\_______\/\\\_\/\\\_________________\/\\\______\///\\\__/\\\_____\///\\\__________\/\\\_______\/\\\_  
+       _______\/\\\_______\/\\\_______\/\\\_\/\\\______________/\\\\\\\\\\\____\///\\\\\/________\////\\\\\\\\\_\/\\\_______\/\\\_ 
+        _______\///________\///________\///__\///______________\///////////_______\/////_____________\/////////__\///________\///__
+
+*/
+
 abstract contract Market is MarketERC20, BoringOwnable {
     using RebaseLibrary for Rebase;
 
@@ -75,8 +88,6 @@ abstract contract Market is MarketERC20, BoringOwnable {
     /// @notice collateral share per user
     mapping(address => uint256) public userCollateralShare;
 
-    /// @notice liquidation caller rewards
-    uint256 public callerFee; // 90%
     /// @notice accrual protocol rewards
     uint256 public protocolFee; // 10%
     /// @notice min % a liquidator can receive in rewards
@@ -178,7 +189,6 @@ abstract contract Market is MarketERC20, BoringOwnable {
     /// @param _oracle oracle address
     /// @param _oracleData oracle data
     /// @param _conservator conservator address; conservator is allowed to pause/unpause the contract
-    /// @param _callerFee deprecated; todo: remove
     /// @param _protocolFee protocol fee percentage
     /// @param _liquidationBonusAmount extra amount factored in the closing factor computation
     /// @param _minLiquidatorReward minimum reward percentage a liquidator can receive
@@ -190,7 +200,6 @@ abstract contract Market is MarketERC20, BoringOwnable {
         ITapiocaOracle _oracle,
         bytes calldata _oracleData,
         address _conservator,
-        uint256 _callerFee,
         uint256 _protocolFee,
         uint256 _liquidationBonusAmount,
         uint256 _minLiquidatorReward,
@@ -212,12 +221,6 @@ abstract contract Market is MarketERC20, BoringOwnable {
         if (_conservator != address(0)) {
             emit ConservatorUpdated(conservator, _conservator);
             conservator = _conservator;
-        }
-
-        if (_callerFee > 0) {
-            require(_callerFee <= FEE_PRECISION, "Market: not valid");
-            callerFee = _callerFee;
-            emit ValueUpdated(1, _callerFee);
         }
 
         if (_protocolFee > 0) {

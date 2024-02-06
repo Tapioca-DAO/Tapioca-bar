@@ -1,7 +1,7 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import inquirer from 'inquirer';
 import { getOverrideOptions } from '@tapioca-sdk/api/utils';
-import { TContract } from 'tapioca-sdk/dist/shared';
+import { TContract } from '@tapioca-sdk//shared';
 import { Penrose, YieldBox } from '../../typechain';
 import { buildOracleMock } from '../deployBuilds/05-buildOracleMock';
 import ClusterArtifact from '@tapioca-sdk/artifacts/tapioca-periphery/Cluster.json';
@@ -24,7 +24,7 @@ export const deployBigBangMarket__task = async (
 
     const chainInfo = hre.SDK.utils.getChainBy(
         'chainId',
-        await hre.getChainId(),
+        hre.SDK.eChainId,
     );
     if (!chainInfo) {
         throw new Error('Chain not found');
@@ -50,7 +50,7 @@ export const deployBigBangMarket__task = async (
         );
 
     const mediumRiskMC = hre.SDK.db.getLocalDeployment(
-        await hre.getChainId(),
+        hre.SDK.eChainId,
         'BigBangMediumRiskMC',
         tag,
     );
@@ -65,7 +65,7 @@ export const deployBigBangMarket__task = async (
     const tokens = hre.SDK.db.loadGlobalDeployment(
         tag,
         projectName,
-        await hre.getChainId(),
+        hre.SDK.eChainId,
     );
 
     const { tokenName } = await inquirer.prompt({
@@ -80,7 +80,7 @@ export const deployBigBangMarket__task = async (
     const tokenStrategyFilter =
         taskArgs.tokenStrategyName ?? `ERC20WithoutStrategy-${token.name}`;
     let tokenStrategy = hre.SDK.db.getLocalDeployment(
-        await hre.getChainId(),
+        hre.SDK.eChainId,
         tokenStrategyFilter,
         tag,
     );
@@ -196,7 +196,7 @@ export const deployBigBangMarket__task = async (
     const leverageExecutorFilter =
         taskArgs.executorName ?? 'SimpleLeverageExecutor';
     const leverageExecutor = hre.SDK.db.getLocalDeployment(
-        await hre.getChainId(),
+        hre.SDK.eChainId,
         leverageExecutorFilter,
         tag,
     );

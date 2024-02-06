@@ -1,11 +1,11 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
-import { IDeployerVMAdd } from 'tapioca-sdk/dist/ethers/hardhat/DeployerVM';
+import { IDeployerVMAdd } from '@tapioca-sdk//ethers/hardhat/DeployerVM';
 import {
     CurveSwapper__factory,
     CurveStableToUsdoBidder__factory,
-} from 'tapioca-sdk/dist/typechain/tapioca-periphery';
-import CurveSwapperArtifact from 'tapioca-sdk/dist/artifacts/tapioca-periphery/CurveSwapper.json';
-import CurveStableToUsdoBidderArtifact from 'tapioca-sdk/dist/artifacts/tapioca-periphery/CurveStableToUsdoBidder.json';
+} from '@tapioca-sdk//typechain/tapioca-periphery';
+import CurveSwapperArtifact from '@tapioca-sdk//artifacts/tapioca-periphery/CurveSwapper.json';
+import CurveStableToUsdoBidderArtifact from '@tapioca-sdk//artifacts/tapioca-periphery/CurveStableToUsdoBidder.json';
 
 // TODO - @Rektora, didn't had time to check if this is relevant/needed, coming back to it later
 export const buildStableToUSD0Bidder = async (

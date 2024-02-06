@@ -11,14 +11,13 @@
       "baseUrl": ".",
       "paths": {
         "@tapioca-sdk/*": ["gitmodule/tapioca-sdk/src/*"],
-        "@tapioca-sdk/dist/*": ["gitmodule/tapioca-sdk/dist/*"],
         "@typechain/*": ["gen/typechain/*"],
       }
     },
     "include": [
       "./hardhat.config.ts",
       "./hardhat_scripts",
-      "hardhat_test",
+      "test_hardhat",
       "./gen/typechain",
       "./tasks",
       "./deploy"

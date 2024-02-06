@@ -1,11 +1,11 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
-import { IDeployerVMAdd } from 'tapioca-sdk/dist/ethers/hardhat/DeployerVM';
+import { IDeployerVMAdd } from '@tapioca-sdk//ethers/hardhat/DeployerVM';
 import {
     YieldBox__factory,
     YieldBoxURIBuilder__factory,
-} from 'tapioca-sdk/dist/typechain/YieldBox';
-import YieldBoxArtifact from 'tapioca-sdk/dist/artifacts/YieldBox/contracts/YieldBox.sol/YieldBox.json';
-import YieldBoxURIBuilderArtifact from 'tapioca-sdk/dist/artifacts/YieldBox/contracts/YieldBoxURIBuilder.sol/YieldBoxURIBuilder.json';
+} from '@tapioca-sdk//typechain/YieldBox';
+import YieldBoxArtifact from '@tapioca-sdk//artifacts/YieldBox/contracts/YieldBox.sol/YieldBox.json';
+import YieldBoxURIBuilderArtifact from '@tapioca-sdk//artifacts/YieldBox/contracts/YieldBoxURIBuilder.sol/YieldBoxURIBuilder.json';
 
 // TODO - Put WETH9 in params for prod
 export const buildYieldBox = async (

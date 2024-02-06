@@ -11,7 +11,7 @@ export const fillCluster__task = async (
 ) => {
     const chainInfo = hre.SDK.utils.getChainBy(
         'chainId',
-        await hre.getChainId(),
+        hre.SDK.eChainId,
     );
     if (!chainInfo) {
         throw new Error('Chain not found');
@@ -65,7 +65,7 @@ export const fillCluster__task = async (
     let allContracts = loadAllContracts(
         hre,
         tag,
-        await hre.getChainId(),
+        hre.SDK.eChainId,
         filter,
     );
 

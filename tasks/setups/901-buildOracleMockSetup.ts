@@ -1,5 +1,5 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
-import { TDeploymentVMContract } from 'tapioca-sdk/dist/ethers/hardhat/DeployerVM';
+import { TDeploymentVMContract } from '@tapioca-sdk//ethers/hardhat/DeployerVM';
 import { Multicall3 } from '../../typechain/contracts/MultiCall';
 
 export const buildYieldBoxAssets = async (

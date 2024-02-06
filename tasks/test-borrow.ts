@@ -5,7 +5,7 @@ import inquirer from 'inquirer';
 
 import TapiocaOFTArtifact from '@tapioca-sdk/artifacts/tapiocaz/TapiocaOFT.json';
 import { TapiocaOFT__factory } from '@tapioca-sdk/typechain/TapiocaZ/factories/tOFT/TapiocaOFT__factory';
-import { TContract } from 'tapioca-sdk/dist/shared';
+import { TContract } from '@tapioca-sdk//shared';
 import { Singularity, USDO__factory } from '../typechain';
 import { BaseTOFT } from '@tapioca-sdk/typechain/TapiocaZ/TapiocaOFT';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
@@ -25,7 +25,7 @@ export const testCrossChainBorrow__task = async (
     // Setup chain info
     const fromChain = hre.SDK.utils.getChainBy(
         'chainId',
-        await hre.getChainId(),
+        hre.SDK.eChainId,
     );
     const toChain = hre.SDK.utils.getChainBy('name', 'arbitrum_goerli');
 

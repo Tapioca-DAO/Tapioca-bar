@@ -11,7 +11,7 @@ export const registerYbAssets__task = async (
 ) => {
     const chainInfo = hre.SDK.utils.getChainBy(
         'chainId',
-        await hre.getChainId(),
+        hre.SDK.eChainId,
     );
     if (!chainInfo) {
         throw new Error('Chain not found');
@@ -32,7 +32,7 @@ export const registerYbAssets__task = async (
     if (!yieldBoxDep) throw new Error('[-] YieldBox not found');
 
     let localStrats = hre.SDK.db
-        .loadLocalDeployment(tag, await hre.getChainId())
+        .loadLocalDeployment(tag, hre.SDK.eChainId)
         .filter((a) => a.name.startsWith('ERC20WithoutStrategy'));
 
     const globalStrats = hre.SDK.db
@@ -83,14 +83,14 @@ export const registerYbAssets__task = async (
         .loadGlobalDeployment(
             tag,
             hre.SDK.config.TAPIOCA_PROJECTS_NAME.TapiocaZ,
-            await hre.getChainId(),
+            hre.SDK.eChainId,
         )
         .filter((a) => stratForNames.find((e) => a.name.startsWith(e)));
     const tapOFTTokens = hre.SDK.db
         .loadGlobalDeployment(
             tag,
             hre.SDK.config.TAPIOCA_PROJECTS_NAME.TapToken,
-            await hre.getChainId(),
+            hre.SDK.eChainId,
         )
         .filter((a) => stratForNames.find((e) => a.name.startsWith(e)));
 
@@ -100,12 +100,12 @@ export const registerYbAssets__task = async (
             .loadGlobalDeployment(
                 tag,
                 hre.SDK.config.TAPIOCA_PROJECTS_NAME.TapiocaMocks,
-                await hre.getChainId(),
+                hre.SDK.eChainId,
             )
             .filter((a) => stratForNames.find((e) => a.name.startsWith(e)));
     }
     const localTokens = hre.SDK.db
-        .loadLocalDeployment(tag, await hre.getChainId())
+        .loadLocalDeployment(tag, hre.SDK.eChainId)
         .filter((a) => stratForNames.find((e) => a.name.startsWith(e)));
     const deps = [
         ...strats,

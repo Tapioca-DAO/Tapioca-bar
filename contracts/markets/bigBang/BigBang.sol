@@ -73,31 +73,47 @@ contract BigBang is BBCommon {
     BBLeverage public leverageModule;
 
     struct _InitMemoryData {
-        address _liquidationModule;
-        address _borrowModule;
-        address _collateralModule;
-        address _leverageModule;
         IPenrose _penrose;
         IERC20 _collateral;
         uint256 _collateralId;
         ITapiocaOracle _oracle;
         uint256 _exchangeRatePrecision;
-        uint256 _debtRateAgainstEth;
-        uint256 _debtRateMin;
-        uint256 _debtRateMax;
         uint256 _collateralizationRate;
         uint256 _liquidationCollateralizationRate;
         ILeverageExecutor _leverageExecutor;
     }
 
+    struct _InitMemoryModulesData {
+        address _liquidationModule;
+        address _borrowModule;
+        address _collateralModule;
+        address _leverageModule;
+    }
+
+    struct _InitMemoryDebtData {
+        uint256 _debtRateAgainstEth;
+        uint256 _debtRateMin;
+        uint256 _debtRateMax;
+    }
+
     /// @notice The init function that acts as a constructor
-    function init(bytes calldata data) external onlyOnce {
-        (_InitMemoryData memory initMemoryData) = abi.decode(data, (_InitMemoryData));
+    function init(bytes calldata initData) external onlyOnce {
+        _InitMemoryData memory initMemoryData;
+        _InitMemoryModulesData memory initModulesData;
+        _InitMemoryDebtData memory initDebtData;
+        {
+            (bytes memory moduleData, bytes memory debtData, bytes memory data) = abi.decode(initData, (bytes, bytes, bytes));
+                
+            initModulesData = abi.decode(moduleData, (_InitMemoryModulesData));
+            initDebtData = abi.decode(debtData, (_InitMemoryDebtData));
+            initMemoryData = abi.decode(data, (_InitMemoryData));
+        }
+
         _initModules(
-            initMemoryData._liquidationModule,
-            initMemoryData._borrowModule,
-            initMemoryData._collateralModule,
-            initMemoryData._leverageModule
+            initModulesData._liquidationModule,
+            initModulesData._borrowModule,
+            initModulesData._collateralModule,
+            initModulesData._leverageModule
         );
         _initCoreStorage(
             initMemoryData._penrose,
@@ -109,7 +125,7 @@ contract BigBang is BBCommon {
             initMemoryData._liquidationCollateralizationRate,
             initMemoryData._leverageExecutor
         );
-        _initDebtStorage(initMemoryData._debtRateAgainstEth, initMemoryData._debtRateMin, initMemoryData._debtRateMax);
+        _initDebtStorage(initDebtData._debtRateAgainstEth, initDebtData._debtRateMin, initDebtData._debtRateMax);
     }
 
     function _initModules(
@@ -165,7 +181,6 @@ contract BigBang is BBCommon {
         collateralId = _collateralId;
         oracle = _oracle;
         updateExchangeRate();
-        callerFee = 90000; // 90%
         protocolFee = 10000; // 10%; used for accrual
         collateralizationRate = _collateralizationRate > 0 ? _collateralizationRate : 75000;
         liquidationCollateralizationRate =

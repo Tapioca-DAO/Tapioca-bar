@@ -8,7 +8,7 @@ export const setBurnerStatus__task = async (
     const tag = await hre.SDK.hardhatUtils.askForTag(hre, 'local');
     const chainInfo = hre.SDK.utils.getChainBy(
         'chainId',
-        await hre.getChainId(),
+        hre.SDK.eChainId,
     );
     if (!chainInfo) {
         throw new Error('Chain not found');

@@ -5,10 +5,10 @@ import { typechain } from 'tapioca-sdk';
 import {
     IDeployerVMAdd,
     TDeploymentVMContract,
-} from 'tapioca-sdk/dist/ethers/hardhat/DeployerVM';
-import { TContract } from 'tapioca-sdk/dist/shared';
+} from '@tapioca-sdk//ethers/hardhat/DeployerVM';
+import { TContract } from '@tapioca-sdk//shared';
 import { getDeployments } from './view/getDeployments';
-import { EChainID } from 'tapioca-sdk/dist/api/config';
+import { EChainID } from '@tapioca-sdk//api/config';
 
 export const loadVM = async (
     hre: HardhatRuntimeEnvironment,
@@ -18,7 +18,7 @@ export const loadVM = async (
     const signer = (await hre.ethers.getSigners())[0];
     const chainInfo = hre.SDK.utils.getChainBy(
         'chainId',
-        await hre.getChainId(),
+        hre.SDK.eChainId,
     );
     // const multicallAddress =
     //     hre.SDK.config.MULTICALL_ADDRESSES[chainInfo?.chainId];

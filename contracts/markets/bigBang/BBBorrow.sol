@@ -1,16 +1,24 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-import "./BBLendingCommon.sol";
+import "contracts/markets/bigBang/BBLendingCommon.sol";
+
+/*
+__/\\\\\\\\\\\\\\\_____/\\\\\\\\\_____/\\\\\\\\\\\\\____/\\\\\\\\\\\_______/\\\\\_____________/\\\\\\\\\_____/\\\\\\\\\____        
+ _\///////\\\/////____/\\\\\\\\\\\\\__\/\\\/////////\\\_\/////\\\///______/\\\///\\\________/\\\////////____/\\\\\\\\\\\\\__       
+  _______\/\\\________/\\\/////////\\\_\/\\\_______\/\\\_____\/\\\_______/\\\/__\///\\\____/\\\/____________/\\\/////////\\\_      
+   _______\/\\\_______\/\\\_______\/\\\_\/\\\\\\\\\\\\\/______\/\\\______/\\\______\//\\\__/\\\_____________\/\\\_______\/\\\_     
+    _______\/\\\_______\/\\\\\\\\\\\\\\\_\/\\\/////////________\/\\\_____\/\\\_______\/\\\_\/\\\_____________\/\\\\\\\\\\\\\\\_    
+     _______\/\\\_______\/\\\/////////\\\_\/\\\_________________\/\\\_____\//\\\______/\\\__\//\\\____________\/\\\/////////\\\_   
+      _______\/\\\_______\/\\\_______\/\\\_\/\\\_________________\/\\\______\///\\\__/\\\_____\///\\\__________\/\\\_______\/\\\_  
+       _______\/\\\_______\/\\\_______\/\\\_\/\\\______________/\\\\\\\\\\\____\///\\\\\/________\////\\\\\\\\\_\/\\\_______\/\\\_ 
+        _______\///________\///________\///__\///______________\///////////_______\/////_____________\/////////__\///________\///__
+
+*/
 
 contract BBBorrow is BBLendingCommon {
     using RebaseLibrary for Rebase;
     using BoringERC20 for IERC20;
-
-    // ************** //
-    // *** ERRORS *** //
-    // ************** //
-    error AllowanceNotValid();
 
     // ************************ //
     // *** PUBLIC FUNCTIONS *** //
@@ -22,11 +30,7 @@ contract BBBorrow is BBLendingCommon {
     /// @param amount Amount to borrow.
     /// @return part Total part of the debt held by borrowers.
     /// @return share Total amount in shares borrowed.
-    function borrow(
-        address from,
-        address to,
-        uint256 amount
-    )
+    function borrow(address from, address to, uint256 amount)
         external
         optionNotPaused(PauseType.Borrow)
         notSelf(to)
@@ -37,12 +41,8 @@ contract BBBorrow is BBLendingCommon {
         penrose.reAccrueBigBangMarkets();
 
         uint256 feeAmount = _computeVariableOpeningFee(amount);
-        uint256 allowanceShare = _computeAllowanceAmountInAsset(
-            from,
-            exchangeRate,
-            amount + feeAmount,
-            asset.safeDecimals()
-        );
+        uint256 allowanceShare =
+            _computeAllowanceAmountInAsset(from, exchangeRate, amount + feeAmount, asset.safeDecimals());
         if (allowanceShare == 0) revert AllowanceNotValid();
         _allowedBorrow(from, allowanceShare);
         (part, share) = _borrow(from, to, amount, feeAmount);
@@ -54,12 +54,7 @@ contract BBBorrow is BBLendingCommon {
     /// @param to Address of the user this payment should go.
     /// @param part The amount to repay. See `userBorrowPart`.
     /// @return amount The total amount repayed.
-    function repay(
-        address from,
-        address to,
-        bool,
-        uint256 part
-    )
+    function repay(address from, address to, bool, uint256 part)
         external
         optionNotPaused(PauseType.Repay)
         notSelf(to)
@@ -69,20 +64,6 @@ contract BBBorrow is BBLendingCommon {
 
         _accrue();
         penrose.reAccrueBigBangMarkets();
-
-        uint256 partInAmount;
-        Rebase memory _totalBorrow = totalBorrow;
-        (_totalBorrow, partInAmount) = _totalBorrow.sub(part, true);
-
-        uint256 allowanceShare = _computeAllowanceAmountInAsset(
-            to,
-            exchangeRate,
-            partInAmount,
-            asset.safeDecimals()
-        );
-
-        if (allowanceShare == 0) revert AllowanceNotValid();
-        _allowedBorrow(from, allowanceShare);
 
         amount = _repay(from, to, part);
     }

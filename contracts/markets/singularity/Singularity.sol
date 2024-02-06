@@ -16,7 +16,6 @@ import {IYieldBox} from "tapioca-periph/interfaces/yieldbox/IYieldBox.sol";
 import {SGLLiquidation} from "./SGLLiquidation.sol";
 import {SGLCollateral} from "./SGLCollateral.sol";
 import {SGLLeverage} from "./SGLLeverage.sol";
-import {LzLib} from "contracts/tmp/LzLib.sol";
 import {SGLCommon} from "./SGLCommon.sol";
 import {SGLBorrow} from "./SGLBorrow.sol";
 
@@ -74,15 +73,7 @@ contract Singularity is SGLCommon {
     error SameState();
 
     struct _InitMemoryData {
-        address _liquidationModule;
-        address _borrowModule;
-        address _collateralModule;
-        address _leverageModule;
         IPenrose tapiocaBar_;
-        IERC20 _asset;
-        uint256 _assetId;
-        IERC20 _collateral;
-        uint256 _collateralId;
         ITapiocaOracle _oracle;
         uint256 _exchangeRatePrecision;
         uint256 _collateralizationRate;
@@ -90,29 +81,52 @@ contract Singularity is SGLCommon {
         ILeverageExecutor _leverageExecutor;
     }
 
+    struct _InitMemoryModulesData {
+        address _liquidationModule;
+        address _borrowModule;
+        address _collateralModule;
+        address _leverageModule;
+    }
+
+    struct _InitMemoryTokensData {
+        IERC20 _asset;
+        uint256 _assetId;
+        IERC20 _collateral;
+        uint256 _collateralId;
+    }
+
     /// @notice The init function that acts as a constructor
-    function init(bytes calldata data) external onlyOnce {
-        (_InitMemoryData memory _initMemoryData) = abi.decode(data, (_InitMemoryData));
+    function init(bytes calldata initData) external onlyOnce {
+        _InitMemoryModulesData memory _initMemoryModulesData;
+        _InitMemoryTokensData memory _initMemoryTokensData;
+        _InitMemoryData memory _initMemoryData;
+        {
+            (bytes memory moduleData, bytes memory tokensData, bytes memory data) = abi.decode(initData, (bytes, bytes, bytes));
+                
+            _initMemoryModulesData = abi.decode(moduleData, (_InitMemoryModulesData));
+            _initMemoryTokensData = abi.decode(tokensData, (_InitMemoryTokensData));
+            _initMemoryData = abi.decode(data, (_InitMemoryData));
+        }
 
         penrose = _initMemoryData.tapiocaBar_;
         yieldBox = IYieldBox(_initMemoryData.tapiocaBar_.yieldBox());
         owner = address(penrose);
 
-        if (address(_initMemoryData._collateral) == address(0)) revert BadPair();
-        if (address(_initMemoryData._asset) == address(0)) revert BadPair();
+        if (address(_initMemoryTokensData._collateral) == address(0)) revert BadPair();
+        if (address(_initMemoryTokensData._asset) == address(0)) revert BadPair();
         if (address(_initMemoryData._oracle) == address(0)) revert BadPair();
 
         _initModules(
-            _initMemoryData._liquidationModule,
-            _initMemoryData._borrowModule,
-            _initMemoryData._collateralModule,
-            _initMemoryData._leverageModule
+            _initMemoryModulesData._liquidationModule,
+            _initMemoryModulesData._borrowModule,
+            _initMemoryModulesData._collateralModule,
+            _initMemoryModulesData._leverageModule
         );
         _initCoreStorage(
-            _initMemoryData._asset,
-            _initMemoryData._assetId,
-            _initMemoryData._collateral,
-            _initMemoryData._collateralId,
+            _initMemoryTokensData._asset,
+            _initMemoryTokensData._assetId,
+            _initMemoryTokensData._collateral,
+            _initMemoryTokensData._collateralId,
             _initMemoryData._oracle,
             _initMemoryData._leverageExecutor
         );
@@ -169,7 +183,6 @@ contract Singularity is SGLCommon {
         accrueInfo.interestPerSecond = startingInterestPerSecond; // 1% APR, with 1e18 being 100%
         updateExchangeRate();
         //default fees
-        callerFee = 1000; // 1%
         protocolFee = 10000; // 10%; used for accrual
         borrowOpeningFee = 50; // 0.05%
         //liquidation

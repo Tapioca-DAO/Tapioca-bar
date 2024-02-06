@@ -1,7 +1,7 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
-import { IDeployerVMAdd } from 'tapioca-sdk/dist/ethers/hardhat/DeployerVM';
-import { UniswapV2Swapper__factory } from 'tapioca-sdk/dist/typechain/tapioca-periphery';
-import UniswapV2SwapperArtifact from 'tapioca-sdk/dist/artifacts/tapioca-periphery/UniswapV2Swapper.json';
+import { IDeployerVMAdd } from '@tapioca-sdk//ethers/hardhat/DeployerVM';
+import { UniswapV2Swapper__factory } from '@tapioca-sdk//typechain/tapioca-periphery';
+import UniswapV2SwapperArtifact from '@tapioca-sdk//artifacts/tapioca-periphery/UniswapV2Swapper.json';
 
 export const buildMultiSwapper = async (
     hre: HardhatRuntimeEnvironment,
