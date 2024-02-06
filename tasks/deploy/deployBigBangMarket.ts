@@ -1,7 +1,7 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import inquirer from 'inquirer';
 import { getOverrideOptions } from '@tapioca-sdk/api/utils';
-import { TContract } from 'tapioca-sdk/dist/shared';
+import { TContract } from '@tapioca-sdk//shared';
 import { Penrose, YieldBox } from '../../typechain';
 import { buildOracleMock } from '../deployBuilds/05-buildOracleMock';
 import ClusterArtifact from '@tapioca-sdk/artifacts/tapioca-periphery/Cluster.json';

@@ -16,7 +16,7 @@ import { YieldBox } from '@tapioca-sdk/typechain/YieldBox';
 import { BigBang } from '../typechain';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { BigNumber } from 'ethers';
-import { Market } from 'tapioca-sdk/dist/typechain/tapioca-penrose';
+import { Market } from '@tapioca-sdk//typechain/tapioca-penrose';
 
 describe('BigBang test', () => {
     it.skip('should test liquidator reward', async () => {

@@ -16,7 +16,7 @@ import { YieldBox } from '@tapioca-sdk/typechain/YieldBox';
 import { Origins } from '../typechain';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { BigNumber } from 'ethers';
-import { Market } from 'tapioca-sdk/dist/typechain/tapioca-penrose';
+import { Market } from '@tapioca-sdk//typechain/tapioca-penrose';
 
 describe('Origins test', () => {
     it('should borrow and check values in time', async () => {

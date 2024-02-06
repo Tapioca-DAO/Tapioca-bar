@@ -1,6 +1,6 @@
 import { ContractFactory } from 'ethers';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
-import { IDeployerVMAdd } from 'tapioca-sdk/dist/ethers/hardhat/DeployerVM';
+import { IDeployerVMAdd } from '@tapioca-sdk//ethers/hardhat/DeployerVM';
 
 export const buildMocks = async (
     hre: HardhatRuntimeEnvironment,

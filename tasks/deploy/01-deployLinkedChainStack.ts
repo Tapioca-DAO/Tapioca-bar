@@ -1,6 +1,6 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import inquirer from 'inquirer';
-import { Multicall3 } from 'tapioca-sdk/dist/typechain/tapioca-periphery';
+import { Multicall3 } from '@tapioca-sdk//typechain/tapioca-periphery';
 import { buildYieldBox } from '../deployBuilds/00-buildYieldBox';
 import { buildUSD0 } from '../deployBuilds/06-buildUSDO';
 import { buildUSDOModules } from '../deployBuilds/11-buildUSDOModules';

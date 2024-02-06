@@ -1,6 +1,6 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import inquirer from 'inquirer';
-import { TContract } from 'tapioca-sdk/dist/shared';
+import { TContract } from '@tapioca-sdk//shared';
 import { Penrose, YieldBox } from '../../typechain';
 import { buildOracleMock } from '../deployBuilds/05-buildOracleMock';
 import { loadVM } from '../utils';

@@ -1,9 +1,9 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import inquirer from 'inquirer';
-import { MagnetarV2 } from 'tapioca-sdk/dist/typechain/tapioca-periphery';
+import { MagnetarV2 } from '@tapioca-sdk//typechain/tapioca-periphery';
 import TapiocaOFTArtifact from '@tapioca-sdk/artifacts/tapiocaz/TapiocaOFT.json';
 
-import { TContract } from 'tapioca-sdk/dist/shared';
+import { TContract } from '@tapioca-sdk//shared';
 import { TAPIOCA_PROJECTS_NAME } from '@tapioca-sdk/api/config';
 import MagnetarV2Artifacts from '@tapioca-sdk/artifacts/tapioca-periphery/MagnetarV2.json';
 import { TapiocaOFT__factory } from '@tapioca-sdk/typechain/TapiocaZ/factories/tOFT/TapiocaOFT__factory';

@@ -1,11 +1,11 @@
 import { ContractTransaction } from 'ethers';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import _ from 'lodash';
-import { BigBang, Singularity } from 'tapioca-sdk/dist/typechain/tapioca-bar';
-import { ERC20Mock } from 'tapioca-sdk/dist/typechain/tapioca-mocks';
-import { MagnetarV2 } from 'tapioca-sdk/dist/typechain/tapioca-periphery';
-import { TapiocaOFT } from 'tapioca-sdk/dist/typechain/tapiocaz';
-import { YieldBox } from 'tapioca-sdk/dist/typechain/YieldBox';
+import { BigBang, Singularity } from '@tapioca-sdk//typechain/tapioca-bar';
+import { ERC20Mock } from '@tapioca-sdk//typechain/tapioca-mocks';
+import { MagnetarV2 } from '@tapioca-sdk//typechain/tapioca-periphery';
+import { TapiocaOFT } from '@tapioca-sdk//typechain/tapiocaz';
+import { YieldBox } from '@tapioca-sdk//typechain/YieldBox';
 import ERC20MockArtifact from '@tapioca-sdk/artifacts/tapioca-mocks/ERC20Mock.json';
 import TapiocaOFTArtifact from '@tapioca-sdk/artifacts/tapiocaz/TapiocaOFT.json';
 import MagnetarArtifact from '@tapioca-sdk/artifacts/tapioca-periphery/MagnetarV2.json';
