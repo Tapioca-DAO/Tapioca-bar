@@ -2,11 +2,12 @@
 pragma solidity ^0.8.18;
 
 // External
+import {IERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/draft-ERC20Permit.sol";
 import {EIP712, ECDSA} from "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 import {IERC20} from "@boringcrypto/boring-solidity/contracts/ERC20.sol";
 
 // Tapioca
-import {IERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/draft-ERC20Permit.sol";
+import {IPearlmit} from "tapioca-periph/interfaces/periph/IPearlmit.sol";
 
 /*
 
@@ -51,23 +52,6 @@ contract MarketERC20 is IERC20, IERC20Permit, EIP712 {
     // ***************** //
     // *** MODIFIERS *** //
     // ***************** //
-    function _allowedLend(address from, uint256 share) internal {
-        if (from != msg.sender) {
-            require(allowance[from][msg.sender] >= share, "Market: not approved");
-            if (allowance[from][msg.sender] != type(uint256).max) {
-                allowance[from][msg.sender] -= share;
-            }
-        }
-    }
-
-    function _allowedBorrow(address from, uint256 share) internal {
-        if (from != msg.sender) {
-            require(allowanceBorrow[from][msg.sender] >= share, "Market: not approved");
-            if (allowanceBorrow[from][msg.sender] != type(uint256).max) {
-                allowanceBorrow[from][msg.sender] -= share;
-            }
-        }
-    }
 
     /// Check if msg.sender has right to execute Lend operations
     modifier allowedLend(address from, uint256 share) virtual {
@@ -196,6 +180,16 @@ contract MarketERC20 is IERC20, IERC20Permit, EIP712 {
     // ************************* //
     // *** PRIVATE FUNCTIONS *** //
     // ************************* //
+
+    /**
+     * @notice Checks if the caller is allowed to lend `share` from `from`.
+     */
+    function _allowedLend(address from, uint256 share) internal virtual {}
+
+    /**
+     * @notice Checks if the caller is allowed to borrow `share` from `from`.
+     */
+    function _allowedBorrow(address from, uint256 share) internal virtual {}
 
     /**
      * @dev "Consume a nonce": return the current value and increment.

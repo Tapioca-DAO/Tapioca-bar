@@ -395,6 +395,31 @@ abstract contract Market is MarketERC20, BoringOwnable {
 
     function _accrueView() internal view virtual returns (Rebase memory);
 
+    /**
+     * @inheritdoc MarketERC20
+     */
+    function _allowedLend(address from, uint256 share) internal virtual override {
+        if (from != msg.sender) {
+            require(allowance[from][msg.sender] >= share, "Market: not approved");
+            if (allowance[from][msg.sender] != type(uint256).max) {
+                allowance[from][msg.sender] -= share;
+            }
+        }
+    }
+
+    /**
+     * @inheritdoc MarketERC20
+     */
+    function _allowedBorrow(address from, uint256 share) internal virtual override {
+        if (from != msg.sender) {
+            (uint256 pearlmitAllowed,) = penrose.pearlmit().allowance(from, msg.sender, address(yieldBox), collateralId);
+            require(allowanceBorrow[from][msg.sender] >= share || pearlmitAllowed >= share, "Market: not approved");
+            if (allowanceBorrow[from][msg.sender] != type(uint256).max) {
+                allowanceBorrow[from][msg.sender] -= share;
+            }
+        }
+    }
+
     function _getRevertMsg(bytes memory _returnData) internal pure returns (string memory) {
         if (_returnData.length > 1000) return "Market: reason too long";
         // If the _res length is less than 68, then the transaction failed silently (without a revert message)
