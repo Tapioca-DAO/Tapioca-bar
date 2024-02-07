@@ -10,9 +10,10 @@ import {BoringFactory} from "@boringcrypto/boring-solidity/contracts/BoringFacto
 import {
     ERC20WithoutStrategy, IStrategy, IYieldBox as IBoringYieldBox
 } from "yieldbox/strategies/ERC20WithoutStrategy.sol";
-import {ISingularity, IMarket} from "tapioca-periph/interfaces/bar/ISingularity.sol";
 import {IUSDOMintable} from "tapioca-periph/interfaces/bar/IUSDOMintable.sol";
+import {IPearlmit} from "tapioca-periph/interfaces/periph/IPearlmit.sol";
 import {ICluster} from "tapioca-periph/interfaces/periph/ICluster.sol";
+import {IMarket} from "tapioca-periph/interfaces/bar/ISingularity.sol";
 import {ITwTap} from "tapioca-periph/interfaces/tap-token/ITwTap.sol";
 import {SafeApprove} from "tapioca-periph/libraries/SafeApprove.sol";
 import {IPenrose} from "tapioca-periph/interfaces/bar/IPenrose.sol";
@@ -47,6 +48,9 @@ contract Penrose is BoringOwnable, BoringFactory {
     bool public paused;
     /// @notice returns the Cluster contract
     ICluster public cluster;
+    /// @notice Used to check allowance borrow on SGL/BB contracts
+    IPearlmit public pearlmit;
+
     /// @notice returns the YieldBox contract
     IYieldBox public immutable yieldBox;
     /// @notice returns the TAP contract
@@ -150,6 +154,8 @@ contract Penrose is BoringOwnable, BoringFactory {
     event LogTwTapFeesDeposit(uint256 indexed amount);
     /// @notice event emitted when Cluster is set
     event ClusterSet(address indexed old, address indexed _new);
+    /// @notice event emitted when Pearlmit is set
+    event PearlmitSet(address indexed old, address indexed _new);
     /// @notice event emitted when total BB markets debt is computed
     event TotalUsdoDebt(uint256 indexed amount);
     /// @notice event emitted when markets are re-accrued
@@ -294,6 +300,17 @@ contract Penrose is BoringOwnable, BoringFactory {
         if (_newCluster == address(0)) revert ZeroAddress();
         emit ClusterSet(address(cluster), _newCluster);
         cluster = ICluster(_newCluster);
+    }
+
+    /**
+     * @notice set the Pearlmit contract
+     * @dev can only be called by the owner
+     * @param _newPearlmit the new address
+     */
+    function setPearlmit(address _newPearlmit) external onlyOwner {
+        if (_newPearlmit == address(0)) revert ZeroAddress();
+        emit PearlmitSet(address(pearlmit), _newPearlmit);
+        pearlmit = IPearlmit(_newPearlmit);
     }
 
     /// @notice sets the main BigBang market debt rate
