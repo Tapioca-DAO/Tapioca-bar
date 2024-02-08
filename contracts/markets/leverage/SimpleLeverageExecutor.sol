@@ -1,7 +1,12 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.18;
+pragma solidity 0.8.22;
 
-import "./BaseLeverageExecutor.sol";
+// Tapioca
+import {IZeroXSwapper} from "tapioca-periph/interfaces/periph/IZeroXSwapper.sol";
+import {IWETH9} from "tapioca-periph/interfaces/external/weth/IWeth9.sol";
+import {ICluster} from "tapioca-periph/interfaces/periph/ICluster.sol";
+import {SafeApprove} from "tapioca-periph/libraries/SafeApprove.sol";
+import {BaseLeverageExecutor} from "./BaseLeverageExecutor.sol";
 
 /*
 __/\\\\\\\\\\\\\\\_____/\\\\\\\\\_____/\\\\\\\\\\\\\____/\\\\\\\\\\\_______/\\\\\_____________/\\\\\\\\\_____/\\\\\\\\\____        
@@ -22,52 +27,39 @@ contract SimpleLeverageExecutor is BaseLeverageExecutor {
     // ************** //
     // *** ERRORS *** //
     // ************** //
-    error SenderNotValid();
-    error TokenNotValid();
-    error NotEnough(address token);
 
-    constructor(IYieldBox _yb, ISwapper _swapper, ICluster _cluster) BaseLeverageExecutor(_yb, _swapper, _cluster) {}
+    constructor(IZeroXSwapper _swapper, ICluster _cluster) BaseLeverageExecutor(_swapper, _cluster) {}
 
     // ********************* //
-    // *** PUBLIC MEHODS *** //
+    // *** PUBLIC METHODS *** //
     // ********************* //
+
+    // WETH withdraw receiver.
+    receive() external payable {}
+
+    /**
+     * @inheritdoc BaseLeverageExecutor
+     */
     function getCollateral(
-        uint256 collateralId,
         address assetAddress,
         address collateralAddress,
         uint256 assetAmountIn,
-        address to,
-        bytes calldata data
+        bytes calldata swapperData
     ) external payable override returns (uint256 collateralAmountOut) {
-        if (!cluster.isWhitelisted(0, msg.sender)) revert SenderNotValid();
-        _assureSwapperValidity();
-
-        (uint256 minAmountOut, bytes memory dexData) = abi.decode(data, (uint256, bytes));
-
-        collateralAmountOut = _swapTokens(assetAddress, collateralAddress, assetAmountIn, minAmountOut, dexData, 0);
-        if (collateralAmountOut < minAmountOut) {
-            revert NotEnough(collateralAddress);
-        }
-
-        _ybDeposit(collateralId, collateralAddress, address(this), to, collateralAmountOut);
+        super._getCollateral(assetAddress, collateralAddress, assetAmountIn, swapperData);
+        return _swapAndTransferToSender(true, assetAddress, collateralAddress, assetAmountIn, swapperData);
     }
 
+    /**
+     * @inheritdoc BaseLeverageExecutor
+     */
     function getAsset(
-        uint256 assetId,
         address collateralAddress,
         address assetAddress,
         uint256 collateralAmountIn,
-        address to,
-        bytes calldata data
+        bytes calldata swapperData
     ) external override returns (uint256 assetAmountOut) {
-        if (!cluster.isWhitelisted(0, msg.sender)) revert SenderNotValid();
-        _assureSwapperValidity();
-
-        (uint256 minAmountOut, bytes memory dexData) = abi.decode(data, (uint256, bytes));
-
-        assetAmountOut = _swapTokens(collateralAddress, assetAddress, collateralAmountIn, minAmountOut, dexData, 0);
-        if (assetAmountOut < minAmountOut) revert NotEnough(assetAddress);
-
-        _ybDeposit(assetId, assetAddress, address(this), to, assetAmountOut);
+        super._getAsset(collateralAddress, assetAddress, collateralAmountIn, swapperData);
+        return _swapAndTransferToSender(true, collateralAddress, assetAddress, collateralAmountIn, swapperData);
     }
 }

@@ -2,14 +2,15 @@
 pragma solidity ^0.8.18;
 
 // External
-import {BoringOwnable} from "@boringcrypto/boring-solidity/contracts/BoringOwnable.sol";
+import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 // Tapioca
-import {ILeverageExecutor} from "tapioca-periph/interfaces/bar/ILeverageExecutor.sol";
-import {SafeApprove} from "tapioca-periph/libraries/SafeApprove.sol";
-import {ISwapper} from "tapioca-periph/interfaces/periph/ISwapper.sol";
+import {ITapiocaOFTBase} from "tapioca-periph/interfaces/tap-token/ITapiocaOFT.sol";
+import {IZeroXSwapper} from "tapioca-periph/interfaces/periph/IZeroXSwapper.sol";
+import {IWETH9} from "tapioca-periph/interfaces/external/weth/IWeth9.sol";
 import {ICluster} from "tapioca-periph/interfaces/periph/ICluster.sol";
-import {IYieldBox} from "yieldbox/interfaces/IYieldBox.sol";
+import {SafeApprove} from "tapioca-periph/libraries/SafeApprove.sol";
 
 /*
 __/\\\\\\\\\\\\\\\_____/\\\\\\\\\_____/\\\\\\\\\\\\\____/\\\\\\\\\\\_______/\\\\\_____________/\\\\\\\\\_____/\\\\\\\\\____        
@@ -24,41 +25,52 @@ __/\\\\\\\\\\\\\\\_____/\\\\\\\\\_____/\\\\\\\\\\\\\____/\\\\\\\\\\\_______/\\\\
 
 */
 
-abstract contract BaseLeverageExecutor is BoringOwnable {
-    using SafeApprove for address;
+struct SToftInfo {
+    bool isTokenInToft;
+    bool isTokenOutToft;
+}
 
-    // ************** //
-    // *** ERRORS *** //
-    // ************** //
-    error SwapperNotValid();
-    error SwapperNotAuthorized();
+struct SLeverageSwapData {
+    uint256 minAmountOut;
+    SToftInfo toftInfo;
+    bytes swapperData;
+}
+
+abstract contract BaseLeverageExecutor is Ownable {
+    using SafeApprove for address;
+    using SafeERC20 for IERC20;
 
     // ************ //
     // *** VARS *** //
     // ************ //
-    /// @notice returns YieldBox address
-    IYieldBox public immutable yieldBox;
 
-    /// @notice returns ICluster address
+    IZeroXSwapper public swapper;
     ICluster public cluster;
+    IWETH9 public weth;
 
-    /// @notice returns ISwapper address
-    ISwapper public swapper;
+    // ************** //
+    // *** ERRORS *** //
+    // ************** //
 
-    constructor(IYieldBox _yb, ISwapper _swapper, ICluster _cluster) {
-        yieldBox = _yb;
+    error MinAmountNotValid(uint256 expected, uint256 received);
+    error NotEnough(address token);
+    error SwapperNotAuthorized();
+    error SwapperNotValid();
+    error SenderNotValid();
+    error TokenNotValid();
+
+    constructor(IZeroXSwapper _swapper, ICluster _cluster) {
         swapper = _swapper;
         cluster = _cluster;
-
-        owner = msg.sender;
     }
 
     // ******************** //
-    // *** OWNER MEHODS *** //
+    // *** OWNER METHODS *** //
     // ******************** //
+
     /// @notice sets swapper
-    /// @param _swapper the new ISwapper
-    function setSwapper(ISwapper _swapper) external onlyOwner {
+    /// @param _swapper the new IZeroXSwapper
+    function setSwapper(IZeroXSwapper _swapper) external onlyOwner {
         swapper = _swapper;
     }
 
@@ -69,76 +81,130 @@ abstract contract BaseLeverageExecutor is BoringOwnable {
     }
 
     // ********************* //
-    // *** PUBLIC MEHODS *** //
+    // *** PUBLIC METHODS *** //
     // ********************* //
-    /// @notice returns getCollateral or getAsset for Asset > DAI or DAI > Asset respectively default data parameter
-    /// @param tokenIn token in address
-    /// @param tokenOut token out address
-    /// @param amountIn amount to get the minimum for
-    function buildSwapDefaultData(address tokenIn, address tokenOut, uint256 amountIn)
+
+    /**
+     * @notice Buys an asked amount of collateral with an asset using the ZeroXSwapper.
+     * @dev Expects the token to be already transferred to this contract.
+     * @param assetAddress asset address.
+     * @param collateralAddress collateral address.
+     * @param assetAmountIn amount to swap.
+     * @param data SLeverageSwapData.
+     */
+    function getCollateral(address assetAddress, address collateralAddress, uint256 assetAmountIn, bytes calldata data)
         external
-        view
-        returns (bytes memory)
+        payable
+        virtual
+        returns (uint256 collateralAmountOut)
     {
-        return _buildDefaultData(tokenIn, tokenOut, amountIn, "0x");
+        // Should be called only by approved SGL/BB markets.
+        if (!cluster.isWhitelisted(0, msg.sender)) revert SenderNotValid();
     }
 
-    function getCollateral(
-        uint256 collateralId,
-        address assetAddress,
-        address collateralAddress,
-        uint256 assetAmountIn,
-        address from,
-        bytes calldata data
-    ) external payable virtual returns (uint256 collateralAmountOut);
-
-    function getAsset(
-        uint256 assetId,
-        address collateralAddress,
-        address assetAddress,
-        uint256 collateralAmountIn,
-        address from,
-        bytes calldata data
-    ) external virtual returns (uint256 assetAmountOut);
-
-    // *********************** //
-    // *** INTERNAL MEHODS *** //
-    // *********************** //
-    function _buildDefaultData(address tokenIn, address tokenOut, uint256 amountIn, bytes memory dexData)
-        internal
-        view
-        returns (bytes memory)
+    /**
+     * @notice Buys an asked amount of asset with a collateral using the ZeroXSwapper.
+     * @dev Expects the token to be already transferred to this contract.
+     * @param collateralAddress collateral address.
+     * @param assetAddress asset address.
+     * @param collateralAmountIn amount to swap.
+     * @param data SLeverageSwapData.
+     */
+    function getAsset(address collateralAddress, address assetAddress, uint256 collateralAmountIn, bytes calldata data)
+        external
+        virtual
+        returns (uint256 assetAmountOut)
     {
-        ISwapper.SwapData memory swapData = swapper.buildSwapData(tokenIn, tokenOut, amountIn, 0);
-        uint256 minAmount = swapper.getOutputAmount(swapData, dexData);
-        return abi.encode(minAmount, dexData);
+        // Should be called only by approved SGL/BB markets.
+        if (!cluster.isWhitelisted(0, msg.sender)) revert SenderNotValid();
     }
 
-    function _swapTokens(
+    // *********************** //
+    // *** INTERNAL METHODS *** //
+    // *********************** //
+
+    /**
+     * @notice Sell `tokenIn` and buy `tokenOut`. Sends the `amountOut` of `tokenOut` to the sender if `sendBack` is true.
+     *
+     * @param tokenIn token to swap. Can be tOFT.
+     * @param tokenOut token to receive. Can be tOFT.
+     * @param amountIn amount to swap.
+     * @param swapperData SLeverageSwapData.
+     */
+    function _swapAndTransferToSender(
+        bool sendBack,
         address tokenIn,
         address tokenOut,
         uint256 amountIn,
-        uint256 minAmountOut,
-        bytes memory dexData,
-        uint256 gas
-    ) internal returns (uint256 amountOut) {
-        ISwapper.SwapData memory swapData = swapper.buildSwapData(tokenIn, tokenOut, amountIn, 0);
+        bytes calldata data
+    ) internal override returns (uint256 amountOut) {
+        SLeverageSwapData memory swapData = abi.decode(data, (SLeverageSwapData));
 
-        if (tokenIn != address(0)) {
-            tokenIn.safeApprove(address(swapper), amountIn);
+        // If the tokenIn is a tOFT, unwrap it. Handles ETH and ERC20.
+        if (swapData.toftInfo.isTokenInToft) {
+            tokenIn = _handleToftUnwrap(tokenIn, amountIn);
         }
-        (amountOut,) = swapper.swap{value: gas}(swapData, minAmountOut, address(this), dexData);
+
+        // Approve the swapper to spend the tokenIn, and perform the swap.
+        tokenIn.safeApprove(address(swapper), amountIn);
+        IZeroXSwapper.SZeroXSwapData memory swapperData =
+            abi.decode(swapData.swapperData, (IZeroXSwapper.SZeroXSwapData));
+        amountOut = swapper.swap(swapperData, amountIn, swapData.minAmountOut);
+        if (amountOut < swapData.minAmountOut) revert MinAmountNotValid(swapData.minAmountOut, amountOut);
+        tokenIn.safeApprove(address(swapper), 0);
+
+        // If the tokenOut is a tOFT, wrap it. Handles ETH and ERC20.
+        // If `sendBack` is true, wrap the `amountOut to` the sender. else, wrap it to this contract.
+        if (swapData.toftInfo.isTokenOutToft) {
+            _handleToftWrapToSender(sendBack, tokenOut, amountOut);
+        } else if (sendBack == true) {
+            // If the token wasn't sent by the wrap OP, send it as a transfer.
+            IERC20(tokenOut).safeTransfer(msg.sender, amountOut);
+        }
     }
 
-    function _assureSwapperValidity() internal view {
-        if (address(swapper) == address(0)) revert SwapperNotValid();
-        if (!cluster.isWhitelisted(0, address(swapper))) {
-            revert SwapperNotAuthorized();
+    /**
+     * @notice Unwraps a tOFT token if it is the tokenIn. If the tOFT is an ERC20, it unwraps it and returns the ERC20 address.
+     * if the tOFT is an ETH, it unwraps it and returns the WETH address.
+     *
+     * @param tokenIn tOFT token to unwrap.
+     * @param amountIn amount to unwrap.
+     * @param swapData SLeverageSwapData.
+     * @return tokenToSwap address of the token to swap. Either WETH or the ERC20 address.
+     */
+    function _handleToftUnwrap(address tokenIn, uint256 amountIn) internal returns (address tokenToSwap) {
+        ITapiocaOFTBase(tokenIn).unwrap(address(this), amountIn); // Sends ETH to `receive()` if not an ERC20.
+        tokenIn = ITapiocaOFTBase(tokenIn).erc20();
+        // If the tokenIn is ETH, wrap it to WETH.
+        if (tokenIn == address(0)) {
+            weth.deposit{value: amountIn}();
+            tokenToSwap = address(weth);
+        } else {
+            tokenToSwap = tokenIn;
         }
     }
 
-    function _ybDeposit(uint256 id, address token, address from, address to, uint256 amount) internal virtual {
-        token.safeApprove(address(yieldBox), amount);
-        yieldBox.depositAsset(id, from, to, amount, 0);
+    /**
+     * @notice Wrap an ERC20 or ETH to a `tokenOut` tOFT token.
+     * @dev Wraps the amountOut and sends it to the sender.
+     *
+     * @param sendBack if true, sends the `amountOut` to the sender. Else, sends it to this contract.
+     * @param tokenOut tOFT token.
+     * @param amountOut amount to wrap.
+     */
+    function _handleToftWrapToSender(bool sendBack, address tokenOut, uint256 amountOut) internal {
+        address toftErc20 = ITapiocaOFTBase(tokenOut).erc20();
+        address wrapsTo = sendBack == true ? msg.sender : address(this);
+
+        if (toftErc20 == address(0)) {
+            // If the tOFT is for ETH, withdraw from WETH and wrap it.
+            weth.withdraw(amountOut);
+            ITapiocaOFTBase(tokenOut).wrap{value: amountOut}(address(this), wrapsTo, amountOut);
+        } else {
+            // If the tOFT is for an ERC20, wrap it.
+            toftErc20.safeApprove(tokenOut, amountOut);
+            ITapiocaOFTBase(tokenOut).wrap(address(this), wrapsTo, amountOut);
+            toftErc20.safeApprove(tokenOut, 0);
+        }
     }
 }
