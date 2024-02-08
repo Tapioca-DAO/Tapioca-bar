@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.22;
 
-// LZ
-import {OFTMsgCodec} from "@layerzerolabs/lz-evm-oapp-v2/contracts/oft/libs/OFTMsgCodec.sol";
-
 // External
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {BytesLib} from "solidity-bytes-utils/contracts/BytesLib.sol";
@@ -22,16 +19,10 @@ import {
     IDepositData,
     ICommonExternalContracts
 } from "tapioca-periph/interfaces/common/ICommonData.sol";
-import {ITapiocaOFTBase, ITapiocaOFT, IBorrowParams} from "tapioca-periph/interfaces/tap-token/ITapiocaOFT.sol";
 import {IMagnetarHelper} from "tapioca-periph/interfaces/periph/IMagnetarHelper.sol";
-import {IUSDOBase, IMintData} from "tapioca-periph/interfaces/bar/IUSDO.sol";
-import {IYieldBox} from "tapioca-periph/interfaces/yieldbox/IYieldBox.sol";
 import {IMagnetar} from "tapioca-periph/interfaces/periph/IMagnetar.sol";
-import {MarketBorrowMsg} from "tapioca-periph/interfaces/oft/ITOFT.sol";
-import {IOftSender} from "tapioca-periph/interfaces/oft/IOftSender.sol";
-import {ISwapper} from "tapioca-periph/interfaces/periph/ISwapper.sol";
 import {SafeApprove} from "tapioca-periph/libraries/SafeApprove.sol";
-import {IMarket} from "tapioca-periph/interfaces/bar/IMarket.sol";
+import {IMintData} from "tapioca-periph/interfaces/bar/IUSDO.sol";
 import {UsdoMsgCodec} from "../libraries/UsdoMsgCodec.sol";
 import {BaseUsdo} from "../BaseUsdo.sol";
 
