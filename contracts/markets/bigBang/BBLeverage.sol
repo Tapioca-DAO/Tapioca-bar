@@ -102,6 +102,10 @@ contract BBLeverage is BBLendingCommon {
             );
         }
         uint256 collateralShare = yieldBox.toShare(collateralId, amountOut, false);
+        address(asset).safeApprove(address(yieldBox), type(uint256).max);
+        yieldBox.depositAsset(collateralId, address(this), address(this), 0, collateralShare); // TODO Check for rounding attack?
+        address(asset).safeApprove(address(yieldBox), 0);
+
         if (collateralShare == 0) revert CollateralShareNotValid();
         _allowedBorrow(calldata_.from, collateralShare);
         _addCollateral(calldata_.from, calldata_.from, false, 0, collateralShare);
@@ -142,8 +146,11 @@ contract BBLeverage is BBLendingCommon {
         amountOut = leverageExecutor.getAsset(
             assetId, address(collateral), address(asset), memoryData.leverageAmount, from, data
         );
-
         memoryData.shareOut = yieldBox.toShare(assetId, amountOut, false);
+        address(asset).safeApprove(address(yieldBox), type(uint256).max);
+        yieldBox.depositAsset(collateralId, address(this), address(this), 0, memoryData.shareOut); // TODO Check for rounding attack?
+        address(asset).safeApprove(address(yieldBox), 0);
+
         memoryData.partOwed = userBorrowPart[from];
         memoryData.amountOwed = totalBorrow.toElastic(memoryData.partOwed, true);
         memoryData.shareOwed = yieldBox.toShare(assetId, memoryData.amountOwed, true);
