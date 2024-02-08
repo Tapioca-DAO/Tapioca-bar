@@ -2,13 +2,11 @@
 pragma solidity ^0.8.18;
 
 // External
-import {BoringERC20} from "@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol";
-import {BoringOwnable} from "@boringcrypto/boring-solidity/contracts/BoringOwnable.sol";
-import {IERC20} from "@boringcrypto/boring-solidity/contracts/ERC20.sol";
+import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 // Tapioca
 import {IMarketLiquidatorReceiver} from "tapioca-periph/interfaces/bar/IMarketLiquidatorReceiver.sol";
-import {ITapiocaOracle} from "tapioca-periph/interfaces/periph/ITapiocaOracle.sol";
 import {IZeroXSwapper} from "tapioca-periph/interfaces/periph/IZeroXSwapper.sol";
 
 /*
@@ -24,8 +22,8 @@ __/\\\\\\\\\\\\\\\_____/\\\\\\\\\_____/\\\\\\\\\\\\\____/\\\\\\\\\\\_______/\\\\
 
 */
 
-contract ExampleMarketLiquidatorReceiver is IMarketLiquidatorReceiver, BoringOwnable {
-    using BoringERC20 for IERC20;
+contract ExampleMarketLiquidatorReceiver is IMarketLiquidatorReceiver, Ownable {
+    using SafeERC20 for IERC20;
 
     struct OracleInfo {
         bytes data;
@@ -46,9 +44,7 @@ contract ExampleMarketLiquidatorReceiver is IMarketLiquidatorReceiver, BoringOwn
     error NotValid();
     error SwapFailed();
 
-    constructor() {
-        owner = msg.sender;
-    }
+    constructor() {}
 
     struct SSwapData {
         uint256 minAmountOut;
@@ -66,14 +62,17 @@ contract ExampleMarketLiquidatorReceiver is IMarketLiquidatorReceiver, BoringOwn
     {
         if (_entered != 0) revert Reentrancy();
         _entered = 1;
-        if (swappers[tokenIn] == address(0)) revert NoSwapperAssigned();
+        address swapperTokenIn = swappers[tokenIn];
+        if (swapperTokenIn == address(0)) revert NoSwapperAssigned();
 
         uint256 collateralBalance = IERC20(tokenIn).balanceOf(address(this));
         if (collateralBalance < collateralAmount) revert NotEnough();
         SSwapData memory swapData = abi.decode(data, (SSwapData));
 
-        uint256 amountOut = IZeroXSwapper(swappers[tokenIn]).swap(data.data, data.minAmountOut);
-        if (amountOut < data.minAmountOut) revert SwapFailed();
+        IERC20(tokenIn).safeApprove(swapperTokenIn, collateralAmount);
+        uint256 amountOut = IZeroXSwapper(swapperTokenIn).swap(swapData.data, swapData.minAmountOut);
+        IERC20(tokenIn).safeApprove(swapperTokenIn, 0);
+        if (amountOut < swapData.minAmountOut) revert SwapFailed();
         IERC20(tokenOut).safeTransfer(msg.sender, amountOut);
 
         _entered = 0;
