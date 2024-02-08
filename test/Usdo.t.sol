@@ -408,7 +408,7 @@ contract UsdoTest is UsdoTestHelper {
             approvals_[0] = permitApprovalB_;
             approvals_[1] = permitApprovalC_;
 
-            approvalsMsg_ = usdoHelper.buildPermitApprovalMsg(approvals_);
+            approvalsMsg_ = usdoHelper.encodeERC20PermitApprovalMsg(approvals_);
         }
 
         PrepareLzCallReturn memory prepareLzCallReturn_ = usdoHelper.prepareLzCall(
