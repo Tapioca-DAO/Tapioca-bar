@@ -7,8 +7,7 @@ import {BoringERC20} from "@boringcrypto/boring-solidity/contracts/libraries/Bor
 import {IERC20} from "@boringcrypto/boring-solidity/contracts/ERC20.sol";
 
 // Tapioca
-import {ITapiocaOFT} from "tapioca-periph/interfaces/tap-token/ITapiocaOFT.sol";
-import {IUSDOBase} from "tapioca-periph/interfaces/bar/IUSDO.sol";
+import {SafeApprove} from "tapioca-periph/libraries/SafeApprove.sol";
 import {BBLendingCommon} from "./BBLendingCommon.sol";
 
 /*
@@ -26,6 +25,7 @@ __/\\\\\\\\\\\\\\\_____/\\\\\\\\\_____/\\\\\\\\\\\\\____/\\\\\\\\\\\_______/\\\\
 
 contract BBLeverage is BBLendingCommon {
     using RebaseLibrary for Rebase;
+    using SafeApprove for address;
     using BoringERC20 for IERC20;
 
     // ************** //
