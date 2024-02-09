@@ -53,7 +53,6 @@ abstract contract BaseLeverageExecutor is Ownable {
     // ************** //
 
     error MinAmountNotValid(uint256 expected, uint256 received);
-    error NotEnough(address token);
     error SwapperNotAuthorized();
     error SwapperNotValid();
     error SenderNotValid();
