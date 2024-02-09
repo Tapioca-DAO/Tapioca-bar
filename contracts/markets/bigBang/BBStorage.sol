@@ -11,7 +11,6 @@ import {IERC20} from "@boringcrypto/boring-solidity/contracts/ERC20.sol";
 
 // Tapioca
 import {ITapiocaOracle} from "tapioca-periph/interfaces/periph/ITapiocaOracle.sol";
-import {IZeroXSwapper} from "tapioca-periph/interfaces/periph/IZeroXSwapper.sol";
 import {IBigBang} from "tapioca-periph/interfaces/bar/IBigBang.sol";
 import {MarketERC20, Market} from "../Market.sol";
 
