@@ -17,18 +17,12 @@ import {
     IDepositData,
     ICommonExternalContracts
 } from "tapioca-periph/interfaces/common/ICommonData.sol";
-import {ITapiocaOFTBase, ITapiocaOFT, IBorrowParams} from "tapioca-periph/interfaces/tap-token/ITapiocaOFT.sol";
+import {ITapiocaOFTBase, IBorrowParams} from "tapioca-periph/interfaces/tap-token/ITapiocaOFT.sol";
 import {UsdoInitStruct, MarketLeverageUpMsg} from "tapioca-periph/interfaces/oft/IUsdo.sol";
-import {IMagnetarHelper} from "tapioca-periph/interfaces/periph/IMagnetarHelper.sol";
-import {IUSDOBase, IMintData} from "tapioca-periph/interfaces/bar/IUSDO.sol";
-import {IYieldBox} from "tapioca-periph/interfaces/yieldbox/IYieldBox.sol";
-import {IMagnetar} from "tapioca-periph/interfaces/periph/IMagnetar.sol";
 import {MarketBorrowMsg} from "tapioca-periph/interfaces/oft/ITOFT.sol";
-import {IOftSender} from "tapioca-periph/interfaces/oft/IOftSender.sol";
 import {UsdoModuleReceiverHelper} from "./UsdoModuleReceiverHelper.sol";
-import {ISwapper} from "tapioca-periph/interfaces/periph/ISwapper.sol";
+import {IZeroXSwapper} from "tapioca-periph/interfaces/periph/IZeroXSwapper.sol";
 import {SafeApprove} from "tapioca-periph/libraries/SafeApprove.sol";
-import {IMarket} from "tapioca-periph/interfaces/bar/IMarket.sol";
 import {UsdoMsgCodec} from "../libraries/UsdoMsgCodec.sol";
 import {BaseUsdo} from "../BaseUsdo.sol";
 
@@ -72,48 +66,49 @@ contract UsdoLeverageReceiverModule is BaseUsdo, UsdoModuleReceiverHelper {
      *      - lzSendParam::struct: LZ v2 send back to source params
      *      - composeMsg::bytes: lzCompose message to be executed back on source
      */
+    // TODO remove
     function marketLeverageUpReceiver(bytes memory _data) public payable {
-        /// @dev decode received message
-        MarketLeverageUpMsg memory msg_ = UsdoMsgCodec.decodeMarketLeverageUpMsg(_data);
+        // /// @dev decode received message
+        // MarketLeverageUpMsg memory msg_ = UsdoMsgCodec.decodeMarketLeverageUpMsg(_data);
 
-        _checkWhitelistStatus(msg_.externalData.srcMarket);
-        _checkWhitelistStatus(msg_.externalData.magnetar);
-        _checkWhitelistStatus(msg_.externalData.swapper);
-        _checkWhitelistStatus(msg_.externalData.tOft);
-        _checkWhitelistStatus(OFTMsgCodec.bytes32ToAddress(msg_.lzSendParams.sendParam.to));
-        if (msg_.swapData.tokenOut != address(0)) {
-            _checkWhitelistStatus(msg_.swapData.tokenOut);
-        }
+        // _checkWhitelistStatus(msg_.externalData.srcMarket);
+        // _checkWhitelistStatus(msg_.externalData.magnetar);
+        // _checkWhitelistStatus(msg_.externalData.swapper);
+        // _checkWhitelistStatus(msg_.externalData.tOft);
+        // _checkWhitelistStatus(OFTMsgCodec.bytes32ToAddress(msg_.lzSendParams.sendParam.to));
+        // if (msg_.swapData.tokenOut != address(0)) {
+        //     _checkWhitelistStatus(msg_.swapData.tokenOut);
+        // }
 
-        msg_.amount = _toLD(msg_.amount.toUint64());
-        msg_.swapData.amountOutMin = _toLD(msg_.swapData.amountOutMin.toUint64());
+        // msg_.amount = _toLD(msg_.amount.toUint64());
+        // msg_.swapData.amountOutMin = _toLD(msg_.swapData.amountOutMin.toUint64());
 
-        uint256 amountOut;
+        // uint256 amountOut;
 
-        // @dev swap Usdo with `tokenOut`
-        {
-            _approve(address(this), msg_.externalData.swapper, msg_.amount);
-            ISwapper.SwapData memory _swapperData =
-                ISwapper(msg_.externalData.swapper).buildSwapData(address(this), msg_.swapData.tokenOut, msg_.amount, 0);
-            (amountOut,) = ISwapper(msg_.externalData.swapper).swap(
-                _swapperData, msg_.swapData.amountOutMin, address(this), msg_.swapData.data
-            );
-        }
+        // /// @dev swap Usdo with `tokenOut`
+        // {
+        //     _approve(address(this), msg_.externalData.swapper, msg_.amount);
+        //     IZeroXSwapper.SZeroXSwapData memory swapperData =
+        //         abi.decode(msg_.swapData.swapperData, (IZeroXSwapper.SZeroXSwapData));
+        //     amountOut = IZeroXSwapper(msg_.externalData.swapper).swap(
+        //         swapperData, msg_.swapData.amountOutMin, msg_.swapData.amountOutMin
+        //     );
+        // }
 
-        // @dev wrap into TOFT
-        {
-            if (msg_.swapData.tokenOut != address(0)) {
-                msg_.swapData.tokenOut.safeApprove(msg_.externalData.tOft, amountOut);
-            }
-            ITapiocaOFTBase(msg_.externalData.tOft).wrap{value: msg_.swapData.tokenOut == address(0) ? amountOut : 0}(
-                address(this), address(this), amountOut
-            );
-        }
+        // /// @dev wrap into TOFT
+        // {
+        //     if (msg_.swapData.tokenOut != address(0)) {
+        //         msg_.swapData.tokenOut.safeApprove(msg_.externalData.tOft, amountOut);
+        //     }
+        //     ITapiocaOFTBase(msg_.externalData.tOft).wrap{value: msg_.swapData.tokenOut == address(0) ? amountOut : 0}(
+        //         address(this), address(this), amountOut
+        //     );
+        // }
 
-        // @dev prepare LZ call for TOFT
-        _toftSendAndBorrow(msg_, amountOut, msg_.composeGas);
+        // /// @dev prepare LZ call for TOFT
+        // _toftSendAndBorrow(msg_, amountOut, msg_.composeGas);
 
-        emit LeverageUpReceived(msg_.user, msg_.externalData.srcMarket, msg_.amount);
+        // emit LeverageUpReceived(msg_.user, msg_.externalData.srcMarket, msg_.amount);
     }
 
     function _checkWhitelistStatus(address _addr) private view {
