@@ -33,8 +33,8 @@ contract AssetTotsDaiLeverageExecutor is BaseLeverageExecutor {
 
     /**
      * @dev USDO > DAI > sDAi > wrap to tsDai
-     * @dev Expects SLeverageSwapData.toftInfo.isTokenInToft to be false
-     * @dev Expects SLeverageSwapData.toftInfo.isTokenOutToft to be false
+     * @dev Expects SLeverageSwapData.toftInfo.isTokenInToft to be false. Does the unwrapping internally.
+     * @dev Expects SLeverageSwapData.toftInfo.isTokenOutToft to be false. Does the wrapping internally.
      * @inheritdoc BaseLeverageExecutor
      */
     function getCollateral(address assetAddress, address collateralAddress, uint256 assetAmountIn, bytes calldata data)
@@ -66,8 +66,8 @@ contract AssetTotsDaiLeverageExecutor is BaseLeverageExecutor {
 
     /**
      * @dev unwrap tsDai > withdraw sDai > Dai > USDO
-     * @dev Expects SLeverageSwapData.toftInfo.isTokenInToft to be false
-     * @dev Expects SLeverageSwapData.toftInfo.isTokenOutToft to be false
+     * @dev Expects SLeverageSwapData.toftInfo.isTokenInToft to be false. Does the unwrapping internally.
+     * @dev Expects SLeverageSwapData.toftInfo.isTokenOutToft to be false. Does the wrapping internally.
      * @inheritdoc BaseLeverageExecutor
      */
     function getAsset(address collateralAddress, address assetAddress, uint256 collateralAmountIn, bytes calldata data)
@@ -88,6 +88,8 @@ contract AssetTotsDaiLeverageExecutor is BaseLeverageExecutor {
         );
         // swap DAI with USDO, and transfer to sender
         SLeverageSwapData memory swapData = abi.decode(data, (SLeverageSwapData));
+        // If sendBack true and swapData.swapperData.toftInfo.isTokenOutToft false
+        // The asset will be transfer via IERC20 transfer.
         assetAmountOut = _swapAndTransferToSender(true, daiAddress, assetAddress, obtainedDai, swapData.swapperData);
     }
 
@@ -95,6 +97,9 @@ contract AssetTotsDaiLeverageExecutor is BaseLeverageExecutor {
     // *** PRIVATE METHODS *** //
     // ********************** //
 
+    /**
+     * @dev retrieve sDai and Dai addresses from tsDai
+     */
     function _getAddresses(address collateralAddress) private view returns (address sDaiAddress, address daiAddress) {
         //retrieve sDAI address from tsDai
         sDaiAddress = ITapiocaOFTBase(collateralAddress).erc20();
