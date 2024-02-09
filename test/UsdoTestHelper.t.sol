@@ -9,16 +9,15 @@ import {TestHelper} from "./LZSetup/TestHelper.sol";
 import {IERC20} from "@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol";
 
 // Tapioca
-import {UsdoInitStruct, UsdoModulesInitStruct} from "tapioca-periph/interfaces/oft/IUsdo.sol";
 import {SimpleLeverageExecutor} from "contracts/markets/leverage/SimpleLeverageExecutor.sol";
 import {ILeverageExecutor} from "tapioca-periph/interfaces/bar/ILeverageExecutor.sol";
 import {ERC20WithoutStrategy} from "yieldbox/strategies/ERC20WithoutStrategy.sol";
+import {IZeroXSwapper} from "tapioca-periph/interfaces/periph/IZeroXSwapper.sol";
 import {SGLLiquidation} from "contracts/markets/singularity/SGLLiquidation.sol";
 import {SGLCollateral} from "contracts/markets/singularity/SGLCollateral.sol";
 import {SGLLeverage} from "contracts/markets/singularity/SGLLeverage.sol";
 import {Singularity} from "contracts/markets/singularity/Singularity.sol";
 import {ICluster} from "tapioca-periph/interfaces/periph/ICluster.sol";
-import {ISwapper} from "tapioca-periph/interfaces/periph/ISwapper.sol";
 import {SGLBorrow} from "contracts/markets/singularity/SGLBorrow.sol";
 import {IWrappedNative} from "yieldbox/interfaces/IWrappedNative.sol";
 import {IOracle} from "tapioca-periph/oracle/interfaces/IOracle.sol";
@@ -88,7 +87,7 @@ contract UsdoTestHelper is TestHelper, TestUtils {
         public
         returns (SimpleLeverageExecutor)
     {
-        return new SimpleLeverageExecutor(IYieldBox(_yb), ISwapper(_swapper), ICluster(_cluster));
+        return new SimpleLeverageExecutor(IZeroXSwapper(_swapper), ICluster(_cluster));
     }
 
     function createPenrose(TestPenroseData memory _data) public returns (Penrose pen, Singularity mediumRiskMC) {

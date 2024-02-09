@@ -17,6 +17,7 @@ import {
     MarketLendOrRepayMsg
 } from "tapioca-periph/interfaces/oft/IUsdo.sol";
 
+// TODO remove duplicate code existing here and in TOE
 library UsdoMsgCodec {
     // ***************************************
     // * Encoding & Decoding Usdo messages *

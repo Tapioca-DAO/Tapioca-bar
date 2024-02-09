@@ -8,11 +8,10 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IGmxRewardRouterV2} from "tapioca-periph/interfaces/external/gmx/IGmxRewardRouterV2.sol";
 import {IGmxGlpManager} from "tapioca-periph/interfaces/external/gmx/IGmxGlpManager.sol";
 import {ITapiocaOFTBase} from "tapioca-periph/interfaces/tap-token/ITapiocaOFT.sol";
-import {ISwapper} from "tapioca-periph/interfaces/periph/ISwapper.sol";
+import {BaseLeverageExecutor, SLeverageSwapData} from "./BaseLeverageExecutor.sol";
+import {IZeroXSwapper} from "tapioca-periph/interfaces/periph/IZeroXSwapper.sol";
 import {ICluster} from "tapioca-periph/interfaces/periph/ICluster.sol";
 import {SafeApprove} from "tapioca-periph/libraries/SafeApprove.sol";
-import {BaseLeverageExecutor} from "./BaseLeverageExecutor.sol";
-import {IYieldBox} from "yieldbox/interfaces/IYieldBox.sol";
 
 /*
 __/\\\\\\\\\\\\\\\_____/\\\\\\\\\_____/\\\\\\\\\\\\\____/\\\\\\\\\\\_______/\\\\\_____________/\\\\\\\\\_____/\\\\\\\\\____        
@@ -27,6 +26,12 @@ __/\\\\\\\\\\\\\\\_____/\\\\\\\\\_____/\\\\\\\\\\\\\____/\\\\\\\\\\\_______/\\\\
 
 */
 
+struct SGlpLeverageSwapData {
+    SLeverageSwapData swapData;
+    uint256 minAmountOut;
+}
+
+// TODO Revisit this contract, should check used of sGLP/fsGLP contract
 contract AssetToSGLPLeverageExecutor is BaseLeverageExecutor {
     using SafeApprove for address;
 
@@ -38,92 +43,84 @@ contract AssetToSGLPLeverageExecutor is BaseLeverageExecutor {
     // ************** //
     // *** ERRORS *** //
     // ************** //
-    error SenderNotValid();
-    error TokenNotValid();
-    error NotEnough(address token);
+
     error GlpNotValid();
 
-    constructor(IYieldBox _yb, ISwapper _swapper, ICluster _cluster, IERC20 _usdc, IGmxRewardRouterV2 _glpRewardRouter)
-        BaseLeverageExecutor(_yb, _swapper, _cluster)
+    constructor(IZeroXSwapper _swapper, ICluster _cluster, IERC20 _usdc, IGmxRewardRouterV2 _glpRewardRouter)
+        BaseLeverageExecutor(_swapper, _cluster)
     {
-        usdc = _usdc;
+        glpManager = IGmxGlpManager(_glpRewardRouter.glpManager());
         glpRewardRouter = _glpRewardRouter;
-        glpManager = IGmxGlpManager(glpRewardRouter.glpManager());
+        usdc = _usdc;
     }
 
     // ********************* //
-    // *** PUBLIC MEHODS *** //
+    // *** PUBLIC METHODS *** //
     // ********************* //
-    /// @notice buys collateral with asset
-    /// @dev USDO > USDC > GLP
-    /// @param collateralId Collateral's YieldBox id
-    /// @param assetAddress usually USDO address
-    /// @param collateralAddress GLP address
-    /// @param assetAmountIn amount to swap
-    /// @param to collateral receiver
-    /// @param data AssetToSGLPLeverageExecutor data
-    function getCollateral(
-        uint256 collateralId,
-        address assetAddress,
-        address collateralAddress,
-        uint256 assetAmountIn,
-        address to,
-        bytes calldata data
-    ) external payable override returns (uint256 collateralAmountOut) {
+
+    /**
+     * @dev USDO > USDC > tsGLP
+     * @dev Expects SLeverageSwapData.toftInfo.isTokenInToft to be false
+     * @dev Expects SLeverageSwapData.toftInfo.isTokenOutToft to be false
+     * @inheritdoc BaseLeverageExecutor
+     */
+    function getCollateral(address assetAddress, address collateralAddress, uint256 assetAmountIn, bytes calldata data)
+        external
+        payable
+        override
+        returns (uint256 collateralAmountOut)
+    {
+        // Should be called only by approved SGL/BB markets.
         if (!cluster.isWhitelisted(0, msg.sender)) revert SenderNotValid();
-        _assureSwapperValidity();
 
-        //decode data
-        (uint256 minUsdcAmountOut, bytes memory dexUsdcData, uint256 minGlpAmountOut) =
-            abi.decode(data, (uint256, bytes, uint256));
+        // Decode data
+        SGlpLeverageSwapData memory glpSwapData = abi.decode(data, (SGlpLeverageSwapData));
 
-        //swap asset with USDC
-        uint256 usdcAmount = _swapTokens(assetAddress, address(usdc), assetAmountIn, minUsdcAmountOut, dexUsdcData, 0);
-        if (usdcAmount < minUsdcAmountOut) revert NotEnough(address(usdc));
+        // Swap asset with USDC
+        uint256 usdcAmount = _swapAndTransferToSender(
+            false, assetAddress, address(usdc), assetAmountIn, glpSwapData.swapData.swapperData
+        );
 
-        //swap USDC with GLP
-        collateralAmountOut = _buyGlp(usdcAmount, address(usdc), minGlpAmountOut, collateralAddress);
+        // Swap USDC with GLP
+        collateralAmountOut = _buyGlp(usdcAmount, address(usdc), glpSwapData.minAmountOut, collateralAddress);
 
-        //deposit GLP to YieldBox
-        _ybDeposit(collateralId, collateralAddress, address(this), to, collateralAmountOut);
+        // Wrap into tsGLP to sender
+        address(usdc).safeApprove(collateralAddress, collateralAmountOut);
+        ITapiocaOFTBase(collateralAddress).wrap(address(this), msg.sender, collateralAmountOut);
+        address(usdc).safeApprove(collateralAddress, 0);
     }
 
-    /// @notice buys asset with collateral
-    /// @dev GLP > USDC > USDO
-    /// @param assetId Asset's YieldBox id; usually USDO asset id
-    /// @param collateralAddress GLP address
-    /// @param assetAddress usually USDO address
-    /// @param collateralAmountIn amount to swap
-    /// @param to collateral receiver
-    /// @param data AssetToSGLPLeverageExecutor data
-    function getAsset(
-        uint256 assetId,
-        address collateralAddress,
-        address assetAddress,
-        uint256 collateralAmountIn,
-        address to,
-        bytes calldata data
-    ) external override returns (uint256 assetAmountOut) {
+    /**
+     * @dev tsGLP > USDC > USDO
+     * @dev Expects SLeverageSwapData.toftInfo.isTokenInToft to be false
+     * @dev Expects SLeverageSwapData.toftInfo.isTokenOutToft to be false
+     * @inheritdoc BaseLeverageExecutor
+     */
+    function getAsset(address collateralAddress, address assetAddress, uint256 collateralAmountIn, bytes calldata data)
+        external
+        override
+        returns (uint256 assetAmountOut)
+    {
+        // Should be called only by approved SGL/BB markets.
         if (!cluster.isWhitelisted(0, msg.sender)) revert SenderNotValid();
-        _assureSwapperValidity();
 
-        //decode data
-        (uint256 minUsdcAmountOut, uint256 minAssetAmountOut, bytes memory dexAssetData) =
-            abi.decode(data, (uint256, uint256, bytes));
+        // Decode data
+        SGlpLeverageSwapData memory usdcSwapData = abi.decode(data, (SGlpLeverageSwapData));
 
-        //swap GLP with USDC
-        uint256 usdcAmount = _sellGlp(collateralAmountIn, collateralAddress, address(usdc), minUsdcAmountOut);
+        // Unwrap tsGLP
+        ITapiocaOFTBase(collateralAddress).unwrap(address(this), collateralAmountIn);
 
-        //swap USDC with Asset
-        assetAmountOut = _swapTokens(address(usdc), assetAddress, usdcAmount, minAssetAmountOut, dexAssetData, 0);
-        if (assetAmountOut < minAssetAmountOut) revert NotEnough(assetAddress);
+        // Swap GLP with USDC
+        // TODO collateralAddress is wrong, should be fsGLP
+        uint256 usdcAmount = _sellGlp(collateralAmountIn, collateralAddress, address(usdc), usdcSwapData.minAmountOut);
 
-        //deposit asset to YieldBox
-        _ybDeposit(assetId, assetAddress, address(this), to, assetAmountOut);
+        // Swap USDC with Asset
+        assetAmountOut =
+            _swapAndTransferToSender(false, address(usdc), assetAddress, usdcAmount, usdcSwapData.swapData.swapperData);
     }
 
     // ********************** //
-    // *** PRIVATE MEHODS *** //
+    // *** PRIVATE METHODS *** //
     // ********************** //
     function _buyGlp(uint256 usdcAmount, address usdcAddress, uint256 minGlpAmountOut, address glpAddress)
         private
@@ -142,10 +139,5 @@ contract AssetToSGLPLeverageExecutor is BaseLeverageExecutor {
         glpAddress.safeApprove(address(glpManager), glpAmount);
         usdcAmount = glpRewardRouter.unstakeAndRedeemGlp(usdcAddress, glpAmount, minUsdcAmountOut, address(this));
         if (usdcAmount < minUsdcAmountOut) revert NotEnough(usdcAddress);
-    }
-
-    function _ybDeposit(uint256 id, address token, address from, address to, uint256 amount) internal override {
-        token.safeApprove(address(yieldBox), amount);
-        yieldBox.depositAsset(id, from, to, amount, 0);
     }
 }
