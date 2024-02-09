@@ -22,6 +22,9 @@ __/\\\\\\\\\\\\\\\_____/\\\\\\\\\_____/\\\\\\\\\\\\\____/\\\\\\\\\\\_______/\\\\
 
 */
 
+/// @title ExampleMarketLiquidatorReceiver.
+/// @notice Example of a liquidator receiver contract.
+/// @dev This contract uses ZeroXSwapper to swap tokens.
 contract ExampleMarketLiquidatorReceiver is IMarketLiquidatorReceiver, Ownable {
     using SafeERC20 for IERC20;
 
@@ -48,20 +51,26 @@ contract ExampleMarketLiquidatorReceiver is IMarketLiquidatorReceiver, Ownable {
 
     struct SSwapData {
         uint256 minAmountOut;
-        bytes data;
+        IZeroXSwapper.SZeroXSwapData data;
     }
 
     /// @notice action performed during the liquidation process
+    /// @param initiator the address that initiated the liquidation
     /// @param tokenIn received token
     /// @param tokenOut output token
     /// @param collateralAmount received amount
     /// @param data Expect a ZeroXSwapper swap data
-    function onCollateralReceiver(address tokenIn, address tokenOut, uint256 collateralAmount, bytes calldata data)
-        external
-        returns (bool)
-    {
+    function onCollateralReceiver(
+        address initiator,
+        address tokenIn,
+        address tokenOut,
+        uint256 collateralAmount,
+        bytes calldata data
+    ) external returns (bool) {
         if (_entered != 0) revert Reentrancy();
         _entered = 1;
+        if (initiator != owner()) revert NotAuthorized();
+
         address swapperTokenIn = swappers[tokenIn];
         if (swapperTokenIn == address(0)) revert NoSwapperAssigned();
 
@@ -70,7 +79,7 @@ contract ExampleMarketLiquidatorReceiver is IMarketLiquidatorReceiver, Ownable {
         SSwapData memory swapData = abi.decode(data, (SSwapData));
 
         IERC20(tokenIn).safeApprove(swapperTokenIn, collateralAmount);
-        uint256 amountOut = IZeroXSwapper(swapperTokenIn).swap(swapData.data, swapData.minAmountOut);
+        uint256 amountOut = IZeroXSwapper(swapperTokenIn).swap(swapData.data, collateralAmount, swapData.minAmountOut);
         IERC20(tokenIn).safeApprove(swapperTokenIn, 0);
         if (amountOut < swapData.minAmountOut) revert SwapFailed();
         IERC20(tokenOut).safeTransfer(msg.sender, amountOut);
