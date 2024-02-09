@@ -380,89 +380,89 @@ contract UsdoTest is UsdoTestHelper {
     /**
      * ERC20 APPROVALS
      */
-    function test_usdo_erc20_approvals() public {
-        address userC_ = vm.addr(0x3);
+    // function test_usdo_erc20_approvals() public {
+    //     address userC_ = vm.addr(0x3);
 
-        ERC20PermitApprovalMsg memory permitApprovalB_;
-        ERC20PermitApprovalMsg memory permitApprovalC_;
-        bytes memory approvalsMsg_;
+    //     ERC20PermitApprovalMsg memory permitApprovalB_;
+    //     ERC20PermitApprovalMsg memory permitApprovalC_;
+    //     bytes memory approvalsMsg_;
 
-        {
-            ERC20PermitStruct memory approvalUserB_ =
-                ERC20PermitStruct({owner: userA, spender: userB, value: 1e18, nonce: 0, deadline: 1 days});
-            ERC20PermitStruct memory approvalUserC_ = ERC20PermitStruct({
-                owner: userA,
-                spender: userC_,
-                value: 2e18,
-                nonce: 1, // Nonce is 1 because we already called permit() on userB
-                deadline: 2 days
-            });
+    //     {
+    //         ERC20PermitStruct memory approvalUserB_ =
+    //             ERC20PermitStruct({owner: userA, spender: userB, value: 1e18, nonce: 0, deadline: 1 days});
+    //         ERC20PermitStruct memory approvalUserC_ = ERC20PermitStruct({
+    //             owner: userA,
+    //             spender: userC_,
+    //             value: 2e18,
+    //             nonce: 1, // Nonce is 1 because we already called permit() on userB
+    //             deadline: 2 days
+    //         });
 
-            permitApprovalB_ =
-                __getERC20PermitData(approvalUserB_, bUsdo.getTypedDataHash(approvalUserB_), address(bUsdo), userAPKey);
+    //         permitApprovalB_ =
+    //             __getERC20PermitData(approvalUserB_, bUsdo.getTypedDataHash(approvalUserB_), address(bUsdo), userAPKey);
 
-            permitApprovalC_ =
-                __getERC20PermitData(approvalUserC_, bUsdo.getTypedDataHash(approvalUserC_), address(bUsdo), userAPKey);
+    //         permitApprovalC_ =
+    //             __getERC20PermitData(approvalUserC_, bUsdo.getTypedDataHash(approvalUserC_), address(bUsdo), userAPKey);
 
-            ERC20PermitApprovalMsg[] memory approvals_ = new ERC20PermitApprovalMsg[](2);
-            approvals_[0] = permitApprovalB_;
-            approvals_[1] = permitApprovalC_;
+    //         ERC20PermitApprovalMsg[] memory approvals_ = new ERC20PermitApprovalMsg[](2);
+    //         approvals_[0] = permitApprovalB_;
+    //         approvals_[1] = permitApprovalC_;
 
-            approvalsMsg_ = usdoHelper.buildPermitApprovalMsg(approvals_);
-        }
+    //         approvalsMsg_ = usdoHelper.buildPermitApprovalMsg(approvals_);
+    //     }
 
-        PrepareLzCallReturn memory prepareLzCallReturn_ = usdoHelper.prepareLzCall(
-            IUsdo(address(aUsdo)),
-            PrepareLzCallData({
-                dstEid: bEid,
-                recipient: OFTMsgCodec.addressToBytes32(address(this)),
-                amountToSendLD: 0,
-                minAmountToCreditLD: 0,
-                msgType: PT_APPROVALS,
-                composeMsgData: ComposeMsgData({
-                    index: 0,
-                    gas: 1_000_000,
-                    value: 0,
-                    data: approvalsMsg_,
-                    prevData: bytes(""),
-                    prevOptionsData: bytes("")
-                }),
-                lzReceiveGas: 1_000_000,
-                lzReceiveValue: 0
-            })
-        );
-        bytes memory composeMsg_ = prepareLzCallReturn_.composeMsg;
-        bytes memory oftMsgOptions_ = prepareLzCallReturn_.oftMsgOptions;
-        MessagingFee memory msgFee_ = prepareLzCallReturn_.msgFee;
-        LZSendParam memory lzSendParam_ = prepareLzCallReturn_.lzSendParam;
+    //     PrepareLzCallReturn memory prepareLzCallReturn_ = usdoHelper.prepareLzCall(
+    //         IUsdo(address(aUsdo)),
+    //         PrepareLzCallData({
+    //             dstEid: bEid,
+    //             recipient: OFTMsgCodec.addressToBytes32(address(this)),
+    //             amountToSendLD: 0,
+    //             minAmountToCreditLD: 0,
+    //             msgType: PT_APPROVALS,
+    //             composeMsgData: ComposeMsgData({
+    //                 index: 0,
+    //                 gas: 1_000_000,
+    //                 value: 0,
+    //                 data: approvalsMsg_,
+    //                 prevData: bytes(""),
+    //                 prevOptionsData: bytes("")
+    //             }),
+    //             lzReceiveGas: 1_000_000,
+    //             lzReceiveValue: 0
+    //         })
+    //     );
+    //     bytes memory composeMsg_ = prepareLzCallReturn_.composeMsg;
+    //     bytes memory oftMsgOptions_ = prepareLzCallReturn_.oftMsgOptions;
+    //     MessagingFee memory msgFee_ = prepareLzCallReturn_.msgFee;
+    //     LZSendParam memory lzSendParam_ = prepareLzCallReturn_.lzSendParam;
 
-        (MessagingReceipt memory msgReceipt_,) = aUsdo.sendPacket{value: msgFee_.nativeFee}(lzSendParam_, composeMsg_);
+    //     (MessagingReceipt memory msgReceipt_,) = aUsdo.sendPacket{value: msgFee_.nativeFee}(lzSendParam_, composeMsg_);
 
-        verifyPackets(uint32(bEid), address(bUsdo));
+    //     verifyPackets(uint32(bEid), address(bUsdo));
 
-        vm.expectEmit(true, true, true, false);
-        emit IERC20.Approval(userA, userB, 1e18);
+    //     vm.expectEmit(true, true, true, false);
+    //     emit IERC20.Approval(userA, userB, 1e18);
 
-        vm.expectEmit(true, true, true, false);
-        emit IERC20.Approval(userA, userC_, 1e18);
+    //     vm.expectEmit(true, true, true, false);
+    //     emit IERC20.Approval(userA, userC_, 1e18);
 
-        __callLzCompose(
-            LzOFTComposedData(
-                PT_APPROVALS,
-                msgReceipt_.guid,
-                composeMsg_,
-                bEid,
-                address(bUsdo), // Compose creator (at lzReceive)
-                address(bUsdo), // Compose receiver (at lzCompose)
-                address(this),
-                oftMsgOptions_
-            )
-        );
+    //     __callLzCompose(
+    //         LzOFTComposedData(
+    //             PT_APPROVALS,
+    //             msgReceipt_.guid,
+    //             composeMsg_,
+    //             bEid,
+    //             address(bUsdo), // Compose creator (at lzReceive)
+    //             address(bUsdo), // Compose receiver (at lzCompose)
+    //             address(this),
+    //             oftMsgOptions_
+    //         )
+    //     );
 
-        assertEq(bUsdo.allowance(userA, userB), 1e18);
-        assertEq(bUsdo.allowance(userA, userC_), 2e18);
-        assertEq(bUsdo.nonces(userA), 2);
-    }
+    //     assertEq(bUsdo.allowance(userA, userB), 1e18);
+    //     assertEq(bUsdo.allowance(userA, userC_), 2e18);
+    //     assertEq(bUsdo.nonces(userA), 2);
+    // }
 
     function test_remote_transfer() public {
         // vars

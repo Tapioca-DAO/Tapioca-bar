@@ -809,55 +809,35 @@ async function registerSingularity(
         `Deployed SimpleLeverageExecutor ${leverageExecutor.address} with args`,
         staging,
     );
-    const modulesData = new ethers.utils.AbiCoder().encode(
-        [
-            'address',
-            'address',
-            'address',
-            'address',
-        ],
-        [
-            _sglLiquidationModule.address,
-            _sglBorrow.address,
-            _sglCollateral.address,
-            _sglLeverage.address,
-        ]
-    );
+    const modulesData = {
+            _liquidationModule: _sglLiquidationModule.address,
+            _borrowModule: _sglBorrow.address,
+            _collateralModule: _sglCollateral.address,
+            _leverageModule: _sglLeverage.address,
+        };
     
-    const tokensData = new ethers.utils.AbiCoder().encode(
-        [
-            'address',
-            'uint256',
-            'address',
-            'uint256',
-        ],
-        [
-            weth.address,
-            wethAssetId,
-            usdc.address,
-            usdcAssetId,
-        ]
-    );
-    const data = new ethers.utils.AbiCoder().encode(
-        [
-            'address',
-            'address',
-            'uint256',
-            'uint256',
-            'uint256',
-            'address',
-        ],
-        [
-            penrose.address,
-            wethUsdcOracle.address,
-            exchangeRatePrecision ?? 0,
-            0,
-            0,
-            leverageExecutor.address,
-        ],
-    );
+    const tokensData = {
+            _asset: weth.address,
+            _assetId: wethAssetId,
+            _collateral: usdc.address,
+            _collateralId: usdcAssetId,
+    };
+    const data = {
+            penrose_: penrose.address,
+            _oracle: wethUsdcOracle.address,
+            _exchangeRatePrecision: exchangeRatePrecision ?? 0,
+            _collateralizationRate: 0,
+            _liquidationCollateralizationRate: 0,
+            _leverageExecutor: leverageExecutor.address,
+    }
 
-    const sglData = new ethers.utils.AbiCoder().encode(['bytes','bytes','bytes'],[modulesData, tokensData, data]);
+    const sglData = new ethers.utils.AbiCoder().encode(
+        [
+            'tuple(address _liquidationModule, address _borrowModule, address _collateralModule, address _leverageModule)',
+            'tuple(address _asset, uint256 _assetId, address _collateral, uint256 _collateralId)',
+            'tuple(address penrose_, address _oracle, uint256 _exchangeRatePrecision, uint256 _collateralizationRate, uint256 _liquidationCollateralizationRate, address _leverageExecutor)'
+        ],
+        [modulesData, tokensData, data]);
     await (
         await penrose.registerSingularity(mediumRiskMC, sglData, true, {
             gasPrice: gasPrice,
@@ -1133,58 +1113,37 @@ async function registerBigBangMarket(
         staging,
     );
 
-     const modulesData = new ethers.utils.AbiCoder().encode(
-        [
-            'address',
-            'address',
-            'address',
-            'address',
-        ],
-        [
-            _bbLiquidationModule.address,
-            _bbBorrow.address,
-            _bbCollateral.address,
-            _bbLeverage.address,
-        ]
-    );
+    const modulesData = {
+            _liquidationModule: _bbLiquidationModule.address,
+            _borrowModule: _bbBorrow.address,
+            _collateralModule: _bbCollateral.address,
+            _leverageModule: _bbLeverage.address,
+        };
+    
+    const debtData = {
+            _debtRateAgainstEth: debtRateAgainstEth,
+            _debtRateMin: debtRateMin,
+            _debtRateMax: debtRateMax
+    };
+    const data = {
+            _penrose: penrose.address,
+            _collateral: collateral.address,
+            _collateralId: collateralId,
+            _oracle: oracle.address,
+            _exchangeRatePrecision: exchangeRatePrecision,
+            _collateralizationRate: 0,
+            _liquidationCollateralizationRate: 0,
+            _leverageExecutor: ethers.constants.AddressZero,
+    }
 
-    const debtData = new ethers.utils.AbiCoder().encode(
+    const bbData = new ethers.utils.AbiCoder().encode(
         [
-            'uint256',
-            'uint256',
-            'uint256',
+            'tuple(address _liquidationModule, address _borrowModule, address _collateralModule, address _leverageModule)',
+            'tuple(uint256 _debtRateAgainstEth, uint256 _debtRateMin, uint256 _debtRateMax)',
+            'tuple(address _penrose, address _collateral, uint256 _collateralId, address _oracle, uint256 _exchangeRatePrecision, uint256 _collateralizationRate, uint256 _liquidationCollateralizationRate, address _leverageExecutor)'
         ],
-        [
-            debtRateAgainstEth,
-            debtRateMin,
-            debtRateMax,
-        ]
-    );
+        [modulesData, debtData, data]);
 
-    const data = new ethers.utils.AbiCoder().encode(
-        [
-            'address',
-            'address',
-            'uint256',
-            'address',
-            'uint256',
-            'uint256',
-            'uint256',
-            'address',
-        ],
-        [
-            penrose.address,
-            collateral.address,
-            collateralId,
-            oracle.address,
-            exchangeRatePrecision,
-            0,
-            0,
-            leverageExecutor.address,
-        ],
-    );
-
-    const bbData = new ethers.utils.AbiCoder().encode(['bytes','bytes','bytes'],[modulesData, debtData, data]);
     await (
         await penrose.registerBigBang(mediumRiskBigBangMC, bbData, true, {
             gasPrice: gasPrice,
