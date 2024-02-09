@@ -24,14 +24,6 @@ __/\\\\\\\\\\\\\\\_____/\\\\\\\\\_____/\\\\\\\\\\\\\____/\\\\\\\\\\\_______/\\\\
 
 contract AssetTotsDaiLeverageExecutor is BaseLeverageExecutor {
     using SafeApprove for address;
-    // ************** //
-    // *** ERRORS *** //
-    // ************** //
-
-    error MinAmountNotValid(uint256 expected, uint256 received);
-    error NotEnough(address token);
-    error SenderNotValid();
-    error TokenNotValid();
 
     constructor(IZeroXSwapper _swapper, ICluster _cluster) BaseLeverageExecutor(_swapper, _cluster) {}
 
@@ -45,13 +37,13 @@ contract AssetTotsDaiLeverageExecutor is BaseLeverageExecutor {
      * @dev Expects SLeverageSwapData.toftInfo.isTokenOutToft to be false
      * @inheritdoc BaseLeverageExecutor
      */
-    function getCollateral(
-        uint256 collateralId,
-        address assetAddress,
-        address collateralAddress,
-        uint256 assetAmountIn,
-        bytes calldata data
-    ) external payable override returns (uint256 collateralAmountOut) {
+    function getCollateral(address assetAddress, address collateralAddress, uint256 assetAmountIn, bytes calldata data)
+        external
+        payable
+        override
+        returns (uint256 collateralAmountOut)
+    {
+        // Should be called only by approved SGL/BB markets.
         if (!cluster.isWhitelisted(0, msg.sender)) revert SenderNotValid();
 
         //retrieve addresses
@@ -59,7 +51,8 @@ contract AssetTotsDaiLeverageExecutor is BaseLeverageExecutor {
 
         //swap USDO (asset) with DAI
         SLeverageSwapData memory swapData = abi.decode(data, (SLeverageSwapData));
-        uint256 daiAmount = _swapAndTransferToSender(false, assetAddress, daiAddress, assetAmountIn, swapData, 0);
+        uint256 daiAmount =
+            _swapAndTransferToSender(false, assetAddress, daiAddress, assetAmountIn, swapData.swapperData);
 
         //obtain sDai
         daiAddress.safeApprove(sDaiAddress, daiAmount);
@@ -82,7 +75,8 @@ contract AssetTotsDaiLeverageExecutor is BaseLeverageExecutor {
         override
         returns (uint256 assetAmountOut)
     {
-        super._getAsset(collateralAddress, assetAddress, collateralAmountIn, data);
+        // Should be called only by approved SGL/BB markets.
+        if (!cluster.isWhitelisted(0, msg.sender)) revert SenderNotValid();
 
         //retrieve addresses
         (address sDaiAddress, address daiAddress) = _getAddresses(collateralAddress);
@@ -92,12 +86,9 @@ contract AssetTotsDaiLeverageExecutor is BaseLeverageExecutor {
         uint256 obtainedDai = ISavingsDai(sDaiAddress).redeem(
             ISavingsDai(sDaiAddress).convertToShares(collateralAmountIn), address(this), address(this)
         );
-        // swap DAI with USDO
+        // swap DAI with USDO, and transfer to sender
         SLeverageSwapData memory swapData = abi.decode(data, (SLeverageSwapData));
-        assetAmountOut = _swapAndTransferToSender(false, daiAddress, assetAddress, obtainedDai, swapData);
-
-        // Send back the remaining USDO
-        assetAddress.safeTransfer(msg.sender, assetAmountOut);
+        assetAmountOut = _swapAndTransferToSender(true, daiAddress, assetAddress, obtainedDai, swapData.swapperData);
     }
 
     // ********************** //

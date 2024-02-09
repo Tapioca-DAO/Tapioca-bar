@@ -46,7 +46,8 @@ contract SimpleLeverageExecutor is BaseLeverageExecutor {
         uint256 assetAmountIn,
         bytes calldata swapperData
     ) external payable override returns (uint256 collateralAmountOut) {
-        super._getCollateral(assetAddress, collateralAddress, assetAmountIn, swapperData);
+        // Should be called only by approved SGL/BB markets.
+        if (!cluster.isWhitelisted(0, msg.sender)) revert SenderNotValid();
         return _swapAndTransferToSender(true, assetAddress, collateralAddress, assetAmountIn, swapperData);
     }
 
@@ -59,7 +60,8 @@ contract SimpleLeverageExecutor is BaseLeverageExecutor {
         uint256 collateralAmountIn,
         bytes calldata swapperData
     ) external override returns (uint256 assetAmountOut) {
-        super._getAsset(collateralAddress, assetAddress, collateralAmountIn, swapperData);
+        // Should be called only by approved SGL/BB markets.
+        if (!cluster.isWhitelisted(0, msg.sender)) revert SenderNotValid();
         return _swapAndTransferToSender(true, collateralAddress, assetAddress, collateralAmountIn, swapperData);
     }
 }

@@ -97,10 +97,7 @@ abstract contract BaseLeverageExecutor is Ownable {
         payable
         virtual
         returns (uint256 collateralAmountOut)
-    {
-        // Should be called only by approved SGL/BB markets.
-        if (!cluster.isWhitelisted(0, msg.sender)) revert SenderNotValid();
-    }
+    {}
 
     /**
      * @notice Buys an asked amount of asset with a collateral using the ZeroXSwapper.
@@ -114,30 +111,28 @@ abstract contract BaseLeverageExecutor is Ownable {
         external
         virtual
         returns (uint256 assetAmountOut)
-    {
-        // Should be called only by approved SGL/BB markets.
-        if (!cluster.isWhitelisted(0, msg.sender)) revert SenderNotValid();
-    }
+    {}
 
     // *********************** //
     // *** INTERNAL METHODS *** //
     // *********************** //
 
     /**
-     * @notice Sell `tokenIn` and buy `tokenOut`. Sends the `amountOut` of `tokenOut` to the sender if `sendBack` is true.
+     * @notice Sell `tokenIn` and buy `tokenOut`.
+     * @dev Sends the `amountOut` of `tokenOut` to the sender if `sendBack` is true, by wrapping or transferring it.
      *
      * @param tokenIn token to swap. Can be tOFT.
      * @param tokenOut token to receive. Can be tOFT.
      * @param amountIn amount to swap.
-     * @param swapperData SLeverageSwapData.
+     * @param data SLeverageSwapData.
      */
     function _swapAndTransferToSender(
         bool sendBack,
         address tokenIn,
         address tokenOut,
         uint256 amountIn,
-        bytes calldata data
-    ) internal override returns (uint256 amountOut) {
+        bytes memory data
+    ) internal returns (uint256 amountOut) {
         SLeverageSwapData memory swapData = abi.decode(data, (SLeverageSwapData));
 
         // If the tokenIn is a tOFT, unwrap it. Handles ETH and ERC20.
@@ -169,7 +164,6 @@ abstract contract BaseLeverageExecutor is Ownable {
      *
      * @param tokenIn tOFT token to unwrap.
      * @param amountIn amount to unwrap.
-     * @param swapData SLeverageSwapData.
      * @return tokenToSwap address of the token to swap. Either WETH or the ERC20 address.
      */
     function _handleToftUnwrap(address tokenIn, uint256 amountIn) internal returns (address tokenToSwap) {
