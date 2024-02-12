@@ -73,6 +73,7 @@ import {IOracle} from "tapioca-periph/oracle/interfaces/IOracle.sol";
 import {IPenrose} from "tapioca-periph/interfaces/bar/IPenrose.sol";
 import {UsdoHelper} from "contracts/usdo/extensions/UsdoHelper.sol";
 import {UsdoSender} from "contracts/usdo/modules/UsdoSender.sol";
+import {Pearlmit} from "tapioca-periph/pearlmit/Pearlmit.sol";
 import {Cluster} from "tapioca-periph/Cluster/Cluster.sol";
 import {YieldBox} from "yieldbox/YieldBox.sol";
 import {Penrose} from "contracts/Penrose.sol";
@@ -275,6 +276,9 @@ contract UsdoTest is UsdoTestHelper {
             ),
             address(masterContract)
         );
+
+        Pearlmit perlmit = new Pearlmit("Test", "1");
+        penrose.setPearlmit(address(perlmit));
 
         cluster.updateContract(aEid, address(yieldBox), true);
         cluster.updateContract(aEid, address(magnetar), true);
@@ -1575,16 +1579,12 @@ contract UsdoTest is UsdoTestHelper {
         uint256 deadline_
     ) private view returns (bytes32) {
         bytes32 permitTypeHash_ = permitAsset
-            ? keccak256(
-                "Permit(uint16 actionType,address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)"
-            )
-            : keccak256(
-                "PermitBorrow(uint16 actionType,address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)"
-            );
+            ? bytes32(0x6e71edae12b1b97f4d1f60370fef10105fa2faae0126114a169c64845d6126c9)
+            : bytes32(0xe9685ff6d48c617fe4f692c50e602cce27cbad0290beb93cfa77eac43968d58c);
 
         uint256 nonce = singularity.nonces(owner_);
         bytes32 structHash_ =
-            keccak256(abi.encode(permitTypeHash_, actionType_, owner_, spender_, value_, nonce++, deadline_));
+            keccak256(abi.encode(permitTypeHash_, owner_, spender_, value_, nonce++, deadline_));
 
         return keccak256(abi.encodePacked("\x19\x01", singularity.DOMAIN_SEPARATOR(), structHash_));
     }

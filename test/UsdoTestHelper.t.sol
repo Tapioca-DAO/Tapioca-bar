@@ -83,7 +83,7 @@ contract UsdoTestHelper is TestHelper, TestUtils {
         return new OracleMock("Oracle Test", "ORCT", 1 ether);
     }
 
-    function createLeverageExecutor(address _yb, address _swapper, address _cluster)
+    function createLeverageExecutor(address, address _swapper, address _cluster)
         public
         returns (SimpleLeverageExecutor)
     {

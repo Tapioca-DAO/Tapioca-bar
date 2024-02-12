@@ -7,9 +7,10 @@ import {
     MarketPermitActionMsg,
     YieldBoxApproveAssetMsg
 } from "tapioca-periph/interfaces/oft/IUsdo.sol";
-import {IPermit} from "tapioca-periph/interfaces/common/IPermit.sol";
+import {TapiocaOmnichainExtExec} from "tapioca-periph/tapiocaOmnichainEngine/extension/TapiocaOmnichainExtExec.sol";
+import {IPermitBorrow} from "tapioca-periph/interfaces/common/IPermitBorrow.sol";
 import {IPermitAll} from "tapioca-periph/interfaces/common/IPermitAll.sol";
-import {IPermitAction} from "tapioca-periph/interfaces/common/IPermitAction.sol";
+import {IPermit} from "tapioca-periph/interfaces/common/IPermit.sol";
 
 /*
 __/\\\\\\\\\\\\\\\_____/\\\\\\\\\_____/\\\\\\\\\\\\\____/\\\\\\\\\\\_______/\\\\\_____________/\\\\\\\\\_____/\\\\\\\\\____        
@@ -29,7 +30,7 @@ __/\\\\\\\\\\\\\\\_____/\\\\\\\\\_____/\\\\\\\\\\\\\____/\\\\\\\\\\\_______/\\\\
  * @author TapiocaDAO
  * @notice Used to execute external calls from the Usdo contract. So to not use Usdo in the call context.
  */
-contract UsdoExtExec {
+contract UsdoExtExec is TapiocaOmnichainExtExec{
     /**
      * @notice Executes YieldBox setApprovalForAll(true) operation.
      * @param _approval The approval message.
@@ -91,18 +92,7 @@ contract UsdoExtExec {
      * @param _approval The approval message.
      */
     function marketPermitAssetApproval(MarketPermitActionMsg calldata _approval) public {
-        bytes memory sigData = abi.encode(
-            true,
-            _approval.owner,
-            _approval.spender,
-            _approval.value,
-            _approval.deadline,
-            _approval.v,
-            _approval.r,
-            _approval.s
-        );
-
-        IPermitAction(_approval.target).permitAction(sigData, _approval.actionType);
+        IPermit(_approval.target).permit(_approval.owner, _approval.spender, _approval.value, _approval.deadline, _approval.v, _approval.r, _approval.s);
     }
 
     /**
@@ -110,17 +100,6 @@ contract UsdoExtExec {
      * @param _approval The approval message.
      */
     function marketPermitCollateralApproval(MarketPermitActionMsg calldata _approval) public {
-        bytes memory sigData = abi.encode(
-            false,
-            _approval.owner,
-            _approval.spender,
-            _approval.value,
-            _approval.deadline,
-            _approval.v,
-            _approval.r,
-            _approval.s
-        );
-
-        IPermitAction(_approval.target).permitAction(sigData, _approval.actionType);
+        IPermitBorrow(_approval.target).permitBorrow(_approval.owner, _approval.spender, _approval.value, _approval.deadline, _approval.v, _approval.r, _approval.s);
     }
 }
