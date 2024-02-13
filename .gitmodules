@@ -19,6 +19,3 @@
 [submodule "gitmodule/permitc"]
 	path = gitmodule/permitc
 	url = https://github.com/limitbreakinc/PermitC.git
-[submodule "PermitC"]
-	path = PermitC
-	url = https://github.com/limitbreakinc/PermitC.git
