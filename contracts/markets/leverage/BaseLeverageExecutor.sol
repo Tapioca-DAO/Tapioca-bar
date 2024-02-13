@@ -6,23 +6,21 @@ import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeE
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 // Tapioca
-import {ITapiocaOFTBase} from "tapioca-periph/interfaces/tap-token/ITapiocaOFT.sol";
 import {IZeroXSwapper} from "tapioca-periph/interfaces/periph/IZeroXSwapper.sol";
-import {IWETH9} from "tapioca-periph/interfaces/external/weth/IWeth9.sol";
+import {IWeth9} from "tapioca-periph/interfaces/external/weth/IWeth9.sol";
 import {ICluster} from "tapioca-periph/interfaces/periph/ICluster.sol";
 import {SafeApprove} from "tapioca-periph/libraries/SafeApprove.sol";
+import {ITOFT} from "tapioca-periph/interfaces/oft/ITOFT.sol";
 
 /*
-__/\\\\\\\\\\\\\\\_____/\\\\\\\\\_____/\\\\\\\\\\\\\____/\\\\\\\\\\\_______/\\\\\_____________/\\\\\\\\\_____/\\\\\\\\\____        
- _\///////\\\/////____/\\\\\\\\\\\\\__\/\\\/////////\\\_\/////\\\///______/\\\///\\\________/\\\////////____/\\\\\\\\\\\\\__       
-  _______\/\\\________/\\\/////////\\\_\/\\\_______\/\\\_____\/\\\_______/\\\/__\///\\\____/\\\/____________/\\\/////////\\\_      
-   _______\/\\\_______\/\\\_______\/\\\_\/\\\\\\\\\\\\\/______\/\\\______/\\\______\//\\\__/\\\_____________\/\\\_______\/\\\_     
-    _______\/\\\_______\/\\\\\\\\\\\\\\\_\/\\\/////////________\/\\\_____\/\\\_______\/\\\_\/\\\_____________\/\\\\\\\\\\\\\\\_    
-     _______\/\\\_______\/\\\/////////\\\_\/\\\_________________\/\\\_____\//\\\______/\\\__\//\\\____________\/\\\/////////\\\_   
-      _______\/\\\_______\/\\\_______\/\\\_\/\\\_________________\/\\\______\///\\\__/\\\_____\///\\\__________\/\\\_______\/\\\_  
-       _______\/\\\_______\/\\\_______\/\\\_\/\\\______________/\\\\\\\\\\\____\///\\\\\/________\////\\\\\\\\\_\/\\\_______\/\\\_ 
-        _______\///________\///________\///__\///______________\///////////_______\/////_____________\/////////__\///________\///__
 
+████████╗ █████╗ ██████╗ ██╗ ██████╗  ██████╗ █████╗ 
+╚══██╔══╝██╔══██╗██╔══██╗██║██╔═══██╗██╔════╝██╔══██╗
+   ██║   ███████║██████╔╝██║██║   ██║██║     ███████║
+   ██║   ██╔══██║██╔═══╝ ██║██║   ██║██║     ██╔══██║
+   ██║   ██║  ██║██║     ██║╚██████╔╝╚██████╗██║  ██║
+   ╚═╝   ╚═╝  ╚═╝╚═╝     ╚═╝ ╚═════╝  ╚═════╝╚═╝  ╚═╝
+   
 */
 
 struct SToftInfo {
@@ -46,7 +44,7 @@ abstract contract BaseLeverageExecutor is Ownable {
 
     IZeroXSwapper public swapper;
     ICluster public cluster;
-    IWETH9 public weth;
+    IWeth9 public weth;
 
     // ************** //
     // *** ERRORS *** //
@@ -166,8 +164,8 @@ abstract contract BaseLeverageExecutor is Ownable {
      * @return tokenToSwap address of the token to swap. Either WETH or the ERC20 address.
      */
     function _handleToftUnwrap(address tokenIn, uint256 amountIn) internal returns (address tokenToSwap) {
-        ITapiocaOFTBase(tokenIn).unwrap(address(this), amountIn); // Sends ETH to `receive()` if not an ERC20.
-        tokenIn = ITapiocaOFTBase(tokenIn).erc20();
+        ITOFT(tokenIn).unwrap(address(this), amountIn); // Sends ETH to `receive()` if not an ERC20.
+        tokenIn = ITOFT(tokenIn).erc20();
         // If the tokenIn is ETH, wrap it to WETH.
         if (tokenIn == address(0)) {
             weth.deposit{value: amountIn}();
@@ -186,17 +184,17 @@ abstract contract BaseLeverageExecutor is Ownable {
      * @param amountOut amount to wrap.
      */
     function _handleToftWrapToSender(bool sendBack, address tokenOut, uint256 amountOut) internal {
-        address toftErc20 = ITapiocaOFTBase(tokenOut).erc20();
+        address toftErc20 = ITOFT(tokenOut).erc20();
         address wrapsTo = sendBack == true ? msg.sender : address(this);
 
         if (toftErc20 == address(0)) {
             // If the tOFT is for ETH, withdraw from WETH and wrap it.
             weth.withdraw(amountOut);
-            ITapiocaOFTBase(tokenOut).wrap{value: amountOut}(address(this), wrapsTo, amountOut);
+            ITOFT(tokenOut).wrap{value: amountOut}(address(this), wrapsTo, amountOut);
         } else {
             // If the tOFT is for an ERC20, wrap it.
             toftErc20.safeApprove(tokenOut, amountOut);
-            ITapiocaOFTBase(tokenOut).wrap(address(this), wrapsTo, amountOut);
+            ITOFT(tokenOut).wrap(address(this), wrapsTo, amountOut);
             toftErc20.safeApprove(tokenOut, 0);
         }
     }

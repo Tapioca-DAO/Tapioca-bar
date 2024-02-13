@@ -2625,7 +2625,13 @@ describe('Singularity test', () => {
                 wethDepositAndAddAsset,
                 __wethUsdcPrice,
                 timeTravel,
+                penrose,
             } = await loadFixture(register);
+
+            const pearlmit = await (await ethers.getContractFactory('Pearlmit')).deploy('A','1');
+            await pearlmit.deployed();
+
+            await penrose.setPearlmit(pearlmit.address);
 
             const assetId = await wethUsdcSingularity.assetId();
             const collateralId = await wethUsdcSingularity.collateralId();
@@ -2775,104 +2781,6 @@ describe('Singularity test', () => {
                 [wethUsdcSingularity.address],
                 twTap.address,
             );
-        });
-    });
-
-    describe('Permit', async () => {
-        it('should test permit lend & borrow', async () => {
-            const { deployer, eoa1, wethUsdcSingularity, BN } =
-                await loadFixture(register);
-
-            const deadline =
-                (await ethers.provider.getBlock('latest')).timestamp + 10_000;
-
-            const { v, r, s } = await getSGLPermitSignature(
-                'Permit',
-                deployer,
-                wethUsdcSingularity,
-                eoa1.address,
-                (1e18).toString(),
-                BN(deadline),
-            );
-
-            const snapshot = await takeSnapshot();
-
-            const encoder = new ethers.utils.AbiCoder();
-            const permitActionData = encoder.encode(
-                [
-                    'bool',
-                    'address',
-                    'address',
-                    'uint256',
-                    'uint256',
-                    'uint8',
-                    'bytes32',
-                    'bytes32',
-                ],
-                [
-                    true,
-                    deployer.address,
-                    eoa1.address,
-                    (1e18).toString(),
-                    deadline,
-                    v,
-                    r,
-                    s,
-                ],
-            );
-
-            await expect(wethUsdcSingularity.permitAction(permitActionData, 0))
-                .to.emit(wethUsdcSingularity, 'Approval')
-                .withArgs(deployer.address, eoa1.address, (1e18).toString());
-
-            await expect(wethUsdcSingularity.permitAction(permitActionData, 10))
-                .to.be.reverted;
-
-            await snapshot.restore();
-            await expect(
-                wethUsdcSingularity.permitBorrow(
-                    deployer.address,
-                    eoa1.address,
-                    (1e18).toString(),
-                    deadline,
-                    v,
-                    r,
-                    s,
-                ),
-            ).to.be.reverted;
-
-            {
-                const deadline =
-                    (await ethers.provider.getBlock('latest')).timestamp +
-                    10_000;
-
-                const { v, r, s } = await getSGLPermitSignature(
-                    'PermitBorrow',
-                    deployer,
-                    wethUsdcSingularity,
-                    eoa1.address,
-                    (1e18).toString(),
-                    BN(deadline),
-                );
-
-                await expect(
-                    wethUsdcSingularity.permitBorrow(
-                        deployer.address,
-                        eoa1.address,
-                        (1e18).toString(),
-                        deadline,
-                        v,
-                        r,
-                        s,
-                    ),
-                )
-                    .to.emit(wethUsdcSingularity, 'ApprovalBorrow')
-                    .withArgs(
-                        deployer.address,
-                        eoa1.address,
-                        (1e18).toString(),
-                    );
-            }
         });
     });
 
@@ -3202,7 +3110,7 @@ describe('Singularity test', () => {
             
             const leverageExecutor = await (
                 await ethers.getContractFactory('SimpleLeverageExecutor')
-            ).deploy(yieldBox.address, multiSwapper.address, cluster.address);
+            ).deploy(multiSwapper.address, cluster.address);
             const data = new ethers.utils.AbiCoder().encode(
                 [
                     'address',

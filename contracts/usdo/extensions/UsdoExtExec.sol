@@ -13,16 +13,14 @@ import {IPermitAll} from "tapioca-periph/interfaces/common/IPermitAll.sol";
 import {IPermit} from "tapioca-periph/interfaces/common/IPermit.sol";
 
 /*
-__/\\\\\\\\\\\\\\\_____/\\\\\\\\\_____/\\\\\\\\\\\\\____/\\\\\\\\\\\_______/\\\\\_____________/\\\\\\\\\_____/\\\\\\\\\____        
- _\///////\\\/////____/\\\\\\\\\\\\\__\/\\\/////////\\\_\/////\\\///______/\\\///\\\________/\\\////////____/\\\\\\\\\\\\\__       
-  _______\/\\\________/\\\/////////\\\_\/\\\_______\/\\\_____\/\\\_______/\\\/__\///\\\____/\\\/____________/\\\/////////\\\_      
-   _______\/\\\_______\/\\\_______\/\\\_\/\\\\\\\\\\\\\/______\/\\\______/\\\______\//\\\__/\\\_____________\/\\\_______\/\\\_     
-    _______\/\\\_______\/\\\\\\\\\\\\\\\_\/\\\/////////________\/\\\_____\/\\\_______\/\\\_\/\\\_____________\/\\\\\\\\\\\\\\\_    
-     _______\/\\\_______\/\\\/////////\\\_\/\\\_________________\/\\\_____\//\\\______/\\\__\//\\\____________\/\\\/////////\\\_   
-      _______\/\\\_______\/\\\_______\/\\\_\/\\\_________________\/\\\______\///\\\__/\\\_____\///\\\__________\/\\\_______\/\\\_  
-       _______\/\\\_______\/\\\_______\/\\\_\/\\\______________/\\\\\\\\\\\____\///\\\\\/________\////\\\\\\\\\_\/\\\_______\/\\\_ 
-        _______\///________\///________\///__\///______________\///////////_______\/////_____________\/////////__\///________\///__
 
+████████╗ █████╗ ██████╗ ██╗ ██████╗  ██████╗ █████╗ 
+╚══██╔══╝██╔══██╗██╔══██╗██║██╔═══██╗██╔════╝██╔══██╗
+   ██║   ███████║██████╔╝██║██║   ██║██║     ███████║
+   ██║   ██╔══██║██╔═══╝ ██║██║   ██║██║     ██╔══██║
+   ██║   ██║  ██║██║     ██║╚██████╔╝╚██████╗██║  ██║
+   ╚═╝   ╚═╝  ╚═╝╚═╝     ╚═╝ ╚═════╝  ╚═════╝╚═╝  ╚═╝
+   
 */
 
 /**
@@ -30,7 +28,7 @@ __/\\\\\\\\\\\\\\\_____/\\\\\\\\\_____/\\\\\\\\\\\\\____/\\\\\\\\\\\_______/\\\\
  * @author TapiocaDAO
  * @notice Used to execute external calls from the Usdo contract. So to not use Usdo in the call context.
  */
-contract UsdoExtExec is TapiocaOmnichainExtExec{
+contract UsdoExtExec is TapiocaOmnichainExtExec {
     /**
      * @notice Executes YieldBox setApprovalForAll(true) operation.
      * @param _approval The approval message.
@@ -92,7 +90,15 @@ contract UsdoExtExec is TapiocaOmnichainExtExec{
      * @param _approval The approval message.
      */
     function marketPermitAssetApproval(MarketPermitActionMsg calldata _approval) public {
-        IPermit(_approval.target).permit(_approval.owner, _approval.spender, _approval.value, _approval.deadline, _approval.v, _approval.r, _approval.s);
+        IPermit(_approval.target).permit(
+            _approval.owner,
+            _approval.spender,
+            _approval.value,
+            _approval.deadline,
+            _approval.v,
+            _approval.r,
+            _approval.s
+        );
     }
 
     /**
@@ -100,6 +106,14 @@ contract UsdoExtExec is TapiocaOmnichainExtExec{
      * @param _approval The approval message.
      */
     function marketPermitCollateralApproval(MarketPermitActionMsg calldata _approval) public {
-        IPermitBorrow(_approval.target).permitBorrow(_approval.owner, _approval.spender, _approval.value, _approval.deadline, _approval.v, _approval.r, _approval.s);
+        IPermitBorrow(_approval.target).permitBorrow(
+            _approval.owner,
+            _approval.spender,
+            _approval.value,
+            _approval.deadline,
+            _approval.v,
+            _approval.r,
+            _approval.s
+        );
     }
 }

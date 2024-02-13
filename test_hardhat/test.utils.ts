@@ -110,16 +110,12 @@ async function registerUsd0Contract(
     const usdo_option = await (
         await ethers.getContractFactory('UsdoOptionReceiverModule')
     ).deploy(usdoInitStruct);
-    const usdo_leverage = await (
-        await ethers.getContractFactory('UsdoLeverageReceiverModule')
-    ).deploy(usdoInitStruct);
 
     const modulesInitStruct = {
         usdoSenderModule: usdo_sender.address,
         usdoReceiverModule: usdo_receiver.address,
         marketReceiverModule: usdo_market.address,
         optionReceiverModule: usdo_option.address,
-        leverageReceiverModule: usdo_leverage.address,
     }
 
     const usd0 = await (
@@ -803,7 +799,7 @@ async function registerSingularity(
 
     const leverageExecutor = await (
         await ethers.getContractFactory('SimpleLeverageExecutor')
-    ).deploy(yieldBox.address, swapper, cluster, { gasPrice: gasPrice });
+    ).deploy(swapper, cluster, { gasPrice: gasPrice });
     await leverageExecutor.deployed();
     log(
         `Deployed SimpleLeverageExecutor ${leverageExecutor.address} with args`,
@@ -962,7 +958,7 @@ async function createWethUsd0Singularity(
 
     const leverageExecutor = await (
         await ethers.getContractFactory('SimpleLeverageExecutor')
-    ).deploy(yieldBox.address, swapper, cluster, { gasPrice: gasPrice });
+    ).deploy(swapper, cluster, { gasPrice: gasPrice });
     await leverageExecutor.deployed();
     log(
         `Deployed SimpleLeverageExecutor ${leverageExecutor.address} with args`,
@@ -1126,7 +1122,7 @@ async function registerBigBangMarket(
 
     const leverageExecutor = await (
         await ethers.getContractFactory('SimpleLeverageExecutor')
-    ).deploy(yieldBox.address, swapper, cluster, { gasPrice: gasPrice });
+    ).deploy(swapper, cluster, { gasPrice: gasPrice });
     await leverageExecutor.deployed();
     log(
         `Deployed SimpleLeverageExecutor ${leverageExecutor.address} with args`,
@@ -1512,6 +1508,11 @@ export async function register(staging?: boolean) {
         staging,
     );
     log(`Deployed Penrose ${penrose.address}`, staging);
+
+    const pearlmit = await (await ethers.getContractFactory('Pearlmit')).deploy('A','1');
+    await pearlmit.deployed();
+
+    await penrose.setPearlmit(pearlmit.address);
 
     // -------------------  3 Add asset types to Penrose -------------------
     log('Setting Penrose assets', staging);

@@ -7,23 +7,21 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 // Tapioca
 import {IGmxRewardRouterV2} from "tapioca-periph/interfaces/external/gmx/IGmxRewardRouterV2.sol";
 import {IGmxGlpManager} from "tapioca-periph/interfaces/external/gmx/IGmxGlpManager.sol";
-import {ITapiocaOFTBase} from "tapioca-periph/interfaces/tap-token/ITapiocaOFT.sol";
+import {ITOFT} from "tapioca-periph/interfaces/oft/ITOFT.sol";
 import {BaseLeverageExecutor, SLeverageSwapData} from "./BaseLeverageExecutor.sol";
 import {IZeroXSwapper} from "tapioca-periph/interfaces/periph/IZeroXSwapper.sol";
 import {ICluster} from "tapioca-periph/interfaces/periph/ICluster.sol";
 import {SafeApprove} from "tapioca-periph/libraries/SafeApprove.sol";
 
 /*
-__/\\\\\\\\\\\\\\\_____/\\\\\\\\\_____/\\\\\\\\\\\\\____/\\\\\\\\\\\_______/\\\\\_____________/\\\\\\\\\_____/\\\\\\\\\____        
- _\///////\\\/////____/\\\\\\\\\\\\\__\/\\\/////////\\\_\/////\\\///______/\\\///\\\________/\\\////////____/\\\\\\\\\\\\\__       
-  _______\/\\\________/\\\/////////\\\_\/\\\_______\/\\\_____\/\\\_______/\\\/__\///\\\____/\\\/____________/\\\/////////\\\_      
-   _______\/\\\_______\/\\\_______\/\\\_\/\\\\\\\\\\\\\/______\/\\\______/\\\______\//\\\__/\\\_____________\/\\\_______\/\\\_     
-    _______\/\\\_______\/\\\\\\\\\\\\\\\_\/\\\/////////________\/\\\_____\/\\\_______\/\\\_\/\\\_____________\/\\\\\\\\\\\\\\\_    
-     _______\/\\\_______\/\\\/////////\\\_\/\\\_________________\/\\\_____\//\\\______/\\\__\//\\\____________\/\\\/////////\\\_   
-      _______\/\\\_______\/\\\_______\/\\\_\/\\\_________________\/\\\______\///\\\__/\\\_____\///\\\__________\/\\\_______\/\\\_  
-       _______\/\\\_______\/\\\_______\/\\\_\/\\\______________/\\\\\\\\\\\____\///\\\\\/________\////\\\\\\\\\_\/\\\_______\/\\\_ 
-        _______\///________\///________\///__\///______________\///////////_______\/////_____________\/////////__\///________\///__
 
+████████╗ █████╗ ██████╗ ██╗ ██████╗  ██████╗ █████╗ 
+╚══██╔══╝██╔══██╗██╔══██╗██║██╔═══██╗██╔════╝██╔══██╗
+   ██║   ███████║██████╔╝██║██║   ██║██║     ███████║
+   ██║   ██╔══██║██╔═══╝ ██║██║   ██║██║     ██╔══██║
+   ██║   ██║  ██║██║     ██║╚██████╔╝╚██████╗██║  ██║
+   ╚═╝   ╚═╝  ╚═╝╚═╝     ╚═╝ ╚═════╝  ╚═════╝╚═╝  ╚═╝
+   
 */
 
 struct SGlpLeverageSwapData {
@@ -90,9 +88,9 @@ contract AssetToSGLPLeverageExecutor is BaseLeverageExecutor {
         collateralAmountOut = _buyGlp(glpSwapData.token, tokenAmount, glpSwapData.minAmountOut);
 
         // Wrap into tsGLP to sender
-        address sGLP = ITapiocaOFTBase(collateralAddress).erc20();
+        address sGLP = ITOFT(collateralAddress).erc20();
         sGLP.safeApprove(collateralAddress, collateralAmountOut);
-        ITapiocaOFTBase(collateralAddress).wrap(address(this), msg.sender, collateralAmountOut);
+        ITOFT(collateralAddress).wrap(address(this), msg.sender, collateralAmountOut);
         sGLP.safeApprove(collateralAddress, 0);
     }
 
@@ -116,10 +114,10 @@ contract AssetToSGLPLeverageExecutor is BaseLeverageExecutor {
         SGlpLeverageSwapData memory tokenSwapData = abi.decode(data, (SGlpLeverageSwapData));
 
         // Unwrap tsGLP
-        ITapiocaOFTBase(collateralAddress).unwrap(address(this), collateralAmountIn);
+        ITOFT(collateralAddress).unwrap(address(this), collateralAmountIn);
 
         // Swap GLP with `SGlpLeverageSwapData.token`
-        address sGLP = ITapiocaOFTBase(collateralAddress).erc20();
+        address sGLP = ITOFT(collateralAddress).erc20();
         uint256 tokenAmount = _sellGlp(tokenSwapData.token, tokenSwapData.minAmountOut, sGLP, collateralAmountIn);
 
         // Swap `SGlpLeverageSwapData.token` with asset.

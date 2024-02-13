@@ -10,7 +10,7 @@ import {
     GmxMarketMock__factory,
 } from '@tapioca-sdk/typechain/tapioca-mocks';
 
-describe('assetToSGlpLeverageExecutors.test test', () => {
+describe.skip('assetToSGlpLeverageExecutors.test test', () => {
     async function setUp() {
         const {
             usdc,

@@ -2,24 +2,23 @@
 pragma solidity ^0.8.18;
 
 // External
+import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 // Tapioca
 import {IERC3156FlashBorrower} from "tapioca-periph/interfaces/bar/IERC3156FlashBorrower.sol";
 import {IERC3156FlashLender} from "tapioca-periph/interfaces/bar/IERC3156FlashLender.sol";
-import {IUSDO} from "tapioca-periph/interfaces/bar/IUSDO.sol";
+import {IUsdo} from "tapioca-periph/interfaces/oft/IUsdo.sol";
 
 /*
-__/\\\\\\\\\\\\\\\_____/\\\\\\\\\_____/\\\\\\\\\\\\\____/\\\\\\\\\\\_______/\\\\\_____________/\\\\\\\\\_____/\\\\\\\\\____        
- _\///////\\\/////____/\\\\\\\\\\\\\__\/\\\/////////\\\_\/////\\\///______/\\\///\\\________/\\\////////____/\\\\\\\\\\\\\__       
-  _______\/\\\________/\\\/////////\\\_\/\\\_______\/\\\_____\/\\\_______/\\\/__\///\\\____/\\\/____________/\\\/////////\\\_      
-   _______\/\\\_______\/\\\_______\/\\\_\/\\\\\\\\\\\\\/______\/\\\______/\\\______\//\\\__/\\\_____________\/\\\_______\/\\\_     
-    _______\/\\\_______\/\\\\\\\\\\\\\\\_\/\\\/////////________\/\\\_____\/\\\_______\/\\\_\/\\\_____________\/\\\\\\\\\\\\\\\_    
-     _______\/\\\_______\/\\\/////////\\\_\/\\\_________________\/\\\_____\//\\\______/\\\__\//\\\____________\/\\\/////////\\\_   
-      _______\/\\\_______\/\\\_______\/\\\_\/\\\_________________\/\\\______\///\\\__/\\\_____\///\\\__________\/\\\_______\/\\\_  
-       _______\/\\\_______\/\\\_______\/\\\_\/\\\______________/\\\\\\\\\\\____\///\\\\\/________\////\\\\\\\\\_\/\\\_______\/\\\_ 
-        _______\///________\///________\///__\///______________\///////////_______\/////_____________\/////////__\///________\///__
 
+████████╗ █████╗ ██████╗ ██╗ ██████╗  ██████╗ █████╗ 
+╚══██╔══╝██╔══██╗██╔══██╗██║██╔═══██╗██╔════╝██╔══██╗
+   ██║   ███████║██████╔╝██║██║   ██║██║     ███████║
+   ██║   ██╔══██║██╔═══╝ ██║██║   ██║██║     ██╔══██║
+   ██║   ██║  ██║██║     ██║╚██████╔╝╚██████╗██║  ██║
+   ╚═╝   ╚═╝  ╚═╝╚═╝     ╚═╝ ╚═════╝  ╚═════╝╚═╝  ╚═╝
+   
 */
 
 /**
@@ -28,7 +27,9 @@ __/\\\\\\\\\\\\\\\_____/\\\\\\\\\_____/\\\\\\\\\\\\\____/\\\\\\\\\\\_______/\\\\
  * @notice The Usdo token flashloan capabilities
  */
 contract USDOFlashloanHelper is IERC3156FlashLender, Ownable {
-    IUSDO public immutable usdo;
+    using SafeERC20 for IERC20;
+
+    IUsdo public immutable usdo;
     uint256 public flashMintFee;
     uint256 public maxFlashMint;
 
@@ -50,7 +51,7 @@ contract USDOFlashloanHelper is IERC3156FlashLender, Ownable {
     event FlashMintFeeUpdated(uint256 _old, uint256 _new);
     event MaxFlashMintUpdated(uint256 _old, uint256 _new);
 
-    constructor(IUSDO _usdo, address _owner) {
+    constructor(IUsdo _usdo, address _owner) {
         usdo = _usdo;
 
         flashMintFee = 1; // 0.001%
@@ -73,10 +74,11 @@ contract USDOFlashloanHelper is IERC3156FlashLender, Ownable {
      * @notice returns the maximum amount of USDO available for a flash mint
      */
     function maxFlashLoan(address) public view override returns (uint256) {
-        if (usdo.totalSupply() > maxFlashMint) {
+        uint256 _supply = IERC20(address(usdo)).totalSupply();
+        if (_supply > maxFlashMint) {
             return maxFlashMint;
         } else {
-            return usdo.totalSupply();
+            return _supply;
         }
     }
 
@@ -134,7 +136,7 @@ contract USDOFlashloanHelper is IERC3156FlashLender, Ownable {
         if (receiver.onFlashLoan(msg.sender, token, amount, fee, data) != FLASH_MINT_CALLBACK_SUCCESS) revert Failed();
 
         //we burn from (this)
-        usdo.transferFrom(address(receiver), address(this), amount);
+        IERC20(address(usdo)).safeTransferFrom(address(receiver), address(this), amount);
 
         // Stack to deep
         // usdo.burn(address(this), amount)
@@ -167,7 +169,7 @@ contract USDOFlashloanHelper is IERC3156FlashLender, Ownable {
             mstore(0x40, add(freeMemPointer, 68))
         }
 
-        usdo.transferFrom(address(receiver), address(usdo), fee);
+        IERC20(address(usdo)).safeTransferFrom(address(receiver), address(usdo), fee);
 
         _flashloanEntered = false;
 

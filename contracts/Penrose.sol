@@ -3,9 +3,8 @@ pragma solidity ^0.8.18;
 
 // External
 import {IERC20} from "@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol";
-import {BoringOwnable} from "@boringcrypto/boring-solidity/contracts/BoringOwnable.sol";
 import {BoringFactory} from "@boringcrypto/boring-solidity/contracts/BoringFactory.sol";
-
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 // Tapioca
 import {
     ERC20WithoutStrategy, IStrategy, IYieldBox as IBoringYieldBox
@@ -22,21 +21,19 @@ import {TokenType} from "yieldbox/enums/YieldBoxTokenType.sol";
 import {IYieldBox} from "yieldbox/interfaces/IYieldBox.sol";
 
 /*
-__/\\\\\\\\\\\\\\\_____/\\\\\\\\\_____/\\\\\\\\\\\\\____/\\\\\\\\\\\_______/\\\\\_____________/\\\\\\\\\_____/\\\\\\\\\____        
- _\///////\\\/////____/\\\\\\\\\\\\\__\/\\\/////////\\\_\/////\\\///______/\\\///\\\________/\\\////////____/\\\\\\\\\\\\\__       
-  _______\/\\\________/\\\/////////\\\_\/\\\_______\/\\\_____\/\\\_______/\\\/__\///\\\____/\\\/____________/\\\/////////\\\_      
-   _______\/\\\_______\/\\\_______\/\\\_\/\\\\\\\\\\\\\/______\/\\\______/\\\______\//\\\__/\\\_____________\/\\\_______\/\\\_     
-    _______\/\\\_______\/\\\\\\\\\\\\\\\_\/\\\/////////________\/\\\_____\/\\\_______\/\\\_\/\\\_____________\/\\\\\\\\\\\\\\\_    
-     _______\/\\\_______\/\\\/////////\\\_\/\\\_________________\/\\\_____\//\\\______/\\\__\//\\\____________\/\\\/////////\\\_   
-      _______\/\\\_______\/\\\_______\/\\\_\/\\\_________________\/\\\______\///\\\__/\\\_____\///\\\__________\/\\\_______\/\\\_  
-       _______\/\\\_______\/\\\_______\/\\\_\/\\\______________/\\\\\\\\\\\____\///\\\\\/________\////\\\\\\\\\_\/\\\_______\/\\\_ 
-        _______\///________\///________\///__\///______________\///////////_______\/////_____________\/////////__\///________\///__
 
+████████╗ █████╗ ██████╗ ██╗ ██████╗  ██████╗ █████╗ 
+╚══██╔══╝██╔══██╗██╔══██╗██║██╔═══██╗██╔════╝██╔══██╗
+   ██║   ███████║██████╔╝██║██║   ██║██║     ███████║
+   ██║   ██╔══██║██╔═══╝ ██║██║   ██║██║     ██╔══██║
+   ██║   ██║  ██║██║     ██║╚██████╔╝╚██████╗██║  ██║
+   ╚═╝   ╚═╝  ╚═╝╚═╝     ╚═╝ ╚═════╝  ╚═════╝╚═╝  ╚═╝
+   
 */
 
 /// @title Global market registry
 /// @notice Singularity management
-contract Penrose is BoringOwnable, BoringFactory {
+contract Penrose is Ownable, BoringFactory {
     using SafeApprove for address;
 
     // ************ //
@@ -103,7 +100,6 @@ contract Penrose is BoringOwnable, BoringFactory {
         yieldBox = _yieldBox;
         cluster = _cluster;
         tapToken = tapToken_;
-        owner = _owner;
 
         emptyStrategies[address(tapToken_)] =
             IStrategy(address(new ERC20WithoutStrategy(IBoringYieldBox(address(_yieldBox)), tapToken_)));
@@ -123,6 +119,8 @@ contract Penrose is BoringOwnable, BoringFactory {
         );
 
         bigBangEthDebtRate = 5e15;
+
+        _transferOwnership(_owner);
     }
 
     // **************//
@@ -516,7 +514,7 @@ contract Penrose is BoringOwnable, BoringFactory {
     /// @dev this works because all BB markets have USDO as the asset
     function computeTotalDebt() public notPaused returns (uint256 totalUsdoDebt) {
         // allow other registered Markets, owner or Penrose to call it
-        if (!isMarketRegistered[msg.sender] && msg.sender != owner && msg.sender != address(this)) {
+        if (!isMarketRegistered[msg.sender] && msg.sender != owner() && msg.sender != address(this)) {
             revert NotAuthorized();
         }
 

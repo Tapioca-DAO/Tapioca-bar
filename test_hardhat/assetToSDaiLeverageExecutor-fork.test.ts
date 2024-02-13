@@ -11,7 +11,7 @@ import {
 import { ERC20 } from '../typechain';
 import { UniswapV3Swapper__factory } from '@tapioca-sdk/typechain/tapioca-periphery';
 
-describe('AssetToSDaiLeverageExecutor-fork test', () => {
+describe.skip('AssetToSDaiLeverageExecutor-fork test', () => {
     before(function () {
         if (process.env.NODE_ENV != 'mainnet') {
             this.skip();

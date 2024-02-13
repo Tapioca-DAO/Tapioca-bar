@@ -11,7 +11,6 @@ import {
     YieldBoxApproveAssetMsg,
     MarketPermitActionMsg,
     ExerciseOptionsMsg,
-    MarketLeverageUpMsg,
     MarketRemoveAssetMsg,
     MarketLendOrRepayMsg
 } from "tapioca-periph/interfaces/oft/IUsdo.sol";
@@ -21,16 +20,14 @@ import {BaseUsdoTokenMsgType} from "../BaseUsdoTokenMsgType.sol";
 import {UsdoMsgCodec} from "../libraries/UsdoMsgCodec.sol";
 
 /*
-__/\\\\\\\\\\\\\\\_____/\\\\\\\\\_____/\\\\\\\\\\\\\____/\\\\\\\\\\\_______/\\\\\_____________/\\\\\\\\\_____/\\\\\\\\\____        
- _\///////\\\/////____/\\\\\\\\\\\\\__\/\\\/////////\\\_\/////\\\///______/\\\///\\\________/\\\////////____/\\\\\\\\\\\\\__       
-  _______\/\\\________/\\\/////////\\\_\/\\\_______\/\\\_____\/\\\_______/\\\/__\///\\\____/\\\/____________/\\\/////////\\\_      
-   _______\/\\\_______\/\\\_______\/\\\_\/\\\\\\\\\\\\\/______\/\\\______/\\\______\//\\\__/\\\_____________\/\\\_______\/\\\_     
-    _______\/\\\_______\/\\\\\\\\\\\\\\\_\/\\\/////////________\/\\\_____\/\\\_______\/\\\_\/\\\_____________\/\\\\\\\\\\\\\\\_    
-     _______\/\\\_______\/\\\/////////\\\_\/\\\_________________\/\\\_____\//\\\______/\\\__\//\\\____________\/\\\/////////\\\_   
-      _______\/\\\_______\/\\\_______\/\\\_\/\\\_________________\/\\\______\///\\\__/\\\_____\///\\\__________\/\\\_______\/\\\_  
-       _______\/\\\_______\/\\\_______\/\\\_\/\\\______________/\\\\\\\\\\\____\///\\\\\/________\////\\\\\\\\\_\/\\\_______\/\\\_ 
-        _______\///________\///________\///__\///______________\///////////_______\/////_____________\/////////__\///________\///__
 
+████████╗ █████╗ ██████╗ ██╗ ██████╗  ██████╗ █████╗ 
+╚══██╔══╝██╔══██╗██╔══██╗██║██╔═══██╗██╔════╝██╔══██╗
+   ██║   ███████║██████╔╝██║██║   ██║██║     ███████║
+   ██║   ██╔══██║██╔═══╝ ██║██║   ██║██║     ██╔══██║
+   ██║   ██║  ██║██║     ██║╚██████╔╝╚██████╗██║  ██║
+   ╚═╝   ╚═╝  ╚═╝╚═╝     ╚═╝ ╚═════╝  ╚═════╝╚═╝  ╚═╝
+   
 */
 
 contract UsdoHelper is TapiocaOmnichainEngineHelper, BaseUsdoTokenMsgType {
@@ -59,14 +56,6 @@ contract UsdoHelper is TapiocaOmnichainEngineHelper, BaseUsdoTokenMsgType {
      */
     function buildExerciseOptionMsg(ExerciseOptionsMsg calldata _msg) public pure returns (bytes memory) {
         return UsdoMsgCodec.buildExerciseOptionsMsg(_msg);
-    }
-
-    /**
-     * @notice Encodes the message for the PT_YB_SEND_SGL_BORROW operation.
-     *
-     */
-    function buildMarketLeverageUpMsg(MarketLeverageUpMsg calldata _marketMsg) public pure returns (bytes memory) {
-        return UsdoMsgCodec.buildMarketLeverageUpMsg(_marketMsg);
     }
 
     /**
@@ -120,7 +109,7 @@ contract UsdoHelper is TapiocaOmnichainEngineHelper, BaseUsdoTokenMsgType {
         if (
             _msgType == MSG_YB_APPROVE_ASSET || _msgType == MSG_YB_APPROVE_ALL || _msgType == MSG_MARKET_PERMIT
                 || _msgType == MSG_MARKET_REMOVE_ASSET || _msgType == MSG_YB_SEND_SGL_LEND_OR_REPAY
-                || _msgType == MSG_LEVERAGE_MARKET_UP || _msgType == MSG_TAP_EXERCISE
+                || _msgType == MSG_TAP_EXERCISE
         ) {
             return true;
         }

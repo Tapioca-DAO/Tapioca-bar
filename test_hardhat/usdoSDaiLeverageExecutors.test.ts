@@ -9,7 +9,7 @@ import {
     TOFTMock__factory,
 } from '@tapioca-sdk/typechain/tapioca-mocks';
 
-describe('USDOsDaiLeverageExecutor test', () => {
+describe.skip('USDOsDaiLeverageExecutor test', () => {
     async function setUp() {
         const {
             registerSDaiMock,

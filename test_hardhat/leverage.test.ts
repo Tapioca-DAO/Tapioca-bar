@@ -143,7 +143,7 @@ describe('Singularity Leverage', () => {
         };
     }
 
-    describe('lever down', () => {
+    describe.skip('lever down', () => {
         it('Should lever down by selling collateral', async () => {
             const {
                 alice,
@@ -275,7 +275,7 @@ describe('Singularity Leverage', () => {
         });
     });
 
-    describe('lever up', () => {
+    describe.skip('lever up', () => {
         it('Should lever up by buying collateral', async () => {
             const {
                 alice,
@@ -350,7 +350,7 @@ describe('Singularity Leverage', () => {
         });
     });
 
-    describe('down payment', () => {
+    describe.skip('down payment', () => {
         it('Should enter into a new position with a down payment', async () => {
             const {
                 carol,

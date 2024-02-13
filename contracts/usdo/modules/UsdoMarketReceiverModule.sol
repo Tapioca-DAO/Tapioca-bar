@@ -7,36 +7,34 @@ import {BytesLib} from "solidity-bytes-utils/contracts/BytesLib.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 // Tapioca
+import {UsdoInitStruct, MarketRemoveAssetMsg, MarketLendOrRepayMsg} from "tapioca-periph/interfaces/oft/IUsdo.sol";
+import {ICommonData, IDepositData, ICommonExternalContracts} from "tapioca-periph/interfaces/common/ICommonData.sol";
 import {
-    UsdoInitStruct,
-    MarketLeverageUpMsg,
-    MarketRemoveAssetMsg,
-    MarketLendOrRepayMsg
-} from "tapioca-periph/interfaces/oft/IUsdo.sol";
-import {
-    ICommonData,
-    IWithdrawParams,
-    IDepositData,
-    ICommonExternalContracts
-} from "tapioca-periph/interfaces/common/ICommonData.sol";
+    IMagnetar,
+    MagnetarCall,
+    MagnetarAction,
+    DepositRepayAndRemoveCollateralFromMarketData,
+    MintFromBBAndLendOnSGLData,
+    ExitPositionAndRemoveCollateralData
+} from "tapioca-periph/interfaces/periph/IMagnetar.sol";
+import {MagnetarOptionModule} from "tapioca-periph/Magnetar/modules/MagnetarOptionModule.sol";
+import {MagnetarAssetModule} from "tapioca-periph/Magnetar/modules/MagnetarAssetModule.sol";
+import {MagnetarMintModule} from "tapioca-periph/Magnetar/modules/MagnetarMintModule.sol";
 import {IMagnetarHelper} from "tapioca-periph/interfaces/periph/IMagnetarHelper.sol";
-import {IMagnetar} from "tapioca-periph/interfaces/periph/IMagnetar.sol";
 import {SafeApprove} from "tapioca-periph/libraries/SafeApprove.sol";
-import {IMintData} from "tapioca-periph/interfaces/bar/IUSDO.sol";
+import {IMintData} from "tapioca-periph/interfaces/oft/IUsdo.sol";
 import {UsdoMsgCodec} from "../libraries/UsdoMsgCodec.sol";
 import {BaseUsdo} from "../BaseUsdo.sol";
 
 /*
-__/\\\\\\\\\\\\\\\_____/\\\\\\\\\_____/\\\\\\\\\\\\\____/\\\\\\\\\\\_______/\\\\\_____________/\\\\\\\\\_____/\\\\\\\\\____        
- _\///////\\\/////____/\\\\\\\\\\\\\__\/\\\/////////\\\_\/////\\\///______/\\\///\\\________/\\\////////____/\\\\\\\\\\\\\__       
-  _______\/\\\________/\\\/////////\\\_\/\\\_______\/\\\_____\/\\\_______/\\\/__\///\\\____/\\\/____________/\\\/////////\\\_      
-   _______\/\\\_______\/\\\_______\/\\\_\/\\\\\\\\\\\\\/______\/\\\______/\\\______\//\\\__/\\\_____________\/\\\_______\/\\\_     
-    _______\/\\\_______\/\\\\\\\\\\\\\\\_\/\\\/////////________\/\\\_____\/\\\_______\/\\\_\/\\\_____________\/\\\\\\\\\\\\\\\_    
-     _______\/\\\_______\/\\\/////////\\\_\/\\\_________________\/\\\_____\//\\\______/\\\__\//\\\____________\/\\\/////////\\\_   
-      _______\/\\\_______\/\\\_______\/\\\_\/\\\_________________\/\\\______\///\\\__/\\\_____\///\\\__________\/\\\_______\/\\\_  
-       _______\/\\\_______\/\\\_______\/\\\_\/\\\______________/\\\\\\\\\\\____\///\\\\\/________\////\\\\\\\\\_\/\\\_______\/\\\_ 
-        _______\///________\///________\///__\///______________\///////////_______\/////_____________\/////////__\///________\///__
 
+████████╗ █████╗ ██████╗ ██╗ ██████╗  ██████╗ █████╗ 
+╚══██╔══╝██╔══██╗██╔══██╗██║██╔═══██╗██╔════╝██╔══██╗
+   ██║   ███████║██████╔╝██║██║   ██║██║     ███████║
+   ██║   ██╔══██║██╔═══╝ ██║██║   ██║██║     ██╔══██║
+   ██║   ██║  ██║██║     ██║╚██████╔╝╚██████╗██║  ██║
+   ╚═╝   ╚═╝  ╚═╝╚═╝     ╚═╝ ╚═════╝  ╚═════╝╚═╝  ╚═╝
+   
 */
 
 /**
@@ -100,22 +98,28 @@ contract UsdoMarketReceiverModule is BaseUsdo {
                 msg_.lendParams.repayAmount = IMagnetarHelper(IMagnetar(payable(msg_.lendParams.marketHelper)).helper())
                     .getBorrowPartForAmount(msg_.lendParams.market, msg_.lendParams.depositAmount);
             }
-            IMagnetar.DepositRepayAndRemoveCollateralFromMarketData memory _repayData = IMagnetar
-                .DepositRepayAndRemoveCollateralFromMarketData({
-                market: msg_.lendParams.market,
-                user: msg_.user,
-                depositAmount: msg_.lendParams.depositAmount,
-                repayAmount: msg_.lendParams.repayAmount,
-                collateralAmount: msg_.lendParams.removeCollateralAmount,
-                extractFromSender: true,
-                withdrawCollateralParams: msg_.withdrawParams,
-                valueAmount: msg.value
-            });
-            IMagnetar(payable(msg_.lendParams.marketHelper)).depositRepayAndRemoveCollateralFromMarket{value: msg.value}(
-                _repayData
+            bytes memory call = abi.encodeWithSelector(
+                MagnetarAssetModule.depositRepayAndRemoveCollateralFromMarket.selector,
+                DepositRepayAndRemoveCollateralFromMarketData({
+                    market: msg_.lendParams.market,
+                    user: msg_.user,
+                    depositAmount: msg_.lendParams.depositAmount,
+                    repayAmount: msg_.lendParams.repayAmount,
+                    collateralAmount: msg_.lendParams.removeCollateralAmount,
+                    withdrawCollateralParams: msg_.withdrawParams
+                })
             );
+            MagnetarCall[] memory magnetarCall = new MagnetarCall[](1);
+            magnetarCall[0] = MagnetarCall({
+                id: MagnetarAction.AssetModule,
+                target: msg_.lendParams.marketHelper, //ignored in modules call
+                value: msg.value,
+                allowFailure: false,
+                call: call
+            });
+            IMagnetar(payable(msg_.lendParams.marketHelper)).burst{value: msg.value}(magnetarCall);
         } else {
-            IMagnetar.MintFromBBAndLendOnSGLData memory _lendData = IMagnetar.MintFromBBAndLendOnSGLData({
+            MintFromBBAndLendOnSGLData memory _lendData = MintFromBBAndLendOnSGLData({
                 user: msg_.user,
                 lendAmount: msg_.lendParams.depositAmount,
                 mintData: IMintData({
@@ -132,7 +136,17 @@ contract UsdoMarketReceiverModule is BaseUsdo {
                     bigBang: address(0)
                 })
             });
-            IMagnetar(payable(msg_.lendParams.marketHelper)).mintFromBBAndLendOnSGL{value: msg.value}(_lendData);
+            bytes memory call = abi.encodeWithSelector(MagnetarMintModule.mintFromBBAndLendOnSGL.selector, _lendData);
+            MagnetarCall[] memory magnetarCall = new MagnetarCall[](1);
+            magnetarCall[0] = MagnetarCall({
+                id: MagnetarAction.MintModule,
+                target: msg_.lendParams.marketHelper, //ignored in modules call
+                value: msg.value,
+                allowFailure: false,
+                call: call
+            });
+
+            IMagnetar(payable(msg_.lendParams.marketHelper)).burst{value: msg.value}(magnetarCall);
         }
     }
 
@@ -154,24 +168,25 @@ contract UsdoMarketReceiverModule is BaseUsdo {
         msg_.removeAndRepayData.removeAmount = _toLD(msg_.removeAndRepayData.removeAmount.toUint64());
         msg_.removeAndRepayData.repayAmount = _toLD(msg_.removeAndRepayData.repayAmount.toUint64());
         msg_.removeAndRepayData.collateralAmount = _toLD(msg_.removeAndRepayData.collateralAmount.toUint64());
-        if (msg_.removeAndRepayData.assetWithdrawData.withdrawLzFeeAmount > 0) {
-            msg_.removeAndRepayData.assetWithdrawData.withdrawLzFeeAmount =
-                _toLD(msg_.removeAndRepayData.assetWithdrawData.withdrawLzFeeAmount.toUint64());
-        }
-        if (msg_.removeAndRepayData.collateralWithdrawData.withdrawLzFeeAmount > 0) {
-            msg_.removeAndRepayData.collateralWithdrawData.withdrawLzFeeAmount =
-                _toLD(msg_.removeAndRepayData.collateralWithdrawData.withdrawLzFeeAmount.toUint64());
-        }
 
         {
-            IMagnetar.ExitPositionAndRemoveCollateralData memory _exitData = IMagnetar
-                .ExitPositionAndRemoveCollateralData({
-                user: msg_.user,
-                externalData: msg_.externalData,
-                removeAndRepayData: msg_.removeAndRepayData,
-                valueAmount: msg.value
+            bytes memory call = abi.encodeWithSelector(
+                MagnetarOptionModule.exitPositionAndRemoveCollateral.selector,
+                ExitPositionAndRemoveCollateralData({
+                    user: msg_.user,
+                    externalData: msg_.externalData,
+                    removeAndRepayData: msg_.removeAndRepayData
+                })
+            );
+            MagnetarCall[] memory magnetarCall = new MagnetarCall[](1);
+            magnetarCall[0] = MagnetarCall({
+                id: MagnetarAction.OptionModule,
+                target: address(this), //ignored in module calls
+                value: msg.value,
+                allowFailure: false,
+                call: call
             });
-            IMagnetar(payable(msg_.externalData.magnetar)).exitPositionAndRemoveCollateral{value: msg.value}(_exitData);
+            IMagnetar(payable(msg_.externalData.magnetar)).burst{value: msg.value}(magnetarCall);
         }
     }
 
