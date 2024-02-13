@@ -7,7 +7,7 @@ import {BoringERC20} from "@boringcrypto/boring-solidity/contracts/libraries/Bor
 import {IERC20} from "@boringcrypto/boring-solidity/contracts/ERC20.sol";
 
 // Tapioca
-import {BBLendingCommon} from "tapioca-bar/markets/bigBang/BBLendingCommon.sol";
+import {BBLendingCommon} from "./BBLendingCommon.sol";
 
 /*
 

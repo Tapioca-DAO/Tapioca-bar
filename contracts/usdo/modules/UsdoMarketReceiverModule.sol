@@ -8,7 +8,7 @@ import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 // Tapioca
 import {UsdoInitStruct, MarketRemoveAssetMsg, MarketLendOrRepayMsg} from "tapioca-periph/interfaces/oft/IUsdo.sol";
-import {ICommonData, IDepositData, ICommonExternalContracts} from "tapioca-periph/interfaces/common/ICommonData.sol";
+import {IDepositData, ICommonExternalContracts} from "tapioca-periph/interfaces/common/ICommonData.sol";
 import {
     IMagnetar,
     MagnetarCall,
