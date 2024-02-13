@@ -11,10 +11,7 @@ import {
 export const setCap = async (taskArgs: any, hre: HardhatRuntimeEnvironment) => {
     const tag = await hre.SDK.hardhatUtils.askForTag(hre, 'local');
 
-    const chainInfo = hre.SDK.utils.getChainBy(
-        'chainId',
-        hre.SDK.eChainId,
-    );
+    const chainInfo = hre.SDK.utils.getChainBy('chainId', hre.SDK.eChainId);
 
     // const penroseDeployment = hre.SDK.db
     //     .loadLocalDeployment(tag, chainInfo.chainId)

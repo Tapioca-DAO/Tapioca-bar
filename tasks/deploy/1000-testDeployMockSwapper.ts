@@ -29,10 +29,7 @@ export const testDeployMockSwapper__task = async (
     const tag = await hre.SDK.hardhatUtils.askForTag(hre, 'local');
     const VM = await loadVM(hre, tag);
 
-    const chainInfo = hre.SDK.utils.getChainBy(
-        'chainId',
-        hre.SDK.eChainId,
-    );
+    const chainInfo = hre.SDK.utils.getChainBy('chainId', hre.SDK.eChainId);
     if (!chainInfo) {
         throw new Error('Chain not found');
     }

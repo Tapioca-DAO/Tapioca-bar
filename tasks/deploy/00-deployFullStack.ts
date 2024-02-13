@@ -31,10 +31,7 @@ export const deployFullStack__task = async (
     const signer = (await hre.ethers.getSigners())[0];
     const VM = await loadVM(hre, tag, true);
 
-    const chainInfo = hre.SDK.utils.getChainBy(
-        'chainId',
-        hre.SDK.eChainId,
-    );
+    const chainInfo = hre.SDK.utils.getChainBy('chainId', hre.SDK.eChainId);
     if (!chainInfo) {
         throw new Error('Chain not found');
     }

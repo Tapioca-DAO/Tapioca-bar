@@ -56,7 +56,7 @@ describe.skip('AssetToSDaiLeverageExecutor-fork test', () => {
             0,
         );
 
-        const TOFTMock = await ethers.getContractFactory("TOFTMock");
+        const TOFTMock = await ethers.getContractFactory('TOFTMock');
         const toft = await TOFTMock.deploy(realsDaiContract.address);
 
         const toftStrategy = await createTokenEmptyStrategy(

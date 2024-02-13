@@ -15,7 +15,7 @@ export const airdropGas__task = async (
 ) => {
     const fromChain = SDK.API.utils
         .getSupportedChains()
-        .find(async (c) => c.chainId === (hre.SDK.eChainId));
+        .find(async (c) => c.chainId === hre.SDK.eChainId);
     const toChain = SDK.API.utils
         .getSupportedChains()
         .find((c) => c.chainId === taskArgs.dstChain);

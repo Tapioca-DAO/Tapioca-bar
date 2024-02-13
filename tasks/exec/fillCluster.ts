@@ -9,10 +9,7 @@ export const fillCluster__task = async (
     data: { chains: [] },
     hre: HardhatRuntimeEnvironment,
 ) => {
-    const chainInfo = hre.SDK.utils.getChainBy(
-        'chainId',
-        hre.SDK.eChainId,
-    );
+    const chainInfo = hre.SDK.utils.getChainBy('chainId', hre.SDK.eChainId);
     if (!chainInfo) {
         throw new Error('Chain not found');
     }
@@ -62,12 +59,7 @@ export const fillCluster__task = async (
         }
     };
 
-    let allContracts = loadAllContracts(
-        hre,
-        tag,
-        hre.SDK.eChainId,
-        filter,
-    );
+    let allContracts = loadAllContracts(hre, tag, hre.SDK.eChainId, filter);
 
     console.log('Whitelist all contracts from current chain');
     await (

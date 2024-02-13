@@ -33,8 +33,12 @@ import TapiocaOFTArtifact from '@tapioca-sdk/artifacts/tapiocaz/TapiocaOFT.json'
 describe('Singularity test', () => {
     describe('test', () => {
         it.skip('should compute the right closing factor', async () => {
-            const { wethUsdcSingularity, wbtcBigBangMarket, deployer, penrose } =
-                await loadFixture(register);
+            const {
+                wethUsdcSingularity,
+                wbtcBigBangMarket,
+                deployer,
+                penrose,
+            } = await loadFixture(register);
 
             // const borrowFeeUpdateFn =
             //     wethUsdcSingularity.interface.encodeFunctionData(
@@ -106,8 +110,12 @@ describe('Singularity test', () => {
     });
     describe('setters', () => {
         it('should be able to set mutable properties', async () => {
-            const { wethUsdcSingularity, wbtcBigBangMarket, deployer, penrose } =
-                await loadFixture(register);
+            const {
+                wethUsdcSingularity,
+                wbtcBigBangMarket,
+                deployer,
+                penrose,
+            } = await loadFixture(register);
 
             const toSetAddress = deployer.address;
             const toSetValue = 101;
@@ -467,33 +475,18 @@ describe('Singularity test', () => {
             } = await loadFixture(register);
 
             const modulesData = new ethers.utils.AbiCoder().encode(
+                ['address', 'address', 'address', 'address'],
                 [
-                    'address',
-                    'address',
-                    'address',
-                    'address',
+                    ethers.constants.AddressZero,
+                    ethers.constants.AddressZero,
+                    ethers.constants.AddressZero,
+                    ethers.constants.AddressZero,
                 ],
-                [
-                    ethers.constants.AddressZero,
-                    ethers.constants.AddressZero,
-                    ethers.constants.AddressZero,
-                    ethers.constants.AddressZero,
-                ]
             );
-            
+
             const tokensData = new ethers.utils.AbiCoder().encode(
-                [
-                    'address',
-                    'uint256',
-                    'address',
-                    'uint256',
-                ],
-                [
-                    weth.address,
-                    wethAssetId,
-                    usdc.address,
-                    usdcAssetId,
-                ]
+                ['address', 'uint256', 'address', 'uint256'],
+                [weth.address, wethAssetId, usdc.address, usdcAssetId],
             );
             const data = new ethers.utils.AbiCoder().encode(
                 [
@@ -514,9 +507,16 @@ describe('Singularity test', () => {
                 ],
             );
 
-            const sglData = new ethers.utils.AbiCoder().encode(['bytes','bytes','bytes'],[modulesData, tokensData, data]);
+            const sglData = new ethers.utils.AbiCoder().encode(
+                ['bytes', 'bytes', 'bytes'],
+                [modulesData, tokensData, data],
+            );
             await (
-                await penrose.registerSingularity(mediumRiskMC.address, sglData, true)
+                await penrose.registerSingularity(
+                    mediumRiskMC.address,
+                    sglData,
+                    true,
+                )
             ).wait();
             const wethUsdcSingularity = await ethers.getContractAt(
                 'Singularity',
@@ -1006,7 +1006,7 @@ describe('Singularity test', () => {
                 );
             const userBorrowedAmountBefore =
                 await wethUsdcSingularity.userBorrowPart(eoa1.address);
-            
+
             const viewUsedCollateral =
                 await wethUsdcSingularity.viewLiquidationCollateralAmount(
                     eoa1.address,
@@ -2628,7 +2628,9 @@ describe('Singularity test', () => {
                 penrose,
             } = await loadFixture(register);
 
-            const pearlmit = await (await ethers.getContractFactory('Pearlmit')).deploy('A','1');
+            const pearlmit = await (
+                await ethers.getContractFactory('Pearlmit')
+            ).deploy('A', '1');
             await pearlmit.deployed();
 
             await penrose.setPearlmit(pearlmit.address);
@@ -3056,7 +3058,7 @@ describe('Singularity test', () => {
             );
 
             //Deploy & set Singularity
-           const _sglLiquidationModule = await (
+            const _sglLiquidationModule = await (
                 await ethers.getContractFactory('SGLLiquidation')
             ).deploy();
             await _sglLiquidationModule.deployed();
@@ -3074,40 +3076,24 @@ describe('Singularity test', () => {
                 await ethers.getContractFactory('SGLLeverage')
             ).deploy();
             await _sglLeverage.deployed();
-           
 
             const newPrice = __wethUsdcPrice.div(1000000);
             await wethUsdcOracle.set(newPrice);
             const modulesData = new ethers.utils.AbiCoder().encode(
-                [
-                    'address',
-                    'address',
-                    'address',
-                    'address',
-                ],
+                ['address', 'address', 'address', 'address'],
                 [
                     _sglLiquidationModule.address,
                     _sglBorrow.address,
                     _sglCollateral.address,
                     _sglLeverage.address,
-                ]
-            );
-            
-            const tokensData = new ethers.utils.AbiCoder().encode(
-                [
-                    'address',
-                    'uint256',
-                    'address',
-                    'uint256',
                 ],
-                [
-                    usd0.address,
-                    usdoAssetId,
-                    weth.address,
-                    wethAssetId,
-                ]
             );
-            
+
+            const tokensData = new ethers.utils.AbiCoder().encode(
+                ['address', 'uint256', 'address', 'uint256'],
+                [usd0.address, usdoAssetId, weth.address, wethAssetId],
+            );
+
             const leverageExecutor = await (
                 await ethers.getContractFactory('SimpleLeverageExecutor')
             ).deploy(multiSwapper.address, cluster.address);
@@ -3129,8 +3115,15 @@ describe('Singularity test', () => {
                     leverageExecutor.address,
                 ],
             );
-            const sglData = new ethers.utils.AbiCoder().encode(['bytes','bytes','bytes'],[modulesData, tokensData, data]);
-            await penrose.registerSingularity(mediumRiskMC.address, sglData, true);
+            const sglData = new ethers.utils.AbiCoder().encode(
+                ['bytes', 'bytes', 'bytes'],
+                [modulesData, tokensData, data],
+            );
+            await penrose.registerSingularity(
+                mediumRiskMC.address,
+                sglData,
+                true,
+            );
             const wethUsdoSingularity = await ethers.getContractAt(
                 'Singularity',
                 await penrose.clonesOf(

@@ -26,7 +26,9 @@ describe('Penrose test', () => {
             const markets = await penrose.singularityMarkets();
             expect(markets[0]).to.not.eq(ethers.constants.AddressZero);
 
-            const isMarketRegistered = await penrose.isMarketRegistered(markets[0]);
+            const isMarketRegistered = await penrose.isMarketRegistered(
+                markets[0],
+            );
             expect(isMarketRegistered).to.be.true;
 
             const nonRegisteredMarket = await penrose.isMarketRegistered(
@@ -53,7 +55,10 @@ describe('Penrose test', () => {
             const { penrose, mediumRiskMC } = await loadFixture(register);
 
             await expect(
-                penrose.registerSingularityMasterContract(mediumRiskMC.address, 1),
+                penrose.registerSingularityMasterContract(
+                    mediumRiskMC.address,
+                    1,
+                ),
             ).to.be.reverted;
         });
 
@@ -111,10 +116,14 @@ describe('Penrose test', () => {
             ).deploy();
             await newMC.deployed();
 
-            const mcLengthBefore = await penrose.singularityMasterContractLength();
+            const mcLengthBefore =
+                await penrose.singularityMasterContractLength();
 
             await (
-                await penrose.registerSingularityMasterContract(newMC.address, 1)
+                await penrose.registerSingularityMasterContract(
+                    newMC.address,
+                    1,
+                )
             ).wait();
 
             const mcLength = await penrose.singularityMasterContractLength();

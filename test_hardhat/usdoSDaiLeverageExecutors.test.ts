@@ -36,7 +36,7 @@ describe.skip('USDOsDaiLeverageExecutor test', () => {
         const MockSwapper = new MockSwapper__factory(deployer);
         const swapper = await MockSwapper.deploy(yieldBox.address);
 
-        const TOFTMock = await ethers.getContractFactory("TOFTMock");
+        const TOFTMock = await ethers.getContractFactory('TOFTMock');
         const toft = await TOFTMock.deploy(sDai.address);
 
         const toftStrategy = await createTokenEmptyStrategy(

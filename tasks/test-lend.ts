@@ -15,10 +15,7 @@ export const testCrossChainLend__task = async (
     const deployer = (await hre.ethers.getSigners())[0];
     const tag = await hre.SDK.hardhatUtils.askForTag(hre, 'global');
     // Setup chain info
-    const fromChain = hre.SDK.utils.getChainBy(
-        'chainId',
-        hre.SDK.eChainId,
-    );
+    const fromChain = hre.SDK.utils.getChainBy('chainId', hre.SDK.eChainId);
     const toChain = hre.SDK.utils.getChainBy('name', 'arbitrum_goerli');
 
     if (!fromChain) throw new Error('[-] From chain not supported');

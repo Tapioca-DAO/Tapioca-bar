@@ -97,10 +97,7 @@ export const fillMockSwapper__test = async (
 ) => {
     const signer = (await hre.ethers.getSigners())[0];
     const tag = await hre.SDK.hardhatUtils.askForTag(hre, 'local');
-    const chainInfo = hre.SDK.utils.getChainBy(
-        'chainId',
-        hre.SDK.eChainId,
-    );
+    const chainInfo = hre.SDK.utils.getChainBy('chainId', hre.SDK.eChainId);
     if (!chainInfo) {
         throw new Error('Chain not found');
     }
