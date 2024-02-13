@@ -1,7 +1,13 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-import "contracts/markets/bigBang/BBLendingCommon.sol";
+// External
+import {RebaseLibrary, Rebase} from "@boringcrypto/boring-solidity/contracts/libraries/BoringRebase.sol";
+import {BoringERC20} from "@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol";
+import {IERC20} from "@boringcrypto/boring-solidity/contracts/ERC20.sol";
+
+// Tapioca
+import {BBLendingCommon} from "tapioca-bar/markets/bigBang/BBLendingCommon.sol";
 
 /*
 
