@@ -5,8 +5,8 @@ pragma solidity 0.8.22;
 import {IZeroXSwapper} from "tapioca-periph/interfaces/periph/IZeroXSwapper.sol";
 import {IWeth9} from "tapioca-periph/interfaces/external/weth/IWeth9.sol";
 import {ICluster} from "tapioca-periph/interfaces/periph/ICluster.sol";
-import {SafeApprove} from "tapioca-periph/libraries/SafeApprove.sol";
 import {BaseLeverageExecutor} from "./BaseLeverageExecutor.sol";
+import {SafeApprove} from "../../libraries/SafeApprove.sol";
 
 /*
 

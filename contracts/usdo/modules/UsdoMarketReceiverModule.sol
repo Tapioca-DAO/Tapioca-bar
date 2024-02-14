@@ -21,8 +21,8 @@ import {MagnetarOptionModule} from "tapioca-periph/Magnetar/modules/MagnetarOpti
 import {MagnetarAssetModule} from "tapioca-periph/Magnetar/modules/MagnetarAssetModule.sol";
 import {MagnetarMintModule} from "tapioca-periph/Magnetar/modules/MagnetarMintModule.sol";
 import {IMagnetarHelper} from "tapioca-periph/interfaces/periph/IMagnetarHelper.sol";
-import {SafeApprove} from "tapioca-periph/libraries/SafeApprove.sol";
 import {IMintData} from "tapioca-periph/interfaces/oft/IUsdo.sol";
+import {SafeApprove} from "../../libraries/SafeApprove.sol";
 import {UsdoMsgCodec} from "../libraries/UsdoMsgCodec.sol";
 import {BaseUsdo} from "../BaseUsdo.sol";
 

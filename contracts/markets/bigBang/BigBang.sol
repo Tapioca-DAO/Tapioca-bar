@@ -11,8 +11,8 @@ import {IMarketLiquidatorReceiver} from "tapioca-periph/interfaces/bar/IMarketLi
 import {ILeverageExecutor} from "tapioca-periph/interfaces/bar/ILeverageExecutor.sol";
 import {ITapiocaOracle} from "tapioca-periph/interfaces/periph/ITapiocaOracle.sol";
 import {IYieldBox} from "tapioca-periph/interfaces/yieldbox/IYieldBox.sol";
-import {SafeApprove} from "tapioca-periph/libraries/SafeApprove.sol";
 import {IPenrose} from "tapioca-periph/interfaces/bar/IPenrose.sol";
+import {SafeApprove} from "../../libraries/SafeApprove.sol";
 import {BBLiquidation} from "./BBLiquidation.sol";
 import {BBCollateral} from "./BBCollateral.sol";
 import {BBLeverage} from "./BBLeverage.sol";

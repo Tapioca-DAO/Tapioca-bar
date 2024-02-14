@@ -9,8 +9,8 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IZeroXSwapper} from "tapioca-periph/interfaces/periph/IZeroXSwapper.sol";
 import {IWeth9} from "tapioca-periph/interfaces/external/weth/IWeth9.sol";
 import {ICluster} from "tapioca-periph/interfaces/periph/ICluster.sol";
-import {SafeApprove} from "tapioca-periph/libraries/SafeApprove.sol";
 import {ITOFT} from "tapioca-periph/interfaces/oft/ITOFT.sol";
+import {SafeApprove} from "../../libraries/SafeApprove.sol";
 
 /*
 

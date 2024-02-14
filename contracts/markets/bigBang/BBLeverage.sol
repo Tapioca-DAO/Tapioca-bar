@@ -7,7 +7,7 @@ import {BoringERC20} from "@boringcrypto/boring-solidity/contracts/libraries/Bor
 import {IERC20} from "@boringcrypto/boring-solidity/contracts/ERC20.sol";
 
 // Tapioca
-import {SafeApprove} from "tapioca-periph/libraries/SafeApprove.sol";
+import {SafeApprove} from "../../libraries/SafeApprove.sol";
 import {BBLendingCommon} from "./BBLendingCommon.sol";
 
 /*

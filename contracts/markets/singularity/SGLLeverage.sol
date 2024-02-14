@@ -6,7 +6,7 @@ import {RebaseLibrary, Rebase} from "@boringcrypto/boring-solidity/contracts/lib
 import {BoringERC20, IERC20} from "@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol";
 
 // Tapioca
-import {SafeApprove} from "tapioca-periph/libraries/SafeApprove.sol";
+import {SafeApprove} from "../../libraries/SafeApprove.sol";
 import {SGLLendingCommon} from "./SGLLendingCommon.sol";
 
 /*
