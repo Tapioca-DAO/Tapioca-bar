@@ -11,6 +11,7 @@ import {IERC20} from "@boringcrypto/boring-solidity/contracts/libraries/BoringER
 // Tapioca
 import {SimpleLeverageExecutor} from "contracts/markets/leverage/SimpleLeverageExecutor.sol";
 import {ILeverageExecutor} from "tapioca-periph/interfaces/bar/ILeverageExecutor.sol";
+import {ITapiocaOracle} from "tapioca-periph/interfaces/periph/ITapiocaOracle.sol";
 import {ERC20WithoutStrategy} from "yieldbox/strategies/ERC20WithoutStrategy.sol";
 import {IZeroXSwapper} from "tapioca-periph/interfaces/periph/IZeroXSwapper.sol";
 import {SGLLiquidation} from "contracts/markets/singularity/SGLLiquidation.sol";
@@ -104,7 +105,7 @@ contract UsdoTestHelper is TestHelper, TestUtils {
         returns (Singularity)
     {
         Singularity sgl = new Singularity();
-        (bytes memory _modulesData, bytes memory _tokensData, bytes memory _data) =
+        (Singularity._InitMemoryModulesData memory _modulesData, Singularity._InitMemoryTokensData memory _tokensData, Singularity._InitMemoryData memory _data) =
             _getSingularityInitData(_sgl, address(_penrose));
         {
             sgl.init(abi.encode(_modulesData, _tokensData, _data));
@@ -118,17 +119,17 @@ contract UsdoTestHelper is TestHelper, TestUtils {
 
     function _getSingularityInitData(TestSingularityData memory _sgl, address _penrose)
         private
-        returns (bytes memory modulesData, bytes memory tokensData, bytes memory data)
+        returns (Singularity._InitMemoryModulesData memory modulesData, Singularity._InitMemoryTokensData memory tokensData, Singularity._InitMemoryData memory data)
     {
         SGLLiquidation sglLiq = new SGLLiquidation();
         SGLBorrow sglBorrow = new SGLBorrow();
         SGLCollateral sglCollateral = new SGLCollateral();
         SGLLeverage sglLev = new SGLLeverage();
 
-        modulesData = abi.encode(address(sglLiq), address(sglBorrow), address(sglCollateral), address(sglLev));
+        modulesData = Singularity._InitMemoryModulesData(address(sglLiq), address(sglBorrow), address(sglCollateral), address(sglLev));
 
-        tokensData = abi.encode(_sgl.asset, _sgl.assetId, _sgl.collateral, _sgl.collateralId);
+        tokensData = Singularity._InitMemoryTokensData(_sgl.asset, _sgl.assetId, _sgl.collateral, _sgl.collateralId);
 
-        data = abi.encode(_penrose, _sgl.oracle, 0, 75000, 80000, _sgl.leverageExecutor);
+        data = Singularity._InitMemoryData(IPenrose(_penrose), ITapiocaOracle(address(_sgl.oracle)), 0, 75000, 80000, _sgl.leverageExecutor);
     }
 }

@@ -9,7 +9,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {BaseTapiocaOmnichainEngine} from "tapioca-periph/tapiocaOmnichainEngine/BaseTapiocaOmnichainEngine.sol";
 import {IUsdo, UsdoInitStruct} from "tapioca-periph/interfaces/oft/IUsdo.sol";
 import {IYieldBox} from "tapioca-periph/interfaces/yieldbox/IYieldBox.sol";
-import {ModuleManager} from "contracts/usdo/modules/ModuleManager.sol";
+import {ModuleManager} from "./modules/ModuleManager.sol";
 import {ICluster} from "tapioca-periph/interfaces/periph/ICluster.sol";
 import {BaseUsdoTokenMsgType} from "./BaseUsdoTokenMsgType.sol";
 import {UsdoExtExec} from "./extensions/UsdoExtExec.sol";

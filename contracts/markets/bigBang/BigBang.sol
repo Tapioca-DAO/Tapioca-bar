@@ -94,17 +94,8 @@ contract BigBang is BBCommon {
 
     /// @notice The init function that acts as a constructor
     function init(bytes calldata initData) external onlyOnce {
-        _InitMemoryData memory initMemoryData;
-        _InitMemoryModulesData memory initModulesData;
-        _InitMemoryDebtData memory initDebtData;
-        {
-            (bytes memory moduleData, bytes memory debtData, bytes memory data) =
-                abi.decode(initData, (bytes, bytes, bytes));
-
-            initModulesData = abi.decode(moduleData, (_InitMemoryModulesData));
-            initDebtData = abi.decode(debtData, (_InitMemoryDebtData));
-            initMemoryData = abi.decode(data, (_InitMemoryData));
-        }
+        (_InitMemoryModulesData memory initModulesData, _InitMemoryDebtData memory initDebtData, _InitMemoryData memory initMemoryData) =
+                abi.decode(initData, (_InitMemoryModulesData, _InitMemoryDebtData, _InitMemoryData));
 
         _initModules(
             initModulesData._liquidationModule,

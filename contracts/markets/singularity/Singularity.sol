@@ -70,7 +70,7 @@ contract Singularity is SGLCommon {
     error ExchangeRateNotValid();
 
     struct _InitMemoryData {
-        IPenrose tapiocaBar_;
+        IPenrose penrose_;
         ITapiocaOracle _oracle;
         uint256 _exchangeRatePrecision;
         uint256 _collateralizationRate;
@@ -94,21 +94,13 @@ contract Singularity is SGLCommon {
 
     /// @notice The init function that acts as a constructor
     function init(bytes calldata initData) external onlyOnce {
-        _InitMemoryModulesData memory _initMemoryModulesData;
-        _InitMemoryTokensData memory _initMemoryTokensData;
-        _InitMemoryData memory _initMemoryData;
-        {
-            (bytes memory moduleData, bytes memory tokensData, bytes memory data) =
-                abi.decode(initData, (bytes, bytes, bytes));
+        (_InitMemoryModulesData memory _initMemoryModulesData,  _InitMemoryTokensData memory _initMemoryTokensData, _InitMemoryData memory _initMemoryData) =
+            abi.decode(initData, (_InitMemoryModulesData, _InitMemoryTokensData, _InitMemoryData));
 
-            _initMemoryModulesData = abi.decode(moduleData, (_InitMemoryModulesData));
-            _initMemoryTokensData = abi.decode(tokensData, (_InitMemoryTokensData));
-            _initMemoryData = abi.decode(data, (_InitMemoryData));
-        }
-
-        penrose = _initMemoryData.tapiocaBar_;
-        yieldBox = IYieldBox(_initMemoryData.tapiocaBar_.yieldBox());
+        penrose = _initMemoryData.penrose_;
+        yieldBox = IYieldBox(_initMemoryData.penrose_.yieldBox());
         _transferOwnership(address(penrose));
+
 
         if (address(_initMemoryTokensData._collateral) == address(0)) {
             revert BadPair();
