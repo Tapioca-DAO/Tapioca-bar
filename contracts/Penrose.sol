@@ -9,7 +9,6 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {
     ERC20WithoutStrategy, IStrategy, IYieldBox as IBoringYieldBox
 } from "yieldbox/strategies/ERC20WithoutStrategy.sol";
-import {IUSDOMintable} from "tapioca-periph/interfaces/bar/IUSDOMintable.sol";
 import {IPearlmit} from "tapioca-periph/interfaces/periph/IPearlmit.sol";
 import {ICluster} from "tapioca-periph/interfaces/periph/ICluster.sol";
 import {IMarket} from "tapioca-periph/interfaces/bar/ISingularity.sol";
@@ -17,6 +16,7 @@ import {ITwTap} from "tapioca-periph/interfaces/tap-token/ITwTap.sol";
 import {IPenrose} from "tapioca-periph/interfaces/bar/IPenrose.sol";
 import {IBigBang} from "tapioca-periph/interfaces/bar/IBigBang.sol";
 import {TokenType} from "yieldbox/enums/YieldBoxTokenType.sol";
+import {IUsdo} from "tapioca-periph/interfaces/oft/IUsdo.sol";
 import {IYieldBox} from "yieldbox/interfaces/IYieldBox.sol";
 import {SafeApprove} from "./libraries/SafeApprove.sol";
 
@@ -282,7 +282,7 @@ contract Penrose is Ownable, BoringFactory {
                 uint256 _amount = totalUsdoDebt - usdoSupply;
 
                 //mint against the open interest; supply should be fully minted now
-                IUSDOMintable(address(usdoToken)).mint(address(this), _amount);
+                IUsdo(address(usdoToken)).mint(address(this), _amount);
 
                 //send it to twTap
                 uint256 rewardTokenId = ITwTap(twTap).rewardTokenIndex(address(usdoToken));
