@@ -11,7 +11,6 @@ import {IMarketLiquidatorReceiver} from "tapioca-periph/interfaces/bar/IMarketLi
 import {ILeverageExecutor} from "tapioca-periph/interfaces/bar/ILeverageExecutor.sol";
 import {ITapiocaOracle} from "tapioca-periph/interfaces/periph/ITapiocaOracle.sol";
 import {IYieldBox} from "tapioca-periph/interfaces/yieldbox/IYieldBox.sol";
-import {ISendFrom} from "tapioca-periph/interfaces/common/ISendFrom.sol";
 import {IPenrose} from "tapioca-periph/interfaces/bar/IPenrose.sol";
 import {SGLLiquidation} from "./SGLLiquidation.sol";
 import {SGLCollateral} from "./SGLCollateral.sol";
@@ -23,16 +22,13 @@ import {SGLBorrow} from "./SGLBorrow.sol";
 
 /*
 
-__/\\\\\\\\\\\\\\\_____/\\\\\\\\\_____/\\\\\\\\\\\\\____/\\\\\\\\\\\_______/\\\\\_____________/\\\\\\\\\_____/\\\\\\\\\____        
- _\///////\\\/////____/\\\\\\\\\\\\\__\/\\\/////////\\\_\/////\\\///______/\\\///\\\________/\\\////////____/\\\\\\\\\\\\\__       
-  _______\/\\\________/\\\/////////\\\_\/\\\_______\/\\\_____\/\\\_______/\\\/__\///\\\____/\\\/____________/\\\/////////\\\_      
-   _______\/\\\_______\/\\\_______\/\\\_\/\\\\\\\\\\\\\/______\/\\\______/\\\______\//\\\__/\\\_____________\/\\\_______\/\\\_     
-    _______\/\\\_______\/\\\\\\\\\\\\\\\_\/\\\/////////________\/\\\_____\/\\\_______\/\\\_\/\\\_____________\/\\\\\\\\\\\\\\\_    
-     _______\/\\\_______\/\\\/////////\\\_\/\\\_________________\/\\\_____\//\\\______/\\\__\//\\\____________\/\\\/////////\\\_   
-      _______\/\\\_______\/\\\_______\/\\\_\/\\\_________________\/\\\______\///\\\__/\\\_____\///\\\__________\/\\\_______\/\\\_  
-       _______\/\\\_______\/\\\_______\/\\\_\/\\\______________/\\\\\\\\\\\____\///\\\\\/________\////\\\\\\\\\_\/\\\_______\/\\\_ 
-        _______\///________\///________\///__\///______________\///////////_______\/////_____________\/////////__\///________\///__
-
+████████╗ █████╗ ██████╗ ██╗ ██████╗  ██████╗ █████╗ 
+╚══██╔══╝██╔══██╗██╔══██╗██║██╔═══██╗██╔════╝██╔══██╗
+   ██║   ███████║██████╔╝██║██║   ██║██║     ███████║
+   ██║   ██╔══██║██╔═══╝ ██║██║   ██║██║     ██╔══██║
+   ██║   ██║  ██║██║     ██║╚██████╔╝╚██████╗██║  ██║
+   ╚═╝   ╚═╝  ╚═╝╚═╝     ╚═╝ ╚═════╝  ╚═════╝╚═╝  ╚═╝
+   
 */
 
 /// @title Tapioca market
@@ -74,7 +70,7 @@ contract Singularity is SGLCommon {
     error ExchangeRateNotValid();
 
     struct _InitMemoryData {
-        IPenrose tapiocaBar_;
+        IPenrose penrose_;
         ITapiocaOracle _oracle;
         uint256 _exchangeRatePrecision;
         uint256 _collateralizationRate;
@@ -98,21 +94,13 @@ contract Singularity is SGLCommon {
 
     /// @notice The init function that acts as a constructor
     function init(bytes calldata initData) external onlyOnce {
-        _InitMemoryModulesData memory _initMemoryModulesData;
-        _InitMemoryTokensData memory _initMemoryTokensData;
-        _InitMemoryData memory _initMemoryData;
-        {
-            (bytes memory moduleData, bytes memory tokensData, bytes memory data) =
-                abi.decode(initData, (bytes, bytes, bytes));
+        (_InitMemoryModulesData memory _initMemoryModulesData,  _InitMemoryTokensData memory _initMemoryTokensData, _InitMemoryData memory _initMemoryData) =
+            abi.decode(initData, (_InitMemoryModulesData, _InitMemoryTokensData, _InitMemoryData));
 
-            _initMemoryModulesData = abi.decode(moduleData, (_InitMemoryModulesData));
-            _initMemoryTokensData = abi.decode(tokensData, (_InitMemoryTokensData));
-            _initMemoryData = abi.decode(data, (_InitMemoryData));
-        }
+        penrose = _initMemoryData.penrose_;
+        yieldBox = IYieldBox(_initMemoryData.penrose_.yieldBox());
+        _transferOwnership(address(penrose));
 
-        penrose = _initMemoryData.tapiocaBar_;
-        yieldBox = IYieldBox(_initMemoryData.tapiocaBar_.yieldBox());
-        owner = address(penrose);
 
         if (address(_initMemoryTokensData._collateral) == address(0)) {
             revert BadPair();
@@ -203,7 +191,7 @@ contract Singularity is SGLCommon {
         fullUtilizationMinusMax = FULL_UTILIZATION - maximumTargetUtilization;
         rateValidDuration = 24 hours;
 
-        conservator = owner;
+        conservator = owner();
     }
 
     // ********************** //

@@ -19,7 +19,6 @@ import {
     YieldBoxApproveAssetMsg
 } from "tapioca-periph/interfaces/oft/IUsdo.sol";
 import {TapiocaOmnichainReceiver} from "tapioca-periph/tapiocaOmnichainEngine/TapiocaOmnichainReceiver.sol";
-import {UsdoLeverageReceiverModule} from "./UsdoLeverageReceiverModule.sol";
 import {UsdoMarketReceiverModule} from "./UsdoMarketReceiverModule.sol";
 import {UsdoOptionReceiverModule} from "./UsdoOptionReceiverModule.sol";
 import {UsdoMsgCodec} from "../libraries/UsdoMsgCodec.sol";
@@ -29,16 +28,13 @@ import {BaseUsdo} from "../BaseUsdo.sol";
 
 /*
 
-__/\\\\\\\\\\\\\\\_____/\\\\\\\\\_____/\\\\\\\\\\\\\____/\\\\\\\\\\\_______/\\\\\_____________/\\\\\\\\\_____/\\\\\\\\\____        
- _\///////\\\/////____/\\\\\\\\\\\\\__\/\\\/////////\\\_\/////\\\///______/\\\///\\\________/\\\////////____/\\\\\\\\\\\\\__       
-  _______\/\\\________/\\\/////////\\\_\/\\\_______\/\\\_____\/\\\_______/\\\/__\///\\\____/\\\/____________/\\\/////////\\\_      
-   _______\/\\\_______\/\\\_______\/\\\_\/\\\\\\\\\\\\\/______\/\\\______/\\\______\//\\\__/\\\_____________\/\\\_______\/\\\_     
-    _______\/\\\_______\/\\\\\\\\\\\\\\\_\/\\\/////////________\/\\\_____\/\\\_______\/\\\_\/\\\_____________\/\\\\\\\\\\\\\\\_    
-     _______\/\\\_______\/\\\/////////\\\_\/\\\_________________\/\\\_____\//\\\______/\\\__\//\\\____________\/\\\/////////\\\_   
-      _______\/\\\_______\/\\\_______\/\\\_\/\\\_________________\/\\\______\///\\\__/\\\_____\///\\\__________\/\\\_______\/\\\_  
-       _______\/\\\_______\/\\\_______\/\\\_\/\\\______________/\\\\\\\\\\\____\///\\\\\/________\////\\\\\\\\\_\/\\\_______\/\\\_ 
-        _______\///________\///________\///__\///______________\///////////_______\/////_____________\/////////__\///________\///__
-
+████████╗ █████╗ ██████╗ ██╗ ██████╗  ██████╗ █████╗ 
+╚══██╔══╝██╔══██╗██╔══██╗██║██╔═══██╗██╔════╝██╔══██╗
+   ██║   ███████║██████╔╝██║██║   ██║██║     ███████║
+   ██║   ██╔══██║██╔═══╝ ██║██║   ██║██║     ██╔══██║
+   ██║   ██║  ██║██║     ██║╚██████╔╝╚██████╗██║  ██║
+   ╚═╝   ╚═╝  ╚═╝╚═╝     ╚═╝ ╚═════╝  ╚═════╝╚═╝  ╚═╝
+   
 */
 
 contract UsdoReceiver is BaseUsdo, TapiocaOmnichainReceiver {
@@ -83,12 +79,6 @@ contract UsdoReceiver is BaseUsdo, TapiocaOmnichainReceiver {
                 abi.encodeWithSelector(
                     UsdoOptionReceiverModule.exerciseOptionsReceiver.selector, _srcChainSender, _toeComposeMsg
                 ),
-                false
-            );
-        } else if (_msgType == MSG_LEVERAGE_MARKET_UP) {
-            _executeModule(
-                uint8(IUsdo.Module.UsdoMarketReceiver),
-                abi.encodeWithSelector(UsdoLeverageReceiverModule.marketLeverageUpReceiver.selector, _toeComposeMsg),
                 false
             );
         } else if (_msgType == MSG_MARKET_REMOVE_ASSET) {

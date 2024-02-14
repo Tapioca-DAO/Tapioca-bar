@@ -10,23 +10,21 @@ import {IERC20} from "@boringcrypto/boring-solidity/contracts/ERC20.sol";
 // Tapioca
 import {IMarketLiquidatorReceiver} from "tapioca-periph/interfaces/bar/IMarketLiquidatorReceiver.sol";
 import {ICluster} from "tapioca-periph/interfaces/periph/ICluster.sol";
-import {SafeApprove} from "tapioca-periph/libraries/SafeApprove.sol";
-import {IUSDOBase} from "tapioca-periph/interfaces/bar/IUSDO.sol";
+import {IUsdo} from "tapioca-periph/interfaces/oft/IUsdo.sol";
+import {SafeApprove} from "../../libraries/SafeApprove.sol";
 import {BBCommon} from "./BBCommon.sol";
 
 // solhint-disable max-line-length
 
 /*
-__/\\\\\\\\\\\\\\\_____/\\\\\\\\\_____/\\\\\\\\\\\\\____/\\\\\\\\\\\_______/\\\\\_____________/\\\\\\\\\_____/\\\\\\\\\____        
- _\///////\\\/////____/\\\\\\\\\\\\\__\/\\\/////////\\\_\/////\\\///______/\\\///\\\________/\\\////////____/\\\\\\\\\\\\\__       
-  _______\/\\\________/\\\/////////\\\_\/\\\_______\/\\\_____\/\\\_______/\\\/__\///\\\____/\\\/____________/\\\/////////\\\_      
-   _______\/\\\_______\/\\\_______\/\\\_\/\\\\\\\\\\\\\/______\/\\\______/\\\______\//\\\__/\\\_____________\/\\\_______\/\\\_     
-    _______\/\\\_______\/\\\\\\\\\\\\\\\_\/\\\/////////________\/\\\_____\/\\\_______\/\\\_\/\\\_____________\/\\\\\\\\\\\\\\\_    
-     _______\/\\\_______\/\\\/////////\\\_\/\\\_________________\/\\\_____\//\\\______/\\\__\//\\\____________\/\\\/////////\\\_   
-      _______\/\\\_______\/\\\_______\/\\\_\/\\\_________________\/\\\______\///\\\__/\\\_____\///\\\__________\/\\\_______\/\\\_  
-       _______\/\\\_______\/\\\_______\/\\\_\/\\\______________/\\\\\\\\\\\____\///\\\\\/________\////\\\\\\\\\_\/\\\_______\/\\\_ 
-        _______\///________\///________\///__\///______________\///////////_______\/////_____________\/////////__\///________\///__
 
+████████╗ █████╗ ██████╗ ██╗ ██████╗  ██████╗ █████╗ 
+╚══██╔══╝██╔══██╗██╔══██╗██║██╔═══██╗██╔════╝██╔══██╗
+   ██║   ███████║██████╔╝██║██║   ██║██║     ███████║
+   ██║   ██╔══██║██╔═══╝ ██║██║   ██║██║     ██╔══██║
+   ██║   ██║  ██║██║     ██║╚██████╔╝╚██████╗██║  ██║
+   ╚═╝   ╚═╝  ╚═╝╚═╝     ╚═╝ ╚═════╝  ╚═════╝╚═╝  ╚═╝
+   
 */
 
 contract BBLiquidation is BBCommon {
@@ -105,7 +103,7 @@ contract BBLiquidation is BBCommon {
         userBorrowPart[user] = 0;
 
         // burn debt amount from `from`
-        IUSDOBase(address(asset)).burn(from, borrowAmount);
+        IUsdo(address(asset)).burn(from, borrowAmount);
 
         // swap collateral with asset and send it to `owner`
         if (swapCollateral) {
@@ -285,7 +283,7 @@ contract BBLiquidation is BBCommon {
 
         (uint256 feeShare, uint256 callerShare) = _extractLiquidationFees(returnedShare, borrowShare, callerReward);
 
-        IUSDOBase(address(asset)).burn(address(this), borrowAmount);
+        IUsdo(address(asset)).burn(address(this), borrowAmount);
 
         address[] memory _users = new address[](1);
         _users[0] = user;

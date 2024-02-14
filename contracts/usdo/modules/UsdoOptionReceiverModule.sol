@@ -14,23 +14,21 @@ import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 // Tapioca
 import {
-    ITapiocaOptionBroker,
-    ITapiocaOptionBrokerCrossChain
+    ITapiocaOptionBroker, IExerciseOptionsData
 } from "tapioca-periph/interfaces/tap-token/ITapiocaOptionBroker.sol";
 import {UsdoInitStruct, ExerciseOptionsMsg, LZSendParam} from "tapioca-periph/interfaces/oft/IUsdo.sol";
 import {UsdoMsgCodec} from "../libraries/UsdoMsgCodec.sol";
 import {BaseUsdo} from "../BaseUsdo.sol";
 
 /*
-__/\\\\\\\\\\\\\\\_____/\\\\\\\\\_____/\\\\\\\\\\\\\____/\\\\\\\\\\\_______/\\\\\_____________/\\\\\\\\\_____/\\\\\\\\\____        
- _\///////\\\/////____/\\\\\\\\\\\\\__\/\\\/////////\\\_\/////\\\///______/\\\///\\\________/\\\////////____/\\\\\\\\\\\\\__       
-  _______\/\\\________/\\\/////////\\\_\/\\\_______\/\\\_____\/\\\_______/\\\/__\///\\\____/\\\/____________/\\\/////////\\\_      
-   _______\/\\\_______\/\\\_______\/\\\_\/\\\\\\\\\\\\\/______\/\\\______/\\\______\//\\\__/\\\_____________\/\\\_______\/\\\_     
-    _______\/\\\_______\/\\\\\\\\\\\\\\\_\/\\\/////////________\/\\\_____\/\\\_______\/\\\_\/\\\_____________\/\\\\\\\\\\\\\\\_    
-     _______\/\\\_______\/\\\/////////\\\_\/\\\_________________\/\\\_____\//\\\______/\\\__\//\\\____________\/\\\/////////\\\_   
-      _______\/\\\_______\/\\\_______\/\\\_\/\\\_________________\/\\\______\///\\\__/\\\_____\///\\\__________\/\\\_______\/\\\_  
-       _______\/\\\_______\/\\\_______\/\\\_\/\\\______________/\\\\\\\\\\\____\///\\\\\/________\////\\\\\\\\\_\/\\\_______\/\\\_ 
-        _______\///________\///________\///__\///______________\///////////_______\/////_____________\/////////__\///________\///__
+
+████████╗ █████╗ ██████╗ ██╗ ██████╗  ██████╗ █████╗ 
+╚══██╔══╝██╔══██╗██╔══██╗██║██╔═══██╗██╔════╝██╔══██╗
+   ██║   ███████║██████╔╝██║██║   ██║██║     ███████║
+   ██║   ██╔══██║██╔═══╝ ██║██║   ██║██║     ██╔══██║
+   ██║   ██║  ██║██║     ██║╚██████╔╝╚██████╗██║  ██║
+   ╚═╝   ╚═╝  ╚═╝╚═╝     ╚═╝ ╚═════╝  ╚═════╝╚═╝  ╚═╝
+   
 */
 
 /**
@@ -65,7 +63,7 @@ contract UsdoOptionReceiverModule is BaseUsdo {
         _checkWhitelistStatus(OFTMsgCodec.bytes32ToAddress(msg_.lzSendParams.sendParam.to));
         {
             // _data declared for visibility.
-            ITapiocaOptionBrokerCrossChain.IExerciseOptionsData memory _options = msg_.optionsData;
+            IExerciseOptionsData memory _options = msg_.optionsData;
             _options.tapAmount = _toLD(_options.tapAmount.toUint64());
             _options.paymentTokenAmount = _toLD(_options.paymentTokenAmount.toUint64());
 
@@ -95,7 +93,7 @@ contract UsdoOptionReceiverModule is BaseUsdo {
 
         {
             // _data declared for visibility.
-            ITapiocaOptionBrokerCrossChain.IExerciseOptionsData memory _options = msg_.optionsData;
+            IExerciseOptionsData memory _options = msg_.optionsData;
             SendParam memory _send = msg_.lzSendParams.sendParam;
 
             address tapOft = ITapiocaOptionBroker(_options.target).tapOFT();

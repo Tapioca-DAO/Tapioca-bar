@@ -26,16 +26,14 @@ import {UsdoSender} from "./modules/UsdoSender.sol";
 import {BaseUsdo} from "./BaseUsdo.sol";
 
 /*
-__/\\\\\\\\\\\\\\\_____/\\\\\\\\\_____/\\\\\\\\\\\\\____/\\\\\\\\\\\_______/\\\\\_____________/\\\\\\\\\_____/\\\\\\\\\____        
- _\///////\\\/////____/\\\\\\\\\\\\\__\/\\\/////////\\\_\/////\\\///______/\\\///\\\________/\\\////////____/\\\\\\\\\\\\\__       
-  _______\/\\\________/\\\/////////\\\_\/\\\_______\/\\\_____\/\\\_______/\\\/__\///\\\____/\\\/____________/\\\/////////\\\_      
-   _______\/\\\_______\/\\\_______\/\\\_\/\\\\\\\\\\\\\/______\/\\\______/\\\______\//\\\__/\\\_____________\/\\\_______\/\\\_     
-    _______\/\\\_______\/\\\\\\\\\\\\\\\_\/\\\/////////________\/\\\_____\/\\\_______\/\\\_\/\\\_____________\/\\\\\\\\\\\\\\\_    
-     _______\/\\\_______\/\\\/////////\\\_\/\\\_________________\/\\\_____\//\\\______/\\\__\//\\\____________\/\\\/////////\\\_   
-      _______\/\\\_______\/\\\_______\/\\\_\/\\\_________________\/\\\______\///\\\__/\\\_____\///\\\__________\/\\\_______\/\\\_  
-       _______\/\\\_______\/\\\_______\/\\\_\/\\\______________/\\\\\\\\\\\____\///\\\\\/________\////\\\\\\\\\_\/\\\_______\/\\\_ 
-        _______\///________\///________\///__\///______________\///////////_______\/////_____________\/////////__\///________\///__
 
+████████╗ █████╗ ██████╗ ██╗ ██████╗  ██████╗ █████╗ 
+╚══██╔══╝██╔══██╗██╔══██╗██║██╔═══██╗██╔════╝██╔══██╗
+   ██║   ███████║██████╔╝██║██║   ██║██║     ███████║
+   ██║   ██╔══██║██╔═══╝ ██║██║   ██║██║     ██╔══██║
+   ██║   ██║  ██║██║     ██║╚██████╔╝╚██████╗██║  ██║
+   ╚═╝   ╚═╝  ╚═╝╚═╝     ╚═╝ ╚═════╝  ╚═════╝╚═╝  ╚═╝
+   
 */
 
 /**
@@ -79,14 +77,11 @@ contract Usdo is BaseUsdo, Pausable, ReentrancyGuard, ERC20Permit {
         if (_modulesData.optionReceiverModule == address(0)) {
             revert Usdo_NotValid();
         }
-        if (_modulesData.leverageReceiverModule == address(0)) {
-            revert Usdo_NotValid();
-        }
+
         _setModule(uint8(IUsdo.Module.UsdoSender), _modulesData.usdoSenderModule);
         _setModule(uint8(IUsdo.Module.UsdoReceiver), _modulesData.usdoReceiverModule);
         _setModule(uint8(IUsdo.Module.UsdoMarketReceiver), _modulesData.marketReceiverModule);
         _setModule(uint8(IUsdo.Module.UsdoOptionReceiver), _modulesData.optionReceiverModule);
-        _setModule(uint8(IUsdo.Module.UsdoLeverageReceiver), _modulesData.leverageReceiverModule);
 
         allowedMinter[_getChainId()][_initData.delegate] = true;
         allowedBurner[_getChainId()][_initData.delegate] = true;

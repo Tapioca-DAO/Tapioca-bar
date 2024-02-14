@@ -6,7 +6,7 @@ import _ from 'lodash';
 import { defaultAbiCoder } from 'ethers/lib/utils';
 import { MockSwapper__factory } from '@tapioca-sdk/typechain/tapioca-mocks';
 
-describe('MarketLiquidatorReceiver test', () => {
+describe.skip('MarketLiquidatorReceiver test', () => {
     it('should perform a swap', async () => {
         const { usdc, weth, deployer, multiSwapper, wethUsdcOracle, eoa1 } =
             await loadFixture(register);

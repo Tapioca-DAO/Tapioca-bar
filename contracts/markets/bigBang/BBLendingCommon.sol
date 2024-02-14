@@ -7,20 +7,18 @@ import {BoringERC20} from "@boringcrypto/boring-solidity/contracts/libraries/Bor
 import {IERC20} from "@boringcrypto/boring-solidity/contracts/ERC20.sol";
 
 // Tapioca
-import {IUSDOBase} from "tapioca-periph/interfaces/bar/IUSDO.sol";
+import {IUsdo} from "tapioca-periph/interfaces/oft/IUsdo.sol";
 import {BBCommon} from "./BBCommon.sol";
 
 /*
-__/\\\\\\\\\\\\\\\_____/\\\\\\\\\_____/\\\\\\\\\\\\\____/\\\\\\\\\\\_______/\\\\\_____________/\\\\\\\\\_____/\\\\\\\\\____        
- _\///////\\\/////____/\\\\\\\\\\\\\__\/\\\/////////\\\_\/////\\\///______/\\\///\\\________/\\\////////____/\\\\\\\\\\\\\__       
-  _______\/\\\________/\\\/////////\\\_\/\\\_______\/\\\_____\/\\\_______/\\\/__\///\\\____/\\\/____________/\\\/////////\\\_      
-   _______\/\\\_______\/\\\_______\/\\\_\/\\\\\\\\\\\\\/______\/\\\______/\\\______\//\\\__/\\\_____________\/\\\_______\/\\\_     
-    _______\/\\\_______\/\\\\\\\\\\\\\\\_\/\\\/////////________\/\\\_____\/\\\_______\/\\\_\/\\\_____________\/\\\\\\\\\\\\\\\_    
-     _______\/\\\_______\/\\\/////////\\\_\/\\\_________________\/\\\_____\//\\\______/\\\__\//\\\____________\/\\\/////////\\\_   
-      _______\/\\\_______\/\\\_______\/\\\_\/\\\_________________\/\\\______\///\\\__/\\\_____\///\\\__________\/\\\_______\/\\\_  
-       _______\/\\\_______\/\\\_______\/\\\_\/\\\______________/\\\\\\\\\\\____\///\\\\\/________\////\\\\\\\\\_\/\\\_______\/\\\_ 
-        _______\///________\///________\///__\///______________\///////////_______\/////_____________\/////////__\///________\///__
 
+████████╗ █████╗ ██████╗ ██╗ ██████╗  ██████╗ █████╗ 
+╚══██╔══╝██╔══██╗██╔══██╗██║██╔═══██╗██╔════╝██╔══██╗
+   ██║   ███████║██████╔╝██║██║   ██║██║     ███████║
+   ██║   ██╔══██║██╔═══╝ ██║██║   ██║██║     ██╔══██║
+   ██║   ██║  ██║██║     ██║╚██████╔╝╚██████╗██║  ██║
+   ╚═╝   ╚═╝  ╚═╝╚═╝     ╚═╝ ╚═════╝  ╚═════╝╚═╝  ╚═╝
+   
 */
 
 contract BBLendingCommon is BBCommon {
@@ -73,7 +71,7 @@ contract BBLendingCommon is BBCommon {
         emit LogBorrow(from, to, amount, feeAmount, part);
 
         //mint USDO
-        IUSDOBase(address(asset)).mint(address(this), amount);
+        IUsdo(address(asset)).mint(address(this), amount);
 
         //deposit borrowed amount to user
         share = _depositAmountToYb(asset, to, assetId, amount);
@@ -131,7 +129,7 @@ contract BBLendingCommon is BBCommon {
         yieldBox.withdraw(assetId, from, address(this), amount, 0);
 
         // @dev burn USDO
-        IUSDOBase(address(asset)).burn(address(this), amount);
+        IUsdo(address(asset)).burn(address(this), amount);
 
         emit LogRepay(from, to, amount, part);
     }

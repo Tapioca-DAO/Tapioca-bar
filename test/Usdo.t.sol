@@ -22,8 +22,17 @@ import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
 // Tapioca
 import {
+    IMagnetar,
+    DepositRepayAndRemoveCollateralFromMarketData,
+    MintFromBBAndLendOnSGLData,
+    ExitPositionAndRemoveCollateralData,
+    DepositAddCollateralAndBorrowFromMarketData,
+    MagnetarWithdrawData
+} from "tapioca-periph/interfaces/periph/IMagnetar.sol";
+import {
     ITapiocaOptionBroker,
-    ITapiocaOptionBrokerCrossChain
+    IExerciseOptionsData,
+    IOptionsParticipateData
 } from "tapioca-periph/interfaces/tap-token/ITapiocaOptionBroker.sol";
 import {
     TapiocaOmnichainEngineHelper,
@@ -43,28 +52,26 @@ import {
     MarketPermitActionMsg,
     MarketRemoveAssetMsg,
     IRemoveAndRepay,
-    MarketLendOrRepayMsg
-} from "tapioca-periph/interfaces/oft/IUsdo.sol";
-import {
-    IUSDOBase,
-    ILeverageSwapData,
-    ILeverageExternalContractsData,
+    MarketLendOrRepayMsg,
     IRemoveAndRepay,
     ILendOrRepayParams
-} from "tapioca-periph/interfaces/bar/IUSDO.sol";
-import {ITapiocaOptionLiquidityProvision} from
-    "tapioca-periph/interfaces/tap-token/ITapiocaOptionLiquidityProvision.sol";
+} from "tapioca-periph/interfaces/oft/IUsdo.sol";
+import {
+    ITapiocaOptionLiquidityProvision,
+    IOptionsLockData,
+    IOptionsUnlockData
+} from "tapioca-periph/interfaces/tap-token/ITapiocaOptionLiquidityProvision.sol";
 import {ERC20PermitStruct, ERC20PermitApprovalMsg} from "tapioca-periph/interfaces/periph/ITapiocaOmnichainEngine.sol";
 import {TapiocaOmnichainExtExec} from "tapioca-periph/tapiocaOmnichainEngine/extension/TapiocaOmnichainExtExec.sol";
-import {ITapiocaOFT, IBorrowParams, IRemoveParams} from "tapioca-periph/interfaces/tap-token/ITapiocaOFT.sol";
-import {UsdoLeverageReceiverModule} from "contracts/usdo/modules/UsdoLeverageReceiverModule.sol";
-import {ICommonData, IWithdrawParams} from "tapioca-periph/interfaces/common/ICommonData.sol";
+import {IOptionsExitData} from "tapioca-periph/interfaces/tap-token/ITapiocaOptionBroker.sol";
 import {UsdoMarketReceiverModule} from "contracts/usdo/modules/UsdoMarketReceiverModule.sol";
 import {UsdoOptionReceiverModule} from "contracts/usdo/modules/UsdoOptionReceiverModule.sol";
 import {SimpleLeverageExecutor} from "contracts/markets/leverage/SimpleLeverageExecutor.sol";
+import {ITOFT, IBorrowParams, IRemoveParams} from "tapioca-periph/interfaces/oft/ITOFT.sol";
 import {ICommonExternalContracts} from "tapioca-periph/interfaces/common/ICommonData.sol";
 import {ILeverageExecutor} from "tapioca-periph/interfaces/bar/ILeverageExecutor.sol";
 import {ERC20WithoutStrategy} from "yieldbox/strategies/ERC20WithoutStrategy.sol";
+import {ICommonData} from "tapioca-periph/interfaces/common/ICommonData.sol";
 import {ISingularity} from "tapioca-periph/interfaces/bar/ISingularity.sol";
 import {Singularity} from "contracts/markets/singularity/Singularity.sol";
 import {UsdoMsgCodec} from "contracts/usdo/libraries/UsdoMsgCodec.sol";
@@ -73,6 +80,7 @@ import {IOracle} from "tapioca-periph/oracle/interfaces/IOracle.sol";
 import {IPenrose} from "tapioca-periph/interfaces/bar/IPenrose.sol";
 import {UsdoHelper} from "contracts/usdo/extensions/UsdoHelper.sol";
 import {UsdoSender} from "contracts/usdo/modules/UsdoSender.sol";
+import {Pearlmit} from "tapioca-periph/pearlmit/Pearlmit.sol";
 import {Cluster} from "tapioca-periph/Cluster/Cluster.sol";
 import {YieldBox} from "yieldbox/YieldBox.sol";
 import {Penrose} from "contracts/Penrose.sol";
@@ -141,8 +149,7 @@ contract UsdoTest is UsdoTestHelper {
     uint16 internal constant PT_REMOTE_TRANSFER = 700; // Use for transferring tokens from the contract from another chain
     uint16 internal constant PT_MARKET_REMOVE_ASSET = 900; // Use for remove asset from a market available on another chain
     uint16 internal constant PT_YB_SEND_SGL_LEND_OR_REPAY = 901; // Use to YB deposit, lend/repay on a market available on another chain
-    uint16 internal constant PT_LEVERAGE_MARKET_UP = 902; // Use for leverage buy on a market available on another chain
-    uint16 internal constant PT_TAP_EXERCISE = 903; // Use for exercise options on tOB available on another chain
+    uint16 internal constant PT_TAP_EXERCISE = 902; // Use for exercise options on tOB available on another chain
 
     /**
      * @dev TOFT global event checks
@@ -190,19 +197,16 @@ contract UsdoTest is UsdoTestHelper {
         UsdoReceiver aUsdoReceiver = new UsdoReceiver(aUsdoInitStruct);
         UsdoMarketReceiverModule aUsdoMarketReceiverModule = new UsdoMarketReceiverModule(aUsdoInitStruct);
         UsdoOptionReceiverModule aUsdoOptionsReceiverModule = new UsdoOptionReceiverModule(aUsdoInitStruct);
-        UsdoLeverageReceiverModule aUsdoLeverageReceiverModule = new UsdoLeverageReceiverModule(aUsdoInitStruct);
         vm.label(address(aUsdoSender), "aUsdoSender");
         vm.label(address(aUsdoReceiver), "aUsdoReceiver");
         vm.label(address(aUsdoMarketReceiverModule), "aUsdoMarketReceiverModule");
         vm.label(address(aUsdoOptionsReceiverModule), "aUsdoOptionsReceiverModule");
-        vm.label(address(aUsdoLeverageReceiverModule), "aUsdoLeverageReceiverModule");
 
         UsdoModulesInitStruct memory aUsdoModulesInitStruct = UsdoModulesInitStruct({
             usdoSenderModule: address(aUsdoSender),
             usdoReceiverModule: address(aUsdoReceiver),
             marketReceiverModule: address(aUsdoMarketReceiverModule),
-            optionReceiverModule: address(aUsdoOptionsReceiverModule),
-            leverageReceiverModule: address(aUsdoLeverageReceiverModule)
+            optionReceiverModule: address(aUsdoOptionsReceiverModule)
         });
         aUsdo = UsdoMock(
             payable(_deployOApp(type(UsdoMock).creationCode, abi.encode(aUsdoInitStruct, aUsdoModulesInitStruct)))
@@ -220,19 +224,16 @@ contract UsdoTest is UsdoTestHelper {
         UsdoReceiver bUsdoReceiver = new UsdoReceiver(bUsdoInitStruct);
         UsdoMarketReceiverModule bUsdoMarketReceiverModule = new UsdoMarketReceiverModule(bUsdoInitStruct);
         UsdoOptionReceiverModule bUsdoOptionsReceiverModule = new UsdoOptionReceiverModule(bUsdoInitStruct);
-        UsdoLeverageReceiverModule bUsdoLeverageReceiverModule = new UsdoLeverageReceiverModule(bUsdoInitStruct);
         vm.label(address(bUsdoSender), "bUsdoSender");
         vm.label(address(bUsdoReceiver), "bUsdoReceiver");
         vm.label(address(bUsdoMarketReceiverModule), "bUsdoMarketReceiverModule");
         vm.label(address(bUsdoOptionsReceiverModule), "bUsdoOptionsReceiverModule");
-        vm.label(address(bUsdoLeverageReceiverModule), "bUsdoLeverageReceiverModule");
 
         UsdoModulesInitStruct memory bUsdoModulesInitStruct = UsdoModulesInitStruct({
             usdoSenderModule: address(bUsdoSender),
             usdoReceiverModule: address(bUsdoReceiver),
             marketReceiverModule: address(bUsdoMarketReceiverModule),
-            optionReceiverModule: address(bUsdoOptionsReceiverModule),
-            leverageReceiverModule: address(bUsdoLeverageReceiverModule)
+            optionReceiverModule: address(bUsdoOptionsReceiverModule)
         });
         bUsdo = UsdoMock(
             payable(_deployOApp(type(UsdoMock).creationCode, abi.encode(bUsdoInitStruct, bUsdoModulesInitStruct)))
@@ -275,6 +276,9 @@ contract UsdoTest is UsdoTestHelper {
             ),
             address(masterContract)
         );
+
+        Pearlmit perlmit = new Pearlmit("Test", "1");
+        penrose.setPearlmit(address(perlmit));
 
         cluster.updateContract(aEid, address(yieldBox), true);
         cluster.updateContract(aEid, address(magnetar), true);
@@ -614,7 +618,7 @@ contract UsdoTest is UsdoTestHelper {
 
         //approve magnetar
         ExerciseOptionsMsg memory exerciseMsg = ExerciseOptionsMsg({
-            optionsData: ITapiocaOptionBrokerCrossChain.IExerciseOptionsData({
+            optionsData: IExerciseOptionsData({
                 from: address(this),
                 target: address(tOB),
                 paymentTokenAmount: tokenAmountSD,
@@ -995,7 +999,6 @@ contract UsdoTest is UsdoTestHelper {
             // @dev v,r,s will be completed on `__getMarketPermitData`
             MarketPermitActionMsg memory approvalUserB_ = MarketPermitActionMsg({
                 target: address(singularity),
-                actionType: 1,
                 owner: userA,
                 spender: userB,
                 value: 1e18,
@@ -1006,7 +1009,7 @@ contract UsdoTest is UsdoTestHelper {
                 permitAsset: true
             });
 
-            bytes32 digest_ = _getMarketPermitTypedDataHash(true, 1, userA, userB, 1e18, 1 days);
+            bytes32 digest_ = _getMarketPermitTypedDataHash(true, userA, userB, 1e18, 1 days);
             MarketPermitActionMsg memory permitApproval_ = __getMarketPermitData(approvalUserB_, digest_, userAPKey);
 
             approvalMsg_ = usdoHelper.buildMarketPermitApprovalMsg(permitApproval_);
@@ -1063,7 +1066,6 @@ contract UsdoTest is UsdoTestHelper {
             // @dev v,r,s will be completed on `__getMarketPermitData`
             MarketPermitActionMsg memory approvalUserB_ = MarketPermitActionMsg({
                 target: address(singularity),
-                actionType: 1,
                 owner: userA,
                 spender: userB,
                 value: 1e18,
@@ -1074,7 +1076,7 @@ contract UsdoTest is UsdoTestHelper {
                 permitAsset: false
             });
 
-            bytes32 digest_ = _getMarketPermitTypedDataHash(false, 1, userA, userB, 1e18, 1 days);
+            bytes32 digest_ = _getMarketPermitTypedDataHash(false, userA, userB, 1e18, 1 days);
             MarketPermitActionMsg memory permitApproval_ = __getMarketPermitData(approvalUserB_, digest_, userAPKey);
 
             approvalMsg_ = usdoHelper.buildMarketPermitApprovalMsg(permitApproval_);
@@ -1168,7 +1170,6 @@ contract UsdoTest is UsdoTestHelper {
         yieldBox.setApprovalForAll(address(singularity), true);
 
         uint256 tokenAmountSD = usdoHelper.toSD(tokenAmount_, aUsdo.decimalConversionRate());
-
         MarketLendOrRepayMsg memory marketMsg = MarketLendOrRepayMsg({
             user: address(this),
             lendParams: ILendOrRepayParams({
@@ -1179,28 +1180,34 @@ contract UsdoTest is UsdoTestHelper {
                 market: address(singularity),
                 removeCollateral: false,
                 removeCollateralAmount: 0,
-                lockData: ITapiocaOptionLiquidityProvision.IOptionsLockData({
-                    lock: false,
-                    target: address(0),
-                    lockDuration: 0,
-                    amount: 0,
-                    fraction: 0
-                }),
-                participateData: ITapiocaOptionBroker.IOptionsParticipateData({
-                    participate: false,
-                    target: address(0),
-                    tOLPTokenId: 0
-                })
+                lockData: IOptionsLockData({lock: false, target: address(0), lockDuration: 0, amount: 0, fraction: 0}),
+                participateData: IOptionsParticipateData({participate: false, target: address(0), tOLPTokenId: 0})
             }),
-            withdrawParams: IWithdrawParams({
+            withdrawParams: MagnetarWithdrawData({
                 withdraw: false,
-                withdrawLzFeeAmount: 0,
-                withdrawOnOtherChain: false,
-                withdrawLzChainId: 0,
-                withdrawAdapterParams: "0x",
+                yieldBox: address(0),
+                assetId: 0,
                 unwrap: false,
-                refundAddress: payable(0),
-                zroPaymentAddress: address(0)
+                lzSendParams: LZSendParam({
+                    refundAddress: address(this),
+                    fee: MessagingFee({lzTokenFee: 0, nativeFee: 0}),
+                    extraOptions: "0x",
+                    sendParam: SendParam({
+                        amountLD: 0,
+                        composeMsg: "0x",
+                        dstEid: 0,
+                        extraOptions: "0x",
+                        minAmountLD: 0,
+                        oftCmd: "0x",
+                        to: OFTMsgCodec.addressToBytes32(address(this))
+                    })
+                }),
+                sendGas: 0,
+                composeGas: 0,
+                sendVal: 0,
+                composeVal: 0,
+                composeMsg: "0x",
+                composeMsgType: 0
             })
         });
 
@@ -1339,28 +1346,34 @@ contract UsdoTest is UsdoTestHelper {
                 market: address(singularity),
                 removeCollateral: true,
                 removeCollateralAmount: tokenAmountSD,
-                lockData: ITapiocaOptionLiquidityProvision.IOptionsLockData({
-                    lock: false,
-                    target: address(0),
-                    lockDuration: 0,
-                    amount: 0,
-                    fraction: 0
-                }),
-                participateData: ITapiocaOptionBroker.IOptionsParticipateData({
-                    participate: false,
-                    target: address(0),
-                    tOLPTokenId: 0
-                })
+                lockData: IOptionsLockData({lock: false, target: address(0), lockDuration: 0, amount: 0, fraction: 0}),
+                participateData: IOptionsParticipateData({participate: false, target: address(0), tOLPTokenId: 0})
             }),
-            withdrawParams: IWithdrawParams({
+            withdrawParams: MagnetarWithdrawData({
                 withdraw: false,
-                withdrawLzFeeAmount: 0,
-                withdrawOnOtherChain: false,
-                withdrawLzChainId: 0,
-                withdrawAdapterParams: "0x",
+                yieldBox: address(0),
+                assetId: 0,
                 unwrap: false,
-                refundAddress: payable(0),
-                zroPaymentAddress: address(0)
+                lzSendParams: LZSendParam({
+                    refundAddress: address(this),
+                    fee: MessagingFee({lzTokenFee: 0, nativeFee: 0}),
+                    extraOptions: "0x",
+                    sendParam: SendParam({
+                        amountLD: 0,
+                        composeMsg: "0x",
+                        dstEid: 0,
+                        extraOptions: "0x",
+                        minAmountLD: 0,
+                        oftCmd: "0x",
+                        to: OFTMsgCodec.addressToBytes32(address(this))
+                    })
+                }),
+                sendGas: 0,
+                composeGas: 0,
+                sendVal: 0,
+                composeVal: 0,
+                composeMsg: "0x",
+                composeMsgType: 0
             })
         });
 
@@ -1486,27 +1499,59 @@ contract UsdoTest is UsdoTestHelper {
                 repayAmount: 0,
                 removeCollateralFromBB: false,
                 collateralAmount: 0,
-                exitData: ITapiocaOptionBroker.IOptionsExitData({exit: false, target: address(0), oTAPTokenID: 0}),
-                unlockData: ITapiocaOptionLiquidityProvision.IOptionsUnlockData({unlock: false, target: address(0), tokenId: 0}),
-                assetWithdrawData: IWithdrawParams({
+                exitData: IOptionsExitData({exit: false, target: address(0), oTAPTokenID: 0}),
+                unlockData: IOptionsUnlockData({unlock: false, target: address(0), tokenId: 0}),
+                assetWithdrawData: MagnetarWithdrawData({
                     withdraw: false,
-                    withdrawLzFeeAmount: 0,
-                    withdrawOnOtherChain: false,
-                    withdrawLzChainId: 0,
-                    withdrawAdapterParams: "0x",
+                    yieldBox: address(0),
+                    assetId: 0,
                     unwrap: false,
-                    refundAddress: payable(0),
-                    zroPaymentAddress: address(0)
+                    lzSendParams: LZSendParam({
+                        refundAddress: address(this),
+                        fee: MessagingFee({lzTokenFee: 0, nativeFee: 0}),
+                        extraOptions: "0x",
+                        sendParam: SendParam({
+                            amountLD: 0,
+                            composeMsg: "0x",
+                            dstEid: 0,
+                            extraOptions: "0x",
+                            minAmountLD: 0,
+                            oftCmd: "0x",
+                            to: OFTMsgCodec.addressToBytes32(address(this))
+                        })
+                    }),
+                    sendGas: 0,
+                    composeGas: 0,
+                    sendVal: 0,
+                    composeVal: 0,
+                    composeMsg: "0x",
+                    composeMsgType: 0
                 }),
-                collateralWithdrawData: IWithdrawParams({
-                    withdraw: false,
-                    withdrawLzFeeAmount: 0,
-                    withdrawOnOtherChain: false,
-                    withdrawLzChainId: 0,
-                    withdrawAdapterParams: "0x",
+                collateralWithdrawData: MagnetarWithdrawData({
+                    withdraw: true,
+                    yieldBox: address(0),
+                    assetId: 0,
                     unwrap: false,
-                    refundAddress: payable(0),
-                    zroPaymentAddress: address(0)
+                    lzSendParams: LZSendParam({
+                        refundAddress: address(this),
+                        fee: MessagingFee({lzTokenFee: 0, nativeFee: 0}),
+                        extraOptions: "0x",
+                        sendParam: SendParam({
+                            amountLD: 0,
+                            composeMsg: "0x",
+                            dstEid: 0,
+                            extraOptions: "0x",
+                            minAmountLD: 0,
+                            oftCmd: "0x",
+                            to: OFTMsgCodec.addressToBytes32(address(this))
+                        })
+                    }),
+                    sendGas: 0,
+                    composeGas: 0,
+                    sendVal: 0,
+                    composeVal: 0,
+                    composeMsg: "0x",
+                    composeMsgType: 0
                 })
             })
         });
@@ -1568,23 +1613,17 @@ contract UsdoTest is UsdoTestHelper {
 
     function _getMarketPermitTypedDataHash(
         bool permitAsset,
-        uint16 actionType_,
         address owner_,
         address spender_,
         uint256 value_,
         uint256 deadline_
     ) private view returns (bytes32) {
         bytes32 permitTypeHash_ = permitAsset
-            ? keccak256(
-                "Permit(uint16 actionType,address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)"
-            )
-            : keccak256(
-                "PermitBorrow(uint16 actionType,address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)"
-            );
+            ? bytes32(0x6e71edae12b1b97f4d1f60370fef10105fa2faae0126114a169c64845d6126c9)
+            : bytes32(0xe9685ff6d48c617fe4f692c50e602cce27cbad0290beb93cfa77eac43968d58c);
 
         uint256 nonce = singularity.nonces(owner_);
-        bytes32 structHash_ =
-            keccak256(abi.encode(permitTypeHash_, actionType_, owner_, spender_, value_, nonce++, deadline_));
+        bytes32 structHash_ = keccak256(abi.encode(permitTypeHash_, owner_, spender_, value_, nonce++, deadline_));
 
         return keccak256(abi.encodePacked("\x19\x01", singularity.DOMAIN_SEPARATOR(), structHash_));
     }

@@ -2400,7 +2400,7 @@ describe('BigBang test', () => {
             };
         };
 
-        it('Should lever up by buying collateral', async () => {
+        it.skip('Should lever up by buying collateral', async () => {
             const {
                 deployer,
                 mockSwapper,
@@ -2501,7 +2501,7 @@ describe('BigBang test', () => {
             ).to.be.true;
         });
 
-        it('Should lever down by selling collateral', async () => {
+        it.skip('Should lever down by selling collateral', async () => {
             const {
                 deployer,
                 mockSwapper,

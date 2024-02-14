@@ -19,10 +19,7 @@ export const buildClusterSetup = async (
 
     const usd0 = await getAfterDepContract<USDO>(hre, deps, 'USDO');
 
-    const chainInfo = hre.SDK.utils.getChainBy(
-        'chainId',
-        hre.SDK.eChainId,
-    );
+    const chainInfo = hre.SDK.utils.getChainBy('chainId', hre.SDK.eChainId);
 
     /**
      * Add calls

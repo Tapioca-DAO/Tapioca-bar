@@ -3,23 +3,21 @@ pragma solidity ^0.8.18;
 
 //interfaces
 import {ISavingsDai} from "tapioca-periph/interfaces/external/makerdao/ISavingsDai.sol";
-import {ITapiocaOFTBase} from "tapioca-periph/interfaces/tap-token/ITapiocaOFT.sol";
 import {BaseLeverageExecutor, SLeverageSwapData} from "./BaseLeverageExecutor.sol";
 import {IZeroXSwapper} from "tapioca-periph/interfaces/periph/IZeroXSwapper.sol";
 import {ICluster} from "tapioca-periph/interfaces/periph/ICluster.sol";
-import {SafeApprove} from "tapioca-periph/libraries/SafeApprove.sol";
+import {ITOFT} from "tapioca-periph/interfaces/oft/ITOFT.sol";
+import {SafeApprove} from "../../libraries/SafeApprove.sol";
 
 /*
-__/\\\\\\\\\\\\\\\_____/\\\\\\\\\_____/\\\\\\\\\\\\\____/\\\\\\\\\\\_______/\\\\\_____________/\\\\\\\\\_____/\\\\\\\\\____        
- _\///////\\\/////____/\\\\\\\\\\\\\__\/\\\/////////\\\_\/////\\\///______/\\\///\\\________/\\\////////____/\\\\\\\\\\\\\__       
-  _______\/\\\________/\\\/////////\\\_\/\\\_______\/\\\_____\/\\\_______/\\\/__\///\\\____/\\\/____________/\\\/////////\\\_      
-   _______\/\\\_______\/\\\_______\/\\\_\/\\\\\\\\\\\\\/______\/\\\______/\\\______\//\\\__/\\\_____________\/\\\_______\/\\\_     
-    _______\/\\\_______\/\\\\\\\\\\\\\\\_\/\\\/////////________\/\\\_____\/\\\_______\/\\\_\/\\\_____________\/\\\\\\\\\\\\\\\_    
-     _______\/\\\_______\/\\\/////////\\\_\/\\\_________________\/\\\_____\//\\\______/\\\__\//\\\____________\/\\\/////////\\\_   
-      _______\/\\\_______\/\\\_______\/\\\_\/\\\_________________\/\\\______\///\\\__/\\\_____\///\\\__________\/\\\_______\/\\\_  
-       _______\/\\\_______\/\\\_______\/\\\_\/\\\______________/\\\\\\\\\\\____\///\\\\\/________\////\\\\\\\\\_\/\\\_______\/\\\_ 
-        _______\///________\///________\///__\///______________\///////////_______\/////_____________\/////////__\///________\///__
 
+████████╗ █████╗ ██████╗ ██╗ ██████╗  ██████╗ █████╗ 
+╚══██╔══╝██╔══██╗██╔══██╗██║██╔═══██╗██╔════╝██╔══██╗
+   ██║   ███████║██████╔╝██║██║   ██║██║     ███████║
+   ██║   ██╔══██║██╔═══╝ ██║██║   ██║██║     ██╔══██║
+   ██║   ██║  ██║██║     ██║╚██████╔╝╚██████╗██║  ██║
+   ╚═╝   ╚═╝  ╚═╝╚═╝     ╚═╝ ╚═════╝  ╚═════╝╚═╝  ╚═╝
+   
 */
 
 contract AssetTotsDaiLeverageExecutor is BaseLeverageExecutor {
@@ -60,7 +58,7 @@ contract AssetTotsDaiLeverageExecutor is BaseLeverageExecutor {
 
         // Wrap into tsDai to sender
         sDaiAddress.safeApprove(collateralAddress, collateralAmountOut);
-        ITapiocaOFTBase(collateralAddress).wrap(address(this), msg.sender, collateralAmountOut);
+        ITOFT(collateralAddress).wrap(address(this), msg.sender, collateralAmountOut);
         sDaiAddress.safeApprove(collateralAddress, 0);
     }
 
@@ -81,7 +79,7 @@ contract AssetTotsDaiLeverageExecutor is BaseLeverageExecutor {
         //retrieve addresses
         (address sDaiAddress, address daiAddress) = _getAddresses(collateralAddress);
         //unwrap tsDai
-        ITapiocaOFTBase(collateralAddress).unwrap(address(this), collateralAmountIn);
+        ITOFT(collateralAddress).unwrap(address(this), collateralAmountIn);
         //redeem from sDai
         uint256 obtainedDai = ISavingsDai(sDaiAddress).redeem(
             ISavingsDai(sDaiAddress).convertToShares(collateralAmountIn), address(this), address(this)
@@ -102,7 +100,7 @@ contract AssetTotsDaiLeverageExecutor is BaseLeverageExecutor {
      */
     function _getAddresses(address collateralAddress) private view returns (address sDaiAddress, address daiAddress) {
         //retrieve sDAI address from tsDai
-        sDaiAddress = ITapiocaOFTBase(collateralAddress).erc20();
+        sDaiAddress = ITOFT(collateralAddress).erc20();
         if (sDaiAddress == address(0)) revert TokenNotValid();
 
         //retrieve DAI address from sDAI

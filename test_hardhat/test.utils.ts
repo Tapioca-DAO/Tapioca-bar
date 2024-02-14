@@ -86,7 +86,7 @@ async function registerUsd0Contract(
     );
     await verifyEtherscan(lzEndpointContract.address, [chainId], staging);
 
-     const extExec = await (
+    const extExec = await (
         await ethers.getContractFactory('TapiocaOmnichainExtExec')
     ).deploy();
 
@@ -97,7 +97,7 @@ async function registerUsd0Contract(
         cluster: cluster,
         extExec: extExec.address,
     };
-    
+
     const usdo_sender = await (
         await ethers.getContractFactory('UsdoSender')
     ).deploy(usdoInitStruct);
@@ -110,27 +110,19 @@ async function registerUsd0Contract(
     const usdo_option = await (
         await ethers.getContractFactory('UsdoOptionReceiverModule')
     ).deploy(usdoInitStruct);
-    const usdo_leverage = await (
-        await ethers.getContractFactory('UsdoLeverageReceiverModule')
-    ).deploy(usdoInitStruct);
 
     const modulesInitStruct = {
         usdoSenderModule: usdo_sender.address,
         usdoReceiverModule: usdo_receiver.address,
         marketReceiverModule: usdo_market.address,
         optionReceiverModule: usdo_option.address,
-        leverageReceiverModule: usdo_leverage.address,
-    }
+    };
 
     const usd0 = await (
         await ethers.getContractFactory('Usdo')
-    ).deploy(
-        usdoInitStruct,
-        modulesInitStruct,
-        {
-            gasPrice: gasPrice,
-        },
-    );
+    ).deploy(usdoInitStruct, modulesInitStruct, {
+        gasPrice: gasPrice,
+    });
     await usd0.deployed();
     log(
         `Deployed UDS0 ${usd0.address} with args [${lzEndpointContract.address},${yieldBox}]`,
@@ -717,9 +709,13 @@ async function deployMediumRiskMC(penrose: Penrose, staging?: boolean) {
     );
 
     await (
-        await penrose.registerSingularityMasterContract(mediumRiskMC.address, 1, {
-            gasPrice: gasPrice,
-        })
+        await penrose.registerSingularityMasterContract(
+            mediumRiskMC.address,
+            1,
+            {
+                gasPrice: gasPrice,
+            },
+        )
     ).wait();
     log('MediumRiskMC was set on Penrose', staging);
 
@@ -803,61 +799,41 @@ async function registerSingularity(
 
     const leverageExecutor = await (
         await ethers.getContractFactory('SimpleLeverageExecutor')
-    ).deploy(yieldBox.address, swapper, cluster, { gasPrice: gasPrice });
+    ).deploy(swapper, cluster, { gasPrice: gasPrice });
     await leverageExecutor.deployed();
     log(
         `Deployed SimpleLeverageExecutor ${leverageExecutor.address} with args`,
         staging,
     );
-    const modulesData = new ethers.utils.AbiCoder().encode(
-        [
-            'address',
-            'address',
-            'address',
-            'address',
-        ],
-        [
-            _sglLiquidationModule.address,
-            _sglBorrow.address,
-            _sglCollateral.address,
-            _sglLeverage.address,
-        ]
-    );
+    const modulesData = {
+            _liquidationModule: _sglLiquidationModule.address,
+            _borrowModule: _sglBorrow.address,
+            _collateralModule: _sglCollateral.address,
+            _leverageModule: _sglLeverage.address,
+        };
     
-    const tokensData = new ethers.utils.AbiCoder().encode(
-        [
-            'address',
-            'uint256',
-            'address',
-            'uint256',
-        ],
-        [
-            weth.address,
-            wethAssetId,
-            usdc.address,
-            usdcAssetId,
-        ]
-    );
-    const data = new ethers.utils.AbiCoder().encode(
-        [
-            'address',
-            'address',
-            'uint256',
-            'uint256',
-            'uint256',
-            'address',
-        ],
-        [
-            penrose.address,
-            wethUsdcOracle.address,
-            exchangeRatePrecision ?? 0,
-            0,
-            0,
-            leverageExecutor.address,
-        ],
-    );
+    const tokensData = {
+            _asset: weth.address,
+            _assetId: wethAssetId,
+            _collateral: usdc.address,
+            _collateralId: usdcAssetId,
+    };
+    const data = {
+            penrose_: penrose.address,
+            _oracle: wethUsdcOracle.address,
+            _exchangeRatePrecision: exchangeRatePrecision ?? 0,
+            _collateralizationRate: 0,
+            _liquidationCollateralizationRate: 0,
+            _leverageExecutor: leverageExecutor.address,
+    }
 
-    const sglData = new ethers.utils.AbiCoder().encode(['bytes','bytes','bytes'],[modulesData, tokensData, data]);
+    const sglData = new ethers.utils.AbiCoder().encode(
+        [
+            'tuple(address _liquidationModule, address _borrowModule, address _collateralModule, address _leverageModule)',
+            'tuple(address _asset, uint256 _assetId, address _collateral, uint256 _collateralId)',
+            'tuple(address penrose_, address _oracle, uint256 _exchangeRatePrecision, uint256 _collateralizationRate, uint256 _liquidationCollateralizationRate, address _leverageExecutor)'
+        ],
+        [modulesData, tokensData, data]);
     await (
         await penrose.registerSingularity(mediumRiskMC, sglData, true, {
             gasPrice: gasPrice,
@@ -962,7 +938,7 @@ async function createWethUsd0Singularity(
 
     const leverageExecutor = await (
         await ethers.getContractFactory('SimpleLeverageExecutor')
-    ).deploy(yieldBox.address, swapper, cluster, { gasPrice: gasPrice });
+    ).deploy(swapper, cluster, { gasPrice: gasPrice });
     await leverageExecutor.deployed();
     log(
         `Deployed SimpleLeverageExecutor ${leverageExecutor.address} with args`,
@@ -1126,65 +1102,44 @@ async function registerBigBangMarket(
 
     const leverageExecutor = await (
         await ethers.getContractFactory('SimpleLeverageExecutor')
-    ).deploy(yieldBox.address, swapper, cluster, { gasPrice: gasPrice });
+    ).deploy(swapper, cluster, { gasPrice: gasPrice });
     await leverageExecutor.deployed();
     log(
         `Deployed SimpleLeverageExecutor ${leverageExecutor.address} with args`,
         staging,
     );
 
-     const modulesData = new ethers.utils.AbiCoder().encode(
-        [
-            'address',
-            'address',
-            'address',
-            'address',
-        ],
-        [
-            _bbLiquidationModule.address,
-            _bbBorrow.address,
-            _bbCollateral.address,
-            _bbLeverage.address,
-        ]
-    );
+    const modulesData = {
+            _liquidationModule: _bbLiquidationModule.address,
+            _borrowModule: _bbBorrow.address,
+            _collateralModule: _bbCollateral.address,
+            _leverageModule: _bbLeverage.address,
+        };
+    
+    const debtData = {
+            _debtRateAgainstEth: debtRateAgainstEth,
+            _debtRateMin: debtRateMin,
+            _debtRateMax: debtRateMax
+    };
+    const data = {
+            _penrose: penrose.address,
+            _collateral: collateral.address,
+            _collateralId: collateralId,
+            _oracle: oracle.address,
+            _exchangeRatePrecision: exchangeRatePrecision,
+            _collateralizationRate: 0,
+            _liquidationCollateralizationRate: 0,
+            _leverageExecutor: ethers.constants.AddressZero,
+    }
 
-    const debtData = new ethers.utils.AbiCoder().encode(
+    const bbData = new ethers.utils.AbiCoder().encode(
         [
-            'uint256',
-            'uint256',
-            'uint256',
+            'tuple(address _liquidationModule, address _borrowModule, address _collateralModule, address _leverageModule)',
+            'tuple(uint256 _debtRateAgainstEth, uint256 _debtRateMin, uint256 _debtRateMax)',
+            'tuple(address _penrose, address _collateral, uint256 _collateralId, address _oracle, uint256 _exchangeRatePrecision, uint256 _collateralizationRate, uint256 _liquidationCollateralizationRate, address _leverageExecutor)'
         ],
-        [
-            debtRateAgainstEth,
-            debtRateMin,
-            debtRateMax,
-        ]
-    );
+        [modulesData, debtData, data]);
 
-    const data = new ethers.utils.AbiCoder().encode(
-        [
-            'address',
-            'address',
-            'uint256',
-            'address',
-            'uint256',
-            'uint256',
-            'uint256',
-            'address',
-        ],
-        [
-            penrose.address,
-            collateral.address,
-            collateralId,
-            oracle.address,
-            exchangeRatePrecision,
-            0,
-            0,
-            leverageExecutor.address,
-        ],
-    );
-
-    const bbData = new ethers.utils.AbiCoder().encode(['bytes','bytes','bytes'],[modulesData, debtData, data]);
     await (
         await penrose.registerBigBang(mediumRiskBigBangMC, bbData, true, {
             gasPrice: gasPrice,
@@ -1391,7 +1346,6 @@ export async function register(staging?: boolean) {
         // await resetVM();
     }
 
-
     /**
      * INITIAL SETUP
      */
@@ -1480,23 +1434,14 @@ export async function register(staging?: boolean) {
     log(`Deployed YieldBox ${yieldBox.address}`, staging);
 
     // -------------------  2.1 Deploy Yieldbox -------------------
-    const chainInfo = hre.SDK.utils.getChainBy(
-        'chainId',
-        hre.SDK.eChainId,
-    );
+    const chainInfo = hre.SDK.utils.getChainBy('chainId', hre.SDK.eChainId);
     const LZEndpointMock = new LZEndpointMock__factory(deployer);
-    const clusterLzEndpoint = await LZEndpointMock.deploy(
-        hre.SDK.eChainId,
-    );
+    const clusterLzEndpoint = await LZEndpointMock.deploy(hre.SDK.eChainId);
 
     const Cluster = new Cluster__factory(deployer);
-    const cluster = await Cluster.deploy(
-        hre.SDK.eChainId,
-        deployer.address,
-        {
-            gasPrice: gasPrice,
-        },
-    );
+    const cluster = await Cluster.deploy(hre.SDK.eChainId, deployer.address, {
+        gasPrice: gasPrice,
+    });
     log(
         `Deployed Cluster ${cluster.address} with args [${chainInfo?.lzChainId}]`,
         staging,
@@ -1512,6 +1457,13 @@ export async function register(staging?: boolean) {
         staging,
     );
     log(`Deployed Penrose ${penrose.address}`, staging);
+
+    const pearlmit = await (
+        await ethers.getContractFactory('Pearlmit')
+    ).deploy('A', '1');
+    await pearlmit.deployed();
+
+    await penrose.setPearlmit(pearlmit.address);
 
     // -------------------  3 Add asset types to Penrose -------------------
     log('Setting Penrose assets', staging);
@@ -1653,7 +1605,7 @@ export async function register(staging?: boolean) {
     const feeCollector = new ethers.Wallet(
         ethers.Wallet.createRandom().privateKey,
         ethers.provider,
-        );
+    );
 
     // ------------------- 10 Deploy USDO -------------------
     log('Registering USDO', staging);
@@ -1735,7 +1687,6 @@ export async function register(staging?: boolean) {
         staging,
     );
 
-    
     // ------------------- 14 Create weth-usd0 pair -------------------
     log('Creating WethUSDO and TapUSDO pairs', staging);
     const { __wethUsdoMockPair, __tapUsdoMockPair } =

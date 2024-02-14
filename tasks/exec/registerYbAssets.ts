@@ -9,10 +9,7 @@ export const registerYbAssets__task = async (
     taskArgs: { strategies?: string[] },
     hre: HardhatRuntimeEnvironment,
 ) => {
-    const chainInfo = hre.SDK.utils.getChainBy(
-        'chainId',
-        hre.SDK.eChainId,
-    );
+    const chainInfo = hre.SDK.utils.getChainBy('chainId', hre.SDK.eChainId);
     if (!chainInfo) {
         throw new Error('Chain not found');
     }

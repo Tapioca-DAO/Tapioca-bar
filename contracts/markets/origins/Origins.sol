@@ -4,36 +4,33 @@ pragma solidity ^0.8.18;
 // External
 import {RebaseLibrary, Rebase} from "@boringcrypto/boring-solidity/contracts/libraries/BoringRebase.sol";
 import {BoringERC20} from "@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol";
-import {BoringOwnable} from "@boringcrypto/boring-solidity/contracts/BoringOwnable.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import {ITapiocaOracle} from "tapioca-periph/interfaces/periph/ITapiocaOracle.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {IERC20} from "@boringcrypto/boring-solidity/contracts/ERC20.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 // Tapioca
-import {SafeApprove} from "tapioca-periph/libraries/SafeApprove.sol";
-import {IUSDOBase} from "tapioca-periph/interfaces/bar/IUSDO.sol";
 import {IYieldBox} from "tapioca-periph/interfaces/yieldbox/IYieldBox.sol";
+import {IUsdo} from "tapioca-periph/interfaces/oft/IUsdo.sol";
+import {SafeApprove} from "../../libraries/SafeApprove.sol";
 import {Market, MarketERC20} from "../Market.sol";
 
 // solhint-disable max-line-length
 
 /*
 
-__/\\\\\\\\\\\\\\\_____/\\\\\\\\\_____/\\\\\\\\\\\\\____/\\\\\\\\\\\_______/\\\\\_____________/\\\\\\\\\_____/\\\\\\\\\____        
- _\///////\\\/////____/\\\\\\\\\\\\\__\/\\\/////////\\\_\/////\\\///______/\\\///\\\________/\\\////////____/\\\\\\\\\\\\\__       
-  _______\/\\\________/\\\/////////\\\_\/\\\_______\/\\\_____\/\\\_______/\\\/__\///\\\____/\\\/____________/\\\/////////\\\_      
-   _______\/\\\_______\/\\\_______\/\\\_\/\\\\\\\\\\\\\/______\/\\\______/\\\______\//\\\__/\\\_____________\/\\\_______\/\\\_     
-    _______\/\\\_______\/\\\\\\\\\\\\\\\_\/\\\/////////________\/\\\_____\/\\\_______\/\\\_\/\\\_____________\/\\\\\\\\\\\\\\\_    
-     _______\/\\\_______\/\\\/////////\\\_\/\\\_________________\/\\\_____\//\\\______/\\\__\//\\\____________\/\\\/////////\\\_   
-      _______\/\\\_______\/\\\_______\/\\\_\/\\\_________________\/\\\______\///\\\__/\\\_____\///\\\__________\/\\\_______\/\\\_  
-       _______\/\\\_______\/\\\_______\/\\\_\/\\\______________/\\\\\\\\\\\____\///\\\\\/________\////\\\\\\\\\_\/\\\_______\/\\\_ 
-        _______\///________\///________\///__\///______________\///////////_______\/////_____________\/////////__\///________\///__
-
+████████╗ █████╗ ██████╗ ██╗ ██████╗  ██████╗ █████╗ 
+╚══██╔══╝██╔══██╗██╔══██╗██║██╔═══██╗██╔════╝██╔══██╗
+   ██║   ███████║██████╔╝██║██║   ██║██║     ███████║
+   ██║   ██╔══██║██╔═══╝ ██║██║   ██║██║     ██╔══██║
+   ██║   ██║  ██║██║     ██║╚██████╔╝╚██████╗██║  ██║
+   ╚═╝   ╚═╝  ╚═╝╚═╝     ╚═╝ ╚═════╝  ╚═════╝╚═╝  ╚═╝
+   
 */
 
 /// @notice used for initial USDO mint
-contract Origins is BoringOwnable, Market, ReentrancyGuard {
+contract Origins is Ownable, Market, ReentrancyGuard {
     using RebaseLibrary for Rebase;
     using BoringERC20 for IERC20;
     using SafeCast for uint256;
@@ -74,7 +71,6 @@ contract Origins is BoringOwnable, Market, ReentrancyGuard {
         uint256 _exchangeRatePrecision,
         uint256 _collateralizationRate
     ) MarketERC20("Origins") {
-        owner = _owner;
         allowedParticipants[_owner] = true;
 
         yieldBox = IYieldBox(_yieldBox);
@@ -96,7 +92,9 @@ contract Origins is BoringOwnable, Market, ReentrancyGuard {
         collateralizationRate = _collateralizationRate;
 
         rateValidDuration = 24 hours;
-        conservator = owner;
+        
+        conservator = _owner;
+        _transferOwnership(_owner);
     }
 
     // ************************* //
@@ -227,7 +225,7 @@ contract Origins is BoringOwnable, Market, ReentrancyGuard {
         yieldBox.withdraw(assetId, from, address(this), amount, 0);
 
         //burn USDO
-        IUSDOBase(address(asset)).burn(address(this), amount);
+        IUsdo(address(asset)).burn(address(this), amount);
 
         emit LogRepay(from, to, amountOut, part);
     }
@@ -243,7 +241,7 @@ contract Origins is BoringOwnable, Market, ReentrancyGuard {
         emit LogBorrow(from, to, amount, part);
 
         //mint USDO
-        IUSDOBase(address(asset)).mint(address(this), amount);
+        IUsdo(address(asset)).mint(address(this), amount);
 
         //deposit borrowed amount to user
         share = _depositAmountToYb(asset, to, assetId, amount);

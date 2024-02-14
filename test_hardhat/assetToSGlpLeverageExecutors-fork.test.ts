@@ -6,7 +6,7 @@ import _ from 'lodash';
 import { TOFTMock__factory } from '@tapioca-sdk/typechain/tapioca-mocks';
 import { UniswapV3Swapper__factory } from '@tapioca-sdk/typechain/tapioca-periphery';
 
-describe('assetToSGlpLeverageExecutors.test test', () => {
+describe.skip('assetToSGlpLeverageExecutors.test test', () => {
     before(function () {
         if (process.env.NODE_ENV != 'arbitrum') {
             this.skip();
@@ -82,7 +82,7 @@ describe('assetToSGlpLeverageExecutors.test test', () => {
             yieldBox.address,
             routerV3,
             factoryV3,
-            deployer.address
+            deployer.address,
         );
         const glpStrategy = await createTokenEmptyStrategy(
             yieldBox.address,

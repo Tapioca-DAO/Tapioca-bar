@@ -18,10 +18,7 @@ export const deploySGLMarket__task = async (
     console.log('[+] Deploying: SGL market');
     const tag = await hre.SDK.hardhatUtils.askForTag(hre, 'local');
 
-    const chainInfo = hre.SDK.utils.getChainBy(
-        'chainId',
-        hre.SDK.eChainId,
-    );
+    const chainInfo = hre.SDK.utils.getChainBy('chainId', hre.SDK.eChainId);
     if (!chainInfo) {
         throw new Error('Chain not found');
     }
@@ -252,10 +249,7 @@ async function loadStrats(
         throw new Error('[-] USDO strategy not found');
     }
 
-    const chainInfo = hre.SDK.utils.getChainBy(
-        'chainId',
-        hre.SDK.eChainId,
-    );
+    const chainInfo = hre.SDK.utils.getChainBy('chainId', hre.SDK.eChainId);
     if (!chainInfo) {
         throw new Error('Chain not found');
     }
@@ -304,10 +298,7 @@ async function loadStrats(
 }
 
 async function loadContracts(hre: HardhatRuntimeEnvironment, tag: string) {
-    const chainInfo = hre.SDK.utils.getChainBy(
-        'chainId',
-        hre.SDK.eChainId,
-    );
+    const chainInfo = hre.SDK.utils.getChainBy('chainId', hre.SDK.eChainId);
     if (!chainInfo) {
         throw new Error('Chain not found');
     }

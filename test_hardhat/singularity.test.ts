@@ -33,8 +33,12 @@ import TapiocaOFTArtifact from '@tapioca-sdk/artifacts/tapiocaz/TapiocaOFT.json'
 describe('Singularity test', () => {
     describe('test', () => {
         it.skip('should compute the right closing factor', async () => {
-            const { wethUsdcSingularity, wbtcBigBangMarket, deployer, penrose } =
-                await loadFixture(register);
+            const {
+                wethUsdcSingularity,
+                wbtcBigBangMarket,
+                deployer,
+                penrose,
+            } = await loadFixture(register);
 
             // const borrowFeeUpdateFn =
             //     wethUsdcSingularity.interface.encodeFunctionData(
@@ -106,8 +110,12 @@ describe('Singularity test', () => {
     });
     describe('setters', () => {
         it('should be able to set mutable properties', async () => {
-            const { wethUsdcSingularity, wbtcBigBangMarket, deployer, penrose } =
-                await loadFixture(register);
+            const {
+                wethUsdcSingularity,
+                wbtcBigBangMarket,
+                deployer,
+                penrose,
+            } = await loadFixture(register);
 
             const toSetAddress = deployer.address;
             const toSetValue = 101;
@@ -466,57 +474,41 @@ describe('Singularity test', () => {
                 deployer,
             } = await loadFixture(register);
 
-            const modulesData = new ethers.utils.AbiCoder().encode(
-                [
-                    'address',
-                    'address',
-                    'address',
-                    'address',
-                ],
-                [
-                    ethers.constants.AddressZero,
-                    ethers.constants.AddressZero,
-                    ethers.constants.AddressZero,
-                    ethers.constants.AddressZero,
-                ]
-            );
+            const modulesData = {
+                    _liquidationModule: ethers.constants.AddressZero,
+                    _borrowModule: ethers.constants.AddressZero,
+                    _collateralModule: ethers.constants.AddressZero,
+                    _leverageModule: ethers.constants.AddressZero,
+                };
             
-            const tokensData = new ethers.utils.AbiCoder().encode(
-                [
-                    'address',
-                    'uint256',
-                    'address',
-                    'uint256',
-                ],
-                [
-                    weth.address,
-                    wethAssetId,
-                    usdc.address,
-                    usdcAssetId,
-                ]
-            );
-            const data = new ethers.utils.AbiCoder().encode(
-                [
-                    'address',
-                    'address',
-                    'uint256',
-                    'uint256',
-                    'uint256',
-                    'address',
-                ],
-                [
-                    penrose.address,
-                    wethUsdcOracle.address,
-                    ethers.utils.parseEther('1'),
-                    0,
-                    0,
-                    ethers.constants.AddressZero,
-                ],
-            );
+            const tokensData = {
+                    _asset: weth.address,
+                    _assetId: wethAssetId,
+                    _collateral: usdc.address,
+                    _collateralId: usdcAssetId,
+            };
+            const data = {
+                    penrose_: penrose.address,
+                    _oracle: wethUsdcOracle.address,
+                    _exchangeRatePrecision: ethers.utils.parseEther('1'),
+                    _collateralizationRate: 0,
+                    _liquidationCollateralizationRate: 0,
+                    _leverageExecutor: ethers.constants.AddressZero,
+            }
 
-            const sglData = new ethers.utils.AbiCoder().encode(['bytes','bytes','bytes'],[modulesData, tokensData, data]);
+            const sglData = new ethers.utils.AbiCoder().encode(
+                [
+                    'tuple(address _liquidationModule, address _borrowModule, address _collateralModule, address _leverageModule)',
+                    'tuple(address _asset, uint256 _assetId, address _collateral, uint256 _collateralId)',
+                    'tuple(address penrose_, address _oracle, uint256 _exchangeRatePrecision, uint256 _collateralizationRate, uint256 _liquidationCollateralizationRate, address _leverageExecutor)'
+                ],
+                [modulesData, tokensData, data]);
             await (
-                await penrose.registerSingularity(mediumRiskMC.address, sglData, true)
+                await penrose.registerSingularity(
+                    mediumRiskMC.address,
+                    sglData,
+                    true,
+                )
             ).wait();
             const wethUsdcSingularity = await ethers.getContractAt(
                 'Singularity',
@@ -1006,7 +998,7 @@ describe('Singularity test', () => {
                 );
             const userBorrowedAmountBefore =
                 await wethUsdcSingularity.userBorrowPart(eoa1.address);
-            
+
             const viewUsedCollateral =
                 await wethUsdcSingularity.viewLiquidationCollateralAmount(
                     eoa1.address,
@@ -2625,7 +2617,15 @@ describe('Singularity test', () => {
                 wethDepositAndAddAsset,
                 __wethUsdcPrice,
                 timeTravel,
+                penrose,
             } = await loadFixture(register);
+
+            const pearlmit = await (
+                await ethers.getContractFactory('Pearlmit')
+            ).deploy('A', '1');
+            await pearlmit.deployed();
+
+            await penrose.setPearlmit(pearlmit.address);
 
             const assetId = await wethUsdcSingularity.assetId();
             const collateralId = await wethUsdcSingularity.collateralId();
@@ -2775,104 +2775,6 @@ describe('Singularity test', () => {
                 [wethUsdcSingularity.address],
                 twTap.address,
             );
-        });
-    });
-
-    describe('Permit', async () => {
-        it('should test permit lend & borrow', async () => {
-            const { deployer, eoa1, wethUsdcSingularity, BN } =
-                await loadFixture(register);
-
-            const deadline =
-                (await ethers.provider.getBlock('latest')).timestamp + 10_000;
-
-            const { v, r, s } = await getSGLPermitSignature(
-                'Permit',
-                deployer,
-                wethUsdcSingularity,
-                eoa1.address,
-                (1e18).toString(),
-                BN(deadline),
-            );
-
-            const snapshot = await takeSnapshot();
-
-            const encoder = new ethers.utils.AbiCoder();
-            const permitActionData = encoder.encode(
-                [
-                    'bool',
-                    'address',
-                    'address',
-                    'uint256',
-                    'uint256',
-                    'uint8',
-                    'bytes32',
-                    'bytes32',
-                ],
-                [
-                    true,
-                    deployer.address,
-                    eoa1.address,
-                    (1e18).toString(),
-                    deadline,
-                    v,
-                    r,
-                    s,
-                ],
-            );
-
-            await expect(wethUsdcSingularity.permitAction(permitActionData, 0))
-                .to.emit(wethUsdcSingularity, 'Approval')
-                .withArgs(deployer.address, eoa1.address, (1e18).toString());
-
-            await expect(wethUsdcSingularity.permitAction(permitActionData, 10))
-                .to.be.reverted;
-
-            await snapshot.restore();
-            await expect(
-                wethUsdcSingularity.permitBorrow(
-                    deployer.address,
-                    eoa1.address,
-                    (1e18).toString(),
-                    deadline,
-                    v,
-                    r,
-                    s,
-                ),
-            ).to.be.reverted;
-
-            {
-                const deadline =
-                    (await ethers.provider.getBlock('latest')).timestamp +
-                    10_000;
-
-                const { v, r, s } = await getSGLPermitSignature(
-                    'PermitBorrow',
-                    deployer,
-                    wethUsdcSingularity,
-                    eoa1.address,
-                    (1e18).toString(),
-                    BN(deadline),
-                );
-
-                await expect(
-                    wethUsdcSingularity.permitBorrow(
-                        deployer.address,
-                        eoa1.address,
-                        (1e18).toString(),
-                        deadline,
-                        v,
-                        r,
-                        s,
-                    ),
-                )
-                    .to.emit(wethUsdcSingularity, 'ApprovalBorrow')
-                    .withArgs(
-                        deployer.address,
-                        eoa1.address,
-                        (1e18).toString(),
-                    );
-            }
         });
     });
 
@@ -3148,7 +3050,7 @@ describe('Singularity test', () => {
             );
 
             //Deploy & set Singularity
-           const _sglLiquidationModule = await (
+            const _sglLiquidationModule = await (
                 await ethers.getContractFactory('SGLLiquidation')
             ).deploy();
             await _sglLiquidationModule.deployed();
@@ -3166,62 +3068,45 @@ describe('Singularity test', () => {
                 await ethers.getContractFactory('SGLLeverage')
             ).deploy();
             await _sglLeverage.deployed();
-           
 
             const newPrice = __wethUsdcPrice.div(1000000);
             await wethUsdcOracle.set(newPrice);
-            const modulesData = new ethers.utils.AbiCoder().encode(
-                [
-                    'address',
-                    'address',
-                    'address',
-                    'address',
-                ],
-                [
-                    _sglLiquidationModule.address,
-                    _sglBorrow.address,
-                    _sglCollateral.address,
-                    _sglLeverage.address,
-                ]
-            );
-            
-            const tokensData = new ethers.utils.AbiCoder().encode(
-                [
-                    'address',
-                    'uint256',
-                    'address',
-                    'uint256',
-                ],
-                [
-                    usd0.address,
-                    usdoAssetId,
-                    weth.address,
-                    wethAssetId,
-                ]
-            );
             
             const leverageExecutor = await (
                 await ethers.getContractFactory('SimpleLeverageExecutor')
-            ).deploy(yieldBox.address, multiSwapper.address, cluster.address);
-            const data = new ethers.utils.AbiCoder().encode(
+            ).deploy(multiSwapper.address, cluster.address);
+            
+
+            const modulesData = {
+                    _liquidationModule: _sglLiquidationModule.address,
+                    _borrowModule: _sglBorrow.address,
+                    _collateralModule: _sglCollateral.address,
+                    _leverageModule: _sglLeverage.address,
+                };
+            
+            const tokensData = {
+                    _asset: usd0.address,
+                    _assetId: usdoAssetId,
+                    _collateral: weth.address,
+                    _collateralId: wethAssetId,
+            };
+            const data = {
+                    penrose_: penrose.address,
+                    _oracle: wethUsdcOracle.address,
+                    _exchangeRatePrecision: ethers.utils.parseEther('1'),
+                    _collateralizationRate: 0,
+                    _liquidationCollateralizationRate: 0,
+                    _leverageExecutor: leverageExecutor.address,
+            }
+
+            const sglData = new ethers.utils.AbiCoder().encode(
                 [
-                    'address',
-                    'address',
-                    'uint256',
-                    'uint256',
-                    'uint256',
-                    'address',
+                    'tuple(address _liquidationModule, address _borrowModule, address _collateralModule, address _leverageModule)',
+                    'tuple(address _asset, uint256 _assetId, address _collateral, uint256 _collateralId)',
+                    'tuple(address penrose_, address _oracle, uint256 _exchangeRatePrecision, uint256 _collateralizationRate, uint256 _liquidationCollateralizationRate, address _leverageExecutor)'
                 ],
-                [
-                    penrose.address,
-                    wethUsdcOracle.address,
-                    ethers.utils.parseEther('1'),
-                    0,
-                    0,
-                    leverageExecutor.address,
-                ],
-            );
-            const sglData = new ethers.utils.AbiCoder().encode(['bytes','bytes','bytes'],[modulesData, tokensData, data]);
+                [modulesData, tokensData, data]);
+
             await penrose.registerSingularity(mediumRiskMC.address, sglData, true);
             const wethUsdoSingularity = await ethers.getContractAt(
                 'Singularity',

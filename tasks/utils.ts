@@ -16,10 +16,7 @@ export const loadVM = async (
     debugMode = true,
 ) => {
     const signer = (await hre.ethers.getSigners())[0];
-    const chainInfo = hre.SDK.utils.getChainBy(
-        'chainId',
-        hre.SDK.eChainId,
-    );
+    const chainInfo = hre.SDK.utils.getChainBy('chainId', hre.SDK.eChainId);
     // const multicallAddress =
     //     hre.SDK.config.MULTICALL_ADDRESSES[chainInfo?.chainId];
     // if (!multicallAddress) {

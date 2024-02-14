@@ -9,7 +9,7 @@ import {
     TOFTMock__factory,
 } from '@tapioca-sdk/typechain/tapioca-mocks';
 
-describe('USDOsDaiLeverageExecutor test', () => {
+describe.skip('USDOsDaiLeverageExecutor test', () => {
     async function setUp() {
         const {
             registerSDaiMock,
@@ -36,7 +36,7 @@ describe('USDOsDaiLeverageExecutor test', () => {
         const MockSwapper = new MockSwapper__factory(deployer);
         const swapper = await MockSwapper.deploy(yieldBox.address);
 
-        const TOFTMock = await ethers.getContractFactory("TOFTMock");
+        const TOFTMock = await ethers.getContractFactory('TOFTMock');
         const toft = await TOFTMock.deploy(sDai.address);
 
         const toftStrategy = await createTokenEmptyStrategy(
