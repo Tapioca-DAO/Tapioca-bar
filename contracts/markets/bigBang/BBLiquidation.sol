@@ -77,8 +77,10 @@ contract BBLiquidation is BBCommon {
             bool isWhitelisted = ICluster(penrose.cluster()).isWhitelisted(0, from);
             if (!isWhitelisted) revert NotAuthorized();
         }
+        
         // accrue before liquidation
         _accrue();
+        penrose.reAccrueBigBangMarkets();
 
         // compute borrow amount with bonus
         uint256 elasticPart = totalBorrow.toElastic(userBorrowPart[user], false);
@@ -87,7 +89,6 @@ contract BBLiquidation is BBCommon {
             yieldBox.toShare(collateralId, (borrowAmountWithBonus * exchangeRate) / EXCHANGE_RATE_PRECISION, false);
 
         uint256 collateralShare = userCollateralShare[user];
-        // equality is included in the require to minimize risk and liquidate as soon as possible
         if (requiredCollateral < collateralShare) revert ForbiddenAction();
 
         // update totalBorrow

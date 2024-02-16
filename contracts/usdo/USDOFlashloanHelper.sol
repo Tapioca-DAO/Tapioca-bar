@@ -117,7 +117,8 @@ contract USDOFlashloanHelper is IERC3156FlashLender, Ownable {
         external
         override
         returns (bool)
-    {
+    {   
+        if (token != address(usdo)) revert NotValid();
         if (usdo.paused()) revert Paused();
         if (address(receiver) != msg.sender) {
             if (allowance(address(receiver), msg.sender) < amount) {
