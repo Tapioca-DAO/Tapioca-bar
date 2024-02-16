@@ -111,6 +111,8 @@ abstract contract Market is MarketERC20, Ownable {
     uint256 internal constant FEE_PRECISION = 1e5;
     uint256 internal constant FEE_PRECISION_DECIMALS = 5;
 
+    error ExchangeRateNotValid();
+
     // ************** //
     // *** EVENTS *** //
     // ************** //
@@ -418,7 +420,26 @@ abstract contract Market is MarketERC20, Ownable {
         }
     }
 
-    function _getRevertMsg(bytes memory _returnData) internal pure returns (string memory) {
+    function _updateOracleRateForLiquidations() internal {
+        try oracle.get(oracleData) returns (
+            bool _updated,
+            uint256 _exchangeRate
+        ) {
+            if (_updated && _exchangeRate > 0) {
+                exchangeRate = _exchangeRate; //update cached rate
+                rateTimestamp = block.timestamp;
+            } else {
+                _exchangeRate = exchangeRate; //use stored rate
+                if (_exchangeRate == 0) revert ExchangeRateNotValid();
+            }
+        } catch {
+            if (exchangeRate == 0) revert ExchangeRateNotValid();
+        }
+    }
+
+    function _getRevertMsg(
+        bytes memory _returnData
+    ) internal pure returns (string memory) {
         if (_returnData.length > 1000) return "Market: reason too long";
         // If the _res length is less than 68, then the transaction failed silently (without a revert message)
         if (_returnData.length < 68) return "Market: no return data";

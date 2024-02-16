@@ -67,7 +67,6 @@ contract Singularity is SGLCommon {
     error ModuleNotSet();
     error NotAuthorized();
     error SameState();
-    error ExchangeRateNotValid();
 
     struct _InitMemoryData {
         IPenrose penrose_;

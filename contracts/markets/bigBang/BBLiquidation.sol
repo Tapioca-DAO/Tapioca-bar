@@ -38,7 +38,6 @@ contract BBLiquidation is BBCommon {
     // ************** //
     error NothingToLiquidate();
     error LengthMismatch();
-    error ExchangeRateNotValid();
     error ForbiddenAction();
     error OnCollateralReceiverFailed();
     error BadDebt();
@@ -60,17 +59,7 @@ contract BBLiquidation is BBCommon {
         bytes calldata liquidatorReceiverData,
         bool swapCollateral
     ) external onlyOwner {
-        // try-get oracle exchange rate
-        {
-            (bool updated, uint256 _exchangeRate) = oracle.get(oracleData);
-            if (updated && _exchangeRate > 0) {
-                exchangeRate = _exchangeRate; //update cached rate
-                rateTimestamp = block.timestamp;
-            } else {
-                _exchangeRate = exchangeRate; //use stored rate
-            }
-            if (_exchangeRate == 0) revert ExchangeRateNotValid();
-        }
+        _updateOracleRateForLiquidations();
 
         //check from whitelist status
         {
@@ -141,21 +130,13 @@ contract BBLiquidation is BBCommon {
             revert LengthMismatch();
         }
 
-        // Oracle can fail but we still need to allow liquidations
-        (bool updated, uint256 _exchangeRate) = oracle.get(oracleData);
-        if (updated && _exchangeRate > 0) {
-            exchangeRate = _exchangeRate; //update cached rate
-            rateTimestamp = block.timestamp;
-        } else {
-            _exchangeRate = exchangeRate; //use stored rate
-        }
-        if (_exchangeRate == 0) revert ExchangeRateNotValid();
+        _updateOracleRateForLiquidations();
 
         _accrue();
         penrose.reAccrueBigBangMarkets();
 
         _closedLiquidation(
-            users, maxBorrowParts, minLiquidationBonuses, liquidatorReceivers, liquidatorReceiverDatas, _exchangeRate
+            users, maxBorrowParts, minLiquidationBonuses, liquidatorReceivers, liquidatorReceiverDatas, exchangeRate
         );
     }
 

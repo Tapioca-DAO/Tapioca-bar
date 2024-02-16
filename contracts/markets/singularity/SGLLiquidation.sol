@@ -36,7 +36,6 @@ contract SGLLiquidation is SGLCommon {
     // *** ERRORS *** //
     // ************** //
     error AmountNotValid();
-    error ExchangeRateNotValid();
     error ForbiddenAction();
     error NothingToLiquidate();
     error LengthMismatch();
@@ -73,17 +72,8 @@ contract SGLLiquidation is SGLCommon {
         bytes calldata liquidatorReceiverData,
         bool swapCollateral
     ) external onlyOwner {
-        // try-get oracle exchange rate
-        {
-            (bool updated, uint256 _exchangeRate) = oracle.get(oracleData);
-            if (updated && _exchangeRate > 0) {
-                exchangeRate = _exchangeRate; //update cached rate
-                rateTimestamp = block.timestamp;
-            } else {
-                _exchangeRate = exchangeRate; //use stored rate
-            }
-            if (_exchangeRate == 0) revert ExchangeRateNotValid();
-        }
+        _updateOracleRateForLiquidations();
+
         //check from whitelist status
         {
             bool isWhitelisted = ICluster(penrose.cluster()).isWhitelisted(0, from);
@@ -155,21 +145,11 @@ contract SGLLiquidation is SGLCommon {
             revert LengthMismatch();
         }
 
-        // Oracle can fail but we still need to allow liquidations
-        (bool updated, uint256 _exchangeRate) = oracle.get(oracleData);
-        if (updated && _exchangeRate > 0) {
-            exchangeRate = _exchangeRate; //update cached rate
-            rateTimestamp = block.timestamp;
-        } else {
-            _exchangeRate = exchangeRate; //use stored rate
-        }
-        if (_exchangeRate == 0) revert ExchangeRateNotValid();
+        _updateOracleRateForLiquidations();
 
         _accrue();
 
-        _closedLiquidation(
-            users, maxBorrowParts, minLiquidationBonuses, liquidatorReceivers, liquidatorReceiverDatas, _exchangeRate
-        );
+        _closedLiquidation(users, maxBorrowParts, minLiquidationBonuses, liquidatorReceivers, liquidatorReceiverDatas, exchangeRate);
     }
 
     // ************************* //
