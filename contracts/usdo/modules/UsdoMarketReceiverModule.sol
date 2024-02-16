@@ -15,7 +15,8 @@ import {
     MagnetarAction,
     DepositRepayAndRemoveCollateralFromMarketData,
     MintFromBBAndLendOnSGLData,
-    ExitPositionAndRemoveCollateralData
+    ExitPositionAndRemoveCollateralData,
+    DepositAndSendForLockingData
 } from "tapioca-periph/interfaces/periph/IMagnetar.sol";
 import {MagnetarOptionModule} from "tapioca-periph/Magnetar/modules/MagnetarOptionModule.sol";
 import {MagnetarAssetModule} from "tapioca-periph/Magnetar/modules/MagnetarAssetModule.sol";
@@ -53,6 +54,37 @@ contract UsdoMarketReceiverModule is BaseUsdo {
     event LeverageUpReceived(address indexed user, address indexed market, uint256 indexed amount);
 
     constructor(UsdoInitStruct memory _data) BaseUsdo(_data) {}
+
+      /**
+     * @notice Execute `magnetar.depositLendAndSendForLocking` 
+     * @dev Lend on SGL and send receipt token on another layer
+     * @param _data.user the user to perform the operation for
+     * @param _data.singularity the SGL address
+     * @param _data.lendAmount the amount to lend on SGL
+     * @param _data.depositData the data needed to deposit on YieldBox
+     * @param _data.lockAndParticipateSendParams LZ send params for the lock or/and the participate operations
+     */
+    function depositLendAndSendForLockingReceiver(bytes memory _data) public payable {
+        // Decode received message.
+        DepositAndSendForLockingData  memory msg_ = UsdoMsgCodec.decodeDepositLendAndSendForLockingMsg(_data);
+        
+        _checkWhitelistStatus(msg_.singularity);
+        _checkWhitelistStatus(msg_.magnetar);
+
+        bytes memory call = abi.encodeWithSelector(
+            MagnetarMintModule.depositYBLendSGLLockXchainTOLP.selector,
+            msg_
+        );
+        MagnetarCall[] memory magnetarCall = new MagnetarCall[](1);
+        magnetarCall[0] = MagnetarCall({
+            id: MagnetarAction.MintModule,
+            target: msg_.magnetar,
+            value: msg.value,
+            allowFailure: false,
+            call: call
+        });
+        IMagnetar(payable(msg_.magnetar)).burst{value: msg.value}(magnetarCall);
+    }
 
     /**
      * @notice Receiver for PT_YB_SEND_SGL_LEND_OR_REPAY
@@ -125,9 +157,9 @@ contract UsdoMarketReceiverModule is BaseUsdo {
                 mintData: IMintData({
                     mint: false,
                     mintAmount: 0,
-                    collateralDepositData: IDepositData({deposit: false, amount: 0, extractFromSender: false})
+                    collateralDepositData: IDepositData({deposit: false, amount: 0})
                 }),
-                depositData: IDepositData({deposit: true, amount: msg_.lendParams.depositAmount, extractFromSender: false}),
+                depositData: IDepositData({deposit: true, amount: msg_.lendParams.depositAmount}),
                 lockData: msg_.lendParams.lockData,
                 participateData: msg_.lendParams.participateData,
                 externalContracts: ICommonExternalContracts({
@@ -136,7 +168,7 @@ contract UsdoMarketReceiverModule is BaseUsdo {
                     bigBang: address(0)
                 })
             });
-            bytes memory call = abi.encodeWithSelector(MagnetarMintModule.mintFromBBAndLendOnSGL.selector, _lendData);
+            bytes memory call = abi.encodeWithSelector(MagnetarMintModule.mintBBLendSGLLockTOLP.selector, _lendData);
             MagnetarCall[] memory magnetarCall = new MagnetarCall[](1);
             magnetarCall[0] = MagnetarCall({
                 id: MagnetarAction.MintModule,

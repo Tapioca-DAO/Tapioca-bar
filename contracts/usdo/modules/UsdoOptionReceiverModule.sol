@@ -13,10 +13,12 @@ import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeE
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 // Tapioca
+import {DepositAndSendForLockingData, MagnetarCall, MagnetarAction, IMagnetar, CrossChainMintFromBBAndLendOnSGLData} from "tapioca-periph/interfaces/periph/IMagnetar.sol";
 import {
     ITapiocaOptionBroker, IExerciseOptionsData
 } from "tapioca-periph/interfaces/tap-token/ITapiocaOptionBroker.sol";
 import {UsdoInitStruct, ExerciseOptionsMsg, LZSendParam} from "tapioca-periph/interfaces/oft/IUsdo.sol";
+import {MagnetarMintModule} from "tapioca-periph/Magnetar/modules/MagnetarMintModule.sol";
 import {UsdoMsgCodec} from "../libraries/UsdoMsgCodec.sol";
 import {BaseUsdo} from "../BaseUsdo.sol";
 
@@ -47,6 +49,42 @@ contract UsdoOptionReceiverModule is BaseUsdo {
     );
 
     constructor(UsdoInitStruct memory _data) BaseUsdo(_data) {}
+
+
+    //TODO: decide if we also need this
+    /**
+     * @notice cross-chain receiver to deposit mint from BB, lend on SGL, lock on tOLP and participate on tOB
+     * @dev Cross chain flow:
+     *  step 1: magnetar.mintBBLendXChainSGL (chain A) -->
+     *         step 2: IUsdo compose call calls magnetar.depositYBLendSGLLockXchainTOLP (chain B) -->
+     *              step 3: IToft(sglReceipt) compose call calls magnetar.lockAndParticipate (chain X)
+     * @param _data.user the user to perform the operation for
+     * @param _data.bigBang the BB address
+     * @param _data.mintData the data needed to mint on BB
+     * @param _data.lendSendParams LZ send params for lending on another layer
+     */
+    function mintLendXChainSGLXChainLockAndParticipateReceiver(bytes memory _data) public payable {
+        // Decode received message.
+        CrossChainMintFromBBAndLendOnSGLData  memory msg_ = UsdoMsgCodec.decodeMintLendXChainSGLXChainLockAndParticipateMsg(_data);
+        
+        _checkWhitelistStatus(msg_.bigBang);
+        _checkWhitelistStatus(msg_.magnetar);
+
+        bytes memory call = abi.encodeWithSelector(
+            MagnetarMintModule.mintBBLendXChainSGL.selector,
+            msg_
+        );
+        MagnetarCall[] memory magnetarCall = new MagnetarCall[](1);
+        magnetarCall[0] = MagnetarCall({
+            id: MagnetarAction.MintModule,
+            target: address(0), //ignored for module calls
+            value: msg.value,
+            allowFailure: false,
+            call: call
+        });
+        IMagnetar(payable(msg_.magnetar)).burst{value: msg.value}(magnetarCall);
+    }
+
 
     /**
      * @notice Exercise tOB option
