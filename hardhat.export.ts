@@ -66,23 +66,13 @@ const config: HardhatUserConfig & { dodoc: any } = {
             },
         ],
         overrides: {
-            'contracts/markets/bigBang/BigBang.sol': {
-                version: '0.8.22',
-                settings: {
-                    evmVersion: 'paris', // Latest before Shanghai
-                    optimizer: {
-                        enabled: true,
-                        runs: 20,
-                    },
-                },
-            },
             'contracts/markets/singularity/Singularity.sol': {
                 version: '0.8.22',
                 settings: {
                     evmVersion: 'paris', // Latest before Shanghai
                     optimizer: {
                         enabled: true,
-                        runs: 0,
+                        runs: 800,
                     },
                 },
             },
@@ -92,7 +82,7 @@ const config: HardhatUserConfig & { dodoc: any } = {
                     evmVersion: 'paris', // Latest before Shanghai
                     optimizer: {
                         enabled: true,
-                        runs: 20,
+                        runs: 1500,
                     },
                 },
             },
@@ -102,7 +92,7 @@ const config: HardhatUserConfig & { dodoc: any } = {
                     evmVersion: 'paris', // Latest before Shanghai
                     optimizer: {
                         enabled: true,
-                        runs: 20,
+                        runs: 300,
                     },
                 },
             },

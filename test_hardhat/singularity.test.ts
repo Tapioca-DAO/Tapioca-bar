@@ -1,7 +1,12 @@
 import hre, { ethers } from 'hardhat';
 import { BigNumberish, BytesLike, Wallet } from 'ethers';
 import { expect } from 'chai';
-import { BN, getSGLPermitSignature, register } from './test.utils';
+import {
+    BN,
+    getSGLPermitSignature,
+    performMarketHelperCall,
+    register,
+} from './test.utils';
 import {
     loadFixture,
     takeSnapshot,
@@ -472,6 +477,7 @@ describe('Singularity test', () => {
                 wethUsdcOracle,
                 mediumRiskMC,
                 deployer,
+                marketHelper,
             } = await loadFixture(register);
 
             const modulesData = {
@@ -523,10 +529,16 @@ describe('Singularity test', () => {
                 ethers.constants.AddressZero,
             );
 
+            const calldata = await marketHelper.borrow(
+                wethUsdcSingularity.address,
+                deployer.address,
+                deployer.address,
+                1,
+            );
             await expect(
                 wethUsdcSingularity
                     .connect(deployer)
-                    .borrow(deployer.address, deployer.address, 1),
+                    .execute(calldata.modules, calldata.calls, true),
             ).to.be.reverted;
         });
 
@@ -590,6 +602,7 @@ describe('Singularity test', () => {
                 approveTokensAndSetBarApproval,
                 wethUsdcSingularity,
                 __wethUsdcPrice,
+                marketHelper,
             } = await loadFixture(register);
 
             const assetId = await wethUsdcSingularity.assetId();
@@ -628,20 +641,34 @@ describe('Singularity test', () => {
                     0,
                 );
 
-            const addCollateralFn =
-                wethUsdcSingularity.interface.encodeFunctionData(
-                    'addCollateral',
-                    [eoa1.address, eoa1.address, false, 0, usdcMintValShare],
-                );
-            const borrowFn = wethUsdcSingularity.interface.encodeFunctionData(
-                'borrow',
-                [eoa1.address, eoa1.address, wethBorrowVal],
+            const addCollateralCalldata = await marketHelper.addCollateral(
+                wethUsdcSingularity.address,
+                eoa1.address,
+                eoa1.address,
+                false,
+                0,
+                usdcMintValShare,
             );
-
+            const borrowCalldata = await marketHelper.borrow(
+                wethUsdcSingularity.address,
+                eoa1.address,
+                eoa1.address,
+                wethBorrowVal,
+            );
             await expect(
                 wethUsdcSingularity
                     .connect(eoa1)
-                    .execute([addCollateralFn, borrowFn], true),
+                    .execute(
+                        [
+                            addCollateralCalldata.modules[0],
+                            borrowCalldata.modules[0],
+                        ],
+                        [
+                            addCollateralCalldata.calls[0],
+                            borrowCalldata.calls[0],
+                        ],
+                        true,
+                    ),
             ).to.be.reverted;
         });
 
@@ -654,6 +681,7 @@ describe('Singularity test', () => {
                 approveTokensAndSetBarApproval,
                 wethUsdcSingularity,
                 __wethUsdcPrice,
+                marketHelper,
             } = await loadFixture(register);
 
             const assetId = await wethUsdcSingularity.assetId();
@@ -694,19 +722,32 @@ describe('Singularity test', () => {
                     )
             ).wait();
 
-            const addCollateralFn =
-                wethUsdcSingularity.interface.encodeFunctionData(
-                    'addCollateral',
-                    [eoa1.address, eoa1.address, false, 0, usdcMintValShare],
-                );
-            const borrowFn = wethUsdcSingularity.interface.encodeFunctionData(
-                'borrow',
-                [eoa1.address, eoa1.address, wethBorrowVal],
+            const addCollateralCalldata = await marketHelper.addCollateral(
+                wethUsdcSingularity.address,
+                eoa1.address,
+                eoa1.address,
+                false,
+                0,
+                usdcMintValShare,
+            );
+
+            const borrowCalldata = await marketHelper.borrow(
+                wethUsdcSingularity.address,
+                eoa1.address,
+                eoa1.address,
+                wethBorrowVal,
             );
 
             const data = await wethUsdcSingularity
                 .connect(eoa1)
-                .callStatic.execute([addCollateralFn, borrowFn], false);
+                .callStatic.execute(
+                    [
+                        addCollateralCalldata.modules[0],
+                        borrowCalldata.modules[0],
+                    ],
+                    [addCollateralCalldata.calls[0], borrowCalldata.calls[0]],
+                    false,
+                );
 
             expect(data.successes[0]).to.be.true;
             expect(data.successes[1]).to.be.false; //can't borrow as there are no lenders
@@ -717,7 +758,17 @@ describe('Singularity test', () => {
             await expect(
                 wethUsdcSingularity
                     .connect(eoa1)
-                    .execute([addCollateralFn, borrowFn], false),
+                    .execute(
+                        [
+                            addCollateralCalldata.modules[0],
+                            borrowCalldata.modules[0],
+                        ],
+                        [
+                            addCollateralCalldata.calls[0],
+                            borrowCalldata.calls[0],
+                        ],
+                        false,
+                    ),
             ).not.to.be.reverted;
         });
     });
@@ -741,6 +792,7 @@ describe('Singularity test', () => {
                 deployLiquidationReceiverMock,
                 timeTravel,
                 cluster,
+                marketHelper,
             } = await loadFixture(register);
 
             const liquidationReceiver = await deployLiquidationReceiverMock(
@@ -793,9 +845,16 @@ describe('Singularity test', () => {
                 .div(100)
                 .div(__wethUsdcPrice.div((1e18).toString()));
 
+            const borrowCalldata = await marketHelper.borrow(
+                wethUsdcSingularity.address,
+                eoa1.address,
+                eoa1.address,
+                wethBorrowVal,
+            );
             await wethUsdcSingularity
                 .connect(eoa1)
-                .borrow(eoa1.address, eoa1.address, wethBorrowVal);
+                .execute(borrowCalldata.modules, borrowCalldata.calls, true);
+
             await yieldBox
                 .connect(eoa1)
                 .withdraw(
@@ -812,22 +871,27 @@ describe('Singularity test', () => {
             await wethUsdcOracle.set(__wethUsdcPrice.add(priceDrop));
             await wethUsdcSingularity.updateExchangeRate();
 
-            const liquidateBadDebtFn =
-                wethUsdcSingularity.interface.encodeFunctionData(
-                    'liquidateBadDebt',
-                    [
-                        eoa1.address,
-                        deployer.address,
-                        deployer.address,
-                        liquidationReceiver.address,
-                        liquidateData,
-                        true,
-                    ],
+            const penroseLiquidateBadDebtCalldata =
+                await marketHelper.liquidateBadDebt(
+                    wethUsdcSingularity.address,
+                    eoa1.address,
+                    deployer.address,
+                    deployer.address,
+                    liquidationReceiver.address,
+                    data,
+                    true,
                 );
+            const penroseMarketCalldata =
+                wethUsdcSingularity.interface.encodeFunctionData('execute', [
+                    penroseLiquidateBadDebtCalldata.modules,
+                    penroseLiquidateBadDebtCalldata.calls,
+                    true,
+                ]);
+
             await expect(
                 penrose.executeMarketFn(
                     [wethUsdcSingularity.address],
-                    [liquidateBadDebtFn],
+                    [penroseMarketCalldata],
                     true,
                 ),
             ).to.be.reverted;
@@ -836,23 +900,36 @@ describe('Singularity test', () => {
             await wethUsdcOracle.set(__wethUsdcPrice.add(priceDrop));
             await wethUsdcSingularity.updateExchangeRate();
 
+            const liquidateCalldata = await marketHelper.liquidate(
+                wethUsdcSingularity.address,
+                [eoa1.address],
+                [wethBorrowVal],
+                [0],
+                [liquidationReceiver.address],
+                [liquidateData],
+            );
             await expect(
-                wethUsdcSingularity.liquidate(
-                    [eoa1.address],
-                    [wethBorrowVal],
-                    [0],
-                    [liquidationReceiver.address],
-                    [liquidateData],
+                wethUsdcSingularity.execute(
+                    liquidateCalldata.modules,
+                    liquidateCalldata.calls,
+                    true,
                 ),
             ).to.be.reverted;
 
-            await expect(
-                wethUsdcSingularity.liquidateBadDebt(
+            const liquidateBadDebtCalldata =
+                await marketHelper.liquidateBadDebt(
+                    wethUsdcSingularity.address,
                     eoa1.address,
                     deployer.address,
                     deployer.address,
                     liquidationReceiver.address,
                     liquidateData,
+                    true,
+                );
+            await expect(
+                wethUsdcSingularity.execute(
+                    liquidateBadDebtCalldata.modules,
+                    liquidateBadDebtCalldata.calls,
                     true,
                 ),
             ).to.be.reverted;
@@ -873,7 +950,7 @@ describe('Singularity test', () => {
             await expect(
                 penrose.executeMarketFn(
                     [wethUsdcSingularity.address],
-                    [liquidateBadDebtFn],
+                    [penroseMarketCalldata],
                     true,
                 ),
             ).to.not.be.reverted;
@@ -902,6 +979,7 @@ describe('Singularity test', () => {
                 __wethUsdcPrice,
                 deployLiquidationReceiverMock,
                 timeTravel,
+                marketHelper,
             } = await loadFixture(register);
 
             const liquidationReceiver = await deployLiquidationReceiverMock(
@@ -952,9 +1030,16 @@ describe('Singularity test', () => {
                 .div(100)
                 .div(__wethUsdcPrice.div((1e18).toString()));
 
+            const borrowCalldata = await marketHelper.borrow(
+                wethUsdcSingularity.address,
+                eoa1.address,
+                eoa1.address,
+                wethBorrowVal,
+            );
+
             await wethUsdcSingularity
                 .connect(eoa1)
-                .borrow(eoa1.address, eoa1.address, wethBorrowVal);
+                .execute(borrowCalldata.modules, borrowCalldata.calls, true);
             await yieldBox
                 .connect(eoa1)
                 .withdraw(
@@ -966,13 +1051,19 @@ describe('Singularity test', () => {
                 );
 
             // Can't liquidate
+            const liquidateCalldata = await marketHelper.liquidate(
+                wethUsdcSingularity.address,
+                [eoa1.address],
+                [wethBorrowVal],
+                [0],
+                [liquidationReceiver.address],
+                [liquidateData],
+            );
             await expect(
-                wethUsdcSingularity.liquidate(
-                    [eoa1.address],
-                    [wethBorrowVal],
-                    [0],
-                    [liquidationReceiver.address],
-                    [liquidateData],
+                wethUsdcSingularity.execute(
+                    liquidateCalldata.modules,
+                    liquidateCalldata.calls,
+                    true,
                 ),
             ).to.be.reverted;
 
@@ -1001,18 +1092,29 @@ describe('Singularity test', () => {
                 await wethUsdcSingularity.userBorrowPart(eoa1.address);
 
             const viewUsedCollateral =
-                await wethUsdcSingularity.viewLiquidationCollateralAmount(
+                await marketHelper.getLiquidationCollateralAmount(
+                    wethUsdcSingularity.address,
                     eoa1.address,
                     wethBorrowVal,
                     0,
+                    1e18,
+                    1e5,
                 );
+
+            const liquidateCalldata2 = await marketHelper.liquidate(
+                wethUsdcSingularity.address,
+                [eoa1.address],
+                [wethBorrowVal],
+                [0],
+                [liquidationReceiver.address],
+                [liquidateData],
+            );
+
             await expect(
-                wethUsdcSingularity.liquidate(
-                    [eoa1.address],
-                    [wethBorrowVal],
-                    [0],
-                    [liquidationReceiver.address],
-                    [liquidateData],
+                wethUsdcSingularity.execute(
+                    liquidateCalldata2.modules,
+                    liquidateCalldata2.calls,
+                    true,
                 ),
             ).to.not.be.reverted;
 
@@ -1041,6 +1143,7 @@ describe('Singularity test', () => {
                 __wbtcUsdcPrice,
                 deployLiquidationReceiverMock,
                 timeTravel,
+                marketHelper,
             } = await loadFixture(register);
 
             const liquidationReceiver = await deployLiquidationReceiverMock(
@@ -1081,9 +1184,16 @@ describe('Singularity test', () => {
             // We borrow 74% collateral, max is 75%
             const wbtcBorrowVal = wbtcMintVal.mul(74).div(100);
 
+            const borrowCalldata = await marketHelper.borrow(
+                wbtcUsdcSingularity.address,
+                eoa1.address,
+                eoa1.address,
+                wbtcBorrowVal,
+            );
+
             await wbtcUsdcSingularity
                 .connect(eoa1)
-                .borrow(eoa1.address, eoa1.address, wbtcBorrowVal.toString());
+                .execute(borrowCalldata.modules, borrowCalldata.calls, true);
             await yieldBox
                 .connect(eoa1)
                 .withdraw(
@@ -1099,13 +1209,19 @@ describe('Singularity test', () => {
                 [wbtcBorrowVal],
             );
             // Can't liquidate
+            const liquidateCalldata = await marketHelper.liquidate(
+                wbtcUsdcSingularity.address,
+                [eoa1.address],
+                [wbtcBorrowVal],
+                [0],
+                [liquidationReceiver.address],
+                [liquidateData],
+            );
             await expect(
-                wbtcUsdcSingularity.liquidate(
-                    [eoa1.address],
-                    [wbtcBorrowVal],
-                    [0],
-                    [liquidationReceiver.address],
-                    [liquidateData],
+                wbtcUsdcSingularity.execute(
+                    liquidateCalldata.modules,
+                    liquidateCalldata.calls,
+                    true,
                 ),
             ).to.be.reverted;
 
@@ -1113,13 +1229,20 @@ describe('Singularity test', () => {
             const priceDrop = __wbtcUsdcPrice.mul(55).div(100);
             await wbtcUsdcOracle.set(__wbtcUsdcPrice.add(priceDrop));
 
+            const liquidateCalldata2 = await marketHelper.liquidate(
+                wbtcUsdcSingularity.address,
+                [eoa1.address],
+                [wbtcBorrowVal],
+                [0],
+                [liquidationReceiver.address],
+                [liquidateData],
+            );
+
             await expect(
-                wbtcUsdcSingularity.liquidate(
-                    [eoa1.address],
-                    [wbtcBorrowVal],
-                    [0],
-                    [liquidationReceiver.address],
-                    [liquidateData],
+                wbtcUsdcSingularity.execute(
+                    liquidateCalldata2.modules,
+                    liquidateCalldata2.calls,
+                    true,
                 ),
             ).to.be.reverted;
         });
@@ -1133,6 +1256,7 @@ describe('Singularity test', () => {
                 deployer,
                 initContracts,
                 penrose,
+                marketHelper,
             } = await loadFixture(register);
 
             await initContracts(); // To prevent `Singularity: below minimum`
@@ -1181,6 +1305,7 @@ describe('Singularity test', () => {
                 );
 
             await wethUsdcSingularity.execute(
+                [0, 0, 0], // Call to base module
                 [addAssetFn, removeAssetFn, updateExchangeRateFn],
                 true,
             );
@@ -1192,6 +1317,7 @@ describe('Singularity test', () => {
 
             await expect(
                 wethUsdcSingularity.execute(
+                    [0, 0, 0], // Call to base module
                     [addAssetFn, removeAssetFn, updateExchangeRateFn],
                     true,
                 ),
@@ -1224,6 +1350,7 @@ describe('Singularity test', () => {
                 wethUsdcOracle,
                 __wethUsdcPrice,
                 magnetarHelper,
+                marketHelper,
             } = await loadFixture(register);
 
             const assetId = await wethUsdcSingularity.assetId();
@@ -1267,7 +1394,7 @@ describe('Singularity test', () => {
                 [deployer.address, deployer.address, false, wethMintValShare],
             );
             await (
-                await wethUsdcSingularity.execute([addAssetFn], true)
+                await wethUsdcSingularity.execute([0], [addAssetFn], true)
             ).wait();
             expect(
                 await wethUsdcSingularity.balanceOf(deployer.address),
@@ -1290,20 +1417,36 @@ describe('Singularity test', () => {
                     )
             ).wait();
 
-            const addCollateralFn =
-                wethUsdcSingularity.interface.encodeFunctionData(
-                    'addCollateral',
-                    [eoa1.address, eoa1.address, false, 0, usdcMintValShare],
-                );
-            const borrowFn = wethUsdcSingularity.interface.encodeFunctionData(
-                'borrow',
-                [eoa1.address, eoa1.address, wethBorrowVal],
+            const addCollateralCalldata = await marketHelper.addCollateral(
+                wethUsdcSingularity.address,
+                eoa1.address,
+                eoa1.address,
+                false,
+                0,
+                usdcMintValShare,
+            );
+
+            const borrowCalldata = await marketHelper.borrow(
+                wethUsdcSingularity.address,
+                eoa1.address,
+                eoa1.address,
+                wethBorrowVal,
             );
 
             await (
                 await wethUsdcSingularity
                     .connect(eoa1)
-                    .execute([addCollateralFn, borrowFn], true)
+                    .execute(
+                        [
+                            addCollateralCalldata.modules[0],
+                            borrowCalldata.modules[0],
+                        ],
+                        [
+                            addCollateralCalldata.calls[0],
+                            borrowCalldata.calls[0],
+                        ],
+                        true,
+                    )
             ).wait();
 
             expect(
@@ -1454,6 +1597,7 @@ describe('Singularity test', () => {
                 wethUsdcOracle,
                 __wethUsdcPrice,
                 magnetarHelper,
+                marketHelper,
             } = await loadFixture(register);
 
             const assetId = await wethUsdcSingularity.assetId();
@@ -1497,7 +1641,7 @@ describe('Singularity test', () => {
                 [deployer.address, deployer.address, false, wethMintValShare],
             );
             await (
-                await wethUsdcSingularity.execute([addAssetFn], true)
+                await wethUsdcSingularity.execute([0], [addAssetFn], true)
             ).wait();
             expect(
                 await wethUsdcSingularity.balanceOf(deployer.address),
@@ -1520,20 +1664,35 @@ describe('Singularity test', () => {
                     )
             ).wait();
 
-            const addCollateralFn =
-                wethUsdcSingularity.interface.encodeFunctionData(
-                    'addCollateral',
-                    [eoa1.address, eoa1.address, false, 0, usdcMintValShare],
-                );
-            const borrowFn = wethUsdcSingularity.interface.encodeFunctionData(
-                'borrow',
-                [eoa1.address, eoa1.address, wethBorrowVal],
+            const addCollateralCalldata = await marketHelper.addCollateral(
+                wethUsdcSingularity.address,
+                eoa1.address,
+                eoa1.address,
+                false,
+                0,
+                usdcMintValShare,
             );
 
+            const borrowCalldata = await marketHelper.borrow(
+                wethUsdcSingularity.address,
+                eoa1.address,
+                eoa1.address,
+                wethBorrowVal,
+            );
             await (
                 await wethUsdcSingularity
                     .connect(eoa1)
-                    .execute([addCollateralFn, borrowFn], true)
+                    .execute(
+                        [
+                            addCollateralCalldata.modules[0],
+                            borrowCalldata.modules[0],
+                        ],
+                        [
+                            addCollateralCalldata.calls[0],
+                            borrowCalldata.calls[0],
+                        ],
+                        true,
+                    )
             ).wait();
 
             expect(
@@ -1561,11 +1720,11 @@ describe('Singularity test', () => {
             );
             expect(dataFromHelper.market[9].eq(borrowed)).to.be.true;
 
-            const permitShare =
-                await wethUsdcSingularity.computeAllowedLendShare(
-                    1,
-                    await wethUsdcSingularity.assetId(),
-                );
+            const permitShare = await marketHelper.computeAllowedLendShare(
+                wethUsdcSingularity.address,
+                1,
+                await wethUsdcSingularity.assetId(),
+            );
             expect(permitShare.gte(1)).to.be.true;
         });
 
@@ -1583,6 +1742,7 @@ describe('Singularity test', () => {
                 weth,
                 eoa1,
                 magnetarHelper,
+                marketHelper,
             } = await loadFixture(register);
 
             const wethAmount = BN(1e18).mul(1);
@@ -1598,12 +1758,15 @@ describe('Singularity test', () => {
             await weth.connect(eoa1).freeMint(wethAmount);
             await wethDepositAndAddAsset(wethAmount, eoa1);
 
-            await wethUsdcSingularity.borrow(
-                deployer.address,
-                deployer.address,
+            const borrowCalldata = await marketHelper.borrow(
+                wethUsdcSingularity.address,
+                eoa1.address,
+                eoa1.address,
                 wethAmount,
             );
-
+            await wethUsdcSingularity
+                .connect(eoa1)
+                .execute(borrowCalldata.modules, borrowCalldata.calls, true);
             const amountFromShares =
                 await magnetarHelper.getAmountForBorrowPart(
                     wethUsdcSingularity.address,
@@ -1635,6 +1798,7 @@ describe('Singularity test', () => {
                 magnetar,
                 twTap,
                 magnetarHelper,
+                marketHelper,
             } = await loadFixture(register);
 
             const assetId = await wethUsdcSingularity.assetId();
@@ -1671,9 +1835,18 @@ describe('Singularity test', () => {
                 .mul(74)
                 .div(100)
                 .div(__wethUsdcPrice.div((1e18).toString()));
-            await wethUsdcSingularity
-                .connect(eoa1)
-                .borrow(eoa1.address, eoa1.address, wethBorrowVal);
+
+            await performMarketHelperCall(
+                marketHelper,
+                wethUsdcSingularity,
+                await marketHelper.borrow(
+                    wethUsdcSingularity.address,
+                    eoa1.address,
+                    eoa1.address,
+                    wethBorrowVal,
+                ),
+                eoa1,
+            );
 
             // We jump time to accumulate fees
             const day = 86400;
@@ -1694,9 +1867,17 @@ describe('Singularity test', () => {
                     userBorrowPart,
                     0,
                 );
+
+            const repayCallData = await marketHelper.repay(
+                wethUsdcSingularity.address,
+                eoa1.address,
+                eoa1.address,
+                false,
+                userBorrowPart,
+            );
             await wethUsdcSingularity
                 .connect(eoa1)
-                .repay(eoa1.address, eoa1.address, false, userBorrowPart);
+                .execute(repayCallData.modules, repayCallData.calls, true);
 
             const feesAmountInAsset =
                 await magnetarHelper.getAmountForAssetFraction(
@@ -1758,6 +1939,7 @@ describe('Singularity test', () => {
                 deployer,
                 wethUsdcSingularity,
                 __wethUsdcPrice,
+                marketHelper,
             } = await loadFixture(register);
 
             const assetId = await wethUsdcSingularity.assetId();
@@ -2694,7 +2876,8 @@ describe('Singularity test', () => {
                     userBorrowPart,
                     0,
                 );
-            await wethUsdcSingularity.repay(
+            await marketHelper.repay(
+                wethUsdcSingularity.address,
                 eoa1.address,
                 eoa1.address,
                 false,
@@ -2713,6 +2896,7 @@ describe('Singularity test', () => {
                 weth,
                 yieldBox,
                 multiSwapper,
+                marketHelper,
                 deployer,
                 wethUsdcSingularity,
                 timeTravel,
@@ -2765,9 +2949,14 @@ describe('Singularity test', () => {
 
             for (let i = 0; i < eoas.length; i++) {
                 const eoa = eoas[i];
-                await wethUsdcSingularity
+                await marketHelper
                     .connect(eoa)
-                    .borrow(eoa.address, eoa.address, firstBorrow);
+                    .borrow(
+                        wethUsdcSingularity.address,
+                        eoa.address,
+                        eoa.address,
+                        firstBorrow,
+                    );
                 timeTravel(10 * 86400);
             }
 
@@ -2794,6 +2983,7 @@ describe('Singularity test', () => {
                 usd0,
                 __wethUsdcPrice,
                 deployCurveStableToUsdoBidder,
+                marketHelper,
                 timeTravel,
             } = await loadFixture(register);
             //deploy and register USDO
@@ -2976,9 +3166,10 @@ describe('Singularity test', () => {
             const _wethValShare = await yieldBox
                 .connect(eoa1)
                 .balanceOf(eoa1.address, wethAssetId);
-            await wethUsdoSingularity
+            await marketHelper
                 .connect(eoa1)
                 .addCollateral(
+                    wethUsdoSingularity.address,
                     eoa1.address,
                     eoa1.address,
                     false,
@@ -3028,6 +3219,7 @@ describe('Singularity test', () => {
 
         it('should create and test wethUsd0 singularity', async () => {
             const {
+                marketHelper,
                 deployer,
                 penrose,
                 eoa1,
@@ -3203,9 +3395,10 @@ describe('Singularity test', () => {
             const _wethValShare = await yieldBox
                 .connect(eoa1)
                 .balanceOf(eoa1.address, wethAssetId);
-            await wethUsdoSingularity
+            await marketHelper
                 .connect(eoa1)
                 .addCollateral(
+                    wethUsdoSingularity.address,
                     eoa1.address,
                     eoa1.address,
                     false,
@@ -3224,9 +3417,14 @@ describe('Singularity test', () => {
                 .div(100)
                 .mul(__wethUsdcPrice.div((1e18).toString()));
 
-            await wethUsdoSingularity
+            await marketHelper
                 .connect(eoa1)
-                .borrow(eoa1.address, eoa1.address, usdoBorrowVal);
+                .borrow(
+                    wethUsdoSingularity.address,
+                    eoa1.address,
+                    eoa1.address,
+                    usdoBorrowVal,
+                );
             await yieldBox
                 .connect(eoa1)
                 .withdraw(
