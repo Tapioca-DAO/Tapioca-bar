@@ -228,14 +228,6 @@ contract BigBang is BBCommon {
         }
     }
 
-    function transfer(address, uint256) public pure override returns (bool) {
-        revert("BB: not allowed");
-    }
-
-    function transferFrom(address, address, uint256) public pure override returns (bool) {
-        revert("BB: not allowed");
-    }
-
     // ************************* //
     // *** OWNER FUNCTIONS ***** //
     // ************************* //
