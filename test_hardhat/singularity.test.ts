@@ -475,34 +475,35 @@ describe('Singularity test', () => {
             } = await loadFixture(register);
 
             const modulesData = {
-                    _liquidationModule: ethers.constants.AddressZero,
-                    _borrowModule: ethers.constants.AddressZero,
-                    _collateralModule: ethers.constants.AddressZero,
-                    _leverageModule: ethers.constants.AddressZero,
-                };
-            
+                _liquidationModule: ethers.constants.AddressZero,
+                _borrowModule: ethers.constants.AddressZero,
+                _collateralModule: ethers.constants.AddressZero,
+                _leverageModule: ethers.constants.AddressZero,
+            };
+
             const tokensData = {
-                    _asset: weth.address,
-                    _assetId: wethAssetId,
-                    _collateral: usdc.address,
-                    _collateralId: usdcAssetId,
+                _asset: weth.address,
+                _assetId: wethAssetId,
+                _collateral: usdc.address,
+                _collateralId: usdcAssetId,
             };
             const data = {
-                    penrose_: penrose.address,
-                    _oracle: wethUsdcOracle.address,
-                    _exchangeRatePrecision: ethers.utils.parseEther('1'),
-                    _collateralizationRate: 0,
-                    _liquidationCollateralizationRate: 0,
-                    _leverageExecutor: ethers.constants.AddressZero,
-            }
+                penrose_: penrose.address,
+                _oracle: wethUsdcOracle.address,
+                _exchangeRatePrecision: ethers.utils.parseEther('1'),
+                _collateralizationRate: 0,
+                _liquidationCollateralizationRate: 0,
+                _leverageExecutor: ethers.constants.AddressZero,
+            };
 
             const sglData = new ethers.utils.AbiCoder().encode(
                 [
                     'tuple(address _liquidationModule, address _borrowModule, address _collateralModule, address _leverageModule)',
                     'tuple(address _asset, uint256 _assetId, address _collateral, uint256 _collateralId)',
-                    'tuple(address penrose_, address _oracle, uint256 _exchangeRatePrecision, uint256 _collateralizationRate, uint256 _liquidationCollateralizationRate, address _leverageExecutor)'
+                    'tuple(address penrose_, address _oracle, uint256 _exchangeRatePrecision, uint256 _collateralizationRate, uint256 _liquidationCollateralizationRate, address _leverageExecutor)',
                 ],
-                [modulesData, tokensData, data]);
+                [modulesData, tokensData, data],
+            );
             await (
                 await penrose.registerSingularity(
                     mediumRiskMC.address,
@@ -3071,43 +3072,47 @@ describe('Singularity test', () => {
 
             const newPrice = __wethUsdcPrice.div(1000000);
             await wethUsdcOracle.set(newPrice);
-            
+
             const leverageExecutor = await (
                 await ethers.getContractFactory('SimpleLeverageExecutor')
             ).deploy(multiSwapper.address, cluster.address);
-            
 
             const modulesData = {
-                    _liquidationModule: _sglLiquidationModule.address,
-                    _borrowModule: _sglBorrow.address,
-                    _collateralModule: _sglCollateral.address,
-                    _leverageModule: _sglLeverage.address,
-                };
-            
+                _liquidationModule: _sglLiquidationModule.address,
+                _borrowModule: _sglBorrow.address,
+                _collateralModule: _sglCollateral.address,
+                _leverageModule: _sglLeverage.address,
+            };
+
             const tokensData = {
-                    _asset: usd0.address,
-                    _assetId: usdoAssetId,
-                    _collateral: weth.address,
-                    _collateralId: wethAssetId,
+                _asset: usd0.address,
+                _assetId: usdoAssetId,
+                _collateral: weth.address,
+                _collateralId: wethAssetId,
             };
             const data = {
-                    penrose_: penrose.address,
-                    _oracle: wethUsdcOracle.address,
-                    _exchangeRatePrecision: ethers.utils.parseEther('1'),
-                    _collateralizationRate: 0,
-                    _liquidationCollateralizationRate: 0,
-                    _leverageExecutor: leverageExecutor.address,
-            }
+                penrose_: penrose.address,
+                _oracle: wethUsdcOracle.address,
+                _exchangeRatePrecision: ethers.utils.parseEther('1'),
+                _collateralizationRate: 0,
+                _liquidationCollateralizationRate: 0,
+                _leverageExecutor: leverageExecutor.address,
+            };
 
             const sglData = new ethers.utils.AbiCoder().encode(
                 [
                     'tuple(address _liquidationModule, address _borrowModule, address _collateralModule, address _leverageModule)',
                     'tuple(address _asset, uint256 _assetId, address _collateral, uint256 _collateralId)',
-                    'tuple(address penrose_, address _oracle, uint256 _exchangeRatePrecision, uint256 _collateralizationRate, uint256 _liquidationCollateralizationRate, address _leverageExecutor)'
+                    'tuple(address penrose_, address _oracle, uint256 _exchangeRatePrecision, uint256 _collateralizationRate, uint256 _liquidationCollateralizationRate, address _leverageExecutor)',
                 ],
-                [modulesData, tokensData, data]);
+                [modulesData, tokensData, data],
+            );
 
-            await penrose.registerSingularity(mediumRiskMC.address, sglData, true);
+            await penrose.registerSingularity(
+                mediumRiskMC.address,
+                sglData,
+                true,
+            );
             const wethUsdoSingularity = await ethers.getContractAt(
                 'Singularity',
                 await penrose.clonesOf(
