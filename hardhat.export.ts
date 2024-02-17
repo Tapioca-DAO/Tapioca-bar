@@ -27,13 +27,6 @@ declare global {
 
 // Load the env vars from the .env/<network>.env file. the <network> file name is the same as the network in hh `--network arbitrum_sepolia`
 loadEnv();
-// Check if the folder /gen/typechain exists, if not, create it. This is needed if the repo was freshly cloned.
-if (!fs.existsSync('./gen/typechain/index.ts')) {
-    try {
-        fs.mkdirSync('./gen/typechain', { recursive: true });
-    } catch (e) {}
-    fs.writeFileSync('./gen/typechain/index.ts', '');
-}
 
 // TODO refactor all of that in the SDK?
 type TNetwork = ReturnType<
@@ -67,12 +60,52 @@ const config: HardhatUserConfig & { dodoc: any } = {
                     evmVersion: 'paris', // Latest before Shanghai
                     optimizer: {
                         enabled: true,
-                        runs: 500,
+                        runs: 9999,
                     },
                 },
             },
         ],
         overrides: {
+            'contracts/markets/bigBang/BigBang.sol': {
+                version: '0.8.22',
+                settings: {
+                    evmVersion: 'paris', // Latest before Shanghai
+                    optimizer: {
+                        enabled: true,
+                        runs: 20,
+                    },
+                },
+            },
+            'contracts/markets/singularity/Singularity.sol': {
+                version: '0.8.22',
+                settings: {
+                    evmVersion: 'paris', // Latest before Shanghai
+                    optimizer: {
+                        enabled: true,
+                        runs: 0,
+                    },
+                },
+            },
+            'contracts/markets/singularity/SGLLeverage.sol': {
+                version: '0.8.22',
+                settings: {
+                    evmVersion: 'paris', // Latest before Shanghai
+                    optimizer: {
+                        enabled: true,
+                        runs: 20,
+                    },
+                },
+            },
+            'contracts/markets/singularity/SGLLiquidation.sol': {
+                version: '0.8.22',
+                settings: {
+                    evmVersion: 'paris', // Latest before Shanghai
+                    optimizer: {
+                        enabled: true,
+                        runs: 20,
+                    },
+                },
+            },
             'gitmodule/tap-yieldbox/contracts/YieldBox.sol': {
                 version: '0.8.22',
                 settings: {

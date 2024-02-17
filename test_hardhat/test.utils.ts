@@ -88,7 +88,7 @@ async function registerUsd0Contract(
 
     const extExec = await (
         await ethers.getContractFactory('TapiocaOmnichainExtExec')
-    ).deploy();
+    ).deploy(cluster, owner);
 
     const usdoInitStruct = {
         endpoint: lzEndpointContract.address,
@@ -806,34 +806,35 @@ async function registerSingularity(
         staging,
     );
     const modulesData = {
-            _liquidationModule: _sglLiquidationModule.address,
-            _borrowModule: _sglBorrow.address,
-            _collateralModule: _sglCollateral.address,
-            _leverageModule: _sglLeverage.address,
-        };
-    
+        _liquidationModule: _sglLiquidationModule.address,
+        _borrowModule: _sglBorrow.address,
+        _collateralModule: _sglCollateral.address,
+        _leverageModule: _sglLeverage.address,
+    };
+
     const tokensData = {
-            _asset: weth.address,
-            _assetId: wethAssetId,
-            _collateral: usdc.address,
-            _collateralId: usdcAssetId,
+        _asset: weth.address,
+        _assetId: wethAssetId,
+        _collateral: usdc.address,
+        _collateralId: usdcAssetId,
     };
     const data = {
-            penrose_: penrose.address,
-            _oracle: wethUsdcOracle.address,
-            _exchangeRatePrecision: exchangeRatePrecision ?? 0,
-            _collateralizationRate: 0,
-            _liquidationCollateralizationRate: 0,
-            _leverageExecutor: leverageExecutor.address,
-    }
+        penrose_: penrose.address,
+        _oracle: wethUsdcOracle.address,
+        _exchangeRatePrecision: exchangeRatePrecision ?? 0,
+        _collateralizationRate: 0,
+        _liquidationCollateralizationRate: 0,
+        _leverageExecutor: leverageExecutor.address,
+    };
 
     const sglData = new ethers.utils.AbiCoder().encode(
         [
             'tuple(address _liquidationModule, address _borrowModule, address _collateralModule, address _leverageModule)',
             'tuple(address _asset, uint256 _assetId, address _collateral, uint256 _collateralId)',
-            'tuple(address penrose_, address _oracle, uint256 _exchangeRatePrecision, uint256 _collateralizationRate, uint256 _liquidationCollateralizationRate, address _leverageExecutor)'
+            'tuple(address penrose_, address _oracle, uint256 _exchangeRatePrecision, uint256 _collateralizationRate, uint256 _liquidationCollateralizationRate, address _leverageExecutor)',
         ],
-        [modulesData, tokensData, data]);
+        [modulesData, tokensData, data],
+    );
     await (
         await penrose.registerSingularity(mediumRiskMC, sglData, true, {
             gasPrice: gasPrice,
@@ -1110,35 +1111,36 @@ async function registerBigBangMarket(
     );
 
     const modulesData = {
-            _liquidationModule: _bbLiquidationModule.address,
-            _borrowModule: _bbBorrow.address,
-            _collateralModule: _bbCollateral.address,
-            _leverageModule: _bbLeverage.address,
-        };
-    
+        _liquidationModule: _bbLiquidationModule.address,
+        _borrowModule: _bbBorrow.address,
+        _collateralModule: _bbCollateral.address,
+        _leverageModule: _bbLeverage.address,
+    };
+
     const debtData = {
-            _debtRateAgainstEth: debtRateAgainstEth,
-            _debtRateMin: debtRateMin,
-            _debtRateMax: debtRateMax
+        _debtRateAgainstEth: debtRateAgainstEth,
+        _debtRateMin: debtRateMin,
+        _debtRateMax: debtRateMax,
     };
     const data = {
-            _penrose: penrose.address,
-            _collateral: collateral.address,
-            _collateralId: collateralId,
-            _oracle: oracle.address,
-            _exchangeRatePrecision: exchangeRatePrecision,
-            _collateralizationRate: 0,
-            _liquidationCollateralizationRate: 0,
-            _leverageExecutor: ethers.constants.AddressZero,
-    }
+        _penrose: penrose.address,
+        _collateral: collateral.address,
+        _collateralId: collateralId,
+        _oracle: oracle.address,
+        _exchangeRatePrecision: exchangeRatePrecision,
+        _collateralizationRate: 0,
+        _liquidationCollateralizationRate: 0,
+        _leverageExecutor: ethers.constants.AddressZero,
+    };
 
     const bbData = new ethers.utils.AbiCoder().encode(
         [
             'tuple(address _liquidationModule, address _borrowModule, address _collateralModule, address _leverageModule)',
             'tuple(uint256 _debtRateAgainstEth, uint256 _debtRateMin, uint256 _debtRateMax)',
-            'tuple(address _penrose, address _collateral, uint256 _collateralId, address _oracle, uint256 _exchangeRatePrecision, uint256 _collateralizationRate, uint256 _liquidationCollateralizationRate, address _leverageExecutor)'
+            'tuple(address _penrose, address _collateral, uint256 _collateralId, address _oracle, uint256 _exchangeRatePrecision, uint256 _collateralizationRate, uint256 _liquidationCollateralizationRate, address _leverageExecutor)',
         ],
-        [modulesData, debtData, data]);
+        [modulesData, debtData, data],
+    );
 
     await (
         await penrose.registerBigBang(mediumRiskBigBangMC, bbData, true, {
