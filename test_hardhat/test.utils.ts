@@ -39,6 +39,8 @@ import {
 import { UniswapV2Swapper__factory } from '@tapioca-sdk/typechain/tapioca-periphery';
 import {
     ERC20Permit,
+    Market,
+    MarketHelper,
     MarketHelper__factory,
     Penrose,
     Singularity,
@@ -1949,7 +1951,10 @@ export async function register(staging?: boolean) {
             _account.address,
             wethUsdcCollateralId,
         );
-        await (
+
+        await performMarketHelperCall(
+            marketHelper,
+            wethUsdcSingularity,
             await marketHelper.addCollateral(
                 _wethUsdcSingularity.address,
                 _account.address,
@@ -1957,8 +1962,8 @@ export async function register(staging?: boolean) {
                 false,
                 0,
                 _wethUsdcValShare,
-            )
-        ).wait();
+            ),
+        );
     };
 
     const usdcDepositAndAddCollateralWbtcSingularity = async (
@@ -1986,7 +1991,10 @@ export async function register(staging?: boolean) {
             _account.address,
             wbtcUsdcCollateralId,
         );
-        await (
+
+        await performMarketHelperCall(
+            marketHelper,
+            wethUsdcSingularity,
             await marketHelper.addCollateral(
                 _wbtcUsdcSingularity.address,
                 _account.address,
@@ -1994,8 +2002,8 @@ export async function register(staging?: boolean) {
                 false,
                 0,
                 _wbtcUsdcValShare,
-            )
-        ).wait();
+            ),
+        );
     };
 
     const initContracts = async () => {
@@ -2077,3 +2085,11 @@ const createSimpleSwapData = (
 
     return swapData;
 };
+
+async function performMarketHelperCall(
+    marketHelper: MarketHelper,
+    market: Singularity,
+    data: [number[], string[]] & { modules: number[]; calls: string[] },
+) {
+    await (await market.execute(data.modules, data.calls, true)).wait();
+}
