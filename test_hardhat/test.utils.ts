@@ -2086,10 +2086,14 @@ const createSimpleSwapData = (
     return swapData;
 };
 
-async function performMarketHelperCall(
+export async function performMarketHelperCall(
     marketHelper: MarketHelper,
     market: Singularity,
     data: [number[], string[]] & { modules: number[]; calls: string[] },
+    signer?: SignerWithAddress | Wallet,
 ) {
-    await (await market.execute(data.modules, data.calls, true)).wait();
+    signer = signer ?? (await ethers.getSigners())[0];
+    await (
+        await market.connect(signer).execute(data.modules, data.calls, true)
+    ).wait();
 }
