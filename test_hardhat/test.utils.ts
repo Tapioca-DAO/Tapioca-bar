@@ -88,7 +88,7 @@ async function registerUsd0Contract(
 
     const extExec = await (
         await ethers.getContractFactory('TapiocaOmnichainExtExec')
-    ).deploy();
+    ).deploy(cluster, owner);
 
     const usdoInitStruct = {
         endpoint: lzEndpointContract.address,
