@@ -278,27 +278,6 @@ contract Singularity is SGLCommon {
         }
     }
 
-    /// @notice updates the pause state of the contract for all types
-    /// @dev events omitted due to size limit
-    /// @param val the new val
-    function updatePauseAll(bool val, bool resetAccrueTimestmap) external {
-        require(msg.sender == conservator, "Market: unauthorized");
-
-        pauseOptions[PauseType.Borrow] = val;
-        pauseOptions[PauseType.Repay] = val;
-        pauseOptions[PauseType.AddCollateral] = val;
-        pauseOptions[PauseType.RemoveCollateral] = val;
-        pauseOptions[PauseType.Liquidation] = val;
-        pauseOptions[PauseType.LeverageBuy] = val;
-        pauseOptions[PauseType.LeverageSell] = val;
-        pauseOptions[PauseType.AddAsset] = val;
-        pauseOptions[PauseType.RemoveAsset] = val;
-
-        if (!val) {
-            accrueInfo.lastAccrued = resetAccrueTimestmap ? block.timestamp.toUint64() : accrueInfo.lastAccrued;
-        }
-    }
-
     /// @notice rescues unused ETH from the contract
     /// @param amount the amount to rescue
     /// @param to the recipient
@@ -410,15 +389,6 @@ contract Singularity is SGLCommon {
         if (module == address(0)) revert ModuleNotSet();
 
         return module;
-    }
-
-    function _executeModule(Module _module, bytes memory _data) private returns (bytes memory returnData) {
-        bool success = true;
-
-        (success, returnData) = _extractModule(_module).delegatecall(_data);
-        if (!success) {
-            revert(abi.decode(_getRevertMsg(returnData), (string)));
-        }
     }
 
     receive() external payable {}
