@@ -365,7 +365,9 @@ contract BigBang is BBCommon {
     // ************************* //
     function _extractModule(Module _module) private view returns (address) {
         address module;
-        if (_module == Module.Borrow) {
+        if (_module == Module.Base) {
+            module = address(this);
+        } else if (_module == Module.Borrow) {
             module = address(borrowModule);
         } else if (_module == Module.Collateral) {
             module = address(collateralModule);

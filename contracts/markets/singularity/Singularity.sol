@@ -194,13 +194,10 @@ contract Singularity is SGLCommon {
         conservator = owner();
     }
 
-    // ********************** //
-    // *** VIEW FUNCTIONS *** //
-    // ********************** //
-
     // ************************ //
     // *** PUBLIC FUNCTIONS *** //
     // ************************ //
+
     /// @notice Allows batched call to Singularity.
     /// @param calls An array encoded call data.
     /// @param revertOnFail If True then reverts after a failed call and stops doing further calls.
@@ -377,7 +374,9 @@ contract Singularity is SGLCommon {
     // ************************* //
     function _extractModule(Module _module) private view returns (address) {
         address module;
-        if (_module == Module.Borrow) {
+        if (_module == Module.Base) {
+            return address(this);
+        } else if (_module == Module.Borrow) {
             module = address(borrowModule);
         } else if (_module == Module.Collateral) {
             module = address(collateralModule);
