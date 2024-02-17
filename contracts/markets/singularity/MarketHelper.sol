@@ -34,6 +34,8 @@ contract MarketHelper {
     /// @param user the user to liquidate
     /// @param maxBorrowPart max borrow part for user
     /// @param minLiquidationBonus minimum liquidation bonus to accept
+    /// @param exchangeRatePrecision the precision of the exchange rate. Typically 1e18
+    /// @param feeDecimalsPrecision the precision of the fee decimals. Typically 1e5
     function getLiquidationCollateralAmount(
         Singularity sgl,
         address user,
