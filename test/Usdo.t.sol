@@ -8,17 +8,11 @@ import {
     MessagingReceipt,
     OFTReceipt
 } from "@layerzerolabs/lz-evm-oapp-v2/contracts/oft/interfaces/IOFT.sol";
-import {OFTComposeMsgCodec} from "@layerzerolabs/lz-evm-oapp-v2/contracts/oft/libs/OFTComposeMsgCodec.sol";
 import {OptionsBuilder} from "@layerzerolabs/lz-evm-oapp-v2/contracts/oapp/libs/OptionsBuilder.sol";
 import {OFTMsgCodec} from "@layerzerolabs/lz-evm-oapp-v2/contracts/oft/libs/OFTMsgCodec.sol";
-import {BytesLib} from "solidity-bytes-utils/contracts/BytesLib.sol";
-import {Origin} from "@layerzerolabs/lz-evm-oapp-v2/contracts/oapp/OApp.sol";
 
 // External
-import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import {IERC20} from "@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol";
-import {EIP712} from "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
-import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
 // Tapioca
 import {
@@ -67,17 +61,13 @@ import {IOptionsExitData} from "tapioca-periph/interfaces/tap-token/ITapiocaOpti
 import {UsdoMarketReceiverModule} from "contracts/usdo/modules/UsdoMarketReceiverModule.sol";
 import {UsdoOptionReceiverModule} from "contracts/usdo/modules/UsdoOptionReceiverModule.sol";
 import {SimpleLeverageExecutor} from "contracts/markets/leverage/SimpleLeverageExecutor.sol";
-import {ITOFT, IBorrowParams, IRemoveParams} from "tapioca-periph/interfaces/oft/ITOFT.sol";
 import {ICommonExternalContracts} from "tapioca-periph/interfaces/common/ICommonData.sol";
 import {ILeverageExecutor} from "tapioca-periph/interfaces/bar/ILeverageExecutor.sol";
 import {ERC20WithoutStrategy} from "yieldbox/strategies/ERC20WithoutStrategy.sol";
 import {ICommonData} from "tapioca-periph/interfaces/common/ICommonData.sol";
-import {ISingularity} from "tapioca-periph/interfaces/bar/ISingularity.sol";
 import {Singularity} from "contracts/markets/singularity/Singularity.sol";
-import {UsdoMsgCodec} from "contracts/usdo/libraries/UsdoMsgCodec.sol";
 import {UsdoReceiver} from "contracts/usdo/modules/UsdoReceiver.sol";
 import {IOracle} from "tapioca-periph/oracle/interfaces/IOracle.sol";
-import {IPenrose} from "tapioca-periph/interfaces/bar/IPenrose.sol";
 import {UsdoHelper} from "contracts/usdo/extensions/UsdoHelper.sol";
 import {UsdoSender} from "contracts/usdo/modules/UsdoSender.sol";
 import {Pearlmit} from "tapioca-periph/pearlmit/Pearlmit.sol";
@@ -183,7 +173,7 @@ contract UsdoTest is UsdoTestHelper {
             vm.label(address(magnetar), "Magnetar");
         }
 
-        TapiocaOmnichainExtExec extExec = new TapiocaOmnichainExtExec();
+        TapiocaOmnichainExtExec extExec = new TapiocaOmnichainExtExec(cluster, __owner);
         vm.label(address(extExec), "TapiocaOmnichainExtExec");
 
         UsdoInitStruct memory aUsdoInitStruct = UsdoInitStruct({
