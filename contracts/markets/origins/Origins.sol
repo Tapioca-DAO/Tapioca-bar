@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.18;
+pragma solidity 0.8.22;
 
 // External
 import {RebaseLibrary, Rebase} from "@boringcrypto/boring-solidity/contracts/libraries/BoringRebase.sol";
@@ -92,7 +92,7 @@ contract Origins is Ownable, Market, ReentrancyGuard {
         collateralizationRate = _collateralizationRate;
 
         rateValidDuration = 24 hours;
-        
+
         conservator = _owner;
         _transferOwnership(_owner);
     }

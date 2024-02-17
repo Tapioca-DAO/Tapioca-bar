@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.18;
+pragma solidity 0.8.22;
 
 // External
 import {RebaseLibrary, Rebase} from "@boringcrypto/boring-solidity/contracts/libraries/BoringRebase.sol";
@@ -94,8 +94,11 @@ contract BigBang is BBCommon {
 
     /// @notice The init function that acts as a constructor
     function init(bytes calldata initData) external onlyOnce {
-        (_InitMemoryModulesData memory initModulesData, _InitMemoryDebtData memory initDebtData, _InitMemoryData memory initMemoryData) =
-                abi.decode(initData, (_InitMemoryModulesData, _InitMemoryDebtData, _InitMemoryData));
+        (
+            _InitMemoryModulesData memory initModulesData,
+            _InitMemoryDebtData memory initDebtData,
+            _InitMemoryData memory initMemoryData
+        ) = abi.decode(initData, (_InitMemoryModulesData, _InitMemoryDebtData, _InitMemoryData));
 
         _initModules(
             initModulesData._liquidationModule,
@@ -153,7 +156,7 @@ contract BigBang is BBCommon {
     ) private {
         penrose = _penrose;
         yieldBox = IYieldBox(_penrose.yieldBox());
-        
+
         address _asset = penrose.usdoToken();
 
         if (address(_collateral) == address(0)) revert BadPair();

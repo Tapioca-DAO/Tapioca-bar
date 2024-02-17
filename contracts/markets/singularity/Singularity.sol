@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.18;
+pragma solidity 0.8.22;
 
 // External
 import {RebaseLibrary, Rebase} from "@boringcrypto/boring-solidity/contracts/libraries/BoringRebase.sol";
@@ -94,13 +94,15 @@ contract Singularity is SGLCommon {
 
     /// @notice The init function that acts as a constructor
     function init(bytes calldata initData) external onlyOnce {
-        (_InitMemoryModulesData memory _initMemoryModulesData,  _InitMemoryTokensData memory _initMemoryTokensData, _InitMemoryData memory _initMemoryData) =
-            abi.decode(initData, (_InitMemoryModulesData, _InitMemoryTokensData, _InitMemoryData));
+        (
+            _InitMemoryModulesData memory _initMemoryModulesData,
+            _InitMemoryTokensData memory _initMemoryTokensData,
+            _InitMemoryData memory _initMemoryData
+        ) = abi.decode(initData, (_InitMemoryModulesData, _InitMemoryTokensData, _InitMemoryData));
 
         penrose = _initMemoryData.penrose_;
         yieldBox = IYieldBox(_initMemoryData.penrose_.yieldBox());
         _transferOwnership(address(penrose));
-
 
         if (address(_initMemoryTokensData._collateral) == address(0)) {
             revert BadPair();
