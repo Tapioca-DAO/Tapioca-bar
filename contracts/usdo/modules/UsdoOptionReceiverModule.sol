@@ -70,6 +70,10 @@ contract UsdoOptionReceiverModule is BaseUsdo {
         _checkWhitelistStatus(msg_.bigBang);
         _checkWhitelistStatus(msg_.magnetar);
 
+        if (msg_.mintData.mintAmount > 0) {
+            msg_.mintData.mintAmount = _toLD(msg_.mintData.mintAmount.toUint64());
+        }
+
         bytes memory call = abi.encodeWithSelector(
             MagnetarMintModule.mintBBLendXChainSGL.selector,
             msg_

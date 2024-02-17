@@ -71,6 +71,13 @@ contract UsdoMarketReceiverModule is BaseUsdo {
         _checkWhitelistStatus(msg_.singularity);
         _checkWhitelistStatus(msg_.magnetar);
 
+        if (msg_.lendAmount > 0) {
+            msg_.lendAmount = _toLD(msg_.lendAmount.toUint64());
+        }
+         if (msg_.depositData.amount > 0) {
+            msg_.depositData.amount = _toLD(msg_.depositData.amount.toUint64());
+        }
+
         bytes memory call = abi.encodeWithSelector(
             MagnetarMintModule.depositYBLendSGLLockXchainTOLP.selector,
             msg_
