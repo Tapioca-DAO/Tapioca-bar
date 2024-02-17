@@ -85,37 +85,35 @@ contract MarketHelper {
     /// @param share The amount of shares to add for `to`.
     function addCollateral(Singularity sgl, address from, address to, bool skim, uint256 amount, uint256 share)
         external
+        returns (Singularity.Module[] memory modules, bytes[] memory calls)
     {
-        Singularity.Module[] memory modules = new Singularity.Module[](1);
-        bytes[] memory calls = new bytes[](1);
+        modules = new Singularity.Module[](1);
+        calls = new bytes[](1);
         modules[0] = Singularity.Module.Collateral;
         calls[0] = abi.encodeWithSelector(SGLCollateral.addCollateral.selector, from, to, skim, amount, share);
-
-        sgl.execute(modules, calls, true);
     }
 
     /// @notice Removes `share` amount of collateral and transfers it to `to`.
     /// @param from Account to debit collateral from.
     /// @param to The receiver of the shares.
     /// @param share Amount of shares to remove.
-    function removeCollateral(Singularity sgl, address from, address to, uint256 share) external {
+    function removeCollateral(Singularity sgl, address from, address to, uint256 share)
+        external
+        returns (Singularity.Module[] memory modules, bytes[] memory calls)
+    {
         Singularity.Module[] memory modules = new Singularity.Module[](1);
         bytes[] memory calls = new bytes[](1);
         modules[0] = Singularity.Module.Collateral;
         calls[0] = abi.encodeWithSelector(SGLCollateral.removeCollateral.selector, from, to, share);
-
-        sgl.execute(modules, calls, true);
     }
 
     /// @notice Sender borrows `amount` and transfers it to `to`.
     /// @param from Account to borrow for.
     /// @param to The receiver of borrowed tokens.
     /// @param amount Amount to borrow.
-    /// @return part Total part of the debt held by borrowers.
-    /// @return share Total amount in shares borrowed.
     function borrow(Singularity sgl, address from, address to, uint256 amount)
         external
-        returns (uint256 part, uint256 share)
+        returns (Singularity.Module[] memory modules, bytes[] memory calls)
     {
         Singularity.Module[] memory modules = new Singularity.Module[](1);
         bytes[] memory calls = new bytes[](1);
@@ -123,7 +121,11 @@ contract MarketHelper {
         calls[0] = abi.encodeWithSelector(SGLBorrow.borrow.selector, from, to, amount);
 
         (, bytes[] memory results) = sgl.execute(modules, calls, true);
-        (part, share) = abi.decode(results[0], (uint256, uint256));
+    }
+
+    /// @notice View the result of a borrow operation.
+    function borrowView(bytes calldata result) external pure returns (uint256 part, uint256 share) {
+        (part, share) = abi.decode(result, (uint256, uint256));
     }
 
     /// @notice Repays a loan.
@@ -132,36 +134,38 @@ contract MarketHelper {
     /// @param skim True if the amount should be skimmed from the deposit balance of msg.sender.
     /// False if tokens from msg.sender in `yieldBox` should be transferred.
     /// @param part The amount to repay. See `userBorrowPart`.
-    /// @return amount The total amount repayed.
     function repay(Singularity sgl, address from, address to, bool skim, uint256 part)
         external
-        returns (uint256 amount)
+        returns (Singularity.Module[] memory modules, bytes[] memory calls)
     {
         Singularity.Module[] memory modules = new Singularity.Module[](1);
         bytes[] memory calls = new bytes[](1);
         modules[0] = Singularity.Module.Borrow;
         calls[0] = abi.encodeWithSelector(SGLBorrow.repay.selector, from, to, skim, part);
-        (, bytes[] memory results) = sgl.execute(modules, calls, true);
+    }
 
-        amount = abi.decode(results[0], (uint256));
+    /// @notice view the result of a repay operation.
+    function repayView(bytes calldata result) external pure returns (uint256 amount) {
+        amount = abi.decode(result, (uint256));
     }
 
     /// @notice Lever down: Sell collateral to repay debt; excess goes to YB
     /// @param from The user who sells
     /// @param share Collateral YieldBox-shares to sell
     /// @param data LeverageExecutor data
-    /// @return amountOut Actual asset amount received in the sale
     function sellCollateral(Singularity sgl, address from, uint256 share, bytes calldata data)
         external
-        returns (uint256 amountOut)
+        returns (Singularity.Module[] memory modules, bytes[] memory calls)
     {
         Singularity.Module[] memory modules = new Singularity.Module[](1);
         bytes[] memory calls = new bytes[](1);
         modules[0] = Singularity.Module.Leverage;
         calls[0] = abi.encodeWithSelector(SGLLeverage.sellCollateral.selector, from, share, data);
-        (, bytes[] memory results) = sgl.execute(modules, calls, true);
+    }
 
-        amountOut = abi.decode(results[0], (uint256));
+    /// @notice view the result of a sellCollateral operation.
+    function sellCollateralView(bytes calldata result) external pure returns (uint256 amountOut) {
+        amountOut = abi.decode(result, (uint256));
     }
 
     /// @notice Lever up: Borrow more and buy collateral with it.
@@ -169,21 +173,22 @@ contract MarketHelper {
     /// @param borrowAmount Amount of extra asset borrowed
     /// @param supplyAmount Amount of asset supplied (down payment)
     /// @param data LeverageExecutor data
-    /// @return amountOut Actual collateral amount purchased
     function buyCollateral(
         Singularity sgl,
         address from,
         uint256 borrowAmount,
         uint256 supplyAmount,
         bytes calldata data
-    ) external returns (uint256 amountOut) {
+    ) external returns (Singularity.Module[] memory modules, bytes[] memory calls) {
         Singularity.Module[] memory modules = new Singularity.Module[](1);
         bytes[] memory calls = new bytes[](1);
         modules[0] = Singularity.Module.Leverage;
         calls[0] = abi.encodeWithSelector(SGLLeverage.buyCollateral.selector, from, borrowAmount, supplyAmount, data);
-        (, bytes[] memory results) = sgl.execute(modules, calls, true);
+    }
 
-        amountOut = abi.decode(results[0], (uint256));
+    /// @notice view the result of a buyCollateral operation.
+    function buyCollateralView(bytes calldata result) external pure returns (uint256 amountOut) {
+        amountOut = abi.decode(result, (uint256));
     }
 
     /// @notice liquidates a position for which the collateral's value is less than the borrowed value
@@ -202,7 +207,7 @@ contract MarketHelper {
         IMarketLiquidatorReceiver liquidatorReceiver,
         bytes calldata liquidatorReceiverData,
         bool swapCollateral
-    ) external {
+    ) external returns (Singularity.Module[] memory modules, bytes[] memory calls) {
         Singularity.Module[] memory modules = new Singularity.Module[](1);
         bytes[] memory calls = new bytes[](1);
         modules[0] = Singularity.Module.Liquidation;
@@ -215,8 +220,6 @@ contract MarketHelper {
             liquidatorReceiverData,
             swapCollateral
         );
-
-        sgl.execute(modules, calls, true);
     }
 
     /// @notice Entry point for liquidations.
@@ -233,7 +236,7 @@ contract MarketHelper {
         uint256[] calldata minLiquidationBonuses,
         IMarketLiquidatorReceiver[] calldata liquidatorReceivers,
         bytes[] calldata liquidatorReceiverDatas
-    ) external {
+    ) external returns (Singularity.Module[] memory modules, bytes[] memory calls) {
         Singularity.Module[] memory modules = new Singularity.Module[](1);
         bytes[] memory calls = new bytes[](1);
         modules[0] = Singularity.Module.Liquidation;
@@ -245,8 +248,6 @@ contract MarketHelper {
             liquidatorReceivers,
             liquidatorReceiverDatas
         );
-
-        sgl.execute(modules, calls, true);
     }
 
     function _getRevertMsg(bytes memory _returnData) internal pure returns (string memory) {
