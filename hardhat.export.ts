@@ -60,12 +60,52 @@ const config: HardhatUserConfig & { dodoc: any } = {
                     evmVersion: 'paris', // Latest before Shanghai
                     optimizer: {
                         enabled: true,
-                        runs: 500,
+                        runs: 9999,
                     },
                 },
             },
         ],
         overrides: {
+            'contracts/markets/bigBang/BigBang.sol': {
+                version: '0.8.22',
+                settings: {
+                    evmVersion: 'paris', // Latest before Shanghai
+                    optimizer: {
+                        enabled: true,
+                        runs: 20,
+                    },
+                },
+            },
+            'contracts/markets/singularity/Singularity.sol': {
+                version: '0.8.22',
+                settings: {
+                    evmVersion: 'paris', // Latest before Shanghai
+                    optimizer: {
+                        enabled: true,
+                        runs: 0,
+                    },
+                },
+            },
+            'contracts/markets/singularity/SGLLeverage.sol': {
+                version: '0.8.22',
+                settings: {
+                    evmVersion: 'paris', // Latest before Shanghai
+                    optimizer: {
+                        enabled: true,
+                        runs: 20,
+                    },
+                },
+            },
+            'contracts/markets/singularity/SGLLiquidation.sol': {
+                version: '0.8.22',
+                settings: {
+                    evmVersion: 'paris', // Latest before Shanghai
+                    optimizer: {
+                        enabled: true,
+                        runs: 20,
+                    },
+                },
+            },
             'gitmodule/tap-yieldbox/contracts/YieldBox.sol': {
                 version: '0.8.22',
                 settings: {
