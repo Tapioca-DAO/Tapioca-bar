@@ -63,7 +63,7 @@ import {UsdoOptionReceiverModule} from "contracts/usdo/modules/UsdoOptionReceive
 import {SimpleLeverageExecutor} from "contracts/markets/leverage/SimpleLeverageExecutor.sol";
 import {ICommonExternalContracts} from "tapioca-periph/interfaces/common/ICommonData.sol";
 import {ILeverageExecutor} from "tapioca-periph/interfaces/bar/ILeverageExecutor.sol";
-import {SingularityHelper} from "contracts/markets/singularity/SingularityHelper.sol";
+import {MarketHelper} from "contracts/markets/singularity/MarketHelper.sol";
 import {ERC20WithoutStrategy} from "yieldbox/strategies/ERC20WithoutStrategy.sol";
 import {ICommonData} from "tapioca-periph/interfaces/common/ICommonData.sol";
 import {Singularity} from "contracts/markets/singularity/Singularity.sol";
@@ -114,7 +114,7 @@ contract UsdoTest is UsdoTestHelper {
     SimpleLeverageExecutor leverageExecutor;
     Singularity masterContract;
     Singularity singularity;
-    SingularityHelper singularityHelper;
+    MarketHelper marketHelper;
     OracleMock oracle;
 
     uint256 aUsdoYieldBoxId;
@@ -161,7 +161,7 @@ contract UsdoTest is UsdoTestHelper {
         weth = new ERC20Mock("Wrapped Ethereum", "WETH");
         vm.label(address(weth), "WETH");
 
-        singularityHelper = new SingularityHelper();
+        marketHelper = new MarketHelper();
 
         setUpEndpoints(3, LibraryType.UltraLightNode);
 
@@ -1279,10 +1279,10 @@ contract UsdoTest is UsdoTestHelper {
             deal(address(aUsdo), address(this), erc20Amount_);
             yieldBox.depositAsset(aUsdoYieldBoxId, address(this), address(this), erc20Amount_, 0);
             uint256 collateralShare = yieldBox.toShare(aUsdoYieldBoxId, erc20Amount_, false);
-            singularityHelper.addCollateral(singularity, address(this), address(this), false, 0, collateralShare);
+            marketHelper.addCollateral(singularity, address(this), address(this), false, 0, collateralShare);
 
             assertEq(singularity.userBorrowPart(address(this)), 0);
-            singularityHelper.borrow(singularity, address(this), address(this), tokenAmount_);
+            marketHelper.borrow(singularity, address(this), address(this), tokenAmount_);
             assertGt(singularity.userBorrowPart(address(this)), 0);
 
             // deal more to cover repay fees

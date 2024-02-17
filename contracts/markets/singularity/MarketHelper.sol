@@ -5,18 +5,11 @@ pragma solidity 0.8.22;
 import {Rebase} from "@boringcrypto/boring-solidity/contracts/libraries/BoringRebase.sol";
 
 // Tapioca
-import {
-    Singularity,
-    SGLLiquidation,
-    SGLCommon,
-    IMarketLiquidatorReceiver,
-    SGLLeverage,
-    SGLBorrow,
-    SGLCollateral
-} from "./Singularity.sol";
+import {SGLLiquidation, SGLCollateral, Singularity, SGLLeverage, SGLCommon, SGLBorrow} from "./Singularity.sol";
+import {IMarketLiquidatorReceiver} from "tapioca-periph/interfaces/bar/IMarketLiquidatorReceiver.sol";
 import {IYieldBox} from "tapioca-periph/interfaces/yieldbox/IYieldBox.sol";
 
-contract SingularityHelper {
+contract MarketHelper {
     error ExchangeRateNotValid();
 
     /// @notice transforms amount to shares for a market's permit operation
