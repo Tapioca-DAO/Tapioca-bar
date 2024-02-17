@@ -207,155 +207,25 @@ contract BigBang is BBCommon {
     /// @notice Allows batched call to BingBang.
     /// @param calls An array encoded call data.
     /// @param revertOnFail If True then reverts after a failed call and stops doing further calls.
-    function execute(bytes[] calldata calls, bool revertOnFail)
+    function execute(Module[] calldata modules, bytes[] calldata calls, bool revertOnFail)
         external
         nonReentrant
-        returns (bool[] memory successes, string[] memory results)
+        returns (bool[] memory successes, bytes[] memory results)
     {
         successes = new bool[](calls.length);
-        results = new string[](calls.length);
-        for (uint256 i; i < calls.length; i++) {
-            (bool success, bytes memory result) = address(this).delegatecall(calls[i]);
+        results = new bytes[](calls.length);
+        if (modules.length != calls.length) revert NotValid();
+        unchecked {
+            for (uint256 i; i < calls.length; i++) {
+                (bool success, bytes memory result) = _extractModule(modules[i]).delegatecall(calls[i]);
 
-            if (!success && revertOnFail) {
-                revert(_getRevertMsg(result));
+                if (!success && revertOnFail) {
+                    revert(abi.decode(_getRevertMsg(result), (string)));
+                }
+                successes[i] = success;
+                results[i] = _getRevertMsg(result);
             }
-            successes[i] = success;
-            results[i] = _getRevertMsg(result);
         }
-    }
-
-    /// @notice Adds `collateral` from msg.sender to the account `to`.
-    /// @param from Account to transfer shares from.
-    /// @param to The receiver of the tokens.
-    /// @param skim True if the amount should be skimmed from the deposit balance of msg.sender.
-    /// False if tokens from msg.sender in `yieldBox` should be transferred.
-    /// @param amount The amount to add for `to`.
-    /// @param share The amount of shares to add for `to`.
-    function addCollateral(address from, address to, bool skim, uint256 amount, uint256 share) external {
-        _executeModule(
-            Module.Collateral,
-            abi.encodeWithSelector(BBCollateral.addCollateral.selector, from, to, skim, amount, share)
-        );
-    }
-
-    /// @notice Removes `share` amount of collateral and transfers it to `to`.
-    /// @param from Account to debit collateral from.
-    /// @param to The receiver of the shares.
-    /// @param share Amount of shares to remove.
-    function removeCollateral(address from, address to, uint256 share) external {
-        _executeModule(
-            Module.Collateral, abi.encodeWithSelector(BBCollateral.removeCollateral.selector, from, to, share)
-        );
-    }
-
-    /// @notice Sender borrows `amount` and transfers it to `to`.
-    /// @param from Account to borrow for.
-    /// @param to The receiver of borrowed tokens.
-    /// @param amount Amount to borrow.
-    /// @return part Total part of the debt held by borrowers.
-    /// @return share Total amount in shares borrowed.
-    function borrow(address from, address to, uint256 amount) external returns (uint256 part, uint256 share) {
-        bytes memory result =
-            _executeModule(Module.Borrow, abi.encodeWithSelector(BBBorrow.borrow.selector, from, to, amount));
-        (part, share) = abi.decode(result, (uint256, uint256));
-    }
-
-    /// @notice Repays a loan.
-    /// @dev The bool param is not used but we added it to respect the ISingularity interface for MarketsHelper compatibility
-    /// @param from Address to repay from.
-    /// @param to Address of the user this payment should go.
-    /// @param part The amount to repay. See `userBorrowPart`.
-    /// @return amount The total amount repayed.
-    function repay(address from, address to, bool skim, uint256 part) external returns (uint256 amount) {
-        bytes memory result =
-            _executeModule(Module.Borrow, abi.encodeWithSelector(BBBorrow.repay.selector, from, to, skim, part));
-        amount = abi.decode(result, (uint256));
-    }
-
-    /// @notice Lever down: Sell collateral to repay debt; excess goes to YB
-    /// @param from The user who sells
-    /// @param share Collateral YieldBox-shares to sell
-    /// @param data LeverageExecutor data
-    /// @return amountOut Actual asset amount received in the sale
-    function sellCollateral(address from, uint256 share, bytes calldata data) external returns (uint256 amountOut) {
-        bytes memory result = _executeModule(
-            Module.Leverage, abi.encodeWithSelector(BBLeverage.sellCollateral.selector, from, share, data)
-        );
-        amountOut = abi.decode(result, (uint256));
-    }
-
-    /// @notice Lever up: Borrow more and buy collateral with it.
-    /// @param from The user who buys
-    /// @param borrowAmount Amount of extra asset borrowed
-    /// @param supplyAmount Amount of asset supplied (down payment)
-    /// @param data LeverageExecutor data
-    /// @return amountOut Actual collateral amount purchased
-    function buyCollateral(address from, uint256 borrowAmount, uint256 supplyAmount, bytes calldata data)
-        external
-        returns (uint256 amountOut)
-    {
-        bytes memory result = _executeModule(
-            Module.Leverage,
-            abi.encodeWithSelector(BBLeverage.buyCollateral.selector, from, borrowAmount, supplyAmount, data)
-        );
-        amountOut = abi.decode(result, (uint256));
-    }
-
-    /// @notice liquidates a position for which the collateral's value is less than the borrowed value
-    /// @dev liquidation bonus is included in the computation
-    /// @param user the address to liquidate
-    /// @param from the address to extract funds from
-    /// @param receiver the address which receives the output
-    /// @param liquidatorReceiver the IMarketLiquidatorReceiver executor
-    /// @param liquidatorReceiverData the IMarketLiquidatorReceiver executor data
-    /// @param swapCollateral true/false
-    function liquidateBadDebt(
-        address user,
-        address from,
-        address receiver,
-        IMarketLiquidatorReceiver liquidatorReceiver,
-        bytes calldata liquidatorReceiverData,
-        bool swapCollateral
-    ) external {
-        _executeModule(
-            Module.Liquidation,
-            abi.encodeWithSelector(
-                BBLiquidation.liquidateBadDebt.selector,
-                user,
-                from,
-                receiver,
-                liquidatorReceiver,
-                liquidatorReceiverData,
-                swapCollateral
-            )
-        );
-    }
-
-    /// @notice Entry point for liquidations.
-    /// @param users An array of user addresses.
-    /// @param maxBorrowParts A one-to-one mapping to `users`, contains maximum (partial) borrow amounts (to liquidate) of the respective user
-    /// @param minLiquidationBonuses minimum liquidation bonus acceptable
-    /// @param liquidatorReceivers IMarketLiquidatorReceiver array
-    /// @param liquidatorReceiverDatas IMarketLiquidatorReceiver datas
-    function liquidate(
-        address[] calldata users,
-        uint256[] calldata maxBorrowParts,
-        uint256[] calldata minLiquidationBonuses,
-        IMarketLiquidatorReceiver[] calldata liquidatorReceivers,
-        bytes[] calldata liquidatorReceiverDatas
-    ) external {
-        _executeModule(
-            Module.Liquidation,
-            abi.encodeWithSelector(
-                BBLiquidation.liquidate.selector,
-                users,
-                maxBorrowParts,
-                minLiquidationBonuses,
-                liquidatorReceivers,
-                liquidatorReceiverDatas
-            )
-        );
     }
 
     function transfer(address, uint256) public pure override returns (bool) {
@@ -523,7 +393,7 @@ contract BigBang is BBCommon {
 
         (success, returnData) = _extractModule(_module).delegatecall(_data);
         if (!success) {
-            revert(_getRevertMsg(returnData));
+            revert(abi.decode(_getRevertMsg(returnData), (string)));
         }
     }
 
