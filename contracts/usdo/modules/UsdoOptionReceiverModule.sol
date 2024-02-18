@@ -13,7 +13,13 @@ import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeE
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 // Tapioca
-import {DepositAndSendForLockingData, MagnetarCall, MagnetarAction, IMagnetar, CrossChainMintFromBBAndLendOnSGLData} from "tapioca-periph/interfaces/periph/IMagnetar.sol";
+import {
+    DepositAndSendForLockingData,
+    MagnetarCall,
+    MagnetarAction,
+    IMagnetar,
+    CrossChainMintFromBBAndLendOnSGLData
+} from "tapioca-periph/interfaces/periph/IMagnetar.sol";
 import {
     ITapiocaOptionBroker, IExerciseOptionsData
 } from "tapioca-periph/interfaces/tap-token/ITapiocaOptionBroker.sol";
@@ -50,7 +56,6 @@ contract UsdoOptionReceiverModule is BaseUsdo {
 
     constructor(UsdoInitStruct memory _data) BaseUsdo(_data) {}
 
-
     //TODO: decide if we also need this
     /**
      * @notice cross-chain receiver to deposit mint from BB, lend on SGL, lock on tOLP and participate on tOB
@@ -65,8 +70,9 @@ contract UsdoOptionReceiverModule is BaseUsdo {
      */
     function mintLendXChainSGLXChainLockAndParticipateReceiver(bytes memory _data) public payable {
         // Decode received message.
-        CrossChainMintFromBBAndLendOnSGLData  memory msg_ = UsdoMsgCodec.decodeMintLendXChainSGLXChainLockAndParticipateMsg(_data);
-        
+        CrossChainMintFromBBAndLendOnSGLData memory msg_ =
+            UsdoMsgCodec.decodeMintLendXChainSGLXChainLockAndParticipateMsg(_data);
+
         _checkWhitelistStatus(msg_.bigBang);
         _checkWhitelistStatus(msg_.magnetar);
 
@@ -74,10 +80,7 @@ contract UsdoOptionReceiverModule is BaseUsdo {
             msg_.mintData.mintAmount = _toLD(msg_.mintData.mintAmount.toUint64());
         }
 
-        bytes memory call = abi.encodeWithSelector(
-            MagnetarMintModule.mintBBLendXChainSGL.selector,
-            msg_
-        );
+        bytes memory call = abi.encodeWithSelector(MagnetarMintModule.mintBBLendXChainSGL.selector, msg_);
         MagnetarCall[] memory magnetarCall = new MagnetarCall[](1);
         magnetarCall[0] = MagnetarCall({
             id: MagnetarAction.MintModule,
@@ -88,7 +91,6 @@ contract UsdoOptionReceiverModule is BaseUsdo {
         });
         IMagnetar(payable(msg_.magnetar)).burst{value: msg.value}(magnetarCall);
     }
-
 
     /**
      * @notice Exercise tOB option

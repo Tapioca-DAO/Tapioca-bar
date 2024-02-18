@@ -15,7 +15,10 @@ import {
     MarketRemoveAssetMsg,
     MarketLendOrRepayMsg
 } from "tapioca-periph/interfaces/oft/IUsdo.sol";
-import {DepositAndSendForLockingData, CrossChainMintFromBBAndLendOnSGLData} from "tapioca-periph/interfaces/periph/IMagnetar.sol";
+import {
+    DepositAndSendForLockingData,
+    CrossChainMintFromBBAndLendOnSGLData
+} from "tapioca-periph/interfaces/periph/IMagnetar.sol";
 
 /*
 
@@ -389,7 +392,11 @@ library UsdoMsgCodec {
     /**
      * @notice Encodes the message for the `UsdoOptionReceiverModule.depositLendAndSendForLockingReceiver()` operation.
      */
-    function buildDepositLendAndSendForLockingMsg(DepositAndSendForLockingData memory _msg) internal pure returns (bytes memory) {
+    function buildDepositLendAndSendForLockingMsg(DepositAndSendForLockingData memory _msg)
+        internal
+        pure
+        returns (bytes memory)
+    {
         return abi.encode(_msg);
     }
 
@@ -404,11 +411,14 @@ library UsdoMsgCodec {
         return abi.decode(_msg, (DepositAndSendForLockingData));
     }
 
-
-     /**
+    /**
      * @notice Encodes the message for the `UsdoOptionReceiverModule.mintLendXChainSGLXChainLockAndParticipateReceiver()` operation.
      */
-    function buildMintLendXChainSGLXChainLockAndParticipateMsg(CrossChainMintFromBBAndLendOnSGLData memory _msg) internal pure returns (bytes memory) {
+    function buildMintLendXChainSGLXChainLockAndParticipateMsg(CrossChainMintFromBBAndLendOnSGLData memory _msg)
+        internal
+        pure
+        returns (bytes memory)
+    {
         return abi.encode(_msg);
     }
 

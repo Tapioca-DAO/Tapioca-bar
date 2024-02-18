@@ -149,7 +149,9 @@ contract SGLLiquidation is SGLCommon {
 
         _accrue();
 
-        _closedLiquidation(users, maxBorrowParts, minLiquidationBonuses, liquidatorReceivers, liquidatorReceiverDatas, exchangeRate);
+        _closedLiquidation(
+            users, maxBorrowParts, minLiquidationBonuses, liquidatorReceivers, liquidatorReceiverDatas, exchangeRate
+        );
     }
 
     // ************************* //

@@ -55,8 +55,8 @@ contract UsdoMarketReceiverModule is BaseUsdo {
 
     constructor(UsdoInitStruct memory _data) BaseUsdo(_data) {}
 
-      /**
-     * @notice Execute `magnetar.depositLendAndSendForLocking` 
+    /**
+     * @notice Execute `magnetar.depositLendAndSendForLocking`
      * @dev Lend on SGL and send receipt token on another layer
      * @param _data.user the user to perform the operation for
      * @param _data.singularity the SGL address
@@ -66,22 +66,19 @@ contract UsdoMarketReceiverModule is BaseUsdo {
      */
     function depositLendAndSendForLockingReceiver(bytes memory _data) public payable {
         // Decode received message.
-        DepositAndSendForLockingData  memory msg_ = UsdoMsgCodec.decodeDepositLendAndSendForLockingMsg(_data);
-        
+        DepositAndSendForLockingData memory msg_ = UsdoMsgCodec.decodeDepositLendAndSendForLockingMsg(_data);
+
         _checkWhitelistStatus(msg_.singularity);
         _checkWhitelistStatus(msg_.magnetar);
 
         if (msg_.lendAmount > 0) {
             msg_.lendAmount = _toLD(msg_.lendAmount.toUint64());
         }
-         if (msg_.depositData.amount > 0) {
+        if (msg_.depositData.amount > 0) {
             msg_.depositData.amount = _toLD(msg_.depositData.amount.toUint64());
         }
 
-        bytes memory call = abi.encodeWithSelector(
-            MagnetarMintModule.depositYBLendSGLLockXchainTOLP.selector,
-            msg_
-        );
+        bytes memory call = abi.encodeWithSelector(MagnetarMintModule.depositYBLendSGLLockXchainTOLP.selector, msg_);
         MagnetarCall[] memory magnetarCall = new MagnetarCall[](1);
         magnetarCall[0] = MagnetarCall({
             id: MagnetarAction.MintModule,

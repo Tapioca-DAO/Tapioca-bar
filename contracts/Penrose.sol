@@ -327,7 +327,7 @@ contract Penrose is Ownable, BoringFactory {
     /// @param _market the new market address
     function setBigBangEthMarket(address _market) external onlyOwner {
         if (_market == address(0)) revert ZeroAddress();
-        
+
         if (bigBangEthMarket != address(0)) {
             uint256 len = allBigBangMarkets.length;
             address[] memory markets = allBigBangMarkets;

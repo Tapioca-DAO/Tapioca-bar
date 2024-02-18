@@ -105,8 +105,11 @@ contract UsdoTestHelper is TestHelper, TestUtils {
         returns (Singularity)
     {
         Singularity sgl = new Singularity();
-        (Singularity._InitMemoryModulesData memory _modulesData, Singularity._InitMemoryTokensData memory _tokensData, Singularity._InitMemoryData memory _data) =
-            _getSingularityInitData(_sgl, address(_penrose));
+        (
+            Singularity._InitMemoryModulesData memory _modulesData,
+            Singularity._InitMemoryTokensData memory _tokensData,
+            Singularity._InitMemoryData memory _data
+        ) = _getSingularityInitData(_sgl, address(_penrose));
         {
             sgl.init(abi.encode(_modulesData, _tokensData, _data));
         }
@@ -119,17 +122,25 @@ contract UsdoTestHelper is TestHelper, TestUtils {
 
     function _getSingularityInitData(TestSingularityData memory _sgl, address _penrose)
         private
-        returns (Singularity._InitMemoryModulesData memory modulesData, Singularity._InitMemoryTokensData memory tokensData, Singularity._InitMemoryData memory data)
+        returns (
+            Singularity._InitMemoryModulesData memory modulesData,
+            Singularity._InitMemoryTokensData memory tokensData,
+            Singularity._InitMemoryData memory data
+        )
     {
         SGLLiquidation sglLiq = new SGLLiquidation();
         SGLBorrow sglBorrow = new SGLBorrow();
         SGLCollateral sglCollateral = new SGLCollateral();
         SGLLeverage sglLev = new SGLLeverage();
 
-        modulesData = Singularity._InitMemoryModulesData(address(sglLiq), address(sglBorrow), address(sglCollateral), address(sglLev));
+        modulesData = Singularity._InitMemoryModulesData(
+            address(sglLiq), address(sglBorrow), address(sglCollateral), address(sglLev)
+        );
 
         tokensData = Singularity._InitMemoryTokensData(_sgl.asset, _sgl.assetId, _sgl.collateral, _sgl.collateralId);
 
-        data = Singularity._InitMemoryData(IPenrose(_penrose), ITapiocaOracle(address(_sgl.oracle)), 0, 75000, 80000, _sgl.leverageExecutor);
+        data = Singularity._InitMemoryData(
+            IPenrose(_penrose), ITapiocaOracle(address(_sgl.oracle)), 0, 75000, 80000, _sgl.leverageExecutor
+        );
     }
 }
