@@ -137,6 +137,10 @@ contract Singularity is SGLCommon {
         address _collateralModule,
         address _leverageModule
     ) private {
+        if (_liquidationModule == address(0)) revert NotValid();
+        if (_collateralModule == address(0)) revert NotValid();
+        if (_borrowModule == address(0)) revert NotValid();
+        if (_leverageModule == address(0)) revert NotValid();
         liquidationModule = SGLLiquidation(_liquidationModule);
         collateralModule = SGLCollateral(_collateralModule);
         borrowModule = SGLBorrow(_borrowModule);
