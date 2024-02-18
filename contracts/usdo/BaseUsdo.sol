@@ -7,13 +7,11 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // Tapioca
 import {BaseTapiocaOmnichainEngine} from "tapioca-periph/tapiocaOmnichainEngine/BaseTapiocaOmnichainEngine.sol";
-import {IUsdo, UsdoInitStruct} from "tapioca-periph/interfaces/oft/IUsdo.sol";
+import {UsdoInitStruct} from "tapioca-periph/interfaces/oft/IUsdo.sol";
 import {IYieldBox} from "tapioca-periph/interfaces/yieldbox/IYieldBox.sol";
 import {ModuleManager} from "./modules/ModuleManager.sol";
 import {ICluster} from "tapioca-periph/interfaces/periph/ICluster.sol";
 import {BaseUsdoTokenMsgType} from "./BaseUsdoTokenMsgType.sol";
-import {UsdoExtExec} from "./extensions/UsdoExtExec.sol";
-import {UsdoHelper} from "./extensions/UsdoHelper.sol";
 
 /*
 
@@ -34,8 +32,6 @@ import {UsdoHelper} from "./extensions/UsdoHelper.sol";
 abstract contract BaseUsdo is ModuleManager, BaseTapiocaOmnichainEngine, BaseUsdoTokenMsgType {
     using SafeERC20 for IERC20;
 
-    UsdoExtExec public immutable usdoExtExec;
-    UsdoHelper public immutable usdoHelper;
     IYieldBox public immutable yieldBox;
     ICluster public cluster;
 
@@ -44,8 +40,5 @@ abstract contract BaseUsdo is ModuleManager, BaseTapiocaOmnichainEngine, BaseUsd
     {
         yieldBox = IYieldBox(_data.yieldBox);
         cluster = ICluster(_data.cluster);
-
-        usdoExtExec = new UsdoExtExec();
-        usdoHelper = new UsdoHelper();
     }
 }

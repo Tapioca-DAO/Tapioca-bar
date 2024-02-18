@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.18;
+pragma solidity 0.8.22;
 
 // External
 import {RebaseLibrary, Rebase} from "@boringcrypto/boring-solidity/contracts/libraries/BoringRebase.sol";
@@ -421,10 +421,7 @@ abstract contract Market is MarketERC20, Ownable {
     }
 
     function _updateOracleRateForLiquidations() internal {
-        try oracle.get(oracleData) returns (
-            bool _updated,
-            uint256 _exchangeRate
-        ) {
+        try oracle.get(oracleData) returns (bool _updated, uint256 _exchangeRate) {
             if (_updated && _exchangeRate > 0) {
                 exchangeRate = _exchangeRate; //update cached rate
                 rateTimestamp = block.timestamp;
@@ -437,9 +434,7 @@ abstract contract Market is MarketERC20, Ownable {
         }
     }
 
-    function _getRevertMsg(
-        bytes memory _returnData
-    ) internal pure returns (string memory) {
+    function _getRevertMsg(bytes memory _returnData) internal pure returns (bytes memory) {
         if (_returnData.length > 1000) return "Market: reason too long";
         // If the _res length is less than 68, then the transaction failed silently (without a revert message)
         if (_returnData.length < 68) return "Market: no return data";
@@ -448,7 +443,7 @@ abstract contract Market is MarketERC20, Ownable {
             // Slice the sighash.
             _returnData := add(_returnData, 0x04)
         }
-        return abi.decode(_returnData, (string)); // All that remains is the revert string
+        return _returnData; // All that remains is the revert string
     }
 
     function _computeMaxBorrowableAmount(address user, uint256 _exchangeRate)

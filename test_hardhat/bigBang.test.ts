@@ -1,22 +1,15 @@
-import hre, { ethers, network } from 'hardhat';
-import { expect } from 'chai';
-import { BN, register } from './test.utils';
-import {
-    loadFixture,
-    setBalance,
-} from '@nomicfoundation/hardhat-network-helpers';
-import _ from 'lodash';
-import { bigBang } from '../typechain/contracts/markets';
-import { AbiCoder, formatUnits } from 'ethers/lib/utils';
+import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
+import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
+import { YieldBox } from '@tapioca-sdk/typechain/YieldBox';
 import {
     ERC20Mock,
     MockSwapper__factory,
 } from '@tapioca-sdk/typechain/tapioca-mocks';
-import { YieldBox } from '@tapioca-sdk/typechain/YieldBox';
-import { BigBang } from '../typechain';
-import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
+import { expect } from 'chai';
 import { BigNumber } from 'ethers';
-import { Market } from '@tapioca-sdk//typechain/tapioca-penrose';
+import { formatUnits } from 'ethers/lib/utils';
+import hre, { ethers } from 'hardhat';
+import { BN, register } from './test.utils';
 
 describe('BigBang test', () => {
     it.skip('should test liquidator reward', async () => {

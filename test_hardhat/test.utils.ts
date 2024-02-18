@@ -1,7 +1,6 @@
 import { time } from '@nomicfoundation/hardhat-network-helpers';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import {
-    CurvePoolMock__factory,
     ERC20Mock,
     ERC20Mock__factory,
     LZEndpointMock__factory,
@@ -13,7 +12,7 @@ import {
     UniswapV2Factory__factory,
     UniswapV2Router02__factory,
 } from '@tapioca-sdk/typechain/tapioca-mocks';
-import { BigNumber, BigNumberish, Signature, Wallet } from 'ethers';
+import { BigNumberish, Signature, Wallet } from 'ethers';
 import { splitSignature } from 'ethers/lib/utils';
 import hre, { ethers } from 'hardhat';
 
@@ -26,7 +25,6 @@ import {
 
 import {
     Cluster__factory,
-    CurveSwapper__factory,
     MagnetarHelper__factory,
     MagnetarMarketModule1__factory,
     MagnetarMarketModule2__factory,
@@ -38,8 +36,16 @@ import {
     UniswapV2Factory,
     UniswapV2Router02,
 } from '@tapioca-sdk/typechain/tapioca-mocks/uniswapv2';
-import { ERC20Permit, Penrose, Singularity, USDO } from '../gen/typechain';
 import { UniswapV2Swapper__factory } from '@tapioca-sdk/typechain/tapioca-periphery';
+import {
+    ERC20Permit,
+    Market,
+    MarketHelper,
+    MarketHelper__factory,
+    Penrose,
+    Singularity,
+    Usdo,
+} from '@typechain/index';
 
 ethers.utils.Logger.setLogLevel(ethers.utils.Logger.levels.ERROR);
 
@@ -88,7 +94,7 @@ async function registerUsd0Contract(
 
     const extExec = await (
         await ethers.getContractFactory('TapiocaOmnichainExtExec')
-    ).deploy();
+    ).deploy(cluster, owner);
 
     const usdoInitStruct = {
         endpoint: lzEndpointContract.address,
@@ -453,7 +459,7 @@ async function createUniV2Usd0Pairs(
     uniRouter: UniswapV2Router02,
     weth: ERC20Mock,
     tap: ERC20Mock,
-    usdo: USDO,
+    usdo: Usdo,
 ) {
     // Create WETH<>USDO pair
     const wethPairAmount = ethers.BigNumber.from(1e6).mul((1e18).toString());
@@ -754,9 +760,9 @@ async function registerSingularity(
     mediumRiskMC: string,
     yieldBox: YieldBox,
     penrose: Penrose,
-    weth: ERC20Mock | USDO,
+    weth: ERC20Mock | Usdo,
     wethAssetId: BigNumberish,
-    usdc: ERC20Mock | TapiocaOFTMock,
+    usdc: ERC20Mock,
     usdcAssetId: BigNumberish,
     wethUsdcOracle: OracleMock,
     swapper: string,
@@ -871,7 +877,7 @@ async function registerSDaiMock(dai: string, deployer: any, staging?: boolean) {
 }
 
 async function createWethUsd0Singularity(
-    usd0: USDO,
+    usd0: Usdo,
     weth: ERC20Mock,
     penrose: Penrose,
     usdoAssetId: any,
@@ -1030,7 +1036,7 @@ async function registerOriginMarket(
     assetId: BigNumberish,
     oracle: OracleMock,
     collateralizationRate: BigNumberish,
-    exchangeRatePrecision?: BigNumberish,
+    exchangeRatePrecision: BigNumberish,
     staging?: boolean,
 ) {
     const originFactory = await ethers.getContractFactory('Origins');
@@ -1449,6 +1455,10 @@ export async function register(staging?: boolean) {
         staging,
     );
 
+    const marketHelper = await new MarketHelper__factory()
+        .connect(deployer)
+        .deploy();
+
     // ------------------- 2.2 Deploy Penrose -------------------
     log('Deploying Penrose', staging);
     const { penrose } = await registerPenrose(
@@ -1489,22 +1499,17 @@ export async function register(staging?: boolean) {
 
     // -------------------  4 Deploy UNIV2 env -------------------
     log('Deploying UNIV2 Environment', staging);
-    const {
-        __wethUsdcMockPair,
-        __wethTapMockPair,
-        __wbtcTapMockPair,
-        __uniFactory,
-        __uniRouter,
-    } = await uniV2EnvironnementSetup(
-        deployer.address,
-        weth,
-        usdc,
-        tap,
-        wbtc,
-        staging,
-    );
+    const { __wethUsdcMockPair, __wethTapMockPair, __uniFactory, __uniRouter } =
+        await uniV2EnvironnementSetup(
+            deployer.address,
+            weth,
+            usdc,
+            tap,
+            wbtc,
+            staging,
+        );
     log(
-        `Deployed UNIV2 Environment WethUsdcMockPair: ${__wethUsdcMockPair}, WethTapMockPar: ${__wethTapMockPair}, WbtcUsdcMockPair: ${__wbtcTapMockPair}, UniswapV2Factory: ${__uniFactory.address}, UniswapV2Router02: ${__uniRouter.address}`,
+        `Deployed UNIV2 Environment WethUsdcMockPair: ${__wethUsdcMockPair}, WethTapMockPar: ${__wethTapMockPair}, UniswapV2Factory: ${__uniFactory.address}, UniswapV2Router02: ${__uniRouter.address}`,
         staging,
     );
 
@@ -1771,6 +1776,7 @@ export async function register(staging?: boolean) {
 
     // Helper
     const initialSetup = {
+        marketHelper,
         __wethUsdcPrice,
         __usd0WethPrice,
         __wbtcUsdcPrice,
@@ -1945,15 +1951,19 @@ export async function register(staging?: boolean) {
             _account.address,
             wethUsdcCollateralId,
         );
-        await (
-            await _wethUsdcSingularity.addCollateral(
+
+        await performMarketHelperCall(
+            marketHelper,
+            wethUsdcSingularity,
+            await marketHelper.addCollateral(
+                _wethUsdcSingularity.address,
                 _account.address,
                 _account.address,
                 false,
                 0,
                 _wethUsdcValShare,
-            )
-        ).wait();
+            ),
+        );
     };
 
     const usdcDepositAndAddCollateralWbtcSingularity = async (
@@ -1981,15 +1991,19 @@ export async function register(staging?: boolean) {
             _account.address,
             wbtcUsdcCollateralId,
         );
-        await (
-            await _wbtcUsdcSingularity.addCollateral(
+
+        await performMarketHelperCall(
+            marketHelper,
+            wethUsdcSingularity,
+            await marketHelper.addCollateral(
+                _wbtcUsdcSingularity.address,
                 _account.address,
                 _account.address,
                 false,
                 0,
                 _wbtcUsdcValShare,
-            )
-        ).wait();
+            ),
+        );
     };
 
     const initContracts = async () => {
@@ -2071,3 +2085,15 @@ const createSimpleSwapData = (
 
     return swapData;
 };
+
+export async function performMarketHelperCall(
+    marketHelper: MarketHelper,
+    market: Singularity,
+    data: [number[], string[]] & { modules: number[]; calls: string[] },
+    signer?: SignerWithAddress | Wallet,
+) {
+    signer = signer ?? (await ethers.getSigners())[0];
+    await (
+        await market.connect(signer).execute(data.modules, data.calls, true)
+    ).wait();
+}

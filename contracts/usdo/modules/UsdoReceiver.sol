@@ -21,9 +21,7 @@ import {
 import {TapiocaOmnichainReceiver} from "tapioca-periph/tapiocaOmnichainEngine/TapiocaOmnichainReceiver.sol";
 import {UsdoMarketReceiverModule} from "./UsdoMarketReceiverModule.sol";
 import {UsdoOptionReceiverModule} from "./UsdoOptionReceiverModule.sol";
-import {UsdoMsgCodec} from "../libraries/UsdoMsgCodec.sol";
 import {UsdoReceiver} from "./UsdoReceiver.sol";
-import {UsdoSender} from "./UsdoSender.sol";
 import {BaseUsdo} from "../BaseUsdo.sol";
 
 /*
@@ -67,13 +65,7 @@ contract UsdoReceiver is BaseUsdo, TapiocaOmnichainReceiver {
         override
         returns (bool success)
     {
-        if (_msgType == MSG_YB_APPROVE_ALL) {
-            _yieldBoxPermitAllReceiver(_toeComposeMsg);
-        } else if (_msgType == MSG_YB_APPROVE_ASSET) {
-            _yieldBoxPermitAssetReceiver(_toeComposeMsg);
-        } else if (_msgType == MSG_MARKET_PERMIT) {
-            _marketPermitReceiver(_toeComposeMsg);
-        } else if (_msgType == MSG_TAP_EXERCISE) {
+        if (_msgType == MSG_TAP_EXERCISE) {
             _executeModule(
                 uint8(IUsdo.Module.UsdoOptionReceiver),
                 abi.encodeWithSelector(
@@ -109,87 +101,5 @@ contract UsdoReceiver is BaseUsdo, TapiocaOmnichainReceiver {
             return false;
         }
         return true;
-    }
-
-    // ********************* //
-    // ***** RECEIVERS ***** //
-    // ********************* //
-    /**
-     * @notice Approves Market lend/borrow via permit.
-     * @param _data The call data containing info about the approval.
-     *      - token::address: Address of the YieldBox to approve.
-     *      - owner::address: Address of the owner of the tokens.
-     *      - spender::address: Address of the spender.
-     *      - value::uint256: Amount of tokens to approve.
-     *      - deadline::uint256: Deadline for the approval.
-     *      - v::uint8: v value of the signature.
-     *      - r::bytes32: r value of the signature.
-     *      - s::bytes32: s value of the signature.
-     */
-    function _marketPermitReceiver(bytes memory _data) internal virtual {
-        MarketPermitActionMsg memory approval = UsdoMsgCodec.decodeMarketPermitApprovalMsg(_data);
-
-        _sanitizeTarget(approval.target);
-
-        if (approval.permitAsset) {
-            usdoExtExec.marketPermitAssetApproval(approval);
-        } else {
-            usdoExtExec.marketPermitCollateralApproval(approval);
-        }
-    }
-
-    /**
-     * @notice Approves YieldBox asset via permit.
-     * @param _data The call data containing info about the approvals.
-     *      - token::address: Address of the YieldBox to approve.
-     *      - owner::address: Address of the owner of the tokens.
-     *      - spender::address: Address of the spender.
-     *      - value::uint256: Amount of tokens to approve.
-     *      - deadline::uint256: Deadline for the approval.
-     *      - v::uint8: v value of the signature.
-     *      - r::bytes32: r value of the signature.
-     *      - s::bytes32: s value of the signature.
-     */
-    function _yieldBoxPermitAssetReceiver(bytes memory _data) internal virtual {
-        YieldBoxApproveAssetMsg[] memory approvals = UsdoMsgCodec.decodeArrayOfYieldBoxPermitAssetMsg(_data);
-
-        uint256 approvalsLength = approvals.length;
-        for (uint256 i = 0; i < approvalsLength;) {
-            _sanitizeTarget(approvals[i].target);
-            unchecked {
-                ++i;
-            }
-        }
-
-        usdoExtExec.yieldBoxPermitApproveAsset(approvals);
-    }
-
-    /**
-     * @notice Approves all assets on YieldBox.
-     * @param _data The call data containing info about the approval.
-     *      - target::address: Address of the YieldBox contract.
-     *      - owner::address: Address of the owner of the tokens.
-     *      - spender::address: Address of the spender.
-     *      - deadline::uint256: Deadline for the approval.
-     *      - v::uint8: v value of the signature.
-     *      - r::bytes32: r value of the signature.
-     *      - s::bytes32: s value of the signature.
-     */
-    function _yieldBoxPermitAllReceiver(bytes memory _data) internal virtual {
-        YieldBoxApproveAllMsg memory approval = UsdoMsgCodec.decodeYieldBoxApproveAllMsg(_data);
-
-        _sanitizeTarget(approval.target);
-
-        if (approval.permit) {
-            usdoExtExec.yieldBoxPermitApproveAll(approval);
-        } else {
-            usdoExtExec.yieldBoxPermitRevokeAll(approval);
-        }
-    }
-
-    function _sanitizeTarget(address target) private view {
-        if (!cluster.isWhitelisted(0, target)) {
-            revert InvalidApprovalTarget(target);
-        }
     }
 }
