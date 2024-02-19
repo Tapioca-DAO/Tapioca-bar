@@ -87,7 +87,7 @@ contract MarketHelper {
     /// @param skim True if the amount should be skimmed from the deposit balance of msg.sender.
     /// False if tokens from msg.sender in `yieldBox` should be transferred.
     /// @param share The amount of shares to add for `to`.
-    function addCollateral(Singularity sgl, address from, address to, bool skim, uint256 amount, uint256 share)
+    function addCollateral(Singularity, address from, address to, bool skim, uint256 amount, uint256 share)
         external
         pure
         returns (Singularity.Module[] memory modules, bytes[] memory calls)
@@ -102,7 +102,7 @@ contract MarketHelper {
     /// @param from Account to debit collateral from.
     /// @param to The receiver of the shares.
     /// @param share Amount of shares to remove.
-    function removeCollateral(Singularity sgl, address from, address to, uint256 share)
+    function removeCollateral(Singularity, address from, address to, uint256 share)
         external
         pure
         returns (Singularity.Module[] memory modules, bytes[] memory calls)
@@ -117,7 +117,7 @@ contract MarketHelper {
     /// @param from Account to borrow for.
     /// @param to The receiver of borrowed tokens.
     /// @param amount Amount to borrow.
-    function borrow(Singularity sgl, address from, address to, uint256 amount)
+    function borrow(Singularity, address from, address to, uint256 amount)
         external
         pure
         returns (Singularity.Module[] memory modules, bytes[] memory calls)
@@ -139,7 +139,7 @@ contract MarketHelper {
     /// @param skim True if the amount should be skimmed from the deposit balance of msg.sender.
     /// False if tokens from msg.sender in `yieldBox` should be transferred.
     /// @param part The amount to repay. See `userBorrowPart`.
-    function repay(Singularity sgl, address from, address to, bool skim, uint256 part)
+    function repay(Singularity, address from, address to, bool skim, uint256 part)
         external
         pure
         returns (Singularity.Module[] memory modules, bytes[] memory calls)
@@ -159,7 +159,7 @@ contract MarketHelper {
     /// @param from The user who sells
     /// @param share Collateral YieldBox-shares to sell
     /// @param data LeverageExecutor data
-    function sellCollateral(Singularity sgl, address from, uint256 share, bytes calldata data)
+    function sellCollateral(Singularity, address from, uint256 share, bytes calldata data)
         external
         pure
         returns (Singularity.Module[] memory modules, bytes[] memory calls)
@@ -181,7 +181,7 @@ contract MarketHelper {
     /// @param supplyAmount Amount of asset supplied (down payment)
     /// @param data LeverageExecutor data
     function buyCollateral(
-        Singularity sgl,
+        Singularity,
         address from,
         uint256 borrowAmount,
         uint256 supplyAmount,
@@ -207,7 +207,7 @@ contract MarketHelper {
     /// @param liquidatorReceiverData the IMarketLiquidatorReceiver executor data
     /// @param swapCollateral true/false
     function liquidateBadDebt(
-        Singularity sgl,
+        Singularity,
         address user,
         address from,
         address receiver,
@@ -237,7 +237,7 @@ contract MarketHelper {
     /// @param liquidatorReceivers IMarketLiquidatorReceiver array
     /// @param liquidatorReceiverDatas IMarketLiquidatorReceiver datas
     function liquidate(
-        Singularity sgl,
+        Singularity,
         address[] calldata users,
         uint256[] calldata maxBorrowParts,
         uint256[] calldata minLiquidationBonuses,
