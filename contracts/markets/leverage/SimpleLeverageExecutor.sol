@@ -32,9 +32,6 @@ contract SimpleLeverageExecutor is BaseLeverageExecutor {
     // *** PUBLIC METHODS *** //
     // ********************* //
 
-    // WETH withdraw receiver.
-    receive() external payable {}
-
     /**
      * @inheritdoc BaseLeverageExecutor
      */

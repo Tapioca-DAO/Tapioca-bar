@@ -62,6 +62,8 @@ abstract contract BaseLeverageExecutor is Ownable {
         cluster = _cluster;
     }
 
+    receive() external payable {}
+
     // ******************** //
     // *** OWNER METHODS *** //
     // ******************** //
