@@ -35,6 +35,7 @@ contract BBStorage is Ownable, Market, ReentrancyGuard {
     // ************ //
     // *** VARS *** //
     // ************ //
+
     IBigBang.AccrueInfo public accrueInfo;
 
     bool public isMainMarket;

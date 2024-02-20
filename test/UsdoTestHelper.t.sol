@@ -41,6 +41,7 @@ struct TestPenroseData {
     address cluster;
     address tap;
     address token;
+    IPearlmit pearlmit;
     address owner;
 }
 
@@ -94,7 +95,12 @@ contract UsdoTestHelper is TestHelper, TestUtils {
 
     function createPenrose(TestPenroseData memory _data) public returns (Penrose pen, Singularity mediumRiskMC) {
         pen = new Penrose(
-            IYieldBox(_data.yb), ICluster(_data.cluster), IERC20(_data.tap), IERC20(_data.token), _data.owner
+            IYieldBox(_data.yb),
+            ICluster(_data.cluster),
+            IERC20(_data.tap),
+            IERC20(_data.token),
+            _data.pearlmit,
+            _data.owner
         );
         mediumRiskMC = new Singularity();
 

@@ -189,7 +189,8 @@ contract UsdoTest is UsdoTestHelper {
             delegate: __owner,
             yieldBox: address(yieldBox),
             cluster: address(cluster),
-            extExec: address(extExec)
+            extExec: address(extExec),
+            pearlmit: IPearlmit(address(pearlmit))
         });
         UsdoSender aUsdoSender = new UsdoSender(aUsdoInitStruct);
         UsdoReceiver aUsdoReceiver = new UsdoReceiver(aUsdoInitStruct);
@@ -216,7 +217,8 @@ contract UsdoTest is UsdoTestHelper {
             delegate: __owner,
             yieldBox: address(yieldBox),
             cluster: address(cluster),
-            extExec: address(extExec)
+            extExec: address(extExec),
+            pearlmit: IPearlmit(address(pearlmit))
         });
         UsdoSender bUsdoSender = new UsdoSender(bUsdoInitStruct);
         UsdoReceiver bUsdoReceiver = new UsdoReceiver(bUsdoInitStruct);
@@ -258,8 +260,16 @@ contract UsdoTest is UsdoTestHelper {
 
         swapper = createSwapper(yieldBox);
         leverageExecutor = createLeverageExecutor(address(yieldBox), address(swapper), address(cluster));
-        (penrose, masterContract) =
-            createPenrose(TestPenroseData(address(yieldBox), address(cluster), address(tapOFT), address(weth), __owner));
+        (penrose, masterContract) = createPenrose(
+            TestPenroseData(
+                address(yieldBox),
+                address(cluster),
+                address(tapOFT),
+                address(weth),
+                IPearlmit(address(pearlmit)),
+                __owner
+            )
+        );
         oracle = createOracle();
         singularity = createSingularity(
             penrose,
@@ -276,7 +286,6 @@ contract UsdoTest is UsdoTestHelper {
         );
 
         Pearlmit perlmit = new Pearlmit("Test", "1");
-        penrose.setPearlmit(address(perlmit));
 
         cluster.updateContract(aEid, address(yieldBox), true);
         cluster.updateContract(aEid, address(magnetar), true);
