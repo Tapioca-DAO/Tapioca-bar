@@ -223,7 +223,7 @@ contract Singularity is SGLCommon {
                     revert(abi.decode(_getRevertMsg(result), (string)));
                 }
                 successes[i] = success;
-                results[i] = _getRevertMsg(result);
+                results[i] = !success ? _getRevertMsg(result) : result;
             }
         }
     }
