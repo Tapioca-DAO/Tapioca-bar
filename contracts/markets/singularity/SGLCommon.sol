@@ -167,7 +167,8 @@ contract SGLCommon is SGLStorage {
                 revert TooMuch();
             }
         } else {
-            yieldBox.transfer(from, address(this), _assetId, share);
+            // yieldBox.transfer(from, address(this), _assetId, share);
+            pearlmit.transferFromERC1155(from, address(this), address(yieldBox), _assetId, share);
         }
     }
 

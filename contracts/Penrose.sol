@@ -9,7 +9,7 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {
     ERC20WithoutStrategy, IStrategy, IYieldBox as IBoringYieldBox
 } from "yieldbox/strategies/ERC20WithoutStrategy.sol";
-import {IPearlmit} from "tapioca-periph/interfaces/periph/IPearlmit.sol";
+import {PearlmitHandler, IPearlmit} from "tapioca-periph/pearlmit/PearlmitHandler.sol";
 import {ICluster} from "tapioca-periph/interfaces/periph/ICluster.sol";
 import {IMarket} from "tapioca-periph/interfaces/bar/ISingularity.sol";
 import {ITwTap} from "tapioca-periph/interfaces/tap-token/ITwTap.sol";
@@ -33,7 +33,7 @@ import {SafeApprove} from "./libraries/SafeApprove.sol";
 
 /// @title Global market registry
 /// @notice Singularity management
-contract Penrose is Ownable, BoringFactory {
+contract Penrose is Ownable, PearlmitHandler, BoringFactory {
     using SafeApprove for address;
 
     // ************ //
@@ -45,8 +45,6 @@ contract Penrose is Ownable, BoringFactory {
     bool public paused;
     /// @notice returns the Cluster contract
     ICluster public cluster;
-    /// @notice Used to check allowance borrow on SGL/BB contracts
-    IPearlmit public pearlmit;
 
     /// @notice returns the YieldBox contract
     IYieldBox public immutable yieldBox;
@@ -96,7 +94,14 @@ contract Penrose is Ownable, BoringFactory {
     /// @param tapToken_ TapOFT contract address
     /// @param mainToken_ WETH contract address
     /// @param _owner owner address
-    constructor(IYieldBox _yieldBox, ICluster _cluster, IERC20 tapToken_, IERC20 mainToken_, address _owner) {
+    constructor(
+        IYieldBox _yieldBox,
+        ICluster _cluster,
+        IERC20 tapToken_,
+        IERC20 mainToken_,
+        IPearlmit _pearlmit,
+        address _owner
+    ) PearlmitHandler(_pearlmit) {
         yieldBox = _yieldBox;
         cluster = _cluster;
         tapToken = tapToken_;
@@ -152,8 +157,6 @@ contract Penrose is Ownable, BoringFactory {
     event LogTwTapFeesDeposit(uint256 indexed amount);
     /// @notice event emitted when Cluster is set
     event ClusterSet(address indexed old, address indexed _new);
-    /// @notice event emitted when Pearlmit is set
-    event PearlmitSet(address indexed old, address indexed _new);
     /// @notice event emitted when total BB markets debt is computed
     event TotalUsdoDebt(uint256 indexed amount);
     /// @notice event emitted when markets are re-accrued
@@ -298,17 +301,6 @@ contract Penrose is Ownable, BoringFactory {
         if (_newCluster == address(0)) revert ZeroAddress();
         emit ClusterSet(address(cluster), _newCluster);
         cluster = ICluster(_newCluster);
-    }
-
-    /**
-     * @notice set the Pearlmit contract
-     * @dev can only be called by the owner
-     * @param _newPearlmit the new address
-     */
-    function setPearlmit(address _newPearlmit) external onlyOwner {
-        if (_newPearlmit == address(0)) revert ZeroAddress();
-        emit PearlmitSet(address(pearlmit), _newPearlmit);
-        pearlmit = IPearlmit(_newPearlmit);
     }
 
     /// @notice sets the main BigBang market debt rate

@@ -7,10 +7,10 @@ import {BoringERC20} from "@boringcrypto/boring-solidity/contracts/libraries/Bor
 import {IERC20} from "@boringcrypto/boring-solidity/contracts/ERC20.sol";
 
 // Tapioca
-import {IMarketLiquidatorReceiver} from "tapioca-periph/interfaces/bar/IMarketLiquidatorReceiver.sol";
 import {ILeverageExecutor} from "tapioca-periph/interfaces/bar/ILeverageExecutor.sol";
 import {ITapiocaOracle} from "tapioca-periph/interfaces/periph/ITapiocaOracle.sol";
 import {IYieldBox} from "tapioca-periph/interfaces/yieldbox/IYieldBox.sol";
+import {IPearlmit} from "tapioca-periph/interfaces/periph/IPearlmit.sol";
 import {IPenrose} from "tapioca-periph/interfaces/bar/IPenrose.sol";
 import {SafeApprove} from "../../libraries/SafeApprove.sol";
 import {BBLiquidation} from "./BBLiquidation.sol";
@@ -155,6 +155,7 @@ contract BigBang is BBCommon {
         ILeverageExecutor _leverageExecutor
     ) private {
         penrose = _penrose;
+        pearlmit = IPearlmit(_penrose.pearlmit());
         yieldBox = IYieldBox(_penrose.yieldBox());
 
         address _asset = penrose.usdoToken();

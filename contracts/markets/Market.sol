@@ -10,6 +10,7 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {ILeverageExecutor} from "tapioca-periph/interfaces/bar/ILeverageExecutor.sol";
 import {ITapiocaOracle} from "tapioca-periph/interfaces/periph/ITapiocaOracle.sol";
 import {IYieldBox} from "tapioca-periph/interfaces/yieldbox/IYieldBox.sol";
+import {IPearlmit} from "tapioca-periph/interfaces/periph/IPearlmit.sol";
 import {IPenrose} from "tapioca-periph/interfaces/bar/IPenrose.sol";
 import {MarketERC20} from "./MarketERC20.sol";
 
@@ -52,6 +53,8 @@ abstract contract Market is MarketERC20, Ownable {
     IYieldBox public yieldBox;
     /// @notice returns Penrose address
     IPenrose public penrose;
+
+    IPearlmit public pearlmit;
 
     /// @notice collateral token address
     IERC20 public collateral;
@@ -412,6 +415,7 @@ abstract contract Market is MarketERC20, Ownable {
      */
     function _allowedBorrow(address from, uint256 share) internal virtual override {
         if (from != msg.sender) {
+            // TODO review risk of using this
             (uint256 pearlmitAllowed,) = penrose.pearlmit().allowance(from, msg.sender, address(yieldBox), collateralId);
             require(allowanceBorrow[from][msg.sender] >= share || pearlmitAllowed >= share, "Market: not approved");
             if (allowanceBorrow[from][msg.sender] != type(uint256).max) {

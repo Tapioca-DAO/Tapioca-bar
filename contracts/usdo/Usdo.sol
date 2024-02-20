@@ -8,7 +8,7 @@ import {OAppReceiver} from "@layerzerolabs/lz-evm-oapp-v2/contracts/oapp/OAppRec
 import {Origin} from "@layerzerolabs/lz-evm-oapp-v2/contracts/oapp/OApp.sol";
 
 // External
-import {ERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/draft-ERC20Permit.sol";
+import {ERC20Permit, ERC20} from "@openzeppelin/contracts/token/ERC20/extensions/draft-ERC20Permit.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import {Pausable} from "@openzeppelin/contracts/security/Pausable.sol";
 
@@ -19,6 +19,7 @@ import {
     LZSendParam,
     ERC20PermitStruct
 } from "tapioca-periph/interfaces/oft/IUsdo.sol";
+import {BaseTapiocaOmnichainEngine} from "tapioca-periph/tapiocaOmnichainEngine/BaseTapiocaOmnichainEngine.sol";
 import {TapiocaOmnichainSender} from "tapioca-periph/tapiocaOmnichainEngine/TapiocaOmnichainSender.sol";
 import {ICluster} from "tapioca-periph/interfaces/periph/ICluster.sol";
 import {UsdoReceiver} from "./modules/UsdoReceiver.sol";
@@ -96,6 +97,17 @@ contract Usdo is BaseUsdo, Pausable, ReentrancyGuard, ERC20Permit {
     }
 
     receive() external payable {}
+
+    /**
+     * @inheritdoc BaseTapiocaOmnichainEngine
+     */
+    function transferFrom(address _from, address _to, uint256 _amount)
+        public
+        override(BaseTapiocaOmnichainEngine, ERC20)
+        returns (bool)
+    {
+        return BaseTapiocaOmnichainEngine.transferFrom(_from, _to, _amount);
+    }
 
     /**
      * @dev Slightly modified version of the OFT _lzReceive() operation.

@@ -10,6 +10,7 @@ import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {ILeverageExecutor} from "tapioca-periph/interfaces/bar/ILeverageExecutor.sol";
 import {ITapiocaOracle} from "tapioca-periph/interfaces/periph/ITapiocaOracle.sol";
 import {IYieldBox} from "tapioca-periph/interfaces/yieldbox/IYieldBox.sol";
+import {IPearlmit} from "tapioca-periph/interfaces/periph/IPearlmit.sol";
 import {IPenrose} from "tapioca-periph/interfaces/bar/IPenrose.sol";
 import {Module} from "tapioca-periph/interfaces/bar/IMarket.sol";
 import {SGLLiquidation} from "./SGLLiquidation.sol";
@@ -90,6 +91,7 @@ contract Singularity is SGLCommon {
         ) = abi.decode(initData, (_InitMemoryModulesData, _InitMemoryTokensData, _InitMemoryData));
 
         penrose = _initMemoryData.penrose_;
+        pearlmit = IPearlmit(_initMemoryData.penrose_.pearlmit());
         yieldBox = IYieldBox(_initMemoryData.penrose_.yieldBox());
         _transferOwnership(address(penrose));
 
