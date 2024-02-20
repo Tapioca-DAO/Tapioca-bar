@@ -24,7 +24,7 @@ import {
     ITapiocaOptionBroker, IExerciseOptionsData
 } from "tapioca-periph/interfaces/tap-token/ITapiocaOptionBroker.sol";
 import {UsdoInitStruct, ExerciseOptionsMsg, LZSendParam} from "tapioca-periph/interfaces/oft/IUsdo.sol";
-import {MagnetarMintModule} from "tapioca-periph/Magnetar/modules/MagnetarMintModule.sol";
+import {MagnetarMintXChainModule} from "tapioca-periph/Magnetar/modules/MagnetarMintXChainModule.sol";
 import {UsdoMsgCodec} from "../libraries/UsdoMsgCodec.sol";
 import {BaseUsdo} from "../BaseUsdo.sol";
 
@@ -80,10 +80,10 @@ contract UsdoOptionReceiverModule is BaseUsdo {
             msg_.mintData.mintAmount = _toLD(msg_.mintData.mintAmount.toUint64());
         }
 
-        bytes memory call = abi.encodeWithSelector(MagnetarMintModule.mintBBLendXChainSGL.selector, msg_);
+        bytes memory call = abi.encodeWithSelector(MagnetarMintXChainModule.mintBBLendXChainSGL.selector, msg_);
         MagnetarCall[] memory magnetarCall = new MagnetarCall[](1);
         magnetarCall[0] = MagnetarCall({
-            id: MagnetarAction.MintModule,
+            id: MagnetarAction.MintXChainModule,
             target: address(this),
             value: msg.value,
             allowFailure: false,
