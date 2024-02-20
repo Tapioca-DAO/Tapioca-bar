@@ -56,42 +56,6 @@ contract UsdoOptionReceiverModule is BaseUsdo {
 
     constructor(UsdoInitStruct memory _data) BaseUsdo(_data) {}
 
-    //TODO: decide if we also need this
-    /**
-     * @notice cross-chain receiver to deposit mint from BB, lend on SGL, lock on tOLP and participate on tOB
-     * @dev Cross chain flow:
-     *  step 1: magnetar.mintBBLendXChainSGL (chain A) -->
-     *         step 2: IUsdo compose call calls magnetar.depositYBLendSGLLockXchainTOLP (chain B) -->
-     *              step 3: IToft(sglReceipt) compose call calls magnetar.lockAndParticipate (chain X)
-     * @param _data.user the user to perform the operation for
-     * @param _data.bigBang the BB address
-     * @param _data.mintData the data needed to mint on BB
-     * @param _data.lendSendParams LZ send params for lending on another layer
-     */
-    function mintLendXChainSGLXChainLockAndParticipateReceiver(bytes memory _data) public payable {
-        // Decode received message.
-        CrossChainMintFromBBAndLendOnSGLData memory msg_ =
-            UsdoMsgCodec.decodeMintLendXChainSGLXChainLockAndParticipateMsg(_data);
-
-        _checkWhitelistStatus(msg_.bigBang);
-        _checkWhitelistStatus(msg_.magnetar);
-
-        if (msg_.mintData.mintAmount > 0) {
-            msg_.mintData.mintAmount = _toLD(msg_.mintData.mintAmount.toUint64());
-        }
-
-        bytes memory call = abi.encodeWithSelector(MagnetarMintXChainModule.mintBBLendXChainSGL.selector, msg_);
-        MagnetarCall[] memory magnetarCall = new MagnetarCall[](1);
-        magnetarCall[0] = MagnetarCall({
-            id: MagnetarAction.MintXChainModule,
-            target: address(this),
-            value: msg.value,
-            allowFailure: false,
-            call: call
-        });
-        IMagnetar(payable(msg_.magnetar)).burst{value: msg.value}(magnetarCall);
-    }
-
     /**
      * @notice Exercise tOB option
      * @param _data The call data containing info about the operation.
