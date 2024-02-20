@@ -63,7 +63,6 @@ import {UsdoOptionReceiverModule} from "contracts/usdo/modules/UsdoOptionReceive
 import {SimpleLeverageExecutor} from "contracts/markets/leverage/SimpleLeverageExecutor.sol";
 import {ICommonExternalContracts} from "tapioca-periph/interfaces/common/ICommonData.sol";
 import {ILeverageExecutor} from "tapioca-periph/interfaces/bar/ILeverageExecutor.sol";
-import {MarketHelper} from "contracts/markets/singularity/MarketHelper.sol";
 import {ERC20WithoutStrategy} from "yieldbox/strategies/ERC20WithoutStrategy.sol";
 import {ICommonData} from "tapioca-periph/interfaces/common/ICommonData.sol";
 import {Singularity} from "contracts/markets/singularity/Singularity.sol";
@@ -71,6 +70,7 @@ import {UsdoReceiver} from "contracts/usdo/modules/UsdoReceiver.sol";
 import {IOracle} from "tapioca-periph/oracle/interfaces/IOracle.sol";
 import {UsdoHelper} from "contracts/usdo/extensions/UsdoHelper.sol";
 import {UsdoSender} from "contracts/usdo/modules/UsdoSender.sol";
+import {MarketHelper} from "contracts/markets/MarketHelper.sol";
 import {Pearlmit} from "tapioca-periph/pearlmit/Pearlmit.sol";
 import {Cluster} from "tapioca-periph/Cluster/Cluster.sol";
 import {YieldBox} from "yieldbox/YieldBox.sol";

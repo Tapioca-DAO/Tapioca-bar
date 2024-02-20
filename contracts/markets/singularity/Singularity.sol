@@ -38,7 +38,8 @@ contract Singularity is SGLCommon {
     // ************ //
     // *** VARS *** //
     // ************ //
-    /// @notice enum representing each type of module associated with a Singularity market
+    //TODO: reference the one from periph
+    /// @notice enum representing each type of module associated with a Singularity/BigBang market
     /// @dev modules are contracts that holds a portion of the market's logic
     enum Module {
         Base,
@@ -48,7 +49,6 @@ contract Singularity is SGLCommon {
         Leverage
     }
     /// @notice returns the liquidation module
-
     SGLLiquidation public liquidationModule;
     /// @notice returns the borrow module
     SGLBorrow public borrowModule;

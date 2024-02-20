@@ -5,7 +5,7 @@ pragma solidity 0.8.22;
 import {Rebase} from "@boringcrypto/boring-solidity/contracts/libraries/BoringRebase.sol";
 
 // Tapioca
-import {SGLLiquidation, SGLCollateral, Singularity, SGLLeverage, SGLCommon, SGLBorrow} from "./Singularity.sol";
+import {SGLLiquidation, SGLCollateral, Singularity, SGLLeverage, SGLCommon, SGLBorrow} from "./singularity/Singularity.sol";
 import {IMarketLiquidatorReceiver} from "tapioca-periph/interfaces/bar/IMarketLiquidatorReceiver.sol";
 import {ITapiocaOracle} from "tapioca-periph/interfaces/periph/ITapiocaOracle.sol";
 import {ISingularity} from "tapioca-periph/interfaces/bar/ISingularity.sol";
