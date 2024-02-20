@@ -73,6 +73,8 @@ contract AssetToSGLPLeverageExecutor is BaseLeverageExecutor {
         override
         returns (uint256 collateralAmountOut)
     {
+        if (msg.value > 0) revert NativeNotSupported();
+
         // Should be called only by approved SGL/BB markets.
         if (!cluster.isWhitelisted(0, msg.sender)) revert SenderNotValid();
 

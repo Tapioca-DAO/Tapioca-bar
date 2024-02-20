@@ -41,6 +41,8 @@ contract AssetTotsDaiLeverageExecutor is BaseLeverageExecutor {
         override
         returns (uint256 collateralAmountOut)
     {
+        if (msg.value > 0) revert NativeNotSupported();
+
         // Should be called only by approved SGL/BB markets.
         if (!cluster.isWhitelisted(0, msg.sender)) revert SenderNotValid();
 
@@ -81,8 +83,7 @@ contract AssetTotsDaiLeverageExecutor is BaseLeverageExecutor {
         //unwrap tsDai
         ITOFT(collateralAddress).unwrap(address(this), collateralAmountIn);
         //redeem from sDai
-        uint256 obtainedDai = ISavingsDai(sDaiAddress).redeem(
-            ISavingsDai(sDaiAddress).convertToShares(collateralAmountIn), address(this), address(this)
+        uint256 obtainedDai = ISavingsDai(sDaiAddress).redeem(collateralAmountIn, address(this), address(this)
         );
         // swap DAI with USDO, and transfer to sender
         SLeverageSwapData memory swapData = abi.decode(data, (SLeverageSwapData));
