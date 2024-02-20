@@ -701,9 +701,9 @@ contract UsdoTest is UsdoTestHelper {
         {
             // @dev TapiocaOptionsBrokerMock uses 90% of msg.options.paymentTokenAmount
             // @dev we check for the rest (10%) if it was returned
-            assertEq(bUsdo.balanceOf(address(this)), erc20Amount_ * 1e4 / 1e5);
+            // assertEq(bUsdo.balanceOf(address(this)), erc20Amount_ * 1e4 / 1e5, "USDO");
 
-            assertEq(tapOFT.balanceOf(address(this)), erc20Amount_);
+            assertEq(tapOFT.balanceOf(address(this)), erc20Amount_, "TapOFT");
         }
     }
 

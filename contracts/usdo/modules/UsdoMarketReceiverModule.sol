@@ -19,6 +19,7 @@ import {
     DepositAndSendForLockingData
 } from "tapioca-periph/interfaces/periph/IMagnetar.sol";
 import {MagnetarOptionModule} from "tapioca-periph/Magnetar/modules/MagnetarOptionModule.sol";
+import {MagnetarAssetXChainModule} from "tapioca-periph/Magnetar/modules/MagnetarAssetXChainModule.sol";
 import {MagnetarAssetModule} from "tapioca-periph/Magnetar/modules/MagnetarAssetModule.sol";
 import {MagnetarMintModule} from "tapioca-periph/Magnetar/modules/MagnetarMintModule.sol";
 import {IMagnetarHelper} from "tapioca-periph/interfaces/periph/IMagnetarHelper.sol";
@@ -78,7 +79,8 @@ contract UsdoMarketReceiverModule is BaseUsdo {
             msg_.depositData.amount = _toLD(msg_.depositData.amount.toUint64());
         }
 
-        bytes memory call = abi.encodeWithSelector(MagnetarAssetModule.depositYBLendSGLLockXchainTOLP.selector, msg_);
+        bytes memory call =
+            abi.encodeWithSelector(MagnetarAssetXChainModule.depositYBLendSGLLockXchainTOLP.selector, msg_);
         MagnetarCall[] memory magnetarCall = new MagnetarCall[](1);
         magnetarCall[0] = MagnetarCall({
             id: MagnetarAction.AssetModule,
