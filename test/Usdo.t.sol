@@ -63,14 +63,15 @@ import {UsdoOptionReceiverModule} from "contracts/usdo/modules/UsdoOptionReceive
 import {SimpleLeverageExecutor} from "contracts/markets/leverage/SimpleLeverageExecutor.sol";
 import {ICommonExternalContracts} from "tapioca-periph/interfaces/common/ICommonData.sol";
 import {ILeverageExecutor} from "tapioca-periph/interfaces/bar/ILeverageExecutor.sol";
-import {MarketHelper} from "contracts/markets/singularity/MarketHelper.sol";
 import {ERC20WithoutStrategy} from "yieldbox/strategies/ERC20WithoutStrategy.sol";
 import {ICommonData} from "tapioca-periph/interfaces/common/ICommonData.sol";
+import {Module, IMarket} from "tapioca-periph/interfaces/bar/IMarket.sol";
 import {Singularity} from "contracts/markets/singularity/Singularity.sol";
 import {UsdoReceiver} from "contracts/usdo/modules/UsdoReceiver.sol";
 import {IOracle} from "tapioca-periph/oracle/interfaces/IOracle.sol";
 import {UsdoHelper} from "contracts/usdo/extensions/UsdoHelper.sol";
 import {UsdoSender} from "contracts/usdo/modules/UsdoSender.sol";
+import {MarketHelper} from "contracts/markets/MarketHelper.sol";
 import {Pearlmit} from "tapioca-periph/pearlmit/Pearlmit.sol";
 import {Cluster} from "tapioca-periph/Cluster/Cluster.sol";
 import {YieldBox} from "yieldbox/YieldBox.sol";
@@ -135,9 +136,9 @@ contract UsdoTest is UsdoTestHelper {
 
     uint16 internal constant SEND = 1; // Send LZ message type
     uint16 internal constant PT_APPROVALS = 500; // Use for ERC20Permit approvals
-    uint16 internal constant PT_YB_APPROVE_ASSET = 600; // Use for YieldBox 'setApprovalForAsset(true)' operation
-    uint16 internal constant PT_YB_APPROVE_ALL = 601; // Use for YieldBox 'setApprovalForAll(true)' operation
-    uint16 internal constant PT_MARKET_PERMIT = 602; // Use for market.permitLend() operation
+    uint16 internal constant PT_YB_APPROVE_ASSET = 503; // Use for YieldBox 'setApprovalForAsset(true)' operation
+    uint16 internal constant PT_YB_APPROVE_ALL = 504; // Use for YieldBox 'setApprovalForAll(true)' operation
+    uint16 internal constant PT_MARKET_PERMIT = 505; // Use for market.permitLend() operation
     uint16 internal constant PT_REMOTE_TRANSFER = 700; // Use for transferring tokens from the contract from another chain
     uint16 internal constant PT_MARKET_REMOVE_ASSET = 900; // Use for remove asset from a market available on another chain
     uint16 internal constant PT_YB_SEND_SGL_LEND_OR_REPAY = 901; // Use to YB deposit, lend/repay on a market available on another chain
@@ -282,6 +283,7 @@ contract UsdoTest is UsdoTestHelper {
         cluster.updateContract(aEid, address(masterContract), true);
         cluster.updateContract(aEid, address(oracle), true);
         cluster.updateContract(aEid, address(singularity), true);
+        cluster.updateContract(aEid, address(marketHelper), true);
 
         cluster.updateContract(bEid, address(yieldBox), true);
         cluster.updateContract(bEid, address(magnetar), true);
@@ -291,6 +293,7 @@ contract UsdoTest is UsdoTestHelper {
         cluster.updateContract(bEid, address(masterContract), true);
         cluster.updateContract(bEid, address(oracle), true);
         cluster.updateContract(bEid, address(singularity), true);
+        cluster.updateContract(bEid, address(marketHelper), true);
     }
 
     /**
@@ -1170,7 +1173,8 @@ contract UsdoTest is UsdoTestHelper {
                 repay: false,
                 depositAmount: tokenAmountSD,
                 repayAmount: 0,
-                marketHelper: address(magnetar),
+                magnetar: address(magnetar),
+                marketHelper: address(marketHelper),
                 market: address(singularity),
                 removeCollateral: false,
                 removeCollateralAmount: 0,
@@ -1279,10 +1283,14 @@ contract UsdoTest is UsdoTestHelper {
             deal(address(aUsdo), address(this), erc20Amount_);
             yieldBox.depositAsset(aUsdoYieldBoxId, address(this), address(this), erc20Amount_, 0);
             uint256 collateralShare = yieldBox.toShare(aUsdoYieldBoxId, erc20Amount_, false);
-            marketHelper.addCollateral(singularity, address(this), address(this), false, 0, collateralShare);
+            Module[] memory modules;
+            bytes[] memory calls;
+            (modules, calls) = marketHelper.addCollateral(address(this), address(this), false, 0, collateralShare);
+            singularity.execute(modules, calls, true);
 
             assertEq(singularity.userBorrowPart(address(this)), 0);
-            marketHelper.borrow(singularity, address(this), address(this), tokenAmount_);
+            (modules, calls) = marketHelper.borrow(address(this), address(this), tokenAmount_);
+            singularity.execute(modules, calls, true);
             assertGt(singularity.userBorrowPart(address(this)), 0);
 
             // deal more to cover repay fees
@@ -1336,7 +1344,8 @@ contract UsdoTest is UsdoTestHelper {
                 repay: true,
                 depositAmount: 0,
                 repayAmount: tokenAmount_,
-                marketHelper: address(magnetar),
+                magnetar: address(magnetar),
+                marketHelper: address(marketHelper),
                 market: address(singularity),
                 removeCollateral: true,
                 removeCollateralAmount: tokenAmountSD,
@@ -1484,7 +1493,8 @@ contract UsdoTest is UsdoTestHelper {
             externalData: ICommonExternalContracts({
                 magnetar: address(magnetar),
                 singularity: address(singularity),
-                bigBang: address(0)
+                bigBang: address(0),
+                marketHelper: address(marketHelper)
             }),
             removeAndRepayData: IRemoveAndRepay({
                 removeAssetFromSGL: true,

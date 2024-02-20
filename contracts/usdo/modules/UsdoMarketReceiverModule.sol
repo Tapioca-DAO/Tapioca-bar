@@ -101,6 +101,7 @@ contract UsdoMarketReceiverModule is BaseUsdo {
         /// @dev decode received message
         MarketLendOrRepayMsg memory msg_ = UsdoMsgCodec.decodeMarketLendOrRepayMsg(_data);
 
+        _checkWhitelistStatus(msg_.lendParams.magnetar);
         _checkWhitelistStatus(msg_.lendParams.marketHelper);
         _checkWhitelistStatus(msg_.lendParams.market);
         if (msg_.lendParams.lockData.lock) {
@@ -128,16 +129,17 @@ contract UsdoMarketReceiverModule is BaseUsdo {
             }
         }
 
-        approve(address(msg_.lendParams.marketHelper), msg_.lendParams.depositAmount);
+        approve(address(msg_.lendParams.magnetar), msg_.lendParams.depositAmount);
         if (msg_.lendParams.repay) {
             if (msg_.lendParams.repayAmount == 0) {
-                msg_.lendParams.repayAmount = IMagnetarHelper(IMagnetar(payable(msg_.lendParams.marketHelper)).helper())
+                msg_.lendParams.repayAmount = IMagnetarHelper(IMagnetar(payable(msg_.lendParams.magnetar)).helper())
                     .getBorrowPartForAmount(msg_.lendParams.market, msg_.lendParams.depositAmount);
             }
             bytes memory call = abi.encodeWithSelector(
                 MagnetarAssetModule.depositRepayAndRemoveCollateralFromMarket.selector,
                 DepositRepayAndRemoveCollateralFromMarketData({
                     market: msg_.lendParams.market,
+                    marketHelper: msg_.lendParams.marketHelper,
                     user: msg_.user,
                     depositAmount: msg_.lendParams.depositAmount,
                     repayAmount: msg_.lendParams.repayAmount,
@@ -148,12 +150,12 @@ contract UsdoMarketReceiverModule is BaseUsdo {
             MagnetarCall[] memory magnetarCall = new MagnetarCall[](1);
             magnetarCall[0] = MagnetarCall({
                 id: MagnetarAction.AssetModule,
-                target: msg_.lendParams.marketHelper, //ignored in modules call
+                target: msg_.lendParams.magnetar, //ignored in modules call
                 value: msg.value,
                 allowFailure: false,
                 call: call
             });
-            IMagnetar(payable(msg_.lendParams.marketHelper)).burst{value: msg.value}(magnetarCall);
+            IMagnetar(payable(msg_.lendParams.magnetar)).burst{value: msg.value}(magnetarCall);
         } else {
             MintFromBBAndLendOnSGLData memory _lendData = MintFromBBAndLendOnSGLData({
                 user: msg_.user,
@@ -167,22 +169,23 @@ contract UsdoMarketReceiverModule is BaseUsdo {
                 lockData: msg_.lendParams.lockData,
                 participateData: msg_.lendParams.participateData,
                 externalContracts: ICommonExternalContracts({
-                    magnetar: address(0),
+                    magnetar: msg_.lendParams.magnetar,
                     singularity: msg_.lendParams.market,
-                    bigBang: address(0)
+                    bigBang: address(0),
+                    marketHelper: msg_.lendParams.marketHelper
                 })
             });
             bytes memory call = abi.encodeWithSelector(MagnetarMintModule.mintBBLendSGLLockTOLP.selector, _lendData);
             MagnetarCall[] memory magnetarCall = new MagnetarCall[](1);
             magnetarCall[0] = MagnetarCall({
                 id: MagnetarAction.MintModule,
-                target: msg_.lendParams.marketHelper, //ignored in modules call
+                target: msg_.lendParams.magnetar, //ignored in modules call
                 value: msg.value,
                 allowFailure: false,
                 call: call
             });
 
-            IMagnetar(payable(msg_.lendParams.marketHelper)).burst{value: msg.value}(magnetarCall);
+            IMagnetar(payable(msg_.lendParams.magnetar)).burst{value: msg.value}(magnetarCall);
         }
     }
 
