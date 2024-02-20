@@ -1279,10 +1279,10 @@ contract UsdoTest is UsdoTestHelper {
             deal(address(aUsdo), address(this), erc20Amount_);
             yieldBox.depositAsset(aUsdoYieldBoxId, address(this), address(this), erc20Amount_, 0);
             uint256 collateralShare = yieldBox.toShare(aUsdoYieldBoxId, erc20Amount_, false);
-            marketHelper.addCollateral(singularity, address(this), address(this), false, 0, collateralShare);
+            marketHelper.addCollateral(address(this), address(this), false, 0, collateralShare);
 
             assertEq(singularity.userBorrowPart(address(this)), 0);
-            marketHelper.borrow(singularity, address(this), address(this), tokenAmount_);
+            marketHelper.borrow(address(this), address(this), tokenAmount_);
             assertGt(singularity.userBorrowPart(address(this)), 0);
 
             // deal more to cover repay fees
