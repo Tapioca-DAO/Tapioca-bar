@@ -3,7 +3,6 @@ pragma solidity 0.8.22;
 
 // LZ
 import {OFTMsgCodec} from "@layerzerolabs/lz-evm-oapp-v2/contracts/oft/libs/OFTMsgCodec.sol";
-import {BytesLib} from "solidity-bytes-utils/contracts/BytesLib.sol";
 
 // External
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -30,8 +29,8 @@ import {
 import {TapiocaOmnichainEngineHelper} from
     "tapioca-periph/tapiocaOmnichainEngine/extension/TapiocaOmnichainEngineHelper.sol";
 import {ITapiocaOmnichainEngine, LZSendParam} from "tapioca-periph/interfaces/periph/ITapiocaOmnichainEngine.sol";
+import {PearlmitHandler, IPearlmit} from "tapioca-periph/pearlmit/PearlmitHandler.sol";
 import {IMarketHelper} from "tapioca-periph/interfaces/bar/IMarketHelper.sol";
-import {ICommonData} from "tapioca-periph/interfaces/common/ICommonData.sol";
 import {ISingularity} from "tapioca-periph/interfaces/bar/ISingularity.sol";
 import {IYieldBox} from "tapioca-periph/interfaces/yieldbox/IYieldBox.sol";
 import {IPermitAll} from "tapioca-periph/interfaces/common/IPermitAll.sol";
@@ -43,7 +42,7 @@ import {IPermit} from "tapioca-periph/interfaces/common/IPermit.sol";
 /*
 * @dev need this because of via-ir: true error on original Magnetar
 **/
-contract MagnetarMock {
+contract MagnetarMock is PearlmitHandler {
     using SafeCast for uint256;
     using SafeERC20 for IERC20;
 
@@ -56,7 +55,7 @@ contract MagnetarMock {
 
     ICluster public cluster;
 
-    constructor(address _cluster) {
+    constructor(address _cluster, IPearlmit _pearlmit) PearlmitHandler(_pearlmit) {
         cluster = ICluster(_cluster);
     }
 
@@ -426,7 +425,8 @@ contract MagnetarMock {
 
     function _extractTokens(address _from, address _token, uint256 _amount) private returns (uint256) {
         uint256 balanceBefore = IERC20(_token).balanceOf(address(this));
-        IERC20(_token).safeTransferFrom(_from, address(this), _amount);
+        // IERC20(_token).safeTransferFrom(_from, address(this), _amount);
+        pearlmit.transferFromERC20(_from, address(this), _token, _amount);
         uint256 balanceAfter = IERC20(_token).balanceOf(address(this));
         if (balanceAfter <= balanceBefore) revert MagnetarMock_Failed();
         return balanceAfter - balanceBefore;

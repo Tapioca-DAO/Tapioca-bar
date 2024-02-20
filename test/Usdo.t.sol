@@ -65,12 +65,13 @@ import {ICommonExternalContracts} from "tapioca-periph/interfaces/common/ICommon
 import {ILeverageExecutor} from "tapioca-periph/interfaces/bar/ILeverageExecutor.sol";
 import {ERC20WithoutStrategy} from "yieldbox/strategies/ERC20WithoutStrategy.sol";
 import {ICommonData} from "tapioca-periph/interfaces/common/ICommonData.sol";
-import {Module, IMarket} from "tapioca-periph/interfaces/bar/IMarket.sol";
 import {Singularity} from "contracts/markets/singularity/Singularity.sol";
+import {Pearlmit, IPearlmit} from "tapioca-periph/pearlmit/Pearlmit.sol";
 import {UsdoReceiver} from "contracts/usdo/modules/UsdoReceiver.sol";
 import {IOracle} from "tapioca-periph/oracle/interfaces/IOracle.sol";
 import {UsdoHelper} from "contracts/usdo/extensions/UsdoHelper.sol";
 import {UsdoSender} from "contracts/usdo/modules/UsdoSender.sol";
+import {Module} from "tapioca-periph/interfaces/bar/IMarket.sol";
 import {MarketHelper} from "contracts/markets/MarketHelper.sol";
 import {Pearlmit} from "tapioca-periph/pearlmit/Pearlmit.sol";
 import {Cluster} from "tapioca-periph/Cluster/Cluster.sol";
@@ -96,6 +97,7 @@ contract UsdoTest is UsdoTestHelper {
     uint32 aEid = 1;
     uint32 bEid = 2;
 
+    Pearlmit pearlmit;
     Cluster cluster;
     YieldBox yieldBox;
     ERC20Mock tapOFT;
@@ -167,9 +169,10 @@ contract UsdoTest is UsdoTestHelper {
         setUpEndpoints(3, LibraryType.UltraLightNode);
 
         {
+            pearlmit = new Pearlmit("Pearlmit", "1");
             yieldBox = createYieldBox();
             cluster = createCluster(aEid, __owner);
-            magnetar = createMagnetar(address(cluster));
+            magnetar = createMagnetar(address(cluster), IPearlmit(address(pearlmit)));
 
             vm.label(address(endpoints[aEid]), "aEndpoint");
             vm.label(address(endpoints[bEid]), "bEndpoint");
@@ -251,7 +254,7 @@ contract UsdoTest is UsdoTestHelper {
         aUsdoYieldBoxId = registerYieldBoxAsset(address(yieldBox), address(aUsdo), address(aUsdoStrategy)); //we assume this is the asset Id
         bUsdoYieldBoxId = registerYieldBoxAsset(address(yieldBox), address(bUsdo), address(bUsdoStrategy)); //we assume this is the collateral Id
 
-        tOB = new TapiocaOptionsBrokerMock(address(tapOFT));
+        tOB = new TapiocaOptionsBrokerMock(address(tapOFT), IPearlmit(address(pearlmit)));
 
         swapper = createSwapper(yieldBox);
         leverageExecutor = createLeverageExecutor(address(yieldBox), address(swapper), address(cluster));

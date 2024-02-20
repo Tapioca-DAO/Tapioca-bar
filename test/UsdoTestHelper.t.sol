@@ -18,6 +18,7 @@ import {SGLLiquidation} from "contracts/markets/singularity/SGLLiquidation.sol";
 import {SGLCollateral} from "contracts/markets/singularity/SGLCollateral.sol";
 import {SGLLeverage} from "contracts/markets/singularity/SGLLeverage.sol";
 import {Singularity} from "contracts/markets/singularity/Singularity.sol";
+import {IPearlmit} from "tapioca-periph/interfaces/periph/IPearlmit.sol";
 import {ICluster} from "tapioca-periph/interfaces/periph/ICluster.sol";
 import {SGLBorrow} from "contracts/markets/singularity/SGLBorrow.sol";
 import {IWrappedNative} from "yieldbox/interfaces/IWrappedNative.sol";
@@ -62,8 +63,8 @@ contract UsdoTestHelper is TestHelper, TestUtils {
         return YieldBox(_yieldBox).registerAsset(TokenType.ERC20, _token, IStrategy(_strategy), 0);
     }
 
-    function createMagnetar(address cluster) public returns (MagnetarMock) {
-        return new MagnetarMock(cluster);
+    function createMagnetar(address cluster, IPearlmit _pearlmit) public returns (MagnetarMock) {
+        return new MagnetarMock(cluster, _pearlmit);
     }
 
     function createYieldBox() public returns (YieldBox) {

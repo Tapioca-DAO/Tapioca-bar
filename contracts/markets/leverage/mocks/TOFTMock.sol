@@ -5,12 +5,15 @@ pragma solidity 0.8.22;
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-contract TOFTMock is ERC20 {
+// Tapioca
+import {PearlmitHandler, IPearlmit} from "tapioca-periph/pearlmit/PearlmitHandler.sol";
+
+contract TOFTMock is ERC20, PearlmitHandler {
     using SafeERC20 for IERC20;
 
     address public erc20_;
 
-    constructor(address _erc20) ERC20("TOFTMock", "TFTM") {
+    constructor(address _erc20, IPearlmit _pearlmit) ERC20("TOFTMock", "TFTM") PearlmitHandler(_pearlmit) {
         erc20_ = _erc20;
     }
 
@@ -21,7 +24,8 @@ contract TOFTMock is ERC20 {
     {
         _mint(_toAddress, _amount);
         if (erc20_ != address(0)) {
-            IERC20(erc20_).safeTransferFrom(_fromAddress, address(this), _amount);
+            // IERC20(erc20_).safeTransferFrom(_fromAddress, address(this), _amount);
+            pearlmit.transferFromERC20(_fromAddress, address(this), erc20_, _amount);
         } else {
             require(msg.value == _amount, "TOFTMock: failed to received ETH");
         }
