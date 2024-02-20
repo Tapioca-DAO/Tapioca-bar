@@ -78,10 +78,10 @@ contract UsdoMarketReceiverModule is BaseUsdo {
             msg_.depositData.amount = _toLD(msg_.depositData.amount.toUint64());
         }
 
-        bytes memory call = abi.encodeWithSelector(MagnetarMintModule.depositYBLendSGLLockXchainTOLP.selector, msg_);
+        bytes memory call = abi.encodeWithSelector(MagnetarAssetModule.depositYBLendSGLLockXchainTOLP.selector, msg_);
         MagnetarCall[] memory magnetarCall = new MagnetarCall[](1);
         magnetarCall[0] = MagnetarCall({
-            id: MagnetarAction.MintModule,
+            id: MagnetarAction.AssetModule,
             target: msg_.magnetar,
             value: msg.value,
             allowFailure: false,
