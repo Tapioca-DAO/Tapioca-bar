@@ -65,6 +65,7 @@ import {ICommonExternalContracts} from "tapioca-periph/interfaces/common/ICommon
 import {ILeverageExecutor} from "tapioca-periph/interfaces/bar/ILeverageExecutor.sol";
 import {ERC20WithoutStrategy} from "yieldbox/strategies/ERC20WithoutStrategy.sol";
 import {ICommonData} from "tapioca-periph/interfaces/common/ICommonData.sol";
+import {Module, IMarket} from "tapioca-periph/interfaces/bar/IMarket.sol";
 import {Singularity} from "contracts/markets/singularity/Singularity.sol";
 import {UsdoReceiver} from "contracts/usdo/modules/UsdoReceiver.sol";
 import {IOracle} from "tapioca-periph/oracle/interfaces/IOracle.sol";
@@ -282,6 +283,7 @@ contract UsdoTest is UsdoTestHelper {
         cluster.updateContract(aEid, address(masterContract), true);
         cluster.updateContract(aEid, address(oracle), true);
         cluster.updateContract(aEid, address(singularity), true);
+        cluster.updateContract(aEid, address(marketHelper), true);
 
         cluster.updateContract(bEid, address(yieldBox), true);
         cluster.updateContract(bEid, address(magnetar), true);
@@ -291,6 +293,7 @@ contract UsdoTest is UsdoTestHelper {
         cluster.updateContract(bEid, address(masterContract), true);
         cluster.updateContract(bEid, address(oracle), true);
         cluster.updateContract(bEid, address(singularity), true);
+        cluster.updateContract(bEid, address(marketHelper), true);
     }
 
     /**
@@ -1170,7 +1173,8 @@ contract UsdoTest is UsdoTestHelper {
                 repay: false,
                 depositAmount: tokenAmountSD,
                 repayAmount: 0,
-                marketHelper: address(magnetar),
+                magnetar: address(magnetar),
+                marketHelper: address(marketHelper),
                 market: address(singularity),
                 removeCollateral: false,
                 removeCollateralAmount: 0,
@@ -1279,10 +1283,14 @@ contract UsdoTest is UsdoTestHelper {
             deal(address(aUsdo), address(this), erc20Amount_);
             yieldBox.depositAsset(aUsdoYieldBoxId, address(this), address(this), erc20Amount_, 0);
             uint256 collateralShare = yieldBox.toShare(aUsdoYieldBoxId, erc20Amount_, false);
-            marketHelper.addCollateral(address(this), address(this), false, 0, collateralShare);
+            Module[] memory modules;
+            bytes[] memory calls;
+            (modules, calls) = marketHelper.addCollateral(address(this), address(this), false, 0, collateralShare);
+            singularity.execute(modules, calls, true);
 
             assertEq(singularity.userBorrowPart(address(this)), 0);
-            marketHelper.borrow(address(this), address(this), tokenAmount_);
+            (modules, calls) = marketHelper.borrow(address(this), address(this), tokenAmount_);
+            singularity.execute(modules, calls, true);
             assertGt(singularity.userBorrowPart(address(this)), 0);
 
             // deal more to cover repay fees
@@ -1336,7 +1344,8 @@ contract UsdoTest is UsdoTestHelper {
                 repay: true,
                 depositAmount: 0,
                 repayAmount: tokenAmount_,
-                marketHelper: address(magnetar),
+                magnetar: address(magnetar),
+                marketHelper: address(marketHelper),
                 market: address(singularity),
                 removeCollateral: true,
                 removeCollateralAmount: tokenAmountSD,
@@ -1484,7 +1493,8 @@ contract UsdoTest is UsdoTestHelper {
             externalData: ICommonExternalContracts({
                 magnetar: address(magnetar),
                 singularity: address(singularity),
-                bigBang: address(0)
+                bigBang: address(0),
+                marketHelper: address(marketHelper)
             }),
             removeAndRepayData: IRemoveAndRepay({
                 removeAssetFromSGL: true,

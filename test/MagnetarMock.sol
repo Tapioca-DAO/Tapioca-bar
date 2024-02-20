@@ -30,14 +30,15 @@ import {
 import {TapiocaOmnichainEngineHelper} from
     "tapioca-periph/tapiocaOmnichainEngine/extension/TapiocaOmnichainEngineHelper.sol";
 import {ITapiocaOmnichainEngine, LZSendParam} from "tapioca-periph/interfaces/periph/ITapiocaOmnichainEngine.sol";
+import {IMarketHelper} from "tapioca-periph/interfaces/bar/IMarketHelper.sol";
 import {ICommonData} from "tapioca-periph/interfaces/common/ICommonData.sol";
 import {ISingularity} from "tapioca-periph/interfaces/bar/ISingularity.sol";
 import {IYieldBox} from "tapioca-periph/interfaces/yieldbox/IYieldBox.sol";
 import {IPermitAll} from "tapioca-periph/interfaces/common/IPermitAll.sol";
+import {IMarket, Module} from "tapioca-periph/interfaces/bar/IMarket.sol";
 import {IOftSender} from "tapioca-periph/interfaces/oft/IOftSender.sol";
 import {ICluster} from "tapioca-periph/interfaces/periph/ICluster.sol";
 import {IPermit} from "tapioca-periph/interfaces/common/IPermit.sol";
-import {IMarket} from "tapioca-periph/interfaces/bar/IMarket.sol";
 
 /*
 * @dev need this because of via-ir: true error on original Magnetar
@@ -183,9 +184,12 @@ contract MagnetarMock {
         // performs a repay operation for the specified market
         if (_data.repayAmount > 0) {
             yieldBox.setApprovalForAll(address(_data.market), true);
-            IMarket(_data.market).repay(
+
+            (Module[] memory modules, bytes[] memory calls) = IMarketHelper(_data.marketHelper).repay(
                 _data.depositAmount > 0 ? address(this) : _data.user, _data.user, false, _data.repayAmount
             );
+            IMarket(_data.market).execute(modules, calls, true);
+
             yieldBox.setApprovalForAll(address(_data.market), false);
         }
 
@@ -195,7 +199,11 @@ contract MagnetarMock {
             address collateralWithdrawReceiver = _data.withdrawCollateralParams.withdraw ? address(this) : _data.user;
             uint256 collateralShare =
                 yieldBox.toShare(IMarket(_data.market).collateralId(), _data.collateralAmount, false);
-            IMarket(_data.market).removeCollateral(_data.user, collateralWithdrawReceiver, collateralShare);
+
+            (Module[] memory modules, bytes[] memory calls) = IMarketHelper(_data.marketHelper).removeCollateral(
+                _data.user, collateralWithdrawReceiver, collateralShare
+            );
+            IMarket(_data.market).execute(modules, calls, true);
         }
     }
 
@@ -287,7 +295,10 @@ contract MagnetarMock {
             uint256 collateralShare = yieldBox.toShare(_collateralId, _data.removeAndRepayData.collateralAmount, false);
             address removeCollateralTo =
                 _data.removeAndRepayData.collateralWithdrawData.withdraw ? address(this) : _data.user;
-            bigBang.removeCollateral(_data.user, removeCollateralTo, collateralShare);
+
+            (Module[] memory modules, bytes[] memory calls) = IMarketHelper(_data.externalData.marketHelper)
+                .removeCollateral(_data.user, removeCollateralTo, collateralShare);
+            bigBang.execute(modules, calls, true);
         }
 
         yieldBox.setApprovalForAll(_data.externalData.singularity, false);
@@ -321,37 +332,23 @@ contract MagnetarMock {
         // performs .addCollateral on market
         if (_data.collateralAmount > 0) {
             yieldBox.setApprovalForAll(address(_data.market), true);
-            IMarket(_data.market).addCollateral(
+
+            (Module[] memory modules, bytes[] memory calls) = IMarketHelper(_data.marketHelper).addCollateral(
                 _data.deposit ? address(this) : _data.user, _data.user, false, _data.collateralAmount, _share
             );
+            IMarket(_data.market).execute(modules, calls, true);
         }
 
         // performs .borrow on market
         // if `withdraw` it uses `withdrawTo` to withdraw assets on the same chain or to another one
         if (_data.borrowAmount > 0) {
             address borrowReceiver = _data.withdrawParams.withdraw ? address(this) : _data.user;
-            IMarket(_data.market).borrow(_data.user, borrowReceiver, _data.borrowAmount);
 
-            // if (withdrawParams.withdraw) {
-            // bytes memory withdrawAssetBytes = abi.encode(
-            //     withdrawParams.withdrawOnOtherChain,
-            //     withdrawParams.withdrawLzChainId,
-            //     LzLib.addressToBytes32(user),
-            //     withdrawParams.withdrawAdapterParams
-            // );
-            // _withdraw(
-            //     borrowReceiver,
-            //     withdrawAssetBytes,
-            //     market,
-            //     yieldBox,
-            //     borrowAmount,
-            //     false,
-            //     valueAmount,
-            //     false,
-            //     withdrawParams.refundAddress,
-            //     withdrawParams.zroPaymentAddress
-            // );
-            // }
+            (Module[] memory modules, bytes[] memory calls) =
+                IMarketHelper(_data.marketHelper).borrow(_data.user, borrowReceiver, _data.borrowAmount);
+            IMarket(_data.market).execute(modules, calls, true);
+
+            //TODO: add withdraw?!
         }
 
         yieldBox.setApprovalForAll(address(_data.market), false);

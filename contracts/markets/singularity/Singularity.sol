@@ -11,6 +11,7 @@ import {ILeverageExecutor} from "tapioca-periph/interfaces/bar/ILeverageExecutor
 import {ITapiocaOracle} from "tapioca-periph/interfaces/periph/ITapiocaOracle.sol";
 import {IYieldBox} from "tapioca-periph/interfaces/yieldbox/IYieldBox.sol";
 import {IPenrose} from "tapioca-periph/interfaces/bar/IPenrose.sol";
+import {Module} from "tapioca-periph/interfaces/bar/IMarket.sol";
 import {SGLLiquidation} from "./SGLLiquidation.sol";
 import {SGLCollateral} from "./SGLCollateral.sol";
 import {SGLLeverage} from "./SGLLeverage.sol";
@@ -38,16 +39,6 @@ contract Singularity is SGLCommon {
     // ************ //
     // *** VARS *** //
     // ************ //
-    //TODO: reference the one from periph
-    /// @notice enum representing each type of module associated with a Singularity/BigBang market
-    /// @dev modules are contracts that holds a portion of the market's logic
-    enum Module {
-        Base,
-        Borrow,
-        Collateral,
-        Liquidation,
-        Leverage
-    }
     /// @notice returns the liquidation module
     SGLLiquidation public liquidationModule;
     /// @notice returns the borrow module

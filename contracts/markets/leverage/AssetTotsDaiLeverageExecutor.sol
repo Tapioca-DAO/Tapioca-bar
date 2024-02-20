@@ -83,8 +83,7 @@ contract AssetTotsDaiLeverageExecutor is BaseLeverageExecutor {
         //unwrap tsDai
         ITOFT(collateralAddress).unwrap(address(this), collateralAmountIn);
         //redeem from sDai
-        uint256 obtainedDai = ISavingsDai(sDaiAddress).redeem(collateralAmountIn, address(this), address(this)
-        );
+        uint256 obtainedDai = ISavingsDai(sDaiAddress).redeem(collateralAmountIn, address(this), address(this));
         // swap DAI with USDO, and transfer to sender
         SLeverageSwapData memory swapData = abi.decode(data, (SLeverageSwapData));
         // If sendBack true and swapData.swapperData.toftInfo.isTokenOutToft false

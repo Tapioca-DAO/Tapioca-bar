@@ -5,12 +5,19 @@ pragma solidity 0.8.22;
 import {Rebase} from "@boringcrypto/boring-solidity/contracts/libraries/BoringRebase.sol";
 
 // Tapioca
-import {SGLLiquidation, SGLCollateral, Singularity, SGLLeverage, SGLCommon, SGLBorrow} from "./singularity/Singularity.sol";
+import {
+    SGLLiquidation,
+    SGLCollateral,
+    Singularity,
+    SGLLeverage,
+    SGLCommon,
+    SGLBorrow
+} from "./singularity/Singularity.sol";
 import {IMarketLiquidatorReceiver} from "tapioca-periph/interfaces/bar/IMarketLiquidatorReceiver.sol";
 import {ITapiocaOracle} from "tapioca-periph/interfaces/periph/ITapiocaOracle.sol";
 import {ISingularity} from "tapioca-periph/interfaces/bar/ISingularity.sol";
 import {IYieldBox} from "tapioca-periph/interfaces/yieldbox/IYieldBox.sol";
-import {IMarket} from "tapioca-periph/interfaces/bar/IMarket.sol";
+import {IMarket, Module} from "tapioca-periph/interfaces/bar/IMarket.sol";
 
 contract MarketHelper {
     error ExchangeRateNotValid();
@@ -48,7 +55,7 @@ contract MarketHelper {
         uint256 minLiquidationBonus,
         uint256 exchangeRatePrecision,
         uint256 feeDecimalsPrecision
-    ) external view returns (Singularity.Module[] memory modules, bytes[] memory calls) {
+    ) external view returns (Module[] memory modules, bytes[] memory calls) {
         ISingularity sgl = ISingularity(sglAddress);
 
         (bool updated, uint256 _exchangeRate) = ITapiocaOracle(sgl.oracle()).peek(sgl.oracleData());
@@ -77,9 +84,9 @@ contract MarketHelper {
             data.feeDecimalsPrecision = feeDecimalsPrecision;
         }
 
-        modules = new Singularity.Module[](1);
+        modules = new Module[](1);
         calls = new bytes[](1);
-        modules[0] = Singularity.Module.Liquidation;
+        modules[0] = Module.Liquidation;
         calls[0] = abi.encodeWithSelector(SGLLiquidation.viewLiquidationCollateralAmount.selector, data);
     }
 
@@ -97,11 +104,11 @@ contract MarketHelper {
     function addCollateral(address from, address to, bool skim, uint256 amount, uint256 share)
         external
         pure
-        returns (Singularity.Module[] memory modules, bytes[] memory calls)
+        returns (Module[] memory modules, bytes[] memory calls)
     {
-        modules = new Singularity.Module[](1);
+        modules = new Module[](1);
         calls = new bytes[](1);
-        modules[0] = Singularity.Module.Collateral;
+        modules[0] = Module.Collateral;
         calls[0] = abi.encodeWithSelector(SGLCollateral.addCollateral.selector, from, to, skim, amount, share);
     }
 
@@ -112,11 +119,11 @@ contract MarketHelper {
     function removeCollateral(address from, address to, uint256 share)
         external
         pure
-        returns (Singularity.Module[] memory modules, bytes[] memory calls)
+        returns (Module[] memory modules, bytes[] memory calls)
     {
-        modules = new Singularity.Module[](1);
+        modules = new Module[](1);
         calls = new bytes[](1);
-        modules[0] = Singularity.Module.Collateral;
+        modules[0] = Module.Collateral;
         calls[0] = abi.encodeWithSelector(SGLCollateral.removeCollateral.selector, from, to, share);
     }
 
@@ -127,11 +134,11 @@ contract MarketHelper {
     function borrow(address from, address to, uint256 amount)
         external
         pure
-        returns (Singularity.Module[] memory modules, bytes[] memory calls)
+        returns (Module[] memory modules, bytes[] memory calls)
     {
-        modules = new Singularity.Module[](1);
+        modules = new Module[](1);
         calls = new bytes[](1);
-        modules[0] = Singularity.Module.Borrow;
+        modules[0] = Module.Borrow;
         calls[0] = abi.encodeWithSelector(SGLBorrow.borrow.selector, from, to, amount);
     }
 
@@ -149,11 +156,11 @@ contract MarketHelper {
     function repay(address from, address to, bool skim, uint256 part)
         external
         pure
-        returns (Singularity.Module[] memory modules, bytes[] memory calls)
+        returns (Module[] memory modules, bytes[] memory calls)
     {
-        modules = new Singularity.Module[](1);
+        modules = new Module[](1);
         calls = new bytes[](1);
-        modules[0] = Singularity.Module.Borrow;
+        modules[0] = Module.Borrow;
         calls[0] = abi.encodeWithSelector(SGLBorrow.repay.selector, from, to, skim, part);
     }
 
@@ -169,11 +176,11 @@ contract MarketHelper {
     function sellCollateral(address from, uint256 share, bytes calldata data)
         external
         pure
-        returns (Singularity.Module[] memory modules, bytes[] memory calls)
+        returns (Module[] memory modules, bytes[] memory calls)
     {
-        modules = new Singularity.Module[](1);
+        modules = new Module[](1);
         calls = new bytes[](1);
-        modules[0] = Singularity.Module.Leverage;
+        modules[0] = Module.Leverage;
         calls[0] = abi.encodeWithSelector(SGLLeverage.sellCollateral.selector, from, share, data);
     }
 
@@ -187,15 +194,14 @@ contract MarketHelper {
     /// @param borrowAmount Amount of extra asset borrowed
     /// @param supplyAmount Amount of asset supplied (down payment)
     /// @param data LeverageExecutor data
-    function buyCollateral(
-        address from,
-        uint256 borrowAmount,
-        uint256 supplyAmount,
-        bytes calldata data
-    ) external pure returns (Singularity.Module[] memory modules, bytes[] memory calls) {
-        modules = new Singularity.Module[](1);
+    function buyCollateral(address from, uint256 borrowAmount, uint256 supplyAmount, bytes calldata data)
+        external
+        pure
+        returns (Module[] memory modules, bytes[] memory calls)
+    {
+        modules = new Module[](1);
         calls = new bytes[](1);
-        modules[0] = Singularity.Module.Leverage;
+        modules[0] = Module.Leverage;
         calls[0] = abi.encodeWithSelector(SGLLeverage.buyCollateral.selector, from, borrowAmount, supplyAmount, data);
     }
 
@@ -219,10 +225,10 @@ contract MarketHelper {
         IMarketLiquidatorReceiver liquidatorReceiver,
         bytes calldata liquidatorReceiverData,
         bool swapCollateral
-    ) external pure returns (Singularity.Module[] memory modules, bytes[] memory calls) {
-        modules = new Singularity.Module[](1);
+    ) external pure returns (Module[] memory modules, bytes[] memory calls) {
+        modules = new Module[](1);
         calls = new bytes[](1);
-        modules[0] = Singularity.Module.Liquidation;
+        modules[0] = Module.Liquidation;
         calls[0] = abi.encodeWithSelector(
             SGLLiquidation.liquidateBadDebt.selector,
             user,
@@ -247,10 +253,10 @@ contract MarketHelper {
         uint256[] calldata minLiquidationBonuses,
         IMarketLiquidatorReceiver[] calldata liquidatorReceivers,
         bytes[] calldata liquidatorReceiverDatas
-    ) external pure returns (Singularity.Module[] memory modules, bytes[] memory calls) {
-        modules = new Singularity.Module[](1);
+    ) external pure returns (Module[] memory modules, bytes[] memory calls) {
+        modules = new Module[](1);
         calls = new bytes[](1);
-        modules[0] = Singularity.Module.Liquidation;
+        modules[0] = Module.Liquidation;
         calls[0] = abi.encodeWithSelector(
             SGLLiquidation.liquidate.selector,
             users,
