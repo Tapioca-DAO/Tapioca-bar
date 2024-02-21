@@ -25,6 +25,7 @@ import {
 } from "tapioca-periph/interfaces/tap-token/ITapiocaOptionBroker.sol";
 import {UsdoInitStruct, ExerciseOptionsMsg, LZSendParam} from "tapioca-periph/interfaces/oft/IUsdo.sol";
 import {MagnetarMintXChainModule} from "tapioca-periph/Magnetar/modules/MagnetarMintXChainModule.sol";
+import {SafeApprove} from "tapioca-periph/libraries/SafeApprove.sol";
 import {UsdoMsgCodec} from "../libraries/UsdoMsgCodec.sol";
 import {BaseUsdo} from "../BaseUsdo.sol";
 
@@ -47,6 +48,7 @@ import {BaseUsdo} from "../BaseUsdo.sol";
 contract UsdoOptionReceiverModule is BaseUsdo {
     using SafeERC20 for IERC20;
     using SafeCast for uint256;
+    using SafeApprove for address;
 
     error UsdoOptionReceiverModule_NotAuthorized(address invalidAddress);
 
@@ -83,6 +85,7 @@ contract UsdoOptionReceiverModule is BaseUsdo {
             pearlmit.approve(
                 address(this), 0, _options.target, uint200(_options.paymentTokenAmount), uint48(block.timestamp + 1)
             ); // Atomic approval
+            address(this).safeApprove(address(pearlmit), _options.paymentTokenAmount);
 
             uint256 bBefore = balanceOf(address(this));
             ITapiocaOptionBroker(_options.target).exerciseOption(

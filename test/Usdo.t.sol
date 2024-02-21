@@ -179,6 +179,7 @@ contract UsdoTest is UsdoTestHelper {
             vm.label(address(yieldBox), "YieldBox");
             vm.label(address(cluster), "Cluster");
             vm.label(address(magnetar), "Magnetar");
+            vm.label(address(pearlmit), "Pearlmit");
         }
 
         TapiocaOmnichainExtExec extExec = new TapiocaOmnichainExtExec(cluster, __owner);
@@ -284,8 +285,6 @@ contract UsdoTest is UsdoTestHelper {
             ),
             address(masterContract)
         );
-
-        Pearlmit perlmit = new Pearlmit("Test", "1");
 
         cluster.updateContract(aEid, address(yieldBox), true);
         cluster.updateContract(aEid, address(magnetar), true);
@@ -1141,6 +1140,8 @@ contract UsdoTest is UsdoTestHelper {
         uint256 tokenAmount_ = 0.5 ether;
 
         deal(address(bUsdo), address(this), erc20Amount_);
+        pearlmit.approve(address(bUsdo), 0, address(magnetar), uint200(tokenAmount_), uint48(block.timestamp + 1)); // Atomic approval
+        bUsdo.approve(address(pearlmit), tokenAmount_);
 
         LZSendParam memory withdrawLzSendParam_;
         MessagingFee memory withdrawMsgFee_; // Will be used as value for the composed msg
