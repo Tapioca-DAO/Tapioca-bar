@@ -24,7 +24,6 @@ import {
     ITapiocaOptionBroker, IExerciseOptionsData
 } from "tapioca-periph/interfaces/tap-token/ITapiocaOptionBroker.sol";
 import {UsdoInitStruct, ExerciseOptionsMsg, LZSendParam} from "tapioca-periph/interfaces/oft/IUsdo.sol";
-import {MagnetarMintXChainModule} from "tapioca-periph/Magnetar/modules/MagnetarMintXChainModule.sol";
 import {SafeApprove} from "tapioca-periph/libraries/SafeApprove.sol";
 import {UsdoMsgCodec} from "../libraries/UsdoMsgCodec.sol";
 import {BaseUsdo} from "../BaseUsdo.sol";
@@ -93,6 +92,7 @@ contract UsdoOptionReceiverModule is BaseUsdo {
                 address(this), //payment token
                 _options.tapAmount
             );
+            address(this).safeApprove(address(pearlmit), 0);
             uint256 bAfter = balanceOf(address(this));
 
             // Refund if less was used.
