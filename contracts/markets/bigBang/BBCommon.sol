@@ -31,6 +31,7 @@ contract BBCommon is BBStorage {
     // *** ERRORS *** //
     // ************** //
     error NotEnough();
+    error TransferFailed();
 
     // ********************** //
     // *** VIEW FUNCTIONS *** //
@@ -129,7 +130,10 @@ contract BBCommon is BBStorage {
             require(share <= yieldBox.balanceOf(address(this), _tokenId) - total, "BB: too much");
         } else {
             // yieldBox.transfer(from, address(this), _tokenId, share);
-            pearlmit.transferFromERC1155(from, address(this), address(yieldBox), _tokenId, share);
+            bool isErr = pearlmit.transferFromERC1155(from, address(this), address(yieldBox), _tokenId, share);
+            if (isErr) {
+                revert TransferFailed();
+            }
         }
     }
 

@@ -42,7 +42,6 @@ contract BigBang is BBCommon {
     error BadPair();
     error DebtRatesNotValid();
     error MaxDebtRateNotValid();
-    error TransferFailed();
     error NotValid();
     error ModuleNotSet();
 
