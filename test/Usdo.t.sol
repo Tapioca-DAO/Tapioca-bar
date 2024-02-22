@@ -1455,9 +1455,11 @@ contract UsdoTest is UsdoTestHelper {
             bUsdo.approve(address(yieldBox), type(uint256).max);
             yieldBox.depositAsset(bUsdoYieldBoxId, address(this), address(this), erc20Amount_, 0);
 
-            yieldBox.setApprovalForAll(address(singularity), true);
-
             uint256 sh = yieldBox.toShare(bUsdoYieldBoxId, erc20Amount_, false);
+            yieldBox.setApprovalForAll(address(pearlmit), true);
+            pearlmit.approve(
+                address(yieldBox), bUsdoYieldBoxId, address(singularity), uint200(sh), uint48(block.timestamp + 1)
+            );
             singularity.addAsset(address(this), address(this), false, sh);
         }
 
