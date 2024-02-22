@@ -53,7 +53,6 @@ contract Singularity is SGLCommon {
     // *** ERRORS *** //
     // ************** //
     error BadPair();
-    error TransferFailed();
     error NotValid();
     error ModuleNotSet();
     error NotAuthorized();

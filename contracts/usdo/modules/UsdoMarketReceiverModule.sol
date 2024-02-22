@@ -131,7 +131,15 @@ contract UsdoMarketReceiverModule is BaseUsdo {
             }
         }
 
-        approve(address(msg_.lendParams.magnetar), msg_.lendParams.depositAmount);
+        // approve(address(msg_.lendParams.magnetar), msg_.lendParams.depositAmount);
+        pearlmit.approve(
+            address(this),
+            0,
+            msg_.lendParams.magnetar,
+            uint200(msg_.lendParams.depositAmount),
+            uint48(block.timestamp + 1)
+        ); // Atomic approval
+        approve(address(pearlmit), msg_.lendParams.depositAmount);
         if (msg_.lendParams.repay) {
             if (msg_.lendParams.repayAmount == 0) {
                 msg_.lendParams.repayAmount = IMagnetarHelper(IMagnetar(payable(msg_.lendParams.magnetar)).helper())
@@ -189,6 +197,7 @@ contract UsdoMarketReceiverModule is BaseUsdo {
 
             IMagnetar(payable(msg_.lendParams.magnetar)).burst{value: msg.value}(magnetarCall);
         }
+        approve(address(pearlmit), 0);
     }
 
     /**

@@ -13,6 +13,8 @@ contract TOFTMock is ERC20, PearlmitHandler {
 
     address public erc20_;
 
+    error TOFTMock_NotValid();
+    
     constructor(address _erc20, IPearlmit _pearlmit) ERC20("TOFTMock", "TFTM") PearlmitHandler(_pearlmit) {
         erc20_ = _erc20;
     }
@@ -25,7 +27,8 @@ contract TOFTMock is ERC20, PearlmitHandler {
         _mint(_toAddress, _amount);
         if (erc20_ != address(0)) {
             // IERC20(erc20_).safeTransferFrom(_fromAddress, address(this), _amount);
-            pearlmit.transferFromERC20(_fromAddress, address(this), erc20_, _amount);
+            bool isErr = pearlmit.transferFromERC20(_fromAddress, address(this), erc20_, _amount);
+            if (isErr) revert TOFTMock_NotValid();
         } else {
             require(msg.value == _amount, "TOFTMock: failed to received ETH");
         }

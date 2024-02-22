@@ -31,6 +31,7 @@ contract SGLCommon is SGLStorage {
     // ************** //
     error TooMuch();
     error MinLimit();
+    error TransferFailed();
 
     // ************************ //
     // *** PUBLIC FUNCTIONS *** //
@@ -168,7 +169,10 @@ contract SGLCommon is SGLStorage {
             }
         } else {
             // yieldBox.transfer(from, address(this), _assetId, share);
-            pearlmit.transferFromERC1155(from, address(this), address(yieldBox), _assetId, share);
+            bool isErr = pearlmit.transferFromERC1155(from, address(this), address(yieldBox), _assetId, share);
+            if (isErr) {
+                revert TransferFailed();
+            }
         }
     }
 
