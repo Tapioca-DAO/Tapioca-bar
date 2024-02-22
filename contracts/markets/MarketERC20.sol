@@ -3,11 +3,9 @@ pragma solidity 0.8.22;
 
 // External
 import {IERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/draft-ERC20Permit.sol";
+import {IERC1155Receiver} from "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
 import {EIP712, ECDSA} from "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 import {IERC20} from "@boringcrypto/boring-solidity/contracts/ERC20.sol";
-
-// Tapioca
-import {IPearlmit} from "tapioca-periph/interfaces/periph/IPearlmit.sol";
 
 /*
 
@@ -20,7 +18,7 @@ import {IPearlmit} from "tapioca-periph/interfaces/periph/IPearlmit.sol";
    
 */
 
-contract MarketERC20 is IERC20, IERC20Permit, EIP712 {
+contract MarketERC20 is IERC20, IERC20Permit, IERC1155Receiver, EIP712 {
     // ************ //
     // *** VARS *** //
     // ************ //
@@ -240,11 +238,26 @@ contract MarketERC20 is IERC20, IERC20Permit, EIP712 {
         emit Approval(owner, spender, amount);
     }
 
+    function supportsInterface(bytes4 interfaceId) external view returns (bool) {
+        return interfaceId == type(IERC20).interfaceId || interfaceId == type(IERC20Permit).interfaceId
+            || interfaceId == type(IERC1155Receiver).interfaceId;
+    }
+
     function onERC1155Received(address operator, address from, uint256 id, uint256 value, bytes calldata data)
         external
         returns (bytes4)
     {
         // bytes4(keccak256("onERC1155Received(address,address,uint256,uint256,bytes)"))
         return 0xf23a6e61;
+    }
+
+    function onERC1155BatchReceived(
+        address operator,
+        address from,
+        uint256[] calldata ids,
+        uint256[] calldata values,
+        bytes calldata data
+    ) external returns (bytes4) {
+        return bytes4(0);
     }
 }
