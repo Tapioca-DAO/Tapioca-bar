@@ -239,4 +239,12 @@ contract MarketERC20 is IERC20, IERC20Permit, EIP712 {
         allowance[owner][spender] = amount;
         emit Approval(owner, spender, amount);
     }
+
+    function onERC1155Received(address operator, address from, uint256 id, uint256 value, bytes calldata data)
+        external
+        returns (bytes4)
+    {
+        // bytes4(keccak256("onERC1155Received(address,address,uint256,uint256,bytes)"))
+        return 0xf23a6e61;
+    }
 }
