@@ -3,6 +3,7 @@ pragma solidity 0.8.22;
 
 // External
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {Pausable} from "@openzeppelin/contracts/security/Pausable.sol";
 
 // Tapioca
 import {IGmxRewardRouterV2} from "tapioca-periph/interfaces/external/gmx/IGmxRewardRouterV2.sol";
@@ -36,7 +37,7 @@ struct SGlpLeverageSwapData {
 
 /// @title AssetToSGLPLeverageExecutor
 /// @notice Contract for leverage executor for tsGLP markets
-contract AssetToSGLPLeverageExecutor is BaseLeverageExecutor {
+contract AssetToSGLPLeverageExecutor is BaseLeverageExecutor, Pausable {
     using SafeApprove for address;
 
     IGmxRewardRouterV2 private immutable glpRewardRouter;
@@ -71,6 +72,7 @@ contract AssetToSGLPLeverageExecutor is BaseLeverageExecutor {
         external
         payable
         override
+        whenNotPaused
         returns (uint256 collateralAmountOut)
     {
         if (msg.value > 0) revert NativeNotSupported();
