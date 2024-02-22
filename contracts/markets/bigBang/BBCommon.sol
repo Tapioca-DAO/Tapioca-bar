@@ -128,8 +128,7 @@ contract BBCommon is BBStorage {
         if (skim) {
             require(share <= yieldBox.balanceOf(address(this), _tokenId) - total, "BB: too much");
         } else {
-            // yieldBox.transfer(from, address(this), _tokenId, share);
-            pearlmit.transferFromERC1155(from, address(this), address(yieldBox), _tokenId, share);
+            yieldBox.transfer(from, address(this), _tokenId, share);
         }
     }
 
