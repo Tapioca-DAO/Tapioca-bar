@@ -84,7 +84,7 @@ contract UsdoOptionReceiverModule is BaseUsdo {
             pearlmit.approve(
                 address(this), 0, _options.target, uint200(_options.paymentTokenAmount), uint48(block.timestamp + 1)
             ); // Atomic approval
-            approve(address(pearlmit), _options.paymentTokenAmount);
+            _approve(address(this), address(pearlmit), _options.paymentTokenAmount);
 
             uint256 bBefore = balanceOf(address(this));
             ITapiocaOptionBroker(_options.target).exerciseOption(
@@ -92,7 +92,7 @@ contract UsdoOptionReceiverModule is BaseUsdo {
                 address(this), //payment token
                 _options.tapAmount
             );
-            approve(address(pearlmit), 0);
+            _approve(address(this), address(pearlmit), 0);
             uint256 bAfter = balanceOf(address(this));
 
             // Refund if less was used.
