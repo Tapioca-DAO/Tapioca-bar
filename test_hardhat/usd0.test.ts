@@ -11,8 +11,13 @@ import {
 describe('USDO', () => {
     describe('views', () => {
         it('should test initial values', async () => {
-            const { registerUsd0Contract, deployer, yieldBox, cluster, pearlmit } =
-                await loadFixture(register);
+            const {
+                registerUsd0Contract,
+                deployer,
+                yieldBox,
+                cluster,
+                pearlmit,
+            } = await loadFixture(register);
             const { usd0 } = await registerUsd0Contract(
                 '1',
                 yieldBox.address,
@@ -39,8 +44,13 @@ describe('USDO', () => {
 
     describe('mint & burn', () => {
         it('should set minters and burners', async () => {
-            const { registerUsd0Contract, deployer, yieldBox, cluster, pearlmit } =
-                await loadFixture(register);
+            const {
+                registerUsd0Contract,
+                deployer,
+                yieldBox,
+                cluster,
+                pearlmit,
+            } = await loadFixture(register);
             const { usd0 } = await registerUsd0Contract(
                 '1',
                 yieldBox.address,
@@ -118,7 +128,7 @@ describe('USDO', () => {
                 weth,
                 yieldBox,
                 cluster,
-                pearlmit
+                pearlmit,
             } = await loadFixture(register);
             const { usd0, usd0Flashloan } = await registerUsd0Contract(
                 '1',
@@ -192,7 +202,7 @@ describe('USDO', () => {
                 weth,
                 yieldBox,
                 cluster,
-                pearlmit
+                pearlmit,
             } = await loadFixture(register);
             const { usd0, usd0Flashloan } = await registerUsd0Contract(
                 '1',

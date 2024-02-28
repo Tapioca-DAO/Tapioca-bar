@@ -315,7 +315,7 @@ async function registerPenrose(
         cluster,
         tapAddress,
         wethAddress,
-        pearlmit.address, 
+        pearlmit.address,
         (
             await hre.ethers.getSigners()
         )[0].address,
@@ -727,7 +727,6 @@ async function registerMagnetarHelper(deployer: any) {
 
     return { magnetarHelper };
 }
-
 
 async function registerMultiSwapper(
     deployer: any,
@@ -1513,8 +1512,8 @@ export async function register(staging?: boolean) {
     log(
         `Deployed Cluster ${cluster.address} with args [${chainInfo?.lzChainId}]`,
         staging,
-        );
-    
+    );
+
     const marketHelperFactory = await ethers.getContractFactory('MarketHelper');
     const marketHelper = await marketHelperFactory.deploy();
     await marketHelper.deployed();
@@ -1651,7 +1650,11 @@ export async function register(staging?: boolean) {
     log('USDC, WETH, TAP and WBTC were set on twTap', staging);
 
     log('Deploying Magnetar', staging);
-    const { magnetar } = await registerMagnetar(cluster.address, pearlmit.address, deployer);
+    const { magnetar } = await registerMagnetar(
+        cluster.address,
+        pearlmit.address,
+        deployer,
+    );
     log(`Deployed Magnetar ${magnetar.address}`, staging);
 
     log('Deploying MagnetarHelper', staging);
@@ -1829,54 +1832,195 @@ export async function register(staging?: boolean) {
     }
 
     await weth.approve(yieldBox.address, ethers.constants.MaxUint256);
-    await weth.approve(pearlmit.address, ethers.constants.MaxUint256); 
+    await weth.approve(pearlmit.address, ethers.constants.MaxUint256);
     await wbtc.approve(yieldBox.address, ethers.constants.MaxUint256);
-    await wbtc.approve(pearlmit.address, ethers.constants.MaxUint256); 
-    await usdc.approve(pearlmit.address, ethers.constants.MaxUint256); 
-    await usd0.approve(pearlmit.address, ethers.constants.MaxUint256); 
+    await wbtc.approve(pearlmit.address, ethers.constants.MaxUint256);
+    await usdc.approve(pearlmit.address, ethers.constants.MaxUint256);
+    await usd0.approve(pearlmit.address, ethers.constants.MaxUint256);
     await yieldBox.setApprovalForAll(wethBigBangMarket.address, true);
     await yieldBox.setApprovalForAll(wethUsdcSingularity.address, true);
     await yieldBox.setApprovalForAll(wbtcBigBangMarket.address, true);
     await yieldBox.setApprovalForAll(wbtcUsdcSingularity.address, true);
     await yieldBox.setApprovalForAll(pearlmit.address, true);
-    await pearlmit.approve(yieldBox.address, wethAssetId, wethBigBangMarket.address, ethers.utils.parseEther('900000000000000'), '9000000000');
-    await pearlmit.approve(yieldBox.address, await penrose.usdoAssetId(), wethBigBangMarket.address, ethers.utils.parseEther('900000000000000'), '9000000000');
-    await pearlmit.approve(yieldBox.address, wbtcAssetId, wbtcBigBangMarket.address, ethers.utils.parseEther('900000000000000'), '9000000000');
-    await pearlmit.approve(yieldBox.address, wethAssetId, wethUsdcSingularity.address, ethers.utils.parseEther('900000000000000'), '9000000000');
-    await pearlmit.approve(yieldBox.address, usdcAssetId, wethUsdcSingularity.address, ethers.utils.parseEther('900000000000000'), '9000000000');
-    await pearlmit.approve(yieldBox.address, usdcAssetId, wbtcUsdcSingularity.address, ethers.utils.parseEther('900000000000000'), '9000000000');
-    await pearlmit.approve(yieldBox.address, wbtcAssetId, wbtcUsdcSingularity.address, ethers.utils.parseEther('900000000000000'), '9000000000');
+    await pearlmit.approve(
+        yieldBox.address,
+        wethAssetId,
+        wethBigBangMarket.address,
+        ethers.utils.parseEther('900000000000000'),
+        '9000000000',
+    );
+    await pearlmit.approve(
+        yieldBox.address,
+        await penrose.usdoAssetId(),
+        wethBigBangMarket.address,
+        ethers.utils.parseEther('900000000000000'),
+        '9000000000',
+    );
+    await pearlmit.approve(
+        yieldBox.address,
+        wbtcAssetId,
+        wbtcBigBangMarket.address,
+        ethers.utils.parseEther('900000000000000'),
+        '9000000000',
+    );
+    await pearlmit.approve(
+        yieldBox.address,
+        wethAssetId,
+        wethUsdcSingularity.address,
+        ethers.utils.parseEther('900000000000000'),
+        '9000000000',
+    );
+    await pearlmit.approve(
+        yieldBox.address,
+        usdcAssetId,
+        wethUsdcSingularity.address,
+        ethers.utils.parseEther('900000000000000'),
+        '9000000000',
+    );
+    await pearlmit.approve(
+        yieldBox.address,
+        usdcAssetId,
+        wbtcUsdcSingularity.address,
+        ethers.utils.parseEther('900000000000000'),
+        '9000000000',
+    );
+    await pearlmit.approve(
+        yieldBox.address,
+        wbtcAssetId,
+        wbtcUsdcSingularity.address,
+        ethers.utils.parseEther('900000000000000'),
+        '9000000000',
+    );
 
-    await weth.connect(eoa1).approve(yieldBox.address, ethers.constants.MaxUint256);
-    await weth.connect(eoa1).approve(pearlmit.address, ethers.constants.MaxUint256); 
-    await wbtc.connect(eoa1).approve(yieldBox.address, ethers.constants.MaxUint256);
-    await wbtc.connect(eoa1).approve(pearlmit.address, ethers.constants.MaxUint256); 
-    await usdc.connect(eoa1).approve(pearlmit.address, ethers.constants.MaxUint256); 
-    await usd0.connect(eoa1).approve(pearlmit.address, ethers.constants.MaxUint256); 
-    await yieldBox.connect(eoa1).setApprovalForAll(wethBigBangMarket.address, true);
-    await yieldBox.connect(eoa1).setApprovalForAll(wethUsdcSingularity.address, true);
-    await yieldBox.connect(eoa1).setApprovalForAll(wbtcBigBangMarket.address, true);
+    await weth
+        .connect(eoa1)
+        .approve(yieldBox.address, ethers.constants.MaxUint256);
+    await weth
+        .connect(eoa1)
+        .approve(pearlmit.address, ethers.constants.MaxUint256);
+    await wbtc
+        .connect(eoa1)
+        .approve(yieldBox.address, ethers.constants.MaxUint256);
+    await wbtc
+        .connect(eoa1)
+        .approve(pearlmit.address, ethers.constants.MaxUint256);
+    await usdc
+        .connect(eoa1)
+        .approve(pearlmit.address, ethers.constants.MaxUint256);
+    await usd0
+        .connect(eoa1)
+        .approve(pearlmit.address, ethers.constants.MaxUint256);
+    await yieldBox
+        .connect(eoa1)
+        .setApprovalForAll(wethBigBangMarket.address, true);
+    await yieldBox
+        .connect(eoa1)
+        .setApprovalForAll(wethUsdcSingularity.address, true);
+    await yieldBox
+        .connect(eoa1)
+        .setApprovalForAll(wbtcBigBangMarket.address, true);
     await yieldBox.connect(eoa1).setApprovalForAll(pearlmit.address, true);
-    await pearlmit.connect(eoa1).approve(yieldBox.address, wethAssetId, wethBigBangMarket.address, ethers.utils.parseEther('900000000000000'), '9000000000');
-    await pearlmit.connect(eoa1).approve(yieldBox.address, await penrose.usdoAssetId(), wethBigBangMarket.address, ethers.utils.parseEther('900000000000000'), '9000000000');
-    await pearlmit.connect(eoa1).approve(yieldBox.address, wbtcAssetId, wbtcBigBangMarket.address, ethers.utils.parseEther('900000000000000'), '9000000000');
-    await pearlmit.connect(eoa1).approve(yieldBox.address, wethAssetId, wethUsdcSingularity.address, ethers.utils.parseEther('900000000000000'), '9000000000');
-    await pearlmit.connect(eoa1).approve(yieldBox.address, usdcAssetId, wethUsdcSingularity.address, ethers.utils.parseEther('900000000000000'), '9000000000');
-    await pearlmit.connect(eoa1).approve(yieldBox.address, usdcAssetId, wbtcUsdcSingularity.address, ethers.utils.parseEther('900000000000000'), '9000000000');
-    await pearlmit.connect(eoa1).approve(yieldBox.address, wbtcAssetId, wbtcUsdcSingularity.address, ethers.utils.parseEther('900000000000000'), '9000000000');
+    await pearlmit
+        .connect(eoa1)
+        .approve(
+            yieldBox.address,
+            wethAssetId,
+            wethBigBangMarket.address,
+            ethers.utils.parseEther('900000000000000'),
+            '9000000000',
+        );
+    await pearlmit
+        .connect(eoa1)
+        .approve(
+            yieldBox.address,
+            await penrose.usdoAssetId(),
+            wethBigBangMarket.address,
+            ethers.utils.parseEther('900000000000000'),
+            '9000000000',
+        );
+    await pearlmit
+        .connect(eoa1)
+        .approve(
+            yieldBox.address,
+            wbtcAssetId,
+            wbtcBigBangMarket.address,
+            ethers.utils.parseEther('900000000000000'),
+            '9000000000',
+        );
+    await pearlmit
+        .connect(eoa1)
+        .approve(
+            yieldBox.address,
+            wethAssetId,
+            wethUsdcSingularity.address,
+            ethers.utils.parseEther('900000000000000'),
+            '9000000000',
+        );
+    await pearlmit
+        .connect(eoa1)
+        .approve(
+            yieldBox.address,
+            usdcAssetId,
+            wethUsdcSingularity.address,
+            ethers.utils.parseEther('900000000000000'),
+            '9000000000',
+        );
+    await pearlmit
+        .connect(eoa1)
+        .approve(
+            yieldBox.address,
+            usdcAssetId,
+            wbtcUsdcSingularity.address,
+            ethers.utils.parseEther('900000000000000'),
+            '9000000000',
+        );
+    await pearlmit
+        .connect(eoa1)
+        .approve(
+            yieldBox.address,
+            wbtcAssetId,
+            wbtcUsdcSingularity.address,
+            ethers.utils.parseEther('900000000000000'),
+            '9000000000',
+        );
 
-    await wethUsdcSingularity.connect(eoa1).approve(deployer.address, ethers.utils.parseEther('900000000000000'));
-    await wbtcBigBangMarket.connect(eoa1).approve(deployer.address, ethers.utils.parseEther('900000000000000'));
-    await wethBigBangMarket.connect(eoa1).approve(deployer.address, ethers.utils.parseEther('900000000000000'));
-    await wbtcUsdcSingularity.connect(eoa1).approve(deployer.address, ethers.utils.parseEther('900000000000000'));
+    await wethUsdcSingularity
+        .connect(eoa1)
+        .approve(deployer.address, ethers.utils.parseEther('900000000000000'));
+    await wbtcBigBangMarket
+        .connect(eoa1)
+        .approve(deployer.address, ethers.utils.parseEther('900000000000000'));
+    await wethBigBangMarket
+        .connect(eoa1)
+        .approve(deployer.address, ethers.utils.parseEther('900000000000000'));
+    await wbtcUsdcSingularity
+        .connect(eoa1)
+        .approve(deployer.address, ethers.utils.parseEther('900000000000000'));
 
-    await wethUsdcSingularity.connect(eoa1).approveBorrow(deployer.address, ethers.utils.parseEther('900000000000000'));
-    await wbtcBigBangMarket.connect(eoa1).approveBorrow(deployer.address, ethers.utils.parseEther('900000000000000'));
-    await wethBigBangMarket.connect(eoa1).approveBorrow(deployer.address, ethers.utils.parseEther('900000000000000'));
-    await wbtcUsdcSingularity.connect(eoa1).approveBorrow(deployer.address, ethers.utils.parseEther('900000000000000'));
-
-
-    
+    await wethUsdcSingularity
+        .connect(eoa1)
+        .approveBorrow(
+            deployer.address,
+            ethers.utils.parseEther('900000000000000'),
+        );
+    await wbtcBigBangMarket
+        .connect(eoa1)
+        .approveBorrow(
+            deployer.address,
+            ethers.utils.parseEther('900000000000000'),
+        );
+    await wethBigBangMarket
+        .connect(eoa1)
+        .approveBorrow(
+            deployer.address,
+            ethers.utils.parseEther('900000000000000'),
+        );
+    await wbtcUsdcSingularity
+        .connect(eoa1)
+        .approveBorrow(
+            deployer.address,
+            ethers.utils.parseEther('900000000000000')
+        );
 
     // Helper
     const initialSetup = {
@@ -2197,7 +2341,6 @@ export async function performMarketHelperCall(
     data: [number[], string[]] & { modules: number[]; calls: string[] },
     signer?: SignerWithAddress | Wallet,
 ) {
-    
     signer = signer ?? (await ethers.getSigners())[0];
     await (
         await market.connect(signer).execute(data.modules, data.calls, true)

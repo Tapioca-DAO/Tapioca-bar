@@ -1,16 +1,11 @@
 import hre, { ethers } from 'hardhat';
 import { expect } from 'chai';
-import {
-    performMarketHelperCall,
-    register,
-} from './test.utils';
+import { performMarketHelperCall, register } from './test.utils';
 import {
     loadFixture,
     takeSnapshot,
 } from '@nomicfoundation/hardhat-network-helpers';
-import {
-    LiquidationQueue__factory,
-} from '@tapioca-sdk/typechain/tapioca-periphery';
+import { LiquidationQueue__factory } from '@tapioca-sdk/typechain/tapioca-periphery';
 
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 
@@ -496,7 +491,7 @@ describe('Singularity test', () => {
                     mediumRiskMC.address,
                     sglData,
                     true,
-                )
+                ),
             ).to.be.reverted;
         });
 
@@ -706,17 +701,21 @@ describe('Singularity test', () => {
             expect(data.successes[0]).to.be.true;
             expect(data.successes[1]).to.be.false; //can't borrow as there are no lenders
 
-            const hexToAscii =(str: string) => {
+            const hexToAscii = (str: string) => {
                 const hexString = str;
                 let strOut = '';
-                    for (let x = 0; x < hexString.length; x += 2) {
-                        strOut += String.fromCharCode(parseInt(hexString.substr(x, 2), 16));
-                    }
-                return strOut;    
-            }
+                for (let x = 0; x < hexString.length; x += 2) {
+                    strOut += String.fromCharCode(
+                        parseInt(hexString.substr(x, 2), 16),
+                    );
+                }
+                return strOut;
+            };
 
             expect(data.results[0]).to.eq('0x');
-            expect(hexToAscii(data.results[1])).to.eq('\u0000Market: no return data');
+            expect(hexToAscii(data.results[1])).to.eq(
+                '\u0000Market: no return data',
+            );
 
             await expect(
                 wethUsdcSingularity
@@ -867,7 +866,7 @@ describe('Singularity test', () => {
                 [liquidationReceiver.address],
                 [liquidateData],
             );
-             penroseMarketCalldata =
+            penroseMarketCalldata =
                 wethUsdcSingularity.interface.encodeFunctionData('execute', [
                     liquidateCalldata.modules,
                     liquidateCalldata.calls,
@@ -881,8 +880,7 @@ describe('Singularity test', () => {
                     true,
                 ),
             ).to.be.reverted;
-        
-                    
+
             const liquidateBadDebtCalldata =
                 await marketHelper.liquidateBadDebt(
                     eoa1.address,
@@ -893,7 +891,7 @@ describe('Singularity test', () => {
                     true,
                 );
 
-             penroseMarketCalldata =
+            penroseMarketCalldata =
                 wethUsdcSingularity.interface.encodeFunctionData('execute', [
                     liquidateBadDebtCalldata.modules,
                     liquidateBadDebtCalldata.calls,
@@ -1687,8 +1685,11 @@ describe('Singularity test', () => {
                 deployer.address,
                 wethAmount,
             );
-            await wethUsdcSingularity
-                .execute(borrowCalldata.modules, borrowCalldata.calls, true);
+            await wethUsdcSingularity.execute(
+                borrowCalldata.modules,
+                borrowCalldata.calls,
+                true,
+            );
             const amountFromShares =
                 await magnetarHelper.getAmountForBorrowPart(
                     wethUsdcSingularity.address,
@@ -1892,7 +1893,11 @@ describe('Singularity test', () => {
             ).equal(await yieldBox.toShare(collateralId, usdcMintVal, false));
 
             const firstBorrow = ethers.BigNumber.from((1e17).toString());
-            let borrowData = await marketHelper.borrow(eoa1.address, eoa1.address, firstBorrow);
+            const borrowData = await marketHelper.borrow(
+                eoa1.address,
+                eoa1.address,
+                firstBorrow,
+            );
             await wethUsdcSingularity
                 .connect(eoa1)
                 .execute(borrowData[0], borrowData[1], true);
@@ -1998,8 +2003,12 @@ describe('Singularity test', () => {
             );
             const savedBorrowCap = await wethUsdcSingularity.totalBorrowCap();
             expect(savedBorrowCap.eq(wethBorrowVal.div(2))).to.be.true;
-            
-            let borrowData = await marketHelper.borrow(eoa1.address, eoa1.address, wethBorrowVal);
+
+            let borrowData = await marketHelper.borrow(
+                eoa1.address,
+                eoa1.address,
+                wethBorrowVal,
+            );
             await expect(
                 wethUsdcSingularity
                     .connect(eoa1)
@@ -2026,7 +2035,11 @@ describe('Singularity test', () => {
                 [borrowCapData],
                 true,
             );
-            borrowData = await marketHelper.borrow(eoa1.address, eoa1.address, wethBorrowVal);
+            borrowData = await marketHelper.borrow(
+                eoa1.address,
+                eoa1.address,
+                wethBorrowVal,
+            );
             await expect(
                 wethUsdcSingularity
                     .connect(eoa1)
@@ -2075,7 +2088,7 @@ describe('Singularity test', () => {
             await wethUsdcSingularity.execute(
                 borrowData[0],
                 borrowData[1],
-                true
+                true,
             );
 
             await wethUsdcSingularity.updateExchangeRate();
@@ -2099,7 +2112,7 @@ describe('Singularity test', () => {
             await wethUsdcSingularity.execute(
                 borrowData[0],
                 borrowData[1],
-                true
+                true,
             );
             reward = await wethUsdcSingularity.computeLiquidatorReward(
                 deployer.address,
@@ -2297,7 +2310,11 @@ describe('Singularity test', () => {
             ).equal(await yieldBox.toShare(collateralId, collateralVal, false));
 
             // We borrow
-            const borrowData = await marketHelper.borrow(eoa1.address, eoa1.address, borrowVal);
+            const borrowData = await marketHelper.borrow(
+                eoa1.address,
+                eoa1.address,
+                borrowVal,
+            );
             await wethUsdcSingularity
                 .connect(eoa1)
                 .execute(borrowData[0], borrowData[1], true);
@@ -2339,7 +2356,12 @@ describe('Singularity test', () => {
                     userBorrowPart,
                     0,
                 );
-            const repayData = await marketHelper.repay(eoa1.address, eoa1.address, false, userBorrowPart);
+            const repayData = await marketHelper.repay(
+                eoa1.address,
+                eoa1.address,
+                false,
+                userBorrowPart,
+            );
             await wethUsdcSingularity
                 .connect(eoa1)
                 .execute(repayData[0], repayData[1], true);
@@ -2351,9 +2373,7 @@ describe('Singularity test', () => {
             const removeCollateralData = await marketHelper.removeCollateral(
                 eoa1.address,
                 eoa1.address,
-                await wethUsdcSingularity.userCollateralShare(
-                    eoa1.address,
-                ),
+                await wethUsdcSingularity.userCollateralShare(eoa1.address),
             );
             await (
                 await wethUsdcSingularity
@@ -2499,7 +2519,11 @@ describe('Singularity test', () => {
                 await wethUsdcSingularity.borrowOpeningFee();
             expect(openingFeeAfter.eq(1e4)).to.be.true;
             // We borrow
-            const borrowData = await marketHelper.borrow(eoa1.address, eoa1.address, borrowVal);
+            const borrowData = await marketHelper.borrow(
+                eoa1.address,
+                eoa1.address,
+                borrowVal,
+            );
             await wethUsdcSingularity
                 .connect(eoa1)
                 .execute(borrowData[0], borrowData[1], true);
@@ -2542,7 +2566,12 @@ describe('Singularity test', () => {
                     userBorrowPart,
                     0,
                 );
-            const repayData = await marketHelper.repay(eoa1.address, eoa1.address, false, userBorrowPart);
+            const repayData = await marketHelper.repay(
+                eoa1.address,
+                eoa1.address,
+                false,
+                userBorrowPart,
+            );
             await wethUsdcSingularity
                 .connect(eoa1)
                 .execute(repayData[0], repayData[1], true);
@@ -2566,9 +2595,7 @@ describe('Singularity test', () => {
             const removeCollateralData = await marketHelper.removeCollateral(
                 eoa1.address,
                 eoa1.address,
-                await wethUsdcSingularity.userCollateralShare(
-                    eoa1.address,
-                ),
+                await wethUsdcSingularity.userCollateralShare(eoa1.address),
             );
             await (
                 await wethUsdcSingularity
@@ -2671,7 +2698,11 @@ describe('Singularity test', () => {
                 .mul(74)
                 .div(100)
                 .div(__wethUsdcPrice.div((1e18).toString()));
-            const borrowData = await marketHelper.borrow(eoa1.address, eoa1.address, wethBorrowVal);
+            const borrowData = await marketHelper.borrow(
+                eoa1.address,
+                eoa1.address,
+                wethBorrowVal,
+            );
             await wethUsdcSingularity
                 .connect(eoa1)
                 .execute(borrowData[0], borrowData[1], true);
@@ -2695,7 +2726,12 @@ describe('Singularity test', () => {
                     userBorrowPart,
                     0,
                 );
-            const repayData = await marketHelper.repay(eoa1.address, eoa1.address, false, userBorrowPart);
+            const repayData = await marketHelper.repay(
+                eoa1.address,
+                eoa1.address,
+                false,
+                userBorrowPart,
+            );
             await wethUsdcSingularity
                 .connect(eoa1)
                 .execute(repayData[0], repayData[1], true);
@@ -2833,11 +2869,7 @@ describe('Singularity test', () => {
                 false,
                 userBorrowPart,
             );
-            await wethUsdcSingularity.execute(
-                repayData[0],
-                repayData[1],
-                true,
-            );
+            await wethUsdcSingularity.execute(repayData[0], repayData[1], true);
 
             userBorrowPart = await wethUsdcSingularity.userBorrowPart(
                 eoa1.address,
@@ -2885,10 +2917,27 @@ describe('Singularity test', () => {
 
             for (let i = 0; i < eoas.length; i++) {
                 const eoa = eoas[i];
-                await wethUsdcSingularity.connect(eoa).approve(deployer.address, ethers.constants.MaxUint256);
-                await wethUsdcSingularity.connect(eoa).approveBorrow(deployer.address, ethers.constants.MaxUint256);
-                await pearlmit.connect(eoa).approve(yieldBox.address, collateralId, wethUsdcSingularity.address, ethers.utils.parseEther('900000000000000'), '9000000000');
-                await yieldBox.connect(eoa).setApprovalForAll(pearlmit.address, true);
+                await wethUsdcSingularity
+                    .connect(eoa)
+                    .approve(deployer.address, ethers.constants.MaxUint256);
+                await wethUsdcSingularity
+                    .connect(eoa)
+                    .approveBorrow(
+                        deployer.address,
+                        ethers.constants.MaxUint256,
+                    );
+                await pearlmit
+                    .connect(eoa)
+                    .approve(
+                        yieldBox.address,
+                        collateralId,
+                        wethUsdcSingularity.address,
+                        ethers.utils.parseEther('900000000000000'),
+                        '9000000000',
+                    );
+                await yieldBox
+                    .connect(eoa)
+                    .setApprovalForAll(pearlmit.address, true);
                 await usdc.connect(eoa).freeMint(usdcMintVal);
                 await approveTokensAndSetBarApproval(eoa);
                 await usdcDepositAndAddCollateral(usdcMintVal, eoa);
@@ -2898,7 +2947,6 @@ describe('Singularity test', () => {
                     await yieldBox.toShare(collateralId, usdcMintVal, false),
                 );
                 timeTravel(86400);
-               
             }
 
             timeTravel(86400 * 5);
@@ -2908,12 +2956,12 @@ describe('Singularity test', () => {
                 const eoa = eoas[i];
                 const borrowData = await marketHelper
                     .connect(eoa)
-                    .borrow(
-                        eoa.address,
-                        eoa.address,
-                        firstBorrow,
-                    );
-                await wethUsdcSingularity.execute(borrowData[0], borrowData[1], true);
+                    .borrow(eoa.address, eoa.address, firstBorrow);
+                await wethUsdcSingularity.execute(
+                    borrowData[0],
+                    borrowData[1],
+                    true,
+                );
                 timeTravel(10 * 86400);
             }
 
@@ -3024,23 +3072,71 @@ describe('Singularity test', () => {
             );
 
             await weth.approve(yieldBox.address, ethers.constants.MaxUint256);
-            await weth.approve(pearlmit.address, ethers.constants.MaxUint256); 
-            await usd0.approve(pearlmit.address, ethers.constants.MaxUint256); 
+            await weth.approve(pearlmit.address, ethers.constants.MaxUint256);
+            await usd0.approve(pearlmit.address, ethers.constants.MaxUint256);
             await yieldBox.setApprovalForAll(wethUsdoSingularity.address, true);
             await yieldBox.setApprovalForAll(pearlmit.address, true);
-            await pearlmit.approve(yieldBox.address, wethAssetId, wethUsdoSingularity.address, ethers.utils.parseEther('900000000000000'), '9000000000');
-            await pearlmit.approve(yieldBox.address, usdoAssetId, wethUsdoSingularity.address, ethers.utils.parseEther('900000000000000'), '9000000000');
+            await pearlmit.approve(
+                yieldBox.address,
+                wethAssetId,
+                wethUsdoSingularity.address,
+                ethers.utils.parseEther('900000000000000'),
+                '9000000000',
+            );
+            await pearlmit.approve(
+                yieldBox.address,
+                usdoAssetId,
+                wethUsdoSingularity.address,
+                ethers.utils.parseEther('900000000000000'),
+                '9000000000',
+            );
 
-            await weth.connect(eoa1).approve(yieldBox.address, ethers.constants.MaxUint256);
-            await weth.connect(eoa1).approve(pearlmit.address, ethers.constants.MaxUint256); 
-            await usd0.connect(eoa1).approve(pearlmit.address, ethers.constants.MaxUint256); 
-            await yieldBox.connect(eoa1).setApprovalForAll(wethUsdoSingularity.address, true);
-            await yieldBox.connect(eoa1).setApprovalForAll(pearlmit.address, true);
-            await pearlmit.connect(eoa1).approve(yieldBox.address, wethAssetId, wethUsdoSingularity.address, ethers.utils.parseEther('900000000000000'), '9000000000');
-            await pearlmit.connect(eoa1).approve(yieldBox.address, usdoAssetId, wethUsdoSingularity.address, ethers.utils.parseEther('900000000000000'), '9000000000');
+            await weth
+                .connect(eoa1)
+                .approve(yieldBox.address, ethers.constants.MaxUint256);
+            await weth
+                .connect(eoa1)
+                .approve(pearlmit.address, ethers.constants.MaxUint256);
+            await usd0
+                .connect(eoa1)
+                .approve(pearlmit.address, ethers.constants.MaxUint256);
+            await yieldBox
+                .connect(eoa1)
+                .setApprovalForAll(wethUsdoSingularity.address, true);
+            await yieldBox
+                .connect(eoa1)
+                .setApprovalForAll(pearlmit.address, true);
+            await pearlmit
+                .connect(eoa1)
+                .approve(
+                    yieldBox.address,
+                    wethAssetId,
+                    wethUsdoSingularity.address,
+                    ethers.utils.parseEther('900000000000000'),
+                    '9000000000',
+                );
+            await pearlmit
+                .connect(eoa1)
+                .approve(
+                    yieldBox.address,
+                    usdoAssetId,
+                    wethUsdoSingularity.address,
+                    ethers.utils.parseEther('900000000000000'),
+                    '9000000000',
+                );
 
-            await wethUsdoSingularity.connect(eoa1).approve(deployer.address, ethers.utils.parseEther('900000000000000'));
-            await wethUsdoSingularity.connect(eoa1).approveBorrow(deployer.address, ethers.utils.parseEther('900000000000000'));
+            await wethUsdoSingularity
+                .connect(eoa1)
+                .approve(
+                    deployer.address,
+                    ethers.utils.parseEther('900000000000000'),
+                );
+            await wethUsdoSingularity
+                .connect(eoa1)
+                .approveBorrow(
+                    deployer.address,
+                    ethers.utils.parseEther('900000000000000'),
+                );
             //Deploy & set LiquidationQueue
             await usd0.setMinterStatus(wethUsdoSingularity.address, true);
             await usd0.setBurnerStatus(wethUsdoSingularity.address, true);
@@ -3132,7 +3228,11 @@ describe('Singularity test', () => {
                     0,
                     _wethValShare,
                 );
-            await wethUsdoSingularity.execute(addCollateralData[0], addCollateralData[1], true);
+            await wethUsdoSingularity.execute(
+                addCollateralData[0],
+                addCollateralData[1],
+                true,
+            );
             expect(
                 await wethUsdoSingularity.userCollateralShare(eoa1.address),
             ).equal(
@@ -3147,12 +3247,12 @@ describe('Singularity test', () => {
 
             const borrowData = await marketHelper
                 .connect(eoa1)
-                .borrow(
-                    eoa1.address,
-                    eoa1.address,
-                    usdoBorrowVal,
-                );
-            await wethUsdoSingularity.execute(borrowData[0], borrowData[1], true);
+                .borrow(eoa1.address, eoa1.address, usdoBorrowVal);
+            await wethUsdoSingularity.execute(
+                borrowData[0],
+                borrowData[1],
+                true,
+            );
             await yieldBox
                 .connect(eoa1)
                 .withdraw(
