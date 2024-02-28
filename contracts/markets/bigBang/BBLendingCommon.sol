@@ -32,7 +32,6 @@ contract BBLendingCommon is BBCommon {
     error OracleCallFailed();
     error NothingToRepay();
     error RepayAmountNotValid();
-    error AllowanceNotValid();
 
     // ************************** //
     // *** PRIVATE FUNCTIONS *** //
@@ -117,7 +116,6 @@ contract BBLendingCommon is BBCommon {
             (_totalBorrow, partInAmount) = _totalBorrow.sub(part, false);
             uint256 allowanceShare =
                 _computeAllowanceAmountInAsset(to, exchangeRate, partInAmount, _safeDecimals(asset));
-            if (allowanceShare == 0) revert AllowanceNotValid();
             _allowedBorrow(from, allowanceShare);
         }
 

@@ -34,11 +34,10 @@ contract SGLBorrow is SGLLendingCommon {
         returns (uint256 part, uint256 share)
     {
         if (amount == 0) return (0, 0);
+
         uint256 feeAmount = (amount * borrowOpeningFee) / FEE_PRECISION;
         uint256 allowanceShare =
             _computeAllowanceAmountInAsset(from, exchangeRate, amount + feeAmount, _safeDecimals(asset));
-
-        if (allowanceShare == 0) revert AllowanceNotValid();
 
         _allowedBorrow(from, allowanceShare);
 

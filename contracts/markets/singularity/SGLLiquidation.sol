@@ -89,6 +89,7 @@ contract SGLLiquidation is SGLCommon {
             yieldBox.toShare(collateralId, (borrowAmountWithBonus * exchangeRate) / EXCHANGE_RATE_PRECISION, false);
 
         uint256 collateralShare = userCollateralShare[user];
+
         if (requiredCollateral < collateralShare) revert ForbiddenAction();
 
         // update totalBorrow
@@ -137,7 +138,7 @@ contract SGLLiquidation is SGLCommon {
         uint256[] calldata minLiquidationBonuses,
         IMarketLiquidatorReceiver[] calldata liquidatorReceivers,
         bytes[] calldata liquidatorReceiverDatas
-    ) external optionNotPaused(PauseType.Liquidation) nonReentrant {
+    ) external optionNotPaused(PauseType.Liquidation) {
         if (users.length == 0) revert NothingToLiquidate();
         if (users.length != maxBorrowParts.length) revert LengthMismatch();
         if (users.length != liquidatorReceivers.length) revert LengthMismatch();

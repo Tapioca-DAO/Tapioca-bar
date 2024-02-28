@@ -34,6 +34,7 @@ describe('Origins test', () => {
             timeTravel,
             eoa1,
             penrose,
+            pearlmit,
         } = await loadFixture(register);
 
         const chainId = hre.SDK.eChainId;
@@ -43,6 +44,7 @@ describe('Origins test', () => {
                 yieldBox.address,
                 cluster.address,
                 deployer.address,
+                pearlmit.address,
                 false,
             );
 

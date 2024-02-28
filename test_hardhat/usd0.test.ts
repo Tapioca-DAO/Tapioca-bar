@@ -11,13 +11,14 @@ import {
 describe('USDO', () => {
     describe('views', () => {
         it('should test initial values', async () => {
-            const { registerUsd0Contract, deployer, yieldBox, cluster } =
+            const { registerUsd0Contract, deployer, yieldBox, cluster, pearlmit } =
                 await loadFixture(register);
             const { usd0 } = await registerUsd0Contract(
                 '1',
                 yieldBox.address,
                 cluster.address,
                 deployer.address,
+                pearlmit.address,
             );
 
             const signerIsAllowedToMint = await usd0.allowedMinter(
@@ -38,13 +39,14 @@ describe('USDO', () => {
 
     describe('mint & burn', () => {
         it('should set minters and burners', async () => {
-            const { registerUsd0Contract, deployer, yieldBox, cluster } =
+            const { registerUsd0Contract, deployer, yieldBox, cluster, pearlmit } =
                 await loadFixture(register);
             const { usd0 } = await registerUsd0Contract(
                 '1',
                 yieldBox.address,
                 cluster.address,
                 deployer.address,
+                pearlmit.address,
             );
             const minter = new ethers.Wallet(
                 ethers.Wallet.createRandom().privateKey,
@@ -74,12 +76,14 @@ describe('USDO', () => {
                 eoas,
                 yieldBox,
                 cluster,
+                pearlmit,
             } = await loadFixture(register);
             const { usd0 } = await registerUsd0Contract(
                 '1',
                 yieldBox.address,
                 cluster.address,
                 deployer.address,
+                pearlmit.address,
             );
             const normalUser = eoas[1];
 
@@ -114,12 +118,14 @@ describe('USDO', () => {
                 weth,
                 yieldBox,
                 cluster,
+                pearlmit
             } = await loadFixture(register);
             const { usd0, usd0Flashloan } = await registerUsd0Contract(
                 '1',
                 yieldBox.address,
                 cluster.address,
                 deployer.address,
+                pearlmit.address,
             );
 
             await usd0.setFlashloanHelper(usd0Flashloan.address);
@@ -186,12 +192,14 @@ describe('USDO', () => {
                 weth,
                 yieldBox,
                 cluster,
+                pearlmit
             } = await loadFixture(register);
             const { usd0, usd0Flashloan } = await registerUsd0Contract(
                 '1',
                 yieldBox.address,
                 cluster.address,
                 deployer.address,
+                pearlmit.address,
             );
 
             await usd0.setFlashloanHelper(usd0Flashloan.address);

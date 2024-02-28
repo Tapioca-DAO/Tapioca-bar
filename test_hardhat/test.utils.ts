@@ -78,6 +78,7 @@ async function registerUsd0Contract(
     yieldBox: string,
     cluster: string,
     owner: string,
+    pearlmitAddress: string,
     staging?: boolean,
 ) {
     const deployer = (await ethers.getSigners())[0];
@@ -102,6 +103,7 @@ async function registerUsd0Contract(
         yieldBox: yieldBox,
         cluster: cluster,
         extExec: extExec.address,
+        pearlmit: pearlmitAddress,
     };
 
     const usdo_sender = await (
@@ -301,6 +303,11 @@ async function registerPenrose(
     wethAddress: string,
     staging?: boolean,
 ) {
+    const pearlmit = await (
+        await ethers.getContractFactory('Pearlmit')
+    ).deploy('A', '1');
+    await pearlmit.deployed();
+
     const penrose = await (
         await ethers.getContractFactory('Penrose')
     ).deploy(
@@ -308,6 +315,7 @@ async function registerPenrose(
         cluster,
         tapAddress,
         wethAddress,
+        pearlmit.address, 
         (
             await hre.ethers.getSigners()
         )[0].address,
@@ -326,7 +334,7 @@ async function registerPenrose(
         staging,
     );
 
-    return { penrose };
+    return { penrose, pearlmit };
 }
 
 async function setPenroseAssets(
@@ -640,34 +648,86 @@ async function registerTwTapMock(deployer: any) {
     const twTap = await TwTapMock.deploy();
     return { twTap };
 }
-async function registerMagnetar(clusterAddress: string, deployer: any) {
-    const MagnetarMarketModule1 = await new MagnetarMarketModule1__factory(
-        deployer,
-    ).deploy();
+async function registerMagnetar(
+    clusterAddress: string,
+    pearlmitAddress: string,
+    deployer: any,
+) {
+    const magnetarAssetModule = await (
+        await (
+            await hre.ethers.getContractFactory('MagnetarAssetModule')
+        ).deploy()
+    ).deployed();
+    hre.tracer.nameTags[magnetarAssetModule.address] = 'magnetarAssetModule';
+    const magnetarAssetXChain = await (
+        await (
+            await hre.ethers.getContractFactory('MagnetarAssetXChainModule')
+        ).deploy()
+    ).deployed();
+    hre.tracer.nameTags[magnetarAssetXChain.address] =
+        'MagnetarAssetXChainModule';
+    const magnetarCollateralModule = await (
+        await (
+            await hre.ethers.getContractFactory('MagnetarCollateralModule')
+        ).deploy()
+    ).deployed();
+    hre.tracer.nameTags[magnetarCollateralModule.address] =
+        'magnetarCollateralModule';
+    const magnetarMintModule = await (
+        await (
+            await hre.ethers.getContractFactory('MagnetarMintModule')
+        ).deploy()
+    ).deployed();
+    hre.tracer.nameTags[magnetarMintModule.address] = 'magnetarMintModule';
+    const magnetarMintXChainModule = await (
+        await (
+            await hre.ethers.getContractFactory('MagnetarMintXChainModule')
+        ).deploy()
+    ).deployed();
+    hre.tracer.nameTags[magnetarMintXChainModule.address] =
+        'magnetarMintXChainModule';
+    const magnetarOptionModule = await (
+        await (
+            await hre.ethers.getContractFactory('MagnetarOptionModule')
+        ).deploy()
+    ).deployed();
+    hre.tracer.nameTags[magnetarOptionModule.address] = 'magnetarOptionModule';
+    const magnetarYieldboxModule = await (
+        await (
+            await hre.ethers.getContractFactory('MagnetarYieldBoxModule')
+        ).deploy()
+    ).deployed();
+    hre.tracer.nameTags[magnetarYieldboxModule.address] =
+        'magnetarYieldboxModule';
 
-    const MagnetarMarketModule2 = await new MagnetarMarketModule2__factory(
-        deployer,
-    ).deploy();
-    const magnetarYieldboxModule = await new MagnetarYieldboxModule__factory(
-        deployer,
-    ).deploy();
-
-    const MagnetarV2 = new MagnetarV2__factory(deployer);
-    const magnetar = await MagnetarV2.deploy(
+    const magnetar = await (
+        await ethers.getContractFactory('Magnetar')
+    ).deploy(
         clusterAddress,
         deployer.address,
-        MagnetarMarketModule1.address,
-        MagnetarMarketModule2.address,
+        magnetarAssetModule.address,
+        magnetarAssetXChain.address,
+        magnetarCollateralModule.address,
+        magnetarMintModule.address,
+        magnetarMintXChainModule.address,
+        magnetarOptionModule.address,
         magnetarYieldboxModule.address,
+        pearlmitAddress,
     );
+    await magnetar.deployed();
+
     return { magnetar };
 }
+
 async function registerMagnetarHelper(deployer: any) {
-    const MagnetarHelper = new MagnetarHelper__factory(deployer);
-    const magnetarHelper = await MagnetarHelper.deploy();
+    const magnetarHelper = await (
+        await ethers.getContractFactory('MagnetarHelper')
+    ).deploy();
+    await magnetarHelper.deployed();
 
     return { magnetarHelper };
 }
+
 
 async function registerMultiSwapper(
     deployer: any,
@@ -1453,15 +1513,15 @@ export async function register(staging?: boolean) {
     log(
         `Deployed Cluster ${cluster.address} with args [${chainInfo?.lzChainId}]`,
         staging,
-    );
-
-    const marketHelper = await new MarketHelper__factory()
-        .connect(deployer)
-        .deploy();
+        );
+    
+    const marketHelperFactory = await ethers.getContractFactory('MarketHelper');
+    const marketHelper = await marketHelperFactory.deploy();
+    await marketHelper.deployed();
 
     // ------------------- 2.2 Deploy Penrose -------------------
     log('Deploying Penrose', staging);
-    const { penrose } = await registerPenrose(
+    const { penrose, pearlmit } = await registerPenrose(
         yieldBox.address,
         cluster.address,
         tap.address,
@@ -1469,13 +1529,6 @@ export async function register(staging?: boolean) {
         staging,
     );
     log(`Deployed Penrose ${penrose.address}`, staging);
-
-    const pearlmit = await (
-        await ethers.getContractFactory('Pearlmit')
-    ).deploy('A', '1');
-    await pearlmit.deployed();
-
-    await penrose.setPearlmit(pearlmit.address);
 
     // -------------------  3 Add asset types to Penrose -------------------
     log('Setting Penrose assets', staging);
@@ -1598,7 +1651,7 @@ export async function register(staging?: boolean) {
     log('USDC, WETH, TAP and WBTC were set on twTap', staging);
 
     log('Deploying Magnetar', staging);
-    const { magnetar } = await registerMagnetar(cluster.address, deployer);
+    const { magnetar } = await registerMagnetar(cluster.address, pearlmit.address, deployer);
     log(`Deployed Magnetar ${magnetar.address}`, staging);
 
     log('Deploying MagnetarHelper', staging);
@@ -1623,6 +1676,7 @@ export async function register(staging?: boolean) {
             yieldBox.address,
             cluster.address,
             deployer.address,
+            pearlmit.address,
             staging,
         );
     log(`USDO registered ${usd0.address}`, staging);
@@ -1774,6 +1828,56 @@ export async function register(staging?: boolean) {
         await setBalance(eoa1.address, 100000);
     }
 
+    await weth.approve(yieldBox.address, ethers.constants.MaxUint256);
+    await weth.approve(pearlmit.address, ethers.constants.MaxUint256); 
+    await wbtc.approve(yieldBox.address, ethers.constants.MaxUint256);
+    await wbtc.approve(pearlmit.address, ethers.constants.MaxUint256); 
+    await usdc.approve(pearlmit.address, ethers.constants.MaxUint256); 
+    await usd0.approve(pearlmit.address, ethers.constants.MaxUint256); 
+    await yieldBox.setApprovalForAll(wethBigBangMarket.address, true);
+    await yieldBox.setApprovalForAll(wethUsdcSingularity.address, true);
+    await yieldBox.setApprovalForAll(wbtcBigBangMarket.address, true);
+    await yieldBox.setApprovalForAll(wbtcUsdcSingularity.address, true);
+    await yieldBox.setApprovalForAll(pearlmit.address, true);
+    await pearlmit.approve(yieldBox.address, wethAssetId, wethBigBangMarket.address, ethers.utils.parseEther('900000000000000'), '9000000000');
+    await pearlmit.approve(yieldBox.address, await penrose.usdoAssetId(), wethBigBangMarket.address, ethers.utils.parseEther('900000000000000'), '9000000000');
+    await pearlmit.approve(yieldBox.address, wbtcAssetId, wbtcBigBangMarket.address, ethers.utils.parseEther('900000000000000'), '9000000000');
+    await pearlmit.approve(yieldBox.address, wethAssetId, wethUsdcSingularity.address, ethers.utils.parseEther('900000000000000'), '9000000000');
+    await pearlmit.approve(yieldBox.address, usdcAssetId, wethUsdcSingularity.address, ethers.utils.parseEther('900000000000000'), '9000000000');
+    await pearlmit.approve(yieldBox.address, usdcAssetId, wbtcUsdcSingularity.address, ethers.utils.parseEther('900000000000000'), '9000000000');
+    await pearlmit.approve(yieldBox.address, wbtcAssetId, wbtcUsdcSingularity.address, ethers.utils.parseEther('900000000000000'), '9000000000');
+
+    await weth.connect(eoa1).approve(yieldBox.address, ethers.constants.MaxUint256);
+    await weth.connect(eoa1).approve(pearlmit.address, ethers.constants.MaxUint256); 
+    await wbtc.connect(eoa1).approve(yieldBox.address, ethers.constants.MaxUint256);
+    await wbtc.connect(eoa1).approve(pearlmit.address, ethers.constants.MaxUint256); 
+    await usdc.connect(eoa1).approve(pearlmit.address, ethers.constants.MaxUint256); 
+    await usd0.connect(eoa1).approve(pearlmit.address, ethers.constants.MaxUint256); 
+    await yieldBox.connect(eoa1).setApprovalForAll(wethBigBangMarket.address, true);
+    await yieldBox.connect(eoa1).setApprovalForAll(wethUsdcSingularity.address, true);
+    await yieldBox.connect(eoa1).setApprovalForAll(wbtcBigBangMarket.address, true);
+    await yieldBox.connect(eoa1).setApprovalForAll(pearlmit.address, true);
+    await pearlmit.connect(eoa1).approve(yieldBox.address, wethAssetId, wethBigBangMarket.address, ethers.utils.parseEther('900000000000000'), '9000000000');
+    await pearlmit.connect(eoa1).approve(yieldBox.address, await penrose.usdoAssetId(), wethBigBangMarket.address, ethers.utils.parseEther('900000000000000'), '9000000000');
+    await pearlmit.connect(eoa1).approve(yieldBox.address, wbtcAssetId, wbtcBigBangMarket.address, ethers.utils.parseEther('900000000000000'), '9000000000');
+    await pearlmit.connect(eoa1).approve(yieldBox.address, wethAssetId, wethUsdcSingularity.address, ethers.utils.parseEther('900000000000000'), '9000000000');
+    await pearlmit.connect(eoa1).approve(yieldBox.address, usdcAssetId, wethUsdcSingularity.address, ethers.utils.parseEther('900000000000000'), '9000000000');
+    await pearlmit.connect(eoa1).approve(yieldBox.address, usdcAssetId, wbtcUsdcSingularity.address, ethers.utils.parseEther('900000000000000'), '9000000000');
+    await pearlmit.connect(eoa1).approve(yieldBox.address, wbtcAssetId, wbtcUsdcSingularity.address, ethers.utils.parseEther('900000000000000'), '9000000000');
+
+    await wethUsdcSingularity.connect(eoa1).approve(deployer.address, ethers.utils.parseEther('900000000000000'));
+    await wbtcBigBangMarket.connect(eoa1).approve(deployer.address, ethers.utils.parseEther('900000000000000'));
+    await wethBigBangMarket.connect(eoa1).approve(deployer.address, ethers.utils.parseEther('900000000000000'));
+    await wbtcUsdcSingularity.connect(eoa1).approve(deployer.address, ethers.utils.parseEther('900000000000000'));
+
+    await wethUsdcSingularity.connect(eoa1).approveBorrow(deployer.address, ethers.utils.parseEther('900000000000000'));
+    await wbtcBigBangMarket.connect(eoa1).approveBorrow(deployer.address, ethers.utils.parseEther('900000000000000'));
+    await wethBigBangMarket.connect(eoa1).approveBorrow(deployer.address, ethers.utils.parseEther('900000000000000'));
+    await wbtcUsdcSingularity.connect(eoa1).approveBorrow(deployer.address, ethers.utils.parseEther('900000000000000'));
+
+
+    
+
     // Helper
     const initialSetup = {
         marketHelper,
@@ -1833,6 +1937,7 @@ export async function register(staging?: boolean) {
         cluster,
         magnetarHelper,
         deployLiquidationReceiverMock,
+        pearlmit,
     };
 
     /**
@@ -1956,13 +2061,13 @@ export async function register(staging?: boolean) {
             marketHelper,
             wethUsdcSingularity,
             await marketHelper.addCollateral(
-                _wethUsdcSingularity.address,
                 _account.address,
                 _account.address,
                 false,
                 0,
                 _wethUsdcValShare,
             ),
+            account,
         );
     };
 
@@ -1994,15 +2099,15 @@ export async function register(staging?: boolean) {
 
         await performMarketHelperCall(
             marketHelper,
-            wethUsdcSingularity,
+            wbtcUsdcSingularity,
             await marketHelper.addCollateral(
-                _wbtcUsdcSingularity.address,
                 _account.address,
                 _account.address,
                 false,
                 0,
                 _wbtcUsdcValShare,
             ),
+            account,
         );
     };
 
@@ -2092,6 +2197,7 @@ export async function performMarketHelperCall(
     data: [number[], string[]] & { modules: number[]; calls: string[] },
     signer?: SignerWithAddress | Wallet,
 ) {
+    
     signer = signer ?? (await ethers.getSigners())[0];
     await (
         await market.connect(signer).execute(data.modules, data.calls, true)
