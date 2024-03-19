@@ -10,3 +10,10 @@ docs
 gen
 
 .DS_Store
+
+
+# Invariants
+crytic-export/
+_corpus/
+out/
+cache/
