@@ -73,19 +73,18 @@ import {UsdoHelper} from "contracts/usdo/extensions/UsdoHelper.sol";
 import {UsdoSender} from "contracts/usdo/modules/UsdoSender.sol";
 import {Module} from "tapioca-periph/interfaces/bar/IMarket.sol";
 import {MarketHelper} from "contracts/markets/MarketHelper.sol";
-import {Pearlmit} from "tapioca-periph/pearlmit/Pearlmit.sol";
 import {Cluster} from "tapioca-periph/Cluster/Cluster.sol";
 import {YieldBox} from "yieldbox/YieldBox.sol";
 import {Penrose} from "contracts/Penrose.sol";
 
 // Tapioca Tests
-import {UsdoTestHelper, TestPenroseData, TestSingularityData} from "./UsdoTestHelper.t.sol";
-import {TapiocaOptionsBrokerMock} from "./TapiocaOptionsBrokerMock.sol";
-import {MagnetarMock} from "./MagnetarMock.sol";
-import {SwapperMock} from "./SwapperMock.sol";
-import {OracleMock} from "./OracleMock.sol";
-import {ERC20Mock} from "./ERC20Mock.sol";
-import {UsdoMock} from "./UsdoMock.sol";
+import {UsdoTestHelper, TestPenroseData, TestSingularityData} from "./helpers/UsdoTestHelper.t.sol";
+import {TapiocaOptionsBrokerMock} from "./mocks/TapiocaOptionsBrokerMock.sol";
+import {MagnetarMock} from "./mocks/MagnetarMock.sol";
+import {SwapperMock} from "./mocks/SwapperMock.sol";
+import {OracleMock} from "./mocks/OracleMock.sol";
+import {ERC20Mock} from "./mocks/ERC20Mock.sol";
+import {UsdoMock} from "./mocks/UsdoMock.sol";
 
 import "forge-std/Test.sol";
 
@@ -1304,7 +1303,6 @@ contract UsdoTest is UsdoTestHelper {
             deal(address(aUsdo), address(this), erc20Amount_);
             yieldBox.depositAsset(aUsdoYieldBoxId, address(this), address(this), erc20Amount_, 0);
 
-            uint256 sh = yieldBox.toShare(collateralId, erc20Amount_, false);
             pearlmit.approve(
                 address(yieldBox), collateralId, address(singularity), uint200(sh), uint48(block.timestamp + 1)
             ); // Atomic approval

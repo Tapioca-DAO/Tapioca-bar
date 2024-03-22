@@ -90,6 +90,7 @@ contract Origins is Ownable, Market, ReentrancyGuard {
         EXCHANGE_RATE_PRECISION = _exchangeRatePrecision > 0 ? _exchangeRatePrecision : 1e18;
 
         collateralizationRate = _collateralizationRate;
+        liquidationCollateralizationRate = 1e5;
 
         rateValidDuration = 24 hours;
 

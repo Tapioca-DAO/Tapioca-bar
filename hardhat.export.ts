@@ -108,6 +108,9 @@ const config: HardhatUserConfig & { dodoc: any } = {
             },
         },
     },
+    mocha: {
+        timeout: 100000000,
+    },
     paths: {
         artifacts: './gen/artifacts',
         cache: './gen/cache',

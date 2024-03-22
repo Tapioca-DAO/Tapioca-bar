@@ -84,6 +84,7 @@
         "solc": "^0.8.4",
         "solhint": "^3.3.6",
         "solidity-coverage": "^0.8.1",
+        "solidity-math": "^0.1.0",
         "ts-node": "^10.7.0",
         "typechain": "^8.1.0",
         "typescript": "^4.4.3",

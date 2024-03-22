@@ -273,6 +273,17 @@ contract Usdo is BaseUsdo, Pausable, ReentrancyGuard, ERC20Permit {
     /// Owner
     /// =====================
     /**
+     * @notice Un/Pauses this contract.
+     */
+    function setPause(bool _pauseState) external onlyOwner {
+        if (_pauseState) {
+            _pause();
+        } else {
+            _unpause();
+        }
+    }
+
+    /**
      * @notice sets `FlashloanHelper` contract
      * @param _helper the contract address
      */

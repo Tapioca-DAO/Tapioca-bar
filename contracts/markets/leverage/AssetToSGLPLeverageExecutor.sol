@@ -85,7 +85,7 @@ contract AssetToSGLPLeverageExecutor is BaseLeverageExecutor, Pausable {
 
         // Swap asset with `SGlpLeverageSwapData.token`
         uint256 tokenAmount = _swapAndTransferToSender(
-            false, assetAddress, glpSwapData.token, assetAmountIn, glpSwapData.swapData.swapperData
+            false, assetAddress, glpSwapData.token, assetAmountIn, abi.encode(glpSwapData.swapData)
         );
 
         // Swap `SGlpLeverageSwapData.token` with GLP
@@ -128,7 +128,7 @@ contract AssetToSGLPLeverageExecutor is BaseLeverageExecutor, Pausable {
         // If sendBack true and swapData.swapperData.toftInfo.isTokenOutToft false
         // The asset will be transfer via IERC20 transfer.
         assetAmountOut = _swapAndTransferToSender(
-            true, tokenSwapData.token, assetAddress, tokenAmount, tokenSwapData.swapData.swapperData
+            true, tokenSwapData.token, assetAddress, tokenAmount, abi.encode(tokenSwapData.swapData)
         );
     }
 

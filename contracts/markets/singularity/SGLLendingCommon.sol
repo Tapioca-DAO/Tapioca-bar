@@ -30,7 +30,6 @@ contract SGLLendingCommon is SGLCommon {
     // ************** //
     error BorrowCapReached();
     error NothingToRepay();
-    error AllowanceNotValid();
 
     // ************************** //
     // *** PRIVATE FUNCTIONS *** //
@@ -101,7 +100,6 @@ contract SGLLendingCommon is SGLCommon {
 
             uint256 allowanceShare =
                 _computeAllowanceAmountInAsset(to, exchangeRate, partInAmount, _safeDecimals(asset));
-            if (allowanceShare == 0) revert AllowanceNotValid();
             _allowedBorrow(from, allowanceShare);
         }
         (totalBorrow, amount) = totalBorrow.sub(part, false);

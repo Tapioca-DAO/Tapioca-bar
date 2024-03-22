@@ -5,3 +5,12 @@ pragma solidity 0.8.22;
 /// Comment the imports for faster compilation
 
 import {Pearlmit} from "tapioca-periph/pearlmit/Pearlmit.sol";
+import {Magnetar} from "tapioca-periph/Magnetar/Magnetar.sol";
+import {MagnetarHelper} from "tapioca-periph/Magnetar/MagnetarHelper.sol";
+import {MagnetarAssetModule} from "tapioca-periph/Magnetar/modules/MagnetarAssetModule.sol";
+import {MagnetarAssetXChainModule} from "tapioca-periph/Magnetar/modules/MagnetarAssetXChainModule.sol";
+import {MagnetarCollateralModule} from "tapioca-periph/Magnetar/modules/MagnetarCollateralModule.sol";
+import {MagnetarMintModule} from "tapioca-periph/Magnetar/modules/MagnetarMintModule.sol";
+import {MagnetarMintXChainModule} from "tapioca-periph/Magnetar/modules/MagnetarMintXChainModule.sol";
+import {MagnetarOptionModule} from "tapioca-periph/Magnetar/modules/MagnetarOptionModule.sol";
+import {MagnetarYieldBoxModule} from "tapioca-periph/Magnetar/modules/MagnetarYieldBoxModule.sol";

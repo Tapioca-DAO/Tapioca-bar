@@ -115,6 +115,7 @@ abstract contract Market is MarketERC20, Ownable {
     uint256 internal constant FEE_PRECISION_DECIMALS = 5;
 
     error ExchangeRateNotValid();
+    error AllowanceNotValid();
 
     // ************** //
     // *** EVENTS *** //
@@ -403,6 +404,8 @@ abstract contract Market is MarketERC20, Ownable {
      */
     function _allowedLend(address from, uint256 share) internal virtual override {
         if (from != msg.sender) {
+            if (share == 0) revert AllowanceNotValid();
+
             require(allowance[from][msg.sender] >= share, "Market: not approved");
             if (allowance[from][msg.sender] != type(uint256).max) {
                 allowance[from][msg.sender] -= share;
@@ -415,6 +418,8 @@ abstract contract Market is MarketERC20, Ownable {
      */
     function _allowedBorrow(address from, uint256 share) internal virtual override {
         if (from != msg.sender) {
+            if (share == 0) revert AllowanceNotValid();
+
             // TODO review risk of using this
             (uint256 pearlmitAllowed,) = penrose.pearlmit().allowance(from, msg.sender, address(yieldBox), collateralId);
             require(allowanceBorrow[from][msg.sender] >= share || pearlmitAllowed >= share, "Market: not approved");

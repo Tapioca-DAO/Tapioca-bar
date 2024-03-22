@@ -10,6 +10,7 @@ import {
     ERC20WithoutStrategy, IStrategy, IYieldBox as IBoringYieldBox
 } from "yieldbox/strategies/ERC20WithoutStrategy.sol";
 import {PearlmitHandler, IPearlmit} from "tapioca-periph/pearlmit/PearlmitHandler.sol";
+import {RevertMsgDecoder} from "./usdo/libraries/RevertMsgDecoder.sol";
 import {ICluster} from "tapioca-periph/interfaces/periph/ICluster.sol";
 import {IMarket} from "tapioca-periph/interfaces/bar/ISingularity.sol";
 import {ITwTap} from "tapioca-periph/interfaces/tap-token/ITwTap.sol";
@@ -500,7 +501,7 @@ contract Penrose is Ownable, PearlmitHandler, BoringFactory {
             if (address(mc[i]).code.length == 0) revert NotValid();
             (success[i], result[i]) = mc[i].call(data[i]);
             if (forceSuccess) {
-                require(success[i], _getRevertMsg(result[i]));
+                require(success[i], RevertMsgDecoder._getRevertMsg(result[i]));
             }
             ++i;
         }
@@ -534,19 +535,6 @@ contract Penrose is Ownable, PearlmitHandler, BoringFactory {
     // ************************* //
     // *** PRIVATE FUNCTIONS *** //
     // ************************* //
-    function _getRevertMsg(bytes memory _returnData) private pure returns (string memory) {
-        if (_returnData.length > 1000) return "SGL: reason too long";
-
-        // If the _res length is less than 68, then the transaction failed silently (without a revert message)
-        if (_returnData.length < 68) return "SGL: no return data";
-        // solhint-disable-next-line no-inline-assembly
-        assembly {
-            // Slice the sighash.
-            _returnData := add(_returnData, 0x04)
-        }
-        return abi.decode(_returnData, (string)); // All that remains is the revert string
-    }
-
     function _reAccrueMarkets(bool includeMainMarket) private {
         uint256 len = allBigBangMarkets.length;
         address[] memory markets = allBigBangMarkets;
