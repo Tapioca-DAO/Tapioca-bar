@@ -405,7 +405,7 @@ abstract contract Market is MarketERC20, Ownable {
     function _allowedLend(address from, uint256 share) internal virtual override {
         if (from != msg.sender) {
             if (share == 0) revert AllowanceNotValid();
-            
+
             require(allowance[from][msg.sender] >= share, "Market: not approved");
             if (allowance[from][msg.sender] != type(uint256).max) {
                 allowance[from][msg.sender] -= share;

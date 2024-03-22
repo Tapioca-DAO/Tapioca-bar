@@ -12,6 +12,7 @@ import {ITapiocaOracle} from "tapioca-periph/interfaces/periph/ITapiocaOracle.so
 import {IYieldBox} from "tapioca-periph/interfaces/yieldbox/IYieldBox.sol";
 import {IPearlmit} from "tapioca-periph/interfaces/periph/IPearlmit.sol";
 import {IPenrose} from "tapioca-periph/interfaces/bar/IPenrose.sol";
+import {Module} from "tapioca-periph/interfaces/bar/IMarket.sol";
 import {SafeApprove} from "../../libraries/SafeApprove.sol";
 import {BBLiquidation} from "./BBLiquidation.sol";
 import {BBCollateral} from "./BBCollateral.sol";
@@ -48,17 +49,8 @@ contract BigBang is BBCommon {
     // ************ //
     // *** VARS *** //
     // ************ //
-    /// @notice enum representing each type of module associated with a Singularity market
-    /// @dev modules are contracts that holds a portion of the market's logic
-    enum Module {
-        Base,
-        Borrow,
-        Collateral,
-        Liquidation,
-        Leverage
-    }
-    /// @notice returns the liquidation module
 
+    /// @notice returns the liquidation module
     BBLiquidation public liquidationModule;
     /// @notice returns the borrow module
     BBBorrow public borrowModule;

@@ -2019,7 +2019,7 @@ export async function register(staging?: boolean) {
         .connect(eoa1)
         .approveBorrow(
             deployer.address,
-            ethers.utils.parseEther('900000000000000')
+            ethers.utils.parseEther('900000000000000'),
         );
 
     // Helper

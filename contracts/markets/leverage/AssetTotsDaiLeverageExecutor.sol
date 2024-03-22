@@ -50,9 +50,7 @@ contract AssetTotsDaiLeverageExecutor is BaseLeverageExecutor {
         (address sDaiAddress, address daiAddress) = _getAddresses(collateralAddress);
 
         //swap USDO (asset) with DAI
-        SLeverageSwapData memory swapData = abi.decode(data, (SLeverageSwapData));
-        uint256 daiAmount =
-            _swapAndTransferToSender(false, assetAddress, daiAddress, assetAmountIn, swapData.swapperData);
+        uint256 daiAmount = _swapAndTransferToSender(false, assetAddress, daiAddress, assetAmountIn, data);
 
         //obtain sDai
         daiAddress.safeApprove(sDaiAddress, daiAmount);
@@ -85,10 +83,9 @@ contract AssetTotsDaiLeverageExecutor is BaseLeverageExecutor {
         //redeem from sDai
         uint256 obtainedDai = ISavingsDai(sDaiAddress).redeem(collateralAmountIn, address(this), address(this));
         // swap DAI with USDO, and transfer to sender
-        SLeverageSwapData memory swapData = abi.decode(data, (SLeverageSwapData));
         // If sendBack true and swapData.swapperData.toftInfo.isTokenOutToft false
         // The asset will be transfer via IERC20 transfer.
-        assetAmountOut = _swapAndTransferToSender(true, daiAddress, assetAddress, obtainedDai, swapData.swapperData);
+        assetAmountOut = _swapAndTransferToSender(true, daiAddress, assetAddress, obtainedDai, data);
     }
 
     // ********************** //

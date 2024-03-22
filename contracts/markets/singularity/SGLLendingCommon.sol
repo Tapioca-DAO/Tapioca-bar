@@ -9,7 +9,6 @@ import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 // Tapioca
 import {SGLCommon} from "./SGLCommon.sol";
 
-
 /*
 
 ████████╗ █████╗ ██████╗ ██╗ ██████╗  ██████╗ █████╗ 

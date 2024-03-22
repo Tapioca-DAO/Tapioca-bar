@@ -3,7 +3,7 @@
 pragma solidity 0.8.22;
 
 // Lz
-import {TestHelper} from "./LZSetup/TestHelper.sol";
+import {TestHelper} from "../LZSetup/TestHelper.sol";
 
 // External
 import {IERC20} from "@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol";
@@ -29,12 +29,20 @@ import {TokenType} from "yieldbox/enums/YieldBoxTokenType.sol";
 import {IYieldBox} from "yieldbox/interfaces/IYieldBox.sol";
 import {IStrategy} from "yieldbox/interfaces/IStrategy.sol";
 import {Cluster} from "tapioca-periph/Cluster/Cluster.sol";
-import {MagnetarMock} from "./MagnetarMock.sol";
+import {MagnetarMock} from "../mocks/MagnetarMock.sol";
 import {YieldBox} from "yieldbox/YieldBox.sol";
 import {Penrose} from "contracts/Penrose.sol";
-import {SwapperMock} from "./SwapperMock.sol";
-import {OracleMock} from "./OracleMock.sol";
-import {TestUtils} from "./TestUtils.t.sol";
+import {SwapperMock} from "../mocks/SwapperMock.sol";
+import {OracleMock} from "../mocks/OracleMock.sol";
+import {TestUtils} from "../TestUtils.t.sol";
+
+import {BBLiquidation} from "contracts/markets/bigBang/BBLiquidation.sol";
+import {BBCollateral} from "contracts/markets/bigBang/BBCollateral.sol";
+import {BBLeverage} from "contracts/markets/bigBang/BBLeverage.sol";
+import {BBBorrow} from "contracts/markets/bigBang/BBBorrow.sol";
+import {BigBang} from "contracts/markets/bigBang/BigBang.sol";
+
+import {Origins} from "contracts/markets/origins/Origins.sol";
 
 struct TestPenroseData {
     address yb;
@@ -53,6 +61,17 @@ struct TestSingularityData {
     uint256 collateralId;
     IOracle oracle;
     ILeverageExecutor leverageExecutor;
+}
+
+struct TestBigBangData {
+    address penrose;
+    address collateral;
+    uint256 collateralId;
+    ITapiocaOracle oracle;
+    ILeverageExecutor leverageExecutor;
+    uint256 debtRateAgainstEth;
+    uint256 debtRateMin;
+    uint256 debtRateMax;
 }
 
 contract UsdoTestHelper is TestHelper, TestUtils {
@@ -105,6 +124,80 @@ contract UsdoTestHelper is TestHelper, TestUtils {
         mediumRiskMC = new Singularity();
 
         pen.registerSingularityMasterContract(address(mediumRiskMC), IPenrose.ContractType.mediumRisk);
+    }
+
+    function createOrigins(
+        address owner,
+        address yb,
+        address asset,
+        uint256 assetId,
+        address collateral,
+        uint256 collateralId,
+        ITapiocaOracle oracle,
+        uint256 exchangePrecision,
+        uint256 collateralizationRate
+    ) public returns (Origins) {
+        return new Origins(
+            owner,
+            yb,
+            IERC20(asset),
+            assetId,
+            IERC20(collateral),
+            collateralId,
+            oracle,
+            exchangePrecision,
+            collateralizationRate
+        );
+    }
+
+    function createBigBang(TestBigBangData memory _bb, address _mc) public returns (BigBang) {
+        BigBang bb = new BigBang();
+
+        (
+            BigBang._InitMemoryModulesData memory initModulesData,
+            BigBang._InitMemoryDebtData memory initDebtData,
+            BigBang._InitMemoryData memory initMemoryData
+        ) = _getBigBangInitData(_bb);
+
+        {
+            bb.init(abi.encode(initModulesData, initDebtData, initMemoryData));
+        }
+
+        {
+            Penrose(_bb.penrose).addBigBang(_mc, address(bb));
+        }
+
+        return bb;
+    }
+
+    function _getBigBangInitData(TestBigBangData memory _bb)
+        private
+        returns (
+            BigBang._InitMemoryModulesData memory modulesData,
+            BigBang._InitMemoryDebtData memory debtData,
+            BigBang._InitMemoryData memory data
+        )
+    {
+        BBLiquidation bbLiq = new BBLiquidation();
+        BBBorrow bbBorrow = new BBBorrow();
+        BBCollateral bbCollateral = new BBCollateral();
+        BBLeverage bbLev = new BBLeverage();
+
+        modulesData =
+            BigBang._InitMemoryModulesData(address(bbLiq), address(bbBorrow), address(bbCollateral), address(bbLev));
+
+        debtData = BigBang._InitMemoryDebtData(_bb.debtRateAgainstEth, _bb.debtRateMin, _bb.debtRateMax);
+
+        data = BigBang._InitMemoryData(
+            IPenrose(_bb.penrose),
+            IERC20(_bb.collateral),
+            _bb.collateralId,
+            ITapiocaOracle(address(_bb.oracle)),
+            0,
+            75000,
+            80000,
+            _bb.leverageExecutor
+        );
     }
 
     function createSingularity(Penrose _penrose, TestSingularityData memory _sgl, address _mc)
