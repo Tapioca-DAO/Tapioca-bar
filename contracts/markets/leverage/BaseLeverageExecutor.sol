@@ -46,6 +46,8 @@ abstract contract BaseLeverageExecutor is Ownable {
     ICluster public cluster;
     IWeth9 public weth;
 
+    event AddressUpdated(address indexed oldAddr, address indexed newAddr);
+
     // ************** //
     // *** ERRORS *** //
     // ************** //
@@ -67,16 +69,22 @@ abstract contract BaseLeverageExecutor is Ownable {
     // ******************** //
     // *** OWNER METHODS *** //
     // ******************** //
+    function setWeth(address _weth) external onlyOwner {
+        emit AddressUpdated(address(weth), _weth);
+        weth = IWeth9(_weth);
+    }
 
     /// @notice sets swapper
     /// @param _swapper the new IZeroXSwapper
     function setSwapper(IZeroXSwapper _swapper) external onlyOwner {
+        emit AddressUpdated(address(swapper), address(_swapper));
         swapper = _swapper;
     }
 
     /// @notice sets cluster
     /// @param _cluster the new ICluster
     function setCluster(ICluster _cluster) external onlyOwner {
+        emit AddressUpdated(address(cluster), address(_cluster));
         cluster = _cluster;
     }
 
