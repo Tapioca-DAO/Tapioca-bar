@@ -253,10 +253,12 @@ contract BBLiquidation is BBCommon {
     ) private {
         uint256 callerReward = _getCallerReward(user, _exchangeRate);
 
-        (uint256 borrowAmount,, uint256 collateralShare) =
+        (uint256 borrowAmount, uint256 borrowPart, uint256 collateralShare) =
             _updateBorrowAndCollateralShare(user, maxBorrowPart, minLiquidationBonus, _exchangeRate);
         totalCollateralShare = totalCollateralShare > collateralShare ? totalCollateralShare - collateralShare : 0;
-
+        totalBorrow.elastic -= borrowAmount.toUint128();
+        totalBorrow.base -= borrowPart.toUint128();
+        
         uint256 borrowShare = yieldBox.toShare(assetId, borrowAmount, true);
 
         (uint256 returnedShare,) =
