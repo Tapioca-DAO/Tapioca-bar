@@ -66,6 +66,9 @@ contract UsdoMarketReceiverModule is BaseUsdo {
      * @param _data.lockAndParticipateSendParams LZ send params for the lock or/and the participate operations
      */
     function depositLendAndSendForLockingReceiver(bytes memory _data) public payable {
+        //make sure sender is LZ endpoint
+        _checkWhitelistStatus(msg.sender);
+
         // Decode received message.
         DepositAndSendForLockingData memory msg_ = UsdoMsgCodec.decodeDepositLendAndSendForLockingMsg(_data);
 
@@ -100,6 +103,9 @@ contract UsdoMarketReceiverModule is BaseUsdo {
      *      - withdrawParams::struct: Struct containing data for the asset withdrawal operation
      */
     function lendOrRepayReceiver(bytes memory _data) public payable {
+        //make sure sender is LZ endpoint
+        _checkWhitelistStatus(msg.sender); 
+
         /// @dev decode received message
         MarketLendOrRepayMsg memory msg_ = UsdoMsgCodec.decodeMarketLendOrRepayMsg(_data);
 
@@ -208,6 +214,9 @@ contract UsdoMarketReceiverModule is BaseUsdo {
      *      - removeAndRepayData::struct: Struct containing data for the asset removal operation
      */
     function removeAssetReceiver(bytes memory _data) public payable {
+        //make sure sender is LZ endpoint
+        _checkWhitelistStatus(msg.sender); 
+
         /// @dev decode received message
         MarketRemoveAssetMsg memory msg_ = UsdoMsgCodec.decodeMarketRemoveAssetMsg(_data);
 

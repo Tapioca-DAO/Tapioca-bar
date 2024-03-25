@@ -65,6 +65,9 @@ contract UsdoOptionReceiverModule is BaseUsdo {
      *      - composeMsg::bytes: Further compose data.
      */
     function exerciseOptionsReceiver(address srcChainSender, bytes memory _data) public payable {
+        //make sure sender is LZ endpoint
+        _checkWhitelistStatus(msg.sender); 
+        
         // Decode received message.
         ExerciseOptionsMsg memory msg_ = UsdoMsgCodec.decodeExerciseOptionsMsg(_data);
 
