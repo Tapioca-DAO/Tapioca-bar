@@ -146,7 +146,7 @@ contract BBLeverage is BBLendingCommon {
         );
         memoryData.shareOut = yieldBox.toShare(assetId, amountOut, false);
         address(asset).safeApprove(address(yieldBox), type(uint256).max);
-        yieldBox.depositAsset(collateralId, address(this), address(this), 0, memoryData.shareOut); // TODO Check for rounding attack?
+        yieldBox.depositAsset(assetId, address(this), address(this), 0, memoryData.shareOut); // TODO Check for rounding attack?
         address(asset).safeApprove(address(yieldBox), 0);
 
         memoryData.partOwed = userBorrowPart[from];
