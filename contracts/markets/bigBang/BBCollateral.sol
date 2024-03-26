@@ -48,7 +48,7 @@ contract BBCollateral is BBLendingCommon {
     function removeCollateral(address from, address to, uint256 share)
         external
         optionNotPaused(PauseType.RemoveCollateral)
-        solvent(from, false)
+        solvent(from)
         notSelf(to)
         allowedBorrow(from, share)
     {

@@ -29,7 +29,7 @@ contract SGLBorrow is SGLLendingCommon {
     function borrow(address from, address to, uint256 amount)
         external
         optionNotPaused(PauseType.Borrow)
-        solvent(from, false)
+        solvent(from)
         notSelf(to)
         returns (uint256 part, uint256 share)
     {
