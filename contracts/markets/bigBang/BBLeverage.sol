@@ -95,14 +95,14 @@ contract BBLeverage is BBLendingCommon {
                 address(asset),
                 address(collateral),
                 memoryData.supplyShareToAmount + memoryData.borrowShareToAmount,
-                calldata_.from,
+                address(this),
                 calldata_.data
             );
         }
         uint256 collateralShare = yieldBox.toShare(collateralId, amountOut, false);
-        address(asset).safeApprove(address(yieldBox), type(uint256).max);
-        yieldBox.depositAsset(collateralId, address(this), address(this), 0, collateralShare); // TODO Check for rounding attack?
-        address(asset).safeApprove(address(yieldBox), 0);
+        address(collateral).safeApprove(address(yieldBox), type(uint256).max);
+        yieldBox.depositAsset(collateralId, address(this), calldata_.from, 0, collateralShare);
+        address(collateral).safeApprove(address(yieldBox), 0);
 
         if (collateralShare == 0) revert CollateralShareNotValid();
         _allowedBorrow(calldata_.from, collateralShare);
