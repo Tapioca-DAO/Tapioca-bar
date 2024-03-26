@@ -161,13 +161,13 @@ abstract contract Market is MarketERC20, Ownable {
     }
 
     /// @dev Checks if the user is solvent in the closed liquidation case at the end of the function body.
-    modifier solvent(address from, bool liquidation) {
+    modifier solvent(address from) {
         updateExchangeRate();
         _accrue();
 
         _;
 
-        require(_isSolvent(from, exchangeRate, liquidation), "Market: insolvent");
+        require(_isSolvent(from, exchangeRate, false), "Market: insolvent");
     }
 
     bool internal initialized;
@@ -372,17 +372,13 @@ abstract contract Market is MarketERC20, Ownable {
     /// @return rate The new exchange rate.
     function updateExchangeRate() public returns (bool updated, uint256 rate) {
         (updated, rate) = oracle.get(oracleData);
+        require(updated, "Market: rate too old");
+        require(rate != 0, "Market: invalid rate");
 
-        if (updated) {
-            require(rate != 0, "Market: invalid rate");
-            exchangeRate = rate;
-            rateTimestamp = block.timestamp;
-            emit LogExchangeRate(rate);
-        } else {
-            require(rateTimestamp + rateValidDuration >= block.timestamp, "Market: rate too old");
-            // Return the old rate if fetching wasn't successful & rate isn't too old
-            rate = exchangeRate;
-        }
+        exchangeRate = rate;
+        rateTimestamp = block.timestamp;
+
+        emit LogExchangeRate(rate);
     }
 
     /// @notice computes the possible liquidator reward

@@ -47,7 +47,7 @@ contract SGLLeverage is SGLLendingCommon {
     function buyCollateral(address from, uint256 borrowAmount, uint256 supplyAmount, bytes calldata data)
         external
         optionNotPaused(PauseType.LeverageBuy)
-        solvent(from, false)
+        solvent(from)
         notSelf(from)
         returns (uint256 amountOut)
     {
@@ -106,7 +106,7 @@ contract SGLLeverage is SGLLendingCommon {
     function sellCollateral(address from, uint256 share, bytes calldata data)
         external
         optionNotPaused(PauseType.LeverageSell)
-        solvent(from, false)
+        solvent(from)
         notSelf(from)
         returns (uint256 amountOut)
     {
