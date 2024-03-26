@@ -75,11 +75,9 @@ contract SGLLeverage is SGLLendingCommon {
         (uint256 borrowShareToAmount,) =
             yieldBox.withdraw(assetId, address(this), address(leverageExecutor), 0, borrowShare);
         amountOut = leverageExecutor.getCollateral(
-            collateralId,
             address(asset),
             address(collateral),
             supplyShareToAmount + borrowShareToAmount,
-            calldata_.from,
             calldata_.data
         );
         uint256 collateralShare = yieldBox.toShare(collateralId, amountOut, false);
@@ -127,7 +125,7 @@ contract SGLLeverage is SGLLendingCommon {
         yieldBox.withdraw(collateralId, address(this), address(leverageExecutor), 0, calldata_.share);
         uint256 leverageAmount = yieldBox.toAmount(collateralId, calldata_.share, false);
         amountOut = leverageExecutor.getAsset(
-            assetId, address(collateral), address(asset), leverageAmount, calldata_.from, calldata_.data
+            address(collateral), address(asset), leverageAmount, calldata_.data
         );
         uint256 shareOut = yieldBox.toShare(assetId, amountOut, false);
 
