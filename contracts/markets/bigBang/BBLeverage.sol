@@ -60,6 +60,7 @@ contract BBLeverage is BBLendingCommon {
         if (address(leverageExecutor) == address(0)) {
             revert LeverageExecutorNotValid();
         }
+        penrose.reAccrueBigBangMarkets();
 
         // Stack too deep fix
         _BuyCollateralCalldata memory calldata_;
@@ -133,6 +134,8 @@ contract BBLeverage is BBLendingCommon {
         if (address(leverageExecutor) == address(0)) {
             revert LeverageExecutorNotValid();
         }
+        penrose.reAccrueBigBangMarkets();
+
         _allowedBorrow(from, share);
         _removeCollateral(from, address(this), share);
 
