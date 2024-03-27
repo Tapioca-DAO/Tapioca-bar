@@ -61,6 +61,6 @@ contract SGLBorrow is SGLLendingCommon {
 
         _accrue();
 
-        amount = _repay(from, to, skim, part);
+        amount = _repay(from, to, skim, part, true);
     }
 }

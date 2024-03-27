@@ -68,6 +68,6 @@ contract BBBorrow is BBLendingCommon {
         _accrue();
         penrose.reAccrueBigBangMarkets();
 
-        amount = _repay(from, to, part);
+        amount = _repay(from, to, part, true);
     }
 }

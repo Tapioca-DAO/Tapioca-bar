@@ -139,11 +139,11 @@ contract SGLLeverage is SGLLendingCommon {
         uint256 amountOwed = totalBorrow.toElastic(partOwed, true);
         uint256 shareOwed = yieldBox.toShare(assetId, amountOwed, true);
         if (shareOwed <= shareOut) {
-            _repay(calldata_.from, calldata_.from, false, partOwed);
+            _repay(calldata_.from, calldata_.from, false, partOwed, false);
         } else {
             //repay as much as we can
             uint256 partOut = totalBorrow.toBase(amountOut, false);
-            _repay(calldata_.from, calldata_.from, false, partOut);
+            _repay(calldata_.from, calldata_.from, false, partOut, false);
         }
     }
 }
