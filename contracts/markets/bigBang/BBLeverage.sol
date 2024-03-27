@@ -106,7 +106,7 @@ contract BBLeverage is BBLendingCommon {
 
         if (collateralShare == 0) revert CollateralShareNotValid();
         _allowedBorrow(calldata_.from, collateralShare);
-        _addCollateral(calldata_.from, calldata_.from, false, 0, collateralShare);
+        _addCollateral(calldata_.from, calldata_.from, false, 0, collateralShare, false);
     }
 
     struct _SellCollateralMemoryData {

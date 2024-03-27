@@ -89,7 +89,7 @@ contract SGLLeverage is SGLLendingCommon {
         address(asset).safeApprove(address(yieldBox), 0);
 
         _allowedBorrow(calldata_.from, collateralShare);
-        _addCollateral(calldata_.from, calldata_.from, false, 0, collateralShare);
+        _addCollateral(calldata_.from, calldata_.from, false, 0, collateralShare, false);
     }
 
     struct _SellCollateralCalldata {
