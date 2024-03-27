@@ -153,11 +153,11 @@ contract BBLeverage is BBLendingCommon {
         memoryData.amountOwed = totalBorrow.toElastic(memoryData.partOwed, true);
         memoryData.shareOwed = yieldBox.toShare(assetId, memoryData.amountOwed, true);
         if (memoryData.shareOwed <= memoryData.shareOut) {
-            _repay(from, from, memoryData.partOwed);
+            _repay(from, from, memoryData.partOwed, false);
         } else {
             //repay as much as we can
             uint256 partOut = totalBorrow.toBase(amountOut, false);
-            _repay(from, from, partOut);
+            _repay(from, from, partOut, false);
         }
     }
 }
