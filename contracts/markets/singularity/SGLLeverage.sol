@@ -85,7 +85,7 @@ contract SGLLeverage is SGLLendingCommon {
         uint256 collateralShare = yieldBox.toShare(collateralId, amountOut, false);
         if (collateralShare == 0) revert CollateralShareNotValid();
         address(asset).safeApprove(address(yieldBox), type(uint256).max);
-        yieldBox.depositAsset(collateralId, address(this), address(this), 0, collateralShare); // TODO Check for rounding attack?
+        yieldBox.depositAsset(collateralId, address(this), calldata_.from, 0, collateralShare); // TODO Check for rounding attack?
         address(asset).safeApprove(address(yieldBox), 0);
 
         _allowedBorrow(calldata_.from, collateralShare);
@@ -132,7 +132,7 @@ contract SGLLeverage is SGLLendingCommon {
         uint256 shareOut = yieldBox.toShare(assetId, amountOut, false);
 
         address(asset).safeApprove(address(yieldBox), type(uint256).max);
-        yieldBox.depositAsset(assetId, address(this), address(this), 0, shareOut);
+        yieldBox.depositAsset(assetId, address(this), from, 0, shareOut);
         address(asset).safeApprove(address(yieldBox), 0);
 
         uint256 partOwed = userBorrowPart[calldata_.from];
