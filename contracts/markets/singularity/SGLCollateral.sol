@@ -38,7 +38,7 @@ contract SGLCollateral is SGLLendingCommon {
         }
         _allowedBorrow(from, share);
 
-        _addCollateral(from, to, skim, amount, share);
+        _addCollateral(from, to, skim, amount, share, true);
     }
 
     /// @notice Removes `share` amount of collateral and transfers it to `to`.
