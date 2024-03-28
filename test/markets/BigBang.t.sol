@@ -187,6 +187,7 @@ contract BigBangTest is UsdoTestHelper {
         marketsData[0] = abi.encodeWithSelector(BigBang.setAssetOracle.selector, oracle, "0x");
 
         penrose.executeMarketFn(markets, marketsData, true);
+        penrose.setBigBangEthMarket(address(bigBang));
     }
 
     function depositAsset(uint256 amount) public {

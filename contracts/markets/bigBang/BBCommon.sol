@@ -92,6 +92,14 @@ contract BBCommon is BBStorage {
         if (elapsedTime == 0) {
             return;
         }
+        //re-accrue ETH market
+        {
+            address mainBB = penrose.bigBangEthMarket();
+            if(mainBB != address(this)){
+                IBigBang(mainBB).accrue();
+            }
+        }
+
         //update debt rate
         uint256 annumDebtRate = getDebtRate();
         _accrueInfo.debtRate = (annumDebtRate / 31557600).toUint64(); //per second; account for leap years
