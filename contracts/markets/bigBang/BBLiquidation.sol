@@ -184,6 +184,9 @@ contract BBLiquidation is BBCommon {
         uint256 userTotalBorrowAmount = totalBorrow.toElastic(userBorrowPart[user], true);
         borrowPartWithBonus = borrowPartWithBonus > userTotalBorrowAmount ? userTotalBorrowAmount : borrowPartWithBonus;
 
+        // make sure liquidator cannot bypass bad debt handling
+        if (collateralPartInAsset < borrowPartWithBonus) revert BadDebt(); 
+
         // check the amount to be repaid versus liquidator supplied limit
         borrowPartWithBonus = borrowPartWithBonus > maxBorrowPart ? maxBorrowPart : borrowPartWithBonus;
         borrowAmount = borrowPartWithBonus;

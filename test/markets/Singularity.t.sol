@@ -391,7 +391,7 @@ contract SingularityTest is UsdoTestHelper {
         }
 
         uint256 oracleRate = oracle.rate();
-        oracle.set(oracleRate * 2);
+        oracle.set(oracleRate * 10 / 6);
 
         liquidatorMock = new MarketLiquidatorReceiverMock(IERC20(address(asset)));
         deal(address(asset), address(liquidatorMock), borrowAmount * 2);
