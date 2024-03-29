@@ -39,7 +39,7 @@ contract BBLiquidation is BBCommon {
     error NothingToLiquidate();
     error LengthMismatch();
     error ForbiddenAction();
-    error OnCollateralReceiverFailed();
+    error OnCollateralReceiverFailed(uint256 returned, uint256 minAccepted);
     error BadDebt();
     error NotEnoughCollateral();
     error Solvent();
@@ -98,7 +98,7 @@ contract BBLiquidation is BBCommon {
         // swap collateral with asset and send it to `owner`
         if (swapCollateral) {
             (, uint256 returnedAmount) =
-                _swapCollateralWithAsset(collateralShare, liquidatorReceiver, liquidatorReceiverData);
+                _swapCollateralWithAsset(collateralShare, liquidatorReceiver, liquidatorReceiverData, 0, false);
             asset.safeTransfer(receiver, returnedAmount);
         } else {
             uint256 collateralAmount = yieldBox.toAmount(collateralId, collateralShare, false);
@@ -146,20 +146,29 @@ contract BBLiquidation is BBCommon {
     function _swapCollateralWithAsset(
         uint256 _collateralShare,
         IMarketLiquidatorReceiver _liquidatorReceiver,
-        bytes memory _liquidatorReceiverData
+        bytes memory _liquidatorReceiverData,
+        uint256 _exchangeRate,
+        bool checkReturned
     ) private returns (uint256 returnedShare, uint256 returnedAmount) {
         uint256 collateralAmount = yieldBox.toAmount(collateralId, _collateralShare, false);
         yieldBox.withdraw(collateralId, address(this), address(_liquidatorReceiver), collateralAmount, 0);
+        
+        {
+            uint256 assetBalanceBefore = asset.balanceOf(address(this));
+            //msg.sender should be validated against `initiator` on IMarketLiquidatorReceiver
+            _liquidatorReceiver.onCollateralReceiver(
+                msg.sender, address(collateral), address(asset), collateralAmount, _liquidatorReceiverData
+            );
+            uint256 assetBalanceAfter = asset.balanceOf(address(this));
+            returnedAmount = assetBalanceAfter - assetBalanceBefore;
 
-        uint256 assetBalanceBefore = asset.balanceOf(address(this));
-        //msg.sender should be validated against `initiator` on IMarketLiquidatorReceiver
-        _liquidatorReceiver.onCollateralReceiver(
-            msg.sender, address(collateral), address(asset), collateralAmount, _liquidatorReceiverData
-        );
-        uint256 assetBalanceAfter = asset.balanceOf(address(this));
-
-        returnedAmount = assetBalanceAfter - assetBalanceBefore;
-        if (returnedAmount == 0) revert OnCollateralReceiverFailed();
+            if (checkReturned) {
+                uint256 receivableAsset = collateralAmount * EXCHANGE_RATE_PRECISION / _exchangeRate;
+                uint256 minReceivableAsset = receivableAsset - (receivableAsset * maxLiquidationSlippage/FEE_PRECISION); //1% slippage
+                if (returnedAmount < minReceivableAsset) revert OnCollateralReceiverFailed(returnedAmount, minReceivableAsset);
+            }
+        }
+        if (returnedAmount == 0) revert OnCollateralReceiverFailed(0, 0);
         returnedShare = yieldBox.toShare(assetId, returnedAmount, false);
     }
 
@@ -260,7 +269,7 @@ contract BBLiquidation is BBCommon {
         uint256 borrowShare = yieldBox.toShare(assetId, borrowAmount, true);
 
         (uint256 returnedShare,) =
-            _swapCollateralWithAsset(collateralShare, _liquidatorReceiver, _liquidatorReceiverData);
+            _swapCollateralWithAsset(collateralShare, _liquidatorReceiver, _liquidatorReceiverData, _exchangeRate, true);
         if (returnedShare < borrowShare) revert AmountNotValid();
 
         (uint256 feeShare, uint256 callerShare) = _extractLiquidationFees(returnedShare, borrowShare, callerReward);
