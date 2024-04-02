@@ -108,7 +108,7 @@ contract BBLendingCommon is BBCommon {
             part = userBorrowPart[to];
         }
         if (part == 0) revert NothingToRepay();
-
+        
         // @dev check allowance
         if (msg.sender != from) {
             uint256 partInAmount;
