@@ -14,6 +14,8 @@ import {IPearlmit} from "tapioca-periph/interfaces/periph/IPearlmit.sol";
 import {IPenrose} from "tapioca-periph/interfaces/bar/IPenrose.sol";
 import {MarketERC20} from "./MarketERC20.sol";
 
+import "forge-std/console.sol";
+
 /*
 
 ████████╗ █████╗ ██████╗ ██╗ ██████╗  ██████╗ █████╗ 
@@ -465,7 +467,7 @@ abstract contract Market is MarketERC20, Ownable {
     /// @param _exchangeRate The exchange rate. Used to cache the `exchangeRate` between calls.
     function _isSolvent(address user, uint256 _exchangeRate, bool _liquidation) internal view returns (bool) {
         // accrue must have already been called!
-        uint256 borrowPart = userBorrowPart[user];
+                uint256 borrowPart = userBorrowPart[user];
         if (borrowPart == 0) return true;
         uint256 collateralShare = userCollateralShare[user];
         if (collateralShare == 0) return false;
@@ -473,7 +475,7 @@ abstract contract Market is MarketERC20, Ownable {
         Rebase memory _totalBorrow = totalBorrow;
 
         uint256 collateralAmount = yieldBox.toAmount(collateralId, collateralShare, false);
-        return collateralAmount * (EXCHANGE_RATE_PRECISION / FEE_PRECISION)
+        return collateralAmount * (EXCHANGE_RATE_PRECISION / FEE_PRECISION)//@audit-issue division before multiplication -> users would get liquidated earlier
             * (_liquidation ? liquidationCollateralizationRate : collateralizationRate)
         // Moved exchangeRate here instead of dividing the other side to preserve more precision
         >= (borrowPart * _totalBorrow.elastic * _exchangeRate) / _totalBorrow.base;

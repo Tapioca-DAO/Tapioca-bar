@@ -137,7 +137,7 @@ contract SGLLiquidation is SGLCommon {
         uint256[] calldata minLiquidationBonuses,
         IMarketLiquidatorReceiver[] calldata liquidatorReceivers,
         bytes[] calldata liquidatorReceiverDatas
-    ) external optionNotPaused(PauseType.Liquidation) nonReentrant {
+    ) external optionNotPaused(PauseType.Liquidation) {//@audit-issue DOS liquidations
         if (users.length == 0) revert NothingToLiquidate();
         if (users.length != maxBorrowParts.length) revert LengthMismatch();
         if (users.length != liquidatorReceivers.length) revert LengthMismatch();

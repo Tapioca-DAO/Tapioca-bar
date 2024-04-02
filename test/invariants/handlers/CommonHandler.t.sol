@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
+// Contracts
+import {Market} from "contracts/markets/Market.sol";
+
 // Test Contracts
 import {BaseHandler} from "../base/BaseHandler.t.sol";
 
@@ -23,7 +26,9 @@ contract CommonHandler is BaseHandler {
     ///////////////////////////////////////////////////////////////////////////////////////////////
 
     function accrue() external {
+        _before();
         IBigBang(target).accrue();
+        _after();
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////////////

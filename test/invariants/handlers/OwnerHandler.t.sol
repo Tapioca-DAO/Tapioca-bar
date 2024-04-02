@@ -1,13 +1,21 @@
-
-
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import {BaseHandler} from "../../base/BaseHandler.t.sol";
+// Libraries
+import "forge-std/console.sol";
 
-/// @title PriceOracleHandler
-/// @notice Handler test contract for the  PriceOracle actions
-contract PriceOracleHandler is BaseHandler {
+// Interfaces
+import {IYieldBox} from "yieldbox/interfaces/IYieldBox.sol";
+
+// Contracts
+import {Market} from "contracts/markets/Market.sol";
+
+// Test Contracts
+import {BaseHandler} from "../base/BaseHandler.t.sol";
+
+/// @title OwnerHandler
+/// @notice Handler test contract for the market liquidation modules contracts
+contract OwnerHandler is BaseHandler {
     ///////////////////////////////////////////////////////////////////////////////////////////////
     //                                      STATE VARIABLES                                      //
     ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -20,17 +28,21 @@ contract PriceOracleHandler is BaseHandler {
     //                                           ACTIONS                                         //
     ///////////////////////////////////////////////////////////////////////////////////////////////
 
-    /// @notice This function simulates changes in price
-    function set(uint256 rate) external {
-        oracle.set(rate);
-    }
+    function updatePause(Market.PauseType pauseType, bool pause, bool resetAccrueTimestmap) external setup {
+        bool success;
+        bytes memory returnData;
 
-/*     /// @notice This function simulates changes in the interest rate model
-    function setSuccess(bool status) external {
-        oracle.setSuccess(status); 
-    } */
+        if (targetType == MarketType.BIGBANG) {
+            bigBang.updatePause(pauseType, pause);
+        } else {
+            singularity.updatePause(pauseType, pause, resetAccrueTimestmap);
+        }
+
+        assert_COMMON_INVARIANT_E(pauseType);
+    }
 
     ///////////////////////////////////////////////////////////////////////////////////////////////
     //                                           HELPERS                                         //
     ///////////////////////////////////////////////////////////////////////////////////////////////
+
 }

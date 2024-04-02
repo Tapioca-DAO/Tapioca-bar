@@ -7,6 +7,7 @@ import {CollateralHandler} from "./handlers/CollateralHandler.t.sol";
 import {BorrowHandler} from "./handlers/BorrowHandler.t.sol";
 import {LeverageHandler} from "./handlers/LeverageHandler.t.sol";
 import {LiquidationHandler} from "./handlers/LiquidationHandler.t.sol";
+import {YieldBoxHandler} from "./handlers/YieldBoxHandler.t.sol";
 
 // Simulators
 import {DonationAttackHandler} from "./handlers/simulators/DonationAttackHandler.t.sol";
@@ -17,8 +18,9 @@ abstract contract HandlerAggregator is
     CommonHandler, // Modules
     CollateralHandler,
     BorrowHandler,
-    LeverageHandler,
+    //LeverageHandler,
     LiquidationHandler,
+    YieldBoxHandler,
     DonationAttackHandler, // Simulators
     PriceOracleHandler
 {

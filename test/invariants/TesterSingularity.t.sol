@@ -2,13 +2,15 @@
 pragma solidity ^0.8.19;
 
 // Test Contracts
-import {Invariants} from "./Invariants.t.sol";
+import {SingularityInvariantsWrapper} from "./invariants/wrappers/SingularityInvariantsWrapper.t.sol";
 import {Setup} from "./Setup.t.sol";
+
+import "forge-std/console.sol";
 
 /// @title Tester
 /// @notice Entry point for invariant testing, inherits all contracts, invariants & handler
 /// @dev Mono contract that contains all the testing logic
-contract Tester is Invariants, Setup {
+contract Tester is SingularityInvariantsWrapper, Setup {
     constructor() payable {
         setUp();
     }

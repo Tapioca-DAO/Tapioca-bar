@@ -14,6 +14,9 @@ import {IUsdo} from "tapioca-periph/interfaces/oft/IUsdo.sol";
 import {SafeApprove} from "../../libraries/SafeApprove.sol";
 import {BBCommon} from "./BBCommon.sol";
 
+import "forge-std/console.sol";
+
+
 // solhint-disable max-line-length
 
 /*
@@ -122,7 +125,7 @@ contract BBLiquidation is BBCommon {
         uint256[] calldata minLiquidationBonuses,
         IMarketLiquidatorReceiver[] calldata liquidatorReceivers,
         bytes[] calldata liquidatorReceiverDatas
-    ) external optionNotPaused(PauseType.Liquidation) nonReentrant {
+    ) external optionNotPaused(PauseType.Liquidation) {
         if (users.length == 0) revert NothingToLiquidate();
         if (users.length != maxBorrowParts.length) revert LengthMismatch();
         if (users.length != liquidatorReceivers.length) revert LengthMismatch();

@@ -201,7 +201,7 @@ contract SGLCommon is SGLStorage {
             return 0;
         }
         Rebase memory _totalAsset = totalAsset;
-        uint256 allShare = _totalAsset.elastic + yieldBox.toShare(assetId, totalBorrow.elastic, false);
+        uint256 allShare = _totalAsset.elastic + yieldBox.toShare(assetId, totalBorrow.elastic, false);//@audit why rounding down
         share = (fraction * allShare) / _totalAsset.base;
 
         _totalAsset.base -= fraction.toUint128();

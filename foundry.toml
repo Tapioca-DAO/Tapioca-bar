@@ -16,7 +16,8 @@ remappings = [
 	"tapioca-periph/=gitmodule/tapioca-periph/contracts/",
 	"yieldbox/=gitmodule/tap-yieldbox/contracts/",
 	"mocks/=gitmodule/tapioca-mocks/contracts/",
-	"permitc/=gitmodule/permitc/src/"
+	"permitc/=gitmodule/permitc/src/",
+	"forge-std/=lib/forge-std/src/",
 ]
 
 # forge-dpeloy

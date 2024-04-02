@@ -1,20 +1,18 @@
-
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
 // Libraries
 import "forge-std/console.sol";
-import {RebaseLibrary, Rebase} from "@boringcrypto/boring-solidity/contracts/libraries/BoringRebase.sol";
 
-// Contracts
-import {Market} from "contracts/markets/Market.sol";
+// Interfaces
+import {IYieldBox} from "yieldbox/interfaces/IYieldBox.sol";
 
 // Test Contracts
-import {BaseHandler, Module} from "../base/BaseHandler.t.sol";
+import {BaseHandler} from "../base/BaseHandler.t.sol";
 
-/// @title BorrowHandler
-/// @notice Handler test contract for the market borrow modules contracts
-contract BorrowHandler is BaseHandler {
+/// @title YieldBoxHandler
+/// @notice Handler test contract for the market liquidation modules contracts
+contract YieldBoxHandler is BaseHandler {
     ///////////////////////////////////////////////////////////////////////////////////////////////
     //                                      STATE VARIABLES                                      //
     ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -27,58 +25,62 @@ contract BorrowHandler is BaseHandler {
     //                                           ACTIONS                                         //
     ///////////////////////////////////////////////////////////////////////////////////////////////
 
-    function borrow(uint256 i, uint256 amount) external setup {
+    function depositAsset(uint256 i, uint256 j, uint256 amount, uint256 share) external setup {
         bool success;
         bytes memory returnData;
 
+        // Get a random assetId 
+        uint256 _assetId = _getRandomYieldBoxAssetId(i);//TODO aprove pearlimit
+
         // Get one of the three actors randomly
-        address to = _getRandomActor(i);
+        address to = _getRandomActor(j);
 
-        (Module[] memory modules, bytes[] memory calls) = marketHelper.borrow(address(actor), to, amount);
+        _before();
 
-        (success, returnData) = _proxyCall(modules, calls);
+        (success, returnData) = actor.proxy(address(yieldbox), abi.encodeWithSelector(IYieldBox.depositAsset.selector, _assetId, address(actor), to, amount, share));
 
         if (success) {
             _after();
-
-            (uint128 _elastic, uint128 _base) = Market(target).totalBorrow();
-
-            Rebase memory _totalBorrow = Rebase(_elastic, _base);
-
-            uint256 base = RebaseLibrary.toBase(_totalBorrow, amount, true);
-
-            _increaseGhostBorrow(to, base);
-
-            assert_GLOBAL_INVARIANT_A(Market.PauseType.Borrow);
         }
     }
 
-    function repay(uint256 i, bool skim, uint256 part) external setup {
+    function withdraw(uint256 i, uint256 j, uint256 amount, uint256 share) external setup {
         bool success;
         bytes memory returnData;
 
+        // Get a random assetId 
+        uint256 _assetId = _getRandomYieldBoxAssetId(i);
+
         // Get one of the three actors randomly
-        address to = _getRandomActor(i);
+        address to = _getRandomActor(j);
 
-        (Module[] memory modules, bytes[] memory calls) = marketHelper.repay(address(actor), to, skim, part);
+        _before();
 
-        (success, returnData) = _proxyCall(modules, calls);
+        (success, returnData) = actor.proxy(address(yieldbox), abi.encodeWithSelector(IYieldBox.withdraw.selector, _assetId, address(actor), to, amount, share));
 
         if (success) {
             _after();
+        }
+    }
 
-            _decreaseGhostBorrow(to, part);
+    function transferERC1155(uint256 i, uint256 share) external setup {
+        bool success;
+        bytes memory returnData;
 
-            assert_GLOBAL_INVARIANT_A(Market.PauseType.Repay);
+        // Get a random assetId 
+        uint256 _assetId = _getRandomYieldBoxAssetId(i);
 
-            if (targetType == MarketType.BIGBANG) {
-                assert_BIGBANG_INVARIANT_G();
-                assert_BIGBANG_INVARIANT_H();
-            }
+        _before();
+
+        (success, returnData) = actor.proxy(address(yieldbox), abi.encodeWithSelector(IYieldBox.transfer.selector, address(actor), target, _assetId, share));
+
+        if (success) {
+            _after();
         }
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////////////
     //                                           HELPERS                                         //
     ///////////////////////////////////////////////////////////////////////////////////////////////
+
 }

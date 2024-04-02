@@ -18,7 +18,7 @@ import {SGLLiquidation} from "contracts/markets/singularity/SGLLiquidation.sol";
 // Market Contracts
 import {Market} from "contracts/markets/Market.sol";
 import {MarketERC20} from "contracts/markets/MarketERC20.sol";
-import {ExampleMarketLiquidatorReceiver} from "contracts/markets/ExampleMarketLiquidatorReceiver.sol";
+import {MarketLiquidationReceiverMock} from "test/invariants/mocks/MarketLiquidationReceiverMock.sol";
 
 // USDO Contracts
 import {Usdo} from "contracts/usdo/Usdo.sol";
@@ -40,16 +40,15 @@ import {SimpleLeverageExecutor} from "contracts/markets/leverage/SimpleLeverageE
 // Utils
 import {YieldBox} from "yieldbox/YieldBox.sol";
 import {YieldBoxURIBuilder} from "yieldbox/YieldBoxURIBuilder.sol";
-import {WETH9Mock} from "yieldbox/mocks/WETH9Mock.sol";
 import {MarketHelper} from "contracts/markets/MarketHelper.sol";
 
 // Mocks
 import {ERC20Mock} from "test/ERC20Mock.sol";
 import {OracleMock} from "test/OracleMock.sol";
+import {SwapperMock} from "test/SwapperMock.sol";
 
 // Interfaces
-import {IBigBang} from "tapioca-periph/interfaces/bar/IBigBang.sol";
-import {IWrappedNative} from "yieldbox/interfaces/IWrappedNative.sol";
+import {IMarketLiquidatorReceiver} from "tapioca-periph/interfaces/bar/IMarketLiquidatorReceiver.sol";
 
 // Utils
 import {Actor} from "../utils/Actor.sol";
@@ -65,6 +64,8 @@ abstract contract BaseStorage {
     uint256 constant ONE_DAY = 1 days;
     uint256 constant ONE_MONTH = ONE_YEAR / 12;
     uint256 constant ONE_YEAR = 365 days;
+
+    uint256 constant BASE_POINTS = 1e5;
 
     uint256 internal constant NUMBER_OF_ACTORS = 3;
     uint256 internal constant INITIAL_ETH_BALANCE = 1e26;
@@ -85,6 +86,12 @@ abstract contract BaseStorage {
 
     /// @notice Array of all actor addresses
     address[] internal actorAddresses;
+
+    /// @notice Liquidator simulator contract
+    Actor liquidator;
+
+    /// @notice Contract that receives liquidations from the market
+    IMarketLiquidatorReceiver internal marketLiquidatorReceiver;
 
     ///////////////////////////////////////////////////////////////////////////////////////////////
     //                                       SUITE STORAGE                                       //
@@ -112,16 +119,21 @@ abstract contract BaseStorage {
     SGLCollateral internal sglCollateral;
     SGLBorrow internal sglBorrow;
 
-    //TODO add USDO contracts
-
     // MARKET CONTRACTS
 
-    /// @notice Contract that receives liquidations from the market
-    ExampleMarketLiquidatorReceiver internal marketLiquidatorReceiver;
     /// @notice Registry contract for the markets
     Penrose internal penrose;
-    /// @notice Oracle contract for the markets
+
+    // ORACLE CONTRACTS
+
+    /// @notice Oracle contract for the market asset
     OracleMock internal oracle;
+    /// @notice Oracle contract for USDO
+    OracleMock internal usdoOracle;
+
+    // LEVERAGE EXECUTOR CONTRACTS
+
+    SimpleLeverageExecutor internal simpleLeverageExecutor;
 
     // YIELDBOX CONTRACTS
 
@@ -129,6 +141,11 @@ abstract contract BaseStorage {
     YieldBox internal yieldbox;
     /// @notice YieldBox URI Builder contract
     YieldBoxURIBuilder internal yieldboxURIBuilder;
+
+    /// @notice mpaping from asset to yieldbox assetId
+    mapping(address => uint256) internal assetIds;
+    /// @notice array of yieldbox assets
+    address[] internal yieldboxAssets;
 
     // PERIPH CONTRACTS
 
@@ -143,9 +160,16 @@ abstract contract BaseStorage {
     // MOCK CONTRACTS
 
     /// @notice WETH9 mock contract
-    WETH9Mock internal weth9Mock;
+    ERC20Mock internal weth9Mock;
     /// @notice ERC20 mock contract
     ERC20Mock internal erc20Mock;
+    /// @notice TAP token mock contract
+    ERC20Mock internal tapToken;
+    /// @notice USDO token mock contract
+    ERC20Mock internal usdo;
+
+    /// @notice Swapper contract mock
+    SwapperMock internal swapperMock;
 
     address[] internal baseAssets;
 

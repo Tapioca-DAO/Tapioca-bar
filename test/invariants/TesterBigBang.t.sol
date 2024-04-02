@@ -2,13 +2,13 @@
 pragma solidity ^0.8.19;
 
 // Test Contracts
-import {Invariants} from "./Invariants.t.sol";
+import {BigBangInvariantsWrapper} from "./invariants/wrappers/BigBangInvariantsWrapper.t.sol";
 import {Setup} from "./Setup.t.sol";
 
 /// @title Tester
 /// @notice Entry point for invariant testing, inherits all contracts, invariants & handler
 /// @dev Mono contract that contains all the testing logic
-contract Tester is Invariants, Setup {
+contract Tester is BigBangInvariantsWrapper, Setup {
     constructor() payable {
         setUp();
     }

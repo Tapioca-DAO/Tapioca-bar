@@ -3,7 +3,6 @@ pragma solidity ^0.8.19;
 
 // Libraries
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ERC20Mock} from "test/ERC20Mock.sol";
 
 // Contracts
@@ -13,6 +12,7 @@ import {HookAggregator} from "../hooks/HookAggregator.t.sol";
 // Interfaces
 import {IMarket} from "tapioca-periph/interfaces/bar/IMarket.sol";
 import {Module} from "tapioca-periph/interfaces/bar/IMarket.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /// @title BaseHandler
 /// @notice Contains common logic for all handlers
@@ -25,14 +25,19 @@ contract BaseHandler is HookAggregator {
     ///////////////////////////////////////////////////////////////////////////////////////////////
 
     /// @notice Track total deposit amount
-    uint256 ghost_deposits;
-    /// @notice Track total deposit amou9nt per user
-    mapping(address => uint256) ghost_userDeposits;
+    uint256 ghost_totalCollateralShare;
+    /// @notice Track total deposit amount per user
+    mapping(address => uint256) ghost_userCollateralShare;
 
-    /// @notice Track totak shares minted
-    uint256 ghost_shares;
-    /// @notice Track total shares minted per user
-    mapping(address => uint256) ghost_userShares;
+    /// @notice Track total borrow amount
+    uint256 ghost_totalBorrowBase;
+    /// @notice Track total borrow part per user
+    mapping(address => uint256) ghost_userBorrowPart;
+
+    /// @notice Track total asset amount
+    uint256 ghost_totalAssetBase;
+    /// @notice Track total asset amount per user
+    mapping(address => uint256) ghost_userAssetBase;
 
 
 
@@ -42,6 +47,17 @@ contract BaseHandler is HookAggregator {
 
     /// @notice Customized proxy call to execute a list of modules and calls using the MarketHelper
     function _proxyCall(Module[] memory modules, bytes[] memory calls) internal returns (bool success, bytes memory returnData) {
+        /// @dev call to before hook
+        _before();
+        
+        /// @dev proxy call to the target
+        (success, returnData) =
+            actor.proxy(target, abi.encodeWithSelector(IMarket.execute.selector, modules, calls, true));
+    }
+
+    /// @notice Customized proxy call to execute a list of modules and calls using the MarketHelper
+    function _proxyCallClear(Module[] memory modules, bytes[] memory calls) internal returns (bool success, bytes memory returnData) {
+        /// @dev proxy call to the target
         (success, returnData) =
             actor.proxy(target, abi.encodeWithSelector(IMarket.execute.selector, modules, calls, true));
     }
@@ -59,6 +75,12 @@ contract BaseHandler is HookAggregator {
     function _getRandomBaseAsset(uint256 i) internal view returns (address) {
         uint256 randomValue = _randomize(i, "randomBaseAsset");
         return baseAssets[randomValue % baseAssets.length];
+    }
+
+
+    function _getRandomYieldBoxAssetId(uint256 i) internal view returns (uint256) {
+        uint256 randomValue = _randomize(i, "randomBaseAsset");
+        return assetIds[yieldboxAssets[randomValue % yieldboxAssets.length]];
     }
 
     /// @notice Helper function to approve an amount of tokens to a spender, a proxy Actor
@@ -91,5 +113,48 @@ contract BaseHandler is HookAggregator {
     function _mintAndApprove(address token, address owner, address spender, uint256 amount) internal {
         _mint(token, owner, amount);
         _approve(token, owner, spender, amount);
+    }
+
+    function _increaseGhostShares(address user, uint256 amount) internal {
+        ghost_userCollateralShare[user] += amount;
+        ghost_totalCollateralShare += amount;
+    }
+
+    function _decreaseGhostShares(address user, uint256 amount) internal {
+        ghost_userCollateralShare[user] -= amount;
+        ghost_totalCollateralShare -= amount;
+    }
+
+    function _increaseGhostBorrow(address user, uint256 amount) internal {
+        ghost_userBorrowPart[user] += amount;
+        ghost_totalBorrowBase += amount;
+    }
+
+    function _decreaseGhostBorrow(address user, uint256 amount) internal {
+        ghost_userBorrowPart[user] -= amount;
+        ghost_totalBorrowBase -= amount;
+    }
+
+    function _increaseGhostAsset(address user, uint256 amount) internal {
+        ghost_userAssetBase[user] += amount;
+        ghost_totalAssetBase += amount;
+    }
+
+    function _decreaseGhostAsset(address user, uint256 amount) internal {
+        ghost_userAssetBase[user] -= amount;
+        ghost_totalAssetBase -= amount;
+    }
+
+    function _getShares(uint256 amount, uint256 share) internal view returns (uint256) {
+        if (share == 0) {
+            share = yieldbox.toShare(assetIds[address(erc20Mock)], amount, false);
+        }
+        return share;
+    }
+
+    function _getAssetFraction(uint256 share, bool roundUp) internal view returns (uint256 fraction) {
+        (uint256 elastic, uint256 base) = singularity.totalBorrow();
+        uint256 allShare = elastic + yieldbox.toShare(assetIds[address(erc20Mock)], elastic, roundUp);
+        fraction = allShare == 0 ? share : (share * base) / allShare;
     }
 }

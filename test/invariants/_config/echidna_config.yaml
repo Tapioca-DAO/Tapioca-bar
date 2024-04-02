@@ -5,13 +5,15 @@ codeSize: 224576
 #it’s not working for us, see: https://github.com/crytic/echidna/issues/547
 #multi-abi: true
 
+#testMode: "exploration"
+
 #balanceAddr is default balance for addresses
 balanceAddr: 0xffffffffffffffffffffffff
 #balanceContract overrides balanceAddr for the contract address (2^128 = ~3e38)
 balanceContract: 0xffffffffffffffffffffffffffffffffffffffffffffffff
 
 #testLimit is the number of test sequences to run
-testLimit: 10000000
+testLimit: 50000000
 
 #seqLen defines how many transactions are in a test sequence
 seqLen: 300
@@ -40,7 +42,7 @@ coverage: true
 coverageFormats: ["lcov", "html"]
 
 #directory to save the corpus; by default is disabled
-corpusDir: "test/invariants/_corpus/echidna/default/_data/corpus"
+#corpusDir: "test/invariants/_corpus/bigbang/echidna/default/_data/corpus"
 # constants for corpus mutations (for experimentation only)
 #mutConsts: [100, 1, 1]
 

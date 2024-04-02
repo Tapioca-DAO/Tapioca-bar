@@ -2,15 +2,15 @@
 pragma solidity ^0.8.19;
 
 // Test Contracts
-import {Actor} from "../utils/Actor.sol";
-import {HandlerAggregator} from "../HandlerAggregator.t.sol";
+import {Actor} from "../../utils/Actor.sol";
+import {HandlerAggregator} from "../../HandlerAggregator.t.sol";
 
 /// @title BigBangInvariants
 /// @notice Implements Invariants for the protocol
 /// @notice Implements View functions assertions for the protocol, checked in assertion testing mode
 /// @dev Inherits HandlerAggregator for checking actions in assertion testing mode
 abstract contract BigBangInvariants is HandlerAggregator {
-    function assert_BIGBANG_INVARIANT_A() internal {
+    function assert_BIGBANG_INVARIANT_A() internal {//@audit-issue initially set wrong
         assertGe(bigBang.maxMintFeeStart(), bigBang.minMintFeeStart(), BIGBANG_INVARIANT_A);
     }
 
@@ -28,9 +28,14 @@ abstract contract BigBangInvariants is HandlerAggregator {
     }
 
     function assert_BIGBANG_INVARIANT_E() internal {
-        try bigBang.getDebtRate() returns (uint256 debtRate) {
+        try bigBang.getDebtRate() {
         } catch {
             fail(BIGBANG_INVARIANT_E);
         }
+    }
+
+    function assert_BIGBANG_INVARIANT_F() internal {
+        (uint256 elastic,) = bigBang.totalBorrow();
+        assertEq(usdo.totalSupply(), elastic, BIGBANG_INVARIANT_F);
     }
 }   
