@@ -138,11 +138,19 @@ abstract contract InvariantsSpec {
 
     string constant BORROWING_INVARIANT_B = "BORROWING_INVARIANT_B: sum(ghost_userBorrowPart) == ghost_totalBorrowBase";
 
+    string constant BORROWING_INVARIANT_C = "BORROWING_INVARIANT_C: A user without collateral cannot borrow";
 
+    string constant BORROWING_INVARIANT_D = "BORROWING_INVARIANT_D: sum(userBorrowPart) == totalBorrow.base";
 
-    string constant BORROWING_INVARIANT_D = "BORROWING_INVARIANT_D: sum(userBorrowPart) == base";
+    string constant BORROWING_INVARIANT_E = "BORROWING_INVARIANT_E: sum(userDebt) == totalBorrow.elastic";//@audit-issue breaks but under tolerance of NUM_ACTORS wei
 
-    string constant BORROWING_INVARIANT_E = "BORROWING_INVARIANT_E: sum(userDebt) == elastic";//@audit-issue breaks but under tolerance of NUM_ACTORS wei
+    /// @notice Big Bang Borrowing
+
+    string constant BORROWING_INVARIANT_F = "BORROWING_INVARIANT_F: Repay burns the correct amount of usdo";
+
+    /// @notice Singularity Borrowing
+
+    string constant BORROWING_INVARIANT_G = "BORROWING_INVARIANT_G: Repay transfers in the correct amount of usdo";
 
     ///////////////////////////////////////////////////////////////////////////////////////////////
     //                                         LENDING                                           //
@@ -205,4 +213,6 @@ abstract contract InvariantsSpec {
     ///////////////////////////////////////////////////////////////////////////////////////////////
 
     string constant GLOBAL_INVARIANT_A = "GLOBAL_INVARIANT_A: Any transaction to a paused function wont succeed";
+
+    string constant GLOBAL_INVARIANT_B = "GLOBAL_INVARIANT_B: No user can be left unhealthy after a transaction";// TODO
 }

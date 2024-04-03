@@ -96,6 +96,23 @@ abstract contract BaseTest is BaseStorage, PropertiesConstants, StdAsserts, StdU
 
         return collateralValue - debtValue;
     }
+
+    /// @notice helper function to determine if a user is solvent
+    function _isSolvent(address user, uint256 _exchangeRate, bool _liquidation) internal view returns (bool) {
+        // accrue must have already been called!
+        uint256 borrowPart = Market(target).userBorrowPart(user);
+        if (borrowPart == 0) return true;
+        uint256 collateralShare = Market(target).userCollateralShare(user);
+        if (collateralShare == 0) return false;
+
+        Rebase memory _totalBorrow = ITarget(target).totalBorrow();
+
+        uint256 collateralAmount = yieldbox.toAmount(Market(target).collateralId(), collateralShare, false);
+        return collateralAmount * (1e18 / 1e5)
+            * (_liquidation ? Market(target).liquidationCollateralizationRate() : Market(target).collateralizationRate())
+        // Moved exchangeRate here instead of dividing the other side to preserve more precision
+        >= (borrowPart * _totalBorrow.elastic * _exchangeRate) / _totalBorrow.base;
+    }
 }
 
 /// @notice Helper interface for the accrueInfo function 

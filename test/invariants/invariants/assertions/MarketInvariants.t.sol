@@ -64,8 +64,6 @@ abstract contract MarketInvariants is HandlerAggregator {
 
     function assert_BORROWING_INVARIANT_E(uint256 sumUserElasticDebt) internal {
         (uint256 elastic,) = IMarket(target).totalBorrow();
-        console.log("sumUserElasticDebt", sumUserElasticDebt);
-        console.log("elastic", elastic);
         assertApproxEqAbs(sumUserElasticDebt, elastic, NUMBER_OF_ACTORS, BORROWING_INVARIANT_E);
     }
 

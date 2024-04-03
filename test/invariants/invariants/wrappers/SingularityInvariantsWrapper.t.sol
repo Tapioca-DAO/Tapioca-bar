@@ -3,6 +3,7 @@ pragma solidity ^0.8.19;
 
 // Invariant Contracts
 import {InvariantsWrapper} from "./InvariantsWrapper.t.sol";
+import "forge-std/console.sol";
 
 /// @title SingularityInvariantsWrapper
 /// @notice Wrappers for the protocol invariants that implements extra wrapper for Singularity invariants
@@ -23,10 +24,10 @@ abstract contract SingularityInvariantsWrapper is InvariantsWrapper {
         uint256 sumBalances;
         uint256 sumGhostBalances;
         for (uint256 i; i < NUMBER_OF_ACTORS; i++) {
-            uint256 balance = singularity.balanceOf(actorAddresses[i]);
-            sumBalances += balance;
-            sumGhostBalances += ghost_userCollateralShare[actorAddresses[i]];
+            sumBalances += singularity.balanceOf(actorAddresses[i]);
+            sumGhostBalances += ghost_userAssetBase[actorAddresses[i]];
         }
+
         assert_SINGULARITY_INVARIANT_E(sumBalances);
         assert_LENDING_INVARIANT_K(sumGhostBalances);
         return true;

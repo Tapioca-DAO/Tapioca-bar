@@ -61,7 +61,7 @@ contract CollateralHandler is BaseHandler {
                     LENDING_INVARIANT_A
                 );
                 assert_GLOBAL_INVARIANT_A(Market.PauseType.AddCollateral);
-                //assert_COMMON_INVARIANT_O(share);@audit-issue
+                assert_COMMON_INVARIANT_O(share);//@audit-issue
 
                 if (targetType == MarketType.BIGBANG) {
                     assert_COMMON_INVARIANT_N();
@@ -96,7 +96,7 @@ contract CollateralHandler is BaseHandler {
                 collateralBefore - share,
                 LENDING_INVARIANT_A
             );
-            //assert_LENDING_INVARIANT_C(share);@audit-issue
+            assert_LENDING_INVARIANT_C(share);//@audit-issue
 
             assert_GLOBAL_INVARIANT_A(Market.PauseType.RemoveCollateral);
         }

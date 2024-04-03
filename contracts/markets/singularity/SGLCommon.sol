@@ -182,9 +182,9 @@ contract SGLCommon is SGLStorage {
         uint256 totalAssetShare = _totalAsset.elastic;
         uint256 allShare = _totalAsset.elastic + yieldBox.toShare(assetId, totalBorrow.elastic, true);
         fraction = allShare == 0 ? share : (share * _totalAsset.base) / allShare;
-        if (_totalAsset.base + fraction.toUint128() < 1000) {
+        if (_totalAsset.base + fraction.toUint128() < 1000) {//@audit why 1000??????
             return 0;
-        }
+        }   
         totalAsset = _totalAsset.add(share, fraction);
 
         balanceOf[to] += fraction;

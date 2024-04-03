@@ -49,6 +49,9 @@ contract BorrowHandler is BaseHandler {
 
             _increaseGhostBorrow(to, base);
 
+            // POST CONDITIONS
+            assert_BORROWING_INVARIANT_C(amount);
+
             assert_GLOBAL_INVARIANT_A(Market.PauseType.Borrow);
         }
     }

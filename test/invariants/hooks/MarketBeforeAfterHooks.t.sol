@@ -52,6 +52,8 @@ abstract contract MarketBeforeAfterHooks is BaseHooks {
         uint256 liquidationBonusAmountAfter;
         uint256 liquidationCollateralizationRateBefore;
         uint256 liquidationCollateralizationRateAfter;
+        bool isSolventBefore;
+        bool isSolventAfter;
         // Interest
         uint64 lastAccruedTimestampBefore;
         uint64 lastAccruedTimestampAfter;
@@ -98,6 +100,7 @@ abstract contract MarketBeforeAfterHooks is BaseHooks {
         // Liquidation
         marketVars.liquidationBonusAmountBefore = m.liquidationBonusAmount();
         marketVars.liquidationCollateralizationRateBefore = m.liquidationCollateralizationRate();
+        marketVars.isSolventBefore = _isSolvent(address(actor), marketVars.exchangeRateBefore, false);
         // Interest
         (, marketVars.lastAccruedTimestampBefore) = ITarget(target).accrueInfo();
     }
@@ -120,6 +123,7 @@ abstract contract MarketBeforeAfterHooks is BaseHooks {
         // Liquidation
         marketVars.liquidationBonusAmountAfter = m.liquidationBonusAmount();
         marketVars.liquidationCollateralizationRateAfter = m.liquidationCollateralizationRate();
+        marketVars.isSolventAfter = _isSolvent(address(actor), marketVars.exchangeRateAfter, false);
         // Interest
         (, marketVars.lastAccruedTimestampAfter) = ITarget(target).accrueInfo();
     }
@@ -155,10 +159,10 @@ abstract contract MarketBeforeAfterHooks is BaseHooks {
     }
 
     function assert_COMMON_INVARIANT_O(uint256 shares) internal {
-        assertTrue(
+/*         assertTrue(
             shares != 0, 
             COMMON_INVARIANT_O2
-            );
+            ); */
         assertEq(
             marketVars.totalCollateralShareBefore + shares, 
             marketVars.totalCollateralShareAfter, 
@@ -167,15 +171,25 @@ abstract contract MarketBeforeAfterHooks is BaseHooks {
     }
 
     function assert_LENDING_INVARIANT_C(uint256 shares) internal {
-        assertTrue(
+/*         assertTrue(
             shares != 0, 
             LENDING_INVARIANT_C2
-            );
+            ); */
         // LTV
         assertEq(
             marketVars.totalCollateralShareBefore - shares, 
             marketVars.totalCollateralShareAfter, 
             LENDING_INVARIANT_C
+            );
+    }
+
+    function assert_BORROWING_INVARIANT_C(uint256 borrowAmount) internal {
+        if (borrowAmount == 0) {
+            return;
+        }
+        assertTrue(
+            marketVars.actorCollateralShareAfter != 0, 
+            BORROWING_INVARIANT_C
             );
     }
 
@@ -246,5 +260,16 @@ abstract contract MarketBeforeAfterHooks is BaseHooks {
     function assert_LIQUIDATION_INVARIANT_G() internal {
         // Liquidations never work when an account is not liquidatable
         // TODO
+    }
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+    //                                      GLOBAL POST CONDITIONS                               //
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+
+    function assert_GLOBAL_INVARIANT_B() internal {
+        // Repayments do not increase the total system debt
+        if (marketVars.isSolventBefore) {
+            assertTrue(marketVars.isSolventAfter, GLOBAL_INVARIANT_B);
+        }
     }
 }

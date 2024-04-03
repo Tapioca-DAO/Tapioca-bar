@@ -4,6 +4,7 @@ pragma solidity ^0.8.19;
 // Libraries
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import {ERC20Mock} from "test/ERC20Mock.sol";
+import "forge-std/console.sol";
 
 // Contracts
 import {Actor} from "../utils/Actor.sol";
@@ -138,6 +139,7 @@ contract BaseHandler is HookAggregator {
     function _increaseGhostAsset(address user, uint256 amount) internal {
         ghost_userAssetBase[user] += amount;
         ghost_totalAssetBase += amount;
+
     }
 
     function _decreaseGhostAsset(address user, uint256 amount) internal {
@@ -153,8 +155,13 @@ contract BaseHandler is HookAggregator {
     }
 
     function _getAssetFraction(uint256 share, bool roundUp) internal view returns (uint256 fraction) {
-        (uint256 elastic, uint256 base) = singularity.totalBorrow();
-        uint256 allShare = elastic + yieldbox.toShare(assetIds[address(erc20Mock)], elastic, roundUp);
+        (uint256 elastic,) = singularity.totalBorrow();
+        (uint256 totalAssetElastic, uint256 base) = singularity.totalAsset();
+        uint256 allShare = totalAssetElastic + yieldbox.toShare(assetIds[address(erc20Mock)], elastic, roundUp);
         fraction = allShare == 0 ? share : (share * base) / allShare;
+        if (base + fraction < 1000) {
+            fraction = 0;
+        }
+
     }
 }

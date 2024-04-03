@@ -24,9 +24,9 @@ contract CryticToFoundry is SingularityInvariantsWrapper, BigBangInvariantsWrapp
     /// @dev Foundry compatibility faster setup debugging
     function setUp() public {
         // Deploy protocol contracts and protocol actors
-        _setUpBigBang();
+        //_setUpBigBang();
 
-        //_setUpSingularity();
+        _setUpSingularity();
 
         // Deploy actors
         _setUpActors();
@@ -46,10 +46,6 @@ contract CryticToFoundry is SingularityInvariantsWrapper, BigBangInvariantsWrapp
     }
 
     function test_liquidationCoverage() public {
-        for (uint256 i; i < NUMBER_OF_ACTORS; i++) {
-            console.log("Actor: %s", actorAddresses[i]);
-        }
-
         this.depositAsset(6118171668427308954168779944868519429957979943594762626456534848346,13723016264086663255320547410345143147227422538002146208221044496490322302,56033672603491885829478221381683690641552746168650514363405444279741398,251021867000000);
         this.addCollateral(194217746983629705204562464402686770946845550394160150372783116911141001,115135754831534972277010449995714387994217638980300780882241825441138507957,true,62470739779638642193228576037466598142928976863858815560103254062873998254,2287453710000);
         this.borrow(6170586545746978343666413280123708490732934572047903414987036203495,10000);
@@ -126,7 +122,16 @@ contract CryticToFoundry is SingularityInvariantsWrapper, BigBangInvariantsWrapp
     }
 
     function test_LENDING_INVARIANT_C2() public {//@audit-issue breaks invariant LENDING_INVARIANT_C2
-        this.removeCollateral(0,0,0)
+        this.removeCollateral(0,0,0);
+    }
+
+    function test_SINGULARITY_INVARIANTS1() public {
+        _setUpBlockAndActor(10483, USER1);
+        this.depositAsset(93233437676153043780619095587883485304683921607809593242097127426835041472294, 40912076364029671817417446916375301006926381437720857482693271626673711978789, 115792089196482756578492131941064060604702231768235835301579706380861786892000, 353073666);
+        this.addAsset(59790970058468620102435961557330553305472509152739786495245951948983907383242, true, 4319);
+        _setUpBlockAndActor(14990, USER1);
+        this.addAsset(33540519, true, 991);
+        echidna_SINGULARITY_INVARIANTS();
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////////////

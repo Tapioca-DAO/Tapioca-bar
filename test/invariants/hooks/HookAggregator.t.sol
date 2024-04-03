@@ -34,6 +34,8 @@ abstract contract HookAggregator is
         // REBASE
         assert_RB_INVARIANT_D();
 
+        // GLOBAL
+        assert_GLOBAL_INVARIANT_B();
     }
 
     /// @notice Singularity-only postconditions trigger
