@@ -4,8 +4,8 @@ import { task } from 'hardhat/config';
 import { setBorrowCap__task } from './tasks/exec/setBorrowCap';
 
 import { airdropGas__task } from './tasks/airdropGas';
-import { deployEmptyStrats__task } from './tasks/deploy/02-deployEmptyStrats';
-import { deployOracleMock__task } from './tasks/deploy/04-deployOracleMock';
+import { deployEmptyStrats__task } from './tasks/deploy/deprecated/02-deployEmptyStrats';
+import { deployOracleMock__task } from './tasks/deploy/deprecated/04-deployOracleMock';
 import { setLiquidationQueue__task } from './tasks/exec/setLiquidationQueue';
 import { setLiquidationQueueBidSwapper__task } from './tasks/exec/setLiquidationQueueBidSwapper';
 import { setLiquidationQueueExecutionSwapper__task } from './tasks/exec/setLiquidationQueueExecutionSwapper';
@@ -27,17 +27,17 @@ import {
     getLocalDeployments__task,
     getSDKDeployments__task,
 } from './tasks/view/getDeployments';
-import { deployFullStack__task } from './tasks/deploy/00-deployFullStack';
-import { deployLinkedChainStack__task } from './tasks/deploy/01-deployLinkedChainStack';
-import { deploySGLMarket__task } from './tasks/deploy/deploySGLMarket';
-import { deployBigBangMarket__task } from './tasks/deploy/deployBigBangMarket';
-import { deployOriginsMarket__task } from './tasks/deploy/deployOriginsMarket';
+import { deployFullStack__task } from './tasks/deploy/deprecated/00-deployFullStack';
+import { deployLinkedChainStack__task } from './tasks/deploy/deprecated/01-deployLinkedChainStack';
+import { deploySGLMarket__task } from './tasks/deploy/deprecated/deploySGLMarket';
+import { deployBigBangMarket__task } from './tasks/deploy/deprecated/deployBigBangMarket';
+import { deployOriginsMarket__task } from './tasks/deploy/deprecated/deployOriginsMarket';
 import { testCrossChainBorrow__task } from './tasks/test-borrow';
 import { setMinterStatus__task } from './tasks/exec/setMinterStatus';
 import { sameChainFlowTest__task } from './tasks/test-sameChainFlow';
 import { crossChainRepay__task } from './tasks/test-crossChainRepay';
 import { sendFrom__task } from './tasks/exec/sendFrom';
-import { testDeployMockSwapper__task } from './tasks/deploy/1000-testDeployMockSwapper';
+import { testDeployMockSwapper__task } from './tasks/deploy/deprecated/1000-testDeployMockSwapper';
 import { fillMockSwapper__test } from './tasks/exec/fillMockSwapper';
 import { fillCluster__task } from './tasks/exec/fillCluster';
 import { testGmxEarnCall__task } from './tasks/test-decode-gmx-call';

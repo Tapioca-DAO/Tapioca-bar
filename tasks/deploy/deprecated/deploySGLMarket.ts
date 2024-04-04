@@ -1,11 +1,12 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import inquirer from 'inquirer';
+import { getOverrideOptions } from '@tapioca-sdk/api/utils';
 import { TContract } from '@tapioca-sdk//shared';
 import { Penrose, YieldBox } from '../../typechain';
-import { buildOracleMock } from '../deployBuilds/05-buildOracleMock';
-import { loadVM } from '../utils';
+import { buildOracleMock } from '../../deployBuilds/05-buildOracleMock';
+import { loadVM } from '../../utils';
 
-export const deployOriginsMarket__task = async (
+export const deploySGLMarket__task = async (
     taskArgs: {
         executorName?: string;
         oracleName?: string;
@@ -22,7 +23,17 @@ export const deployOriginsMarket__task = async (
         throw new Error('Chain not found');
     }
 
-    const { yieldBox, penrose, usd0, token } = await loadContracts(hre, tag);
+    const {
+        yieldBox,
+        penrose,
+        usd0,
+        sglCollateral,
+        sglBorrow,
+        sglLeverage,
+        sglLiquidation,
+        mediumRiskMC,
+        token,
+    } = await loadContracts(hre, tag);
 
     const { usd0Strategy, oracleAddress } = await loadStrats(
         hre,
@@ -79,54 +90,90 @@ export const deployOriginsMarket__task = async (
         default: '0',
     });
 
-    const deployer = (await hre.ethers.getSigners())[0];
+    const { liquidationCollateralizationRate } = await inquirer.prompt({
+        type: 'input',
+        name: 'liquidationCollateralizationRate',
+        message: 'Liquidation collateralization rate (85000 is 75%)',
+        default: '0',
+    });
 
-    const originsFactory = await hre.ethers.getContractFactory('Origins');
-    const origins = await originsFactory.deploy(
-        deployer.address,
-        yieldBox.address,
-        asset.assetAddress,
-        assetId,
-        collateral.collateralAddress,
-        collateralId,
-        oracleAddress,
-        exchangeRatePrecision,
-        collateralizationRate,
+    const leverageExecutorFilter =
+        taskArgs.executorName ?? 'SimpleLeverageExecutor';
+    const leverageExecutor = hre.SDK.db.getLocalDeployment(
+        hre.SDK.eChainId,
+        leverageExecutorFilter,
+        tag,
     );
-    await origins.deployed();
 
-    console.log('[+] Origins deployed! 🥳');
+    if (!leverageExecutor) throw new Error('[-] Leverage executor not found');
+
+    const sglFactory = await hre.ethers.getContractFactory('Singularity');
+    const sgl = await sglFactory.deploy();
+    await sgl.deployed();
+
+    const data = new hre.ethers.utils.AbiCoder().encode(
+        [
+            'address',
+            'address',
+            'address',
+            'address',
+            'address',
+            'address',
+            'uint256',
+            'address',
+            'uint256',
+            'address',
+            'uint256',
+            'uint256',
+            'uint256',
+            'address',
+        ],
+        [
+            sglLiquidation.address,
+            sglBorrow.address,
+            sglCollateral.address,
+            sglLeverage.address,
+            penrose.address,
+            asset.assetAddress,
+            assetId,
+            collateral.collateralAddress,
+            collateralId,
+            oracleAddress,
+            exchangeRatePrecision ??
+                hre.ethers.BigNumber.from((1e18).toString()),
+            collateralizationRate,
+            liquidationCollateralizationRate,
+            leverageExecutor.address,
+        ],
+    );
+
+    await (await sgl.init(data)).wait(3);
+
+    console.log('[+] +Setting: Register SGL market in Penrose');
+    await (
+        await penrose.addSingularity(mediumRiskMC.address, sgl.address)
+    ).wait(3);
+
+    const marketsLength = (await penrose.singularityMarkets()).length;
+    const market = await hre.ethers.getContractAt(
+        'Singularity',
+        await penrose.clonesOf(mediumRiskMC.address, marketsLength - 1),
+    );
+
+    console.log(`[+] ${await market.name()} deployed! 🥳`);
     const VM = await loadVM(hre, tag);
     VM.load([
         {
-            name: 'Origins',
-            address: origins.address,
+            name: await market.name(),
+            address: market.address,
             meta: {
-                isSGLMarket: false,
+                isSGLMarket: true,
                 collateral,
                 asset,
             },
         },
     ]);
     VM.save();
-
-    console.log('[+] Setting the market as a minter & burner for USDO');
-    const usdoDeployment = hre.SDK.db
-        .loadLocalDeployment(tag, chainInfo.chainId)
-        .find((e) => e.name == 'USDO');
-    if (!usdoDeployment) throw new Error('[-] USDO deployment not found');
-
-    const usdo = await hre.ethers.getContractAt(
-        'USDO',
-        usdoDeployment?.address,
-    );
-    await (await usdo.setMinterStatus(origins.address, true)).wait(3);
-    await (await usdo.setBurnerStatus(origins.address, true)).wait(3);
-    console.log('[+] Done');
-
-    console.log('[+] Setting the market as Origins on Penrose');
-    await penrose.addOriginsMarket(origins.address);
-    console.log('[+] Done');
 };
 
 async function loadAssets(
@@ -251,12 +298,22 @@ async function loadStrats(
 }
 
 async function loadContracts(hre: HardhatRuntimeEnvironment, tag: string) {
-    const { contract: yieldBox } =
-        await hre.SDK.hardhatUtils.getLocalContract<YieldBox>(
-            hre,
-            'YieldBox',
-            tag,
-        );
+    const chainInfo = hre.SDK.utils.getChainBy('chainId', hre.SDK.eChainId);
+    if (!chainInfo) {
+        throw new Error('Chain not found');
+    }
+
+    let yb = hre.SDK.db
+        .loadGlobalDeployment(tag, 'yieldbox', chainInfo.chainId)
+        .find((e) => e.name == 'YieldBox');
+
+    if (!yb) {
+        yb = hre.SDK.db
+            .loadLocalDeployment(tag, chainInfo.chainId)
+            .find((e) => e.name == 'YieldBox');
+    }
+
+    const yieldBox = await hre.ethers.getContractAt('YieldBox', yb?.address);
 
     const { contract: penrose } =
         await hre.SDK.hardhatUtils.getLocalContract<Penrose>(
@@ -270,25 +327,55 @@ async function loadContracts(hre: HardhatRuntimeEnvironment, tag: string) {
         'USDO',
         tag,
     );
-    const { tokenAddress } = await inquirer.prompt({
-        type: 'input',
-        name: 'tokenAddress',
-        message: 'Collateral address',
-    });
 
-    const ercToken = await hre.ethers.getContractAt(
-        'IERC20Metadata',
-        tokenAddress,
+    const { contract: sglLiquidation } =
+        await hre.SDK.hardhatUtils.getLocalContract(hre, 'SGLLiquidation', tag);
+
+    const { contract: sglCollateral } =
+        await hre.SDK.hardhatUtils.getLocalContract(hre, 'SGLCollateral', tag);
+
+    const { contract: sglBorrow } = await hre.SDK.hardhatUtils.getLocalContract(
+        hre,
+        'SGLBorrow',
+        tag,
     );
-    const token: TContract = {
-        name: await ercToken.name(),
-        address: ercToken.address,
-        meta: {},
-    };
+
+    const { contract: sglLeverage } =
+        await hre.SDK.hardhatUtils.getLocalContract(hre, 'SGLLeverage', tag);
+
+    const mediumRiskMC = hre.SDK.db.getLocalDeployment(
+        hre.SDK.eChainId,
+        'MediumRiskMC',
+        tag,
+    );
+
+    if (!mediumRiskMC) throw new Error('[-] MediumRiskMC not found');
+
+    const tokens = hre.SDK.db.loadGlobalDeployment(
+        tag,
+        'tapiocaz',
+        hre.SDK.eChainId,
+    );
+
+    const { tokenName } = await inquirer.prompt({
+        type: 'list',
+        name: 'tokenName',
+        message:
+            'Which token do you want to deploy a market for? (List loaded from tapiocaz repo)',
+        choices: tokens.map((e) => e.name),
+    });
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const token = tokens.find((e) => e.name === tokenName)!;
+
     return {
         yieldBox,
         penrose,
         usd0,
+        sglLiquidation,
+        sglCollateral,
+        sglBorrow,
+        sglLeverage,
+        mediumRiskMC,
         token,
     };
 }

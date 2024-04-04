@@ -1,7 +1,7 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import inquirer from 'inquirer';
-import { buildEmptyStrat } from '../deployBuilds/10-buildEmptyStrat';
-import { loadVM } from '../utils';
+import { buildEmptyStrat } from '../../deployBuilds/10-buildEmptyStrat';
+import { loadVM } from '../../utils';
 import SDK from 'tapioca-sdk';
 import { TContract } from '@tapioca-sdk//shared';
 

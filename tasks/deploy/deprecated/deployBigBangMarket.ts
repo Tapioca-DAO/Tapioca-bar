@@ -3,10 +3,10 @@ import inquirer from 'inquirer';
 import { getOverrideOptions } from '@tapioca-sdk/api/utils';
 import { TContract } from '@tapioca-sdk//shared';
 import { Penrose, YieldBox } from '../../typechain';
-import { buildOracleMock } from '../deployBuilds/05-buildOracleMock';
+import { buildOracleMock } from '../../deployBuilds/05-buildOracleMock';
 import ClusterArtifact from '@tapioca-sdk/artifacts/tapioca-periphery/Cluster.json';
 
-import { loadVM } from '../utils';
+import { loadVM } from '../../utils';
 import { Cluster } from '@tapioca-sdk/typechain/tapioca-periphery';
 
 export const deployBigBangMarket__task = async (
