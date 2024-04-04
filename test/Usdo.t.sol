@@ -295,9 +295,7 @@ contract UsdoTest is UsdoTestHelper {
         cluster.updateContract(aEid, address(oracle), true);
         cluster.updateContract(aEid, address(singularity), true);
         cluster.updateContract(aEid, address(marketHelper), true);
-        cluster.updateContract(aEid, endpoints[aEid], true);
-        cluster.updateContract(aEid, endpoints[bEid], true);
-        
+
         cluster.updateContract(bEid, address(yieldBox), true);
         cluster.updateContract(bEid, address(magnetar), true);
         cluster.updateContract(bEid, address(tOB), true);
@@ -307,8 +305,6 @@ contract UsdoTest is UsdoTestHelper {
         cluster.updateContract(bEid, address(oracle), true);
         cluster.updateContract(bEid, address(singularity), true);
         cluster.updateContract(bEid, address(marketHelper), true);
-        cluster.updateContract(bEid, endpoints[aEid], true);
-        cluster.updateContract(bEid, endpoints[bEid], true);
     }
 
     /**
@@ -1168,7 +1164,7 @@ contract UsdoTest is UsdoTestHelper {
                         prevData: bytes(""),
                         prevOptionsData: bytes("")
                     }),
-                    lzReceiveGas: 1_000_000,
+                    lzReceiveGas: 500_000,
                     lzReceiveValue: 0
                 })
             );
@@ -1242,13 +1238,13 @@ contract UsdoTest is UsdoTestHelper {
                 msgType: PT_YB_SEND_SGL_LEND_OR_REPAY,
                 composeMsgData: ComposeMsgData({
                     index: 0,
-                    gas: 1_000_000,
+                    gas: 500_000,
                     value: uint128(withdrawMsgFee_.nativeFee),
                     data: marketMsg_,
                     prevData: bytes(""),
                     prevOptionsData: bytes("")
                 }),
-                lzReceiveGas: 1_000_000,
+                lzReceiveGas: 500_000,
                 lzReceiveValue: 0
             })
         );
