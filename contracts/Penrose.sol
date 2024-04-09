@@ -5,6 +5,7 @@ pragma solidity 0.8.22;
 import {IERC20} from "@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol";
 import {BoringFactory} from "@boringcrypto/boring-solidity/contracts/BoringFactory.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+
 // Tapioca
 import {
     ERC20WithoutStrategy, IStrategy, IYieldBox as IBoringYieldBox
@@ -34,8 +35,10 @@ import {SafeApprove} from "./libraries/SafeApprove.sol";
 
 /// @title Global market registry
 /// @notice Singularity management
-contract Penrose is Ownable, PearlmitHandler, BoringFactory {
+contract Penrose is Ownable, PearlmitHandler, BoringFactory, Pausable {
     using SafeApprove for address;
+
+    error AddressNotValid();
 
     // ************ //
     // *** VARS *** //
@@ -73,10 +76,8 @@ contract Penrose is Ownable, PearlmitHandler, BoringFactory {
     mapping(address => bool) public isBigBangMasterContractRegistered;
     /// @notice Used to check if a SGL/BB is a real market
     mapping(address => bool) public isMarketRegistered;
-    /// @notice default LZ Chain id
-    uint32 public immutable hostLzChainId;
 
-    /// @notice BigBang ETH market addressf
+    /// @notice BigBang ETH market address
     address public bigBangEthMarket;
     /// @notice BigBang ETH market debt rate
     uint256 public bigBangEthDebtRate;
@@ -103,6 +104,12 @@ contract Penrose is Ownable, PearlmitHandler, BoringFactory {
         IPearlmit _pearlmit,
         address _owner
     ) PearlmitHandler(_pearlmit) {
+        if (address(_yieldBox) == address(0)) revert AddressNotValid();
+        if (address(_cluster) == address(0)) revert AddressNotValid();
+        if (address(tapToken_) == address(0)) revert AddressNotValid();
+        if (address(_pearlmit) == address(0)) revert AddressNotValid();
+        if (address(_owner) == address(0)) revert AddressNotValid();
+
         yieldBox = _yieldBox;
         cluster = _cluster;
         tapToken = tapToken_;
@@ -481,7 +488,7 @@ contract Penrose is Ownable, PearlmitHandler, BoringFactory {
     }
 
     /// @notice Execute an only owner function inside of a Singularity or a BigBang market
-    /// @param mc Master contracts array
+    /// @param mc Markets contracts array
     /// @param data array
     /// @param forceSuccess if true, method reverts in case of an unsuccessful execution
     function executeMarketFn(address[] calldata mc, bytes[] memory data, bool forceSuccess)
@@ -568,6 +575,7 @@ contract Penrose is Ownable, PearlmitHandler, BoringFactory {
     function _distributeOnTwTap(uint256 amount, uint256 rewardTokenId, address _asset, ITwTap twTap) private {
         _asset.safeApprove(address(twTap), amount);
         twTap.distributeReward(rewardTokenId, amount);
+        _asset.safeApprove(address(twTap), 0);
         emit LogTwTapFeesDeposit(amount);
     }
 
