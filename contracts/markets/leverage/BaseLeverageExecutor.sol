@@ -58,10 +58,13 @@ abstract contract BaseLeverageExecutor is Ownable {
     error SenderNotValid();
     error TokenNotValid();
     error NativeNotSupported();
+    error AddressNotValid();
 
-    constructor(IZeroXSwapper _swapper, ICluster _cluster) {
+    constructor(IZeroXSwapper _swapper, ICluster _cluster, address _weth) {
+        if (address(_cluster) == address(0)) revert AddressNotValid();
         swapper = _swapper;
         cluster = _cluster;
+        weth = IWeth9(_weth);
     }
 
     receive() external payable {}
