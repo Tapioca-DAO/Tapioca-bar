@@ -22,3 +22,6 @@
 [submodule "gitmodule/tap-token"]
 	path = gitmodule/tap-token
 	url = https://github.com/Tapioca-DAO/tap-token
+[submodule "gitmodule/tapiocaz"]
+	path = gitmodule/tapiocaz
+	url = https://github.com/Tapioca-DAO/tapiocaz
