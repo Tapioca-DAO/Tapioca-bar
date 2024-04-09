@@ -35,7 +35,7 @@ import {SafeApprove} from "./libraries/SafeApprove.sol";
 
 /// @title Global market registry
 /// @notice Singularity management
-contract Penrose is Ownable, PearlmitHandler, BoringFactory, Pausable {
+contract Penrose is Ownable, PearlmitHandler, BoringFactory {
     using SafeApprove for address;
 
     error AddressNotValid();
