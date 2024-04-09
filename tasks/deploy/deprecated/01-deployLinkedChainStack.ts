@@ -1,14 +1,14 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import inquirer from 'inquirer';
 import { Multicall3 } from '@tapioca-sdk//typechain/tapioca-periphery';
-import { buildYieldBox } from '../../deployBuilds/00-buildYieldBox';
-import { buildUSD0 } from '../../deployBuilds/06-buildUSDO';
-import { buildUSDOModules } from '../../deployBuilds/11-buildUSDOModules';
-import { buildCluster } from '../../deployBuilds/12-buildCluster';
-import { buildUSDOFlashloanHelper } from '../../deployBuilds/13-buildUSDOFlashloanHelper';
+import { buildYieldBox } from '../../deployBuilds/deprecated/00-buildYieldBox';
+import { buildUSD0 } from '../../deployBuilds/deprecated/06-buildUSDO';
+import { buildUSDOModules } from '../../deployBuilds/deprecated/11-buildUSDOModules';
+import { buildCluster } from '../../deployBuilds/deprecated/12-buildCluster';
+import { buildUSDOFlashloanHelper } from '../../deployBuilds/deprecated/13-buildUSDOFlashloanHelper';
 import { buildUsdoFlashloanSetup } from '../../setups/04-buildUsdoFlashloanSetup';
-import { buildSimpleLeverageExecutor } from '../../deployBuilds/14-buildSimpleLeverageExecutor';
-import { buildMultiSwapper } from '../../deployBuilds/04-buildMultiSwapper';
+import { buildSimpleLeverageExecutor } from '../../deployBuilds/deprecated/14-buildSimpleLeverageExecutor';
+import { buildMultiSwapper } from '../../deployBuilds/deprecated/04-buildMultiSwapper';
 import { UNISWAP_DEPLOYMENTS } from '@tapioca-sdk/api/constants';
 import { loadVM } from '../../utils';
 

@@ -1,26 +1,26 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import inquirer from 'inquirer';
 import { Multicall3 } from '@tapioca-sdk//typechain/tapioca-periphery';
-import { buildYieldBox } from '../../deployBuilds/00-buildYieldBox';
-import { buildPenrose } from '../../deployBuilds/01-buildPenrose';
-import { buildMasterContracts } from '../../deployBuilds/02-buildMasterContracts';
-import { buildMultiSwapper } from '../../deployBuilds/04-buildMultiSwapper';
-import { buildUSD0 } from '../../deployBuilds/06-buildUSDO';
-import { buildStableToUSD0Bidder } from '../../deployBuilds/07-buildStableToUSD0Bidder';
-import { buildBigBangModules } from '../../deployBuilds/09-buildBigBangModules';
-import { buildSingularityModules } from '../../deployBuilds/08-buildSingularityModules';
+import { buildYieldBox } from '../../deployBuilds/deprecated/00-buildYieldBox';
+import { buildPenrose } from '../../deployBuilds/buildPenrose';
+import { buildMasterContracts } from '../../deployBuilds/deprecated/02-buildMasterContracts';
+import { buildMultiSwapper } from '../../deployBuilds/deprecated/04-buildMultiSwapper';
+import { buildUSD0 } from '../../deployBuilds/deprecated/06-buildUSDO';
+import { buildStableToUSD0Bidder } from '../../deployBuilds/deprecated/07-buildStableToUSD0Bidder';
+import { buildBigBangModules } from '../../deployBuilds/deprecated/09-buildBigBangModules';
+import { buildSingularityModules } from '../../deployBuilds/deprecated/08-buildSingularityModules';
 import { buildPenroseSetup } from '../../setups/01-buildPenroseSetup';
 import { buildMasterContractsSetup } from '../../setups/02-buildMasterContractsSetup';
 import { buildUsdoFlashloanSetup } from '../../setups/04-buildUsdoFlashloanSetup';
-import { buildSimpleLeverageExecutor } from '../../deployBuilds/14-buildSimpleLeverageExecutor';
+import { buildSimpleLeverageExecutor } from '../../deployBuilds/deprecated/14-buildSimpleLeverageExecutor';
 import { loadVM } from '../../utils';
-import { buildUSDOModules } from '../../deployBuilds/11-buildUSDOModules';
-import { buildUSDOFlashloanHelper } from '../../deployBuilds/13-buildUSDOFlashloanHelper';
+import { buildUSDOModules } from '../../deployBuilds/deprecated/11-buildUSDOModules';
+import { buildUSDOFlashloanHelper } from '../../deployBuilds/deprecated/13-buildUSDOFlashloanHelper';
 import {
     CURVE_DEPLOYMENTS,
     UNISWAP_DEPLOYMENTS,
 } from '@tapioca-sdk/api/constants';
-import { buildCluster } from '../../deployBuilds/12-buildCluster';
+import { buildCluster } from '../../deployBuilds/deprecated/12-buildCluster';
 
 // hh deployFullStack --network goerli
 export const deployFullStack__task = async (

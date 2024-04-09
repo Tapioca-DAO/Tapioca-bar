@@ -3,7 +3,7 @@ import inquirer from 'inquirer';
 import { getOverrideOptions } from '@tapioca-sdk/api/utils';
 import { TContract } from '@tapioca-sdk//shared';
 import { Penrose, YieldBox } from '../../typechain';
-import { buildOracleMock } from '../../deployBuilds/05-buildOracleMock';
+import { buildOracleMock } from '../../deployBuilds/deprecated/05-buildOracleMock';
 import { loadVM } from '../../utils';
 
 export const deploySGLMarket__task = async (
