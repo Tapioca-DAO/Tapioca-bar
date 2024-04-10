@@ -9,7 +9,7 @@ import { DEPLOYMENT_NAMES, DEPLOY_CONFIG } from '../DEPLOY_CONFIG';
  * @notice - Register mtETH, wstETH, rETH YB assets for BB.
  */
 export async function setupCreateYBAssets(params: TPostDeployParams) {
-    const { hre, tag } = params;
+    const { hre, tag, deployed } = params;
 
     const {
         yieldBox: ybAddress,
@@ -19,6 +19,23 @@ export async function setupCreateYBAssets(params: TPostDeployParams) {
     } = deployLoadDeployments({ hre, tag });
 
     const yieldBox = await hre.ethers.getContractAt('IYieldBox', ybAddress);
+    const usdo = deployed.find((e) => e.name === DEPLOYMENT_NAMES.USDO)!;
+    const usdoStrategy = deployed.find(
+        (e) => e.name === DEPLOYMENT_NAMES.YB_USDO_ASSET_WITHOUT_STRATEGY,
+    )!;
+
+    /**
+     * USDO
+     */
+    await addNewAsset({
+        ...params,
+        assetAddress: usdo.name,
+        assetDepName: usdoStrategy.address,
+        assetName: 'USDO',
+        assetType: 1,
+        strategyType: 0,
+        yieldBox,
+    });
 
     /**
      * SGL

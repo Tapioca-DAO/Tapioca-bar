@@ -8,11 +8,14 @@ export const DEPLOYMENT_NAMES = {
     USDO_EXT_EXEC: 'USDO_EXT_EXEC',
     USDO_FLASHLOAN_HELPER: 'USDO_FLASHLOAN_HELPER',
     SIMPLE_LEVERAGE_EXECUTOR: 'SIMPLE_LEVERAGE_EXECUTOR',
+    YB_USDO_ASSET_WITHOUT_STRATEGY: 'YB_USDO_ASSET_WITHOUT_STRATEGY',
     YB_SDAI_ASSET_WITHOUT_STRATEGY: 'YB_SDAI_ASSET_WITHOUT_STRATEGY',
     YB_SGLP_ASSET_WITHOUT_STRATEGY: 'YB_SGLP_ASSET_WITHOUT_STRATEGY',
     YB_MT_ETH_ASSET_WITHOUT_STRATEGY: 'YB_MT_ETH_ASSET_WITHOUT_STRATEGY',
     YB_T_RETH_ASSET_WITHOUT_STRATEGY: 'YB_T_RETH_ASSET_WITHOUT_STRATEGY',
     YB_T_WST_ETH_ASSET_WITHOUT_STRATEGY: 'YB_T_WST_ETH_ASSET_WITHOUT_STRATEGY',
+    // ORIGINS
+    ORIGINS_MT_ETH_MARKET: 'ORIGINS_MT_ETH_MARKET',
     // SGL
     SGL_S_DAI_MARKET: 'SGL_S_DAI_MARKET',
     SGL_S_GLP_MARKET: 'SGL_S_GLP_MARKET',
@@ -37,10 +40,14 @@ export const DEPLOYMENT_NAMES = {
     USDO_OPTION_RECEIVER_MODULE: 'USDO_OPTION_RECEIVER_MODULE',
 };
 
-type TMarketConfig = {
+type TBBMarketConfig = {
     debtRateAgainstEth: BigNumberish;
     debtRateMin: BigNumberish;
     debtRateMax: BigNumberish;
+    collateralizationRate: BigNumberish;
+    liquidationCollateralizationRate: BigNumberish;
+};
+type TSGLMarketConfig = {
     collateralizationRate: BigNumberish;
     liquidationCollateralizationRate: BigNumberish;
 };
@@ -48,44 +55,71 @@ type TPostLbp = {
     [key in EChainID]?: {
         sDAI?: string;
         sGLP?: string;
-        mtEthMarketConfig?: TMarketConfig;
-        tRethMarketConfig?: TMarketConfig;
-        twSTETH?: TMarketConfig;
+        mtEthOriginsMarketConfig?: {
+            collateralizationRate: BigNumberish;
+        };
+        mtEthMarketConfig?: TBBMarketConfig;
+        tRethMarketConfig?: TBBMarketConfig;
+        twSTETHMarketConfig?: TBBMarketConfig;
+        tSdaiMarketConfig?: TSGLMarketConfig;
+        tSGlpMarketConfig?: TSGLMarketConfig;
     };
+};
+
+const marketConfigArb: TPostLbp[EChainID] = {
+    mtEthOriginsMarketConfig: {
+        collateralizationRate: 100_000, // 100%
+    },
+    mtEthMarketConfig: {
+        debtRateAgainstEth: 0,
+        debtRateMin: 0,
+        debtRateMax: 0,
+        collateralizationRate: 87_000, // 87%
+        liquidationCollateralizationRate: 80_000, // 80%,
+    },
+    tRethMarketConfig: {
+        debtRateAgainstEth: ethers.utils.parseEther('0.15'), // 15%
+        debtRateMin: ethers.utils.parseEther('0.05'), // 5%
+        debtRateMax: ethers.utils.parseEther('0.35'), // 35%
+        collateralizationRate: 87_000, // 87%
+        liquidationCollateralizationRate: 80_000, // 80%
+    },
+    twSTETHMarketConfig: {
+        debtRateAgainstEth: ethers.utils.parseEther('0.15'), // 15%
+        debtRateMin: ethers.utils.parseEther('0.05'), // 5%
+        debtRateMax: ethers.utils.parseEther('0.35'), // 35%
+        collateralizationRate: 86_000, // 86%
+        liquidationCollateralizationRate: 80_000, // 80%
+    },
+
+    tSGlpMarketConfig: {
+        collateralizationRate: 85_000, // 85%
+        liquidationCollateralizationRate: 80_000, // 80%
+    },
+};
+
+const marketConfigMainnet: TPostLbp[EChainID] = {
+    tSdaiMarketConfig: {
+        collateralizationRate: 98_000, // 98%
+        liquidationCollateralizationRate: 90_000, // 90%
+    },
 };
 const POST_LBP: TPostLbp = {
     [EChainID.ARBITRUM]: {
         sGLP: '0x5402B5F40310bDED796c7D0F3FF6683f5C0cFfdf',
+        ...marketConfigArb,
     },
     [EChainID.ARBITRUM_SEPOLIA]: {
         sGLP: '0x1B460E311753fDB46451EF3d11d7B9eE5542b369',
-        mtEthMarketConfig: {
-            debtRateAgainstEth: 0,
-            debtRateMin: 0,
-            debtRateMax: 0,
-            collateralizationRate: 0,
-            liquidationCollateralizationRate: 0,
-        },
-        tRethMarketConfig: {
-            debtRateAgainstEth: ethers.utils.parseEther('0.005'),
-            debtRateMin: ethers.utils.parseEther('0.05'),
-            debtRateMax: ethers.utils.parseEther('0.035'),
-            collateralizationRate: 0,
-            liquidationCollateralizationRate: 0,
-        },
-        twSTETH: {
-            debtRateAgainstEth: ethers.utils.parseEther('0.005'),
-            debtRateMin: ethers.utils.parseEther('0.05'),
-            debtRateMax: ethers.utils.parseEther('0.035'),
-            collateralizationRate: 0,
-            liquidationCollateralizationRate: 0,
-        },
+        ...marketConfigArb,
     },
     [EChainID.MAINNET]: {
         sDAI: '0x83f20f44975d03b1b09e64809b757c47f942beea',
+        ...marketConfigMainnet,
     },
     [EChainID.SEPOLIA]: {
         sDAI: '0xC6EA2075314a58cf74DE8430b24714E600A21Dd8',
+        ...marketConfigMainnet,
     },
 };
 

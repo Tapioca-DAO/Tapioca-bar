@@ -1,9 +1,16 @@
 import { TDeploymentVMContract } from '@tapioca-sdk/ethers/hardhat/DeployerVM';
-import { BigBang__factory, IYieldBox } from '@typechain/index';
+import {
+    BigBang__factory,
+    IYieldBox,
+    Singularity__factory,
+} from '@typechain/index';
 import { BigNumberish } from 'ethers';
 import { deployLoadDeployments } from '../1-deployPostLbp';
 import { TPostDeployParams } from '../1-setupPostLbp';
 import { DEPLOYMENT_NAMES, DEPLOY_CONFIG } from '../DEPLOY_CONFIG';
+import { loadGlobalContract, loadLocalContract } from 'tapioca-sdk';
+import { TAPIOCA_PROJECTS_NAME } from '@tapioca-sdk/api/config';
+import { buildOrigins } from 'tasks/deployBuilds/buildOrigins';
 
 export async function setupInitAndRegisterMarket(params: TPostDeployParams) {
     const { hre, deployed, tag } = params;
@@ -16,19 +23,31 @@ export async function setupInitAndRegisterMarket(params: TPostDeployParams) {
         tRethOracle,
         tWSTETH,
         tWstEthOracle,
+        tSdaiOracle,
+        tSGLPOracle,
     } = deployLoadDeployments({
         hre,
         tag,
     });
-    const yieldBox = await hre.ethers.getContractAt('IYieldBox', yieldBoxDep);
     const leverageExecutorAddr = deployed.find(
         (e) => e.name === DEPLOYMENT_NAMES.SIMPLE_LEVERAGE_EXECUTOR,
     )!.address;
-
     const penroseAddr = deployed.find(
         (e) => e.name === DEPLOYMENT_NAMES.PENROSE,
     )!.address;
 
+    const usdo = deployed.find(
+        (e) => e.name === DEPLOYMENT_NAMES.USDO,
+    )!.address;
+    const usdoStrategy = deployed.find(
+        (e) => e.name === DEPLOYMENT_NAMES.YB_USDO_ASSET_WITHOUT_STRATEGY,
+    )!;
+
+    const yieldBox = await hre.ethers.getContractAt('IYieldBox', yieldBoxDep);
+
+    /**
+     * BigBang
+     */
     // MT_ETH
     {
         const mtEthDeployConf =
@@ -80,7 +99,7 @@ export async function setupInitAndRegisterMarket(params: TPostDeployParams) {
     // T_WST_ETH
     {
         const tWSTETHDeployConf =
-            DEPLOY_CONFIG.POST_LBP[hre.SDK.eChainId]!.twSTETH!;
+            DEPLOY_CONFIG.POST_LBP[hre.SDK.eChainId]!.twSTETHMarketConfig!;
         await initBBMarket({
             ...params,
             factory: await hre.ethers.getContractFactory('BigBang'),
@@ -95,6 +114,56 @@ export async function setupInitAndRegisterMarket(params: TPostDeployParams) {
             collateralizationRate: tWSTETHDeployConf.collateralizationRate,
             liquidationCollateralizationRate:
                 tWSTETHDeployConf.liquidationCollateralizationRate,
+            exchangeRatePrecision: (1e18).toString(),
+            leverageExecutorAddr,
+            penroseAddr,
+            yieldBox,
+        });
+    }
+
+    /**
+     * Singularity
+     */
+
+    // SDAI
+    {
+        const tSdaiDeployConf =
+            DEPLOY_CONFIG.POST_LBP[hre.SDK.eChainId]!.tSdaiMarketConfig!;
+        await initSGLMarket({
+            ...params,
+            factory: await hre.ethers.getContractFactory('Singularity'),
+            marketName: DEPLOYMENT_NAMES.SGL_S_DAI_MARKET,
+            collateralAddr: DEPLOY_CONFIG.POST_LBP[hre.SDK.eChainId]!.sDAI!,
+            oracleAddr: tSdaiOracle,
+            collateralStrategy: DEPLOYMENT_NAMES.YB_SDAI_ASSET_WITHOUT_STRATEGY,
+            usdoStrategy: usdoStrategy.name,
+            usdoAddr: usdo,
+            collateralizationRate: tSdaiDeployConf.collateralizationRate,
+            liquidationCollateralizationRate:
+                tSdaiDeployConf.liquidationCollateralizationRate,
+            exchangeRatePrecision: (1e18).toString(),
+            leverageExecutorAddr,
+            penroseAddr,
+            yieldBox,
+        });
+    }
+
+    // SGLP
+    {
+        const tSglpDeployConf =
+            DEPLOY_CONFIG.POST_LBP[hre.SDK.eChainId]!.tSGlpMarketConfig!;
+        await initSGLMarket({
+            ...params,
+            factory: await hre.ethers.getContractFactory('Singularity'),
+            marketName: DEPLOYMENT_NAMES.SGL_S_GLP_MARKET,
+            collateralAddr: DEPLOY_CONFIG.POST_LBP[hre.SDK.eChainId]!.sGLP!,
+            oracleAddr: tSGLPOracle,
+            collateralStrategy: DEPLOYMENT_NAMES.YB_SDAI_ASSET_WITHOUT_STRATEGY,
+            usdoStrategy: usdoStrategy.name,
+            usdoAddr: usdo,
+            collateralizationRate: tSglpDeployConf.collateralizationRate,
+            liquidationCollateralizationRate:
+                tSglpDeployConf.liquidationCollateralizationRate,
             exchangeRatePrecision: (1e18).toString(),
             leverageExecutorAddr,
             penroseAddr,
@@ -204,6 +273,108 @@ async function initBBMarket(
         calls.push({
             target: market.address,
             callData: market.interface.encodeFunctionData('init', [bbData]),
+            allowFailure: false,
+        });
+    }
+}
+
+async function initSGLMarket(
+    params: TPostDeployParams & {
+        factory: Singularity__factory;
+        penroseAddr: string;
+        marketName: string;
+        collateralAddr: string;
+        collateralStrategy: string;
+        oracleAddr: string;
+        usdoAddr: string;
+        usdoStrategy: string;
+        yieldBox: IYieldBox;
+        leverageExecutorAddr: string;
+        exchangeRatePrecision: BigNumberish;
+        collateralizationRate: BigNumberish;
+        liquidationCollateralizationRate: BigNumberish;
+    },
+) {
+    const {
+        hre,
+        deployed,
+        marketName,
+        calls,
+        yieldBox,
+        factory,
+        penroseAddr,
+        collateralAddr,
+        collateralStrategy,
+        usdoAddr,
+        usdoStrategy,
+        exchangeRatePrecision,
+        leverageExecutorAddr,
+        oracleAddr,
+        collateralizationRate,
+        liquidationCollateralizationRate,
+    } = params;
+
+    const marketDep = deployed.find((e) => e.name === marketName)!;
+    const market = factory.attach(marketDep.address);
+
+    if ((await market.penrose()).toLowerCase() !== penroseAddr.toLowerCase()) {
+        console.log(`\t[+] Init market ${marketName} ${marketDep.address}`);
+
+        const assetId = await yieldBox.ids(1, usdoAddr, usdoStrategy, 0);
+        const collateralId = await yieldBox.ids(
+            1,
+            collateralAddr,
+            collateralStrategy,
+            0,
+        );
+
+        const modulesData = {
+            _liquidationModule: loadModule({
+                deployed,
+                deploymentName: DEPLOYMENT_NAMES.SGL_LIQUIDATION_MODULE,
+            }),
+            _borrowModule: loadModule({
+                deployed,
+                deploymentName: DEPLOYMENT_NAMES.SGL_BORROW_MODULE,
+            }),
+            _collateralModule: loadModule({
+                deployed,
+                deploymentName: DEPLOYMENT_NAMES.SGL_COLLATERAL_MODULE,
+            }),
+            _leverageModule: loadModule({
+                deployed,
+                deploymentName: DEPLOYMENT_NAMES.SGL_LEVERAGE_MODULE,
+            }),
+        };
+
+        const tokensData = {
+            _asset: usdoAddr,
+            _assetId: assetId,
+            _collateral: collateralAddr,
+            _collateralId: collateralId,
+        };
+
+        const data = {
+            penrose_: penroseAddr,
+            _oracle: oracleAddr,
+            _exchangeRatePrecision: exchangeRatePrecision ?? 0,
+            _collateralizationRate: collateralizationRate,
+            _liquidationCollateralizationRate: liquidationCollateralizationRate,
+            _leverageExecutor: leverageExecutorAddr,
+        };
+
+        const sglData = new hre.ethers.utils.AbiCoder().encode(
+            [
+                'tuple(address _liquidationModule, address _borrowModule, address _collateralModule, address _leverageModule)',
+                'tuple(address _asset, uint256 _assetId, address _collateral, uint256 _collateralId)',
+                'tuple(address penrose_, address _oracle, uint256 _exchangeRatePrecision, uint256 _collateralizationRate, uint256 _liquidationCollateralizationRate, address _leverageExecutor)',
+            ],
+            [modulesData, tokensData, data],
+        );
+
+        calls.push({
+            target: market.address,
+            callData: market.interface.encodeFunctionData('init', [sglData]),
             allowFailure: false,
         });
     }

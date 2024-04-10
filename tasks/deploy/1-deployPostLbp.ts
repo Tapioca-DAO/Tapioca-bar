@@ -1,22 +1,23 @@
 import * as TAP_TOKEN_CONFIG from '@tap-token/config';
 import * as TAPIOCA_PERIPH_CONFIG from '@tapioca-periph/config';
-import * as TAPIOCA_Z_CONFIG from '@tapiocaz/config';
 import { TAPIOCA_PROJECTS_NAME } from '@tapioca-sdk/api/config';
 import { TTapiocaDeployTaskArgs } from '@tapioca-sdk/ethers/hardhat/DeployerVM';
+import * as TAPIOCA_Z_CONFIG from '@tapiocaz/config';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { loadGlobalContract } from 'tapioca-sdk';
 import { TTapiocaDeployerVmPass } from 'tapioca-sdk/dist/ethers/hardhat/DeployerVM';
 import { buildBBMediumRiskMC } from 'tasks/deployBuilds/buildBBMediumRiskMC';
+import { buildERC20WithoutStrategy } from 'tasks/deployBuilds/buildERC20WithoutStrategy';
 import { buildPenrose } from 'tasks/deployBuilds/buildPenrose';
 import { buildSGLMediumRiskMC } from 'tasks/deployBuilds/buildSGLMediumRiskMC';
 import { buildSGLModules } from 'tasks/deployBuilds/buildSGLModules';
+import { buildSimpleLeverageExecutor } from 'tasks/deployBuilds/buildSimpleLeverageExecutor';
 import { buildUSDO } from 'tasks/deployBuilds/buildUSDO';
-import { buildUSDOModules } from 'tasks/deployBuilds/buildUSDOModules';
-import { DEPLOYMENT_NAMES, DEPLOY_CONFIG } from './DEPLOY_CONFIG';
 import { buildUSDOExtExec } from 'tasks/deployBuilds/buildUSDOExtExec';
 import { buildUSDOFlashloanHelper } from 'tasks/deployBuilds/buildUSDOFlashloanHelper';
-import { buildSimpleLeverageExecutor } from 'tasks/deployBuilds/buildSimpleLeverageExecutor';
-import { buildERC20WithoutStrategy } from 'tasks/deployBuilds/buildERC20WithoutStrategy';
+import { buildUSDOModules } from 'tasks/deployBuilds/buildUSDOModules';
+import { DEPLOYMENT_NAMES, DEPLOY_CONFIG } from './DEPLOY_CONFIG';
+import { deployPostLbp__task_2 } from './1-2-deployPostLbp';
 
 export const deployPostLbp__task = async (
     _taskArgs: TTapiocaDeployTaskArgs,
@@ -32,6 +33,7 @@ export const deployPostLbp__task = async (
         tapiocaDeployTask,
         tapiocaPostDeployTask,
     );
+    await deployPostLbp__task_2(_taskArgs, hre);
 };
 
 async function tapiocaPostDeployTask(params: TTapiocaDeployerVmPass<object>) {
@@ -317,6 +319,22 @@ export function deployLoadDeployments(params: {
         params.tag,
     ).address;
 
+    const tSdaiOracle = loadGlobalContract(
+        hre,
+        TAPIOCA_PROJECTS_NAME.TapiocaPeriph,
+        hre.SDK.eChainId,
+        TAPIOCA_PERIPH_CONFIG.DEPLOYMENT_NAMES.S_DAI_ORACLE,
+        params.tag,
+    ).address;
+
+    const tSGLPOracle = loadGlobalContract(
+        hre,
+        TAPIOCA_PROJECTS_NAME.TapiocaPeriph,
+        hre.SDK.eChainId,
+        TAPIOCA_PERIPH_CONFIG.DEPLOYMENT_NAMES.GLP_ORACLE,
+        params.tag,
+    ).address;
+
     return {
         tapToken,
         yieldBox,
@@ -329,5 +347,7 @@ export function deployLoadDeployments(params: {
         mtEthOracle,
         tRethOracle,
         tWstEthOracle,
+        tSdaiOracle,
+        tSGLPOracle,
     };
 }
