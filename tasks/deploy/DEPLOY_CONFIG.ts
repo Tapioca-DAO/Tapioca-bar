@@ -1,4 +1,5 @@
 import { EChainID } from '@tapioca-sdk/api/config';
+import { BigNumberish, ethers } from 'ethers';
 
 // Name of the contract deployments to be used in the deployment scripts and saved in the deployments file
 export const DEPLOYMENT_NAMES = {
@@ -7,13 +8,23 @@ export const DEPLOYMENT_NAMES = {
     USDO_EXT_EXEC: 'USDO_EXT_EXEC',
     USDO_FLASHLOAN_HELPER: 'USDO_FLASHLOAN_HELPER',
     SIMPLE_LEVERAGE_EXECUTOR: 'SIMPLE_LEVERAGE_EXECUTOR',
+    YB_SDAI_ASSET_WITHOUT_STRATEGY: 'YB_SDAI_ASSET_WITHOUT_STRATEGY',
+    YB_SGLP_ASSET_WITHOUT_STRATEGY: 'YB_SGLP_ASSET_WITHOUT_STRATEGY',
+    YB_MT_ETH_ASSET_WITHOUT_STRATEGY: 'YB_MT_ETH_ASSET_WITHOUT_STRATEGY',
+    YB_T_RETH_ASSET_WITHOUT_STRATEGY: 'YB_T_RETH_ASSET_WITHOUT_STRATEGY',
+    YB_T_WST_ETH_ASSET_WITHOUT_STRATEGY: 'YB_T_WST_ETH_ASSET_WITHOUT_STRATEGY',
     // SGL
+    SGL_S_DAI_MARKET: 'SGL_S_DAI_MARKET',
+    SGL_S_GLP_MARKET: 'SGL_S_GLP_MARKET',
     SGL_MEDIUM_RISK_MC: 'SGL_MEDIUM_RISK_MC',
     SGL_LIQUIDATION_MODULE: 'SGL_LIQUIDATION_MODULE',
     SGL_BORROW_MODULE: 'SGL_BORROW_MODULE',
     SGL_COLLATERAL_MODULE: 'SGL_COLLATERAL_MODULE',
     SGL_LEVERAGE_MODULE: 'SGL_LEVERAGE_MODULE',
     // BB
+    BB_MT_ETH_MARKET: 'BB_MT_ETH_MARKET',
+    BB_T_RETH_MARKET: 'BB_T_RETH_MARKET',
+    BB_T_WST_ETH_MARKET: 'BB_T_WST_ETH_MARKET',
     BB_MEDIUM_RISK_MC: 'BB_MEDIUM_RISK_MC',
     BB_LIQUIDATION_MODULE: 'BB_LIQUIDATION_MODULE',
     BB_BORROW_MODULE: 'BB_BORROW_MODULE',
@@ -26,9 +37,58 @@ export const DEPLOYMENT_NAMES = {
     USDO_OPTION_RECEIVER_MODULE: 'USDO_OPTION_RECEIVER_MODULE',
 };
 
-type TPostLbp = {};
+type TMarketConfig = {
+    debtRateAgainstEth: BigNumberish;
+    debtRateMin: BigNumberish;
+    debtRateMax: BigNumberish;
+    collateralizationRate: BigNumberish;
+    liquidationCollateralizationRate: BigNumberish;
+};
+type TPostLbp = {
+    [key in EChainID]?: {
+        sDAI?: string;
+        sGLP?: string;
+        mtEthMarketConfig?: TMarketConfig;
+        tRethMarketConfig?: TMarketConfig;
+        twSTETH?: TMarketConfig;
+    };
+};
+const POST_LBP: TPostLbp = {
+    [EChainID.ARBITRUM]: {
+        sGLP: '0x5402B5F40310bDED796c7D0F3FF6683f5C0cFfdf',
+    },
+    [EChainID.ARBITRUM_SEPOLIA]: {
+        sGLP: '0x1B460E311753fDB46451EF3d11d7B9eE5542b369',
+        mtEthMarketConfig: {
+            debtRateAgainstEth: 0,
+            debtRateMin: 0,
+            debtRateMax: 0,
+            collateralizationRate: 0,
+            liquidationCollateralizationRate: 0,
+        },
+        tRethMarketConfig: {
+            debtRateAgainstEth: ethers.utils.parseEther('0.005'),
+            debtRateMin: ethers.utils.parseEther('0.05'),
+            debtRateMax: ethers.utils.parseEther('0.035'),
+            collateralizationRate: 0,
+            liquidationCollateralizationRate: 0,
+        },
+        twSTETH: {
+            debtRateAgainstEth: ethers.utils.parseEther('0.005'),
+            debtRateMin: ethers.utils.parseEther('0.05'),
+            debtRateMax: ethers.utils.parseEther('0.035'),
+            collateralizationRate: 0,
+            liquidationCollateralizationRate: 0,
+        },
+    },
+    [EChainID.MAINNET]: {
+        sDAI: '0x83f20f44975d03b1b09e64809b757c47f942beea',
+    },
+    [EChainID.SEPOLIA]: {
+        sDAI: '0xC6EA2075314a58cf74DE8430b24714E600A21Dd8',
+    },
+};
 
-const POST_LBP: TPostLbp = {};
 POST_LBP['31337' as EChainID] = POST_LBP[EChainID.ARBITRUM]; // Copy from Arbitrum
 
 type TMisc = {

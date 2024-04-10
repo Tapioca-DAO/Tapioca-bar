@@ -1,5 +1,6 @@
 import * as TAP_TOKEN_CONFIG from '@tap-token/config';
 import * as TAPIOCA_PERIPH_CONFIG from '@tapioca-periph/config';
+import * as TAPIOCA_Z_CONFIG from '@tapiocaz/config';
 import { TAPIOCA_PROJECTS_NAME } from '@tapioca-sdk/api/config';
 import { TTapiocaDeployTaskArgs } from '@tapioca-sdk/ethers/hardhat/DeployerVM';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
@@ -11,10 +12,11 @@ import { buildSGLMediumRiskMC } from 'tasks/deployBuilds/buildSGLMediumRiskMC';
 import { buildSGLModules } from 'tasks/deployBuilds/buildSGLModules';
 import { buildUSDO } from 'tasks/deployBuilds/buildUSDO';
 import { buildUSDOModules } from 'tasks/deployBuilds/buildUSDOModules';
-import { DEPLOYMENT_NAMES } from './DEPLOY_CONFIG';
+import { DEPLOYMENT_NAMES, DEPLOY_CONFIG } from './DEPLOY_CONFIG';
 import { buildUSDOExtExec } from 'tasks/deployBuilds/buildUSDOExtExec';
 import { buildUSDOFlashloanHelper } from 'tasks/deployBuilds/buildUSDOFlashloanHelper';
 import { buildSimpleLeverageExecutor } from 'tasks/deployBuilds/buildSimpleLeverageExecutor';
+import { buildERC20WithoutStrategy } from 'tasks/deployBuilds/buildERC20WithoutStrategy';
 
 export const deployPostLbp__task = async (
     _taskArgs: TTapiocaDeployTaskArgs,
@@ -43,35 +45,119 @@ async function tapiocaDeployTask(params: TTapiocaDeployerVmPass<object>) {
     const { tag } = taskArgs;
     const owner = tapiocaMulticallAddr;
 
-    const { tapToken, yieldBox, cluster, pearlmit, zeroXSwapper } =
-        loadDeployments({
-            hre,
-            tag,
-        });
+    const {
+        tapToken,
+        yieldBox,
+        cluster,
+        pearlmit,
+        zeroXSwapper,
+        mtETH,
+        tReth,
+        tWSTETH,
+    } = deployLoadDeployments({
+        hre,
+        tag,
+    });
 
     if (
         chainInfo.name === 'arbitrum' ||
         chainInfo.name === 'arbitrum_sepolia'
     ) {
         // @ts-ignore
-        (await buildSGLModules(hre)).forEach((module) => VM.add(module));
-        // @ts-ignore
         (await buildBBModules(hre)).forEach((module) => VM.add(module));
         VM.add(
-            await buildPenrose(hre, {
-                yieldBox,
-                cluster,
-                tapToken,
-                pearlmit,
-                owner,
-            }),
+            await buildBBMediumRiskMC(hre, DEPLOYMENT_NAMES.BB_MEDIUM_RISK_MC),
         )
-            .add(await buildSGLMediumRiskMC(hre))
-            .add(await buildBBMediumRiskMC(hre));
+            .add(
+                await buildBBMediumRiskMC(
+                    hre,
+                    DEPLOYMENT_NAMES.BB_MT_ETH_MARKET,
+                ),
+            )
+            .add(
+                await buildBBMediumRiskMC(
+                    hre,
+                    DEPLOYMENT_NAMES.BB_T_RETH_MARKET,
+                ),
+            )
+            .add(
+                await buildBBMediumRiskMC(
+                    hre,
+                    DEPLOYMENT_NAMES.BB_T_WST_ETH_MARKET,
+                ),
+            );
     }
 
     // @ts-ignore
+    (await buildSGLModules(hre)).forEach((module) => VM.add(module));
+    VM.add(
+        await buildPenrose(hre, {
+            yieldBox,
+            cluster,
+            tapToken,
+            pearlmit,
+            owner,
+        }),
+    )
+        .add(
+            await buildSGLMediumRiskMC(
+                hre,
+                DEPLOYMENT_NAMES.SGL_MEDIUM_RISK_MC,
+            ),
+        )
+        .add(await buildSGLMediumRiskMC(hre, DEPLOYMENT_NAMES.SGL_S_DAI_MARKET))
+        .add(
+            await buildSGLMediumRiskMC(hre, DEPLOYMENT_NAMES.SGL_S_GLP_MARKET),
+        );
+
+    // @ts-ignore
     (await buildUSDOModules(hre)).forEach((module) => VM.add(module));
+
+    /**
+     * YB Assets
+     */
+    VM.add(
+        await buildERC20WithoutStrategy(hre, {
+            deploymentName: DEPLOYMENT_NAMES.YB_SDAI_ASSET_WITHOUT_STRATEGY,
+            token: DEPLOY_CONFIG.POST_LBP[hre.SDK.eChainId]!.sDAI!,
+            yieldBox,
+        }),
+    )
+        .add(
+            await buildERC20WithoutStrategy(hre, {
+                deploymentName: DEPLOYMENT_NAMES.YB_SGLP_ASSET_WITHOUT_STRATEGY,
+                token: DEPLOY_CONFIG.POST_LBP[hre.SDK.eChainId]!.sGLP!,
+                yieldBox,
+            }),
+        )
+        .add(
+            await buildERC20WithoutStrategy(hre, {
+                deploymentName:
+                    DEPLOYMENT_NAMES.YB_MT_ETH_ASSET_WITHOUT_STRATEGY,
+                token: mtETH,
+                yieldBox,
+            }),
+        )
+        .add(
+            await buildERC20WithoutStrategy(hre, {
+                deploymentName:
+                    DEPLOYMENT_NAMES.YB_T_RETH_ASSET_WITHOUT_STRATEGY,
+                token: tReth,
+                yieldBox,
+            }),
+        )
+        .add(
+            await buildERC20WithoutStrategy(hre, {
+                deploymentName:
+                    DEPLOYMENT_NAMES.YB_T_WST_ETH_ASSET_WITHOUT_STRATEGY,
+                token: tWSTETH,
+                yieldBox,
+            }),
+        );
+
+    /**
+     * USDO
+     */
 
     VM.add(await buildUSDOExtExec(hre, { cluster, owner }))
         .add(
@@ -141,7 +227,7 @@ async function tapiocaDeployTask(params: TTapiocaDeployerVmPass<object>) {
         );
 }
 
-function loadDeployments(params: {
+export function deployLoadDeployments(params: {
     hre: HardhatRuntimeEnvironment;
     tag: string;
 }) {
@@ -183,5 +269,65 @@ function loadDeployments(params: {
         params.tag,
     ).address;
 
-    return { tapToken, yieldBox, cluster, pearlmit, zeroXSwapper };
+    const mtETH = loadGlobalContract(
+        hre,
+        TAPIOCA_PROJECTS_NAME.TapiocaZ,
+        hre.SDK.eChainId,
+        TAPIOCA_Z_CONFIG.DEPLOYMENT_NAMES.mtETH,
+        params.tag,
+    ).address;
+
+    const tReth = loadGlobalContract(
+        hre,
+        TAPIOCA_PROJECTS_NAME.TapiocaZ,
+        hre.SDK.eChainId,
+        TAPIOCA_Z_CONFIG.DEPLOYMENT_NAMES.tRETH,
+        params.tag,
+    ).address;
+
+    const tWSTETH = loadGlobalContract(
+        hre,
+        TAPIOCA_PROJECTS_NAME.TapiocaZ,
+        hre.SDK.eChainId,
+        TAPIOCA_Z_CONFIG.DEPLOYMENT_NAMES.tWSTETH,
+        params.tag,
+    ).address;
+
+    const mtEthOracle = loadGlobalContract(
+        hre,
+        TAPIOCA_PROJECTS_NAME.TapiocaPeriph,
+        hre.SDK.eChainId,
+        TAPIOCA_PERIPH_CONFIG.DEPLOYMENT_NAMES.ETH_SEER_DUAL_ORACLE,
+        params.tag,
+    ).address;
+
+    const tRethOracle = loadGlobalContract(
+        hre,
+        TAPIOCA_PROJECTS_NAME.TapiocaPeriph,
+        hre.SDK.eChainId,
+        TAPIOCA_PERIPH_CONFIG.DEPLOYMENT_NAMES.RETH_USD_SEER_CL_MULTI_ORACLE,
+        params.tag,
+    ).address;
+
+    const tWstEthOracle = loadGlobalContract(
+        hre,
+        TAPIOCA_PROJECTS_NAME.TapiocaPeriph,
+        hre.SDK.eChainId,
+        TAPIOCA_PERIPH_CONFIG.DEPLOYMENT_NAMES.WSTETH_USD_SEER_CL_MULTI_ORACLE,
+        params.tag,
+    ).address;
+
+    return {
+        tapToken,
+        yieldBox,
+        cluster,
+        pearlmit,
+        zeroXSwapper,
+        mtETH,
+        tReth,
+        tWSTETH,
+        mtEthOracle,
+        tRethOracle,
+        tWstEthOracle,
+    };
 }
