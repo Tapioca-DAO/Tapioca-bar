@@ -79,9 +79,9 @@ contract AssetTotsDaiLeverageExecutor is BaseLeverageExecutor {
         //retrieve addresses
         (address sDaiAddress, address daiAddress) = _getAddresses(collateralAddress);
         //unwrap tsDai
-        ITOFT(collateralAddress).unwrap(address(this), collateralAmountIn);
+        uint256 unwrapped = ITOFT(collateralAddress).unwrap(address(this), collateralAmountIn);
         //redeem from sDai
-        uint256 obtainedDai = ISavingsDai(sDaiAddress).redeem(collateralAmountIn, address(this), address(this));
+        uint256 obtainedDai = ISavingsDai(sDaiAddress).redeem(unwrapped, address(this), address(this));
         // swap DAI with USDO, and transfer to sender
         // If sendBack true and swapData.swapperData.toftInfo.isTokenOutToft false
         // The asset will be transfer via IERC20 transfer.

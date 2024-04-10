@@ -118,11 +118,11 @@ contract AssetToSGLPLeverageExecutor is BaseLeverageExecutor, Pausable {
         SGlpLeverageSwapData memory tokenSwapData = abi.decode(data, (SGlpLeverageSwapData));
 
         // Unwrap tsGLP
-        ITOFT(collateralAddress).unwrap(address(this), collateralAmountIn);
+        uint256 unwrapped = ITOFT(collateralAddress).unwrap(address(this), collateralAmountIn);
 
         // Swap GLP with `SGlpLeverageSwapData.token`
         address sGLP = ITOFT(collateralAddress).erc20();
-        uint256 tokenAmount = _sellGlp(tokenSwapData.token, tokenSwapData.minAmountOut, sGLP, collateralAmountIn);
+        uint256 tokenAmount = _sellGlp(tokenSwapData.token, tokenSwapData.minAmountOut, sGLP, unwrapped);
 
         // Swap `SGlpLeverageSwapData.token` with asset.
         // If sendBack true and swapData.swapperData.toftInfo.isTokenOutToft false
