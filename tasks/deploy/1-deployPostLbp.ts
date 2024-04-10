@@ -4,7 +4,7 @@ import { TAPIOCA_PROJECTS_NAME } from '@tapioca-sdk/api/config';
 import { TTapiocaDeployTaskArgs } from '@tapioca-sdk/ethers/hardhat/DeployerVM';
 import * as TAPIOCA_Z_CONFIG from '@tapiocaz/config';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
-import { loadGlobalContract } from 'tapioca-sdk';
+import { loadGlobalContract, setLzPeer__task } from 'tapioca-sdk';
 import { TTapiocaDeployerVmPass } from 'tapioca-sdk/dist/ethers/hardhat/DeployerVM';
 import { buildBBMediumRiskMC } from 'tasks/deployBuilds/buildBBMediumRiskMC';
 import { buildERC20WithoutStrategy } from 'tasks/deployBuilds/buildERC20WithoutStrategy';
@@ -16,8 +16,8 @@ import { buildUSDO } from 'tasks/deployBuilds/buildUSDO';
 import { buildUSDOExtExec } from 'tasks/deployBuilds/buildUSDOExtExec';
 import { buildUSDOFlashloanHelper } from 'tasks/deployBuilds/buildUSDOFlashloanHelper';
 import { buildUSDOModules } from 'tasks/deployBuilds/buildUSDOModules';
-import { DEPLOYMENT_NAMES, DEPLOY_CONFIG } from './DEPLOY_CONFIG';
 import { deployPostLbp__task_2 } from './1-2-deployPostLbp';
+import { DEPLOYMENT_NAMES, DEPLOY_CONFIG } from './DEPLOY_CONFIG';
 
 export const deployPostLbp__task = async (
     _taskArgs: TTapiocaDeployTaskArgs,
@@ -39,6 +39,8 @@ export const deployPostLbp__task = async (
 async function tapiocaPostDeployTask(params: TTapiocaDeployerVmPass<object>) {
     const { hre, taskArgs, VM, chainInfo } = params;
     const { tag } = taskArgs;
+
+    await setLzPeer__task({ tag, targetName: DEPLOYMENT_NAMES.USDO }, hre);
 }
 
 async function tapiocaDeployTask(params: TTapiocaDeployerVmPass<object>) {
