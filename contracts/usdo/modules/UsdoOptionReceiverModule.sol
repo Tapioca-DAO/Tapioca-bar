@@ -70,7 +70,7 @@ contract UsdoOptionReceiverModule is BaseUsdo {
         ExerciseOptionsMsg memory msg_ = UsdoMsgCodec.decodeExerciseOptionsMsg(_data);
 
         _checkWhitelistStatus(msg_.optionsData.target);
-        _checkWhitelistStatus(OFTMsgCodec.bytes32ToAddress(msg_.lzSendParams.sendParam.to));
+        
         {
             // _data declared for visibility.
             IExerciseOptionsData memory _options = msg_.optionsData;
