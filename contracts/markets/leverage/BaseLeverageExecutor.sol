@@ -162,7 +162,7 @@ abstract contract BaseLeverageExecutor is Ownable {
         // If the tokenOut is a tOFT, wrap it. Handles ETH and ERC20.
         // If `sendBack` is true, wrap the `amountOut to` the sender. else, wrap it to this contract.
         if (swapData.toftInfo.isTokenOutToft) {
-            _handleToftWrapToSender(sendBack, tokenOut, amountOut);
+            amountOut = _handleToftWrapToSender(sendBack, tokenOut, amountOut);
         } else if (sendBack == true) {
             // If the token wasn't sent by the wrap OP, send it as a transfer.
             IERC20(tokenOut).safeTransfer(msg.sender, amountOut);
@@ -197,18 +197,18 @@ abstract contract BaseLeverageExecutor is Ownable {
      * @param tokenOut tOFT token.
      * @param amountOut amount to wrap.
      */
-    function _handleToftWrapToSender(bool sendBack, address tokenOut, uint256 amountOut) internal {
+    function _handleToftWrapToSender(bool sendBack, address tokenOut, uint256 amountOut) internal returns (uint256 _amountOut) {
         address toftErc20 = ITOFT(tokenOut).erc20();
         address wrapsTo = sendBack == true ? msg.sender : address(this);
 
         if (toftErc20 == address(0)) {
             // If the tOFT is for ETH, withdraw from WETH and wrap it.
             weth.withdraw(amountOut);
-            ITOFT(tokenOut).wrap{value: amountOut}(address(this), wrapsTo, amountOut);
+            _amountOut = ITOFT(tokenOut).wrap{value: amountOut}(address(this), wrapsTo, amountOut);
         } else {
             // If the tOFT is for an ERC20, wrap it.
             toftErc20.safeApprove(tokenOut, amountOut);
-            ITOFT(tokenOut).wrap(address(this), wrapsTo, amountOut);
+            _amountOut = ITOFT(tokenOut).wrap(address(this), wrapsTo, amountOut);
             toftErc20.safeApprove(tokenOut, 0);
         }
     }
