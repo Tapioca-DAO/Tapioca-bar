@@ -324,7 +324,7 @@ abstract contract Market is MarketERC20, Ownable {
         uint256 numerator = borrowPart - liquidationStartsAt;
         //compute denominator
         uint256 diff =
-            (collateralizationRate * ((10 ** ratesPrecision) + _liquidationMultiplier)) / (10 ** ratesPrecision);
+            (liquidationCollateralizationRate * ((10 ** ratesPrecision) + _liquidationMultiplier)) / (10 ** ratesPrecision);
         int256 denominator = (int256(10 ** ratesPrecision) - int256(diff)) * int256(1e13);
 
         //compute closing factor
