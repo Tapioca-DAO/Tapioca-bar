@@ -56,9 +56,25 @@ contract AssetToSGLPLeverageExecutor is BaseLeverageExecutor, Pausable {
         glpRewardRouter = _glpRewardRouter;
     }
 
-    // ********************* //
+    
+    // ********************** //
+    // *** OWNER METHODS *** //
+    // ********************** //
+    /**
+    * @notice Un/Pauses this contract.
+    */
+    function setPause(bool _pauseState) external onlyOwner {
+        if (_pauseState) {
+            _pause();
+        } else {
+            _unpause();
+        }
+    }
+
+
+    // ********************** //
     // *** PUBLIC METHODS *** //
-    // ********************* //
+    // ********************** //
 
     /**
      * @dev USDO > SGlpLeverageSwapData.token > wrap to tsGLP
