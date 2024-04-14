@@ -103,17 +103,17 @@ contract BBLendingCommon is BBCommon {
     }
 
     /// @dev Concrete implementation of `repay`.
-    function _repay(address from, address to, uint256 part) internal returns (uint256 amount) {
+    function _repay(address from, address to, uint256 part, bool checkAllowance) internal returns (uint256 amount) {
         if (part > userBorrowPart[to]) {
             part = userBorrowPart[to];
         }
         if (part == 0) revert NothingToRepay();
 
         // @dev check allowance
-        if (msg.sender != from) {
+        if (checkAllowance && msg.sender != from) {
             uint256 partInAmount;
             Rebase memory _totalBorrow = totalBorrow;
-            (_totalBorrow, partInAmount) = _totalBorrow.sub(part, false);
+            (_totalBorrow, partInAmount) = _totalBorrow.sub(part, true);
             uint256 allowanceShare =
                 _computeAllowanceAmountInAsset(to, exchangeRate, partInAmount, _safeDecimals(asset));
             _allowedBorrow(from, allowanceShare);
