@@ -7,16 +7,30 @@ import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeE
 // Tapioca
 import {PearlmitHandler, IPearlmit} from "tapioca-periph/pearlmit/PearlmitHandler.sol";
 
+
+contract OTapMock {
+
+    // IERC721(oTap).isApprovedForAll(oTapOwner,_options.from)
+    function ownerOf(uint256) external view returns (address) {
+        return msg.sender;
+    }
+
+    function isApprovedForAll(address, address) external pure returns (bool) {
+        return true;
+    }
+}
 contract TapiocaOptionsBrokerMock is PearlmitHandler {
     using SafeERC20 for IERC20;
 
     address public tapOFT;
     uint256 public paymentTokenAmount;
+    address public oTapMock;
 
     error TapiocaOptionsBrokerMock_NotValid();
 
     constructor(address _tap, IPearlmit _pearlmit) PearlmitHandler(_pearlmit) {
         tapOFT = _tap;
+        oTapMock = address(new OTapMock());
     }
 
     function setPaymentTokenAmount(uint256 _am) external {
@@ -34,5 +48,9 @@ contract TapiocaOptionsBrokerMock is PearlmitHandler {
             pearlmit.transferFromERC20(msg.sender, address(this), address(_paymentToken), actualPaymentTokenAmount);
         if (isErr) revert TapiocaOptionsBrokerMock_NotValid();
         IERC20(tapOFT).safeTransfer(msg.sender, _tapAmount);
+    }
+
+    function oTAP() external view returns (address) {
+        return address(oTapMock);
     }
 }

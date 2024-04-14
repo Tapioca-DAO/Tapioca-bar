@@ -262,7 +262,7 @@ contract BigBang is BBCommon {
     function setMinAndMaxMintRange(uint256 _min, uint256 _max) external onlyOwner {
         emit UpdateMinMaxMintRange(minMintFeeStart, _min, maxMintFeeStart, _max);
 
-        if (_min >= _max) revert NotValid();
+        if (_max >= _min) revert NotValid();
 
         minMintFeeStart = _min;
         maxMintFeeStart = _max;

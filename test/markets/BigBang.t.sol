@@ -233,45 +233,6 @@ contract BigBangTest is UsdoTestHelper {
         bigBang.execute(modules, calls, true);
     }
 
-    // function test_setSingularityConfig() public {
-    //     uint256 borrowingOpeningFee = bigBang.borrowOpeningFee();
-    //     uint256 lqCollateralizationRate = bigBang.lqCollateralizationRate();
-    //     uint256 liquidationMultiplier = bigBang.liquidationMultiplier();
-    //     uint256 minimumTargetUtilization = bigBang.minimumTargetUtilization();
-    //     uint256 maximumTargetUtilization = bigBang.maximumTargetUtilization();
-    //     uint256 minimumInterestPerSecond = bigBang.minimumInterestPerSecond();
-    //     uint256 maximumInterestPerSecond = bigBang.maximumInterestPerSecond();
-    //     uint256 interestElasticity = bigBang.interestElasticity();
-
-    //     bytes memory payload = abi.encodeWithSelector(BigBang.setSingularityConfig.selector, bigBang.borrowOpeningFee(), 0, 0, 0, 0, 0, 0, 0);
-    //     address[] memory mc = new address[](1);
-    //     mc[0] = address(bigBang);
-
-    //     bytes[] memory data = new bytes[](1);
-    //     data[0] = payload;
-    //     penrose.executeMarketFn(mc, data, false);
-
-    //     {
-    //         assertEq(bigBang.borrowOpeningFee(), borrowingOpeningFee);
-    //         assertEq(bigBang.lqCollateralizationRate(), lqCollateralizationRate);
-    //         assertEq(bigBang.liquidationMultiplier(), liquidationMultiplier);
-    //         assertEq(bigBang.minimumTargetUtilization(), minimumTargetUtilization);
-    //         assertEq(bigBang.maximumTargetUtilization(), maximumTargetUtilization);
-    //         assertEq(bigBang.minimumInterestPerSecond(), minimumInterestPerSecond);
-    //         assertEq(bigBang.maximumInterestPerSecond(), maximumInterestPerSecond);
-    //         assertEq(bigBang.interestElasticity(), interestElasticity);
-    //     }
-
-    //     uint256 toSetValue = 101;
-    //     {
-    //         payload = abi.encodeWithSelector(BigBang.setSingularityConfig.selector, toSetValue, 0, 0, 0, 0, 0, 0, 0);
-    //         data = new bytes[](1);
-    //         data[0] = payload;
-    //         penrose.executeMarketFn(mc, data, false);
-    //     }
-    //     assertEq(bigBang.borrowOpeningFee(), toSetValue);
-    // }
-
     function test_setMarketConfig() public {
         address toSetAddress = address(userA);
         uint256 toSetValue = 101;

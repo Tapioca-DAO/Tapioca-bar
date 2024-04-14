@@ -49,16 +49,32 @@ contract AssetToSGLPLeverageExecutor is BaseLeverageExecutor, Pausable {
 
     error NotEnough(uint256 expected, uint256 received);
 
-    constructor(IZeroXSwapper _swapper, ICluster _cluster, IGmxRewardRouterV2 _glpRewardRouter)
-        BaseLeverageExecutor(_swapper, _cluster)
+    constructor(IZeroXSwapper _swapper, ICluster _cluster, IGmxRewardRouterV2 _glpRewardRouter, address _weth)
+        BaseLeverageExecutor(_swapper, _cluster, _weth)
     {
         glpManager = IGmxGlpManager(_glpRewardRouter.glpManager());
         glpRewardRouter = _glpRewardRouter;
     }
 
-    // ********************* //
+    
+    // ********************** //
+    // *** OWNER METHODS *** //
+    // ********************** //
+    /**
+    * @notice Un/Pauses this contract.
+    */
+    function setPause(bool _pauseState) external onlyOwner {
+        if (_pauseState) {
+            _pause();
+        } else {
+            _unpause();
+        }
+    }
+
+
+    // ********************** //
     // *** PUBLIC METHODS *** //
-    // ********************* //
+    // ********************** //
 
     /**
      * @dev USDO > SGlpLeverageSwapData.token > wrap to tsGLP
