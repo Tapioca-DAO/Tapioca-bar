@@ -10,6 +10,7 @@ import {OFTMsgCodec} from "@layerzerolabs/lz-evm-oapp-v2/contracts/oft/libs/OFTM
 
 // External
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 // Tapioca
@@ -69,7 +70,7 @@ contract UsdoOptionReceiverModule is BaseUsdo {
         ExerciseOptionsMsg memory msg_ = UsdoMsgCodec.decodeExerciseOptionsMsg(_data);
 
         _checkWhitelistStatus(msg_.optionsData.target);
-        _checkWhitelistStatus(OFTMsgCodec.bytes32ToAddress(msg_.lzSendParams.sendParam.to));
+        
         {
             // _data declared for visibility.
             IExerciseOptionsData memory _options = msg_.optionsData;
@@ -87,6 +88,10 @@ contract UsdoOptionReceiverModule is BaseUsdo {
             _approve(address(this), address(pearlmit), _options.paymentTokenAmount);
 
             uint256 bBefore = balanceOf(address(this));
+            address oTap = ITapiocaOptionBroker(_options.target).oTAP();
+            address oTapOwner = IERC721(oTap).ownerOf(_options.oTAPTokenID);
+
+            if (oTapOwner != _options.from && !IERC721(oTap).isApprovedForAll(oTapOwner,_options.from) && IERC721(oTap).getApproved(_options.oTAPTokenID) != _options.from) revert UsdoOptionReceiverModule_NotAuthorized(oTapOwner);
             ITapiocaOptionBroker(_options.target).exerciseOption(
                 _options.oTAPTokenID,
                 address(this), //payment token
@@ -96,7 +101,7 @@ contract UsdoOptionReceiverModule is BaseUsdo {
             uint256 bAfter = balanceOf(address(this));
 
             // Refund if less was used.
-            if (bBefore > bAfter) {
+            if (bBefore >= bAfter) {
                 uint256 diff = bBefore - bAfter;
                 if (diff < _options.paymentTokenAmount) {
                     IERC20(address(this)).safeTransfer(_options.from, _options.paymentTokenAmount - diff);
@@ -116,7 +121,10 @@ contract UsdoOptionReceiverModule is BaseUsdo {
                 if (_send.minAmountLD > amountToSend) {
                     _send.minAmountLD = amountToSend;
                 }
-
+                _send.amountLD = amountToSend;
+                
+                msg_.lzSendParams.sendParam = _send;
+                
                 // Sends to source and preserve source `msg.sender` (`from` in this case).
                 _sendPacket(msg_.lzSendParams, msg_.composeMsg, _options.from);
 

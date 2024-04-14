@@ -77,7 +77,7 @@ contract BBCommon is BBStorage {
         // Calculate fees
         _totalBorrow = totalBorrow;
         uint256 extraAmount = (uint256(_totalBorrow.elastic) * (getDebtRate() / 31536000) * elapsedTime) / 1e18;
-        uint256 max = type(uint128).max - totalBorrowCap;
+        uint256 max = type(uint128).max - totalBorrow.elastic;
 
         if (extraAmount > max) {
             extraAmount = max;
@@ -104,7 +104,7 @@ contract BBCommon is BBStorage {
         extraAmount = (uint256(_totalBorrow.elastic) * _accrueInfo.debtRate * elapsedTime) / 1e18;
 
         // cap `extraAmount` to avoid overflow risk when converting it from uint256 to uint128
-        uint256 max = type(uint128).max - totalBorrowCap;
+        uint256 max = type(uint128).max - totalBorrow.elastic;
 
         if (extraAmount > max) {
             extraAmount = max;

@@ -530,10 +530,12 @@ contract Penrose is Ownable, PearlmitHandler, BoringFactory {
 
         address _asset = market.asset();
         uint256 _assetId = market.assetId();
+
+        uint256 feeAmount = yieldBox.toAmount(_assetId, feeShares, false);
+        
         yieldBox.withdraw(_assetId, address(this), address(this), 0, feeShares);
 
         uint256 rewardTokenId = twTap.rewardTokenIndex(_asset);
-        uint256 feeAmount = yieldBox.toAmount(_assetId, feeShares, false);
         _distributeOnTwTap(feeAmount, rewardTokenId, _asset, twTap);
     }
 

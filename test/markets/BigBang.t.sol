@@ -237,7 +237,6 @@ contract BigBangTest is UsdoTestHelper {
         (Module[] memory modules, bytes[] memory calls) = marketHelper.repay(address(this), address(this), false, part);
         bigBang.execute(modules, calls, true);
     }
-
     
     function test_open_interest_borrow_repay_borrow_repay() public {
 
@@ -430,6 +429,7 @@ contract BigBangTest is UsdoTestHelper {
         assertGt(totalMinted, 0);
         // console.log("-------------- totalMinted %s", totalMinted);
     }
+
 
     function test_setMarketConfig() public {
         address toSetAddress = address(userA);
