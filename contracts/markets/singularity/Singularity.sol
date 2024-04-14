@@ -302,7 +302,6 @@ contract Singularity is SGLCommon {
     ///     - borrowOpeningFee is always updated!
     function setSingularityConfig(
         uint256 _borrowOpeningFee,
-        uint256 _lqCollateralizationRate,
         uint256 _liquidationMultiplier,
         uint256 _minimumTargetUtilization,
         uint256 _maximumTargetUtilization,
@@ -350,12 +349,6 @@ contract Singularity is SGLCommon {
         if (_interestElasticity > 0) {
             emit InterestElasticityUpdated(interestElasticity, _interestElasticity);
             interestElasticity = _interestElasticity;
-        }
-
-        if (_lqCollateralizationRate > 0) {
-            if (_lqCollateralizationRate > FEE_PRECISION) revert NotValid();
-            emit LqCollateralizationRateUpdated(lqCollateralizationRate, _lqCollateralizationRate);
-            lqCollateralizationRate = _lqCollateralizationRate;
         }
 
         if (_liquidationMultiplier > 0) {

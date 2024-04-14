@@ -324,7 +324,7 @@ abstract contract Market is MarketERC20, Ownable {
         uint256 numerator = borrowPart - liquidationStartsAt;
         //compute denominator
         uint256 diff =
-            (collateralizationRate * ((10 ** ratesPrecision) + _liquidationMultiplier)) / (10 ** ratesPrecision);
+            (liquidationCollateralizationRate * ((10 ** ratesPrecision) + _liquidationMultiplier)) / (10 ** ratesPrecision);
         int256 denominator = (int256(10 ** ratesPrecision) - int256(diff)) * int256(1e13);
 
         //compute closing factor
@@ -420,9 +420,9 @@ abstract contract Market is MarketERC20, Ownable {
         if (from != msg.sender) {
             if (share == 0) revert AllowanceNotValid();
 
-            // TODO review risk of using this
             (uint256 pearlmitAllowed,) = penrose.pearlmit().allowance(from, msg.sender, address(yieldBox), collateralId);
             require(allowanceBorrow[from][msg.sender] >= share || pearlmitAllowed >= share, "Market: not approved");
+            if(pearlmitAllowed != 0) return;
             if (allowanceBorrow[from][msg.sender] != type(uint256).max) {
                 allowanceBorrow[from][msg.sender] -= share;
             }

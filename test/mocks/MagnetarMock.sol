@@ -480,7 +480,8 @@ contract MagnetarMock is PearlmitHandler {
                     prevOptionsData: bytes("")
                 }),
                 lzReceiveGas: _lzSendGas + _lzComposeGas,
-                lzReceiveValue: _lzComposeVal
+                lzReceiveValue: _lzComposeVal,
+                refundAddress: address(this)
             })
         );
 
@@ -515,7 +516,8 @@ contract MagnetarMock is PearlmitHandler {
                     prevOptionsData: bytes("")
                 }),
                 lzReceiveGas: _lzSendGas,
-                lzReceiveValue: _lzSendVal
+                lzReceiveValue: _lzSendVal,
+                refundAddress: address(this)
             })
         );
     }

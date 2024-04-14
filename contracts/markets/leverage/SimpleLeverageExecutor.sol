@@ -26,7 +26,7 @@ contract SimpleLeverageExecutor is BaseLeverageExecutor {
     // *** ERRORS *** //
     // ************** //
 
-    constructor(IZeroXSwapper _swapper, ICluster _cluster) BaseLeverageExecutor(_swapper, _cluster) {}
+    constructor(IZeroXSwapper _swapper, ICluster _cluster, address _weth) BaseLeverageExecutor(_swapper, _cluster, _weth) {}
 
     // ********************* //
     // *** PUBLIC METHODS *** //
