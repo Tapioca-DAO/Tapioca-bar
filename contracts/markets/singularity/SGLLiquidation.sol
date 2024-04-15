@@ -233,6 +233,9 @@ contract SGLLiquidation is SGLCommon {
         uint256 userTotalBorrowAmount = _data.totalBorrow.toElastic(_data.userBorrowPart, true);
         borrowPartWithBonus = borrowPartWithBonus > userTotalBorrowAmount ? userTotalBorrowAmount : borrowPartWithBonus;
 
+        // make sure liquidator cannot bypass bad debt handling
+        if (collateralPartInAsset < borrowPartWithBonus) revert BadDebt(); 
+
         // check the amount to be repaid versus liquidator supplied limit
         borrowPartWithBonus = borrowPartWithBonus > _data.maxBorrowPart ? _data.maxBorrowPart : borrowPartWithBonus;
         borrowAmount = borrowPartWithBonus;
