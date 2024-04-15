@@ -44,7 +44,6 @@ import {BigBang} from "contracts/markets/bigBang/BigBang.sol";
 
 import {Origins} from "contracts/markets/origins/Origins.sol";
 
-
 struct TestPenroseData {
     address yb;
     address cluster;

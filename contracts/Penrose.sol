@@ -22,7 +22,6 @@ import {IUsdo} from "tapioca-periph/interfaces/oft/IUsdo.sol";
 import {IYieldBox} from "yieldbox/interfaces/IYieldBox.sol";
 import {SafeApprove} from "./libraries/SafeApprove.sol";
 
-
 /*
 
 ████████╗ █████╗ ██████╗ ██╗ ██████╗  ██████╗ █████╗ 
@@ -539,7 +538,7 @@ contract Penrose is Ownable, PearlmitHandler, BoringFactory {
         uint256 _assetId = market.assetId();
 
         uint256 feeAmount = yieldBox.toAmount(_assetId, feeShares, false);
-        
+
         yieldBox.withdraw(_assetId, address(this), address(this), 0, feeShares);
 
         uint256 rewardTokenId = twTap.rewardTokenIndex(_asset);

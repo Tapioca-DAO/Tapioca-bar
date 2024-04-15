@@ -35,7 +35,9 @@ contract SGLLendingCommon is SGLCommon {
     // *** PRIVATE FUNCTIONS *** //
     // ************************* //
     /// @dev Concrete implementation of `addCollateral`.
-    function _addCollateral(address from, address to, bool skim, uint256 amount, uint256 share, bool addTokens) internal {
+    function _addCollateral(address from, address to, bool skim, uint256 amount, uint256 share, bool addTokens)
+        internal
+    {
         if (share == 0) {
             share = yieldBox.toShare(collateralId, amount, false);
         }
@@ -87,7 +89,10 @@ contract SGLLendingCommon is SGLCommon {
     }
 
     /// @dev Concrete implementation of `repay`.
-    function _repay(address from, address to, bool skim, uint256 part, bool checkAllowance) internal returns (uint256 amount) {
+    function _repay(address from, address to, bool skim, uint256 part, bool checkAllowance)
+        internal
+        returns (uint256 amount)
+    {
         if (part > userBorrowPart[to]) {
             part = userBorrowPart[to];
         }

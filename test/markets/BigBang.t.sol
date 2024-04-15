@@ -238,9 +238,8 @@ contract BigBangTest is UsdoTestHelper {
         (Module[] memory modules, bytes[] memory calls) = marketHelper.repay(address(this), address(this), false, part);
         bigBang.execute(modules, calls, true);
     }
-    
-    function test_open_interest_borrow_repay_borrow_repay() public {
 
+    function test_open_interest_borrow_repay_borrow_repay() public {
         // console.log ("");
         // console.log ("");
         // console.log ("");
@@ -413,8 +412,8 @@ contract BigBangTest is UsdoTestHelper {
             penrose.mintOpenInterestDebt(address(twTap));
         }
 
-         // repay 2
-        {   
+        // repay 2
+        {
             asset.mint(address(this), borrowAmount * 100);
             // uint256 balance = asset.balanceOf(address(this));
             // console.log("-------------- balance %s", balance);
@@ -430,7 +429,6 @@ contract BigBangTest is UsdoTestHelper {
         assertGt(totalMinted, 0);
         // console.log("-------------- totalMinted %s", totalMinted);
     }
-
 
     function test_setMarketConfig() public {
         address toSetAddress = address(userA);
@@ -548,7 +546,8 @@ contract BigBangTest is UsdoTestHelper {
             borrow(borrowAmount, false);
         }
 
-        bytes memory setLiquidationMaxSlippageCall = abi.encodeWithSelector(Market.setLiquidationMaxSlippage.selector, 1e4); //10%
+        bytes memory setLiquidationMaxSlippageCall =
+            abi.encodeWithSelector(Market.setLiquidationMaxSlippage.selector, 1e4); //10%
 
         address[] memory mc = new address[](1);
         mc[0] = address(bigBang);

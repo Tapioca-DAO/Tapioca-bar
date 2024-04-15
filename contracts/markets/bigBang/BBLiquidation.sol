@@ -152,7 +152,7 @@ contract BBLiquidation is BBCommon {
     ) private returns (uint256 returnedShare, uint256 returnedAmount) {
         uint256 collateralAmount = yieldBox.toAmount(collateralId, _collateralShare, false);
         yieldBox.withdraw(collateralId, address(this), address(_liquidatorReceiver), collateralAmount, 0);
-        
+
         {
             uint256 assetBalanceBefore = asset.balanceOf(address(this));
             //msg.sender should be validated against `initiator` on IMarketLiquidatorReceiver
@@ -164,8 +164,11 @@ contract BBLiquidation is BBCommon {
 
             if (checkReturned) {
                 uint256 receivableAsset = collateralAmount * EXCHANGE_RATE_PRECISION / _exchangeRate;
-                uint256 minReceivableAsset = receivableAsset - (receivableAsset * maxLiquidationSlippage/FEE_PRECISION); //1% slippage
-                if (returnedAmount < minReceivableAsset) revert OnCollateralReceiverFailed(returnedAmount, minReceivableAsset);
+                uint256 minReceivableAsset =
+                    receivableAsset - (receivableAsset * maxLiquidationSlippage / FEE_PRECISION); //1% slippage
+                if (returnedAmount < minReceivableAsset) {
+                    revert OnCollateralReceiverFailed(returnedAmount, minReceivableAsset);
+                }
             }
         }
         if (returnedAmount == 0) revert OnCollateralReceiverFailed(0, 0);
@@ -194,7 +197,7 @@ contract BBLiquidation is BBCommon {
         borrowPartWithBonus = borrowPartWithBonus > userTotalBorrowAmount ? userTotalBorrowAmount : borrowPartWithBonus;
 
         // make sure liquidator cannot bypass bad debt handling
-        if (collateralPartInAsset < borrowPartWithBonus) revert BadDebt(); 
+        if (collateralPartInAsset < borrowPartWithBonus) revert BadDebt();
 
         // check the amount to be repaid versus liquidator supplied limit
         borrowPartWithBonus = borrowPartWithBonus > maxBorrowPart ? maxBorrowPart : borrowPartWithBonus;
@@ -270,7 +273,7 @@ contract BBLiquidation is BBCommon {
         totalCollateralShare = totalCollateralShare > collateralShare ? totalCollateralShare - collateralShare : 0;
         totalBorrow.elastic -= borrowAmount.toUint128();
         totalBorrow.base -= borrowPart.toUint128();
-        
+
         uint256 borrowShare = yieldBox.toShare(assetId, borrowAmount, true);
 
         (uint256 returnedShare,) =

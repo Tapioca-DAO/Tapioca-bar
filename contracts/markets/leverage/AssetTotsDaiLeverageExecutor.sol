@@ -23,7 +23,9 @@ import {SafeApprove} from "../../libraries/SafeApprove.sol";
 contract AssetTotsDaiLeverageExecutor is BaseLeverageExecutor {
     using SafeApprove for address;
 
-    constructor(IZeroXSwapper _swapper, ICluster _cluster, address _weth) BaseLeverageExecutor(_swapper, _cluster, _weth) {}
+    constructor(IZeroXSwapper _swapper, ICluster _cluster, address _weth)
+        BaseLeverageExecutor(_swapper, _cluster, _weth)
+    {}
 
     // ********************* //
     // *** PUBLIC METHODS *** //

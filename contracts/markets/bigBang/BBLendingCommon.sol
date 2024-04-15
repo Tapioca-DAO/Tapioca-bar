@@ -36,7 +36,9 @@ contract BBLendingCommon is BBCommon {
     // ************************** //
     // *** PRIVATE FUNCTIONS *** //
     // ************************* //
-    function _addCollateral(address from, address to, bool skim, uint256 amount, uint256 share, bool addTokens) internal {
+    function _addCollateral(address from, address to, bool skim, uint256 amount, uint256 share, bool addTokens)
+        internal
+    {
         if (share == 0) {
             share = yieldBox.toShare(collateralId, amount, false);
         }
@@ -108,7 +110,7 @@ contract BBLendingCommon is BBCommon {
             part = userBorrowPart[to];
         }
         if (part == 0) revert NothingToRepay();
-        
+
         // @dev check allowance
         if (checkAllowance && msg.sender != from) {
             uint256 partInAmount;

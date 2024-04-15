@@ -95,7 +95,7 @@ contract BBCommon is BBStorage {
         //re-accrue ETH market
         {
             address mainBB = penrose.bigBangEthMarket();
-            if(mainBB != address(this)){
+            if (mainBB != address(this)) {
                 IBigBang(mainBB).accrue();
             }
         }

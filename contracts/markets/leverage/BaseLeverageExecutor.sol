@@ -177,7 +177,10 @@ abstract contract BaseLeverageExecutor is Ownable {
      * @param amountIn amount to unwrap.
      * @return tokenToSwap address of the token to swap. Either WETH or the ERC20 address.
      */
-    function _handleToftUnwrap(address tokenIn, uint256 amountIn) internal returns (address tokenToSwap, uint256 unwrapped) {
+    function _handleToftUnwrap(address tokenIn, uint256 amountIn)
+        internal
+        returns (address tokenToSwap, uint256 unwrapped)
+    {
         unwrapped = ITOFT(tokenIn).unwrap(address(this), amountIn); // Sends ETH to `receive()` if not an ERC20.
         tokenIn = ITOFT(tokenIn).erc20();
         // If the tokenIn is ETH, wrap it to WETH.
@@ -197,7 +200,10 @@ abstract contract BaseLeverageExecutor is Ownable {
      * @param tokenOut tOFT token.
      * @param amountOut amount to wrap.
      */
-    function _handleToftWrapToSender(bool sendBack, address tokenOut, uint256 amountOut) internal returns (uint256 _amountOut) {
+    function _handleToftWrapToSender(bool sendBack, address tokenOut, uint256 amountOut)
+        internal
+        returns (uint256 _amountOut)
+    {
         address toftErc20 = ITOFT(tokenOut).erc20();
         address wrapsTo = sendBack == true ? msg.sender : address(this);
 

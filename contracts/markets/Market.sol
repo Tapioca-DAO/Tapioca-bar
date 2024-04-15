@@ -107,7 +107,7 @@ abstract contract Market is MarketERC20, Ownable {
     /// @notice returns the leverage executor
     ILeverageExecutor public leverageExecutor;
     /// @notice returns the maximum accepted slippage for liquidation
-    uint256 public maxLiquidationSlippage = 1000; //1% 
+    uint256 public maxLiquidationSlippage = 1000; //1%
     // ***************** //
     // *** CONSTANTS *** //
     // ***************** //
@@ -195,7 +195,7 @@ abstract contract Market is MarketERC20, Ownable {
     /// @dev not included in `setMarketConfig` for faster updates
     /// @param _val the new slippage value
     function setLiquidationMaxSlippage(uint256 _val) external onlyOwner {
-        require (_val < FEE_PRECISION, "Market: not valid");
+        require(_val < FEE_PRECISION, "Market: not valid");
         emit LiquidationMaxSlippageUpdated(maxLiquidationSlippage, _val);
         maxLiquidationSlippage = _val;
     }
@@ -335,8 +335,8 @@ abstract contract Market is MarketERC20, Ownable {
         //compute numerator
         uint256 numerator = borrowPart - liquidationStartsAt;
         //compute denominator
-        uint256 diff =
-            (liquidationCollateralizationRate * ((10 ** ratesPrecision) + _liquidationMultiplier)) / (10 ** ratesPrecision);
+        uint256 diff = (liquidationCollateralizationRate * ((10 ** ratesPrecision) + _liquidationMultiplier))
+            / (10 ** ratesPrecision);
         int256 denominator = (int256(10 ** ratesPrecision) - int256(diff)) * int256(1e13);
 
         //compute closing factor
@@ -430,7 +430,7 @@ abstract contract Market is MarketERC20, Ownable {
 
             (uint256 pearlmitAllowed,) = penrose.pearlmit().allowance(from, msg.sender, address(yieldBox), collateralId);
             require(allowanceBorrow[from][msg.sender] >= share || pearlmitAllowed >= share, "Market: not approved");
-            if(pearlmitAllowed != 0) return;
+            if (pearlmitAllowed != 0) return;
             if (allowanceBorrow[from][msg.sender] != type(uint256).max) {
                 allowanceBorrow[from][msg.sender] -= share;
             }

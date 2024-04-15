@@ -388,7 +388,8 @@ contract SingularityTest is UsdoTestHelper {
             borrow(borrowAmount, false);
         }
 
-        bytes memory setLiquidationMaxSlippageCall = abi.encodeWithSelector(Market.setLiquidationMaxSlippage.selector, 1e4); //10%
+        bytes memory setLiquidationMaxSlippageCall =
+            abi.encodeWithSelector(Market.setLiquidationMaxSlippage.selector, 1e4); //10%
 
         address[] memory mc = new address[](1);
         mc[0] = address(singularity);

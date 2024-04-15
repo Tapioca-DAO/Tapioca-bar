@@ -171,11 +171,7 @@ contract Origins is Ownable, Market, ReentrancyGuard {
 
     /// @notice Removes `share` amount of collateral
     /// @param share Amount of shares to remove.
-    function removeCollateral(uint256 share)
-        external
-        optionNotPaused(PauseType.RemoveCollateral)
-        solvent(msg.sender)
-    {
+    function removeCollateral(uint256 share) external optionNotPaused(PauseType.RemoveCollateral) solvent(msg.sender) {
         if (!allowedParticipants[msg.sender]) revert NotAuthorized();
         _removeCollateral(msg.sender, msg.sender, share);
     }

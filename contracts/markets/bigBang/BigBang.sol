@@ -84,7 +84,6 @@ contract BigBang is BBCommon {
         uint256 _debtRateMax;
     }
 
-
     /// @notice The init function that acts as a constructor
     function init(bytes calldata initData) external onlyOnce {
         (
@@ -198,16 +197,16 @@ contract BigBang is BBCommon {
     // *** PUBLIC FUNCTIONS *** //
     // ************************ //
     /// @notice returns open interest debt
-    /// @dev accrue needs to be called before 
+    /// @dev accrue needs to be called before
     function viewOpenInterest() public view returns (uint256) {
         uint256 debt = totalBorrow.elastic - totalBorrow.base;
-        if (debtMinted > debt)  {
+        if (debtMinted > debt) {
             return 0;
         }
 
         return debt - debtMinted;
     }
-   
+
     /// @notice Allows batched call to BingBang.
     /// @param calls An array encoded call data.
     /// @param revertOnFail If True then reverts after a failed call and stops doing further calls.
