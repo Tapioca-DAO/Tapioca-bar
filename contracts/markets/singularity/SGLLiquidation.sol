@@ -109,6 +109,7 @@ contract SGLLiquidation is SGLCommon {
         address(asset).safeApprove(address(yieldBox), borrowAmount);
         uint256 borrowShare = yieldBox.toShare(assetId, borrowAmount, false);
         yieldBox.depositAsset(assetId, address(this), address(this), borrowAmount, 0);
+        address(asset).safeApprove(address(yieldBox), 0);
         totalAsset.elastic += borrowShare.toUint128();
 
         // swap collateral with asset and send it to `receiver`

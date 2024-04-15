@@ -265,6 +265,7 @@ contract Origins is Ownable, Market, ReentrancyGuard {
     {
         address(token).safeApprove(address(yieldBox), amount);
         (, share) = yieldBox.depositAsset(id, address(this), to, amount, 0);
+        address(token).safeApprove(address(yieldBox), 0);
     }
 
     function _addCollateral(address from, address to, uint256 amount, uint256 share) internal {
