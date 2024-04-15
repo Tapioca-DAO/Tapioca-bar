@@ -366,7 +366,7 @@ contract SGLLiquidation is SGLCommon {
 
         {
             (data.returnedShare,) =
-                _swapCollateralWithAsset(data.collateralShare, _liquidatorReceiver, _liquidatorReceiverData);
+                _swapCollateralWithAsset(data.collateralShare, _liquidatorReceiver, _liquidatorReceiverData, _exchangeRate, true);
             if (data.returnedShare < data.borrowShare) revert AmountNotValid();
 
 
