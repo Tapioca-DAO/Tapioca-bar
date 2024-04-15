@@ -311,7 +311,7 @@ contract SGLLiquidation is SGLCommon {
             totalAsset.base += feeFraction.toUint128();
             totalAsset.elastic += feeShare.toUint128();
 
-            yieldBox.depositAsset(assetId, address(this), address(this), feeAmount, 0);
+            yieldBox.depositAsset(assetId, address(this), address(this), 0, feeShare);
         }
         if (callerShare > 0) {
             uint256 callerAmount = yieldBox.toAmount(assetId, callerShare, false);
