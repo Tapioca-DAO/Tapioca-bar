@@ -71,7 +71,7 @@ contract UsdoOptionReceiverModule is BaseUsdo {
         ExerciseOptionsMsg memory msg_ = UsdoMsgCodec.decodeExerciseOptionsMsg(_data);
 
         _checkWhitelistStatus(msg_.optionsData.target);
-        
+
         {
             // _data declared for visibility.
             IExerciseOptionsData memory _options = msg_.optionsData;
@@ -92,7 +92,10 @@ contract UsdoOptionReceiverModule is BaseUsdo {
             address oTap = ITapiocaOptionBroker(_options.target).oTAP();
             address oTapOwner = IERC721(oTap).ownerOf(_options.oTAPTokenID);
 
-            if (oTapOwner != _options.from && !IERC721(oTap).isApprovedForAll(oTapOwner,_options.from) && IERC721(oTap).getApproved(_options.oTAPTokenID) != _options.from) revert UsdoOptionReceiverModule_NotAuthorized(oTapOwner);
+            if (
+                oTapOwner != _options.from && !IERC721(oTap).isApprovedForAll(oTapOwner, _options.from)
+                    && IERC721(oTap).getApproved(_options.oTAPTokenID) != _options.from
+            ) revert UsdoOptionReceiverModule_NotAuthorized(oTapOwner);
             ITapiocaOptionBroker(_options.target).exerciseOption(
                 _options.oTAPTokenID,
                 address(this), //payment token
@@ -121,7 +124,7 @@ contract UsdoOptionReceiverModule is BaseUsdo {
                 /// @dev determine the right amount to send back to source
                 uint256 amountToSend = _send.amountLD > tapBalance ? tapBalance : _send.amountLD;
                 _send.amountLD = amountToSend;
-                
+
                 if (_send.minAmountLD > amountToSend) {
                     _send.minAmountLD = amountToSend;
                 }
@@ -147,7 +150,6 @@ contract UsdoOptionReceiverModule is BaseUsdo {
             }
         }
     }
-
 
     /**
      * @dev Performs a transfer with an allowance check and consumption against the xChain msg sender.

@@ -35,7 +35,15 @@ abstract contract BaseUsdo is ModuleManager, BaseTapiocaOmnichainEngine, BaseUsd
     IYieldBox public immutable yieldBox;
 
     constructor(UsdoInitStruct memory _data)
-        BaseTapiocaOmnichainEngine("Tapioca Usdo", "USDO", _data.endpoint, _data.delegate, _data.extExec, _data.pearlmit, ICluster(_data.cluster))
+        BaseTapiocaOmnichainEngine(
+            "Tapioca Usdo",
+            "USDO",
+            _data.endpoint,
+            _data.delegate,
+            _data.extExec,
+            _data.pearlmit,
+            ICluster(_data.cluster)
+        )
     {
         yieldBox = IYieldBox(_data.yieldBox);
     }
