@@ -99,6 +99,7 @@ contract BBLeverage is BBLendingCommon {
             );
         }
         uint256 collateralShare = yieldBox.toShare(collateralId, amountOut, false);
+
         address(collateral).safeApprove(address(yieldBox), type(uint256).max);
         yieldBox.depositAsset(collateralId, address(this), calldata_.from, 0, collateralShare);
         address(collateral).safeApprove(address(yieldBox), 0);
@@ -146,7 +147,7 @@ contract BBLeverage is BBLendingCommon {
         );
         memoryData.shareOut = yieldBox.toShare(assetId, amountOut, false);
         address(asset).safeApprove(address(yieldBox), type(uint256).max);
-        yieldBox.depositAsset(assetId, address(this), address(this), 0, memoryData.shareOut); // TODO Check for rounding attack?
+        yieldBox.depositAsset(collateralId, address(this), from, 0, memoryData.shareOut); 
         address(asset).safeApprove(address(yieldBox), 0);
 
         memoryData.partOwed = userBorrowPart[from];
