@@ -106,7 +106,8 @@ abstract contract Market is MarketERC20, Ownable {
     uint256 public liquidationMultiplier = 12000; //12%
     /// @notice returns the leverage executor
     ILeverageExecutor public leverageExecutor;
-
+    /// @notice returns the maximum accepted slippage for liquidation
+    uint256 public maxLiquidationSlippage = 1000; //1% 
     // ***************** //
     // *** CONSTANTS *** //
     // ***************** //
@@ -149,6 +150,8 @@ abstract contract Market is MarketERC20, Ownable {
     event LiquidationMultiplierUpdated(uint256 indexed oldVal, uint256 indexed newVal);
     /// @notice event emitted on setMarketConfig updates
     event ValueUpdated(uint256 indexed valType, uint256 indexed _newVal);
+    /// @notice event emitted when then liquidation max slippage is updated
+    event LiquidationMaxSlippageUpdated(uint256 indexed oldVal, uint256 indexed newVal);
 
     modifier optionNotPaused(PauseType _type) {
         require(!pauseOptions[_type], "Market: paused");
@@ -186,6 +189,15 @@ abstract contract Market is MarketERC20, Ownable {
     function setLeverageExecutor(ILeverageExecutor _executor) external onlyOwner {
         emit LeverageExecutorSet(address(leverageExecutor), address(_executor));
         leverageExecutor = _executor;
+    }
+
+    /// @notice updates `maxLiquidationSlippage`
+    /// @dev not included in `setMarketConfig` for faster updates
+    /// @param _val the new slippage value
+    function setLiquidationMaxSlippage(uint256 _val) external onlyOwner {
+        require (_val < FEE_PRECISION, "Market: not valid");
+        emit LiquidationMaxSlippageUpdated(maxLiquidationSlippage, _val);
+        maxLiquidationSlippage = _val;
     }
 
     /// @notice sets common market configuration

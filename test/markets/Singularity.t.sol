@@ -388,6 +388,15 @@ contract SingularityTest is UsdoTestHelper {
             borrow(borrowAmount, false);
         }
 
+        bytes memory setLiquidationMaxSlippageCall = abi.encodeWithSelector(Market.setLiquidationMaxSlippage.selector, 1e4); //10%
+
+        address[] memory mc = new address[](1);
+        mc[0] = address(singularity);
+
+        bytes[] memory data = new bytes[](1);
+        data[0] = setLiquidationMaxSlippageCall;
+        penrose.executeMarketFn(mc, data, false);
+
         uint256 oracleRate = oracle.rate();
         oracle.set(oracleRate * 2);
 
