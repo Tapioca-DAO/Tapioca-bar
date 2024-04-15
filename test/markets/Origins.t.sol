@@ -39,7 +39,6 @@ import {Pearlmit, IPearlmit} from "tapioca-periph/pearlmit/Pearlmit.sol";
 
 import "forge-std/Test.sol";
 
-//TODO continue
 contract OriginsTest is UsdoTestHelper {
     uint32 aEid = 1;
     uint32 bEid = 2;
