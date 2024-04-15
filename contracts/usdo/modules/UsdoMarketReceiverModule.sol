@@ -266,7 +266,7 @@ contract UsdoMarketReceiverModule is BaseUsdo {
 
     function _checkWhitelistStatus(address _addr) private view {
         if (_addr != address(0)) {
-            if (!cluster.isWhitelisted(0, _addr)) {
+            if (!getCluster().isWhitelisted(0, _addr)) {
                 revert UsdoMarketReceiverModule_NotAuthorized(_addr);
             }
         }

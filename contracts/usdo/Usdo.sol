@@ -284,14 +284,6 @@ contract Usdo is BaseUsdo, Pausable, ReentrancyGuard, ERC20Permit {
     }
 
     /**
-     * @notice set the Cluster address.
-     * @param _cluster the new Cluster address
-     */
-    function setCluster(address _cluster) external virtual onlyOwner {
-        cluster = ICluster(_cluster);
-    }
-
-    /**
      * @notice sets/unsets address as minter
      * @dev can only be called by the owner
      * @param _for role receiver

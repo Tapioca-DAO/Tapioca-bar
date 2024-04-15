@@ -181,7 +181,7 @@ contract UsdoTest is UsdoTestHelper {
             vm.label(address(pearlmit), "Pearlmit");
         }
 
-        TapiocaOmnichainExtExec extExec = new TapiocaOmnichainExtExec(cluster, __owner);
+        TapiocaOmnichainExtExec extExec = new TapiocaOmnichainExtExec();
         vm.label(address(extExec), "TapiocaOmnichainExtExec");
 
         UsdoInitStruct memory aUsdoInitStruct = UsdoInitStruct({
@@ -365,7 +365,7 @@ contract UsdoTest is UsdoTestHelper {
 
     function test_constructor() public {
         assertEq(address(aUsdo.yieldBox()), address(yieldBox));
-        assertEq(address(aUsdo.cluster()), address(cluster));
+        assertEq(address(aUsdo.getCluster()), address(cluster));
     }
 
     function test_erc20_permit() public {
