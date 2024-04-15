@@ -239,7 +239,7 @@ contract UsdoMarketReceiverModule is BaseUsdo {
         msg_.removeAndRepayData.collateralAmount = _toLD(msg_.removeAndRepayData.collateralAmount.toUint64());
 
         if (msg_.user != srcChainSender) {
-            uint256 allowanceAmont =  msg_.removeAndRepayData.removeAmount + msg_.removeAndRepayData.collateralAmount;
+            uint256 allowanceAmont = msg_.removeAndRepayData.removeAmount + msg_.removeAndRepayData.collateralAmount;
             _spendAllowance(msg_.user, srcChainSender, allowanceAmont);
         }
 
@@ -266,7 +266,7 @@ contract UsdoMarketReceiverModule is BaseUsdo {
 
     function _checkWhitelistStatus(address _addr) private view {
         if (_addr != address(0)) {
-            if (!cluster.isWhitelisted(0, _addr)) {
+            if (!getCluster().isWhitelisted(0, _addr)) {
                 revert UsdoMarketReceiverModule_NotAuthorized(_addr);
             }
         }
