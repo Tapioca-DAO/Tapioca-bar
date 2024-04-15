@@ -174,7 +174,7 @@ contract Origins is Ownable, Market, ReentrancyGuard {
     function removeCollateral(uint256 share)
         external
         optionNotPaused(PauseType.RemoveCollateral)
-        solvent(msg.sender, false)
+        solvent(msg.sender)
     {
         if (!allowedParticipants[msg.sender]) revert NotAuthorized();
         _removeCollateral(msg.sender, msg.sender, share);
@@ -187,7 +187,7 @@ contract Origins is Ownable, Market, ReentrancyGuard {
     function borrow(uint256 amount)
         external
         optionNotPaused(PauseType.Borrow)
-        solvent(msg.sender, false)
+        solvent(msg.sender)
         returns (uint256 part, uint256 share)
     {
         if (!allowedParticipants[msg.sender]) revert NotAuthorized();
