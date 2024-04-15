@@ -115,9 +115,10 @@ contract UsdoOptionReceiverModule is BaseUsdo {
             SendParam memory _send = msg_.lzSendParams.sendParam;
 
             address tapOft = ITapiocaOptionBroker(_options.target).tapOFT();
+            uint256 tapBalance = IERC20(tapOft).balanceOf(address(this));
             if (msg_.withdrawOnOtherChain) {
                 /// @dev determine the right amount to send back to source
-                uint256 amountToSend = _send.amountLD > _options.tapAmount ? _options.tapAmount : _send.amountLD;
+                uint256 amountToSend = _send.amountLD > tapBalance ? tapBalance : _send.amountLD;
                 if (_send.minAmountLD > amountToSend) {
                     _send.minAmountLD = amountToSend;
                 }
@@ -129,12 +130,12 @@ contract UsdoOptionReceiverModule is BaseUsdo {
                 _sendPacket(msg_.lzSendParams, msg_.composeMsg, _options.from);
 
                 // Refund extra amounts
-                if (_options.tapAmount - amountToSend > 0) {
-                    IERC20(tapOft).safeTransfer(_options.from, _options.tapAmount - amountToSend);
+                if (tapBalance - amountToSend > 0) {
+                    IERC20(tapOft).safeTransfer(_options.from, tapBalance - amountToSend);
                 }
             } else {
                 //send on this chain
-                IERC20(tapOft).safeTransfer(_options.from, _options.tapAmount);
+                IERC20(tapOft).safeTransfer(_options.from, tapBalance);
             }
         }
     }
