@@ -92,11 +92,9 @@ contract BBLeverage is BBLendingCommon {
         }
         {
             amountOut = leverageExecutor.getCollateral(
-                collateralId,
                 address(asset),
                 address(collateral),
                 memoryData.supplyShareToAmount + memoryData.borrowShareToAmount,
-                address(this),
                 calldata_.data
             );
         }
@@ -144,7 +142,7 @@ contract BBLeverage is BBLendingCommon {
         (memoryData.leverageAmount, ) =
             yieldBox.withdraw(collateralId, address(this), address(leverageExecutor), 0, share);
         amountOut = leverageExecutor.getAsset(
-            assetId, address(asset), address(collateral), memoryData.leverageAmount, from, data
+            address(collateral), address(asset), memoryData.leverageAmount, data
         );
         memoryData.shareOut = yieldBox.toShare(assetId, amountOut, false);
         address(asset).safeApprove(address(yieldBox), type(uint256).max);
