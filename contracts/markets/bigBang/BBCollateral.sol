@@ -38,7 +38,7 @@ contract BBCollateral is BBLendingCommon {
         }
         _allowedBorrow(from, share);
 
-        _addCollateral(from, to, skim, amount, share);
+        _addCollateral(from, to, skim, amount, share, true);
     }
 
     /// @notice Removes `share` amount of collateral and transfers it to `to`.
@@ -48,7 +48,7 @@ contract BBCollateral is BBLendingCommon {
     function removeCollateral(address from, address to, uint256 share)
         external
         optionNotPaused(PauseType.RemoveCollateral)
-        solvent(from, false)
+        solvent(from)
         notSelf(to)
         allowedBorrow(from, share)
     {

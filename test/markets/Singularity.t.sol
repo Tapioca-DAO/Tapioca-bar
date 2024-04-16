@@ -225,7 +225,6 @@ contract SingularityTest is UsdoTestHelper {
 
     function test_setSingularityConfig() public {
         uint256 borrowingOpeningFee = singularity.borrowOpeningFee();
-        uint256 lqCollateralizationRate = singularity.lqCollateralizationRate();
         uint256 liquidationMultiplier = singularity.liquidationMultiplier();
         uint256 minimumTargetUtilization = singularity.minimumTargetUtilization();
         uint256 maximumTargetUtilization = singularity.maximumTargetUtilization();
@@ -234,7 +233,7 @@ contract SingularityTest is UsdoTestHelper {
         uint256 interestElasticity = singularity.interestElasticity();
 
         bytes memory payload = abi.encodeWithSelector(
-            Singularity.setSingularityConfig.selector, singularity.borrowOpeningFee(), 0, 0, 0, 0, 0, 0, 0
+            Singularity.setSingularityConfig.selector, singularity.borrowOpeningFee(), 0, 0, 0, 0, 0, 0
         );
         address[] memory mc = new address[](1);
         mc[0] = address(singularity);
@@ -245,7 +244,6 @@ contract SingularityTest is UsdoTestHelper {
 
         {
             assertEq(singularity.borrowOpeningFee(), borrowingOpeningFee);
-            assertEq(singularity.lqCollateralizationRate(), lqCollateralizationRate);
             assertEq(singularity.liquidationMultiplier(), liquidationMultiplier);
             assertEq(singularity.minimumTargetUtilization(), minimumTargetUtilization);
             assertEq(singularity.maximumTargetUtilization(), maximumTargetUtilization);
@@ -256,7 +254,7 @@ contract SingularityTest is UsdoTestHelper {
 
         uint256 toSetValue = 101;
         {
-            payload = abi.encodeWithSelector(Singularity.setSingularityConfig.selector, toSetValue, 0, 0, 0, 0, 0, 0, 0);
+            payload = abi.encodeWithSelector(Singularity.setSingularityConfig.selector, toSetValue, 0, 0, 0, 0, 0, 0);
             data = new bytes[](1);
             data[0] = payload;
             penrose.executeMarketFn(mc, data, false);
@@ -390,8 +388,18 @@ contract SingularityTest is UsdoTestHelper {
             borrow(borrowAmount, false);
         }
 
+        bytes memory setLiquidationMaxSlippageCall =
+            abi.encodeWithSelector(Market.setLiquidationMaxSlippage.selector, 1e4); //10%
+
+        address[] memory mc = new address[](1);
+        mc[0] = address(singularity);
+
+        bytes[] memory data = new bytes[](1);
+        data[0] = setLiquidationMaxSlippageCall;
+        penrose.executeMarketFn(mc, data, false);
+
         uint256 oracleRate = oracle.rate();
-        oracle.set(oracleRate * 2);
+        oracle.set(oracleRate * 10 / 6);
 
         liquidatorMock = new MarketLiquidatorReceiverMock(IERC20(address(asset)));
         deal(address(asset), address(liquidatorMock), borrowAmount * 2);

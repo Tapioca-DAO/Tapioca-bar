@@ -59,6 +59,8 @@ contract Origins is Ownable, Market, ReentrancyGuard {
     event LogBorrow(address indexed from, address indexed to, uint256 indexed amount, uint256 part);
     /// @notice event emitted when a repay operation is performed
     event LogRepay(address indexed from, address indexed to, uint256 indexed amount, uint256 part);
+    /// @notice event emitted when an allowed participant status changes
+    event UpdateParticipants(address indexed participant, bool indexed status);
 
     constructor(
         address _owner,
@@ -101,6 +103,15 @@ contract Origins is Ownable, Market, ReentrancyGuard {
     // ************************* //
     // *** OWNER FUNCTIONS ***** //
     // ************************* //
+
+    /// @notice sets or removes an allowed participant
+    /// @param _participant the participant's address
+    /// @param _val true/false
+    function updateAllowedParticipants(address _participant, bool _val) external onlyOwner {
+        allowedParticipants[_participant] = _val;
+        emit UpdateParticipants(_participant, _val);
+    }
+
     /// @notice updates the pause state of the contract
     /// @dev can only be called by the conservator
     /// @param val the new value
@@ -160,11 +171,7 @@ contract Origins is Ownable, Market, ReentrancyGuard {
 
     /// @notice Removes `share` amount of collateral
     /// @param share Amount of shares to remove.
-    function removeCollateral(uint256 share)
-        external
-        optionNotPaused(PauseType.RemoveCollateral)
-        solvent(msg.sender, false)
-    {
+    function removeCollateral(uint256 share) external optionNotPaused(PauseType.RemoveCollateral) solvent(msg.sender) {
         if (!allowedParticipants[msg.sender]) revert NotAuthorized();
         _removeCollateral(msg.sender, msg.sender, share);
     }
@@ -176,7 +183,7 @@ contract Origins is Ownable, Market, ReentrancyGuard {
     function borrow(uint256 amount)
         external
         optionNotPaused(PauseType.Borrow)
-        solvent(msg.sender, false)
+        solvent(msg.sender)
         returns (uint256 part, uint256 share)
     {
         if (!allowedParticipants[msg.sender]) revert NotAuthorized();
@@ -254,6 +261,7 @@ contract Origins is Ownable, Market, ReentrancyGuard {
     {
         address(token).safeApprove(address(yieldBox), amount);
         (, share) = yieldBox.depositAsset(id, address(this), to, amount, 0);
+        address(token).safeApprove(address(yieldBox), 0);
     }
 
     function _addCollateral(address from, address to, uint256 amount, uint256 share) internal {

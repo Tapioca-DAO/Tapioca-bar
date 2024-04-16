@@ -72,9 +72,11 @@ contract AssetToSDaiLeverageExecutorTest is BaseLeverageExecutorTest {
             cluster = new Cluster(0, address(this));
 
             swapperTarget = new ZeroXSwapperMockTarget();
-            swapper = new ZeroXSwapper(address(swapperTarget), address(0), ICluster(address(cluster)), address(this));
+            swapper = new ZeroXSwapper(address(swapperTarget), ICluster(address(cluster)), address(this));
 
-            executor = new AssetTotsDaiLeverageExecutor(IZeroXSwapper(address(swapper)), ICluster(address(cluster)));
+            executor = new AssetTotsDaiLeverageExecutor(
+                IZeroXSwapper(address(swapper)), ICluster(address(cluster)), address(0)
+            );
         }
 
         {

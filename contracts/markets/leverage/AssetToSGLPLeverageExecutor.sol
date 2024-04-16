@@ -49,16 +49,30 @@ contract AssetToSGLPLeverageExecutor is BaseLeverageExecutor, Pausable {
 
     error NotEnough(uint256 expected, uint256 received);
 
-    constructor(IZeroXSwapper _swapper, ICluster _cluster, IGmxRewardRouterV2 _glpRewardRouter)
-        BaseLeverageExecutor(_swapper, _cluster)
+    constructor(IZeroXSwapper _swapper, ICluster _cluster, IGmxRewardRouterV2 _glpRewardRouter, address _weth)
+        BaseLeverageExecutor(_swapper, _cluster, _weth)
     {
         glpManager = IGmxGlpManager(_glpRewardRouter.glpManager());
         glpRewardRouter = _glpRewardRouter;
     }
 
-    // ********************* //
+    // ********************** //
+    // *** OWNER METHODS *** //
+    // ********************** //
+    /**
+     * @notice Un/Pauses this contract.
+     */
+    function setPause(bool _pauseState) external onlyOwner {
+        if (_pauseState) {
+            _pause();
+        } else {
+            _unpause();
+        }
+    }
+
+    // ********************** //
     // *** PUBLIC METHODS *** //
-    // ********************* //
+    // ********************** //
 
     /**
      * @dev USDO > SGlpLeverageSwapData.token > wrap to tsGLP
@@ -118,11 +132,11 @@ contract AssetToSGLPLeverageExecutor is BaseLeverageExecutor, Pausable {
         SGlpLeverageSwapData memory tokenSwapData = abi.decode(data, (SGlpLeverageSwapData));
 
         // Unwrap tsGLP
-        ITOFT(collateralAddress).unwrap(address(this), collateralAmountIn);
+        uint256 unwrapped = ITOFT(collateralAddress).unwrap(address(this), collateralAmountIn);
 
         // Swap GLP with `SGlpLeverageSwapData.token`
         address sGLP = ITOFT(collateralAddress).erc20();
-        uint256 tokenAmount = _sellGlp(tokenSwapData.token, tokenSwapData.minAmountOut, sGLP, collateralAmountIn);
+        uint256 tokenAmount = _sellGlp(tokenSwapData.token, tokenSwapData.minAmountOut, sGLP, unwrapped);
 
         // Swap `SGlpLeverageSwapData.token` with asset.
         // If sendBack true and swapData.swapperData.toftInfo.isTokenOutToft false

@@ -109,7 +109,7 @@ contract UsdoTestHelper is TestHelper, TestUtils {
         public
         returns (SimpleLeverageExecutor)
     {
-        return new SimpleLeverageExecutor(IZeroXSwapper(_swapper), ICluster(_cluster));
+        return new SimpleLeverageExecutor(IZeroXSwapper(_swapper), ICluster(_cluster), address(0));
     }
 
     function createPenrose(TestPenroseData memory _data) public returns (Penrose pen, Singularity mediumRiskMC) {

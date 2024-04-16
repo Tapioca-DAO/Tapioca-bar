@@ -28,7 +28,7 @@ contract TOFTMock is ERC20 {
         return _amount;
     }
 
-    function unwrap(address _toAddress, uint256 _amount) external {
+    function unwrap(address _toAddress, uint256 _amount) external returns (uint256 unwrapped) {
         _burn(msg.sender, _amount);
         if (erc20_ != address(0)) {
             IERC20(erc20_).safeTransfer(_toAddress, _amount);
@@ -36,6 +36,7 @@ contract TOFTMock is ERC20 {
             (bool sent,) = _toAddress.call{value: _amount}("");
             require(sent, "TOFTMock: failed to transfer ETH");
         }
+        return _amount;
     }
 
     function mint(address to, uint256 amount) external {

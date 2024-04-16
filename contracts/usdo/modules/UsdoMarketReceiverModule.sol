@@ -59,13 +59,14 @@ contract UsdoMarketReceiverModule is BaseUsdo {
     /**
      * @notice Execute `magnetar.depositLendAndSendForLocking`
      * @dev Lend on SGL and send receipt token on another layer
+     * @param srcChainSender The address of the sender on the source chain.
      * @param _data.user the user to perform the operation for
      * @param _data.singularity the SGL address
      * @param _data.lendAmount the amount to lend on SGL
      * @param _data.depositData the data needed to deposit on YieldBox
      * @param _data.lockAndParticipateSendParams LZ send params for the lock or/and the participate operations
      */
-    function depositLendAndSendForLockingReceiver(bytes memory _data) public payable {
+    function depositLendAndSendForLockingReceiver(address srcChainSender, bytes memory _data) public payable {
         // Decode received message.
         DepositAndSendForLockingData memory msg_ = UsdoMsgCodec.decodeDepositLendAndSendForLockingMsg(_data);
 
@@ -77,6 +78,11 @@ contract UsdoMarketReceiverModule is BaseUsdo {
         }
         if (msg_.depositData.amount > 0) {
             msg_.depositData.amount = _toLD(msg_.depositData.amount.toUint64());
+        }
+
+        if (msg_.user != srcChainSender) {
+            uint256 allowanceAmont = msg_.lendAmount + msg_.depositData.amount;
+            _spendAllowance(msg_.user, srcChainSender, allowanceAmont);
         }
 
         bytes memory call =
@@ -94,12 +100,13 @@ contract UsdoMarketReceiverModule is BaseUsdo {
 
     /**
      * @notice Receiver for PT_YB_SEND_SGL_LEND_OR_REPAY
+     * @param srcChainSender The address of the sender on the source chain.
      * @param _data The call data containing info about the operation.
      *      - user::address: Address to leverage for.
      *      - lendParams::struct: Struct containing data for the lend or the repay operations
      *      - withdrawParams::struct: Struct containing data for the asset withdrawal operation
      */
-    function lendOrRepayReceiver(bytes memory _data) public payable {
+    function lendOrRepayReceiver(address srcChainSender, bytes memory _data) public payable {
         /// @dev decode received message
         MarketLendOrRepayMsg memory msg_ = UsdoMsgCodec.decodeMarketLendOrRepayMsg(_data);
 
@@ -145,6 +152,12 @@ contract UsdoMarketReceiverModule is BaseUsdo {
                 msg_.lendParams.repayAmount = IMagnetarHelper(IMagnetar(payable(msg_.lendParams.magnetar)).helper())
                     .getBorrowPartForAmount(msg_.lendParams.market, msg_.lendParams.depositAmount);
             }
+
+            if (msg_.user != srcChainSender) {
+                uint256 allowanceAmont = msg_.lendParams.depositAmount + msg_.lendParams.removeCollateralAmount;
+                _spendAllowance(msg_.user, srcChainSender, allowanceAmont);
+            }
+
             bytes memory call = abi.encodeWithSelector(
                 MagnetarAssetModule.depositRepayAndRemoveCollateralFromMarket.selector,
                 DepositRepayAndRemoveCollateralFromMarketData({
@@ -167,6 +180,11 @@ contract UsdoMarketReceiverModule is BaseUsdo {
             });
             IMagnetar(payable(msg_.lendParams.magnetar)).burst{value: msg.value}(magnetarCall);
         } else {
+            if (msg_.user != srcChainSender) {
+                uint256 allowanceAmont = msg_.lendParams.depositAmount + msg_.lendParams.lockData.amount;
+                _spendAllowance(msg_.user, srcChainSender, allowanceAmont);
+            }
+
             MintFromBBAndLendOnSGLData memory _lendData = MintFromBBAndLendOnSGLData({
                 user: msg_.user,
                 lendAmount: msg_.lendParams.depositAmount,
@@ -202,12 +220,13 @@ contract UsdoMarketReceiverModule is BaseUsdo {
 
     /**
      * @notice Receiver for PT_MARKET_REMOVE_ASSET
+     * @param srcChainSender The address of the sender on the source chain.
      * @param _data The call data containing info about the operation.
      *      - user::address: Address to leverage for.
      *      - externalData::struct: Struct containing addresses used by this operation.
      *      - removeAndRepayData::struct: Struct containing data for the asset removal operation
      */
-    function removeAssetReceiver(bytes memory _data) public payable {
+    function removeAssetReceiver(address srcChainSender, bytes memory _data) public payable {
         /// @dev decode received message
         MarketRemoveAssetMsg memory msg_ = UsdoMsgCodec.decodeMarketRemoveAssetMsg(_data);
 
@@ -218,6 +237,11 @@ contract UsdoMarketReceiverModule is BaseUsdo {
         msg_.removeAndRepayData.removeAmount = _toLD(msg_.removeAndRepayData.removeAmount.toUint64());
         msg_.removeAndRepayData.repayAmount = _toLD(msg_.removeAndRepayData.repayAmount.toUint64());
         msg_.removeAndRepayData.collateralAmount = _toLD(msg_.removeAndRepayData.collateralAmount.toUint64());
+
+        if (msg_.user != srcChainSender) {
+            uint256 allowanceAmont = msg_.removeAndRepayData.removeAmount + msg_.removeAndRepayData.collateralAmount;
+            _spendAllowance(msg_.user, srcChainSender, allowanceAmont);
+        }
 
         {
             bytes memory call = abi.encodeWithSelector(
@@ -242,7 +266,7 @@ contract UsdoMarketReceiverModule is BaseUsdo {
 
     function _checkWhitelistStatus(address _addr) private view {
         if (_addr != address(0)) {
-            if (!cluster.isWhitelisted(0, _addr)) {
+            if (!getCluster().isWhitelisted(0, _addr)) {
                 revert UsdoMarketReceiverModule_NotAuthorized(_addr);
             }
         }

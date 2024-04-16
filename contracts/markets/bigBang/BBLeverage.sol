@@ -53,13 +53,14 @@ contract BBLeverage is BBLendingCommon {
     function buyCollateral(address from, uint256 borrowAmount, uint256 supplyAmount, bytes calldata data)
         external
         optionNotPaused(PauseType.LeverageBuy)
-        solvent(from, false)
+        solvent(from)
         notSelf(from)
         returns (uint256 amountOut)
     {
         if (address(leverageExecutor) == address(0)) {
             revert LeverageExecutorNotValid();
         }
+        penrose.reAccrueBigBangMarkets();
 
         // Stack too deep fix
         _BuyCollateralCalldata memory calldata_;
@@ -91,22 +92,21 @@ contract BBLeverage is BBLendingCommon {
         }
         {
             amountOut = leverageExecutor.getCollateral(
-                collateralId,
                 address(asset),
                 address(collateral),
                 memoryData.supplyShareToAmount + memoryData.borrowShareToAmount,
-                calldata_.from,
                 calldata_.data
             );
         }
         uint256 collateralShare = yieldBox.toShare(collateralId, amountOut, false);
-        address(asset).safeApprove(address(yieldBox), type(uint256).max);
-        yieldBox.depositAsset(collateralId, address(this), address(this), 0, collateralShare); // TODO Check for rounding attack?
-        address(asset).safeApprove(address(yieldBox), 0);
+
+        address(collateral).safeApprove(address(yieldBox), type(uint256).max);
+        yieldBox.depositAsset(collateralId, address(this), calldata_.from, 0, collateralShare);
+        address(collateral).safeApprove(address(yieldBox), 0);
 
         if (collateralShare == 0) revert CollateralShareNotValid();
         _allowedBorrow(calldata_.from, collateralShare);
-        _addCollateral(calldata_.from, calldata_.from, false, 0, collateralShare);
+        _addCollateral(calldata_.from, calldata_.from, false, 0, collateralShare, false);
     }
 
     struct _SellCollateralMemoryData {
@@ -126,38 +126,37 @@ contract BBLeverage is BBLendingCommon {
     function sellCollateral(address from, uint256 share, bytes calldata data)
         external
         optionNotPaused(PauseType.LeverageSell)
-        solvent(from, false)
+        solvent(from)
         notSelf(from)
         returns (uint256 amountOut)
     {
         if (address(leverageExecutor) == address(0)) {
             revert LeverageExecutorNotValid();
         }
+        penrose.reAccrueBigBangMarkets();
+
         _allowedBorrow(from, share);
         _removeCollateral(from, address(this), share);
 
         _SellCollateralMemoryData memory memoryData;
 
-        (, memoryData.obtainedShare) =
+        (memoryData.leverageAmount,) =
             yieldBox.withdraw(collateralId, address(this), address(leverageExecutor), 0, share);
-        memoryData.leverageAmount = yieldBox.toAmount(collateralId, memoryData.obtainedShare, false);
-        amountOut = leverageExecutor.getAsset(
-            assetId, address(collateral), address(asset), memoryData.leverageAmount, from, data
-        );
+        amountOut = leverageExecutor.getAsset(address(collateral), address(asset), memoryData.leverageAmount, data);
         memoryData.shareOut = yieldBox.toShare(assetId, amountOut, false);
         address(asset).safeApprove(address(yieldBox), type(uint256).max);
-        yieldBox.depositAsset(collateralId, address(this), address(this), 0, memoryData.shareOut); // TODO Check for rounding attack?
+        yieldBox.depositAsset(assetId, address(this), from, 0, memoryData.shareOut); // TODO Check for rounding attack?
         address(asset).safeApprove(address(yieldBox), 0);
 
         memoryData.partOwed = userBorrowPart[from];
         memoryData.amountOwed = totalBorrow.toElastic(memoryData.partOwed, true);
         memoryData.shareOwed = yieldBox.toShare(assetId, memoryData.amountOwed, true);
         if (memoryData.shareOwed <= memoryData.shareOut) {
-            _repay(from, from, memoryData.partOwed);
+            _repay(from, from, memoryData.partOwed, false);
         } else {
             //repay as much as we can
             uint256 partOut = totalBorrow.toBase(amountOut, false);
-            _repay(from, from, partOut);
+            _repay(from, from, partOut, false);
         }
     }
 }

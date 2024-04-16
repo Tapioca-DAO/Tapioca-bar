@@ -181,7 +181,7 @@ contract UsdoTest is UsdoTestHelper {
             vm.label(address(pearlmit), "Pearlmit");
         }
 
-        TapiocaOmnichainExtExec extExec = new TapiocaOmnichainExtExec(cluster, __owner);
+        TapiocaOmnichainExtExec extExec = new TapiocaOmnichainExtExec();
         vm.label(address(extExec), "TapiocaOmnichainExtExec");
 
         UsdoInitStruct memory aUsdoInitStruct = UsdoInitStruct({
@@ -365,7 +365,7 @@ contract UsdoTest is UsdoTestHelper {
 
     function test_constructor() public {
         assertEq(address(aUsdo.yieldBox()), address(yieldBox));
-        assertEq(address(aUsdo.cluster()), address(cluster));
+        assertEq(address(aUsdo.getCluster()), address(cluster));
     }
 
     function test_erc20_permit() public {
@@ -440,7 +440,8 @@ contract UsdoTest is UsdoTestHelper {
                     prevOptionsData: bytes("")
                 }),
                 lzReceiveGas: 1_000_000,
-                lzReceiveValue: 0
+                lzReceiveValue: 0,
+                refundAddress: address(this)
             })
         );
         bytes memory composeMsg_ = prepareLzCallReturn_.composeMsg;
@@ -506,7 +507,8 @@ contract UsdoTest is UsdoTestHelper {
                         prevOptionsData: bytes("")
                     }),
                     lzReceiveGas: 500_000,
-                    lzReceiveValue: 0
+                    lzReceiveValue: 0,
+                    refundAddress: address(this)
                 })
             );
             remoteLzSendParam_ = prepareLzCallReturn1_.lzSendParam;
@@ -537,7 +539,8 @@ contract UsdoTest is UsdoTestHelper {
                     prevOptionsData: bytes("")
                 }),
                 lzReceiveGas: 500_000,
-                lzReceiveValue: 0
+                lzReceiveValue: 0,
+                refundAddress: address(this)
             })
         );
         bytes memory composeMsg_ = prepareLzCallReturn2_.composeMsg;
@@ -612,7 +615,8 @@ contract UsdoTest is UsdoTestHelper {
                         prevOptionsData: bytes("")
                     }),
                     lzReceiveGas: 500_000,
-                    lzReceiveValue: 0
+                    lzReceiveValue: 0,
+                    refundAddress: address(this)
                 })
             );
             withdrawLzSendParam_ = prepareLzCallReturn1_.lzSendParam;
@@ -669,7 +673,8 @@ contract UsdoTest is UsdoTestHelper {
                     prevOptionsData: bytes("")
                 }),
                 lzReceiveGas: 500_000,
-                lzReceiveValue: 0
+                lzReceiveValue: 0,
+                refundAddress: address(this)
             })
         );
         bytes memory composeMsg_ = prepareLzCallReturn2_.composeMsg;
@@ -736,7 +741,8 @@ contract UsdoTest is UsdoTestHelper {
                     prevOptionsData: bytes("")
                 }),
                 lzReceiveGas: 1_000_000,
-                lzReceiveValue: 0
+                lzReceiveValue: 0,
+                refundAddress: address(this)
             })
         );
         bytes memory composeMsg_ = prepareLzCallReturn_.composeMsg;
@@ -797,7 +803,8 @@ contract UsdoTest is UsdoTestHelper {
                     prevOptionsData: bytes("")
                 }),
                 lzReceiveGas: 1_000_000,
-                lzReceiveValue: 0
+                lzReceiveValue: 0,
+                refundAddress: address(this)
             })
         );
         bytes memory composeMsg_ = prepareLzCallReturn_.composeMsg;
@@ -877,7 +884,8 @@ contract UsdoTest is UsdoTestHelper {
                     prevOptionsData: bytes("")
                 }),
                 lzReceiveGas: 1_000_000,
-                lzReceiveValue: 0
+                lzReceiveValue: 0,
+                refundAddress: address(this)
             })
         );
         bytes memory composeMsg_ = prepareLzCallReturn_.composeMsg;
@@ -965,7 +973,8 @@ contract UsdoTest is UsdoTestHelper {
                     prevOptionsData: bytes("")
                 }),
                 lzReceiveGas: 1_000_000,
-                lzReceiveValue: 0
+                lzReceiveValue: 0,
+                refundAddress: address(this)
             })
         );
         bytes memory composeMsg_ = prepareLzCallReturn_.composeMsg;
@@ -1040,7 +1049,8 @@ contract UsdoTest is UsdoTestHelper {
                     prevOptionsData: bytes("")
                 }),
                 lzReceiveGas: 1_000_000,
-                lzReceiveValue: 0
+                lzReceiveValue: 0,
+                refundAddress: address(this)
             })
         );
         bytes memory composeMsg_ = prepareLzCallReturn_.composeMsg;
@@ -1107,7 +1117,8 @@ contract UsdoTest is UsdoTestHelper {
                     prevOptionsData: bytes("")
                 }),
                 lzReceiveGas: 1_000_000,
-                lzReceiveValue: 0
+                lzReceiveValue: 0,
+                refundAddress: address(this)
             })
         );
         bytes memory composeMsg_ = prepareLzCallReturn_.composeMsg;
@@ -1165,7 +1176,8 @@ contract UsdoTest is UsdoTestHelper {
                         prevOptionsData: bytes("")
                     }),
                     lzReceiveGas: 500_000,
-                    lzReceiveValue: 0
+                    lzReceiveValue: 0,
+                    refundAddress: address(this)
                 })
             );
             withdrawLzSendParam_ = prepareLzCallReturn1_.lzSendParam;
@@ -1202,7 +1214,7 @@ contract UsdoTest is UsdoTestHelper {
                 withdraw: false,
                 yieldBox: address(0),
                 assetId: 0,
-                unwrap: false,
+                compose: false,
                 lzSendParams: LZSendParam({
                     refundAddress: address(this),
                     fee: MessagingFee({lzTokenFee: 0, nativeFee: 0}),
@@ -1245,7 +1257,8 @@ contract UsdoTest is UsdoTestHelper {
                     prevOptionsData: bytes("")
                 }),
                 lzReceiveGas: 500_000,
-                lzReceiveValue: 0
+                lzReceiveValue: 0,
+                refundAddress: address(this)
             })
         );
         bytes memory composeMsg_ = prepareLzCallReturn2_.composeMsg;
@@ -1345,7 +1358,8 @@ contract UsdoTest is UsdoTestHelper {
                         prevOptionsData: bytes("")
                     }),
                     lzReceiveGas: 500_000,
-                    lzReceiveValue: 0
+                    lzReceiveValue: 0,
+                    refundAddress: address(this)
                 })
             );
             withdrawLzSendParam_ = prepareLzCallReturn1_.lzSendParam;
@@ -1383,7 +1397,7 @@ contract UsdoTest is UsdoTestHelper {
                 withdraw: false,
                 yieldBox: address(0),
                 assetId: 0,
-                unwrap: false,
+                compose: false,
                 lzSendParams: LZSendParam({
                     refundAddress: address(this),
                     fee: MessagingFee({lzTokenFee: 0, nativeFee: 0}),
@@ -1426,7 +1440,8 @@ contract UsdoTest is UsdoTestHelper {
                     prevOptionsData: bytes("")
                 }),
                 lzReceiveGas: 500_000,
-                lzReceiveValue: 0
+                lzReceiveValue: 0,
+                refundAddress: address(this)
             })
         );
         bytes memory composeMsg_ = prepareLzCallReturn2_.composeMsg;
@@ -1502,7 +1517,8 @@ contract UsdoTest is UsdoTestHelper {
                         prevOptionsData: bytes("")
                     }),
                     lzReceiveGas: 500_000,
-                    lzReceiveValue: 0
+                    lzReceiveValue: 0,
+                    refundAddress: address(this)
                 })
             );
             withdrawLzSendParam_ = prepareLzCallReturn1_.lzSendParam;
@@ -1538,7 +1554,7 @@ contract UsdoTest is UsdoTestHelper {
                     withdraw: false,
                     yieldBox: address(0),
                     assetId: 0,
-                    unwrap: false,
+                    compose: false,
                     lzSendParams: LZSendParam({
                         refundAddress: address(this),
                         fee: MessagingFee({lzTokenFee: 0, nativeFee: 0}),
@@ -1564,7 +1580,7 @@ contract UsdoTest is UsdoTestHelper {
                     withdraw: true,
                     yieldBox: address(0),
                     assetId: 0,
-                    unwrap: false,
+                    compose: false,
                     lzSendParams: LZSendParam({
                         refundAddress: address(this),
                         fee: MessagingFee({lzTokenFee: 0, nativeFee: 0}),
@@ -1607,7 +1623,8 @@ contract UsdoTest is UsdoTestHelper {
                     prevOptionsData: bytes("")
                 }),
                 lzReceiveGas: 500_000,
-                lzReceiveValue: 0
+                lzReceiveValue: 0,
+                refundAddress: address(this)
             })
         );
         bytes memory composeMsg_ = prepareLzCallReturn2_.composeMsg;

@@ -90,10 +90,13 @@ contract AssetToSGLPLeverageExecutorTest is BaseLeverageExecutorTest {
             cluster = new Cluster(0, address(this));
 
             swapperTarget = new ZeroXSwapperMockTarget();
-            swapper = new ZeroXSwapper(address(swapperTarget), address(0), ICluster(address(cluster)), address(this));
+            swapper = new ZeroXSwapper(address(swapperTarget), ICluster(address(cluster)), address(this));
 
             executor = new AssetToSGLPLeverageExecutor(
-                IZeroXSwapper(address(swapper)), ICluster(address(cluster)), IGmxRewardRouterV2(address(gmxMock))
+                IZeroXSwapper(address(swapper)),
+                ICluster(address(cluster)),
+                IGmxRewardRouterV2(address(gmxMock)),
+                address(0)
             );
         }
 

@@ -5,6 +5,7 @@ pragma solidity 0.8.22;
 import {IERC20} from "@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol";
 import {BoringFactory} from "@boringcrypto/boring-solidity/contracts/BoringFactory.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+
 // Tapioca
 import {
     ERC20WithoutStrategy, IStrategy, IYieldBox as IBoringYieldBox
@@ -36,6 +37,8 @@ import {SafeApprove} from "./libraries/SafeApprove.sol";
 /// @notice Singularity management
 contract Penrose is Ownable, PearlmitHandler, BoringFactory {
     using SafeApprove for address;
+
+    error AddressNotValid();
 
     // ************ //
     // *** VARS *** //
@@ -73,10 +76,8 @@ contract Penrose is Ownable, PearlmitHandler, BoringFactory {
     mapping(address => bool) public isBigBangMasterContractRegistered;
     /// @notice Used to check if a SGL/BB is a real market
     mapping(address => bool) public isMarketRegistered;
-    /// @notice default LZ Chain id
-    uint32 public immutable hostLzChainId;
 
-    /// @notice BigBang ETH market addressf
+    /// @notice BigBang ETH market address
     address public bigBangEthMarket;
     /// @notice BigBang ETH market debt rate
     uint256 public bigBangEthDebtRate;
@@ -103,6 +104,12 @@ contract Penrose is Ownable, PearlmitHandler, BoringFactory {
         IPearlmit _pearlmit,
         address _owner
     ) PearlmitHandler(_pearlmit) {
+        if (address(_yieldBox) == address(0)) revert AddressNotValid();
+        if (address(_cluster) == address(0)) revert AddressNotValid();
+        if (address(tapToken_) == address(0)) revert AddressNotValid();
+        if (address(_pearlmit) == address(0)) revert AddressNotValid();
+        if (address(_owner) == address(0)) revert AddressNotValid();
+
         yieldBox = _yieldBox;
         cluster = _cluster;
         tapToken = tapToken_;
@@ -223,12 +230,12 @@ contract Penrose is Ownable, PearlmitHandler, BoringFactory {
     /// @dev does not include Origins markets
     function viewTotalDebt() public view returns (uint256) {
         uint256 _totalUsdoDebt = 0;
+
         uint256 len = allBigBangMarkets.length;
         for (uint256 i; i < len; i++) {
-            IMarket market = IMarket(allBigBangMarkets[i]);
+            IBigBang market = IBigBang(allBigBangMarkets[i]);
             if (isMarketRegistered[address(market)]) {
-                (uint256 elastic,) = market.totalBorrow();
-                _totalUsdoDebt += elastic;
+                _totalUsdoDebt += market.viewOpenInterest();
             }
         }
 
@@ -262,36 +269,24 @@ contract Penrose is Ownable, PearlmitHandler, BoringFactory {
     /// @dev Penrose should be an allowed minter for USDO
     /// @param twTap the twTap contract address
     function mintOpenInterestDebt(address twTap) external onlyOwner {
-        uint256 usdoSupply = usdoToken.totalSupply();
-
-        // nothing to mint when there's no activity
-        if (usdoSupply > 0) {
-            // re-compute latest debt
-            uint256 totalUsdoDebt = computeTotalDebt();
-
-            //add Origins debt
-            //Origins market doesn't accrue in time but increases totalSupply
-            //and needs to be taken into account here
-            uint256 len = allOriginsMarkets.length;
-            for (uint256 i; i < len; i++) {
-                IMarket market = IMarket(allOriginsMarkets[i]);
-                if (isOriginRegistered[address(market)]) {
-                    (uint256 elastic,) = market.totalBorrow();
-                    totalUsdoDebt += elastic;
-                }
+        uint256 sum;
+        // compute mintable debt for all BB markets
+        // Origins do not produce debt
+        uint256 len = allBigBangMarkets.length;
+        for (uint256 i; i < len; i++) {
+            IBigBang market = IBigBang(allBigBangMarkets[i]);
+            if (isMarketRegistered[address(market)]) {
+                sum += market.computeOpenInterestMintable();
             }
+        }
 
-            //debt should always be > USDO supply
-            if (totalUsdoDebt > usdoSupply) {
-                uint256 _amount = totalUsdoDebt - usdoSupply;
+        if (sum > 0) {
+            //mint against the open interest; supply should be fully minted now
+            IUsdo(address(usdoToken)).mint(address(this), sum);
 
-                //mint against the open interest; supply should be fully minted now
-                IUsdo(address(usdoToken)).mint(address(this), _amount);
-
-                //send it to twTap
-                uint256 rewardTokenId = ITwTap(twTap).rewardTokenIndex(address(usdoToken));
-                _distributeOnTwTap(_amount, rewardTokenId, address(usdoToken), ITwTap(twTap));
-            }
+            //send it to twTap
+            uint256 rewardTokenId = ITwTap(twTap).rewardTokenIndex(address(usdoToken));
+            _distributeOnTwTap(sum, rewardTokenId, address(usdoToken), ITwTap(twTap));
         }
     }
 
@@ -481,7 +476,7 @@ contract Penrose is Ownable, PearlmitHandler, BoringFactory {
     }
 
     /// @notice Execute an only owner function inside of a Singularity or a BigBang market
-    /// @param mc Master contracts array
+    /// @param mc Markets contracts array
     /// @param data array
     /// @param forceSuccess if true, method reverts in case of an unsuccessful execution
     function executeMarketFn(address[] calldata mc, bytes[] memory data, bool forceSuccess)
@@ -515,23 +510,6 @@ contract Penrose is Ownable, PearlmitHandler, BoringFactory {
         }
     }
 
-    /// @notice computes total USDO debt of all BB markets
-    /// @dev this works because all BB markets have USDO as the asset
-    function computeTotalDebt() public notPaused returns (uint256 totalUsdoDebt) {
-        // allow other registered Markets, owner or Penrose to call it
-        if (!isMarketRegistered[msg.sender] && msg.sender != owner() && msg.sender != address(this)) {
-            revert NotAuthorized();
-        }
-
-        //accrue to the latest point in time
-        _reAccrueMarkets(true);
-
-        // compute debt
-        totalUsdoDebt = viewTotalDebt();
-
-        emit TotalUsdoDebt(totalUsdoDebt);
-    }
-
     // ************************* //
     // *** PRIVATE FUNCTIONS *** //
     // ************************* //
@@ -558,16 +536,19 @@ contract Penrose is Ownable, PearlmitHandler, BoringFactory {
 
         address _asset = market.asset();
         uint256 _assetId = market.assetId();
+
+        uint256 feeAmount = yieldBox.toAmount(_assetId, feeShares, false);
+
         yieldBox.withdraw(_assetId, address(this), address(this), 0, feeShares);
 
         uint256 rewardTokenId = twTap.rewardTokenIndex(_asset);
-        uint256 feeAmount = yieldBox.toAmount(_assetId, feeShares, false);
         _distributeOnTwTap(feeAmount, rewardTokenId, _asset, twTap);
     }
 
     function _distributeOnTwTap(uint256 amount, uint256 rewardTokenId, address _asset, ITwTap twTap) private {
         _asset.safeApprove(address(twTap), amount);
         twTap.distributeReward(rewardTokenId, amount);
+        _asset.safeApprove(address(twTap), 0);
         emit LogTwTapFeesDeposit(amount);
     }
 

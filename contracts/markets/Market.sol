@@ -106,7 +106,8 @@ abstract contract Market is MarketERC20, Ownable {
     uint256 public liquidationMultiplier = 12000; //12%
     /// @notice returns the leverage executor
     ILeverageExecutor public leverageExecutor;
-
+    /// @notice returns the maximum accepted slippage for liquidation
+    uint256 public maxLiquidationSlippage = 1000; //1%
     // ***************** //
     // *** CONSTANTS *** //
     // ***************** //
@@ -149,6 +150,8 @@ abstract contract Market is MarketERC20, Ownable {
     event LiquidationMultiplierUpdated(uint256 indexed oldVal, uint256 indexed newVal);
     /// @notice event emitted on setMarketConfig updates
     event ValueUpdated(uint256 indexed valType, uint256 indexed _newVal);
+    /// @notice event emitted when then liquidation max slippage is updated
+    event LiquidationMaxSlippageUpdated(uint256 indexed oldVal, uint256 indexed newVal);
 
     modifier optionNotPaused(PauseType _type) {
         require(!pauseOptions[_type], "Market: paused");
@@ -161,13 +164,13 @@ abstract contract Market is MarketERC20, Ownable {
     }
 
     /// @dev Checks if the user is solvent in the closed liquidation case at the end of the function body.
-    modifier solvent(address from, bool liquidation) {
+    modifier solvent(address from) {
         updateExchangeRate();
         _accrue();
 
         _;
 
-        require(_isSolvent(from, exchangeRate, liquidation), "Market: insolvent");
+        require(_isSolvent(from, exchangeRate, false), "Market: insolvent");
     }
 
     bool internal initialized;
@@ -186,6 +189,15 @@ abstract contract Market is MarketERC20, Ownable {
     function setLeverageExecutor(ILeverageExecutor _executor) external onlyOwner {
         emit LeverageExecutorSet(address(leverageExecutor), address(_executor));
         leverageExecutor = _executor;
+    }
+
+    /// @notice updates `maxLiquidationSlippage`
+    /// @dev not included in `setMarketConfig` for faster updates
+    /// @param _val the new slippage value
+    function setLiquidationMaxSlippage(uint256 _val) external onlyOwner {
+        require(_val < FEE_PRECISION, "Market: not valid");
+        emit LiquidationMaxSlippageUpdated(maxLiquidationSlippage, _val);
+        maxLiquidationSlippage = _val;
     }
 
     /// @notice sets common market configuration
@@ -323,8 +335,8 @@ abstract contract Market is MarketERC20, Ownable {
         //compute numerator
         uint256 numerator = borrowPart - liquidationStartsAt;
         //compute denominator
-        uint256 diff =
-            (collateralizationRate * ((10 ** ratesPrecision) + _liquidationMultiplier)) / (10 ** ratesPrecision);
+        uint256 diff = (liquidationCollateralizationRate * ((10 ** ratesPrecision) + _liquidationMultiplier))
+            / (10 ** ratesPrecision);
         int256 denominator = (int256(10 ** ratesPrecision) - int256(diff)) * int256(1e13);
 
         //compute closing factor
@@ -372,17 +384,13 @@ abstract contract Market is MarketERC20, Ownable {
     /// @return rate The new exchange rate.
     function updateExchangeRate() public returns (bool updated, uint256 rate) {
         (updated, rate) = oracle.get(oracleData);
+        require(updated, "Market: rate too old");
+        require(rate != 0, "Market: invalid rate");
 
-        if (updated) {
-            require(rate != 0, "Market: invalid rate");
-            exchangeRate = rate;
-            rateTimestamp = block.timestamp;
-            emit LogExchangeRate(rate);
-        } else {
-            require(rateTimestamp + rateValidDuration >= block.timestamp, "Market: rate too old");
-            // Return the old rate if fetching wasn't successful & rate isn't too old
-            rate = exchangeRate;
-        }
+        exchangeRate = rate;
+        rateTimestamp = block.timestamp;
+
+        emit LogExchangeRate(rate);
     }
 
     /// @notice computes the possible liquidator reward
@@ -420,9 +428,9 @@ abstract contract Market is MarketERC20, Ownable {
         if (from != msg.sender) {
             if (share == 0) revert AllowanceNotValid();
 
-            // TODO review risk of using this
             (uint256 pearlmitAllowed,) = penrose.pearlmit().allowance(from, msg.sender, address(yieldBox), collateralId);
             require(allowanceBorrow[from][msg.sender] >= share || pearlmitAllowed >= share, "Market: not approved");
+            if (pearlmitAllowed != 0) return;
             if (allowanceBorrow[from][msg.sender] != type(uint256).max) {
                 allowanceBorrow[from][msg.sender] -= share;
             }

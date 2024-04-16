@@ -90,10 +90,10 @@ contract MagnetarMock is PearlmitHandler {
                 continue; // skip the rest of the loop
             }
 
-            /// @dev Tap singular operations
-            if (_action.id == MagnetarAction.TapToken) {
-                continue; // skip the rest of the loop
-            }
+            // /// @dev Tap singular operations
+            // if (_action.id == MagnetarAction.TapToken) {
+            //     continue; // skip the rest of the loop
+            // }
 
             /// @dev Modules will not return result data.
             if (_action.id == MagnetarAction.AssetModule) {
@@ -408,7 +408,7 @@ contract MagnetarMock is PearlmitHandler {
 
         _yieldBox.withdraw(data.assetId, address(this), address(this), data.lzSendParams.sendParam.amountLD, 0);
         // TODO: decide about try-catch here
-        if (data.unwrap) {
+        if (data.compose) {
             _lzCustomWithdraw(
                 asset,
                 data.lzSendParams,
@@ -480,7 +480,8 @@ contract MagnetarMock is PearlmitHandler {
                     prevOptionsData: bytes("")
                 }),
                 lzReceiveGas: _lzSendGas + _lzComposeGas,
-                lzReceiveValue: _lzComposeVal
+                lzReceiveValue: _lzComposeVal,
+                refundAddress: address(this)
             })
         );
 
@@ -515,7 +516,8 @@ contract MagnetarMock is PearlmitHandler {
                     prevOptionsData: bytes("")
                 }),
                 lzReceiveGas: _lzSendGas,
-                lzReceiveValue: _lzSendVal
+                lzReceiveValue: _lzSendVal,
+                refundAddress: address(this)
             })
         );
     }

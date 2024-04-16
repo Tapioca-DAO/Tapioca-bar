@@ -77,7 +77,7 @@ contract BBCommon is BBStorage {
         // Calculate fees
         _totalBorrow = totalBorrow;
         uint256 extraAmount = (uint256(_totalBorrow.elastic) * (getDebtRate() / 31536000) * elapsedTime) / 1e18;
-        uint256 max = type(uint128).max - totalBorrowCap;
+        uint256 max = type(uint128).max - totalBorrow.elastic;
 
         if (extraAmount > max) {
             extraAmount = max;
@@ -92,6 +92,14 @@ contract BBCommon is BBStorage {
         if (elapsedTime == 0) {
             return;
         }
+        //re-accrue ETH market
+        {
+            address mainBB = penrose.bigBangEthMarket();
+            if (mainBB != address(this)) {
+                IBigBang(mainBB).accrue();
+            }
+        }
+
         //update debt rate
         uint256 annumDebtRate = getDebtRate();
         _accrueInfo.debtRate = (annumDebtRate / 31557600).toUint64(); //per second; account for leap years
@@ -104,7 +112,7 @@ contract BBCommon is BBStorage {
         extraAmount = (uint256(_totalBorrow.elastic) * _accrueInfo.debtRate * elapsedTime) / 1e18;
 
         // cap `extraAmount` to avoid overflow risk when converting it from uint256 to uint128
-        uint256 max = type(uint128).max - totalBorrowCap;
+        uint256 max = type(uint128).max - totalBorrow.elastic;
 
         if (extraAmount > max) {
             extraAmount = max;
@@ -148,5 +156,6 @@ contract BBCommon is BBStorage {
     {
         address(token).safeApprove(address(yieldBox), amount);
         (, share) = yieldBox.depositAsset(id, address(this), to, amount, 0);
+        address(token).safeApprove(address(yieldBox), 0);
     }
 }

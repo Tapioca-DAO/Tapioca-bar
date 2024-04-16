@@ -23,7 +23,9 @@ import {SafeApprove} from "../../libraries/SafeApprove.sol";
 contract AssetTotsDaiLeverageExecutor is BaseLeverageExecutor {
     using SafeApprove for address;
 
-    constructor(IZeroXSwapper _swapper, ICluster _cluster) BaseLeverageExecutor(_swapper, _cluster) {}
+    constructor(IZeroXSwapper _swapper, ICluster _cluster, address _weth)
+        BaseLeverageExecutor(_swapper, _cluster, _weth)
+    {}
 
     // ********************* //
     // *** PUBLIC METHODS *** //
@@ -79,9 +81,9 @@ contract AssetTotsDaiLeverageExecutor is BaseLeverageExecutor {
         //retrieve addresses
         (address sDaiAddress, address daiAddress) = _getAddresses(collateralAddress);
         //unwrap tsDai
-        ITOFT(collateralAddress).unwrap(address(this), collateralAmountIn);
+        uint256 unwrapped = ITOFT(collateralAddress).unwrap(address(this), collateralAmountIn);
         //redeem from sDai
-        uint256 obtainedDai = ISavingsDai(sDaiAddress).redeem(collateralAmountIn, address(this), address(this));
+        uint256 obtainedDai = ISavingsDai(sDaiAddress).redeem(unwrapped, address(this), address(this));
         // swap DAI with USDO, and transfer to sender
         // If sendBack true and swapData.swapperData.toftInfo.isTokenOutToft false
         // The asset will be transfer via IERC20 transfer.
