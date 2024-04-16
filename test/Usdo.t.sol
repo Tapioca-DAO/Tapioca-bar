@@ -1214,7 +1214,7 @@ contract UsdoTest is UsdoTestHelper {
                 withdraw: false,
                 yieldBox: address(0),
                 assetId: 0,
-                unwrap: false,
+                compose: false,
                 lzSendParams: LZSendParam({
                     refundAddress: address(this),
                     fee: MessagingFee({lzTokenFee: 0, nativeFee: 0}),
@@ -1397,7 +1397,7 @@ contract UsdoTest is UsdoTestHelper {
                 withdraw: false,
                 yieldBox: address(0),
                 assetId: 0,
-                unwrap: false,
+                compose: false,
                 lzSendParams: LZSendParam({
                     refundAddress: address(this),
                     fee: MessagingFee({lzTokenFee: 0, nativeFee: 0}),
@@ -1554,7 +1554,7 @@ contract UsdoTest is UsdoTestHelper {
                     withdraw: false,
                     yieldBox: address(0),
                     assetId: 0,
-                    unwrap: false,
+                    compose: false,
                     lzSendParams: LZSendParam({
                         refundAddress: address(this),
                         fee: MessagingFee({lzTokenFee: 0, nativeFee: 0}),
@@ -1580,7 +1580,7 @@ contract UsdoTest is UsdoTestHelper {
                     withdraw: true,
                     yieldBox: address(0),
                     assetId: 0,
-                    unwrap: false,
+                    compose: false,
                     lzSendParams: LZSendParam({
                         refundAddress: address(this),
                         fee: MessagingFee({lzTokenFee: 0, nativeFee: 0}),
