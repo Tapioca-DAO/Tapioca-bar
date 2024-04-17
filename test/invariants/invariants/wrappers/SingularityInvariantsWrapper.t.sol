@@ -19,7 +19,7 @@ abstract contract SingularityInvariantsWrapper is InvariantsWrapper {
         assert_SINGULARITY_INVARIANT_B();
         assert_SINGULARITY_INVARIANT_C();
         assert_SINGULARITY_INVARIANT_D();
-        assert_LENDING_INVARIANT_J();
+        assert_SINGULARITY_INVARIANT_G();
 
         uint256 sumBalances;
         uint256 sumGhostBalances;
@@ -29,7 +29,7 @@ abstract contract SingularityInvariantsWrapper is InvariantsWrapper {
         }
 
         assert_SINGULARITY_INVARIANT_E(sumBalances);
-        assert_LENDING_INVARIANT_K(sumGhostBalances);
+        assert_SINGULARITY_INVARIANT_H(sumGhostBalances);
         return true;
     }
 

@@ -31,9 +31,9 @@ abstract contract CommonInvariants is HandlerAggregator {
         }
     }
 
-    function assert_COMMON_INVARIANT_B2(address _actor) internal {
+    function assert_COMMON_INVARIANT_D(address _actor) internal {
         if (IMarket(target).userBorrowPart(_actor) != 0) {
-            assertGt(IMarket(target).totalCollateralShare(), 0, COMMON_INVARIANT_B2);
+            assertGt(IMarket(target).totalCollateralShare(), 0, COMMON_INVARIANT_D);
         }
     }
 

@@ -69,12 +69,12 @@ abstract contract SingularityInvariants is HandlerAggregator {
     //                                           LENDING                                         //
     ///////////////////////////////////////////////////////////////////////////////////////////////
 
-    function assert_LENDING_INVARIANT_J() internal {
+    function assert_SINGULARITY_INVARIANT_G() internal {
         (, uint256 base) = singularity.totalAsset();
-        assertEq(ghost_totalAssetBase, base, LENDING_INVARIANT_J);
+        assertEq(ghost_totalAssetBase, base, SINGULARITY_INVARIANT_G);
     }
 
-    function assert_LENDING_INVARIANT_K(uint256 sumGhostBalances) internal {
-        assertGe(sumGhostBalances, ghost_totalAssetBase, LENDING_INVARIANT_K);
+    function assert_SINGULARITY_INVARIANT_H(uint256 sumGhostBalances) internal {
+        assertGe(sumGhostBalances, ghost_totalAssetBase, SINGULARITY_INVARIANT_H);
     }
 }

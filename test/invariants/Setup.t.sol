@@ -29,7 +29,7 @@ import {Actor, LiquidatorActor} from "./utils/Actor.sol";
 import {BaseTest} from "./base/BaseTest.t.sol";
 import {OracleMock} from "test/OracleMock.sol";
 import {ERC20WithoutStrategy} from "yieldbox/strategies/ERC20WithoutStrategy.sol";
-import {SwapperMock} from "test/SwapperMock.sol";// TODO change swapper
+import {SwapperMock} from "test/SwapperMock.sol";
 
 // Interfaces
 import {IERC20} from "@boringcrypto/boring-solidity/contracts/ERC20.sol";

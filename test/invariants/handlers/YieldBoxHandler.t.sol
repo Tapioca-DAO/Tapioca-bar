@@ -30,7 +30,7 @@ contract YieldBoxHandler is BaseHandler {
         bytes memory returnData;
 
         // Get a random assetId 
-        uint256 _assetId = _getRandomYieldBoxAssetId(i);//TODO aprove pearlimit
+        uint256 _assetId = _getRandomYieldBoxAssetId(i);
 
         // Get one of the three actors randomly
         address to = _getRandomActor(j);

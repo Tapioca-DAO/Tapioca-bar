@@ -81,10 +81,7 @@ contract LiquidationHandler is BaseHandler {
         receivers[0] = marketLiquidatorReceiver;
         datas[0] = abi.encode(uint256(maxBorrowPart));
 
-        if (maxBorrowPart > usdo.balanceOf(address(marketLiquidatorReceiver))) {
-            (success, returnData) = actor.proxy(address(usdo), abi.encodeWithSelector(IERC20.transfer.selector, address(marketLiquidatorReceiver), (maxBorrowPart - usdo.balanceOf(address(marketLiquidatorReceiver)))));
-            require(success, "LiquidationHandler: liquidate - Transfer failed");
-        }
+        bool solvent = _isSolvent(users[0], Market(target).exchangeRate(), true);
 
         // Select the liquidator as the mesage sender
         actor = liquidator;
@@ -99,6 +96,8 @@ contract LiquidationHandler is BaseHandler {
 
             _after();
 
+            // POSTCONDITIONS
+            assert_LIQUIDATION_INVARIANT_G(solvent);
             assert_GLOBAL_INVARIANT_A(Market.PauseType.Liquidation);
         }
     }

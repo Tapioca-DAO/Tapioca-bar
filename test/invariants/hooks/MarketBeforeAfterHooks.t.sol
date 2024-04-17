@@ -159,10 +159,6 @@ abstract contract MarketBeforeAfterHooks is BaseHooks {
     }
 
     function assert_COMMON_INVARIANT_O(uint256 shares) internal {
-/*         assertTrue(
-            shares != 0, 
-            COMMON_INVARIANT_O2
-            ); */
         assertEq(
             marketVars.totalCollateralShareBefore + shares, 
             marketVars.totalCollateralShareAfter, 
@@ -171,11 +167,6 @@ abstract contract MarketBeforeAfterHooks is BaseHooks {
     }
 
     function assert_LENDING_INVARIANT_C(uint256 shares) internal {
-/*         assertTrue(
-            shares != 0, 
-            LENDING_INVARIANT_C2
-            ); */
-        // LTV
         assertEq(
             marketVars.totalCollateralShareBefore - shares, 
             marketVars.totalCollateralShareAfter, 
@@ -188,11 +179,18 @@ abstract contract MarketBeforeAfterHooks is BaseHooks {
             return;
         }
         assertTrue(
-            marketVars.actorCollateralShareAfter != 0, 
+            marketVars.totalCollateralShareBefore != 0, 
             BORROWING_INVARIANT_C
             );
     }
 
+    function assert_BORROWING_INVARIANT_F() internal {
+        assertTrue(
+            marketVars.isSolventBefore, 
+            BORROWING_INVARIANT_F
+            );
+    }
+    
     ///////////////////////////////////////////////////////////////////////////////////////////////
     //                                   BIGBANG POST CONDITIONS                                 //
     ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -257,9 +255,12 @@ abstract contract MarketBeforeAfterHooks is BaseHooks {
     ///////////////////////////////////////////////////////////////////////////////////////////////
     //                                   LIQUIDATION POST CONDITIONS                             //
     ///////////////////////////////////////////////////////////////////////////////////////////////
-    function assert_LIQUIDATION_INVARIANT_G() internal {
+    function assert_LIQUIDATION_INVARIANT_G(bool liquidatable) internal {
         // Liquidations never work when an account is not liquidatable
-        // TODO
+        assertTrue(
+            liquidatable, 
+            LIQUIDATION_INVARIANT_G
+            );
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////////////

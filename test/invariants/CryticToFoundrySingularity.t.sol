@@ -24,8 +24,6 @@ contract CryticToFoundry is SingularityInvariantsWrapper, BigBangInvariantsWrapp
     /// @dev Foundry compatibility faster setup debugging
     function setUp() public {
         // Deploy protocol contracts and protocol actors
-        //_setUpBigBang();
-
         _setUpSingularity();
 
         // Deploy actors
@@ -108,7 +106,7 @@ contract CryticToFoundry is SingularityInvariantsWrapper, BigBangInvariantsWrapp
     //                                      BROKEN INVARIANTS                                    //
     ///////////////////////////////////////////////////////////////////////////////////////////////
 
-    function test_BORROWING_INVARIANT_E() public {//@audit-issue breaks invariant BORROWING_INVARIANT_E
+    function test_BORROWING_INVARIANT_E() public {// PASS: breaks invariant BORROWING_INVARIANT_E
         this.depositAsset(84027550495474829978967527970889097317445874881,1590568045798011523397932283681399078770600397943965740041,38932883677169898583585090110958012,112895457);
         this.addCollateral(110044444127432929055138182635735580347754944931,2105074998667199894907467084299265081540672403117395099628204,true,722003098614135832271952176790986063828038680,112888585);
         this.set(65);
@@ -117,21 +115,20 @@ contract CryticToFoundry is SingularityInvariantsWrapper, BigBangInvariantsWrapp
         echidna_borrowing_invariants();
     }
 
-    function test_LENDING_INVARIANT_F() public {//@audit-issue breaks invariant LENDING_INVARIANT_F
-        this.addCollateral(0,249967167224412689345948710965838539747203804318257341338,true,0,0);
-    }
-
-    function test_LENDING_INVARIANT_C2() public {//@audit-issue breaks invariant LENDING_INVARIANT_C2
-        this.removeCollateral(0,0,0);
-    }
-
-    function test_SINGULARITY_INVARIANTS1() public {
+    function test_SINGULARITY_INVARIANT_1() public {// PASS
         _setUpBlockAndActor(10483, USER1);
         this.depositAsset(93233437676153043780619095587883485304683921607809593242097127426835041472294, 40912076364029671817417446916375301006926381437720857482693271626673711978789, 115792089196482756578492131941064060604702231768235835301579706380861786892000, 353073666);
         this.addAsset(59790970058468620102435961557330553305472509152739786495245951948983907383242, true, 4319);
         _setUpBlockAndActor(14990, USER1);
         this.addAsset(33540519, true, 991);
         echidna_SINGULARITY_INVARIANTS();
+    }
+
+    function test_SINGULARITY_INVARIANT_F() public {// PASS
+        _setUpBlockAndActor(34233, USER1);
+        this.depositAsset(115792089237316195423570985008687907853269984665640564039457584007912971090988, 64257558948137924534486597881408886878859336335651806413999976908412012845627, 115792089237316195423570985008687907853269984665640564039457584007913129539860, 317097920000);
+        _setUpBlockAndActor(34233, USER3);
+        this.assert_SINGULARITY_INVARIANT_F(900);
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////////////

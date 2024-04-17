@@ -475,7 +475,7 @@ abstract contract Market is MarketERC20, Ownable {
         Rebase memory _totalBorrow = totalBorrow;
 
         uint256 collateralAmount = yieldBox.toAmount(collateralId, collateralShare, false);
-        return collateralAmount * (EXCHANGE_RATE_PRECISION / FEE_PRECISION)//@audit-issue division before multiplication -> users would get liquidated earlier
+        return collateralAmount * (EXCHANGE_RATE_PRECISION / FEE_PRECISION)
             * (_liquidation ? liquidationCollateralizationRate : collateralizationRate)
         // Moved exchangeRate here instead of dividing the other side to preserve more precision
         >= (borrowPart * _totalBorrow.elastic * _exchangeRate) / _totalBorrow.base;

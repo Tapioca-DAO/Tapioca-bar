@@ -51,6 +51,7 @@ contract BorrowHandler is BaseHandler {
 
             // POST CONDITIONS
             assert_BORROWING_INVARIANT_C(amount);
+            assert_BORROWING_INVARIANT_F();
 
             assert_GLOBAL_INVARIANT_A(Market.PauseType.Borrow);
         }
@@ -63,6 +64,8 @@ contract BorrowHandler is BaseHandler {
         // Get one of the three actors randomly
         address to = _getRandomActor(i);
 
+        uint256 totalSupply = usdo.totalSupply();
+
         (Module[] memory modules, bytes[] memory calls) = marketHelper.repay(address(actor), to, skim, part);
 
         (success, returnData) = _proxyCall(modules, calls);
@@ -72,11 +75,14 @@ contract BorrowHandler is BaseHandler {
 
             _decreaseGhostBorrow(to, part);
 
+            // POST CONDITIONS
             assert_GLOBAL_INVARIANT_A(Market.PauseType.Repay);
 
             if (targetType == MarketType.BIGBANG) {
                 assert_BIGBANG_INVARIANT_G();
                 assert_BIGBANG_INVARIANT_H();
+
+                assertEq(usdo.totalSupply(), totalSupply - part, BORROWING_INVARIANT_G);
             }
         }
     }

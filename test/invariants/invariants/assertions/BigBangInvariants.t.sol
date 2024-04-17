@@ -10,7 +10,7 @@ import {HandlerAggregator} from "../../HandlerAggregator.t.sol";
 /// @notice Implements View functions assertions for the protocol, checked in assertion testing mode
 /// @dev Inherits HandlerAggregator for checking actions in assertion testing mode
 abstract contract BigBangInvariants is HandlerAggregator {
-    function assert_BIGBANG_INVARIANT_A() internal {//@audit-issue initially set wrong
+    function assert_BIGBANG_INVARIANT_A() internal {
         assertGe(bigBang.maxMintFeeStart(), bigBang.minMintFeeStart(), BIGBANG_INVARIANT_A);
     }
 

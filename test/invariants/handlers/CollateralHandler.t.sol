@@ -61,7 +61,7 @@ contract CollateralHandler is BaseHandler {
                     LENDING_INVARIANT_A
                 );
                 assert_GLOBAL_INVARIANT_A(Market.PauseType.AddCollateral);
-                assert_COMMON_INVARIANT_O(share);//@audit-issue
+                assert_COMMON_INVARIANT_O(share);
 
                 if (targetType == MarketType.BIGBANG) {
                     assert_COMMON_INVARIANT_N();
@@ -96,7 +96,7 @@ contract CollateralHandler is BaseHandler {
                 collateralBefore - share,
                 LENDING_INVARIANT_A
             );
-            assert_LENDING_INVARIANT_C(share);//@audit-issue
+            assert_LENDING_INVARIANT_C(share);
 
             assert_GLOBAL_INVARIANT_A(Market.PauseType.RemoveCollateral);
         }
@@ -113,17 +113,30 @@ contract CollateralHandler is BaseHandler {
         // Get one of the three actors randomly
         address to = _getRandomActor(j);
 
+        uint256 balanceBefore = yieldbox.balanceOf(address(actor), assetIds[address(weth9Mock)]);
+
+        uint256 fractionBalanceBefore = yieldbox.balanceOf(to, assetIds[address(weth9Mock)]);
+
         (success, returnData) = actor.proxy(address(yieldbox), abi.encodeWithSelector(IYieldBox.transfer.selector, address(actor), target, assetIds[address(weth9Mock)], share));
 
         if (success) {
             (success, returnData) = actor.proxy(target, abi.encodeWithSelector(Singularity.addAsset.selector, address(actor), to, skim, share));
 
+            uint256 balanceDiff = yieldbox.balanceOf(address(actor), assetIds[address(weth9Mock)]) - balanceBefore;
+
+            uint256 fractionBalanceDiff = yieldbox.balanceOf(to, assetIds[address(weth9Mock)]) - fractionBalanceBefore;
+
             if (success) {
+                _after();
+
                 uint256 fraction = _getAssetFraction(share, false);
 
                 _increaseGhostAsset(to, fraction);
 
+                // FUNCTION POSCONDITIONS  
                 assert_GLOBAL_INVARIANT_A(Market.PauseType.AddAsset);
+
+                assertGe(balanceDiff, _getAssets(fractionBalanceDiff, false), SINGULARITY_INVARIANT_I);
             }
         }
     }
@@ -137,8 +150,11 @@ contract CollateralHandler is BaseHandler {
         (success, returnData) = actor.proxy(target, abi.encodeWithSelector(Singularity.removeAsset.selector, address(actor), to, fraction));
 
         if (success) {
+            _after();
+
             _decreaseGhostAsset(address(actor), fraction);
 
+            // FUNCTION POSCONDITIONS  
             assert_GLOBAL_INVARIANT_A(Market.PauseType.RemoveAsset);
         }
     }
@@ -184,7 +200,7 @@ contract CollateralHandler is BaseHandler {
         assertEq(yieldbox.balanceOf(target, assetIds[address(erc20Mock)]), yieldboxMarketBalanceBefore, string.concat(LENDING_INVARIANT_F, " - Yieldbox market balance mismatch"));
     }
 
-    function assert_LENDING_INVARIANT_G(uint256 share) external setup onlyTargetMarket(MarketType.SINGULARITY) {
+    function assert_SINGULARITY_INVARIANT_F(uint256 share) external setup onlyTargetMarket(MarketType.SINGULARITY) {
         bool success;
         bytes memory returnData;
 
@@ -202,22 +218,26 @@ contract CollateralHandler is BaseHandler {
         (success, returnData) = actor.proxy(address(yieldbox), abi.encodeWithSelector(IYieldBox.transfer.selector, address(actor), target, assetIds[address(weth9Mock)], share));
         require(success, "Transfer failed");
 
-        (success, returnData) = actor.proxy(target, abi.encodeWithSelector(Singularity.addAsset.selector, address(actor), skim, share));
+        (success, returnData) = actor.proxy(target, abi.encodeWithSelector(Singularity.addAsset.selector, address(actor), address(actor), skim, share));
         require(success, "Add asset failed");
         uint256 fraction = abi.decode(returnData, (uint256));
+        require(fraction > 0, "Add asset failed");
+
+        console.log("Yieldbox: ", yieldbox.balanceOf(address(actor), assetIds[address(weth9Mock)]));
 
         (success, returnData) = actor.proxy(target, abi.encodeWithSelector(Singularity.removeAsset.selector, address(actor), address(actor), fraction));
         require(success, "Remove asset failed");
 
+        console.log("Yieldbox: ", yieldbox.balanceOf(address(actor), assetIds[address(weth9Mock)]));
+
         _after();
 
         // USER ASSERTIONS
-        assertEq(assetBefore, market.balanceOf(address(actor)), string.concat(LENDING_INVARIANT_G, " - Asset share mismatch"));
-        assertEq(yieldboxShareBefore, yieldbox.balanceOf(address(actor), assetIds[address(weth9Mock)]), string.concat(LENDING_INVARIANT_G, " - Yieldbox share mismatch"));
+        assertEq(assetBefore, market.balanceOf(address(actor)), string.concat(SINGULARITY_INVARIANT_F, " - Asset share mismatch"));
+        assertEq(yieldboxShareBefore, yieldbox.balanceOf(address(actor), assetIds[address(weth9Mock)]), string.concat(SINGULARITY_INVARIANT_F, " - Yieldbox share mismatch"));
         // MARKET ASSERTIONS
-        assertEq(marketVars.totalSupplyBefore, marketVars.totalSupplyAfter, string.concat(LENDING_INVARIANT_G, " - Total asset share mismatch"));
-        assertEq(yieldbox.balanceOf(address(actor), assetIds[address(weth9Mock)]), yieldboxShareBefore, string.concat(LENDING_INVARIANT_G, " - Yieldbox share mismatch"));
-        assertEq(yieldbox.balanceOf(target, assetIds[address(weth9Mock)]), yieldboxMarketBalanceBefore, string.concat(LENDING_INVARIANT_G, " - Yieldbox market balance mismatch"));
+        assertEq(marketVars.totalSupplyBefore, marketVars.totalSupplyAfter, string.concat(SINGULARITY_INVARIANT_F, " - Total asset share mismatch"));
+        assertEq(yieldbox.balanceOf(target, assetIds[address(weth9Mock)]), yieldboxMarketBalanceBefore, string.concat(SINGULARITY_INVARIANT_F, " - Yieldbox market balance mismatch"));
     }
 
 

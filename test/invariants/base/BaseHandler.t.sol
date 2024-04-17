@@ -164,4 +164,11 @@ contract BaseHandler is HookAggregator {
         }
 
     }
+
+    function _getAssets(uint256 share, bool roundUp) internal view returns (uint256 assets) {
+        (uint256 elastic,) = singularity.totalBorrow();
+        (uint256 totalAssetElastic, uint256 base) = singularity.totalAsset();
+        uint256 allShare = totalAssetElastic + yieldbox.toShare(assetIds[address(erc20Mock)], elastic, roundUp);
+        assets = allShare == 0 ? share : (share * allShare) / base;
+    }
 }
