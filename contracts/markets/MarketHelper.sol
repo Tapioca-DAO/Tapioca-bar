@@ -35,7 +35,7 @@ contract MarketHelper {
 
         IYieldBox yieldBox = IYieldBox(sgl.yieldBox());
         (uint128 totalAssetElastic, uint128 totalAssetBase) = sgl.totalAsset();
-        (uint128 totalBorrowElastic,) = sgl.totalBorrow();
+        (uint128 totalBorrowElastic,) = sgl._totalBorrow();
 
         uint256 allShare = totalAssetElastic + yieldBox.toShare(tokenId, totalBorrowElastic, true);
         share = (amount * allShare) / totalAssetBase;
@@ -58,13 +58,13 @@ contract MarketHelper {
     ) external view returns (Module[] memory modules, bytes[] memory calls) {
         ISingularity sgl = ISingularity(sglAddress);
 
-        (bool updated, uint256 _exchangeRate) = ITapiocaOracle(sgl.oracle()).peek(sgl.oracleData());
+        (bool updated, uint256 _exchangeRate) = ITapiocaOracle(sgl._oracle()).peek(sgl._oracleData());
         if (!updated || _exchangeRate == 0) {
-            _exchangeRate = sgl.exchangeRate(); //use stored rate
+            _exchangeRate = sgl._exchangeRate(); //use stored rate
         }
         if (_exchangeRate == 0) revert ExchangeRateNotValid();
 
-        (uint128 totalBorrowElastic, uint128 totalBorrowBase) = sgl.totalBorrow();
+        (uint128 totalBorrowElastic, uint128 totalBorrowBase) = sgl._totalBorrow();
 
         SGLCommon._ViewLiquidationStruct memory data;
         {
@@ -73,13 +73,13 @@ contract MarketHelper {
             data.minLiquidationBonus = minLiquidationBonus;
             data.exchangeRate = _exchangeRate;
             data.yieldBox = IYieldBox(sgl.yieldBox());
-            data.collateralId = sgl.collateralId();
-            data.userCollateralShare = sgl.userCollateralShare(user);
-            data.userBorrowPart = sgl.userBorrowPart(user);
+            data.collateralId = sgl._collateralId();
+            data.userCollateralShare = sgl._userCollateralShare(user);
+            data.userBorrowPart = sgl._userBorrowPart(user);
             data.totalBorrow = Rebase({elastic: totalBorrowElastic, base: totalBorrowBase});
-            data.liquidationBonusAmount = IMarket(sglAddress).liquidationBonusAmount();
-            data.liquidationCollateralizationRate = sgl.liquidationCollateralizationRate();
-            data.liquidationMultiplier = sgl.liquidationMultiplier();
+            data.liquidationBonusAmount = IMarket(sglAddress)._liquidationBonusAmount();
+            data.liquidationCollateralizationRate = sgl._liquidationCollateralizationRate();
+            data.liquidationMultiplier = sgl._liquidationMultiplier();
             data.exchangeRatePrecision = exchangeRatePrecision;
             data.feeDecimalsPrecision = feeDecimalsPrecision;
         }
