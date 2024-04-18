@@ -36,7 +36,7 @@ export const buildBBModules = async (
         },
         {
             contract: await hre.ethers.getContractFactory('BBLeverage'),
-            deploymentName: DEPLOYMENT_NAMES.BB_COLLATERAL_MODULE,
+            deploymentName: DEPLOYMENT_NAMES.BB_LEVERAGE_MODULE,
             args: [],
         },
     ];

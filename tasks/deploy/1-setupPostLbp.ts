@@ -35,4 +35,8 @@ export async function setupPostLbp(params: TTapiocaDeployerVmPass<object>) {
     await setupUsdoFlashloanHelperInUsdo(setupParams);
     await setupCreateYBAssets(setupParams);
     await setupInitAndRegisterMarket(setupParams);
+
+    await VM.executeMulticall(calls);
+
+    console.log('[+] Post deploy task completed');
 }

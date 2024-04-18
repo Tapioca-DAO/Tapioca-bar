@@ -21,6 +21,7 @@ import { buildUSDOModules } from 'tasks/deployBuilds/buildUSDOModules';
 import { deployPostLbp__task_2 } from './1-2-deployPostLbp';
 import { DEPLOYMENT_NAMES, DEPLOY_CONFIG } from './DEPLOY_CONFIG';
 import { setupPostLbp } from './1-setupPostLbp';
+import { TContract } from '@tapioca-sdk/shared';
 
 /**
  * Deploys on Ethereum and Sepolia
@@ -44,6 +45,7 @@ export const deployPostLbp__task = async (
             overrideOptions: {
                 gasLimit: 10_000_000,
             },
+            bytecodeSizeLimit: 80_000, // EVM starts to complain for contract size but we can still deploy, just need to tune down the limit
         },
         tapiocaDeployTask,
         tapiocaPostDeployTask,
@@ -75,6 +77,8 @@ async function tapiocaDeployTask(params: TTapiocaDeployerVmPass<object>) {
         mtETH,
         tReth,
         tWSTETH,
+        tapStratWithAsset,
+        wethStratWithAsset,
     } = deploy__LoadDeployments_Arb({
         hre,
         tag,
@@ -162,6 +166,8 @@ async function tapiocaDeployTask(params: TTapiocaDeployerVmPass<object>) {
             cluster,
             tapToken,
             pearlmit,
+            tapAssetId: tapStratWithAsset.meta.ybAssetId,
+            wethAssetId: wethStratWithAsset.meta.ybAssetId,
             owner,
         }),
     ).add(await buildSGLMediumRiskMC(hre, DEPLOYMENT_NAMES.SGL_MEDIUM_RISK_MC));
@@ -177,29 +183,8 @@ async function tapiocaDeployTask(params: TTapiocaDeployerVmPass<object>) {
     ) {
         // @ts-ignore
         (await buildBBModules(hre)).forEach((module) => VM.add(module));
-        VM.add(
-            await buildBBMediumRiskMC(hre, DEPLOYMENT_NAMES.BB_MEDIUM_RISK_MC),
-        )
-            .add(
-                await buildBBMediumRiskMC(
-                    hre,
-                    DEPLOYMENT_NAMES.BB_MT_ETH_MARKET,
-                ),
-            )
-            .add(
-                await buildBBMediumRiskMC(
-                    hre,
-                    DEPLOYMENT_NAMES.BB_T_RETH_MARKET,
-                ),
-            )
-            .add(
-                await buildBBMediumRiskMC(
-                    hre,
-                    DEPLOYMENT_NAMES.BB_T_WST_ETH_MARKET,
-                ),
-            );
 
-        // BB markets
+        // BB Asset strategies
         VM.add(
             await buildERC20WithoutStrategy(hre, {
                 deploymentName:
@@ -223,16 +208,39 @@ async function tapiocaDeployTask(params: TTapiocaDeployerVmPass<object>) {
                     token: tWSTETH,
                     yieldBox,
                 }),
-            )
-            .add(
-                await buildERC20WithoutStrategy(hre, {
-                    deploymentName:
-                        DEPLOYMENT_NAMES.YB_SGLP_ASSET_WITHOUT_STRATEGY,
-                    token: DEPLOY_CONFIG.POST_LBP[hre.SDK.eChainId]!.sGLP!,
-                    yieldBox,
-                }),
             );
 
+        // BB Markets
+        VM.add(
+            await buildBBMediumRiskMC(hre, DEPLOYMENT_NAMES.BB_MEDIUM_RISK_MC),
+        )
+            .add(
+                await buildBBMediumRiskMC(
+                    hre,
+                    DEPLOYMENT_NAMES.BB_MT_ETH_MARKET,
+                ),
+            )
+            .add(
+                await buildBBMediumRiskMC(
+                    hre,
+                    DEPLOYMENT_NAMES.BB_T_RETH_MARKET,
+                ),
+            )
+            .add(
+                await buildBBMediumRiskMC(
+                    hre,
+                    DEPLOYMENT_NAMES.BB_T_WST_ETH_MARKET,
+                ),
+            );
+
+        // SGL asset strategies
+        VM.add(
+            await buildERC20WithoutStrategy(hre, {
+                deploymentName: DEPLOYMENT_NAMES.YB_SGLP_ASSET_WITHOUT_STRATEGY,
+                token: DEPLOY_CONFIG.POST_LBP[hre.SDK.eChainId]!.sGLP!,
+                yieldBox,
+            }),
+        );
         // SGL markets
         VM.add(
             await buildSGLMediumRiskMC(hre, DEPLOYMENT_NAMES.SGL_S_GLP_MARKET),
@@ -244,6 +252,16 @@ async function tapiocaDeployTask(params: TTapiocaDeployerVmPass<object>) {
      * SGL Markets: sDAI
      */
     if (chainInfo.name === 'ethereum' || chainInfo.name === 'sepolia') {
+        // SGL asset strategies
+        VM.add(
+            await buildERC20WithoutStrategy(hre, {
+                deploymentName: DEPLOYMENT_NAMES.YB_SDAI_ASSET_WITHOUT_STRATEGY,
+                token: DEPLOY_CONFIG.POST_LBP[hre.SDK.eChainId]!.sDAI!,
+                yieldBox,
+            }),
+        );
+
+        // SGL markets
         VM.add(
             await buildSGLMediumRiskMC(hre, DEPLOYMENT_NAMES.SGL_S_DAI_MARKET),
         );
@@ -292,12 +310,30 @@ function deploy__LoadDeployments_Generic(params: {
         params.tag,
     ).address;
 
+    type TStratAsset = TContract & { meta: { ybAssetId: string } };
+    const tapStratWithAsset: TStratAsset = loadGlobalContract(
+        hre,
+        TAPIOCA_PROJECTS_NAME.TapiocaPeriph,
+        hre.SDK.eChainId,
+        TAPIOCA_PERIPH_CONFIG.DEPLOYMENT_NAMES.TAP_TOKEN_YB_EMPTY_STRAT,
+        params.tag,
+    );
+    const wethStratWithAsset: TStratAsset = loadGlobalContract(
+        hre,
+        TAPIOCA_PROJECTS_NAME.TapiocaPeriph,
+        hre.SDK.eChainId,
+        TAPIOCA_PERIPH_CONFIG.DEPLOYMENT_NAMES.WETH_YB_EMPTY_STRAT,
+        params.tag,
+    );
+
     return {
         tapToken,
         yieldBox,
         cluster,
         pearlmit,
         zeroXSwapper,
+        tapStratWithAsset,
+        wethStratWithAsset,
     };
 }
 

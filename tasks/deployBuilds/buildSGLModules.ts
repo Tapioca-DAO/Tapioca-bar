@@ -36,7 +36,7 @@ export const buildSGLModules = async (
         },
         {
             contract: await hre.ethers.getContractFactory('SGLLeverage'),
-            deploymentName: DEPLOYMENT_NAMES.SGL_COLLATERAL_MODULE,
+            deploymentName: DEPLOYMENT_NAMES.SGL_LEVERAGE_MODULE,
             args: [],
         },
     ];

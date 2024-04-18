@@ -11,6 +11,7 @@ import {
 } from '../1-deployPostLbp';
 import { TPostDeployParams } from '../1-setupPostLbp';
 import { DEPLOYMENT_NAMES, DEPLOY_CONFIG } from '../DEPLOY_CONFIG';
+import { loadLocalContract } from 'tapioca-sdk';
 
 export async function setupInitAndRegisterMarket(params: TPostDeployParams) {
     const { hre, deployed, tag } = params;
@@ -38,11 +39,17 @@ export async function setupInitAndRegisterMarket(params: TPostDeployParams) {
     const usdo = deployed.find(
         (e) => e.name === DEPLOYMENT_NAMES.USDO,
     )!.address;
-    const usdoStrategy = deployed.find(
-        (e) => e.name === DEPLOYMENT_NAMES.YB_USDO_ASSET_WITHOUT_STRATEGY,
-    )!;
+    const usdoStrategy = loadLocalContract(
+        hre,
+        hre.SDK.eChainId,
+        DEPLOYMENT_NAMES.YB_USDO_ASSET_WITHOUT_STRATEGY,
+        tag,
+    );
 
-    const yieldBox = await hre.ethers.getContractAt('IYieldBox', yieldBoxDep);
+    const yieldBox = (await hre.ethers.getContractAt(
+        'tapioca-periph/interfaces/yieldbox/IYieldBox.sol:IYieldBox',
+        yieldBoxDep,
+    )) as IYieldBox;
 
     /**
      * BigBang
@@ -146,9 +153,9 @@ export async function setupInitAndRegisterMarket(params: TPostDeployParams) {
                 marketName: DEPLOYMENT_NAMES.SGL_S_DAI_MARKET,
                 collateralAddr: DEPLOY_CONFIG.POST_LBP[hre.SDK.eChainId]!.sDAI!,
                 oracleAddr: tSdaiOracle,
-                collateralStrategy:
+                strategyDepName:
                     DEPLOYMENT_NAMES.YB_SDAI_ASSET_WITHOUT_STRATEGY,
-                usdoStrategy: usdoStrategy.name,
+                usdoStrategy: usdoStrategy.address,
                 usdoAddr: usdo,
                 collateralizationRate: tSdaiDeployConf.collateralizationRate,
                 liquidationCollateralizationRate:
@@ -169,15 +176,16 @@ export async function setupInitAndRegisterMarket(params: TPostDeployParams) {
         {
             const tSglpDeployConf =
                 DEPLOY_CONFIG.POST_LBP[hre.SDK.eChainId]!.tSGlpMarketConfig!;
+
             await initSGLMarket({
                 ...params,
                 factory: await hre.ethers.getContractFactory('Singularity'),
                 marketName: DEPLOYMENT_NAMES.SGL_S_GLP_MARKET,
                 collateralAddr: DEPLOY_CONFIG.POST_LBP[hre.SDK.eChainId]!.sGLP!,
                 oracleAddr: tSGLPOracle,
-                collateralStrategy:
-                    DEPLOYMENT_NAMES.YB_SDAI_ASSET_WITHOUT_STRATEGY,
-                usdoStrategy: usdoStrategy.name,
+                strategyDepName:
+                    DEPLOYMENT_NAMES.YB_SGLP_ASSET_WITHOUT_STRATEGY,
+                usdoStrategy: usdoStrategy.address,
                 usdoAddr: usdo,
                 collateralizationRate: tSglpDeployConf.collateralizationRate,
                 liquidationCollateralizationRate:
@@ -231,7 +239,7 @@ async function initBBMarket(
     const marketDep = deployed.find((e) => e.name === marketName)!;
     const market = factory.attach(marketDep.address);
 
-    if ((await market.penrose()).toLowerCase() !== penroseAddr.toLowerCase()) {
+    if ((await market._penrose()).toLowerCase() !== penroseAddr.toLowerCase()) {
         console.log(`\t[+] Init market ${marketName} ${marketDep.address}`);
 
         const strategyAddr = deployed.find(
@@ -303,7 +311,7 @@ async function initSGLMarket(
         penroseAddr: string;
         marketName: string;
         collateralAddr: string;
-        collateralStrategy: string;
+        strategyDepName: string;
         oracleAddr: string;
         usdoAddr: string;
         usdoStrategy: string;
@@ -323,7 +331,7 @@ async function initSGLMarket(
         factory,
         penroseAddr,
         collateralAddr,
-        collateralStrategy,
+        strategyDepName,
         usdoAddr,
         usdoStrategy,
         exchangeRatePrecision,
@@ -336,10 +344,13 @@ async function initSGLMarket(
     const marketDep = deployed.find((e) => e.name === marketName)!;
     const market = factory.attach(marketDep.address);
 
-    if ((await market.penrose()).toLowerCase() !== penroseAddr.toLowerCase()) {
+    if ((await market._penrose()).toLowerCase() !== penroseAddr.toLowerCase()) {
         console.log(`\t[+] Init market ${marketName} ${marketDep.address}`);
 
         const assetId = await yieldBox.ids(1, usdoAddr, usdoStrategy, 0);
+        const collateralStrategy = deployed.find(
+            (e) => e.name === strategyDepName,
+        )!.address;
         const collateralId = await yieldBox.ids(
             1,
             collateralAddr,

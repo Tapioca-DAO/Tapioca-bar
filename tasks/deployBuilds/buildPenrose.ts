@@ -10,6 +10,8 @@ export const buildPenrose = async (
         cluster: string;
         tapToken: string;
         pearlmit: string;
+        tapAssetId: string;
+        wethAssetId: string;
         owner: string;
     },
 ): Promise<IDeployerVMAdd<Penrose__factory>> => {
@@ -23,6 +25,8 @@ export const buildPenrose = async (
             tapToken,
             DEPLOY_CONFIG.MISC[hre.SDK.eChainId]!.WETH,
             pearlmit,
+            params.tapAssetId,
+            params.wethAssetId,
             owner,
         ],
         dependsOn: [],
