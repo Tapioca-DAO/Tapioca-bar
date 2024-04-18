@@ -86,6 +86,8 @@ contract Usdo is BaseUsdo, Pausable, ReentrancyGuard, ERC20Permit {
 
         allowedMinter[_getChainId()][_initData.delegate] = true;
         allowedBurner[_getChainId()][_initData.delegate] = true;
+
+        _transferOwnership(_initData.delegate);
     }
 
     /**
