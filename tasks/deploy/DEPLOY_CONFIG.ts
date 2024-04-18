@@ -75,33 +75,33 @@ const marketConfigArb: TPostLbp[EChainID] = {
         debtRateMin: 0,
         debtRateMax: 0,
         collateralizationRate: 87_000, // 87%
-        liquidationCollateralizationRate: 80_000, // 80%,
+        liquidationCollateralizationRate: 93_000, //  93%
     },
     tRethMarketConfig: {
         debtRateAgainstEth: ethers.utils.parseEther('0.15'), // 15%
         debtRateMin: ethers.utils.parseEther('0.05'), // 5%
         debtRateMax: ethers.utils.parseEther('0.35'), // 35%
         collateralizationRate: 87_000, // 87%
-        liquidationCollateralizationRate: 80_000, // 80%
+        liquidationCollateralizationRate: 93_000, // 93%
     },
     twSTETHMarketConfig: {
         debtRateAgainstEth: ethers.utils.parseEther('0.15'), // 15%
         debtRateMin: ethers.utils.parseEther('0.05'), // 5%
         debtRateMax: ethers.utils.parseEther('0.35'), // 35%
         collateralizationRate: 86_000, // 86%
-        liquidationCollateralizationRate: 80_000, // 80%
+        liquidationCollateralizationRate: 92_000, // 92%
     },
 
     tSGlpMarketConfig: {
         collateralizationRate: 85_000, // 85%
-        liquidationCollateralizationRate: 80_000, // 80%
+        liquidationCollateralizationRate: 90_000, // 90%
     },
 };
 
 const marketConfigMainnet: TPostLbp[EChainID] = {
     tSdaiMarketConfig: {
         collateralizationRate: 98_000, // 98%
-        liquidationCollateralizationRate: 90_000, // 90%
+        liquidationCollateralizationRate: 99_000, // 99%
     },
 };
 const POST_LBP: TPostLbp = {

@@ -1,5 +1,5 @@
 import { IDeployerVMAdd } from '@tapioca-sdk//ethers/hardhat/DeployerVM';
-import { Origins__factory } from '@typechain/index';
+import { IYieldBox, Origins__factory } from '@typechain/index';
 import { BigNumberish } from 'ethers';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 
@@ -18,17 +18,17 @@ export const buildOrigins = async (
     },
 ): Promise<IDeployerVMAdd<Origins__factory>> => {
     const { deploymentName } = params;
-    const yieldBox = await hre.ethers.getContractAt(
-        'YieldBox',
+    const yieldBox = (await hre.ethers.getContractAt(
+        'tapioca-periph/interfaces/yieldbox/IYieldBox.sol:IYieldBox',
         params.yieldBox,
-    );
-    const assetId = await yieldBox.assetId(
+    )) as IYieldBox;
+    const assetId = await yieldBox.ids(
         1,
         params.asset,
         params.assetStrategy,
         0,
     );
-    const collateralId = await yieldBox.assetId(
+    const collateralId = await yieldBox.ids(
         1,
         params.collateral,
         params.collateralStrategy,
@@ -46,8 +46,8 @@ export const buildOrigins = async (
             assetId,
             params.collateral,
             collateralId,
-            exchangeRatePrecision,
             params.oracle,
+            exchangeRatePrecision,
             params.collateralizationRate,
         ],
         dependsOn: [],

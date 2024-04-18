@@ -36,6 +36,7 @@ export const deployPostLbp__task = async (
     _taskArgs: TTapiocaDeployTaskArgs,
     hre: HardhatRuntimeEnvironment,
 ) => {
+    console.log('[+] Deployed Post LBP phase 1');
     await hre.SDK.DeployerVM.tapiocaDeployTask(
         _taskArgs,
         {
@@ -45,11 +46,13 @@ export const deployPostLbp__task = async (
             overrideOptions: {
                 gasLimit: 10_000_000,
             },
+            // max size is 24kb, let's do 3 contracts per batch, 72kb
             bytecodeSizeLimit: 80_000, // EVM starts to complain for contract size but we can still deploy, just need to tune down the limit
         },
         tapiocaDeployTask,
         tapiocaPostDeployTask,
     );
+    console.log('[+] Deployed Post LBP phase 2');
     await deployPostLbp__task_2(_taskArgs, hre);
 };
 

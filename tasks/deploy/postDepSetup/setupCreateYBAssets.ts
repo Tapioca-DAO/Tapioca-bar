@@ -1,5 +1,4 @@
 import { IYieldBox } from '@typechain/index';
-import { Contract } from 'ethers';
 import { deploy__LoadDeployments_Arb } from '../1-deployPostLbp';
 import { TPostDeployParams } from '../1-setupPostLbp';
 import { DEPLOYMENT_NAMES, DEPLOY_CONFIG } from '../DEPLOY_CONFIG';
