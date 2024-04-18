@@ -5,12 +5,12 @@ import {
     Singularity__factory,
 } from '@typechain/index';
 import { BigNumberish } from 'ethers';
-import { deployLoadDeployments } from '../1-deployPostLbp';
+import {
+    deploy__LoadDeployments_Arb,
+    deploy__LoadDeployments_Eth,
+} from '../1-deployPostLbp';
 import { TPostDeployParams } from '../1-setupPostLbp';
 import { DEPLOYMENT_NAMES, DEPLOY_CONFIG } from '../DEPLOY_CONFIG';
-import { loadGlobalContract, loadLocalContract } from 'tapioca-sdk';
-import { TAPIOCA_PROJECTS_NAME } from '@tapioca-sdk/api/config';
-import { buildOrigins } from 'tasks/deployBuilds/buildOrigins';
 
 export async function setupInitAndRegisterMarket(params: TPostDeployParams) {
     const { hre, deployed, tag } = params;
@@ -23,9 +23,8 @@ export async function setupInitAndRegisterMarket(params: TPostDeployParams) {
         tRethOracle,
         tWSTETH,
         tWstEthOracle,
-        tSdaiOracle,
         tSGLPOracle,
-    } = deployLoadDeployments({
+    } = deploy__LoadDeployments_Arb({
         hre,
         tag,
     });
@@ -48,77 +47,84 @@ export async function setupInitAndRegisterMarket(params: TPostDeployParams) {
     /**
      * BigBang
      */
-    // MT_ETH
-    {
-        const mtEthDeployConf =
-            DEPLOY_CONFIG.POST_LBP[hre.SDK.eChainId]!.mtEthMarketConfig!;
-        await initBBMarket({
-            ...params,
-            factory: await hre.ethers.getContractFactory('BigBang'),
-            marketName: DEPLOYMENT_NAMES.BB_MT_ETH_MARKET,
-            collateralAddr: mtETH,
-            strategyDepName: DEPLOYMENT_NAMES.YB_MT_ETH_ASSET_WITHOUT_STRATEGY,
-            oracleAddr: mtEthOracle,
-            debtRateAgainstEth: mtEthDeployConf.debtRateAgainstEth,
-            debtRateMin: mtEthDeployConf.debtRateMin,
-            debtRateMax: mtEthDeployConf.debtRateMax,
-            collateralizationRate: mtEthDeployConf.collateralizationRate,
-            liquidationCollateralizationRate:
-                mtEthDeployConf.liquidationCollateralizationRate,
-            exchangeRatePrecision: (1e18).toString(),
-            leverageExecutorAddr,
-            penroseAddr,
-            yieldBox,
-        });
-    }
+    if (
+        hre.SDK.chainInfo.name === 'arbitrum' ||
+        hre.SDK.chainInfo.name === 'arbitrum_sepolia'
+    ) {
+        // MT_ETH
+        {
+            const mtEthDeployConf =
+                DEPLOY_CONFIG.POST_LBP[hre.SDK.eChainId]!.mtEthMarketConfig!;
+            await initBBMarket({
+                ...params,
+                factory: await hre.ethers.getContractFactory('BigBang'),
+                marketName: DEPLOYMENT_NAMES.BB_MT_ETH_MARKET,
+                collateralAddr: mtETH,
+                strategyDepName:
+                    DEPLOYMENT_NAMES.YB_MT_ETH_ASSET_WITHOUT_STRATEGY,
+                oracleAddr: mtEthOracle,
+                debtRateAgainstEth: mtEthDeployConf.debtRateAgainstEth,
+                debtRateMin: mtEthDeployConf.debtRateMin,
+                debtRateMax: mtEthDeployConf.debtRateMax,
+                collateralizationRate: mtEthDeployConf.collateralizationRate,
+                liquidationCollateralizationRate:
+                    mtEthDeployConf.liquidationCollateralizationRate,
+                exchangeRatePrecision: (1e18).toString(),
+                leverageExecutorAddr,
+                penroseAddr,
+                yieldBox,
+            });
+        }
 
-    // T_RETH
-    {
-        const tRethDeployConf =
-            DEPLOY_CONFIG.POST_LBP[hre.SDK.eChainId]!.tRethMarketConfig!;
-        await initBBMarket({
-            ...params,
-            factory: await hre.ethers.getContractFactory('BigBang'),
-            marketName: DEPLOYMENT_NAMES.BB_T_RETH_MARKET,
-            collateralAddr: tReth,
-            strategyDepName: DEPLOYMENT_NAMES.YB_T_RETH_ASSET_WITHOUT_STRATEGY,
-            oracleAddr: tRethOracle,
-            debtRateAgainstEth: tRethDeployConf.debtRateAgainstEth,
-            debtRateMin: tRethDeployConf.debtRateMin,
-            debtRateMax: tRethDeployConf.debtRateMax,
-            collateralizationRate: tRethDeployConf.collateralizationRate,
-            liquidationCollateralizationRate:
-                tRethDeployConf.liquidationCollateralizationRate,
-            exchangeRatePrecision: (1e18).toString(),
-            leverageExecutorAddr,
-            penroseAddr,
-            yieldBox,
-        });
-    }
+        // T_RETH
+        {
+            const tRethDeployConf =
+                DEPLOY_CONFIG.POST_LBP[hre.SDK.eChainId]!.tRethMarketConfig!;
+            await initBBMarket({
+                ...params,
+                factory: await hre.ethers.getContractFactory('BigBang'),
+                marketName: DEPLOYMENT_NAMES.BB_T_RETH_MARKET,
+                collateralAddr: tReth,
+                strategyDepName:
+                    DEPLOYMENT_NAMES.YB_T_RETH_ASSET_WITHOUT_STRATEGY,
+                oracleAddr: tRethOracle,
+                debtRateAgainstEth: tRethDeployConf.debtRateAgainstEth,
+                debtRateMin: tRethDeployConf.debtRateMin,
+                debtRateMax: tRethDeployConf.debtRateMax,
+                collateralizationRate: tRethDeployConf.collateralizationRate,
+                liquidationCollateralizationRate:
+                    tRethDeployConf.liquidationCollateralizationRate,
+                exchangeRatePrecision: (1e18).toString(),
+                leverageExecutorAddr,
+                penroseAddr,
+                yieldBox,
+            });
+        }
 
-    // T_WST_ETH
-    {
-        const tWSTETHDeployConf =
-            DEPLOY_CONFIG.POST_LBP[hre.SDK.eChainId]!.twSTETHMarketConfig!;
-        await initBBMarket({
-            ...params,
-            factory: await hre.ethers.getContractFactory('BigBang'),
-            marketName: DEPLOYMENT_NAMES.BB_T_WST_ETH_MARKET,
-            collateralAddr: tWSTETH,
-            strategyDepName:
-                DEPLOYMENT_NAMES.YB_T_WST_ETH_ASSET_WITHOUT_STRATEGY,
-            oracleAddr: tWstEthOracle,
-            debtRateAgainstEth: tWSTETHDeployConf.debtRateAgainstEth,
-            debtRateMin: tWSTETHDeployConf.debtRateMin,
-            debtRateMax: tWSTETHDeployConf.debtRateMax,
-            collateralizationRate: tWSTETHDeployConf.collateralizationRate,
-            liquidationCollateralizationRate:
-                tWSTETHDeployConf.liquidationCollateralizationRate,
-            exchangeRatePrecision: (1e18).toString(),
-            leverageExecutorAddr,
-            penroseAddr,
-            yieldBox,
-        });
+        // T_WST_ETH
+        {
+            const tWSTETHDeployConf =
+                DEPLOY_CONFIG.POST_LBP[hre.SDK.eChainId]!.twSTETHMarketConfig!;
+            await initBBMarket({
+                ...params,
+                factory: await hre.ethers.getContractFactory('BigBang'),
+                marketName: DEPLOYMENT_NAMES.BB_T_WST_ETH_MARKET,
+                collateralAddr: tWSTETH,
+                strategyDepName:
+                    DEPLOYMENT_NAMES.YB_T_WST_ETH_ASSET_WITHOUT_STRATEGY,
+                oracleAddr: tWstEthOracle,
+                debtRateAgainstEth: tWSTETHDeployConf.debtRateAgainstEth,
+                debtRateMin: tWSTETHDeployConf.debtRateMin,
+                debtRateMax: tWSTETHDeployConf.debtRateMax,
+                collateralizationRate: tWSTETHDeployConf.collateralizationRate,
+                liquidationCollateralizationRate:
+                    tWSTETHDeployConf.liquidationCollateralizationRate,
+                exchangeRatePrecision: (1e18).toString(),
+                leverageExecutorAddr,
+                penroseAddr,
+                yieldBox,
+            });
+        }
     }
 
     /**
@@ -126,49 +132,62 @@ export async function setupInitAndRegisterMarket(params: TPostDeployParams) {
      */
 
     // SDAI
-    {
-        const tSdaiDeployConf =
-            DEPLOY_CONFIG.POST_LBP[hre.SDK.eChainId]!.tSdaiMarketConfig!;
-        await initSGLMarket({
-            ...params,
-            factory: await hre.ethers.getContractFactory('Singularity'),
-            marketName: DEPLOYMENT_NAMES.SGL_S_DAI_MARKET,
-            collateralAddr: DEPLOY_CONFIG.POST_LBP[hre.SDK.eChainId]!.sDAI!,
-            oracleAddr: tSdaiOracle,
-            collateralStrategy: DEPLOYMENT_NAMES.YB_SDAI_ASSET_WITHOUT_STRATEGY,
-            usdoStrategy: usdoStrategy.name,
-            usdoAddr: usdo,
-            collateralizationRate: tSdaiDeployConf.collateralizationRate,
-            liquidationCollateralizationRate:
-                tSdaiDeployConf.liquidationCollateralizationRate,
-            exchangeRatePrecision: (1e18).toString(),
-            leverageExecutorAddr,
-            penroseAddr,
-            yieldBox,
-        });
+    if (
+        hre.SDK.chainInfo.name === 'ethereum' ||
+        hre.SDK.chainInfo.name === 'sepolia'
+    ) {
+        const { tSdaiOracle } = deploy__LoadDeployments_Eth({ hre, tag });
+        {
+            const tSdaiDeployConf =
+                DEPLOY_CONFIG.POST_LBP[hre.SDK.eChainId]!.tSdaiMarketConfig!;
+            await initSGLMarket({
+                ...params,
+                factory: await hre.ethers.getContractFactory('Singularity'),
+                marketName: DEPLOYMENT_NAMES.SGL_S_DAI_MARKET,
+                collateralAddr: DEPLOY_CONFIG.POST_LBP[hre.SDK.eChainId]!.sDAI!,
+                oracleAddr: tSdaiOracle,
+                collateralStrategy:
+                    DEPLOYMENT_NAMES.YB_SDAI_ASSET_WITHOUT_STRATEGY,
+                usdoStrategy: usdoStrategy.name,
+                usdoAddr: usdo,
+                collateralizationRate: tSdaiDeployConf.collateralizationRate,
+                liquidationCollateralizationRate:
+                    tSdaiDeployConf.liquidationCollateralizationRate,
+                exchangeRatePrecision: (1e18).toString(),
+                leverageExecutorAddr,
+                penroseAddr,
+                yieldBox,
+            });
+        }
     }
 
-    // SGLP
-    {
-        const tSglpDeployConf =
-            DEPLOY_CONFIG.POST_LBP[hre.SDK.eChainId]!.tSGlpMarketConfig!;
-        await initSGLMarket({
-            ...params,
-            factory: await hre.ethers.getContractFactory('Singularity'),
-            marketName: DEPLOYMENT_NAMES.SGL_S_GLP_MARKET,
-            collateralAddr: DEPLOY_CONFIG.POST_LBP[hre.SDK.eChainId]!.sGLP!,
-            oracleAddr: tSGLPOracle,
-            collateralStrategy: DEPLOYMENT_NAMES.YB_SDAI_ASSET_WITHOUT_STRATEGY,
-            usdoStrategy: usdoStrategy.name,
-            usdoAddr: usdo,
-            collateralizationRate: tSglpDeployConf.collateralizationRate,
-            liquidationCollateralizationRate:
-                tSglpDeployConf.liquidationCollateralizationRate,
-            exchangeRatePrecision: (1e18).toString(),
-            leverageExecutorAddr,
-            penroseAddr,
-            yieldBox,
-        });
+    if (
+        hre.SDK.chainInfo.name === 'arbitrum' ||
+        hre.SDK.chainInfo.name === 'arbitrum_sepolia'
+    ) {
+        // SGLP
+        {
+            const tSglpDeployConf =
+                DEPLOY_CONFIG.POST_LBP[hre.SDK.eChainId]!.tSGlpMarketConfig!;
+            await initSGLMarket({
+                ...params,
+                factory: await hre.ethers.getContractFactory('Singularity'),
+                marketName: DEPLOYMENT_NAMES.SGL_S_GLP_MARKET,
+                collateralAddr: DEPLOY_CONFIG.POST_LBP[hre.SDK.eChainId]!.sGLP!,
+                oracleAddr: tSGLPOracle,
+                collateralStrategy:
+                    DEPLOYMENT_NAMES.YB_SDAI_ASSET_WITHOUT_STRATEGY,
+                usdoStrategy: usdoStrategy.name,
+                usdoAddr: usdo,
+                collateralizationRate: tSglpDeployConf.collateralizationRate,
+                liquidationCollateralizationRate:
+                    tSglpDeployConf.liquidationCollateralizationRate,
+                exchangeRatePrecision: (1e18).toString(),
+                leverageExecutorAddr,
+                penroseAddr,
+                yieldBox,
+            });
+        }
     }
 }
 

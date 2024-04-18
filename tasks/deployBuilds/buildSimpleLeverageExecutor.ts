@@ -8,13 +8,14 @@ export const buildSimpleLeverageExecutor = async (
     params: {
         zeroXSwapper: string;
         cluster: string;
+        weth: string;
         tag: string;
     },
 ): Promise<IDeployerVMAdd<SimpleLeverageExecutor__factory>> => {
     return {
         contract: await hre.ethers.getContractFactory('SimpleLeverageExecutor'),
         deploymentName: DEPLOYMENT_NAMES.SIMPLE_LEVERAGE_EXECUTOR,
-        args: [params.zeroXSwapper, params.cluster],
+        args: [params.zeroXSwapper, params.cluster, params.weth],
         dependsOn: [],
     };
 };

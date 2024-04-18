@@ -19,9 +19,7 @@ export type TPostDeployParams = {
     calls: TapiocaMulticall.CallStruct[];
 };
 
-export async function tapiocaPostDeployTask(
-    params: TTapiocaDeployerVmPass<object>,
-) {
+export async function setupPostLbp(params: TTapiocaDeployerVmPass<object>) {
     console.log('\n[+] Running post deploy task');
 
     const { hre, taskArgs, VM, chainInfo } = params;

@@ -1,5 +1,5 @@
 import { IYieldBox } from '@typechain/index';
-import { deployLoadDeployments } from '../1-deployPostLbp';
+import { deploy__LoadDeployments_Arb } from '../1-deployPostLbp';
 import { TPostDeployParams } from '../1-setupPostLbp';
 import { DEPLOYMENT_NAMES, DEPLOY_CONFIG } from '../DEPLOY_CONFIG';
 
@@ -16,7 +16,7 @@ export async function setupCreateYBAssets(params: TPostDeployParams) {
         mtETH,
         tReth,
         tWSTETH,
-    } = deployLoadDeployments({ hre, tag });
+    } = deploy__LoadDeployments_Arb({ hre, tag });
 
     const yieldBox = await hre.ethers.getContractAt('IYieldBox', ybAddress);
     const usdo = deployed.find((e) => e.name === DEPLOYMENT_NAMES.USDO)!;

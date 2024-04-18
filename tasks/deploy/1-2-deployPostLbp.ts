@@ -1,11 +1,18 @@
-import { TTapiocaDeployTaskArgs } from '@tapioca-sdk/ethers/hardhat/DeployerVM';
+import {
+    TTapiocaDeployerVmPass,
+    TTapiocaDeployTaskArgs,
+} from 'tapioca-sdk/dist/ethers/hardhat/DeployerVM';
+
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { loadLocalContract } from 'tapioca-sdk';
-import { TTapiocaDeployerVmPass } from 'tapioca-sdk/dist/ethers/hardhat/DeployerVM';
 import { buildOrigins } from 'tasks/deployBuilds/buildOrigins';
-import { deployLoadDeployments } from './1-deployPostLbp';
-import { DEPLOYMENT_NAMES, DEPLOY_CONFIG } from './DEPLOY_CONFIG';
+import { deploy__LoadDeployments_Arb } from './1-deployPostLbp';
+import { DEPLOY_CONFIG, DEPLOYMENT_NAMES } from './DEPLOY_CONFIG';
 
+/**
+ * Part 2 of the post LBP deployment task
+ * Needs to be called after the first part, which contains deployments + setups
+ */
 export const deployPostLbp__task_2 = async (
     _taskArgs: TTapiocaDeployTaskArgs,
     hre: HardhatRuntimeEnvironment,
@@ -26,7 +33,7 @@ async function tapiocaDeployTask(params: TTapiocaDeployerVmPass<object>) {
     const { tag } = taskArgs;
     const owner = tapiocaMulticallAddr;
 
-    const { yieldBox, mtETH, mtEthOracle } = deployLoadDeployments({
+    const { yieldBox, mtETH, mtEthOracle } = deploy__LoadDeployments_Arb({
         hre,
         tag,
     });
