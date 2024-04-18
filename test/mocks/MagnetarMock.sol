@@ -169,7 +169,7 @@ contract MagnetarMock is PearlmitHandler {
 
         IYieldBox yieldBox = IYieldBox(IMarket(_data.market).yieldBox());
 
-        uint256 assetId = IMarket(_data.market).assetId();
+        uint256 assetId = IMarket(_data.market)._assetId();
         (, address assetAddress,,) = yieldBox.assets(assetId);
 
         // deposit to YieldBox
@@ -197,7 +197,7 @@ contract MagnetarMock is PearlmitHandler {
         if (_data.collateralAmount > 0) {
             address collateralWithdrawReceiver = _data.withdrawCollateralParams.withdraw ? address(this) : _data.user;
             uint256 collateralShare =
-                yieldBox.toShare(IMarket(_data.market).collateralId(), _data.collateralAmount, false);
+                yieldBox.toShare(IMarket(_data.market)._collateralId(), _data.collateralAmount, false);
 
             (Module[] memory modules, bytes[] memory calls) = IMarketHelper(_data.marketHelper).removeCollateral(
                 _data.user, collateralWithdrawReceiver, collateralShare
@@ -232,7 +232,7 @@ contract MagnetarMock is PearlmitHandler {
 
         // if `depositData.deposit`:
         //      - deposit SGL asset to YB for `_data.user`
-        uint256 sglAssetId = singularity.assetId();
+        uint256 sglAssetId = singularity._assetId();
         (, address sglAssetAddress,,) = yieldBox.assets(sglAssetId);
         if (_data.depositData.deposit) {
             _data.depositData.amount = _extractTokens(_data.user, sglAssetAddress, _data.depositData.amount);
@@ -280,7 +280,7 @@ contract MagnetarMock is PearlmitHandler {
 
         uint256 _removeAmount = _data.removeAndRepayData.removeAmount;
         if (_data.removeAndRepayData.removeAssetFromSGL) {
-            uint256 _assetId = singularity.assetId();
+            uint256 _assetId = singularity._assetId();
             uint256 share = yieldBox.toShare(_assetId, _removeAmount, false);
 
             address removeAssetTo = _data.removeAndRepayData.assetWithdrawData.withdraw
@@ -290,7 +290,7 @@ contract MagnetarMock is PearlmitHandler {
         }
 
         if (_data.removeAndRepayData.removeCollateralFromBB) {
-            uint256 _collateralId = bigBang.collateralId();
+            uint256 _collateralId = bigBang._collateralId();
             uint256 collateralShare = yieldBox.toShare(_collateralId, _data.removeAndRepayData.collateralAmount, false);
             address removeCollateralTo =
                 _data.removeAndRepayData.collateralWithdrawData.withdraw ? address(this) : _data.user;
@@ -311,7 +311,7 @@ contract MagnetarMock is PearlmitHandler {
 
         IYieldBox yieldBox = IYieldBox(IMarket(_data.market).yieldBox());
 
-        uint256 collateralId = IMarket(_data.market).collateralId();
+        uint256 collateralId = IMarket(_data.market)._collateralId();
         (, address collateralAddress,,) = yieldBox.assets(collateralId);
 
         uint256 _share = yieldBox.toShare(collateralId, _data.collateralAmount, false);

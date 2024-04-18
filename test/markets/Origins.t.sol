@@ -197,14 +197,14 @@ contract OriginsTest is UsdoTestHelper {
         }
 
         {
-            assertEq(address(origins.oracle()), address(toSetAddress));
-            assertEq(origins.conservator(), toSetAddress);
-            assertEq(origins.protocolFee(), toSetValue);
-            assertEq(origins.minLiquidatorReward(), toSetValue);
-            assertEq(origins.maxLiquidatorReward(), toSetMaxValue);
-            assertEq(origins.totalBorrowCap(), toSetValue);
-            assertEq(origins.collateralizationRate(), toSetValue);
-            assertEq(origins.liquidationCollateralizationRate(), toSetMaxValue);
+            assertEq(address(origins._oracle()), address(toSetAddress));
+            assertEq(origins._conservator(), toSetAddress);
+            assertEq(origins._protocolFee(), toSetValue);
+            assertEq(origins._minLiquidatorReward(), toSetValue);
+            assertEq(origins._maxLiquidatorReward(), toSetMaxValue);
+            assertEq(origins._totalBorrowCap(), toSetValue);
+            assertEq(origins._collateralizationRate(), toSetValue);
+            assertEq(origins._liquidationCollateralizationRate(), toSetMaxValue);
         }
     }
 
@@ -266,7 +266,7 @@ contract OriginsTest is UsdoTestHelper {
 
         repay(borrowAmount);
 
-        uint256 borrowPart = origins.userBorrowPart(address(this));
+        uint256 borrowPart = origins._userBorrowPart(address(this));
         assertEq(borrowPart, 0);
     }
 
@@ -299,13 +299,13 @@ contract OriginsTest is UsdoTestHelper {
 
         skip(86400 * 1000);
 
-        uint256 borrowPart = origins.userBorrowPart(address(this));
+        uint256 borrowPart = origins._userBorrowPart(address(this));
         assertEq(borrowPart, borrowAmount);
 
         depositAsset(borrowAmount);
 
         repay(borrowAmount);
-        borrowPart = origins.userBorrowPart(address(this));
+        borrowPart = origins._userBorrowPart(address(this));
         assertEq(borrowPart, 0);
     }
 }

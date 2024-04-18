@@ -132,7 +132,7 @@ contract SGLStorage is Ownable, Market, ReentrancyGuard {
     /// @notice returns market's ERC20 totalSupply
     /// @dev totalSupply for ERC20 compatibility
     ///      BalanceOf[user] represent a fraction
-    function totalSupply() public view override returns (uint256) {
+    function totalSupply() public view virtual override returns (uint256) {
         return totalAsset.base;
     }
 

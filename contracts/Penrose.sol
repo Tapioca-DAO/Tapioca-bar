@@ -534,8 +534,8 @@ contract Penrose is Ownable, PearlmitHandler, BoringFactory {
         uint256 feeShares = market.refreshPenroseFees();
         if (feeShares == 0) return;
 
-        address _asset = market.asset();
-        uint256 _assetId = market.assetId();
+        address _asset = market._asset();
+        uint256 _assetId = market._assetId();
 
         uint256 feeAmount = yieldBox.toAmount(_assetId, feeShares, false);
 
