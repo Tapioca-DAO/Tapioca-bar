@@ -344,7 +344,7 @@ contract Penrose is Ownable, PearlmitHandler, BoringFactory {
     /// @param _usdoToken the USDO token address
     /// @param _usdoAssetId the USDO asset id
     function setUsdoToken(address _usdoToken, uint256 _usdoAssetId) external onlyOwner {
-        if (_usdoToken != address(0)) revert ZeroAddress();
+        if (_usdoToken == address(0)) revert ZeroAddress();
         if (_usdoAssetId == 0) revert NotValid();
 
         usdoToken = IERC20(_usdoToken);
