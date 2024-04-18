@@ -130,8 +130,4 @@ abstract contract MarketStateView is Market {
     function _yieldBox() external view returns (address) {
         return address(yieldBox);
     }
-
-    function _penrose() external view returns (address) {
-        return address(penrose);
-    }
 }
