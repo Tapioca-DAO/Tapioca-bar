@@ -126,4 +126,8 @@ abstract contract MarketStateView is Market {
     function _maxLiquidationSlippage() external view returns (uint256) {
         return maxLiquidationSlippage;
     }
+
+    function _yieldBox() external view returns (address) {
+        return address(yieldBox);
+    }
 }
