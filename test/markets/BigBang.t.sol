@@ -163,7 +163,10 @@ contract BigBangTest is UsdoTestHelper {
         masterContract = new BigBang();
         penrose.registerBigBangMasterContract(address(masterContract), IPenrose.ContractType.mediumRisk);
 
-        penrose.setUsdoToken(address(asset));
+        address usdoStrat = address(createYieldBoxEmptyStrategy(address(yieldBox), address(tapOFT)));
+        uint256 usdoAssetId = registerYieldBoxAsset(address(yieldBox), address(tapOFT), usdoStrat);
+
+        penrose.setUsdoToken(address(asset), usdoAssetId);
 
         collateralYieldBoxId = penrose.mainAssetId();
 
