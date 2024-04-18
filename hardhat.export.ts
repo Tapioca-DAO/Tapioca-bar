@@ -72,6 +72,16 @@ const config: HardhatUserConfig & { dodoc: any } = {
                     evmVersion: 'paris', // Latest before Shanghai
                     optimizer: {
                         enabled: true,
+                        runs: 100,
+                    },
+                },
+            },
+            'contracts/markets/bigBang/BigBang.sol': {
+                version: '0.8.22',
+                settings: {
+                    evmVersion: 'paris', // Latest before Shanghai
+                    optimizer: {
+                        enabled: true,
                         runs: 800,
                     },
                 },
@@ -82,7 +92,17 @@ const config: HardhatUserConfig & { dodoc: any } = {
                     evmVersion: 'paris', // Latest before Shanghai
                     optimizer: {
                         enabled: true,
-                        runs: 1500,
+                        runs: 700,
+                    },
+                },
+            },
+            'contracts/markets/bigBang/BBLeverage.sol': {
+                version: '0.8.22',
+                settings: {
+                    evmVersion: 'paris', // Latest before Shanghai
+                    optimizer: {
+                        enabled: true,
+                        runs: 2500,
                     },
                 },
             },
@@ -92,7 +112,27 @@ const config: HardhatUserConfig & { dodoc: any } = {
                     evmVersion: 'paris', // Latest before Shanghai
                     optimizer: {
                         enabled: true,
-                        runs: 300,
+                        runs: 1,
+                    },
+                },
+            },
+            'contracts/markets/bigBang/BBLiquidation.sol': {
+                version: '0.8.22',
+                settings: {
+                    evmVersion: 'paris', // Latest before Shanghai
+                    optimizer: {
+                        enabled: true,
+                        runs: 2000,
+                    },
+                },
+            },
+            'contracts/usdo/modules/UsdoMarketReceiverModule.sol': {
+                version: '0.8.22',
+                settings: {
+                    evmVersion: 'paris', // Latest before Shanghai
+                    optimizer: {
+                        enabled: true,
+                        runs: 200,
                     },
                 },
             },
