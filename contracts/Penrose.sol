@@ -82,9 +82,6 @@ contract Penrose is Ownable, PearlmitHandler, BoringFactory {
     /// @notice BigBang ETH market debt rate
     uint256 public bigBangEthDebtRate;
 
-    /// @notice registered empty strategies
-    mapping(address => IStrategy) public emptyStrategies;
-
     address[] public allBigBangMarkets;
 
     mapping(address => bool) public isOriginRegistered;
@@ -102,6 +99,8 @@ contract Penrose is Ownable, PearlmitHandler, BoringFactory {
         IERC20 tapToken_,
         IERC20 mainToken_,
         IPearlmit _pearlmit,
+        uint256 _tapAssetId,
+        uint256 _mainAssetId,
         address _owner
     ) PearlmitHandler(_pearlmit) {
         if (address(_yieldBox) == address(0)) revert AddressNotValid();
@@ -109,27 +108,16 @@ contract Penrose is Ownable, PearlmitHandler, BoringFactory {
         if (address(tapToken_) == address(0)) revert AddressNotValid();
         if (address(_pearlmit) == address(0)) revert AddressNotValid();
         if (address(_owner) == address(0)) revert AddressNotValid();
+        if (_tapAssetId == 0) revert NotValid();
+        if (_mainAssetId == 0) revert NotValid();
 
         yieldBox = _yieldBox;
         cluster = _cluster;
         tapToken = tapToken_;
-
-        emptyStrategies[address(tapToken_)] =
-            IStrategy(address(new ERC20WithoutStrategy(IBoringYieldBox(address(_yieldBox)), tapToken_)));
-        tapAssetId = uint96(
-            _yieldBox.registerAsset(
-                TokenType.ERC20, address(tapToken_), address(emptyStrategies[address(tapToken_)]), 0
-            )
-        );
-
         mainToken = mainToken_;
-        emptyStrategies[address(mainToken_)] =
-            IStrategy(address(new ERC20WithoutStrategy(IBoringYieldBox(address(_yieldBox)), mainToken_)));
-        mainAssetId = uint96(
-            _yieldBox.registerAsset(
-                TokenType.ERC20, address(mainToken_), address(emptyStrategies[address(mainToken_)]), 0
-            )
-        );
+
+        tapAssetId = _tapAssetId;
+        mainAssetId = _mainAssetId;
 
         bigBangEthDebtRate = 5e15;
 
@@ -354,15 +342,15 @@ contract Penrose is Ownable, PearlmitHandler, BoringFactory {
     /// @dev sets usdoToken and usdoAssetId
     ///      can only by called by the owner
     /// @param _usdoToken the USDO token address
-    function setUsdoToken(address _usdoToken) external onlyOwner {
-        if (address(usdoToken) != address(0)) revert NotAuthorized();
-        usdoToken = IERC20(_usdoToken);
+    /// @param _usdoAssetId the USDO asset id
+    function setUsdoToken(address _usdoToken, uint256 _usdoAssetId) external onlyOwner {
+        if (_usdoToken != address(0)) revert ZeroAddress();
+        if (_usdoAssetId == 0) revert NotValid();
 
-        emptyStrategies[_usdoToken] =
-            IStrategy(address(new ERC20WithoutStrategy(IBoringYieldBox(address(yieldBox)), IERC20(_usdoToken))));
-        usdoAssetId =
-            uint96(yieldBox.registerAsset(TokenType.ERC20, _usdoToken, address(emptyStrategies[_usdoToken]), 0));
-        emit UsdoTokenUpdated(_usdoToken, usdoAssetId);
+        usdoToken = IERC20(_usdoToken);
+        usdoAssetId = _usdoAssetId;
+
+        emit UsdoTokenUpdated(_usdoToken, _usdoAssetId);
     }
 
     /// @notice Register a Singularity master contract
