@@ -31,6 +31,7 @@ contract BBLeverage is BBLendingCommon {
     // ************** //
     error LeverageExecutorNotValid();
     error CollateralShareNotValid();
+    error AmountNotValid();
 
     struct _BuyCollateralCalldata {
         address from;
@@ -107,6 +108,7 @@ contract BBLeverage is BBLendingCommon {
         if (collateralShare == 0) revert CollateralShareNotValid();
         _allowedBorrow(calldata_.from, collateralShare);
         _addCollateral(calldata_.from, calldata_.from, false, 0, collateralShare, false);
+        if (amountOut == 0) revert AmountNotValid();
     }
 
     struct _SellCollateralMemoryData {
@@ -158,5 +160,6 @@ contract BBLeverage is BBLendingCommon {
             uint256 partOut = totalBorrow.toBase(amountOut, false);
             _repay(from, from, partOut, false);
         }
+        if (amountOut == 0) revert AmountNotValid();
     }
 }
