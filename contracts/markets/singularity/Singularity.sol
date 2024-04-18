@@ -13,9 +13,12 @@ import {IYieldBox} from "tapioca-periph/interfaces/yieldbox/IYieldBox.sol";
 import {IPearlmit} from "tapioca-periph/interfaces/periph/IPearlmit.sol";
 import {IPenrose} from "tapioca-periph/interfaces/bar/IPenrose.sol";
 import {Module} from "tapioca-periph/interfaces/bar/IMarket.sol";
+import {MarketStateView} from "../MarketStateView.sol";
 import {SGLLiquidation} from "./SGLLiquidation.sol";
 import {SGLCollateral} from "./SGLCollateral.sol";
+import {MarketERC20} from "../MarketERC20.sol";
 import {SGLLeverage} from "./SGLLeverage.sol";
+import {SGLStorage} from "./SGLStorage.sol";
 import {SGLCommon} from "./SGLCommon.sol";
 import {SGLBorrow} from "./SGLBorrow.sol";
 
@@ -33,7 +36,7 @@ import {SGLBorrow} from "./SGLBorrow.sol";
 */
 
 /// @title Tapioca market
-contract Singularity is SGLCommon {
+contract Singularity is MarketStateView, SGLCommon {
     using RebaseLibrary for Rebase;
     using SafeCast for uint256;
 
@@ -79,6 +82,10 @@ contract Singularity is SGLCommon {
         uint256 _assetId;
         IERC20 _collateral;
         uint256 _collateralId;
+    }
+
+    function totalSupply() public view override(MarketERC20, SGLStorage) returns (uint256) {
+        return totalAsset.base;
     }
 
     /// @notice The init function that acts as a constructor

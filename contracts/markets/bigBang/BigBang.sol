@@ -15,6 +15,7 @@ import {IPenrose} from "tapioca-periph/interfaces/bar/IPenrose.sol";
 import {Module} from "tapioca-periph/interfaces/bar/IMarket.sol";
 import {IUsdo} from "tapioca-periph/interfaces/oft/IUsdo.sol";
 import {SafeApprove} from "../../libraries/SafeApprove.sol";
+import {MarketStateView} from "../MarketStateView.sol";
 import {BBLiquidation} from "./BBLiquidation.sol";
 import {BBCollateral} from "./BBCollateral.sol";
 import {BBLeverage} from "./BBLeverage.sol";
@@ -33,7 +34,7 @@ import {BBBorrow} from "./BBBorrow.sol";
    
 */
 
-contract BigBang is BBCommon {
+contract BigBang is MarketStateView, BBCommon {
     using RebaseLibrary for Rebase;
     using BoringERC20 for IERC20;
     using SafeApprove for address;
