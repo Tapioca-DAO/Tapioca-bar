@@ -1296,7 +1296,7 @@ contract UsdoTest is UsdoTestHelper {
         uint256 tokenAmount_ = 0.5 ether;
 
         uint256 sh = yieldBox.toShare(bUsdoYieldBoxId, erc20Amount_, false);
-        uint256 collateralId = singularity.collateralId();
+        uint256 collateralId = singularity._collateralId();
         // setup
         {
             aUsdo.approve(address(singularity), type(uint256).max);
@@ -1326,10 +1326,10 @@ contract UsdoTest is UsdoTestHelper {
             (modules, calls) = marketHelper.addCollateral(address(this), address(this), false, 0, collateralShare);
             singularity.execute(modules, calls, true);
 
-            assertEq(singularity.userBorrowPart(address(this)), 0);
+            assertEq(singularity._userBorrowPart(address(this)), 0);
             (modules, calls) = marketHelper.borrow(address(this), address(this), tokenAmount_);
             singularity.execute(modules, calls, true);
-            assertGt(singularity.userBorrowPart(address(this)), 0);
+            assertGt(singularity._userBorrowPart(address(this)), 0);
 
             // deal more to cover repay fees
             deal(address(bUsdo), address(this), erc20Amount_);
@@ -1376,7 +1376,7 @@ contract UsdoTest is UsdoTestHelper {
         ); // Atomic approval
         yieldBox.setApprovalForAll(address(pearlmit), true);
 
-        uint256 userCollateralShareBefore = singularity.userCollateralShare(address(this));
+        uint256 userCollateralShareBefore = singularity._userCollateralShare(address(this));
         uint256 tokenAmountSD = usdoHelper.toSD(tokenAmount_, aUsdo.decimalConversionRate());
 
         MarketLendOrRepayMsg memory marketMsg = MarketLendOrRepayMsg({
@@ -1470,8 +1470,8 @@ contract UsdoTest is UsdoTestHelper {
 
         // Check execution
         {
-            assertEq(singularity.userBorrowPart(address(this)), 0);
-            assertGt(userCollateralShareBefore, singularity.userCollateralShare(address(this)));
+            assertEq(singularity._userBorrowPart(address(this)), 0);
+            assertGt(userCollateralShareBefore, singularity._userCollateralShare(address(this)));
         }
     }
 

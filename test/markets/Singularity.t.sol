@@ -225,7 +225,7 @@ contract SingularityTest is UsdoTestHelper {
 
     function test_setSingularityConfig() public {
         uint256 borrowingOpeningFee = singularity.borrowOpeningFee();
-        uint256 liquidationMultiplier = singularity.liquidationMultiplier();
+        uint256 liquidationMultiplier = singularity._liquidationMultiplier();
         uint256 minimumTargetUtilization = singularity.minimumTargetUtilization();
         uint256 maximumTargetUtilization = singularity.maximumTargetUtilization();
         uint256 minimumInterestPerSecond = singularity.minimumInterestPerSecond();
@@ -244,7 +244,7 @@ contract SingularityTest is UsdoTestHelper {
 
         {
             assertEq(singularity.borrowOpeningFee(), borrowingOpeningFee);
-            assertEq(singularity.liquidationMultiplier(), liquidationMultiplier);
+            assertEq(singularity._liquidationMultiplier(), liquidationMultiplier);
             assertEq(singularity.minimumTargetUtilization(), minimumTargetUtilization);
             assertEq(singularity.maximumTargetUtilization(), maximumTargetUtilization);
             assertEq(singularity.minimumInterestPerSecond(), minimumInterestPerSecond);
@@ -289,14 +289,14 @@ contract SingularityTest is UsdoTestHelper {
         }
 
         {
-            assertEq(address(singularity.oracle()), address(toSetAddress));
-            assertEq(singularity.conservator(), toSetAddress);
-            assertEq(singularity.protocolFee(), toSetValue);
-            assertEq(singularity.minLiquidatorReward(), toSetValue);
-            assertEq(singularity.maxLiquidatorReward(), toSetMaxValue);
-            assertEq(singularity.totalBorrowCap(), toSetValue);
-            assertEq(singularity.collateralizationRate(), toSetValue);
-            assertEq(singularity.liquidationCollateralizationRate(), toSetMaxValue);
+            assertEq(address(singularity._oracle()), address(toSetAddress));
+            assertEq(singularity._conservator(), toSetAddress);
+            assertEq(singularity._protocolFee(), toSetValue);
+            assertEq(singularity._minLiquidatorReward(), toSetValue);
+            assertEq(singularity._maxLiquidatorReward(), toSetMaxValue);
+            assertEq(singularity._totalBorrowCap(), toSetValue);
+            assertEq(singularity._collateralizationRate(), toSetValue);
+            assertEq(singularity._liquidationCollateralizationRate(), toSetMaxValue);
         }
     }
 
@@ -419,11 +419,11 @@ contract SingularityTest is UsdoTestHelper {
         bytes[] memory receiverData = new bytes[](1);
         receiverData[0] = abi.encode(borrowAmount / 2);
 
-        uint256 borrowPartBefore = singularity.userBorrowPart(address(this));
+        uint256 borrowPartBefore = singularity._userBorrowPart(address(this));
         (Module[] memory modules, bytes[] memory calls) =
             marketHelper.liquidate(users, borrowParts, minLiquidationBonuses, receivers, receiverData);
         singularity.execute(modules, calls, true);
-        uint256 borrowPartAfter = singularity.userBorrowPart(address(this));
+        uint256 borrowPartAfter = singularity._userBorrowPart(address(this));
 
         assertGt(borrowPartBefore, borrowPartAfter);
     }
@@ -468,18 +468,18 @@ contract SingularityTest is UsdoTestHelper {
             bytes[] memory receiverData = new bytes[](1);
             receiverData[0] = abi.encode(borrowAmount / 2);
 
-            uint256 borrowPartBefore = singularity.userBorrowPart(address(this));
+            uint256 borrowPartBefore = singularity._userBorrowPart(address(this));
             (Module[] memory modules, bytes[] memory calls) =
                 marketHelper.liquidate(users, borrowParts, minLiquidationBonuses, receivers, receiverData);
             vm.expectRevert();
             singularity.execute(modules, calls, true);
-            uint256 borrowPartAfter = singularity.userBorrowPart(address(this));
+            uint256 borrowPartAfter = singularity._userBorrowPart(address(this));
             assertEq(borrowPartBefore, borrowPartAfter);
         }
 
         //use liquidateBadDebt
         {
-            uint256 borrowPartBefore = singularity.userBorrowPart(address(this));
+            uint256 borrowPartBefore = singularity._userBorrowPart(address(this));
             (Module[] memory modules, bytes[] memory calls) = marketHelper.liquidateBadDebt(
                 address(this),
                 address(this),
@@ -500,7 +500,7 @@ contract SingularityTest is UsdoTestHelper {
             bytes[] memory data = new bytes[](1);
             data[0] = badDebtCall;
             penrose.executeMarketFn(mc, data, false);
-            uint256 borrowPartAfter = singularity.userBorrowPart(address(this));
+            uint256 borrowPartAfter = singularity._userBorrowPart(address(this));
             assertGt(borrowPartBefore, borrowPartAfter);
         }
     }
@@ -528,14 +528,14 @@ contract SingularityTest is UsdoTestHelper {
 
         assertEq(info[0].market.collateral, address(collateral));
         assertEq(info[0].market.asset, address(asset));
-        assertEq(info[0].market.userCollateralShare, singularity.userCollateralShare(address(this)));
-        assertEq(info[0].market.userBorrowPart, singularity.userBorrowPart(address(this)));
+        assertEq(info[0].market.userCollateralShare, singularity._userCollateralShare(address(this)));
+        assertEq(info[0].market.userBorrowPart, singularity._userBorrowPart(address(this)));
 
         uint256 share = marketHelper.computeAllowedLendShare(address(singularity), 1, assetYieldBoxId);
         assertGe(share, 1);
 
         uint256 borrowAmountFromHelper = magnetarHelper.getAmountForBorrowPart(
-            IMarket(address(singularity)), singularity.userBorrowPart(address(this))
+            IMarket(address(singularity)), singularity._userBorrowPart(address(this))
         );
         assertGe(borrowAmountFromHelper, borrowAmount);
     }
@@ -562,9 +562,9 @@ contract SingularityTest is UsdoTestHelper {
             // prepare for repay
             deal(address(asset), address(this), borrowAmount * 2);
             yieldBox.depositAsset(assetYieldBoxId, address(this), address(this), borrowAmount * 2, 0);
-            userBorrowPart = singularity.userBorrowPart(address(this));
+            userBorrowPart = singularity._userBorrowPart(address(this));
 
-            repay(singularity.userBorrowPart(address(this)));
+            repay(singularity._userBorrowPart(address(this)));
         }
         (,, uint128 feesEarnedFraction) = singularity.accrueInfo();
         uint256 feesAmount =
@@ -602,7 +602,7 @@ contract SingularityTest is UsdoTestHelper {
             borrow(borrowAmount, false);
         }
 
-        uint256 borrowPart = singularity.userBorrowPart(address(this));
+        uint256 borrowPart = singularity._userBorrowPart(address(this));
         assertGt(borrowPart, 0);
 
         vm.startPrank(userA);
@@ -630,7 +630,7 @@ contract SingularityTest is UsdoTestHelper {
         vm.prank(userA);
         singularity.execute(modules, calls, true);
 
-        uint256 borrowPartAfter = singularity.userBorrowPart(address(this));
+        uint256 borrowPartAfter = singularity._userBorrowPart(address(this));
         assertEq(borrowPartAfter, 0);
     }
 
@@ -655,7 +655,7 @@ contract SingularityTest is UsdoTestHelper {
     //         borrow(borrowAmount, false);
     //     }
 
-    //     uint256 borrowPartBefore = singularity.userBorrowPart(address(this));
+    //     uint256 borrowPartBefore = singularity._userBorrowPart(address(this));
     //     assertGe(borrowPartBefore, borrowAmount);
 
     //     bytes memory leverageData = abi.encode(1000, "");

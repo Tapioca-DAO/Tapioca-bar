@@ -183,7 +183,7 @@ contract BigBangTest is UsdoTestHelper {
         );
         vm.label(address(bigBang), "BigBang");
 
-        assetYieldBoxId = bigBang.assetId();
+        assetYieldBoxId = bigBang._assetId();
 
         // set asset oracle
         address[] memory markets = new address[](1);
@@ -274,10 +274,10 @@ contract BigBangTest is UsdoTestHelper {
             penrose.mintOpenInterestDebt(address(twTap));
             // prepare for repay
             yieldBox.depositAsset(assetYieldBoxId, address(this), address(this), borrowAmount * 2, 0);
-            userBorrowPart = bigBang.userBorrowPart(address(this));
+            userBorrowPart = bigBang._userBorrowPart(address(this));
 
             // console.log ("=======BEFORE REPAY ");
-            repay(bigBang.userBorrowPart(address(this)));
+            repay(bigBang._userBorrowPart(address(this)));
             // console.log ("=======AFTER REPAY ");
             penrose.mintOpenInterestDebt(address(twTap));
         }
@@ -298,10 +298,10 @@ contract BigBangTest is UsdoTestHelper {
             // prepare for repay
             penrose.mintOpenInterestDebt(address(twTap));
             yieldBox.depositAsset(assetYieldBoxId, address(this), address(this), borrowAmount * 2, 0);
-            userBorrowPart = bigBang.userBorrowPart(address(this));
+            userBorrowPart = bigBang._userBorrowPart(address(this));
 
             // console.log ("=======BEFORE REPAY ");
-            repay(bigBang.userBorrowPart(address(this)));
+            repay(bigBang._userBorrowPart(address(this)));
             // console.log ("=======AFTER REPAY ");
             penrose.mintOpenInterestDebt(address(twTap));
         }
@@ -320,10 +320,10 @@ contract BigBangTest is UsdoTestHelper {
             skip(86400 * 10);
             // prepare for repay
             yieldBox.depositAsset(assetYieldBoxId, address(this), address(this), borrowAmount * 2, 0);
-            userBorrowPart = bigBang.userBorrowPart(address(this));
+            userBorrowPart = bigBang._userBorrowPart(address(this));
 
             penrose.mintOpenInterestDebt(address(twTap));
-            repay(bigBang.userBorrowPart(address(this)));
+            repay(bigBang._userBorrowPart(address(this)));
         }
 
         uint256 totalMinted = asset.balanceOf(address(twTap));
@@ -403,11 +403,11 @@ contract BigBangTest is UsdoTestHelper {
         // repay 1
         {
             yieldBox.depositAsset(assetYieldBoxId, address(this), address(this), borrowAmount * 2, 0);
-            userBorrowPart = bigBang.userBorrowPart(address(this));
+            userBorrowPart = bigBang._userBorrowPart(address(this));
 
             // console.log ("=======BEFORE REPAY ");
             penrose.mintOpenInterestDebt(address(twTap));
-            repay(bigBang.userBorrowPart(address(this)) / 10);
+            repay(bigBang._userBorrowPart(address(this)) / 10);
             // console.log ("=======AFTER REPAY ");
             penrose.mintOpenInterestDebt(address(twTap));
         }
@@ -418,10 +418,10 @@ contract BigBangTest is UsdoTestHelper {
             // uint256 balance = asset.balanceOf(address(this));
             // console.log("-------------- balance %s", balance);
             yieldBox.depositAsset(assetYieldBoxId, address(this), address(this), borrowAmount * 2, 0);
-            userBorrowPart = bigBang.userBorrowPart(address(this));
+            userBorrowPart = bigBang._userBorrowPart(address(this));
 
             penrose.mintOpenInterestDebt(address(twTap));
-            repay(bigBang.userBorrowPart(address(this)));
+            repay(bigBang._userBorrowPart(address(this)));
             penrose.mintOpenInterestDebt(address(twTap));
         }
 
@@ -457,14 +457,14 @@ contract BigBangTest is UsdoTestHelper {
         }
 
         {
-            assertEq(address(bigBang.oracle()), address(toSetAddress));
-            assertEq(bigBang.conservator(), toSetAddress);
-            assertEq(bigBang.protocolFee(), toSetValue);
-            assertEq(bigBang.minLiquidatorReward(), toSetValue);
-            assertEq(bigBang.maxLiquidatorReward(), toSetMaxValue);
-            assertEq(bigBang.totalBorrowCap(), toSetValue);
-            assertEq(bigBang.collateralizationRate(), toSetValue);
-            assertEq(bigBang.liquidationCollateralizationRate(), toSetMaxValue);
+            assertEq(address(bigBang._oracle()), address(toSetAddress));
+            assertEq(bigBang._conservator(), toSetAddress);
+            assertEq(bigBang._protocolFee(), toSetValue);
+            assertEq(bigBang._minLiquidatorReward(), toSetValue);
+            assertEq(bigBang._maxLiquidatorReward(), toSetMaxValue);
+            assertEq(bigBang._totalBorrowCap(), toSetValue);
+            assertEq(bigBang._collateralizationRate(), toSetValue);
+            assertEq(bigBang._liquidationCollateralizationRate(), toSetMaxValue);
         }
     }
 
@@ -577,11 +577,11 @@ contract BigBangTest is UsdoTestHelper {
         bytes[] memory receiverData = new bytes[](1);
         receiverData[0] = abi.encode(borrowAmount / 2);
 
-        uint256 borrowPartBefore = bigBang.userBorrowPart(address(this));
+        uint256 borrowPartBefore = bigBang._userBorrowPart(address(this));
         (Module[] memory modules, bytes[] memory calls) =
             marketHelper.liquidate(users, borrowParts, minLiquidationBonuses, receivers, receiverData);
         bigBang.execute(modules, calls, true);
-        uint256 borrowPartAfter = bigBang.userBorrowPart(address(this));
+        uint256 borrowPartAfter = bigBang._userBorrowPart(address(this));
 
         assertGt(borrowPartBefore, borrowPartAfter);
     }
@@ -626,18 +626,18 @@ contract BigBangTest is UsdoTestHelper {
             bytes[] memory receiverData = new bytes[](1);
             receiverData[0] = abi.encode(borrowAmount / 2);
 
-            uint256 borrowPartBefore = bigBang.userBorrowPart(address(this));
+            uint256 borrowPartBefore = bigBang._userBorrowPart(address(this));
             (Module[] memory modules, bytes[] memory calls) =
                 marketHelper.liquidate(users, borrowParts, minLiquidationBonuses, receivers, receiverData);
             vm.expectRevert();
             bigBang.execute(modules, calls, true);
-            uint256 borrowPartAfter = bigBang.userBorrowPart(address(this));
+            uint256 borrowPartAfter = bigBang._userBorrowPart(address(this));
             assertEq(borrowPartBefore, borrowPartAfter);
         }
 
         //use liquidateBadDebt
         {
-            uint256 borrowPartBefore = bigBang.userBorrowPart(address(this));
+            uint256 borrowPartBefore = bigBang._userBorrowPart(address(this));
             (Module[] memory modules, bytes[] memory calls) = marketHelper.liquidateBadDebt(
                 address(this),
                 address(this),
@@ -658,7 +658,7 @@ contract BigBangTest is UsdoTestHelper {
             bytes[] memory data = new bytes[](1);
             data[0] = badDebtCall;
             penrose.executeMarketFn(mc, data, false);
-            uint256 borrowPartAfter = bigBang.userBorrowPart(address(this));
+            uint256 borrowPartAfter = bigBang._userBorrowPart(address(this));
             assertGt(borrowPartBefore, borrowPartAfter);
         }
     }
@@ -688,11 +688,11 @@ contract BigBangTest is UsdoTestHelper {
 
         assertEq(info[0].market.collateral, address(collateral));
         assertEq(info[0].market.asset, address(asset));
-        assertEq(info[0].market.userCollateralShare, bigBang.userCollateralShare(address(this)));
-        assertEq(info[0].market.userBorrowPart, bigBang.userBorrowPart(address(this)));
+        assertEq(info[0].market.userCollateralShare, bigBang._userCollateralShare(address(this)));
+        assertEq(info[0].market.userBorrowPart, bigBang._userBorrowPart(address(this)));
 
         uint256 borrowAmountFromHelper =
-            magnetarHelper.getAmountForBorrowPart(IMarket(address(bigBang)), bigBang.userBorrowPart(address(this)));
+            magnetarHelper.getAmountForBorrowPart(IMarket(address(bigBang)), bigBang._userBorrowPart(address(this)));
         assertGe(borrowAmountFromHelper, borrowAmount);
     }
 
@@ -713,7 +713,7 @@ contract BigBangTest is UsdoTestHelper {
             borrow(borrowAmount, false);
         }
 
-        uint256 borrowPart = bigBang.userBorrowPart(address(this));
+        uint256 borrowPart = bigBang._userBorrowPart(address(this));
         assertGt(borrowPart, 0);
 
         vm.startPrank(userA);
@@ -741,7 +741,7 @@ contract BigBangTest is UsdoTestHelper {
         vm.prank(userA);
         bigBang.execute(modules, calls, true);
 
-        uint256 borrowPartAfter = bigBang.userBorrowPart(address(this));
+        uint256 borrowPartAfter = bigBang._userBorrowPart(address(this));
         assertEq(borrowPartAfter, 0);
     }
 }
