@@ -44,70 +44,70 @@ abstract contract Market is MarketERC20, Ownable {
     }
 
     /// @notice pause options
-    mapping(PauseType pauseProp => bool pauseStatus) public pauseOptions;
+    mapping(PauseType pauseProp => bool pauseStatus) internal pauseOptions;
     /// @notice conservator's addresss
     /// @dev conservator can pause/unpause the contract
-    address public conservator;
+    address internal conservator;
 
     /// @notice returns YieldBox address
-    IYieldBox public yieldBox;
+    IYieldBox internal yieldBox;
     /// @notice returns Penrose address
-    IPenrose public penrose;
+    IPenrose internal penrose;
 
-    IPearlmit public pearlmit;
+    IPearlmit internal pearlmit;
 
     /// @notice collateral token address
-    IERC20 public collateral;
+    IERC20 internal collateral;
     /// @notice collateral token YieldBox id
-    uint256 public collateralId;
+    uint256 internal collateralId;
     /// @notice asset token address
-    IERC20 public asset;
+    IERC20 internal asset;
     /// @notice asset token YieldBox id
-    uint256 public assetId;
+    uint256 internal assetId;
     /// @notice oracle address
-    ITapiocaOracle public oracle;
+    ITapiocaOracle internal oracle;
     /// @notice oracleData
-    bytes public oracleData;
+    bytes internal oracleData;
     /// @notice Exchange and interest rate tracking.
     /// This is 'cached' here because calls to Oracles can be very expensive.
     /// Asset -> collateral = assetAmount * exchangeRate.
-    uint256 public exchangeRate;
+    uint256 internal exchangeRate;
     /// @notice cached rate is valid only for the `rateValidDuration` time
-    uint256 public rateValidDuration;
+    uint256 internal rateValidDuration;
     /// @notice latest timestamp when `exchangeRate` was updated
-    uint256 public rateTimestamp;
+    uint256 internal rateTimestamp;
 
     /// @notice total amount borrowed
     /// @dev elastic = Total token amount to be repayed by borrowers, base = Total parts of the debt held by borrowers
-    Rebase public totalBorrow;
+    Rebase internal totalBorrow;
     /// @notice total collateral supplied
-    uint256 public totalCollateralShare;
+    uint256 internal totalCollateralShare;
     /// @notice max borrow cap
-    uint256 public totalBorrowCap;
+    uint256 internal totalBorrowCap;
     /// @notice borrow amount per user
-    mapping(address => uint256) public userBorrowPart;
+    mapping(address => uint256) internal userBorrowPart;
     /// @notice collateral share per user
-    mapping(address => uint256) public userCollateralShare;
+    mapping(address => uint256) internal userCollateralShare;
 
     /// @notice accrual protocol rewards
-    uint256 public protocolFee; // 10%
+    uint256 internal protocolFee; // 10%
     /// @notice min % a liquidator can receive in rewards
-    uint256 public minLiquidatorReward = 8e4; //80%
+    uint256 internal minLiquidatorReward = 8e4; //80%
     /// @notice max % a liquidator can receive in rewards
-    uint256 public maxLiquidatorReward = 9e4; //90%
+    uint256 internal maxLiquidatorReward = 9e4; //90%
     /// @notice max liquidatable bonus amount
     /// @dev max % added to the amount that can be liquidated
-    uint256 public liquidationBonusAmount = 1e4; //10%
+    uint256 internal liquidationBonusAmount = 1e4; //10%
     /// @notice collateralization rate
-    uint256 public collateralizationRate; // 75%
+    uint256 internal collateralizationRate; // 75%
     /// @notice liquidation collateralization rate
-    uint256 public liquidationCollateralizationRate; //80%
+    uint256 internal liquidationCollateralizationRate; //80%
     /// @notice liquidation multiplier used to compute liquidator rewards
-    uint256 public liquidationMultiplier = 12000; //12%
+    uint256 internal liquidationMultiplier = 12000; //12%
     /// @notice returns the leverage executor
-    ILeverageExecutor public leverageExecutor;
+    ILeverageExecutor internal leverageExecutor;
     /// @notice returns the maximum accepted slippage for liquidation
-    uint256 public maxLiquidationSlippage = 1000; //1%
+    uint256 internal maxLiquidationSlippage = 1000; //1%
     // ***************** //
     // *** CONSTANTS *** //
     // ***************** //

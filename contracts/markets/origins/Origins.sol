@@ -14,6 +14,7 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IYieldBox} from "tapioca-periph/interfaces/yieldbox/IYieldBox.sol";
 import {IUsdo} from "tapioca-periph/interfaces/oft/IUsdo.sol";
 import {SafeApprove} from "../../libraries/SafeApprove.sol";
+import {MarketStateView} from "../MarketStateView.sol";
 import {Market, MarketERC20} from "../Market.sol";
 
 // solhint-disable max-line-length
@@ -30,7 +31,7 @@ import {Market, MarketERC20} from "../Market.sol";
 */
 
 /// @notice used for initial USDO mint
-contract Origins is Ownable, Market, ReentrancyGuard {
+contract Origins is Ownable, Market, MarketStateView, ReentrancyGuard {
     using RebaseLibrary for Rebase;
     using BoringERC20 for IERC20;
     using SafeCast for uint256;
