@@ -167,7 +167,7 @@ contract MagnetarMock is PearlmitHandler {
             revert MagnetarMock_NotAuthorized();
         }
 
-        IYieldBox yieldBox = IYieldBox(IMarket(_data.market).yieldBox());
+        IYieldBox yieldBox = IYieldBox(IMarket(_data.market)._yieldBox());
 
         uint256 assetId = IMarket(_data.market)._assetId();
         (, address assetAddress,,) = yieldBox.assets(assetId);
@@ -221,7 +221,7 @@ contract MagnetarMock is PearlmitHandler {
 
         IMarket bigBang = IMarket(_data.externalContracts.bigBang);
         ISingularity singularity = ISingularity(_data.externalContracts.singularity);
-        IYieldBox yieldBox = IYieldBox(singularity.yieldBox());
+        IYieldBox yieldBox = IYieldBox(singularity._yieldBox());
 
         if (address(singularity) != address(0)) {
             yieldBox.setApprovalForAll(address(singularity), true);
@@ -276,7 +276,7 @@ contract MagnetarMock is PearlmitHandler {
 
         IMarket bigBang = IMarket(_data.externalData.bigBang);
         ISingularity singularity = ISingularity(_data.externalData.singularity);
-        IYieldBox yieldBox = IYieldBox(singularity.yieldBox());
+        IYieldBox yieldBox = IYieldBox(singularity._yieldBox());
 
         uint256 _removeAmount = _data.removeAndRepayData.removeAmount;
         if (_data.removeAndRepayData.removeAssetFromSGL) {
@@ -309,7 +309,7 @@ contract MagnetarMock is PearlmitHandler {
     {
         if (!cluster.isWhitelisted(cluster.lzChainId(), address(_data.market))) revert MagnetarMock_NotAuthorized();
 
-        IYieldBox yieldBox = IYieldBox(IMarket(_data.market).yieldBox());
+        IYieldBox yieldBox = IYieldBox(IMarket(_data.market)._yieldBox());
 
         uint256 collateralId = IMarket(_data.market)._collateralId();
         (, address collateralAddress,,) = yieldBox.assets(collateralId);

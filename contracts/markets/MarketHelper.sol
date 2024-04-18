@@ -33,7 +33,7 @@ contract MarketHelper {
     {
         ISingularity sgl = ISingularity(sglAddress);
 
-        IYieldBox yieldBox = IYieldBox(sgl.yieldBox());
+        IYieldBox yieldBox = IYieldBox(sgl._yieldBox());
         (uint128 totalAssetElastic, uint128 totalAssetBase) = sgl.totalAsset();
         (uint128 totalBorrowElastic,) = sgl._totalBorrow();
 
@@ -72,7 +72,7 @@ contract MarketHelper {
             data.maxBorrowPart = maxBorrowPart;
             data.minLiquidationBonus = minLiquidationBonus;
             data.exchangeRate = _exchangeRate;
-            data.yieldBox = IYieldBox(sgl.yieldBox());
+            data.yieldBox = IYieldBox(sgl._yieldBox());
             data.collateralId = sgl._collateralId();
             data.userCollateralShare = sgl._userCollateralShare(user);
             data.userBorrowPart = sgl._userBorrowPart(user);
