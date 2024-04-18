@@ -30,6 +30,7 @@ contract SGLLeverage is SGLLendingCommon {
     // ************** //
     error LeverageExecutorNotValid();
     error CollateralShareNotValid();
+    error AmountNotValid();
 
     struct _BuyCollateralCalldata {
         address from;
@@ -86,6 +87,7 @@ contract SGLLeverage is SGLLendingCommon {
 
         _allowedBorrow(calldata_.from, collateralShare);
         _addCollateral(calldata_.from, calldata_.from, false, 0, collateralShare, false);
+        if (amountOut == 0) revert AmountNotValid();
     }
 
     struct _SellCollateralCalldata {
@@ -140,5 +142,6 @@ contract SGLLeverage is SGLLendingCommon {
             uint256 partOut = totalBorrow.toBase(amountOut, false);
             _repay(calldata_.from, calldata_.from, false, partOut, false);
         }
+        if (amountOut == 0) revert AmountNotValid();
     }
 }

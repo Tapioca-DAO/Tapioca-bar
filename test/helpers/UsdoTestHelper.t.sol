@@ -113,12 +113,20 @@ contract UsdoTestHelper is TestHelper, TestUtils {
     }
 
     function createPenrose(TestPenroseData memory _data) public returns (Penrose pen, Singularity mediumRiskMC) {
+        address tapStrat = address(createYieldBoxEmptyStrategy(_data.yb, _data.tap));
+        address tokenStrat = address(createYieldBoxEmptyStrategy(_data.yb, _data.token));
+
+        uint256 tapAssetId = IYieldBox(_data.yb).registerAsset(TokenType.ERC20, _data.tap, tapStrat, 0);
+        uint256 tokenAssetId = IYieldBox(_data.yb).registerAsset(TokenType.ERC20, _data.token, tokenStrat, 0);
+
         pen = new Penrose(
             IYieldBox(_data.yb),
             ICluster(_data.cluster),
             IERC20(_data.tap),
             IERC20(_data.token),
             _data.pearlmit,
+            tapAssetId,
+            tokenAssetId,
             _data.owner
         );
         mediumRiskMC = new Singularity();

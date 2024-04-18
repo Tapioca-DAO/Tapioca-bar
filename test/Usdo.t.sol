@@ -651,8 +651,7 @@ contract UsdoTest is UsdoTestHelper {
                 fee: MessagingFee({nativeFee: 0, lzTokenFee: 0}),
                 extraOptions: "0x",
                 refundAddress: address(this)
-            }),
-            composeMsg: "0x"
+            })
         });
         bytes memory sendMsg_ = usdoHelper.buildExerciseOptionMsg(exerciseMsg);
 
