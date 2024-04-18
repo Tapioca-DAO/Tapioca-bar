@@ -1,8 +1,9 @@
 import * as TAP_TOKEN_CONFIG from '@tap-token/config';
 import * as TAPIOCA_PERIPH_CONFIG from '@tapioca-periph/config';
+import * as TAP_YIELDBOX from '@tap-yieldbox/config';
+import * as TAPIOCA_Z_CONFIG from '@tapiocaz/config';
 import { TAPIOCA_PROJECTS_NAME } from '@tapioca-sdk/api/config';
 import { TTapiocaDeployTaskArgs } from '@tapioca-sdk/ethers/hardhat/DeployerVM';
-import * as TAPIOCA_Z_CONFIG from '@tapiocaz/config';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { loadGlobalContract, setLzPeer__task } from 'tapioca-sdk';
 import { TTapiocaDeployerVmPass } from 'tapioca-sdk/dist/ethers/hardhat/DeployerVM';
@@ -263,9 +264,9 @@ function deploy__LoadDeployments_Generic(params: {
     ).address;
     const yieldBox = loadGlobalContract(
         hre,
-        TAPIOCA_PROJECTS_NAME.TapToken,
+        TAPIOCA_PROJECTS_NAME.YieldBox,
         hre.SDK.eChainId,
-        TAP_TOKEN_CONFIG.DEPLOYMENT_NAMES.TAP_TOKEN,
+        TAP_YIELDBOX.DEPLOYMENT_NAMES.YieldBox,
         tag,
     ).address;
     const cluster = loadGlobalContract(
