@@ -1232,7 +1232,6 @@ contract UsdoTest is UsdoTestHelper {
                 composeGas: 0,
                 sendVal: 0,
                 composeVal: 0,
-                composeMsg: "0x",
                 composeMsgType: 0
             })
         });
@@ -1415,7 +1414,6 @@ contract UsdoTest is UsdoTestHelper {
                 composeGas: 0,
                 sendVal: 0,
                 composeVal: 0,
-                composeMsg: "0x",
                 composeMsgType: 0
             })
         });
@@ -1572,7 +1570,6 @@ contract UsdoTest is UsdoTestHelper {
                     composeGas: 0,
                     sendVal: 0,
                     composeVal: 0,
-                    composeMsg: "0x",
                     composeMsgType: 0
                 }),
                 collateralWithdrawData: MagnetarWithdrawData({
@@ -1598,7 +1595,6 @@ contract UsdoTest is UsdoTestHelper {
                     composeGas: 0,
                     sendVal: 0,
                     composeVal: 0,
-                    composeMsg: "0x",
                     composeMsgType: 0
                 })
             })
