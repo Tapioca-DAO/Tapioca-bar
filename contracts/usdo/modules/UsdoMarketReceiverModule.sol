@@ -81,8 +81,8 @@ contract UsdoMarketReceiverModule is BaseUsdo {
         }
 
         if (msg_.user != srcChainSender) {
-            uint256 allowanceAmont = msg_.lendAmount + msg_.depositData.amount;
-            _spendAllowance(msg_.user, srcChainSender, allowanceAmont);
+            uint256 allowanceAmount = msg_.lendAmount > msg_.depositData.amount ? msg_.lendAmount: msg_.depositData.amount;
+            _spendAllowance(msg_.user, srcChainSender, allowanceAmount);
         }
 
         bytes memory call =
