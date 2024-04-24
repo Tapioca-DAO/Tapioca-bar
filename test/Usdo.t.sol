@@ -119,6 +119,9 @@ contract UsdoTest is UsdoTestHelper {
     MarketHelper marketHelper;
     OracleMock oracle;
 
+    ERC20WithoutStrategy aUsdoStrategy;
+    ERC20WithoutStrategy bUsdoStrategy;
+
     uint256 aUsdoYieldBoxId;
     uint256 bUsdoYieldBoxId;
 
@@ -250,8 +253,8 @@ contract UsdoTest is UsdoTestHelper {
         this.wireOApps(ofts);
 
         // Setup YieldBox assets
-        ERC20WithoutStrategy aUsdoStrategy = createYieldBoxEmptyStrategy(address(yieldBox), address(aUsdo));
-        ERC20WithoutStrategy bUsdoStrategy = createYieldBoxEmptyStrategy(address(yieldBox), address(bUsdo));
+        aUsdoStrategy = createYieldBoxEmptyStrategy(address(yieldBox), address(aUsdo));
+        bUsdoStrategy = createYieldBoxEmptyStrategy(address(yieldBox), address(bUsdo));
 
         aUsdoYieldBoxId = registerYieldBoxAsset(address(yieldBox), address(aUsdo), address(aUsdoStrategy)); //we assume this is the asset Id
         bUsdoYieldBoxId = registerYieldBoxAsset(address(yieldBox), address(bUsdo), address(bUsdoStrategy)); //we assume this is the collateral Id
@@ -1655,6 +1658,66 @@ contract UsdoTest is UsdoTestHelper {
             );
         }
     }
+
+    function test_poc39() public {
+        address alice = address(1337);
+        address bob = address(1338);
+        address charlie = address(1339);
+
+        uint erc20Amount_ = 10e18;
+        //Setup victim account
+        {
+            vm.startPrank(alice);
+            deal(address(bUsdo), alice, erc20Amount_);
+            bUsdo.approve(address(yieldBox), type(uint256).max);
+            (,uint shares) = yieldBox.depositAsset(bUsdoYieldBoxId, alice, alice, erc20Amount_, 0);
+
+            yieldBox.setApprovalForAll(address(pearlmit), true);
+            pearlmit.approve(
+                address(yieldBox), bUsdoYieldBoxId, address(singularity), uint200(shares), uint48(block.timestamp + 1)
+            );
+            singularity.addAsset(alice, alice, false, shares);
+
+            vm.stopPrank();
+        }
+
+        //Setup conditions (have borrows to trigger yieldbox.toShare conversion)
+        {
+            uint collateralAmount = erc20Amount_*2;
+            vm.startPrank(charlie);
+            deal(address(aUsdo), charlie, collateralAmount);
+            aUsdo.approve(address(yieldBox), type(uint256).max);
+            (,uint shares) = yieldBox.depositAsset(aUsdoYieldBoxId, charlie, charlie, collateralAmount, 0);
+
+            yieldBox.setApprovalForAll(address(pearlmit), true);
+            pearlmit.approve(
+                address(yieldBox), aUsdoYieldBoxId, address(singularity), uint200(shares), uint48(block.timestamp + 1)
+            );
+
+            Module[] memory modules;
+            bytes[] memory calls;
+            (modules, calls) = marketHelper.addCollateral(charlie, charlie, false, 0, shares);
+            singularity.execute(modules, calls, true);
+
+            (modules, calls) = marketHelper.borrow(charlie, charlie, (erc20Amount_*9)/10);
+            singularity.execute(modules, calls, true);
+
+            vm.stopPrank();
+        }
+
+        //Simulate some yield has accrued in the strategy by donating some amount directly to strategy
+        uint YIELD_AMOUNT = 10*erc20Amount_;
+        deal(address(bUsdo), address(this), YIELD_AMOUNT);
+        bUsdo.transfer(address(bUsdoStrategy), YIELD_AMOUNT);
+
+        //Bob can extract some asset from Alice without approval
+        {
+            uint EXTRACT_AMOUNT = 5;
+            vm.startPrank(bob);
+            vm.expectRevert();
+            singularity.removeAsset(alice, bob, EXTRACT_AMOUNT);
+        }
+        }
 
     function _getMarketPermitTypedDataHash(
         bool permitAsset,
