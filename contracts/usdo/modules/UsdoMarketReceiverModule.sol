@@ -92,7 +92,6 @@ contract UsdoMarketReceiverModule is BaseUsdo {
             id: MagnetarAction.AssetModule,
             target: msg_.magnetar,
             value: msg.value,
-            allowFailure: false,
             call: call
         });
         IMagnetar(payable(msg_.magnetar)).burst{value: msg.value}(magnetarCall);
@@ -175,7 +174,6 @@ contract UsdoMarketReceiverModule is BaseUsdo {
                 id: MagnetarAction.AssetModule,
                 target: msg_.lendParams.magnetar, //ignored in modules call
                 value: msg.value,
-                allowFailure: false,
                 call: call
             });
             IMagnetar(payable(msg_.lendParams.magnetar)).burst{value: msg.value}(magnetarCall);
@@ -209,7 +207,6 @@ contract UsdoMarketReceiverModule is BaseUsdo {
                 id: MagnetarAction.MintModule,
                 target: msg_.lendParams.magnetar, //ignored in modules call
                 value: msg.value,
-                allowFailure: false,
                 call: call
             });
 
@@ -257,7 +254,6 @@ contract UsdoMarketReceiverModule is BaseUsdo {
                 id: MagnetarAction.OptionModule,
                 target: address(this), //ignored in module calls
                 value: msg.value,
-                allowFailure: false,
                 call: call
             });
             IMagnetar(payable(msg_.externalData.magnetar)).burst{value: msg.value}(magnetarCall);
