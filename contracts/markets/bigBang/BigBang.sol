@@ -160,6 +160,7 @@ contract BigBang is MarketStateView, BBCommon {
         if (_liquidationCollateralizationRate > FEE_PRECISION) {
             revert NotValid();
         }
+
         asset = IERC20(_asset);
         assetId = penrose.usdoAssetId();
         collateral = _collateral;
