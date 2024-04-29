@@ -59,7 +59,7 @@ contract BBLiquidation is BBCommon {
         bytes calldata liquidatorReceiverData,
         bool swapCollateral
     ) external onlyOwner {
-        _updateOracleRateForLiquidations();
+        _tryUpdateOracleRate();
 
         //check from whitelist status
         {
@@ -130,7 +130,7 @@ contract BBLiquidation is BBCommon {
             revert LengthMismatch();
         }
 
-        _updateOracleRateForLiquidations();
+        _tryUpdateOracleRate();
 
         _accrue();
         penrose.reAccrueBigBangMarkets();

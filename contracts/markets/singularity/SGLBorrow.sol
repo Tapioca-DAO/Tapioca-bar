@@ -57,7 +57,7 @@ contract SGLBorrow is SGLLendingCommon {
         notSelf(to)
         returns (uint256 amount)
     {
-        updateExchangeRate();
+        _tryUpdateOracleRate();
 
         _accrue();
 

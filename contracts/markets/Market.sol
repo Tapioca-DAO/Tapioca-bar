@@ -439,7 +439,7 @@ abstract contract Market is MarketERC20, Ownable {
         }
     }
 
-    function _updateOracleRateForLiquidations() internal {
+    function _tryUpdateOracleRate() internal {
         try oracle.get(oracleData) returns (bool _updated, uint256 _exchangeRate) {
             if (_updated && _exchangeRate > 0) {
                 exchangeRate = _exchangeRate; //update cached rate

@@ -63,7 +63,7 @@ contract BBBorrow is BBLendingCommon {
         notSelf(to)
         returns (uint256 amount)
     {
-        updateExchangeRate();
+        _tryUpdateOracleRate();
 
         _accrue();
         penrose.reAccrueBigBangMarkets();
