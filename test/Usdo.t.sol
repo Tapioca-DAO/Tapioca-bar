@@ -1213,7 +1213,6 @@ contract UsdoTest is UsdoTestHelper {
                 participateData: IOptionsParticipateData({participate: false, target: address(0), tOLPTokenId: 0})
             }),
             withdrawParams: MagnetarWithdrawData({
-                withdraw: false,
                 yieldBox: address(0),
                 assetId: 0,
                 compose: false,
@@ -1235,7 +1234,9 @@ contract UsdoTest is UsdoTestHelper {
                 composeGas: 0,
                 sendVal: 0,
                 composeVal: 0,
-                composeMsgType: 0
+                composeMsg: "0x",
+                composeMsgType: 0,
+                withdraw: false
             })
         });
 
@@ -1395,7 +1396,6 @@ contract UsdoTest is UsdoTestHelper {
                 participateData: IOptionsParticipateData({participate: false, target: address(0), tOLPTokenId: 0})
             }),
             withdrawParams: MagnetarWithdrawData({
-                withdraw: false,
                 yieldBox: address(0),
                 assetId: 0,
                 compose: false,
@@ -1417,7 +1417,9 @@ contract UsdoTest is UsdoTestHelper {
                 composeGas: 0,
                 sendVal: 0,
                 composeVal: 0,
-                composeMsgType: 0
+                composeMsg: "0x",
+                composeMsgType: 0,
+                withdraw: false
             })
         });
 
@@ -1551,7 +1553,6 @@ contract UsdoTest is UsdoTestHelper {
                 exitData: IOptionsExitData({exit: false, target: address(0), oTAPTokenID: 0}),
                 unlockData: IOptionsUnlockData({unlock: false, target: address(0), tokenId: 0}),
                 assetWithdrawData: MagnetarWithdrawData({
-                    withdraw: false,
                     yieldBox: address(0),
                     assetId: 0,
                     compose: false,
@@ -1573,10 +1574,11 @@ contract UsdoTest is UsdoTestHelper {
                     composeGas: 0,
                     sendVal: 0,
                     composeVal: 0,
-                    composeMsgType: 0
+                    composeMsg: "0x",
+                    composeMsgType: 0,
+                    withdraw: false
                 }),
                 collateralWithdrawData: MagnetarWithdrawData({
-                    withdraw: true,
                     yieldBox: address(0),
                     assetId: 0,
                     compose: false,
@@ -1598,7 +1600,9 @@ contract UsdoTest is UsdoTestHelper {
                     composeGas: 0,
                     sendVal: 0,
                     composeVal: 0,
-                    composeMsgType: 0
+                    composeMsg: "0x",
+                    composeMsgType: 0,
+                    withdraw: true
                 })
             })
         });
