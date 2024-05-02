@@ -304,7 +304,14 @@ contract SGLLiquidation is SGLCommon {
 
         if (feeShare > 0) {
             uint256 feeAmount = yieldBox.toAmount(assetId, feeShare, false);
-            yieldBox.depositAsset(assetId, address(this), address(penrose), feeAmount, 0);
+
+            uint256 fullAssetAmount = yieldBox.toAmount(assetId, totalAsset.elastic, false) + totalBorrow.elastic;
+            uint256 feeFraction = (feeAmount * totalAsset.base) / fullAssetAmount;
+            balanceOf[address(penrose)] += feeFraction;
+            totalAsset.base += feeFraction.toUint128();
+            totalAsset.elastic += feeShare.toUint128();
+
+            yieldBox.depositAsset(assetId, address(this), address(this), 0, feeShare);
         }
         if (callerShare > 0) {
             uint256 callerAmount = yieldBox.toAmount(assetId, callerShare, false);
