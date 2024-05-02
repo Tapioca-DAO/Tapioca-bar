@@ -312,6 +312,17 @@ contract SGLLiquidation is SGLCommon {
         }
     }
 
+    struct __LiquidateUserData {
+        uint256 callerReward;
+        uint256 borrowAmount;
+        uint256 borrowPart;
+        uint256 collateralShare;
+        uint256 borrowShare;
+        uint256 returnedShare;
+        uint256 extraShare;
+        uint256 feeShare;
+        uint256 callerShare;
+    }
     function _liquidateUser(
         address user,
         uint256 maxBorrowPart,
@@ -320,28 +331,37 @@ contract SGLLiquidation is SGLCommon {
         uint256 _exchangeRate,
         uint256 minLiquidationBonus
     ) private {
-        uint256 callerReward = _getCallerReward(user, _exchangeRate);
-        (uint256 borrowAmount,, uint256 collateralShare) =
+        __LiquidateUserData memory data;
+
+        data.callerReward = _getCallerReward(user, _exchangeRate);
+        (data.borrowAmount, data.borrowPart, data.collateralShare) =
             _updateBorrowAndCollateralShare(user, maxBorrowPart, minLiquidationBonus, _exchangeRate);
-        uint256 borrowShare = yieldBox.toShare(assetId, borrowAmount, true);
-        totalCollateralShare = totalCollateralShare > collateralShare ? totalCollateralShare - collateralShare : 0;
+        data.borrowShare = yieldBox.toShare(assetId, data.borrowAmount, true);
 
-        (uint256 returnedShare,) =
-            _swapCollateralWithAsset(collateralShare, _liquidatorReceiver, _liquidatorReceiverData);
+        {
+            totalCollateralShare = totalCollateralShare > data.collateralShare ? totalCollateralShare - data.collateralShare : 0;
+            totalBorrow.elastic -= data.borrowAmount.toUint128();
+            totalBorrow.base -= data.borrowPart.toUint128();
+        }
 
-        if (returnedShare < borrowShare) revert AmountNotValid();
+        {
+            (data.returnedShare,) =
+                _swapCollateralWithAsset(data.collateralShare, _liquidatorReceiver, _liquidatorReceiverData);
+            if (data.returnedShare < data.borrowShare) revert AmountNotValid();
 
-        uint256 extraShare = returnedShare > borrowShare ? returnedShare - borrowShare : 0;
 
-        address(asset).safeApprove(address(yieldBox), type(uint256).max);
-        yieldBox.depositAsset(assetId, address(this), address(this), 0, returnedShare - extraShare);
-        totalAsset.elastic += (returnedShare - extraShare).toUint128();
-        emit LogAddAsset(address(this), address(this), (returnedShare - extraShare), 0);
-        (uint256 feeShare, uint256 callerShare) = _extractLiquidationFees(extraShare, callerReward);
-        address(asset).safeApprove(address(yieldBox), 0);
-        address[] memory _users = new address[](1);
-        _users[0] = user;
-        emit Liquidated(msg.sender, _users, callerShare, feeShare, borrowAmount, collateralShare);
+            data.extraShare = data.returnedShare > data.borrowShare ? data.returnedShare - data.borrowShare : 0;
+            address(asset).safeApprove(address(yieldBox), type(uint256).max);
+            yieldBox.depositAsset(assetId, address(this), address(this), 0, data.returnedShare - data.extraShare);
+            totalAsset.elastic += (data.returnedShare - data.extraShare).toUint128();
+            emit LogAddAsset(address(this), address(this), (data.returnedShare - data.extraShare), 0);
+
+            (data.feeShare, data.callerShare) = _extractLiquidationFees(data.extraShare, data.callerReward);
+            address(asset).safeApprove(address(yieldBox), 0);
+            address[] memory _users = new address[](1);
+            _users[0] = user;
+            emit Liquidated(msg.sender, _users, data.callerShare, data.feeShare, data.borrowAmount, data.collateralShare);
+        }
     }
 
     struct __ClosedLiquidationCalldata {
