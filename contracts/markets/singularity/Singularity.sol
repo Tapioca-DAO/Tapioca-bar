@@ -264,6 +264,10 @@ contract Singularity is SGLCommon {
         emit PausedUpdated(_type, pauseOptions[_type], val);
         pauseOptions[_type] = val;
 
+        if (val) {
+            _accrue();
+        }
+
         // In case of 'unpause', `lastAccrued` is set to block.timestamp
         // Valid for all action types that has an impact on debt or supply
         if (!val && (_type != PauseType.AddCollateral && _type != PauseType.RemoveCollateral)) {
