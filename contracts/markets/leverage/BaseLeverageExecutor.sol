@@ -148,14 +148,14 @@ abstract contract BaseLeverageExecutor is Ownable {
 
         // If the tokenIn is a tOFT, unwrap it. Handles ETH and ERC20.
         if (swapData.toftInfo.isTokenInToft) {
-            tokenIn = _handleToftUnwrap(tokenIn, amountIn);
+            (tokenIn, amountOut) = _handleToftUnwrap(tokenIn, amountIn);
         }
 
         // Approve the swapper to spend the tokenIn, and perform the swap.
-        tokenIn.safeApprove(address(swapper), amountIn);
+        tokenIn.safeApprove(address(swapper), amountOut);
         IZeroXSwapper.SZeroXSwapData memory swapperData =
             abi.decode(swapData.swapperData, (IZeroXSwapper.SZeroXSwapData));
-        amountOut = swapper.swap(swapperData, amountIn, swapData.minAmountOut);
+        amountOut = swapper.swap(swapperData, amountOut, swapData.minAmountOut);
         if (amountOut < swapData.minAmountOut) revert MinAmountNotValid(swapData.minAmountOut, amountOut);
         tokenIn.safeApprove(address(swapper), 0);
 
@@ -177,12 +177,12 @@ abstract contract BaseLeverageExecutor is Ownable {
      * @param amountIn amount to unwrap.
      * @return tokenToSwap address of the token to swap. Either WETH or the ERC20 address.
      */
-    function _handleToftUnwrap(address tokenIn, uint256 amountIn) internal returns (address tokenToSwap) {
-        ITOFT(tokenIn).unwrap(address(this), amountIn); // Sends ETH to `receive()` if not an ERC20.
+    function _handleToftUnwrap(address tokenIn, uint256 amountIn) internal returns (address tokenToSwap, uint256 unwrapped) {
+        unwrapped = ITOFT(tokenIn).unwrap(address(this), amountIn); // Sends ETH to `receive()` if not an ERC20.
         tokenIn = ITOFT(tokenIn).erc20();
         // If the tokenIn is ETH, wrap it to WETH.
         if (tokenIn == address(0)) {
-            weth.deposit{value: amountIn}();
+            weth.deposit{value: unwrapped}();
             tokenToSwap = address(weth);
         } else {
             tokenToSwap = tokenIn;
