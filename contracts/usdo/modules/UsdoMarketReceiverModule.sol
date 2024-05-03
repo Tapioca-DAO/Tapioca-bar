@@ -80,10 +80,7 @@ contract UsdoMarketReceiverModule is BaseUsdo {
             msg_.depositData.amount = _toLD(msg_.depositData.amount.toUint64());
         }
 
-        if (msg_.user != srcChainSender) {
-            uint256 allowanceAmont = msg_.lendAmount + msg_.depositData.amount;
-            _spendAllowance(msg_.user, srcChainSender, allowanceAmont);
-        }
+        _validateAndSpendAllowance(msg_.user, srcChainSender, msg_.lendAmount);
 
         bytes memory call =
             abi.encodeWithSelector(MagnetarAssetXChainModule.depositYBLendSGLLockXchainTOLP.selector, msg_);
@@ -153,10 +150,7 @@ contract UsdoMarketReceiverModule is BaseUsdo {
                     .getBorrowPartForAmount(msg_.lendParams.market, msg_.lendParams.depositAmount);
             }
 
-            if (msg_.user != srcChainSender) {
-                uint256 allowanceAmont = msg_.lendParams.depositAmount + msg_.lendParams.removeCollateralAmount;
-                _spendAllowance(msg_.user, srcChainSender, allowanceAmont);
-            }
+            _validateAndSpendAllowance(msg_.user, srcChainSender, msg_.lendParams.depositAmount);
 
             bytes memory call = abi.encodeWithSelector(
                 MagnetarAssetModule.depositRepayAndRemoveCollateralFromMarket.selector,
@@ -180,10 +174,7 @@ contract UsdoMarketReceiverModule is BaseUsdo {
             });
             IMagnetar(payable(msg_.lendParams.magnetar)).burst{value: msg.value}(magnetarCall);
         } else {
-            if (msg_.user != srcChainSender) {
-                uint256 allowanceAmont = msg_.lendParams.depositAmount + msg_.lendParams.lockData.amount;
-                _spendAllowance(msg_.user, srcChainSender, allowanceAmont);
-            }
+            _validateAndSpendAllowance(msg_.user, srcChainSender, msg_.lendParams.depositAmount);
 
             MintFromBBAndLendOnSGLData memory _lendData = MintFromBBAndLendOnSGLData({
                 user: msg_.user,
@@ -238,10 +229,7 @@ contract UsdoMarketReceiverModule is BaseUsdo {
         msg_.removeAndRepayData.repayAmount = _toLD(msg_.removeAndRepayData.repayAmount.toUint64());
         msg_.removeAndRepayData.collateralAmount = _toLD(msg_.removeAndRepayData.collateralAmount.toUint64());
 
-        if (msg_.user != srcChainSender) {
-            uint256 allowanceAmont =  msg_.removeAndRepayData.removeAmount + msg_.removeAndRepayData.collateralAmount;
-            _spendAllowance(msg_.user, srcChainSender, allowanceAmont);
-        }
+        _validateAndSpendAllowance(msg_.user, srcChainSender, msg_.removeAndRepayData.removeAmount);
 
         {
             bytes memory call = abi.encodeWithSelector(
