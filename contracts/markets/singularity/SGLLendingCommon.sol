@@ -35,7 +35,7 @@ contract SGLLendingCommon is SGLCommon {
     // *** PRIVATE FUNCTIONS *** //
     // ************************* //
     /// @dev Concrete implementation of `addCollateral`.
-    function _addCollateral(address from, address to, bool skim, uint256 amount, uint256 share) internal {
+    function _addCollateral(address from, address to, bool skim, uint256 amount, uint256 share, bool addTokens) internal {
         if (share == 0) {
             share = yieldBox.toShare(collateralId, amount, false);
         }
@@ -43,7 +43,7 @@ contract SGLLendingCommon is SGLCommon {
         userCollateralShare[to] += share;
         totalCollateralShare = oldTotalCollateralShare + share;
 
-        _addTokens(from, to, collateralId, share, oldTotalCollateralShare, skim);
+        if (addTokens) _addTokens(from, to, collateralId, share, oldTotalCollateralShare, skim);
 
         emit LogAddCollateral(skim ? address(yieldBox) : from, to, share);
     }

@@ -92,22 +92,21 @@ contract BBLeverage is BBLendingCommon {
         }
         {
             amountOut = leverageExecutor.getCollateral(
-                collateralId,
                 address(asset),
                 address(collateral),
                 memoryData.supplyShareToAmount + memoryData.borrowShareToAmount,
-                address(this),
                 calldata_.data
             );
         }
         uint256 collateralShare = yieldBox.toShare(collateralId, amountOut, false);
+
         address(collateral).safeApprove(address(yieldBox), type(uint256).max);
         yieldBox.depositAsset(collateralId, address(this), calldata_.from, 0, collateralShare);
         address(collateral).safeApprove(address(yieldBox), 0);
 
         if (collateralShare == 0) revert CollateralShareNotValid();
         _allowedBorrow(calldata_.from, collateralShare);
-        _addCollateral(calldata_.from, calldata_.from, false, 0, collateralShare);
+        _addCollateral(calldata_.from, calldata_.from, false, 0, collateralShare, false);
     }
 
     struct _SellCollateralMemoryData {
@@ -141,14 +140,12 @@ contract BBLeverage is BBLendingCommon {
 
         _SellCollateralMemoryData memory memoryData;
 
-        (memoryData.leverageAmount, ) =
+        (memoryData.leverageAmount,) =
             yieldBox.withdraw(collateralId, address(this), address(leverageExecutor), 0, share);
-        amountOut = leverageExecutor.getAsset(
-            assetId, address(asset), address(collateral), memoryData.leverageAmount, from, data
-        );
+        amountOut = leverageExecutor.getAsset(address(collateral), address(asset), memoryData.leverageAmount, data);
         memoryData.shareOut = yieldBox.toShare(assetId, amountOut, false);
         address(asset).safeApprove(address(yieldBox), type(uint256).max);
-        yieldBox.depositAsset(collateralId, address(this), address(this), 0, memoryData.shareOut); // TODO Check for rounding attack?
+        yieldBox.depositAsset(assetId, address(this), from, 0, memoryData.shareOut); // TODO Check for rounding attack?
         address(asset).safeApprove(address(yieldBox), 0);
 
         memoryData.partOwed = userBorrowPart[from];

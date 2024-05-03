@@ -148,5 +148,6 @@ contract BBCommon is BBStorage {
     {
         address(token).safeApprove(address(yieldBox), amount);
         (, share) = yieldBox.depositAsset(id, address(this), to, amount, 0);
+        address(token).safeApprove(address(yieldBox), 0);
     }
 }
