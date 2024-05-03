@@ -213,7 +213,7 @@ contract MarketHelper {
     /// @notice liquidates a position for which the collateral's value is less than the borrowed value
     /// @dev liquidation bonus is included in the computation
     /// @param user the address to liquidate
-    /// @param user the address to extract from
+    /// @param from the address to extract from
     /// @param receiver the address which receives the output
     /// @param liquidatorReceiver the IMarketLiquidatorReceiver executor
     /// @param liquidatorReceiverData the IMarketLiquidatorReceiver executor data

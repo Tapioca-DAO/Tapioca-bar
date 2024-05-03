@@ -36,14 +36,14 @@ contract BBLendingCommon is BBCommon {
     // ************************** //
     // *** PRIVATE FUNCTIONS *** //
     // ************************* //
-    function _addCollateral(address from, address to, bool skim, uint256 amount, uint256 share) internal {
+    function _addCollateral(address from, address to, bool skim, uint256 amount, uint256 share, bool addTokens) internal {
         if (share == 0) {
             share = yieldBox.toShare(collateralId, amount, false);
         }
         userCollateralShare[to] += share;
         uint256 oldTotalCollateralShare = totalCollateralShare;
         totalCollateralShare = oldTotalCollateralShare + share;
-        _addTokens(from, collateralId, share, oldTotalCollateralShare, skim);
+        if (addTokens) _addTokens(from, collateralId, share, oldTotalCollateralShare, skim);
         emit LogAddCollateral(skim ? address(yieldBox) : from, to, share);
     }
 
