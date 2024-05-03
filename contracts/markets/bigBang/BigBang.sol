@@ -13,6 +13,7 @@ import {IYieldBox} from "tapioca-periph/interfaces/yieldbox/IYieldBox.sol";
 import {IPearlmit} from "tapioca-periph/interfaces/periph/IPearlmit.sol";
 import {IPenrose} from "tapioca-periph/interfaces/bar/IPenrose.sol";
 import {Module} from "tapioca-periph/interfaces/bar/IMarket.sol";
+import {IUsdo} from "tapioca-periph/interfaces/oft/IUsdo.sol";
 import {SafeApprove} from "../../libraries/SafeApprove.sol";
 import {BBLiquidation} from "./BBLiquidation.sol";
 import {BBCollateral} from "./BBCollateral.sol";
@@ -82,6 +83,7 @@ contract BigBang is BBCommon {
         uint256 _debtRateMin;
         uint256 _debtRateMax;
     }
+
 
     /// @notice The init function that acts as a constructor
     function init(bytes calldata initData) external onlyOnce {
@@ -195,7 +197,17 @@ contract BigBang is BBCommon {
     // ************************ //
     // *** PUBLIC FUNCTIONS *** //
     // ************************ //
+    /// @notice returns open interest debt
+    /// @dev accrue needs to be called before 
+    function viewOpenInterest() public view returns (uint256) {
+        uint256 debt = totalBorrow.elastic - totalBorrow.base;
+        if (debtMinted > debt)  {
+            return 0;
+        }
 
+        return debt - debtMinted;
+    }
+   
     /// @notice Allows batched call to BingBang.
     /// @param calls An array encoded call data.
     /// @param revertOnFail If True then reverts after a failed call and stops doing further calls.
@@ -223,6 +235,17 @@ contract BigBang is BBCommon {
     // ************************* //
     // *** OWNER FUNCTIONS ***** //
     // ************************* //
+    /// @notice computes mintable debt and updates `debtMinted`
+    function computeOpenInterestMintable() external onlyOwner returns (uint256) {
+        _accrue();
+        uint256 toMint = viewOpenInterest();
+        if (toMint == 0) {
+            debtMinted = totalBorrow.elastic - totalBorrow.base;
+        }
+        debtMinted += toMint;
+        return toMint;
+    }
+
     /// @notice updates the pause state of the contract
     /// @dev can only be called by the conservator
     /// @param val the new value
