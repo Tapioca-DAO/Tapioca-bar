@@ -25,6 +25,7 @@ import {
     ITapiocaOptionBroker, IExerciseOptionsData
 } from "tapioca-periph/interfaces/tap-token/ITapiocaOptionBroker.sol";
 import {UsdoInitStruct, ExerciseOptionsMsg, LZSendParam} from "tapioca-periph/interfaces/oft/IUsdo.sol";
+import {IOftSender} from "tapioca-periph/interfaces/oft/IOftSender.sol";
 import {SafeApprove} from "tapioca-periph/libraries/SafeApprove.sol";
 import {UsdoMsgCodec} from "../libraries/UsdoMsgCodec.sol";
 import {BaseUsdo} from "../BaseUsdo.sol";
@@ -70,7 +71,7 @@ contract UsdoOptionReceiverModule is BaseUsdo {
         ExerciseOptionsMsg memory msg_ = UsdoMsgCodec.decodeExerciseOptionsMsg(_data);
 
         _checkWhitelistStatus(msg_.optionsData.target);
-        
+
         {
             // _data declared for visibility.
             IExerciseOptionsData memory _options = msg_.optionsData;
@@ -91,7 +92,10 @@ contract UsdoOptionReceiverModule is BaseUsdo {
             address oTap = ITapiocaOptionBroker(_options.target).oTAP();
             address oTapOwner = IERC721(oTap).ownerOf(_options.oTAPTokenID);
 
-            if (oTapOwner != _options.from && !IERC721(oTap).isApprovedForAll(oTapOwner,_options.from) && IERC721(oTap).getApproved(_options.oTAPTokenID) != _options.from) revert UsdoOptionReceiverModule_NotAuthorized(oTapOwner);
+            if (
+                oTapOwner != _options.from && !IERC721(oTap).isApprovedForAll(oTapOwner, _options.from)
+                    && IERC721(oTap).getApproved(_options.oTAPTokenID) != _options.from
+            ) revert UsdoOptionReceiverModule_NotAuthorized(oTapOwner);
             ITapiocaOptionBroker(_options.target).exerciseOption(
                 _options.oTAPTokenID,
                 address(this), //payment token
@@ -119,15 +123,14 @@ contract UsdoOptionReceiverModule is BaseUsdo {
             if (msg_.withdrawOnOtherChain) {
                 /// @dev determine the right amount to send back to source
                 uint256 amountToSend = _send.amountLD > tapBalance ? tapBalance : _send.amountLD;
+
+                _send.amountLD = amountToSend;
                 if (_send.minAmountLD > amountToSend) {
                     _send.minAmountLD = amountToSend;
                 }
-                _send.amountLD = amountToSend;
-                
+
                 msg_.lzSendParams.sendParam = _send;
-                
-                // Sends to source and preserve source `msg.sender` (`from` in this case).
-                _sendPacket(msg_.lzSendParams, msg_.composeMsg, _options.from);
+                IOftSender(tapOft).sendPacket{value: msg.value}(msg_.lzSendParams, msg_.composeMsg);
 
                 // Refund extra amounts
                 if (tapBalance - amountToSend > 0) {
@@ -145,58 +148,6 @@ contract UsdoOptionReceiverModule is BaseUsdo {
             if (!cluster.isWhitelisted(0, _addr)) {
                 revert UsdoOptionReceiverModule_NotAuthorized(_addr);
             }
-        }
-    }
-
-    function _sendPacket(LZSendParam memory _lzSendParam, bytes memory _composeMsg, address _srcChainSender)
-        private
-        returns (MessagingReceipt memory msgReceipt, OFTReceipt memory oftReceipt)
-    {
-        /// @dev Applies the token transfers regarding this send() operation.
-        // - amountDebitedLD is the amount in local decimals that was ACTUALLY debited from the sender.
-        // - amountToCreditLD is the amount in local decimals that will be credited to the recipient on the remote OFT instance.
-        (uint256 amountDebitedLD, uint256 amountToCreditLD) =
-            _debit(_lzSendParam.sendParam.amountLD, _lzSendParam.sendParam.minAmountLD, _lzSendParam.sendParam.dstEid);
-
-        /// @dev Builds the options and OFT message to quote in the endpoint.
-        (bytes memory message, bytes memory options) = _buildOFTMsgAndOptionsMemory(
-            _lzSendParam.sendParam, _lzSendParam.extraOptions, _composeMsg, amountToCreditLD, _srcChainSender
-        );
-
-        /// @dev Sends the message to the LayerZero endpoint and returns the LayerZero msg receipt.
-        msgReceipt =
-            _lzSend(_lzSendParam.sendParam.dstEid, message, options, _lzSendParam.fee, _lzSendParam.refundAddress);
-        /// @dev Formulate the OFT receipt.
-        oftReceipt = OFTReceipt(amountDebitedLD, amountToCreditLD);
-
-        emit OFTSent(msgReceipt.guid, _lzSendParam.sendParam.dstEid, msg.sender, amountDebitedLD);
-    }
-    /**
-     * @dev For details about this function, check `BaseTapiocaOmnichainEngine._buildOFTMsgAndOptions()`.
-     * @dev !!!! IMPORTANT !!!! The differences are:
-     *      - memory instead of calldata for parameters.
-     *      - `_msgSender` is used instead of using context `msg.sender`, to preserve context of the OFT call and use `msg.sender` of the source chain.
-     *      - Does NOT combine options, make sure to pass valid options to cover gas costs/value transfers.
-     */
-
-    function _buildOFTMsgAndOptionsMemory(
-        SendParam memory _sendParam,
-        bytes memory _extraOptions,
-        bytes memory _composeMsg,
-        uint256 _amountToCreditLD,
-        address _msgSender
-    ) private view returns (bytes memory message, bytes memory options) {
-        bool hasCompose = _composeMsg.length > 0;
-
-        message = hasCompose
-            ? abi.encodePacked(
-                _sendParam.to, _toSD(_amountToCreditLD), OFTMsgCodec.addressToBytes32(_msgSender), _composeMsg
-            )
-            : abi.encodePacked(_sendParam.to, _toSD(_amountToCreditLD));
-        options = _extraOptions;
-
-        if (msgInspector != address(0)) {
-            IOAppMsgInspector(msgInspector).inspect(message, options);
         }
     }
 
