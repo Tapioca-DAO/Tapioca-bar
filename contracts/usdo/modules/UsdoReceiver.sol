@@ -89,16 +89,6 @@ contract UsdoReceiver is BaseUsdo, TapiocaOmnichainReceiver {
                 ),
                 false
             );
-        } else if (_msgType == MSG_DEPOSIT_LEND_AND_SEND_FOR_LOCK) {
-            _executeModule(
-                uint8(IUsdo.Module.UsdoMarketReceiver),
-                abi.encodeWithSelector(
-                    UsdoMarketReceiverModule.depositLendAndSendForLockingReceiver.selector,
-                    _srcChainSender,
-                    _toeComposeMsg
-                ),
-                false
-            );
         } else {
             return false;
         }
