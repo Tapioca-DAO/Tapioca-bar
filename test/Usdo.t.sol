@@ -719,7 +719,7 @@ contract UsdoTest is UsdoTestHelper {
             ERC20PermitStruct memory approvalUserB_ =
                 ERC20PermitStruct({owner: userA, spender: userB, value: 0, nonce: 0, deadline: 1 days});
 
-            bytes32 digest_ = _getYieldBoxPermitAllTypedDataHash(approvalUserB_);
+            bytes32 digest_ = _getYieldBoxPermitAllTypedDataHash(approvalUserB_, true);
             YieldBoxApproveAllMsg memory permitApproval_ =
                 __getYieldBoxPermitAllData(approvalUserB_, address(yieldBox), true, digest_, userAPKey);
 
@@ -781,7 +781,7 @@ contract UsdoTest is UsdoTestHelper {
             ERC20PermitStruct memory approvalUserB_ =
                 ERC20PermitStruct({owner: userA, spender: userB, value: 0, nonce: 0, deadline: 1 days});
 
-            bytes32 digest_ = _getYieldBoxPermitAllTypedDataHash(approvalUserB_);
+            bytes32 digest_ = _getYieldBoxPermitAllTypedDataHash(approvalUserB_, false);
             YieldBoxApproveAllMsg memory permitApproval_ =
                 __getYieldBoxPermitAllData(approvalUserB_, address(yieldBox), false, digest_, userAPKey);
 
@@ -855,11 +855,11 @@ contract UsdoTest is UsdoTestHelper {
             });
 
             permitApprovalB_ = __getYieldBoxPermitAssetData(
-                approvalUserB_, address(yieldBox), true, _getYieldBoxPermitAssetTypedDataHash(approvalUserB_), userAPKey
+                approvalUserB_, address(yieldBox), true, _getYieldBoxPermitAssetTypedDataHash(approvalUserB_, true), userAPKey
             );
 
             permitApprovalC_ = __getYieldBoxPermitAssetData(
-                approvalUserC_, address(yieldBox), true, _getYieldBoxPermitAssetTypedDataHash(approvalUserC_), userAPKey
+                approvalUserC_, address(yieldBox), true, _getYieldBoxPermitAssetTypedDataHash(approvalUserC_, true), userAPKey
             );
 
             YieldBoxApproveAssetMsg[] memory approvals_ = new YieldBoxApproveAssetMsg[](2);
@@ -939,7 +939,7 @@ contract UsdoTest is UsdoTestHelper {
                 approvalUserB_,
                 address(yieldBox),
                 false,
-                _getYieldBoxPermitAssetTypedDataHash(approvalUserB_),
+                _getYieldBoxPermitAssetTypedDataHash(approvalUserB_, false),
                 userAPKey
             );
 
@@ -947,7 +947,7 @@ contract UsdoTest is UsdoTestHelper {
                 approvalUserC_,
                 address(yieldBox),
                 false,
-                _getYieldBoxPermitAssetTypedDataHash(approvalUserC_),
+                _getYieldBoxPermitAssetTypedDataHash(approvalUserC_, false),
                 userAPKey
             );
 
@@ -1668,8 +1668,8 @@ contract UsdoTest is UsdoTestHelper {
         return keccak256(abi.encodePacked("\x19\x01", singularity.DOMAIN_SEPARATOR(), structHash_));
     }
 
-    function _getYieldBoxPermitAllTypedDataHash(ERC20PermitStruct memory _permitData) private view returns (bytes32) {
-        bytes32 permitTypeHash_ = keccak256("PermitAll(address owner,address spender,uint256 nonce,uint256 deadline)");
+    function _getYieldBoxPermitAllTypedDataHash(ERC20PermitStruct memory _permitData, bool permit) private view returns (bytes32) {
+        bytes32 permitTypeHash_ = permit ? keccak256("PermitAll(address owner,address spender,uint256 nonce,uint256 deadline)") : keccak256("RevokeAll(address owner,address spender,uint256 nonce,uint256 deadline)");
 
         bytes32 structHash_ = keccak256(
             abi.encode(permitTypeHash_, _permitData.owner, _permitData.spender, _permitData.nonce, _permitData.deadline)
@@ -1678,13 +1678,14 @@ contract UsdoTest is UsdoTestHelper {
         return keccak256(abi.encodePacked("\x19\x01", _getYieldBoxDomainSeparator(), structHash_));
     }
 
-    function _getYieldBoxPermitAssetTypedDataHash(ERC20PermitStruct memory _permitData)
+    function _getYieldBoxPermitAssetTypedDataHash(ERC20PermitStruct memory _permitData, bool permit)
         private
         view
         returns (bytes32)
     {
-        bytes32 permitTypeHash_ =
-            keccak256("Permit(address owner,address spender,uint256 assetId,uint256 nonce,uint256 deadline)");
+        bytes32 permitTypeHash_ = permit ?
+            keccak256("Permit(address owner,address spender,uint256 assetId,uint256 nonce,uint256 deadline)") : 
+            keccak256("Revoke(address owner,address spender,uint256 assetId,uint256 nonce,uint256 deadline)");
 
         bytes32 structHash_ = keccak256(
             abi.encode(
