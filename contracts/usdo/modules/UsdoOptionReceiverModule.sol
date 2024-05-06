@@ -15,11 +15,9 @@ import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 // Tapioca
 import {
-    DepositAndSendForLockingData,
     MagnetarCall,
     MagnetarAction,
-    IMagnetar,
-    CrossChainMintFromBBAndLendOnSGLData
+    IMagnetar
 } from "tapioca-periph/interfaces/periph/IMagnetar.sol";
 import {
     ITapiocaOptionBroker, IExerciseOptionsData

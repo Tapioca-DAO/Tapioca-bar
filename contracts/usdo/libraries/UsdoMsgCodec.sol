@@ -15,10 +15,6 @@ import {
     MarketRemoveAssetMsg,
     MarketLendOrRepayMsg
 } from "tapioca-periph/interfaces/oft/IUsdo.sol";
-import {
-    DepositAndSendForLockingData,
-    CrossChainMintFromBBAndLendOnSGLData
-} from "tapioca-periph/interfaces/periph/IMagnetar.sol";
 
 /*
 
@@ -387,27 +383,5 @@ library UsdoMsgCodec {
         returns (MarketLendOrRepayMsg memory marketMsg_)
     {
         return abi.decode(_msg, (MarketLendOrRepayMsg));
-    }
-
-    /**
-     * @notice Encodes the message for the `UsdoOptionReceiverModule.depositLendAndSendForLockingReceiver()` operation.
-     */
-    function buildDepositLendAndSendForLockingMsg(DepositAndSendForLockingData memory _msg)
-        internal
-        pure
-        returns (bytes memory)
-    {
-        return abi.encode(_msg);
-    }
-
-    /**
-     * @notice Decodes an encoded message for the `UsdoOptionReceiverModule.depositLendAndSendForLockingReceiver()` operation.
-     */
-    function decodeDepositLendAndSendForLockingMsg(bytes memory _msg)
-        internal
-        pure
-        returns (DepositAndSendForLockingData memory marketMsg_)
-    {
-        return abi.decode(_msg, (DepositAndSendForLockingData));
     }
 }

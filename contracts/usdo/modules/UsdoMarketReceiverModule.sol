@@ -15,8 +15,7 @@ import {
     MagnetarAction,
     DepositRepayAndRemoveCollateralFromMarketData,
     MintFromBBAndLendOnSGLData,
-    ExitPositionAndRemoveCollateralData,
-    DepositAndSendForLockingData
+    ExitPositionAndRemoveCollateralData
 } from "tapioca-periph/interfaces/periph/IMagnetar.sol";
 import {MagnetarOptionModule} from "tapioca-periph/Magnetar/modules/MagnetarOptionModule.sol";
 import {MagnetarAssetModule} from "tapioca-periph/Magnetar/modules/MagnetarAssetModule.sol";
