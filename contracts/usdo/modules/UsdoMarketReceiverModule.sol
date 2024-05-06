@@ -158,10 +158,8 @@ contract UsdoMarketReceiverModule is BaseUsdo {
                 .getBorrowPartForAmount(msg_.lendParams.market, msg_.lendParams.depositAmount);
         }
 
-        if (msg_.user != srcChainSender) {
-            uint256 allowanceAmont = msg_.lendParams.depositAmount + msg_.lendParams.removeCollateralAmount;
-            _spendAllowance(msg_.user, srcChainSender, allowanceAmont);
-        }
+        _validateAndSpendAllowance(msg_.user, srcChainSender, msg_.lendParams.depositAmount);
+
 
         bytes memory call = abi.encodeWithSelector(
             MagnetarAssetModule.depositRepayAndRemoveCollateralFromMarket.selector,
@@ -230,10 +228,7 @@ contract UsdoMarketReceiverModule is BaseUsdo {
         msg_.removeAndRepayData.repayAmount = _toLD(msg_.removeAndRepayData.repayAmount.toUint64());
         msg_.removeAndRepayData.collateralAmount = _toLD(msg_.removeAndRepayData.collateralAmount.toUint64());
 
-        if (msg_.user != srcChainSender) {
-            uint256 allowanceAmont = msg_.removeAndRepayData.removeAmount + msg_.removeAndRepayData.collateralAmount;
-            _spendAllowance(msg_.user, srcChainSender, allowanceAmont);
-        }
+        _validateAndSpendAllowance(msg_.user, srcChainSender, msg_.removeAndRepayData.removeAmount);
 
         return msg_;
     }
