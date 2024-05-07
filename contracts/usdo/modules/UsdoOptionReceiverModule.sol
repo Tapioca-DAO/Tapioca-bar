@@ -14,7 +14,13 @@ import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 // Tapioca
-import {MagnetarCall, MagnetarAction, IMagnetar} from "tapioca-periph/interfaces/periph/IMagnetar.sol";
+import {
+    DepositAndSendForLockingData,
+    MagnetarCall,
+    MagnetarAction,
+    IMagnetar,
+    CrossChainMintFromBBAndLendOnSGLData
+} from "tapioca-periph/interfaces/periph/IMagnetar.sol";
 import {
     ITapiocaOptionBroker, IExerciseOptionsData
 } from "tapioca-periph/interfaces/tap-token/ITapiocaOptionBroker.sol";

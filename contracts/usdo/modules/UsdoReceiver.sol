@@ -13,7 +13,10 @@ import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeE
 // Tapioca
 import {
     IUsdo,
-    UsdoInitStruct
+    UsdoInitStruct,
+    YieldBoxApproveAllMsg,
+    MarketPermitActionMsg,
+    YieldBoxApproveAssetMsg
 } from "tapioca-periph/interfaces/oft/IUsdo.sol";
 import {TapiocaOmnichainReceiver} from "tapioca-periph/tapiocaOmnichainEngine/TapiocaOmnichainReceiver.sol";
 import {UsdoMarketReceiverModule} from "./UsdoMarketReceiverModule.sol";
