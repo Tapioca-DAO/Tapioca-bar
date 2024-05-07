@@ -1215,10 +1215,27 @@ contract UsdoTest is UsdoTestHelper {
             withdrawParams: MagnetarWithdrawData({
                 yieldBox: address(0),
                 assetId: 0,
-                unwrap: false,
-                amount: 0,
-                withdraw: false,
-                receiver: address(this)
+                compose: false,
+                lzSendParams: LZSendParam({
+                    refundAddress: address(this),
+                    fee: MessagingFee({lzTokenFee: 0, nativeFee: 0}),
+                    extraOptions: "0x",
+                    sendParam: SendParam({
+                        amountLD: 0,
+                        composeMsg: "0x",
+                        dstEid: 0,
+                        extraOptions: "0x",
+                        minAmountLD: 0,
+                        oftCmd: "0x",
+                        to: OFTMsgCodec.addressToBytes32(address(this))
+                    })
+                }),
+                sendGas: 0,
+                composeGas: 0,
+                sendVal: 0,
+                composeVal: 0,
+                composeMsgType: 0,
+                withdraw: false
             })
         });
 
@@ -1380,10 +1397,27 @@ contract UsdoTest is UsdoTestHelper {
             withdrawParams: MagnetarWithdrawData({
                 yieldBox: address(0),
                 assetId: 0,
-                unwrap: false,
-                amount: 0,
-                withdraw: false,
-                receiver: address(this)
+                compose: false,
+                lzSendParams: LZSendParam({
+                    refundAddress: address(this),
+                    fee: MessagingFee({lzTokenFee: 0, nativeFee: 0}),
+                    extraOptions: "0x",
+                    sendParam: SendParam({
+                        amountLD: 0,
+                        composeMsg: "0x",
+                        dstEid: 0,
+                        extraOptions: "0x",
+                        minAmountLD: 0,
+                        oftCmd: "0x",
+                        to: OFTMsgCodec.addressToBytes32(address(this))
+                    })
+                }),
+                sendGas: 0,
+                composeGas: 0,
+                sendVal: 0,
+                composeVal: 0,
+                composeMsgType: 0,
+                withdraw: false
             })
         });
 
@@ -1519,18 +1553,52 @@ contract UsdoTest is UsdoTestHelper {
                 assetWithdrawData: MagnetarWithdrawData({
                     yieldBox: address(0),
                     assetId: 0,
-                    unwrap: false,
-                    amount: 0,
-                    withdraw: false,
-                    receiver: address(this)
+                    compose: false,
+                    lzSendParams: LZSendParam({
+                        refundAddress: address(this),
+                        fee: MessagingFee({lzTokenFee: 0, nativeFee: 0}),
+                        extraOptions: "0x",
+                        sendParam: SendParam({
+                            amountLD: 0,
+                            composeMsg: "0x",
+                            dstEid: 0,
+                            extraOptions: "0x",
+                            minAmountLD: 0,
+                            oftCmd: "0x",
+                            to: OFTMsgCodec.addressToBytes32(address(this))
+                        })
+                    }),
+                    sendGas: 0,
+                    composeGas: 0,
+                    sendVal: 0,
+                    composeVal: 0,
+                    composeMsgType: 0,
+                    withdraw: false
                 }),
                 collateralWithdrawData: MagnetarWithdrawData({
                     yieldBox: address(0),
                     assetId: 0,
-                    unwrap: false,
-                    amount: 0,
-                    withdraw: false,
-                    receiver: address(this)
+                    compose: false,
+                    lzSendParams: LZSendParam({
+                        refundAddress: address(this),
+                        fee: MessagingFee({lzTokenFee: 0, nativeFee: 0}),
+                        extraOptions: "0x",
+                        sendParam: SendParam({
+                            amountLD: 0,
+                            composeMsg: "0x",
+                            dstEid: 0,
+                            extraOptions: "0x",
+                            minAmountLD: 0,
+                            oftCmd: "0x",
+                            to: OFTMsgCodec.addressToBytes32(address(this))
+                        })
+                    }),
+                    sendGas: 0,
+                    composeGas: 0,
+                    sendVal: 0,
+                    composeVal: 0,
+                    composeMsgType: 0,
+                    withdraw: true
                 })
             })
         });
