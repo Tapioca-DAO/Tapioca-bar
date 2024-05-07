@@ -51,7 +51,7 @@ contract MagnetarMock is PearlmitHandler {
     error MagnetarMock_TargetNotWhitelisted(address target);
     error MagnetarMock_GasMismatch(uint256 expected, uint256 received);
     error MagnetarMock_UnknownReason();
-    error MagnetarMock_ActionNotValid(uint8 action, bytes actionCalldata); // Burst did not find what to execute
+    error MagnetarMock_ActionNotValid(MagnetarAction action, bytes actionCalldata); // Burst did not find what to execute
 
     ICluster public cluster;
 
@@ -66,7 +66,7 @@ contract MagnetarMock is PearlmitHandler {
 
         for (uint256 i; i < length; i++) {
             MagnetarCall calldata _action = calls[i];
-            
+
             valAccumulator += _action.value;
 
             /// @dev Permit on YB, or an SGL/BB market
@@ -150,7 +150,7 @@ contract MagnetarMock is PearlmitHandler {
             _executeCall(_target, _actionCalldata, 0);
             return;
         }
-        revert MagnetarMock_ActionNotValid(uint8(MagnetarAction.Permit), _actionCalldata);
+        revert MagnetarMock_ActionNotValid(MagnetarAction.Permit, _actionCalldata);
     }
 
     function depositRepayAndRemoveCollateralFromMarket(DepositRepayAndRemoveCollateralFromMarketData memory _data)
@@ -355,9 +355,7 @@ contract MagnetarMock is PearlmitHandler {
     /**
      * @dev Executes a call to an address, optionally reverting on failure. Make sure to sanitize prior to calling.
      */
-    function _executeCall(address _target, bytes calldata _actionCalldata, uint256 _actionValue)
-        private
-    {
+    function _executeCall(address _target, bytes calldata _actionCalldata, uint256 _actionValue) private {
         bool success;
         bytes memory returnData;
 

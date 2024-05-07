@@ -72,7 +72,7 @@ contract SGLLiquidation is SGLCommon {
         bytes calldata liquidatorReceiverData,
         bool swapCollateral
     ) external onlyOwner {
-        _updateOracleRateForLiquidations();
+        _tryUpdateOracleRate();
 
         //check from whitelist status
         {
@@ -147,7 +147,7 @@ contract SGLLiquidation is SGLCommon {
             revert LengthMismatch();
         }
 
-        _updateOracleRateForLiquidations();
+        _tryUpdateOracleRate();
 
         _accrue();
 

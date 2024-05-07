@@ -122,17 +122,17 @@ abstract contract Market is MarketERC20, Ownable {
     // *** EVENTS *** //
     // ************** //
     /// @notice event emitted when `leverageExecutor` is updated
-    event LeverageExecutorSet(address indexed oldVal, address indexed newVal);
+    event LeverageExecutorSet(address oldVal, address newVal);
     /// @notice event emitted when `exchangeRate` validation duration is updated
     event ExchangeRateDurationUpdated(uint256 _oldVal, uint256 _newVal);
     /// @notice event emitted when conservator is updated
-    event ConservatorUpdated(address indexed old, address indexed _new);
+    event ConservatorUpdated(address old, address _new);
     /// @notice event emitted when pause state is changed
-    event PausedUpdated(PauseType indexed _type, bool indexed oldState, bool indexed newState);
+    event PausedUpdated(PauseType indexed _type, bool oldState, bool newState);
     /// @notice event emitted when cached exchange rate is updated
-    event LogExchangeRate(uint256 indexed rate);
+    event LogExchangeRate(uint256 rate);
     /// @notice event emitted when borrow cap is updated
-    event LogBorrowCapUpdated(uint256 indexed _oldVal, uint256 indexed _newVal);
+    event LogBorrowCapUpdated(uint256 _oldVal, uint256 _newVal);
     /// @notice event emitted when oracle data is updated
     event OracleDataUpdated();
     /// @notice event emitted when oracle is updated
@@ -140,18 +140,18 @@ abstract contract Market is MarketERC20, Ownable {
     /// @notice event emitted when a position is liquidated
     event Liquidated(
         address indexed liquidator,
-        address[] indexed users,
-        uint256 indexed liquidatorReward,
+        address[] users,
+        uint256 liquidatorReward,
         uint256 protocolReward,
         uint256 repayedAmount,
         uint256 collateralShareRemoved
     );
     /// @notice event emitted when the liquidation multiplier rate is updated
-    event LiquidationMultiplierUpdated(uint256 indexed oldVal, uint256 indexed newVal);
+    event LiquidationMultiplierUpdated(uint256 oldVal, uint256 newVal);
     /// @notice event emitted on setMarketConfig updates
-    event ValueUpdated(uint256 indexed valType, uint256 indexed _newVal);
+    event ValueUpdated(uint256 valType, uint256 _newVal);
     /// @notice event emitted when then liquidation max slippage is updated
-    event LiquidationMaxSlippageUpdated(uint256 indexed oldVal, uint256 indexed newVal);
+    event LiquidationMaxSlippageUpdated(uint256 oldVal, uint256 newVal);
 
     modifier optionNotPaused(PauseType _type) {
         require(!pauseOptions[_type], "Market: paused");
@@ -228,7 +228,6 @@ abstract contract Market is MarketERC20, Ownable {
             oracle = _oracle;
             emit OracleUpdated(address(_oracle));
         }
-
         if (_oracleData.length > 0) {
             oracleData = _oracleData;
             emit OracleDataUpdated();
@@ -428,7 +427,10 @@ abstract contract Market is MarketERC20, Ownable {
         if (from != msg.sender) {
             if (share == 0) revert AllowanceNotValid();
 
-            (uint256 pearlmitAllowed,) = penrose.pearlmit().allowance(from, msg.sender, address(yieldBox), collateralId);
+            uint256 pearlmitAllowed;
+            if (penrose.cluster().isWhitelisted(0, msg.sender)) {
+                (pearlmitAllowed,) = penrose.pearlmit().allowance(from, msg.sender, address(yieldBox), collateralId);
+            }
             require(allowanceBorrow[from][msg.sender] >= share || pearlmitAllowed >= share, "Market: not approved");
             if (pearlmitAllowed != 0) return;
             if (allowanceBorrow[from][msg.sender] != type(uint256).max) {
@@ -437,7 +439,7 @@ abstract contract Market is MarketERC20, Ownable {
         }
     }
 
-    function _updateOracleRateForLiquidations() internal {
+    function _tryUpdateOracleRate() internal {
         try oracle.get(oracleData) returns (bool _updated, uint256 _exchangeRate) {
             if (_updated && _exchangeRate > 0) {
                 exchangeRate = _exchangeRate; //update cached rate

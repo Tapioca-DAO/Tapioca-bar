@@ -81,10 +81,11 @@ contract UsdoMarketReceiverModule is BaseUsdo {
         }
 
         if (msg_.user != srcChainSender) {
-            uint256 allowanceAmont = msg_.lendAmount + msg_.depositData.amount;
-            _spendAllowance(msg_.user, srcChainSender, allowanceAmont);
+            uint256 allowanceAmount = msg_.lendAmount + msg_.depositData.amount;
+            _spendAllowance(msg_.user, srcChainSender, allowanceAmount);
         }
 
+        /*
         bytes memory call =
             abi.encodeWithSelector(MagnetarAssetXChainModule.depositYBLendSGLLockXchainTOLP.selector, msg_);
         MagnetarCall[] memory magnetarCall = new MagnetarCall[](1);
@@ -95,6 +96,7 @@ contract UsdoMarketReceiverModule is BaseUsdo {
             call: call
         });
         IMagnetar(payable(msg_.magnetar)).burst{value: msg.value}(magnetarCall);
+        */
     }
 
     /**
@@ -235,10 +237,7 @@ contract UsdoMarketReceiverModule is BaseUsdo {
         msg_.removeAndRepayData.repayAmount = _toLD(msg_.removeAndRepayData.repayAmount.toUint64());
         msg_.removeAndRepayData.collateralAmount = _toLD(msg_.removeAndRepayData.collateralAmount.toUint64());
 
-        if (msg_.user != srcChainSender) {
-            uint256 allowanceAmont = msg_.removeAndRepayData.removeAmount + msg_.removeAndRepayData.collateralAmount;
-            _spendAllowance(msg_.user, srcChainSender, allowanceAmont);
-        }
+        _validateAndSpendAllowance(msg_.user, srcChainSender, msg_.removeAndRepayData.removeAmount);
 
         {
             bytes memory call = abi.encodeWithSelector(
