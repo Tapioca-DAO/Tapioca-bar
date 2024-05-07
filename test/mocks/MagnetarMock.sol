@@ -382,7 +382,37 @@ contract MagnetarMock is PearlmitHandler {
         }
         IYieldBox _yieldBox = IYieldBox(data.yieldBox);
 
-        _withdrawHere(_yieldBox, data.assetId, data.receiver, data.amount);
+        // perform a same chain withdrawal
+        if (data.lzSendParams.sendParam.dstEid == 0) {
+            _withdrawHere(_yieldBox, data.assetId, data.lzSendParams.sendParam.to, data.lzSendParams.sendParam.amountLD);
+            return;
+        }
+
+        if (msg.value > 0) {
+            if (msg.value != data.composeGas) revert MagnetarMock_GasMismatch(data.composeGas, msg.value);
+        }
+
+        // perform a cross chain withdrawal
+        (, address asset,,) = _yieldBox.assets(data.assetId);
+        if (!cluster.isWhitelisted(0, asset)) {
+            revert MagnetarMock_TargetNotWhitelisted(asset);
+        }
+
+        _yieldBox.withdraw(data.assetId, address(this), address(this), data.lzSendParams.sendParam.amountLD, 0);
+        // TODO: decide about try-catch here
+        if (data.compose) {
+            _lzCustomWithdraw(
+                asset,
+                data.lzSendParams,
+                data.sendGas,
+                data.sendVal,
+                data.composeGas,
+                data.composeVal,
+                data.composeMsgType
+            );
+        } else {
+            _lzWithdraw(asset, data.lzSendParams, data.sendGas, data.sendVal);
+        }
     }
 
     function _extractTokens(address _from, address _token, uint256 _amount) private returns (uint256) {
@@ -395,8 +425,8 @@ contract MagnetarMock is PearlmitHandler {
         return balanceAfter - balanceBefore;
     }
 
-    function _withdrawHere(IYieldBox _yieldBox, uint256 _assetId, address _to, uint256 _amount) private {
-        _yieldBox.withdraw(_assetId, address(this), _to, _amount, 0);
+    function _withdrawHere(IYieldBox _yieldBox, uint256 _assetId, bytes32 _to, uint256 _amount) private {
+        _yieldBox.withdraw(_assetId, address(this), OFTMsgCodec.bytes32ToAddress(_to), _amount, 0);
     }
 
     function _lzWithdraw(address _asset, LZSendParam memory _lzSendParam, uint128 _lzSendGas, uint128 _lzSendVal)
