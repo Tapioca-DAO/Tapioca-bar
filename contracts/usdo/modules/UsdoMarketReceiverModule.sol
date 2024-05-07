@@ -18,6 +18,7 @@ import {
     ExitPositionAndRemoveCollateralData
 } from "tapioca-periph/interfaces/periph/IMagnetar.sol";
 import {MagnetarOptionModule} from "tapioca-periph/Magnetar/modules/MagnetarOptionModule.sol";
+import {MagnetarAssetXChainModule} from "tapioca-periph/Magnetar/modules/MagnetarAssetXChainModule.sol";
 import {MagnetarAssetModule} from "tapioca-periph/Magnetar/modules/MagnetarAssetModule.sol";
 import {MagnetarMintModule} from "tapioca-periph/Magnetar/modules/MagnetarMintModule.sol";
 import {IMagnetarHelper} from "tapioca-periph/interfaces/periph/IMagnetarHelper.sol";
@@ -56,6 +57,43 @@ contract UsdoMarketReceiverModule is BaseUsdo {
     constructor(UsdoInitStruct memory _data) BaseUsdo(_data) {}
 
     /**
+     * @notice Execute `magnetar.depositLendAndSendForLocking`
+     * @dev Lend on SGL and send receipt token on another layer
+     * @param srcChainSender The address of the sender on the source chain.
+     * @param _data.user the user to perform the operation for
+     * @param _data.singularity the SGL address
+     * @param _data.lendAmount the amount to lend on SGL
+     * @param _data.depositData the data needed to deposit on YieldBox
+     * @param _data.lockAndParticipateSendParams LZ send params for the lock or/and the participate operations
+     */
+    function depositLendAndSendForLockingReceiver(address srcChainSender, bytes memory _data) public payable {
+        // Decode received message.
+        DepositAndSendForLockingData memory msg_ = UsdoMsgCodec.decodeDepositLendAndSendForLockingMsg(_data);
+
+        _checkWhitelistStatus(msg_.singularity);
+        _checkWhitelistStatus(msg_.magnetar);
+
+        if (msg_.lendAmount > 0) {
+            msg_.lendAmount = _toLD(msg_.lendAmount.toUint64());
+        }
+        if (msg_.depositData.amount > 0) {
+            msg_.depositData.amount = _toLD(msg_.depositData.amount.toUint64());
+        }
+
+        if (msg_.user != srcChainSender) {
+            uint256 allowanceAmount = msg_.lendAmount + msg_.depositData.amount;
+            _spendAllowance(msg_.user, srcChainSender, allowanceAmount);
+        }
+
+        bytes memory call =
+            abi.encodeWithSelector(MagnetarAssetXChainModule.depositYBLendSGLLockXchainTOLP.selector, msg_);
+        MagnetarCall[] memory magnetarCall = new MagnetarCall[](1);
+        magnetarCall[0] =
+            MagnetarCall({id: uint8(MagnetarAction.AssetModule), target: msg_.magnetar, value: msg.value, call: call});
+        IMagnetar(payable(msg_.magnetar)).burst{value: msg.value}(magnetarCall);
+    }
+
+    /**
      * @notice Receiver for PT_YB_SEND_SGL_LEND_OR_REPAY
      * @param srcChainSender The address of the sender on the source chain.
      * @param _data The call data containing info about the operation.
@@ -67,13 +105,13 @@ contract UsdoMarketReceiverModule is BaseUsdo {
         MarketLendOrRepayMsg memory msg_ = UsdoMsgCodec.decodeMarketLendOrRepayMsg(_data);
 
         /**
-        * @dev validate data
-        */
+         * @dev validate data
+         */
         msg_ = _validateLendOrRepayReceiver(msg_);
 
         /**
-        * @dev Pearlmit approvals
-        */
+         * @dev Pearlmit approvals
+         */
         // approve(address(msg_.lendParams.magnetar), msg_.lendParams.depositAmount);
         approve(address(pearlmit), msg_.lendParams.depositAmount);
         pearlmit.approve(
@@ -85,8 +123,8 @@ contract UsdoMarketReceiverModule is BaseUsdo {
         );
 
         /**
-        * @dev Lend or Repay through `magnetar`
-        */
+         * @dev Lend or Repay through `magnetar`
+         */
         if (msg_.lendParams.repay) {
             _repay(msg_, srcChainSender);
         } else {
@@ -94,8 +132,8 @@ contract UsdoMarketReceiverModule is BaseUsdo {
         }
 
         /**
-        * @dev Pearlmit revokes
-        */
+         * @dev Pearlmit revokes
+         */
         approve(address(pearlmit), 0);
 
         emit LendOrRepayReceived(msg_.user, srcChainSender, msg_.lendParams.repay, msg_.lendParams.market);
@@ -113,19 +151,23 @@ contract UsdoMarketReceiverModule is BaseUsdo {
         MarketRemoveAssetMsg memory msg_ = UsdoMsgCodec.decodeMarketRemoveAssetMsg(_data);
 
         /**
-        * @dev validate data
-        */
+         * @dev validate data
+         */
         msg_ = _validateRemoveAsset(msg_, srcChainSender);
 
         /**
-        * @dev Remove asset through `magnetar`
-        */
+         * @dev Remove asset through `magnetar`
+         */
         _removeAsset(msg_);
 
         emit RemoveAssetReceived(msg_.user, srcChainSender, msg_.externalData.magnetar);
     }
 
-    function _validateLendOrRepayReceiver(MarketLendOrRepayMsg memory msg_) private view returns (MarketLendOrRepayMsg memory){
+    function _validateLendOrRepayReceiver(MarketLendOrRepayMsg memory msg_)
+        private
+        view
+        returns (MarketLendOrRepayMsg memory)
+    {
         _checkWhitelistStatus(msg_.lendParams.magnetar);
         _checkWhitelistStatus(msg_.lendParams.marketHelper);
         _checkWhitelistStatus(msg_.lendParams.market);
@@ -160,7 +202,6 @@ contract UsdoMarketReceiverModule is BaseUsdo {
 
         _validateAndSpendAllowance(msg_.user, srcChainSender, msg_.lendParams.depositAmount);
 
-
         bytes memory call = abi.encodeWithSelector(
             MagnetarAssetModule.depositRepayAndRemoveCollateralFromMarket.selector,
             DepositRepayAndRemoveCollateralFromMarketData({
@@ -185,7 +226,7 @@ contract UsdoMarketReceiverModule is BaseUsdo {
 
     function _lend(MarketLendOrRepayMsg memory msg_, address srcChainSender) private {
         if (msg_.user != srcChainSender) {
-                uint256 allowanceAmont = msg_.lendParams.depositAmount + msg_.lendParams.lockData.amount;
+            uint256 allowanceAmont = msg_.lendParams.depositAmount + msg_.lendParams.lockData.amount;
             _spendAllowance(msg_.user, srcChainSender, allowanceAmont);
         }
 
@@ -219,7 +260,10 @@ contract UsdoMarketReceiverModule is BaseUsdo {
         IMagnetar(payable(msg_.lendParams.magnetar)).burst{value: msg.value}(magnetarCall);
     }
 
-    function _validateRemoveAsset(MarketRemoveAssetMsg memory msg_, address srcChainSender) private returns(MarketRemoveAssetMsg memory){
+    function _validateRemoveAsset(MarketRemoveAssetMsg memory msg_, address srcChainSender)
+        private
+        returns (MarketRemoveAssetMsg memory)
+    {
         _checkWhitelistStatus(msg_.externalData.magnetar);
         _checkWhitelistStatus(msg_.externalData.singularity);
         _checkWhitelistStatus(msg_.externalData.bigBang);
