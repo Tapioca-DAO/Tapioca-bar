@@ -1,5 +1,5 @@
 import { EChainID } from '@tapioca-sdk/api/config';
-import { BigNumberish, ethers } from 'ethers';
+import { BigNumber, BigNumberish, ethers } from 'ethers';
 
 // Name of the contract deployments to be used in the deployment scripts and saved in the deployments file
 export const DEPLOYMENT_NAMES = {
@@ -125,6 +125,24 @@ const POST_LBP: TPostLbp = {
 
 POST_LBP['31337' as EChainID] = POST_LBP[EChainID.ARBITRUM]; // Copy from Arbitrum
 
+type TUSDOUniswapPool = {
+    [key in EChainID]?: {
+        USDC_BORROW_COLLATERAL_ETH_AMOUNT: BigNumber;
+        DAI_BORROW_COLLATERAL_ETH_AMOUNT: BigNumber;
+    };
+};
+
+const USDO_UNISWAP_POOL: TUSDOUniswapPool = {
+    [EChainID.ARBITRUM]: {
+        USDC_BORROW_COLLATERAL_ETH_AMOUNT: ethers.BigNumber.from('0'),
+        DAI_BORROW_COLLATERAL_ETH_AMOUNT: ethers.BigNumber.from('0'),
+    },
+    [EChainID.ARBITRUM_SEPOLIA]: {
+        USDC_BORROW_COLLATERAL_ETH_AMOUNT: ethers.BigNumber.from('0'),
+        DAI_BORROW_COLLATERAL_ETH_AMOUNT: ethers.BigNumber.from('0'),
+    },
+};
+
 type TMisc = {
     [key in EChainID]?: {
         WETH: string;
@@ -150,5 +168,6 @@ const MISC: TMisc = {
 
 export const DEPLOY_CONFIG = {
     POST_LBP,
+    USDO_UNISWAP_POOL,
     MISC,
 };
