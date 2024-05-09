@@ -36,7 +36,7 @@ contract SGLCollateral is SGLLendingCommon {
         if (share == 0) {
             share = yieldBox.toShare(collateralId, amount, false);
         }
-        _allowedBorrow(from, share);
+        _allowedBorrow(from, share, collateralId);
 
         _addCollateral(from, to, skim, amount, share, true);
     }
@@ -49,7 +49,7 @@ contract SGLCollateral is SGLLendingCommon {
         external
         optionNotPaused(PauseType.RemoveCollateral)
         solvent(from)
-        allowedBorrow(from, share)
+        allowedBorrow(from, share, collateralId)
         notSelf(to)
     {
         _removeCollateral(from, to, share);

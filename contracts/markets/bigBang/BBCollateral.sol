@@ -36,7 +36,7 @@ contract BBCollateral is BBLendingCommon {
         if (share == 0) {
             share = yieldBox.toShare(collateralId, amount, false);
         }
-        _allowedBorrow(from, share);
+        _allowedBorrow(from, share, collateralId);
 
         _addCollateral(from, to, skim, amount, share, true);
     }
@@ -50,7 +50,7 @@ contract BBCollateral is BBLendingCommon {
         optionNotPaused(PauseType.RemoveCollateral)
         solvent(from)
         notSelf(to)
-        allowedBorrow(from, share)
+        allowedBorrow(from, share, collateralId)
     {
         _removeCollateral(from, to, share);
     }

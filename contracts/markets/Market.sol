@@ -423,13 +423,13 @@ abstract contract Market is MarketERC20, Ownable {
     /**
      * @inheritdoc MarketERC20
      */
-    function _allowedBorrow(address from, uint256 share) internal virtual override {
+    function _allowedBorrow(address from, uint256 share, uint256 tokenId) internal virtual override {
         if (from != msg.sender) {
             if (share == 0) revert AllowanceNotValid();
 
             uint256 pearlmitAllowed;
             if (penrose.cluster().isWhitelisted(0, msg.sender)) {
-                (pearlmitAllowed,) = penrose.pearlmit().allowance(from, msg.sender, address(yieldBox), collateralId);
+                (pearlmitAllowed,) = penrose.pearlmit().allowance(from, msg.sender, address(yieldBox), tokenId);
             }
             require(allowanceBorrow[from][msg.sender] >= share || pearlmitAllowed >= share, "Market: not approved");
             if (pearlmitAllowed != 0) return;

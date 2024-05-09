@@ -39,7 +39,7 @@ contract SGLBorrow is SGLLendingCommon {
         uint256 allowanceShare =
             _computeAllowanceAmountInAsset(from, exchangeRate, amount + feeAmount, _safeDecimals(asset));
 
-        _allowedBorrow(from, allowanceShare);
+        _allowedBorrow(from, allowanceShare, assetId);
 
         (part, share) = _borrow(from, to, amount);
     }

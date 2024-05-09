@@ -106,7 +106,7 @@ contract BBLeverage is BBLendingCommon {
         address(collateral).safeApprove(address(yieldBox), 0);
 
         if (collateralShare == 0) revert CollateralShareNotValid();
-        _allowedBorrow(calldata_.from, collateralShare);
+        _allowedBorrow(calldata_.from, collateralShare, collateralId);
         _addCollateral(calldata_.from, calldata_.from, false, 0, collateralShare, false);
         if (amountOut == 0) revert AmountNotValid();
     }
@@ -137,7 +137,7 @@ contract BBLeverage is BBLendingCommon {
         }
         penrose.reAccrueBigBangMarkets();
 
-        _allowedBorrow(from, share);
+        _allowedBorrow(from, share, collateralId);
         _removeCollateral(from, address(this), share);
 
         _SellCollateralMemoryData memory memoryData;

@@ -47,7 +47,7 @@ contract BBBorrow is BBLendingCommon {
         uint256 feeAmount = _computeVariableOpeningFee(amount);
         uint256 allowanceShare =
             _computeAllowanceAmountInAsset(from, exchangeRate, amount + feeAmount, asset.safeDecimals());
-        _allowedBorrow(from, allowanceShare);
+        _allowedBorrow(from, allowanceShare, assetId);
         (part, share) = _borrow(from, to, amount, feeAmount);
     }
 

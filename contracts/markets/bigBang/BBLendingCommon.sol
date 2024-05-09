@@ -118,7 +118,7 @@ contract BBLendingCommon is BBCommon {
             (_totalBorrow, partInAmount) = _totalBorrow.sub(part, true);
             uint256 allowanceShare =
                 _computeAllowanceAmountInAsset(to, exchangeRate, partInAmount, _safeDecimals(asset));
-            _allowedBorrow(from, allowanceShare);
+            _allowedBorrow(from, allowanceShare, assetId);
         }
 
         // @dev sub `part` of totalBorrow

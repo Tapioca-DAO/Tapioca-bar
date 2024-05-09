@@ -55,8 +55,8 @@ contract MarketERC20 is IERC20, IERC20Permit, IERC1155Receiver, EIP712 {
     }
     /// Check if msg.sender has right to execute borrow operations
 
-    modifier allowedBorrow(address from, uint256 share) virtual {
-        _allowedBorrow(from, share);
+    modifier allowedBorrow(address from, uint256 share, uint256 tokenId) virtual {
+        _allowedBorrow(from, share, tokenId);
         _;
     }
 
@@ -184,7 +184,7 @@ contract MarketERC20 is IERC20, IERC20Permit, IERC1155Receiver, EIP712 {
     /**
      * @notice Checks if the caller is allowed to borrow `share` from `from`.
      */
-    function _allowedBorrow(address from, uint256 share) internal virtual {}
+    function _allowedBorrow(address from, uint256 share, uint256 tokenId) internal virtual {}
 
     /**
      * @dev "Consume a nonce": return the current value and increment.

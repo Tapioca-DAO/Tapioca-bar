@@ -85,7 +85,7 @@ contract SGLLeverage is SGLLendingCommon {
         yieldBox.depositAsset(collateralId, address(this), calldata_.from, 0, collateralShare);
         address(collateral).safeApprove(address(yieldBox), 0);
 
-        _allowedBorrow(calldata_.from, collateralShare);
+        _allowedBorrow(calldata_.from, collateralShare, collateralId);
         _addCollateral(calldata_.from, calldata_.from, false, 0, collateralShare, false);
         if (amountOut == 0) revert AmountNotValid();
     }
@@ -119,7 +119,7 @@ contract SGLLeverage is SGLLendingCommon {
             calldata_.data = data;
         }
 
-        _allowedBorrow(calldata_.from, calldata_.share);
+        _allowedBorrow(calldata_.from, calldata_.share, collateralId);
         _removeCollateral(calldata_.from, address(this), calldata_.share);
 
         (uint256 leverageAmount,) =
