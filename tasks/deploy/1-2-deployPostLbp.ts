@@ -16,8 +16,13 @@ import { DEPLOY_CONFIG, DEPLOYMENT_NAMES } from './DEPLOY_CONFIG';
 import { mintOriginUSDO__deployPostLbp_2 } from './postDepSetup/1-2-setupOriginsMintUSDO';
 
 /**
- * Part 2 of the post LBP deployment task
- * Needs to be called after the first part, which contains deployments + setups
+ * @notice Called after Bar `postLbp1`
+ * Deploy the tETH origin contract. This contracts uses native ETH on Arb, and mock tWETH on testnet.
+ *
+ * Post deploy:
+ * - Sets Origin as minter in USDO.
+ * - Mint USDO on Origin for the USDC and DAI pools.
+ * - Transfer USDO to Ethereum for the DAI pool.
  */
 export const deployPostLbp__task_2 = async (
     _taskArgs: TTapiocaDeployTaskArgs,
@@ -94,6 +99,35 @@ async function tapiocaPostDeployTask(params: TTapiocaDeployerVmPass<object>) {
 
     const calls: TapiocaMulticall.CallStruct[] = [];
 
+    /**
+     * Set Origin as minter in USDO
+     */
+    // usdo.setMinterStatus(origins.address, true);
+    // usdo.setBurnerStatus(origins.address, true);
+    calls.push(
+        ...[
+            {
+                target: usdo.address,
+                allowFailure: false,
+                callData: usdo.interface.encodeFunctionData('setMinterStatus', [
+                    origins.address,
+                    true,
+                ]),
+            },
+            {
+                target: usdo.address,
+                allowFailure: false,
+                callData: usdo.interface.encodeFunctionData('setBurnerStatus', [
+                    origins.address,
+                    true,
+                ]),
+            },
+        ],
+    );
+
+    /**
+     * Mint USDO on Origin for the USDC and DAI pools
+     */
     const ETH_AMOUNT_FOR_USDC =
         DEPLOY_CONFIG.USDO_UNISWAP_POOL[chainInfo.chainId]!
             .USDC_BORROW_COLLATERAL_ETH_AMOUNT!;
