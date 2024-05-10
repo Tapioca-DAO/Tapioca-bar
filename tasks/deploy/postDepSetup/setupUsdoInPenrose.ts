@@ -1,6 +1,6 @@
 import { createEmptyStratYbAsset__task, loadLocalContract } from 'tapioca-sdk';
 import { TContract } from 'tapioca-sdk/dist/shared';
-import { TPostDeployParams } from '../1-setupPostLbp';
+import { TPostDeployParams } from '../1-1-setupPostLbp';
 import { DEPLOYMENT_NAMES } from '../DEPLOY_CONFIG';
 
 export async function setupUsdoInPenrose(params: TPostDeployParams) {

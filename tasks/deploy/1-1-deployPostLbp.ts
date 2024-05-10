@@ -20,7 +20,6 @@ import { buildUSDOFlashloanHelper } from 'tasks/deployBuilds/buildUSDOFlashloanH
 import { buildUSDOModules } from 'tasks/deployBuilds/buildUSDOModules';
 import { deployPostLbp__task_2 } from './1-2-deployPostLbp';
 import { DEPLOYMENT_NAMES, DEPLOY_CONFIG } from './DEPLOY_CONFIG';
-import { setupPostLbp } from './1-setupPostLbp';
 import { TContract } from '@tapioca-sdk/shared';
 
 /**
@@ -32,7 +31,7 @@ import { TContract } from '@tapioca-sdk/shared';
  * BB Markets: mtETH, tReth, tWSTETH
  * SGL Markets: sGLP
  */
-export const deployPostLbp__task = async (
+export const deployPostLbp__task_1 = async (
     _taskArgs: TTapiocaDeployTaskArgs,
     hre: HardhatRuntimeEnvironment,
 ) => {

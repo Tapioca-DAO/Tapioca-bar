@@ -8,8 +8,8 @@ import { BigNumberish } from 'ethers';
 import {
     deploy__LoadDeployments_Arb,
     deploy__LoadDeployments_Eth,
-} from '../1-deployPostLbp';
-import { TPostDeployParams } from '../1-setupPostLbp';
+} from '../1-1-deployPostLbp';
+import { TPostDeployParams } from '../1-1-setupPostLbp';
 import { DEPLOYMENT_NAMES, DEPLOY_CONFIG } from '../DEPLOY_CONFIG';
 import { loadLocalContract } from 'tapioca-sdk';
 

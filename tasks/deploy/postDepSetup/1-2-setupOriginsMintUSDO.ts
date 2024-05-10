@@ -1,9 +1,9 @@
 import { TapiocaMulticall } from '@tapioca-sdk/typechain/tapioca-periphery';
 import { BigNumber } from 'ethers';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
-import { loadContracts__mintOriginUSDO } from '../2-postLbp3__deployMintOriginUSDO';
+import { loadContracts__mintOriginUSDO } from '../1-2-deployPostLbp';
 
-export async function mintOriginUSDO__setupOriginsBorrowUSDO(params: {
+export async function mintOriginUSDO__deployPostLbp_2(params: {
     hre: HardhatRuntimeEnvironment;
     tag: string;
     multicallAddr: string;
