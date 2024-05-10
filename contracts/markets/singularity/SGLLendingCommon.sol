@@ -105,7 +105,7 @@ contract SGLLendingCommon is SGLCommon {
 
             uint256 allowanceShare =
                 _computeAllowanceAmountInAsset(to, exchangeRate, partInAmount, _safeDecimals(asset));
-            _allowedBorrow(from, allowanceShare);
+            _allowedLend(from, allowanceShare);
         }
         (totalBorrow, amount) = totalBorrow.sub(part, true);
 
