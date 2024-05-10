@@ -52,7 +52,6 @@ export const deployPostLbp__task_1 = async (
         tapiocaPostDeployTask,
     );
     console.log('[+] Deployed Post LBP phase 2');
-    await deployPostLbp__task_2(_taskArgs, hre);
 };
 
 async function tapiocaPostDeployTask(params: TTapiocaDeployerVmPass<object>) {
