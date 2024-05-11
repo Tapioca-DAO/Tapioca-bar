@@ -144,3 +144,27 @@ contract AssetToSDaiLeverageExecutorTest is BaseLeverageExecutorTest {
         assertEq(asset.balanceOf(address(this)), amountIn);
     }
 }
+
+    function test_get_asset_reverts_min_amount_missmatch() public {
+        uint256 balanceBefore = toft.balanceOf(address(this));
+        assertEq(balanceBefore, 0);
+        vm.expectRevert("minAmountOut missmatch");
+    }
+
+    function test_get_asset_reverts_insufficient_transfered_amount() public {
+        uint256 balanceBefore = toft.balanceOf(address(this));
+        assertEq(balanceBefore, 0);
+        vm.expectRevert("insufficient transfer");
+    }
+
+    function test_get_asset_reverts_non_whitelisted_caller() public {
+        uint256 balanceBefore = toft.balanceOf(address(this));
+        assertEq(balanceBefore, 0);
+        vm.expectRevert("caller not whitelisted");
+    }
+
+    function test_get_asset_reverts_value_insufficient() public {
+        uint256 balanceBefore = toft.balanceOf(address(this));
+        assertEq(balanceBefore, 0);
+        vm.expectRevert("insufficient value");
+    }
