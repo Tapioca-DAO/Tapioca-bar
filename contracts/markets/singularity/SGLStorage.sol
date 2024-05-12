@@ -138,5 +138,5 @@ contract SGLStorage is Ownable, Market, ReentrancyGuard {
 
     function _accrue() internal virtual override {}
 
-    function _accrueView() internal view virtual override returns (Rebase memory) {}
+    function _accrueView() internal virtual override returns (Rebase memory) {}
 }

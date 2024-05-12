@@ -358,7 +358,6 @@ abstract contract Market is MarketERC20, Ownable {
     /// @return maxTVL the asset value of the collateral amount.
     function computeTVLInfo(address user, uint256 _exchangeRate)
         public
-        view
         returns (uint256 amountToSolvency, uint256 minTVL, uint256 maxTVL)
     {
         uint256 borrowPart = userBorrowPart[user];
@@ -404,7 +403,7 @@ abstract contract Market is MarketERC20, Ownable {
     // ************************** //
     function _accrue() internal virtual;
 
-    function _accrueView() internal view virtual returns (Rebase memory);
+    function _accrueView() internal virtual returns (Rebase memory);
 
     /**
      * @inheritdoc MarketERC20

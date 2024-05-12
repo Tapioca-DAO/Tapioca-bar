@@ -17,6 +17,7 @@ import {MarketStateView} from "../MarketStateView.sol";
 import {SGLLiquidation} from "./SGLLiquidation.sol";
 import {SGLCollateral} from "./SGLCollateral.sol";
 import {MarketERC20} from "../MarketERC20.sol";
+import {SGLInterest} from "./SGLInterest.sol";
 import {SGLLeverage} from "./SGLLeverage.sol";
 import {SGLStorage} from "./SGLStorage.sol";
 import {SGLCommon} from "./SGLCommon.sol";
@@ -75,6 +76,7 @@ contract Singularity is MarketStateView, SGLCommon {
         address _borrowModule;
         address _collateralModule;
         address _leverageModule;
+        address _interestModule;
     }
 
     struct _InitMemoryTokensData {
@@ -113,7 +115,8 @@ contract Singularity is MarketStateView, SGLCommon {
             _initMemoryModulesData._liquidationModule,
             _initMemoryModulesData._borrowModule,
             _initMemoryModulesData._collateralModule,
-            _initMemoryModulesData._leverageModule
+            _initMemoryModulesData._leverageModule,
+            _initMemoryModulesData._interestModule
         );
         _initCoreStorage(
             _initMemoryTokensData._asset,
@@ -134,16 +137,19 @@ contract Singularity is MarketStateView, SGLCommon {
         address _liquidationModule,
         address _borrowModule,
         address _collateralModule,
-        address _leverageModule
+        address _leverageModule,
+        address _interestModule
     ) private {
         if (_liquidationModule == address(0)) revert NotValid();
         if (_collateralModule == address(0)) revert NotValid();
         if (_borrowModule == address(0)) revert NotValid();
         if (_leverageModule == address(0)) revert NotValid();
+        if (_interestModule == address(0)) revert NotValid();
         liquidationModule = SGLLiquidation(_liquidationModule);
         collateralModule = SGLCollateral(_collateralModule);
         borrowModule = SGLBorrow(_borrowModule);
         leverageModule = SGLLeverage(_leverageModule);
+        interestModule = SGLInterest(_interestModule);
     }
 
     function _initCoreStorage(
