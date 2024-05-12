@@ -1,7 +1,7 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import inquirer from 'inquirer';
-import { buildOracleMock } from '../deployBuilds/05-buildOracleMock';
-import { loadVM } from '../utils';
+import { buildOracleMock } from '../../deployBuilds/deprecated/05-buildOracleMock';
+import { loadVM } from '../../utils';
 
 export const deployOracleMock__task = async (
     {},

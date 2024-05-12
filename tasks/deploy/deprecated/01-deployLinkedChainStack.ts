@@ -1,29 +1,19 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import inquirer from 'inquirer';
 import { Multicall3 } from '@tapioca-sdk//typechain/tapioca-periphery';
-import { buildYieldBox } from '../deployBuilds/00-buildYieldBox';
-import { buildPenrose } from '../deployBuilds/01-buildPenrose';
-import { buildMasterContracts } from '../deployBuilds/02-buildMasterContracts';
-import { buildMultiSwapper } from '../deployBuilds/04-buildMultiSwapper';
-import { buildUSD0 } from '../deployBuilds/06-buildUSDO';
-import { buildStableToUSD0Bidder } from '../deployBuilds/07-buildStableToUSD0Bidder';
-import { buildBigBangModules } from '../deployBuilds/09-buildBigBangModules';
-import { buildSingularityModules } from '../deployBuilds/08-buildSingularityModules';
-import { buildPenroseSetup } from '../setups/01-buildPenroseSetup';
-import { buildMasterContractsSetup } from '../setups/02-buildMasterContractsSetup';
-import { buildUsdoFlashloanSetup } from '../setups/04-buildUsdoFlashloanSetup';
-import { buildSimpleLeverageExecutor } from '../deployBuilds/14-buildSimpleLeverageExecutor';
-import { loadVM } from '../utils';
-import { buildUSDOModules } from '../deployBuilds/11-buildUSDOModules';
-import { buildUSDOFlashloanHelper } from '../deployBuilds/13-buildUSDOFlashloanHelper';
-import {
-    CURVE_DEPLOYMENTS,
-    UNISWAP_DEPLOYMENTS,
-} from '@tapioca-sdk/api/constants';
-import { buildCluster } from '../deployBuilds/12-buildCluster';
+import { buildYieldBox } from '../../deployBuilds/deprecated/00-buildYieldBox';
+import { buildUSD0 } from '../../deployBuilds/deprecated/06-buildUSDO';
+import { buildUSDOModules } from '../../deployBuilds/deprecated/11-buildUSDOModules';
+import { buildCluster } from '../../deployBuilds/deprecated/12-buildCluster';
+import { buildUSDOFlashloanHelper } from '../../deployBuilds/deprecated/13-buildUSDOFlashloanHelper';
+import { buildUsdoFlashloanSetup } from '../../setups/04-buildUsdoFlashloanSetup';
+import { buildSimpleLeverageExecutor } from '../../deployBuilds/deprecated/14-buildSimpleLeverageExecutor';
+import { buildMultiSwapper } from '../../deployBuilds/deprecated/04-buildMultiSwapper';
+import { UNISWAP_DEPLOYMENTS } from '@tapioca-sdk/api/constants';
+import { loadVM } from '../../utils';
 
-// hh deployFullStack --network goerli
-export const deployFullStack__task = async (
+// hh deployLinkedChainStack --network bsc_testnet
+export const deployLinkedChainStack__task = async (
     {},
     hre: HardhatRuntimeEnvironment,
 ) => {
@@ -37,17 +27,6 @@ export const deployFullStack__task = async (
     }
     const isTestnet = chainInfo.tags[0] == 'testnet';
 
-    let tapToken = hre.SDK.db
-        .loadGlobalDeployment(tag, 'tap-token', chainInfo.chainId)
-        .find((e) => e.name === 'TapOFT');
-    if (!tapToken && isTestnet) {
-        //try to take it again from local deployment
-        tapToken = hre.SDK.db
-            .loadLocalDeployment(tag, chainInfo.chainId)
-            .find((e) => e.name.startsWith('TapOFT'));
-    }
-    if (!tapToken) throw new Error('[-] TapToken not found');
-
     let weth = isTestnet
         ? hre.SDK.db
               .loadGlobalDeployment(tag, 'tapioca-mocks', chainInfo.chainId)
@@ -60,7 +39,9 @@ export const deployFullStack__task = async (
             .loadLocalDeployment(tag, chainInfo.chainId)
             .find((e) => e.name.startsWith('WETHMock'));
     }
-    if (!weth) throw new Error('[-] Weth not found');
+    if (!weth) {
+        throw new Error('[-] Token not found');
+    }
 
     let ybAddress = hre.ethers.constants.AddressZero;
     let yb = hre.SDK.db
@@ -117,46 +98,7 @@ export const deployFullStack__task = async (
         }
     }
 
-    // 02 - Penrose
-    const penrose = await buildPenrose(
-        hre,
-        tapToken.address,
-        weth.address,
-        signer.address,
-        ybAddress,
-        clusterAddress,
-        chainInfo.lzChainId,
-    );
-    VM.add(penrose);
-
-    // 03 - Master contracts
-    const [sgl, bb] = await buildMasterContracts(hre);
-    VM.add(sgl).add(bb);
-
-    // 04 - MultiSwapper
-    if (isTestnet) {
-        const uniswapperV2 = await buildMultiSwapper(
-            hre,
-            UNISWAP_DEPLOYMENTS[chainInfo?.chainId as EChainID]?.v2Router,
-            UNISWAP_DEPLOYMENTS[chainInfo?.chainId as EChainID]?.v2factory,
-            ybAddress,
-            signer.address,
-        );
-        VM.add(uniswapperV2);
-    }
-
-    // 05 - SingularityModules
-    const [liq, borrow, collateral, leverage] = await buildSingularityModules(
-        hre,
-    );
-    VM.add(liq).add(borrow).add(collateral).add(leverage);
-
-    // 06 - BigBang Modules
-    const [bbLiq, bbBorrow, bbCollateral, bbLeverage] =
-        await buildBigBangModules(hre);
-    VM.add(bbLiq).add(bbBorrow).add(bbCollateral).add(bbLeverage);
-
-    // 07 USDO
+    // 02 USDO
     const [
         leverageModule,
         leverageDestinationModule,
@@ -194,6 +136,17 @@ export const deployFullStack__task = async (
     );
     VM.add(usdoFlashloanHelper);
 
+    if (isTestnet) {
+        const uniswapperV2 = await buildMultiSwapper(
+            hre,
+            UNISWAP_DEPLOYMENTS[chainInfo?.chainId as EChainID]?.v2Router,
+            UNISWAP_DEPLOYMENTS[chainInfo?.chainId as EChainID]?.v2factory,
+            ybAddress,
+            signer.address,
+        );
+        VM.add(uniswapperV2);
+    }
+
     const simpleLeverageExecutor = await buildSimpleLeverageExecutor(
         hre,
         clusterAddress,
@@ -201,18 +154,8 @@ export const deployFullStack__task = async (
     );
     VM.add(simpleLeverageExecutor);
 
-    if (isTestnet) {
-        // 08 - CurveSwapper-buildStableToUSD0Bidder
-        const [curveSwapper, curveStableToUsd0] = await buildStableToUSD0Bidder(
-            hre,
-            CURVE_DEPLOYMENTS[chainInfo?.chainId as EChainID]?.stablePool,
-            ybAddress,
-        );
-        VM.add(curveSwapper).add(curveStableToUsd0);
-    }
-
     // Add and execute
-    await VM.execute(3, false);
+    await VM.execute(3, true);
     VM.save();
     const { wantToVerify } = await inquirer.prompt({
         type: 'confirm',
@@ -222,8 +165,9 @@ export const deployFullStack__task = async (
     if (wantToVerify) {
         try {
             await VM.verify();
-        } catch {
+        } catch (e) {
             console.log('[-] Verification failed');
+            console.log(`error: ${JSON.stringify(e)}`);
         }
     }
 
@@ -233,8 +177,6 @@ export const deployFullStack__task = async (
     const multiCall = await VM.getMulticall();
 
     const calls: Multicall3.CallStruct[] = [
-        ...(await buildPenroseSetup(hre, vmList)),
-        ...(await buildMasterContractsSetup(hre, vmList)),
         ...(await buildUsdoFlashloanSetup(hre, vmList)),
     ];
 
