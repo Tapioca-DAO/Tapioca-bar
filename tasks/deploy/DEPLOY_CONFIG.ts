@@ -12,10 +12,11 @@ export const DEPLOYMENT_NAMES = {
     YB_SDAI_ASSET_WITHOUT_STRATEGY: 'YB_SDAI_ASSET_WITHOUT_STRATEGY',
     YB_SGLP_ASSET_WITHOUT_STRATEGY: 'YB_SGLP_ASSET_WITHOUT_STRATEGY',
     YB_MT_ETH_ASSET_WITHOUT_STRATEGY: 'YB_MT_ETH_ASSET_WITHOUT_STRATEGY',
+    YB_T_ETH_ASSET_WITHOUT_STRATEGY: 'YB_T_ETH_ASSET_WITHOUT_STRATEGY',
     YB_T_RETH_ASSET_WITHOUT_STRATEGY: 'YB_T_RETH_ASSET_WITHOUT_STRATEGY',
     YB_T_WST_ETH_ASSET_WITHOUT_STRATEGY: 'YB_T_WST_ETH_ASSET_WITHOUT_STRATEGY',
     // ORIGINS
-    ORIGINS_MT_ETH_MARKET: 'ORIGINS_MT_ETH_MARKET',
+    ORIGINS_T_ETH_MARKET: 'ORIGINS_T_ETH_MARKET',
     // SGL
     SGL_S_DAI_MARKET: 'SGL_S_DAI_MARKET',
     SGL_S_GLP_MARKET: 'SGL_S_GLP_MARKET',
@@ -55,7 +56,7 @@ type TPostLbp = {
     [key in EChainID]?: {
         sDAI?: string;
         sGLP?: string;
-        mtEthOriginsMarketConfig?: {
+        tEthOriginsMarketConfig?: {
             collateralizationRate: BigNumberish;
         };
         mtEthMarketConfig?: TBBMarketConfig;
@@ -67,7 +68,7 @@ type TPostLbp = {
 };
 
 const marketConfigArb: TPostLbp[EChainID] = {
-    mtEthOriginsMarketConfig: {
+    tEthOriginsMarketConfig: {
         collateralizationRate: 100_000, // 100%
     },
     mtEthMarketConfig: {
@@ -121,25 +122,29 @@ const POST_LBP: TPostLbp = {
         sDAI: '0xC6EA2075314a58cf74DE8430b24714E600A21Dd8',
         ...marketConfigMainnet,
     },
+    [EChainID.OPTIMISM_SEPOLIA]: {
+        sDAI: '0x37359B8bfbFAE28E513EE31a2A94A9Ec60668d90',
+        ...marketConfigMainnet,
+    },
 };
 
 POST_LBP['31337' as EChainID] = POST_LBP[EChainID.ARBITRUM]; // Copy from Arbitrum
 
 type TUSDOUniswapPool = {
     [key in EChainID]?: {
-        USDC_BORROW_COLLATERAL_ETH_AMOUNT: BigNumber;
-        DAI_BORROW_COLLATERAL_ETH_AMOUNT: BigNumber;
+        ETH_AMOUNT_TO_MINT_FOR_USDC_POOL: BigNumber;
+        ETH_AMOUNT_TO_MINT_FOR_DAI_POOL: BigNumber;
     };
 };
 
 const USDO_UNISWAP_POOL: TUSDOUniswapPool = {
     [EChainID.ARBITRUM]: {
-        USDC_BORROW_COLLATERAL_ETH_AMOUNT: ethers.BigNumber.from('0'),
-        DAI_BORROW_COLLATERAL_ETH_AMOUNT: ethers.BigNumber.from('0'),
+        ETH_AMOUNT_TO_MINT_FOR_USDC_POOL: ethers.utils.parseEther('0'),
+        ETH_AMOUNT_TO_MINT_FOR_DAI_POOL: ethers.utils.parseEther('0'),
     },
     [EChainID.ARBITRUM_SEPOLIA]: {
-        USDC_BORROW_COLLATERAL_ETH_AMOUNT: ethers.BigNumber.from('0'),
-        DAI_BORROW_COLLATERAL_ETH_AMOUNT: ethers.BigNumber.from('0'),
+        ETH_AMOUNT_TO_MINT_FOR_USDC_POOL: ethers.utils.parseEther('1'),
+        ETH_AMOUNT_TO_MINT_FOR_DAI_POOL: ethers.utils.parseEther('1'),
     },
 };
 

@@ -1,7 +1,7 @@
 import { TapiocaMulticall } from '@tapioca-sdk/typechain/tapioca-periphery';
 import { BigNumber } from 'ethers';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
-import { loadContracts__mintOriginUSDO } from '../1-2-deployPostLbp';
+import { loadContracts__deployPostLbp__task_2 } from '../1-2-deployPostLbp';
 
 export async function mintOriginUSDO__deployPostLbp_2(params: {
     hre: HardhatRuntimeEnvironment;
@@ -13,20 +13,21 @@ export async function mintOriginUSDO__deployPostLbp_2(params: {
     const calls: TapiocaMulticall.CallStruct[] = [];
 
     const { hre, tag, collateralAmount, multicallAddr, borrowAmount } = params;
-    const { origins, yieldBox, mtETH } = await loadContracts__mintOriginUSDO({
-        hre,
-        tag,
-    });
+    const { origins, yieldBox, tETH } =
+        await loadContracts__deployPostLbp__task_2({
+            hre,
+            tag,
+        });
 
     const collateralAssetId = await origins._collateralId();
 
     // Step 1 - Deposit ETH to YieldBox
     {
-        // mtETH.approve(yieldBox.address, collateralAmount);
+        // tETH.approve(yieldBox.address, collateralAmount);
         calls.push({
-            target: mtETH.address,
+            target: tETH.address,
             allowFailure: false,
-            callData: mtETH.interface.encodeFunctionData('approve', [
+            callData: tETH.interface.encodeFunctionData('approve', [
                 yieldBox.address,
                 collateralAmount,
             ]),

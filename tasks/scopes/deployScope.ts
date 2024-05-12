@@ -9,7 +9,7 @@ const deployScope = scope('deploys', 'Deployment tasks');
 TAP_TASK(
     deployScope.task(
         'postLbp1',
-        'Will deploy Origins, BB and SGL market, depending on the calling chain. Will also deploy USDO and call LzPeer for each USDO deployed chain.',
+        'Will deploy BB and SGL market, depending on the calling chain. Will also deploy USDO and call LzPeer for each USDO deployed chain.',
         deployPostLbp__task_1,
     ),
 );

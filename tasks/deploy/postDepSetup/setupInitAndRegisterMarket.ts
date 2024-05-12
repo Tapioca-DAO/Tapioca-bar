@@ -8,6 +8,7 @@ import { BigNumberish } from 'ethers';
 import {
     deploy__LoadDeployments_Arb,
     deploy__LoadDeployments_Eth,
+    deploy__LoadDeployments_Generic,
 } from '../1-1-deployPostLbp';
 import { TPostDeployParams } from '../1-1-setupPostLbp';
 import { DEPLOYMENT_NAMES, DEPLOY_CONFIG } from '../DEPLOY_CONFIG';
@@ -16,19 +17,6 @@ import { loadLocalContract } from 'tapioca-sdk';
 export async function setupInitAndRegisterMarket(params: TPostDeployParams) {
     const { hre, deployed, tag } = params;
 
-    const {
-        yieldBox: yieldBoxDep,
-        mtETH,
-        mtEthOracle,
-        tReth,
-        tRethOracle,
-        tWSTETH,
-        tWstEthOracle,
-        tSGLPOracle,
-    } = deploy__LoadDeployments_Arb({
-        hre,
-        tag,
-    });
     const leverageExecutorAddr = deployed.find(
         (e) => e.name === DEPLOYMENT_NAMES.SIMPLE_LEVERAGE_EXECUTOR,
     )!.address;
@@ -46,6 +34,11 @@ export async function setupInitAndRegisterMarket(params: TPostDeployParams) {
         tag,
     );
 
+    const { yieldBox: yieldBoxDep } = deploy__LoadDeployments_Generic({
+        hre,
+        tag,
+    });
+
     const yieldBox = (await hre.ethers.getContractAt(
         'tapioca-periph/interfaces/yieldbox/IYieldBox.sol:IYieldBox',
         yieldBoxDep,
@@ -58,6 +51,17 @@ export async function setupInitAndRegisterMarket(params: TPostDeployParams) {
         hre.SDK.chainInfo.name === 'arbitrum' ||
         hre.SDK.chainInfo.name === 'arbitrum_sepolia'
     ) {
+        const {
+            mtETH,
+            mtEthOracle,
+            tReth,
+            tRethOracle,
+            tWSTETH,
+            tWstEthOracle,
+        } = deploy__LoadDeployments_Arb({
+            hre,
+            tag,
+        });
         // MT_ETH
         {
             const mtEthDeployConf =
@@ -141,7 +145,8 @@ export async function setupInitAndRegisterMarket(params: TPostDeployParams) {
     // SDAI
     if (
         hre.SDK.chainInfo.name === 'ethereum' ||
-        hre.SDK.chainInfo.name === 'sepolia'
+        hre.SDK.chainInfo.name === 'sepolia' ||
+        hre.SDK.chainInfo.name === 'optimism_sepolia'
     ) {
         const { tSdaiOracle } = deploy__LoadDeployments_Eth({ hre, tag });
         {
@@ -172,6 +177,7 @@ export async function setupInitAndRegisterMarket(params: TPostDeployParams) {
         hre.SDK.chainInfo.name === 'arbitrum' ||
         hre.SDK.chainInfo.name === 'arbitrum_sepolia'
     ) {
+        const { tSGLPOracle } = deploy__LoadDeployments_Arb({ hre, tag });
         // SGLP
         {
             const tSglpDeployConf =

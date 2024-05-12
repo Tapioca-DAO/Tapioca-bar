@@ -1,12 +1,15 @@
 import * as TAP_TOKEN_CONFIG from '@tap-token/config';
-import * as TAPIOCA_PERIPH_CONFIG from '@tapioca-periph/config';
 import * as TAP_YIELDBOX from '@tap-yieldbox/config';
-import * as TAPIOCA_Z_CONFIG from '@tapiocaz/config';
+import * as TAPIOCA_PERIPH_CONFIG from '@tapioca-periph/config';
 import { TAPIOCA_PROJECTS_NAME } from '@tapioca-sdk/api/config';
 import { TTapiocaDeployTaskArgs } from '@tapioca-sdk/ethers/hardhat/DeployerVM';
+import { TContract } from '@tapioca-sdk/shared';
+import * as TAPIOCA_Z_CONFIG from '@tapiocaz/config';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { loadGlobalContract, setLzPeer__task } from 'tapioca-sdk';
 import { TTapiocaDeployerVmPass } from 'tapioca-sdk/dist/ethers/hardhat/DeployerVM';
+// Used to bypass inference conflict
+import { TTapiocaDeployerVmPass as TTapiocaDeployerVmPass_NODE_PACKAGE } from '@tapioca-sdk/ethers/hardhat/DeployerVM';
 import { buildBBMediumRiskMC } from 'tasks/deployBuilds/buildBBMediumRiskMC';
 import { buildBBModules } from 'tasks/deployBuilds/buildBBModules';
 import { buildERC20WithoutStrategy } from 'tasks/deployBuilds/buildERC20WithoutStrategy';
@@ -18,11 +21,11 @@ import { buildUSDO } from 'tasks/deployBuilds/buildUSDO';
 import { buildUSDOExtExec } from 'tasks/deployBuilds/buildUSDOExtExec';
 import { buildUSDOFlashloanHelper } from 'tasks/deployBuilds/buildUSDOFlashloanHelper';
 import { buildUSDOModules } from 'tasks/deployBuilds/buildUSDOModules';
-import { deployPostLbp__task_2 } from './1-2-deployPostLbp';
+import { setupPostLbp1 } from './1-1-setupPostLbp';
 import { DEPLOYMENT_NAMES, DEPLOY_CONFIG } from './DEPLOY_CONFIG';
-import { TContract } from '@tapioca-sdk/shared';
 
 /**
+ * @notice Should be called after TapiocaZ `postLbp` task
  * Deploys on Ethereum and Sepolia
  * Penrose, SGL, USDO, YB Assets
  * SGL Markets: sDAI
@@ -35,23 +38,23 @@ export const deployPostLbp__task_1 = async (
     _taskArgs: TTapiocaDeployTaskArgs,
     hre: HardhatRuntimeEnvironment,
 ) => {
-    console.log('[+] Deployed Post LBP phase 1');
+    console.log('[+] Deploying Post LBP phase 1');
     await hre.SDK.DeployerVM.tapiocaDeployTask(
         _taskArgs,
         {
             hre,
             // Static simulation needs to be false, constructor relies on external call. We're using 0x00 replacement with DeployerVM, which creates a false positive for static simulation.
             staticSimulation: false,
-            overrideOptions: {
-                gasLimit: 10_000_000,
-            },
+            // overrideOptions: {
+            //     gasLimit: 20_000_000,
+            // },
             // max size is 24kb, let's do 3 contracts per batch, 72kb
-            bytecodeSizeLimit: 80_000, // EVM starts to complain for contract size but we can still deploy, just need to tune down the limit
+            // bytecodeSizeLimit: 70_000, // EVM starts to complain for contract size but we can still deploy, just need to tune down the limit
         },
         tapiocaDeployTask,
         tapiocaPostDeployTask,
     );
-    console.log('[+] Deployed Post LBP phase 2');
+    console.log('[+] Deployed Post LBP phase 1');
 };
 
 async function tapiocaPostDeployTask(params: TTapiocaDeployerVmPass<object>) {
@@ -60,8 +63,9 @@ async function tapiocaPostDeployTask(params: TTapiocaDeployerVmPass<object>) {
 
     await setLzPeer__task({ tag, targetName: DEPLOYMENT_NAMES.USDO }, hre);
 
-    // @ts-ignore
-    await setupPostLbp(params);
+    await setupPostLbp1(
+        params as unknown as TTapiocaDeployerVmPass_NODE_PACKAGE<object>,
+    );
 }
 
 async function tapiocaDeployTask(params: TTapiocaDeployerVmPass<object>) {
@@ -69,21 +73,16 @@ async function tapiocaDeployTask(params: TTapiocaDeployerVmPass<object>) {
         params;
     const { tag } = taskArgs;
     const owner = tapiocaMulticallAddr;
+
     const {
-        tapToken,
-        yieldBox,
         cluster,
         pearlmit,
-        zeroXSwapper,
-        mtETH,
-        tReth,
-        tWSTETH,
         tapStratWithAsset,
+        tapToken,
         wethStratWithAsset,
-    } = deploy__LoadDeployments_Arb({
-        hre,
-        tag,
-    });
+        yieldBox,
+        zeroXSwapper,
+    } = deploy__LoadDeployments_Generic({ hre, tag });
 
     /**
      * USDO
@@ -175,13 +174,20 @@ async function tapiocaDeployTask(params: TTapiocaDeployerVmPass<object>) {
 
     /**
      * Assets on Arbitrum and Arbitrum Sepolia
+     * Origin strategy only: tETH
      * SGL Markets: sGLP
-     * BB Markets: mtETH, tReth, tWSTETH
+     * BB Markets: mtETH,tReth, tWSTETH
      */
     if (
         chainInfo.name === 'arbitrum' ||
         chainInfo.name === 'arbitrum_sepolia'
     ) {
+        const { yieldBox, mtETH, tETH, tReth, tWSTETH } =
+            deploy__LoadDeployments_Arb({
+                hre,
+                tag,
+            });
+
         // @ts-ignore
         (await buildBBModules(hre)).forEach((module) => VM.add(module));
 
@@ -194,6 +200,14 @@ async function tapiocaDeployTask(params: TTapiocaDeployerVmPass<object>) {
                 yieldBox,
             }),
         )
+            .add(
+                await buildERC20WithoutStrategy(hre, {
+                    deploymentName:
+                        DEPLOYMENT_NAMES.YB_T_ETH_ASSET_WITHOUT_STRATEGY,
+                    token: tETH,
+                    yieldBox,
+                }),
+            )
             .add(
                 await buildERC20WithoutStrategy(hre, {
                     deploymentName:
@@ -252,7 +266,11 @@ async function tapiocaDeployTask(params: TTapiocaDeployerVmPass<object>) {
      * SGL Assets on Ethereum and Sepolia
      * SGL Markets: sDAI
      */
-    if (chainInfo.name === 'ethereum' || chainInfo.name === 'sepolia') {
+    if (
+        chainInfo.name === 'ethereum' ||
+        chainInfo.name === 'sepolia' ||
+        chainInfo.name === 'optimism_sepolia'
+    ) {
         // SGL asset strategies
         VM.add(
             await buildERC20WithoutStrategy(hre, {
@@ -269,7 +287,7 @@ async function tapiocaDeployTask(params: TTapiocaDeployerVmPass<object>) {
     }
 }
 
-function deploy__LoadDeployments_Generic(params: {
+export function deploy__LoadDeployments_Generic(params: {
     hre: HardhatRuntimeEnvironment;
     tag: string;
 }) {
@@ -372,6 +390,14 @@ export function deploy__LoadDeployments_Arb(params: {
         tag,
     ).address;
 
+    const tETH = loadGlobalContract(
+        hre,
+        TAPIOCA_PROJECTS_NAME.TapiocaZ,
+        hre.SDK.eChainId,
+        TAPIOCA_Z_CONFIG.DEPLOYMENT_NAMES.tETH,
+        tag,
+    ).address;
+
     const tReth = loadGlobalContract(
         hre,
         TAPIOCA_PROJECTS_NAME.TapiocaZ,
@@ -389,6 +415,14 @@ export function deploy__LoadDeployments_Arb(params: {
     ).address;
 
     const mtEthOracle = loadGlobalContract(
+        hre,
+        TAPIOCA_PROJECTS_NAME.TapiocaPeriph,
+        hre.SDK.eChainId,
+        TAPIOCA_PERIPH_CONFIG.DEPLOYMENT_NAMES.ETH_SEER_DUAL_ORACLE,
+        tag,
+    ).address;
+
+    const tEthOracle = loadGlobalContract(
         hre,
         TAPIOCA_PROJECTS_NAME.TapiocaPeriph,
         hre.SDK.eChainId,
@@ -423,9 +457,11 @@ export function deploy__LoadDeployments_Arb(params: {
     return {
         ...deploy__LoadDeployments_Generic({ hre, tag }),
         mtETH,
+        tETH,
         tReth,
         tWSTETH,
         mtEthOracle,
+        tEthOracle,
         tRethOracle,
         tWstEthOracle,
         tSGLPOracle,

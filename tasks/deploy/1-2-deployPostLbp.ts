@@ -4,16 +4,22 @@ import {
 } from 'tapioca-sdk/dist/ethers/hardhat/DeployerVM';
 
 import * as TAP_YIELDBOX_CONFIG from '@tap-yieldbox/config';
+import * as TAPIOCA_PERIPH_CONFIG from '@tapioca-periph/config';
 import { TAPIOCA_PROJECTS_NAME } from '@tapioca-sdk/api/config';
 import { TapiocaMulticall } from '@tapioca-sdk/typechain/tapioca-periphery';
 import * as TAPIOCA_Z_CONFIG from '@tapiocaz/config';
 import { SendParamStruct } from '@typechain/contracts/usdo/Usdo';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
-import { loadGlobalContract, loadLocalContract } from 'tapioca-sdk';
+import {
+    checkExists,
+    loadGlobalContract,
+    loadLocalContract,
+} from 'tapioca-sdk';
 import { buildOrigins } from 'tasks/deployBuilds/buildOrigins';
 import { deploy__LoadDeployments_Arb } from './1-1-deployPostLbp';
 import { DEPLOY_CONFIG, DEPLOYMENT_NAMES } from './DEPLOY_CONFIG';
 import { mintOriginUSDO__deployPostLbp_2 } from './postDepSetup/1-2-setupOriginsMintUSDO';
+import { Options } from '@layerzerolabs/lz-v2-utilities';
 
 /**
  * @notice Called after Bar `postLbp1`
@@ -28,6 +34,7 @@ export const deployPostLbp__task_2 = async (
     _taskArgs: TTapiocaDeployTaskArgs,
     hre: HardhatRuntimeEnvironment,
 ) => {
+    console.log('[+] Deploying Post LBP phase 2');
     await hre.SDK.DeployerVM.tapiocaDeployTask(
         _taskArgs,
         {
@@ -37,6 +44,7 @@ export const deployPostLbp__task_2 = async (
         tapiocaDeployTask,
         tapiocaPostDeployTask,
     );
+    console.log('[+] Deployed Post LBP phase 2');
 };
 
 async function tapiocaDeployTask(params: TTapiocaDeployerVmPass<object>) {
@@ -45,7 +53,7 @@ async function tapiocaDeployTask(params: TTapiocaDeployerVmPass<object>) {
     const { tag } = taskArgs;
     const owner = tapiocaMulticallAddr;
 
-    const { yieldBox, mtETH, mtEthOracle } = deploy__LoadDeployments_Arb({
+    const { yieldBox, tETH, tEthOracle } = deploy__LoadDeployments_Arb({
         hre,
         tag,
     });
@@ -62,12 +70,14 @@ async function tapiocaDeployTask(params: TTapiocaDeployerVmPass<object>) {
         DEPLOYMENT_NAMES.YB_USDO_ASSET_WITHOUT_STRATEGY,
         tag,
     );
-    const mtEthStrategy = loadLocalContract(
+    const tEthStrategy = loadLocalContract(
         hre,
         hre.SDK.eChainId,
-        DEPLOYMENT_NAMES.YB_MT_ETH_ASSET_WITHOUT_STRATEGY,
+        DEPLOYMENT_NAMES.YB_T_ETH_ASSET_WITHOUT_STRATEGY,
         tag,
     );
+
+    console.log(usdoStrategy.address);
 
     if (
         chainInfo.name === 'arbitrum' ||
@@ -77,13 +87,13 @@ async function tapiocaDeployTask(params: TTapiocaDeployerVmPass<object>) {
             await buildOrigins(hre, {
                 asset: usdo.address,
                 assetStrategy: usdoStrategy.address,
-                collateral: mtETH,
-                collateralStrategy: mtEthStrategy.address,
+                collateral: tETH,
+                collateralStrategy: tEthStrategy.address,
                 collateralizationRate:
                     DEPLOY_CONFIG.POST_LBP[hre.SDK.eChainId]!
-                        .mtEthOriginsMarketConfig!.collateralizationRate,
-                deploymentName: DEPLOYMENT_NAMES.ORIGINS_MT_ETH_MARKET,
-                oracle: mtEthOracle,
+                        .tEthOriginsMarketConfig!.collateralizationRate,
+                deploymentName: DEPLOYMENT_NAMES.ORIGINS_T_ETH_MARKET,
+                oracle: tEthOracle,
                 owner,
                 yieldBox,
             }),
@@ -95,7 +105,10 @@ async function tapiocaPostDeployTask(params: TTapiocaDeployerVmPass<object>) {
     const { hre, taskArgs, VM, chainInfo, tapiocaMulticallAddr } = params;
     const { tag } = taskArgs;
 
-    const { usdo, origins } = await loadContracts__mintOriginUSDO({ hre, tag });
+    const { usdo, origins } = await loadContracts__deployPostLbp__task_2({
+        hre,
+        tag,
+    });
 
     const calls: TapiocaMulticall.CallStruct[] = [];
 
@@ -130,10 +143,10 @@ async function tapiocaPostDeployTask(params: TTapiocaDeployerVmPass<object>) {
      */
     const ETH_AMOUNT_FOR_USDC =
         DEPLOY_CONFIG.USDO_UNISWAP_POOL[chainInfo.chainId]!
-            .USDC_BORROW_COLLATERAL_ETH_AMOUNT!;
+            .ETH_AMOUNT_TO_MINT_FOR_USDC_POOL!;
     const ETH_AMOUNT_FOR_DAI =
         DEPLOY_CONFIG.USDO_UNISWAP_POOL[chainInfo.chainId]!
-            .DAI_BORROW_COLLATERAL_ETH_AMOUNT!;
+            .ETH_AMOUNT_TO_MINT_FOR_DAI_POOL!;
 
     if (ETH_AMOUNT_FOR_USDC.isZero() || ETH_AMOUNT_FOR_DAI.isZero()) {
         throw new Error(
@@ -143,14 +156,24 @@ async function tapiocaPostDeployTask(params: TTapiocaDeployerVmPass<object>) {
 
     const exchangeRate = await origins._exchangeRate();
     console.log(
-        `[+] Exchange rate: ${hre.ethers.utils.formatUnits(
-            ETH_AMOUNT_FOR_USDC,
-            'ether',
+        `[+] Exchange rate of tETH/USD: ${hre.ethers.utils.formatEther(
+            exchangeRate,
         )}`,
     );
 
-    const borrowAmountForUSDC = ETH_AMOUNT_FOR_USDC.mul(exchangeRate).div(1e18);
-    const borrowAmountForDAI = ETH_AMOUNT_FOR_DAI.mul(exchangeRate).div(1e18);
+    const delta = 5; // 1%
+    let borrowAmountForUSDC = ETH_AMOUNT_FOR_USDC.mul(exchangeRate).div(
+        (1e18).toString(),
+    );
+    borrowAmountForUSDC = borrowAmountForUSDC.sub(
+        borrowAmountForUSDC.mul(delta).div(100),
+    );
+    let borrowAmountForDAI = ETH_AMOUNT_FOR_DAI.mul(exchangeRate).div(
+        (1e18).toString(),
+    );
+    borrowAmountForDAI = borrowAmountForDAI.sub(
+        borrowAmountForDAI.mul(delta).div(100),
+    );
 
     /***
      * Mint USDO on Origin
@@ -201,40 +224,54 @@ async function tapiocaPostDeployTask(params: TTapiocaDeployerVmPass<object>) {
     {
         let chainName;
         if (chainInfo.name === 'arbitrum_sepolia') {
-            console.log('[+] Transferring USDO to Sepolia for the DAI pool');
-            chainName = 'sepolia';
-        } else {
+            console.log(
+                '[+] Transferring USDO to Optimism Sep for the DAI pool',
+            );
+            chainName = 'optimism_sepolia';
+        } else if (chainInfo.name === 'arbitrum') {
             console.log('[+] Transferring USDO to Ethereum for the DAI pool');
             chainName = 'ethereum';
+        } else {
+            throw new Error('Not implemented');
         }
 
-        const tapiocaMulticallTargetChain = hre.SDK.db.findGlobalDeployment(
-            TAPIOCA_PROJECTS_NAME.Generic, //generic
-            hre.SDK.utils.getChainBy('name', chainName).chainId,
+        console.log('[+] Loading TapiocaMulticall from', chainName, 'tag', tag);
+        const tapiocaMulticallTargetChain = checkExists(
+            hre,
+            hre.SDK.db.findGlobalDeployment(
+                TAPIOCA_PROJECTS_NAME.Generic,
+                hre.SDK.utils.getChainBy('name', chainName).chainId,
+                hre.SDK.DeployerVM.TAPIOCA_MULTICALL_NAME,
+                tag,
+            ),
             hre.SDK.DeployerVM.TAPIOCA_MULTICALL_NAME,
-            tag,
+            TAPIOCA_PROJECTS_NAME.Generic,
         );
-        if (!tapiocaMulticallTargetChain) {
-            throw new Error(
-                `[-] Could not find a tapioca multicall contract on ${chainName} tag ${tag}`,
-            );
-        }
+        const minAmountLD = await usdo.removeDust(borrowAmountForDAI);
 
         const sendData: SendParamStruct = {
             amountLD: borrowAmountForDAI,
-            minAmountLD: borrowAmountForDAI,
-            to: tapiocaMulticallTargetChain.address,
+            minAmountLD,
+            to: '0x'.concat(
+                tapiocaMulticallTargetChain.address
+                    .split('0x')[1]
+                    .padStart(64, '0'),
+            ),
             dstEid: hre.SDK.utils.getChainBy('name', chainName).lzChainId,
-            extraOptions: '0x',
+            extraOptions: Options.newOptions()
+                .addExecutorLzReceiveOption(200_000)
+                .toHex(),
             composeMsg: '0x',
             oftCmd: '0x',
         };
 
-        const usdoQuoteSend = await usdo.quoteSend(sendData, false);
+        const usdoQuoteSend = await usdo.callStatic.quoteSend(sendData, false);
         console.log(
             '[+] Sending',
             hre.ethers.utils.formatUnits(borrowAmountForDAI, 'ether'),
             'USDO',
+            'min amount out: ',
+            hre.ethers.utils.formatUnits(minAmountLD, 'ether'),
         );
         console.log(
             '[+] Quote for sending USDO:',
@@ -251,9 +288,10 @@ async function tapiocaPostDeployTask(params: TTapiocaDeployerVmPass<object>) {
             ]),
         });
     }
+    await VM.executeMulticall(calls);
 }
 
-export async function loadContracts__mintOriginUSDO(params: {
+export async function loadContracts__deployPostLbp__task_2(params: {
     hre: HardhatRuntimeEnvironment;
     tag: string;
 }) {
@@ -264,7 +302,7 @@ export async function loadContracts__mintOriginUSDO(params: {
         loadLocalContract(
             hre,
             hre.SDK.eChainId,
-            DEPLOYMENT_NAMES.ORIGINS_MT_ETH_MARKET,
+            DEPLOYMENT_NAMES.ORIGINS_T_ETH_MARKET,
             tag,
         ).address,
     );
@@ -286,13 +324,13 @@ export async function loadContracts__mintOriginUSDO(params: {
         ).address,
     );
 
-    const mtETH = await hre.ethers.getContractAt(
+    const tETH = await hre.ethers.getContractAt(
         'ITOFT',
         loadGlobalContract(
             hre,
             TAPIOCA_PROJECTS_NAME.TapiocaZ,
             hre.SDK.eChainId,
-            TAPIOCA_Z_CONFIG.DEPLOYMENT_NAMES.mtETH,
+            TAPIOCA_Z_CONFIG.DEPLOYMENT_NAMES.tETH,
             tag,
         ).address,
     );
@@ -300,7 +338,7 @@ export async function loadContracts__mintOriginUSDO(params: {
     return {
         origins,
         yieldBox,
-        mtETH,
+        tETH,
         usdo,
     };
 }

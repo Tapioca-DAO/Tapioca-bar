@@ -10,9 +10,6 @@ export async function setupRegisterMCInPenrose(params: TPostDeployParams) {
     const sglMediumRiskMC = deployed.find(
         (e) => e.name === DEPLOYMENT_NAMES.SGL_MEDIUM_RISK_MC,
     )!;
-    const bbMediumRiskMC = deployed.find(
-        (e) => e.name === DEPLOYMENT_NAMES.BB_MEDIUM_RISK_MC,
-    )!;
 
     const penrose = await hre.ethers.getContractAt(
         'Penrose',
@@ -38,20 +35,29 @@ export async function setupRegisterMCInPenrose(params: TPostDeployParams) {
     }
 
     if (
-        (await penrose.isBigBangMasterContractRegistered(
-            bbMediumRiskMC.address,
-        )) !== true
+        hre.SDK.chainInfo.name === 'arbitrum' ||
+        hre.SDK.chainInfo.name === 'arbitrum_sepolia'
     ) {
-        console.log(
-            `\t[+] Registering BB medium risk MC ${bbMediumRiskMC.address} in Penrose ${penroseDep.address}`,
-        );
-        calls.push({
-            target: penrose.address,
-            callData: penrose.interface.encodeFunctionData(
-                'registerBigBangMasterContract',
-                [bbMediumRiskMC.address, 1],
-            ),
-            allowFailure: false,
-        });
+        const bbMediumRiskMC = deployed.find(
+            (e) => e.name === DEPLOYMENT_NAMES.BB_MEDIUM_RISK_MC,
+        )!;
+
+        if (
+            (await penrose.isBigBangMasterContractRegistered(
+                bbMediumRiskMC.address,
+            )) !== true
+        ) {
+            console.log(
+                `\t[+] Registering BB medium risk MC ${bbMediumRiskMC.address} in Penrose ${penroseDep.address}`,
+            );
+            calls.push({
+                target: penrose.address,
+                callData: penrose.interface.encodeFunctionData(
+                    'registerBigBangMasterContract',
+                    [bbMediumRiskMC.address, 1],
+                ),
+                allowFailure: false,
+            });
+        }
     }
 }
