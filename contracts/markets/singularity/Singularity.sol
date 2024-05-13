@@ -311,8 +311,17 @@ contract Singularity is MarketStateView, SGLCommon {
         uint256 _maximumTargetUtilization,
         uint64 _minimumInterestPerSecond,
         uint64 _maximumInterestPerSecond,
-        uint256 _interestElasticity
+        uint256 _interestElasticity,
+        address _interestHelper
     ) external onlyOwner {
+        // this needs to be set first
+        // if `interestHelper` is address(0), the next _accrue() call won't work
+        if (_interestHelper != address(0)) {
+            emit InterestHelperUpdated(interestHelper, _interestHelper);
+            interestHelper = _interestHelper;
+
+        }
+        
         _accrue();
 
         if (_borrowOpeningFee > FEE_PRECISION) revert NotValid();

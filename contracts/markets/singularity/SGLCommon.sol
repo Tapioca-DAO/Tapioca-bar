@@ -9,6 +9,7 @@ import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 // Tapioca
 import {IYieldBox} from "tapioca-periph/interfaces/yieldbox/IYieldBox.sol";
 import {ICluster} from "tapioca-periph/interfaces/periph/ICluster.sol";
+import {ISGLInterestHelper} from "./SGLInterestHelper.sol";
 import {SGLStorage} from "./SGLStorage.sol";
 
 /*
@@ -63,66 +64,24 @@ contract SGLCommon is SGLStorage {
             uint256 utilization
         )
     {
-        _accrueInfo = accrueInfo;
-        _totalBorrow = totalBorrow;
-        _totalAsset = totalAsset;
-        extraAmount = 0;
-        feeFraction = 0;
-
-        uint256 fullAssetAmount = yieldBox.toAmount(assetId, _totalAsset.elastic, false) + _totalBorrow.elastic;
-
-        utilization =
-            fullAssetAmount == 0 ? 0 : (uint256(_totalBorrow.elastic) * UTILIZATION_PRECISION) / fullAssetAmount;
-
-        // Number of seconds since accrue was called
-        uint256 elapsedTime = block.timestamp - _accrueInfo.lastAccrued;
-        if (elapsedTime == 0) {
-            return (_accrueInfo, totalBorrow, totalAsset, 0, 0, utilization);
-        }
-        _accrueInfo.lastAccrued = block.timestamp.toUint64();
-
-        if (_totalBorrow.base == 0) {
-            // If there are no borrows, reset the interest rate
-            if (_accrueInfo.interestPerSecond != startingInterestPerSecond) {
-                _accrueInfo.interestPerSecond = startingInterestPerSecond;
-            }
-            return (_accrueInfo, _totalBorrow, totalAsset, 0, 0, utilization);
-        }
-
-        // Accrue interest
-        extraAmount = (uint256(_totalBorrow.elastic) * _accrueInfo.interestPerSecond * elapsedTime) / 1e18;
-        _totalBorrow.elastic += extraAmount.toUint128();
-
-        //take accrued values into account
-        fullAssetAmount = yieldBox.toAmount(assetId, _totalAsset.elastic, false) + _totalBorrow.elastic;
-
-        uint256 feeAmount = (extraAmount * protocolFee) / FEE_PRECISION; // % of interest paid goes to fee
-        feeFraction = (feeAmount * _totalAsset.base) / (fullAssetAmount - feeAmount);
-        _accrueInfo.feesEarnedFraction += feeFraction.toUint128();
-        _totalAsset.base = _totalAsset.base + feeFraction.toUint128();
-
-        utilization =
-            fullAssetAmount == 0 ? 0 : (uint256(_totalBorrow.elastic) * UTILIZATION_PRECISION) / fullAssetAmount;
-
-        // Update interest rate
-        if (utilization < minimumTargetUtilization) {
-            uint256 underFactor =
-                ((minimumTargetUtilization - utilization) * 1e18) / minimumTargetUtilization;
-            uint256 scale = interestElasticity + (underFactor * underFactor * elapsedTime);
-            _accrueInfo.interestPerSecond =
-                ((uint256(_accrueInfo.interestPerSecond) * interestElasticity) / scale).toUint64();
-            if (_accrueInfo.interestPerSecond < minimumInterestPerSecond) {
-                _accrueInfo.interestPerSecond = minimumInterestPerSecond; // 0.25% APR minimum
-            }
-        } else if (utilization > maximumTargetUtilization) {
-            uint256 overFactor = ((utilization - maximumTargetUtilization) * 1e18) / (FULL_UTILIZATION - maximumTargetUtilization);
-            uint256 scale = interestElasticity + (overFactor * overFactor * elapsedTime);
-            uint256 newInterestPerSecond = (uint256(_accrueInfo.interestPerSecond) * scale) / interestElasticity;
-            if (newInterestPerSecond > maximumInterestPerSecond) {
-                newInterestPerSecond = maximumInterestPerSecond; // 1000% APR maximum
-            }
-            _accrueInfo.interestPerSecond = newInterestPerSecond.toUint64();
-        }
+        (_accrueInfo, _totalBorrow, _totalAsset, extraAmount, feeFraction, utilization) = ISGLInterestHelper(
+            interestHelper
+        ).getInterestRate(
+            ISGLInterestHelper.InterestRateCall(
+                yieldBox,
+                accrueInfo,
+                assetId,
+                totalAsset,
+                totalBorrow,
+                protocolFee,
+                interestElasticity,
+                minimumTargetUtilization,
+                maximumTargetUtilization,
+                minimumInterestPerSecond,
+                maximumInterestPerSecond,
+                startingInterestPerSecond
+            )
+        );
     }
 
     function _accrueView() internal view override returns (Rebase memory _totalBorrow) {
@@ -166,6 +125,4 @@ contract SGLCommon is SGLStorage {
             }
         }
     }
-
-    
 }

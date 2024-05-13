@@ -50,6 +50,8 @@ contract SGLStorage is Ownable, Market, ReentrancyGuard {
     /// @notice borrowing opening fee
     uint256 public borrowOpeningFee = 50; //0.05%
 
+    address public interestHelper;
+
     // ************** //
     // *** EVENTS *** //
     // ************** //
@@ -83,6 +85,8 @@ contract SGLStorage is Ownable, Market, ReentrancyGuard {
     event MaximumInterestPerSecondUpdated(uint256 indexed oldVal, uint256 indexed newVal);
     /// @notice event emitted when the interest elasticity updated
     event InterestElasticityUpdated(uint256 indexed oldVal, uint256 indexed newVal);
+    /// @notice event emitted when the interest helper is updated
+    event InterestHelperUpdated(address indexed oldVal, address indexed newVal);
 
     // ***************** //
     // *** CONSTANTS *** //
