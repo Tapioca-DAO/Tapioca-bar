@@ -100,6 +100,14 @@ contract Singularity is MarketStateView, SGLCommon {
         yieldBox = IYieldBox(_initMemoryData.penrose_.yieldBox());
         _transferOwnership(address(penrose));
 
+        if (address(_initMemoryTokensData._collateral) == address(0)) {
+            revert NotValid();
+        }
+        if (address(_initMemoryTokensData._asset) == address(0)) {
+            revert NotValid();
+        }
+        if (address(_initMemoryData._oracle) == address(0)) revert NotValid();
+
         _initModules(
             _initMemoryModulesData._liquidationModule,
             _initMemoryModulesData._borrowModule,
@@ -127,6 +135,10 @@ contract Singularity is MarketStateView, SGLCommon {
         address _collateralModule,
         address _leverageModule
     ) private {
+        if (_liquidationModule == address(0)) revert NotValid();
+        if (_collateralModule == address(0)) revert NotValid();
+        if (_borrowModule == address(0)) revert NotValid();
+        if (_leverageModule == address(0)) revert NotValid();
         assembly {
             sstore(liquidationModule.slot, _liquidationModule)
             sstore(collateralModule.slot, _collateralModule)
