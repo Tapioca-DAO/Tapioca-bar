@@ -58,6 +58,10 @@ contract AssetTotsDaiLeverageExecutor is BaseLeverageExecutor {
         daiAddress.safeApprove(sDaiAddress, daiAmount);
         collateralAmountOut = ISavingsDai(sDaiAddress).deposit(daiAmount, address(this));
 
+        //re-check minAmount to verify the DAI<>sDAI ratio
+        SLeverageSwapData memory swapData = abi.decode(data, (SLeverageSwapData));
+        if (collateralAmountOut < swapData.minAmountOut) revert MinAmountNotValid(swapData.minAmountOut, collateralAmountOut);
+
         // Wrap into tsDai to sender
         sDaiAddress.safeApprove(collateralAddress, collateralAmountOut);
         collateralAmountOut = ITOFT(collateralAddress).wrap(address(this), msg.sender, collateralAmountOut);
