@@ -8,7 +8,7 @@ broadcast = 'gen/broadcast'
 solc_version='0.8.22'
 evm_version='paris'
 optimizer = true
-optimizer_runs = 100
+optimizer_runs = 10
 
 remappings = [
 	"solidity-bytes-utils/=node_modules/@layerzerolabs/solidity-bytes-utils/",
