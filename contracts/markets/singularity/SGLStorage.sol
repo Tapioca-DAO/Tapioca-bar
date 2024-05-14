@@ -39,15 +39,8 @@ contract SGLStorage is Ownable, Market, ReentrancyGuard {
     /// @notice total assets share & amount
     Rebase public totalAsset; // elastic = yieldBox shares held by the Singularity, base = Total fractions held by asset suppliers
 
-    // YieldBox shares, from -> Yb asset type -> shares
-    bytes32 internal ASSET_SIG = 0x0bd4060688a1800ae986e4840aebc924bb40b5bf44de4583df2257220b54b77c; // keccak256("asset")
-    bytes32 internal COLLATERAL_SIG = 0x7d1dc38e60930664f8cbf495da6556ca091d2f92d6550877750c049864b18230; // keccak256("collateral")
-    /// @notice collateralization rate
-    uint256 public lqCollateralizationRate = 25000; // 25%
-
     uint256 public minimumTargetUtilization;
     uint256 public maximumTargetUtilization;
-    uint256 public fullUtilizationMinusMax;
 
     uint64 public minimumInterestPerSecond;
     uint64 public maximumInterestPerSecond;
@@ -56,6 +49,8 @@ contract SGLStorage is Ownable, Market, ReentrancyGuard {
 
     /// @notice borrowing opening fee
     uint256 public borrowOpeningFee = 50; //0.05%
+
+    address public interestHelper;
 
     // ************** //
     // *** EVENTS *** //
@@ -80,8 +75,6 @@ contract SGLStorage is Ownable, Market, ReentrancyGuard {
     event LogRepay(address indexed from, address indexed to, uint256 indexed amount, uint256 part);
     /// @notice event emitted when fees are extracted
     event LogWithdrawFees(address indexed feeTo, uint256 indexed feesEarnedFraction);
-    /// @notice event emitted when fees are deposited to YieldBox
-    event LogYieldBoxFeesDeposit(uint256 indexed feeShares, uint256 indexed ethAmount);
     /// @notice event emitted when the minimum target utilization is updated
     event MinimumTargetUtilizationUpdated(uint256 indexed oldVal, uint256 indexed newVal);
     /// @notice event emitted when the maximum target utilization is updated
@@ -92,23 +85,12 @@ contract SGLStorage is Ownable, Market, ReentrancyGuard {
     event MaximumInterestPerSecondUpdated(uint256 indexed oldVal, uint256 indexed newVal);
     /// @notice event emitted when the interest elasticity updated
     event InterestElasticityUpdated(uint256 indexed oldVal, uint256 indexed newVal);
-    /// @notice event emitted when the LQ collateralization rate is updated
-    event LqCollateralizationRateUpdated(uint256 indexed oldVal, uint256 indexed newVal);
-    /// @notice event emitted when the order book liquidation multiplier rate is updated
-    event OrderBookLiquidationMultiplierUpdated(uint256 indexed oldVal, uint256 indexed newVal);
-    /// @notice event emitted when the bid execution swapper is updated
-    event BidExecutionSwapperUpdated(address indexed newAddress);
-    /// @notice event emitted when the usdo swapper is updated
-    event UsdoSwapperUpdated(address indexed newAddress);
+    /// @notice event emitted when the interest helper is updated
+    event InterestHelperUpdated(address indexed oldVal, address indexed newVal);
 
     // ***************** //
     // *** CONSTANTS *** //
     // ***************** //
-    uint256 internal constant FULL_UTILIZATION = 1e18;
-    uint256 internal constant UTILIZATION_PRECISION = 1e18;
-
-    uint256 internal constant FACTOR_PRECISION = 1e18;
-
     constructor() MarketERC20("Tapioca Singularity") {}
 
     // ********************** //
