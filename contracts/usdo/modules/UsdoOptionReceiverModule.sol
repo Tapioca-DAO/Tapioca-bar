@@ -150,4 +150,68 @@ contract UsdoOptionReceiverModule is BaseUsdo {
             }
         }
     }
+
+    function _validateExerciseOptionReceiver(ExerciseOptionsMsg memory msg_) private view returns (ExerciseOptionsMsg memory) {
+        _checkWhitelistStatus(msg_.optionsData.target);
+
+        if (msg_.optionsData.tapAmount > 0)
+            msg_.optionsData.tapAmount = _toLD(msg_.optionsData.tapAmount.toUint64());
+            
+        if (msg_.optionsData.paymentTokenAmount > 0)
+            msg_.optionsData.paymentTokenAmount = _toLD(msg_.optionsData.paymentTokenAmount.toUint64());
+
+        return msg_;
+    }
+
+    function _exerciseAndRefund(IExerciseOptionsData memory _options) private {
+        uint256 bBefore = balanceOf(address(this));
+        address oTap = ITapiocaOptionBroker(_options.target).oTAP();
+        address oTapOwner = IERC721(oTap).ownerOf(_options.oTAPTokenID);
+
+        if (
+            oTapOwner != _options.from && !IERC721(oTap).isApprovedForAll(oTapOwner, _options.from)
+                && IERC721(oTap).getApproved(_options.oTAPTokenID) != _options.from
+        ) revert UsdoOptionReceiverModule_NotAuthorized(oTapOwner);
+        ITapiocaOptionBroker(_options.target).exerciseOption(
+            _options.oTAPTokenID,
+            address(this), //payment token
+            _options.tapAmount
+        );
+        _approve(address(this), address(pearlmit), 0);
+        uint256 bAfter = balanceOf(address(this));
+
+        // Refund if less was used.
+        if (bBefore >= bAfter) {
+            uint256 diff = bBefore - bAfter;
+            if (diff < _options.paymentTokenAmount) {
+                IERC20(address(this)).safeTransfer(_options.from, _options.paymentTokenAmount - diff);
+            }
+        }
+    }
+    function _withdrawExercised(ExerciseOptionsMsg memory msg_) private {
+        SendParam memory _send = msg_.lzSendParams.sendParam;
+
+        address tapOft = ITapiocaOptionBroker(msg_.optionsData.target).tapOFT();
+        uint256 tapBalance = IERC20(tapOft).balanceOf(address(this));
+        if (msg_.withdrawOnOtherChain) {
+            /// @dev determine the right amount to send back to source
+            uint256 amountToSend = _send.amountLD > tapBalance ? tapBalance : _send.amountLD;
+            _send.amountLD = amountToSend;
+
+            if (_send.minAmountLD > amountToSend) {
+                _send.minAmountLD = amountToSend;
+            }
+
+            msg_.lzSendParams.sendParam = _send;
+            IOftSender(tapOft).sendPacket{value: msg.value}(msg_.lzSendParams, "");
+
+            // Refund extra amounts
+            if (tapBalance - amountToSend > 0) {
+                IERC20(tapOft).safeTransfer(msg_.optionsData.from, tapBalance - amountToSend);
+            }
+        } else {
+            //send on this chain
+            IERC20(tapOft).safeTransfer(msg_.optionsData.from, tapBalance);
+        }               
+    }
 }

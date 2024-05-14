@@ -1177,7 +1177,7 @@ contract UsdoTest is UsdoTestHelper {
                         prevData: bytes(""),
                         prevOptionsData: bytes("")
                     }),
-                    lzReceiveGas: 500_000,
+                    lzReceiveGas: 5_000_000,
                     lzReceiveValue: 0,
                     refundAddress: address(this)
                 })
@@ -1251,13 +1251,13 @@ contract UsdoTest is UsdoTestHelper {
                 msgType: PT_YB_SEND_SGL_LEND_OR_REPAY,
                 composeMsgData: ComposeMsgData({
                     index: 0,
-                    gas: 500_000,
+                    gas: 5_000_000,
                     value: uint128(withdrawMsgFee_.nativeFee),
                     data: marketMsg_,
                     prevData: bytes(""),
                     prevOptionsData: bytes("")
                 }),
-                lzReceiveGas: 500_000,
+                lzReceiveGas: 5_000_000,
                 lzReceiveValue: 0,
                 refundAddress: address(this)
             })
