@@ -108,7 +108,7 @@ contract AssetToSGLPLeverageExecutor is BaseLeverageExecutor, Pausable {
         // Wrap into tsGLP to sender
         address sGLP = ITOFT(collateralAddress).erc20();
         sGLP.safeApprove(collateralAddress, collateralAmountOut);
-        ITOFT(collateralAddress).wrap(address(this), msg.sender, collateralAmountOut);
+        collateralAmountOut = ITOFT(collateralAddress).wrap(address(this), msg.sender, collateralAmountOut);
         sGLP.safeApprove(collateralAddress, 0);
     }
 
