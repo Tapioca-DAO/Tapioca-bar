@@ -346,7 +346,7 @@ contract Singularity is MarketStateView, SGLCommon {
         }
 
         if (_maximumTargetUtilization > 0) {
-            if (_maximumTargetUtilization >= FULL_UTILIZATION) {
+            if (_maximumTargetUtilization >= 1e18) { //1e18 = FULL_UTILIZATION
                 revert NotValid();
             }
 

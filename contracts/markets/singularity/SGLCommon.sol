@@ -3,13 +3,13 @@ pragma solidity 0.8.22;
 
 // External
 import {RebaseLibrary, Rebase} from "@boringcrypto/boring-solidity/contracts/libraries/BoringRebase.sol";
-import {ISingularity, IMarket} from "tapioca-periph/interfaces/bar/ISingularity.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 // Tapioca
+import {ISGLInterestHelper} from "tapioca-periph/interfaces/bar/ISGLInterestHelper.sol";
+import {ISingularity} from "tapioca-periph/interfaces/bar/ISingularity.sol";
 import {IYieldBox} from "tapioca-periph/interfaces/yieldbox/IYieldBox.sol";
 import {ICluster} from "tapioca-periph/interfaces/periph/ICluster.sol";
-import {ISGLInterestHelper} from "./SGLInterestHelper.sol";
 import {SGLStorage} from "./SGLStorage.sol";
 
 /*
