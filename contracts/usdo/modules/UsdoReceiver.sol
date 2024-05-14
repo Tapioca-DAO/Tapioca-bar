@@ -13,10 +13,7 @@ import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeE
 // Tapioca
 import {
     IUsdo,
-    UsdoInitStruct,
-    YieldBoxApproveAllMsg,
-    MarketPermitActionMsg,
-    YieldBoxApproveAssetMsg
+    UsdoInitStruct
 } from "tapioca-periph/interfaces/oft/IUsdo.sol";
 import {TapiocaOmnichainReceiver} from "tapioca-periph/tapiocaOmnichainEngine/TapiocaOmnichainReceiver.sol";
 import {UsdoMarketReceiverModule} from "./UsdoMarketReceiverModule.sol";
@@ -86,16 +83,6 @@ contract UsdoReceiver is BaseUsdo, TapiocaOmnichainReceiver {
                 uint8(IUsdo.Module.UsdoMarketReceiver),
                 abi.encodeWithSelector(
                     UsdoMarketReceiverModule.lendOrRepayReceiver.selector, _srcChainSender, _toeComposeMsg
-                ),
-                false
-            );
-        } else if (_msgType == MSG_DEPOSIT_LEND_AND_SEND_FOR_LOCK) {
-            _executeModule(
-                uint8(IUsdo.Module.UsdoMarketReceiver),
-                abi.encodeWithSelector(
-                    UsdoMarketReceiverModule.depositLendAndSendForLockingReceiver.selector,
-                    _srcChainSender,
-                    _toeComposeMsg
                 ),
                 false
             );
