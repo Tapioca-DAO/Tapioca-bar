@@ -91,8 +91,6 @@ contract SGLStorage is Ownable, Market, ReentrancyGuard {
     // ***************** //
     // *** CONSTANTS *** //
     // ***************** //
-    uint256 internal constant FULL_UTILIZATION = 1e18;
-    uint256 internal constant UTILIZATION_PRECISION = 1e18;
     constructor() MarketERC20("Tapioca Singularity") {}
 
     // ********************** //
