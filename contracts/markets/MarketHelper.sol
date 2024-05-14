@@ -2,7 +2,7 @@
 pragma solidity 0.8.22;
 
 // External
-import {Rebase} from "@boringcrypto/boring-solidity/contracts/libraries/BoringRebase.sol";
+import {RebaseLibrary, Rebase} from "@boringcrypto/boring-solidity/contracts/libraries/BoringRebase.sol";
 
 // Tapioca
 import {
@@ -20,6 +20,7 @@ import {IYieldBox} from "tapioca-periph/interfaces/yieldbox/IYieldBox.sol";
 import {IMarket, Module} from "tapioca-periph/interfaces/bar/IMarket.sol";
 
 contract MarketHelper {
+    using RebaseLibrary for Rebase;
     error ExchangeRateNotValid();
 
     /// @notice transforms amount to shares for a market's permit operation
@@ -55,7 +56,7 @@ contract MarketHelper {
         uint256 minLiquidationBonus,
         uint256 exchangeRatePrecision,
         uint256 feeDecimalsPrecision
-    ) external view returns (Module[] memory modules, bytes[] memory calls) {
+    ) external view returns (uint256 collateralShare) {
         ISingularity sgl = ISingularity(sglAddress);
 
         (bool updated, uint256 _exchangeRate) = ITapiocaOracle(sgl._oracle()).peek(sgl._oracleData());
@@ -66,7 +67,7 @@ contract MarketHelper {
 
         (uint128 totalBorrowElastic, uint128 totalBorrowBase) = sgl._totalBorrow();
 
-        SGLCommon._ViewLiquidationStruct memory data;
+        _ViewLiquidationStruct memory data;
         {
             data.user = user;
             data.maxBorrowPart = maxBorrowPart;
@@ -84,15 +85,7 @@ contract MarketHelper {
             data.feeDecimalsPrecision = feeDecimalsPrecision;
         }
 
-        modules = new Module[](1);
-        calls = new bytes[](1);
-        modules[0] = Module.Liquidation;
-        calls[0] = abi.encodeWithSelector(SGLLiquidation.viewLiquidationCollateralAmount.selector, data);
-    }
-
-    /// @notice view the result of a viewLiquidationCollateralAmount operation.
-    function getLiquidationCollateralAmountView(bytes calldata result) external pure returns (uint256 amount) {
-        amount = abi.decode(result, (uint256));
+        (,,collateralShare) = _viewLiqudationBorrowAndCollateralShare(data, sglAddress);
     }
 
     /// @notice Adds `collateral` from msg.sender to the account `to`.
@@ -265,6 +258,95 @@ contract MarketHelper {
             liquidatorReceivers,
             liquidatorReceiverDatas
         );
+    }
+
+    error Solvent();
+    error BadDebt();
+    error InsufficientLiquidationBonus();
+    error NotEnoughCollateral();
+    struct _ViewLiquidationStruct {
+        address user;
+        uint256 maxBorrowPart;
+        uint256 minLiquidationBonus;
+        uint256 exchangeRate;
+        IYieldBox yieldBox;
+        uint256 collateralId;
+        uint256 userCollateralShare;
+        uint256 userBorrowPart;
+        Rebase totalBorrow;
+        uint256 liquidationBonusAmount;
+        uint256 liquidationCollateralizationRate;
+        uint256 liquidationMultiplier;
+        uint256 exchangeRatePrecision;
+        uint256 feeDecimalsPrecision;
+    }
+    function _viewLiqudationBorrowAndCollateralShare(_ViewLiquidationStruct memory _data, address sglAddress)
+        private
+        view
+        returns (uint256 borrowAmount, uint256 borrowPart, uint256 collateralShare)
+    {   
+        IMarket market = IMarket(sglAddress);
+        if (_data.exchangeRate == 0) revert ExchangeRateNotValid();
+
+        // get collateral amount in asset's value
+        uint256 collateralPartInAsset = (
+            _data.yieldBox.toAmount(_data.collateralId, _data.userCollateralShare, false) * _data.exchangeRatePrecision
+        ) / _data.exchangeRate;
+
+        // compute closing factor (liquidatable amount)
+        uint256 borrowPartWithBonus = market.computeClosingFactor(
+            _data.userBorrowPart,
+            collateralPartInAsset,
+            1e5
+        );
+
+        // limit liquidable amount before bonus to the current debt
+        uint256 userTotalBorrowAmount = _data.totalBorrow.toElastic(_data.userBorrowPart, true);
+        borrowPartWithBonus = borrowPartWithBonus > userTotalBorrowAmount ? userTotalBorrowAmount : borrowPartWithBonus;
+
+        // make sure liquidator cannot bypass bad debt handling
+        if (collateralPartInAsset < borrowPartWithBonus) revert BadDebt();
+
+        // check the amount to be repaid versus liquidator supplied limit
+        borrowPartWithBonus = borrowPartWithBonus > _data.maxBorrowPart ? _data.maxBorrowPart : borrowPartWithBonus;
+        borrowAmount = borrowPartWithBonus;
+
+        // compute part units, preventing rounding dust when liquidation is full
+        borrowPart = borrowAmount == userTotalBorrowAmount
+            ? _data.userBorrowPart
+            : _data.totalBorrow.toBase(borrowPartWithBonus, false);
+        if (borrowPart == 0) revert Solvent();
+
+        if (_data.liquidationBonusAmount > 0) {
+            borrowPartWithBonus =
+                borrowPartWithBonus + (borrowPartWithBonus * _data.liquidationBonusAmount) / 1e5;
+        }
+
+        if (collateralPartInAsset < borrowPartWithBonus) {
+            if (collateralPartInAsset <= userTotalBorrowAmount) {
+                revert BadDebt();
+            }
+            // If current debt is covered by collateral fully
+            // then there is some liquidation bonus,
+            // so liquidation can proceed if liquidator's minimum is met
+            if (_data.minLiquidationBonus > 0) {
+                // `collateralPartInAsset > borrowAmount` as `borrowAmount <= userTotalBorrowAmount`
+                uint256 effectiveBonus = ((collateralPartInAsset - borrowAmount) * 1e5) / borrowAmount;
+                if (effectiveBonus < _data.minLiquidationBonus) {
+                    revert InsufficientLiquidationBonus();
+                }
+                collateralShare = _data.userCollateralShare;
+            } else {
+                revert InsufficientLiquidationBonus();
+            }
+        } else {
+            collateralShare = _data.yieldBox.toShare(
+                _data.collateralId, (borrowPartWithBonus * _data.exchangeRate) / _data.exchangeRatePrecision, false
+            );
+            if (collateralShare > _data.userCollateralShare) {
+                revert NotEnoughCollateral();
+            }
+        }
     }
 
     function _getRevertMsg(bytes memory _returnData) internal pure returns (string memory) {
