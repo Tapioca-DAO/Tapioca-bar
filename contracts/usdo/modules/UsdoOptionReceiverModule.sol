@@ -161,7 +161,7 @@ contract UsdoOptionReceiverModule is BaseUsdo {
             }
 
             msg_.lzSendParams.sendParam = _send;
-            IOftSender(tapOft).sendPacket(msg_.lzSendParams, "");
+            IOftSender(tapOft).sendPacket{value: msg.value}(msg_.lzSendParams, "");
 
             // Refund extra amounts
             if (tapBalance - amountToSend > 0) {

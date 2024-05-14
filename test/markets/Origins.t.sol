@@ -144,7 +144,7 @@ contract OriginsTest is UsdoTestHelper {
             collateralYieldBoxId,
             ITapiocaOracle(address(oracle)),
             0,
-            95000
+            99999
         );
 
         vm.label(address(origins), "Origins");
@@ -238,6 +238,33 @@ contract OriginsTest is UsdoTestHelper {
         origins.updatePause(Market.PauseType.Borrow, true);
         vm.expectRevert("Market: paused");
         origins.borrow(1);
+    }
+
+    function test_origin_should_borrow_max() public {
+        uint256 collateralAmount = 1 ether;
+        uint256 borrowAmount = 9e17;
+
+        deal(address(collateral), address(this), collateralAmount);
+
+        depositCollateral(collateralAmount);
+
+        borrow(borrowAmount, false);
+    }
+
+    function test_origin_should_borrow_max_2000_ether() public {
+        uint256 collateralAmount = 1 ether;
+        uint256 borrowAmount = 1900e18;
+        
+        oracle.set(5e14);
+        origins.updateExchangeRate();
+
+        deal(address(collateral), address(this), collateralAmount);
+
+        depositCollateral(collateralAmount);
+
+        borrow(borrowAmount, false);
+
+        borrow(100e18, true);
     }
 
     function test_should_borrow_without_lenders() public {

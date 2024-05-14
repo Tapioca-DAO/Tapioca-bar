@@ -11,6 +11,7 @@ import {IERC20} from "@boringcrypto/boring-solidity/contracts/libraries/BoringER
 // Tapioca
 import {SimpleLeverageExecutor} from "contracts/markets/leverage/SimpleLeverageExecutor.sol";
 import {ILeverageExecutor} from "tapioca-periph/interfaces/bar/ILeverageExecutor.sol";
+import {SGLInterestHelper} from "contracts/markets/singularity/SGLInterestHelper.sol";
 import {ITapiocaOracle} from "tapioca-periph/interfaces/periph/ITapiocaOracle.sol";
 import {ERC20WithoutStrategy} from "yieldbox/strategies/ERC20WithoutStrategy.sol";
 import {IZeroXSwapper} from "tapioca-periph/interfaces/periph/IZeroXSwapper.sol";
@@ -225,6 +226,21 @@ contract UsdoTestHelper is TestHelper, TestUtils {
         {
             _penrose.addSingularity(_mc, address(sgl));
         }
+
+        {
+            SGLInterestHelper sglInterestHelper = new SGLInterestHelper();
+
+            bytes memory payload = abi.encodeWithSelector(
+                Singularity.setSingularityConfig.selector, sgl.borrowOpeningFee(), 0, 0, 0, 0, 0, 0, address(sglInterestHelper)
+            );
+            address[] memory mc = new address[](1);
+            mc[0] = address(sgl);
+
+            bytes[] memory data = new bytes[](1);
+            data[0] = payload;
+            _penrose.executeMarketFn(mc, data, false);
+        }
+        
         return sgl;
     }
 
