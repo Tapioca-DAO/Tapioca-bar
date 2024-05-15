@@ -3,7 +3,7 @@ import { IDeployerVMAdd } from '@tapioca-sdk//ethers/hardhat/DeployerVM';
 import { MockSwapper__factory } from '@tapioca-sdk/typechain/tapioca-mocks';
 import MockSwapperArtifact from '@tapioca-sdk/artifacts/tapioca-mocks/MockSwapper.json';
 import { EChainID } from '@tapioca-sdk/api/config';
-import { loadVM } from '../utils';
+import { loadVM } from '../../utils';
 
 const buildMockSwapper = async (
     hre: HardhatRuntimeEnvironment,
