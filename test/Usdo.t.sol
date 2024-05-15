@@ -1276,6 +1276,9 @@ contract UsdoTest is UsdoTestHelper {
     }
 
     function test_usdo_repay_and_remove_collateral() public {
+        singularity.approve(address(magnetar), type(uint256).max);
+
+
         uint256 erc20Amount_ = 1 ether;
         uint256 tokenAmount_ = 0.5 ether;
 
