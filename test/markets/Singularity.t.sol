@@ -233,7 +233,7 @@ contract SingularityTest is UsdoTestHelper {
         uint256 interestElasticity = singularity.interestElasticity();
 
         bytes memory payload = abi.encodeWithSelector(
-            Singularity.setSingularityConfig.selector, singularity.borrowOpeningFee(), 0, 0, 0, 0, 0, 0
+            Singularity.setSingularityConfig.selector, singularity.borrowOpeningFee(), 0, 0, 0, 0, 0, 0, address(0)
         );
         address[] memory mc = new address[](1);
         mc[0] = address(singularity);
@@ -254,7 +254,7 @@ contract SingularityTest is UsdoTestHelper {
 
         uint256 toSetValue = 101;
         {
-            payload = abi.encodeWithSelector(Singularity.setSingularityConfig.selector, toSetValue, 0, 0, 0, 0, 0, 0);
+            payload = abi.encodeWithSelector(Singularity.setSingularityConfig.selector, toSetValue, 0, 0, 0, 0, 0, 0, address(0));
             data = new bytes[](1);
             data[0] = payload;
             penrose.executeMarketFn(mc, data, false);

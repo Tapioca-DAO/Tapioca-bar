@@ -14,11 +14,7 @@ import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 // Tapioca
-import {
-    MagnetarCall,
-    MagnetarAction,
-    IMagnetar
-} from "tapioca-periph/interfaces/periph/IMagnetar.sol";
+import {MagnetarCall, MagnetarAction, IMagnetar} from "tapioca-periph/interfaces/periph/IMagnetar.sol";
 import {
     ITapiocaOptionBroker, IExerciseOptionsData
 } from "tapioca-periph/interfaces/tap-token/ITapiocaOptionBroker.sol";
@@ -65,39 +61,46 @@ contract UsdoOptionReceiverModule is BaseUsdo {
      *      - composeMsg::bytes: Further compose data.
      */
     function exerciseOptionsReceiver(address srcChainSender, bytes memory _data) public payable {
-        ExerciseOptionsMsg memory msg_ = UsdoMsgCodec.decodeExerciseOptionsMsg(_data); 
+        ExerciseOptionsMsg memory msg_ = UsdoMsgCodec.decodeExerciseOptionsMsg(_data);
 
         /**
-        * @dev validate data
-        */
+         * @dev validate data
+         */
         msg_ = _validateExerciseOptionReceiver(msg_);
 
         /**
-        * @dev retrieve paymentToken amount
-        */
+         * @dev retrieve paymentToken amount
+         */
         _internalTransferWithAllowance(msg_.optionsData.from, srcChainSender, msg_.optionsData.paymentTokenAmount);
 
         /**
-        * @dev call exerciseOption() with address(this) as the payment token
-        */
+         * @dev call exerciseOption() with address(this) as the payment token
+         */
         // _approve(address(this), _options.target, _options.paymentTokenAmount);
         pearlmit.approve(
-            address(this), 0, msg_.optionsData.target, uint200(msg_.optionsData.paymentTokenAmount), uint48(block.timestamp + 1)
+            address(this),
+            0,
+            msg_.optionsData.target,
+            uint200(msg_.optionsData.paymentTokenAmount),
+            uint48(block.timestamp + 1)
         ); // Atomic approval
         _approve(address(this), address(pearlmit), msg_.optionsData.paymentTokenAmount);
 
         /**
-        * @dev exercise and refund if less paymentToken amount was used
-        */
+         * @dev exercise and refund if less paymentToken amount was used
+         */
         _exerciseAndRefund(msg_.optionsData);
 
         /**
-        * @dev retrieve exercised amount
-        */
+         * @dev retrieve exercised amount
+         */
         _withdrawExercised(msg_);
 
         emit ExerciseOptionsReceived(
-            msg_.optionsData.from, msg_.optionsData.target, msg_.optionsData.oTAPTokenID, msg_.optionsData.paymentTokenAmount
+            msg_.optionsData.from,
+            msg_.optionsData.target,
+            msg_.optionsData.oTAPTokenID,
+            msg_.optionsData.paymentTokenAmount
         );
     }
 
@@ -109,14 +112,20 @@ contract UsdoOptionReceiverModule is BaseUsdo {
         }
     }
 
-    function _validateExerciseOptionReceiver(ExerciseOptionsMsg memory msg_) private view returns (ExerciseOptionsMsg memory) {
+    function _validateExerciseOptionReceiver(ExerciseOptionsMsg memory msg_)
+        private
+        view
+        returns (ExerciseOptionsMsg memory)
+    {
         _checkWhitelistStatus(msg_.optionsData.target);
 
-        if (msg_.optionsData.tapAmount > 0)
+        if (msg_.optionsData.tapAmount > 0) {
             msg_.optionsData.tapAmount = _toLD(msg_.optionsData.tapAmount.toUint64());
-            
-        if (msg_.optionsData.paymentTokenAmount > 0)
+        }
+
+        if (msg_.optionsData.paymentTokenAmount > 0) {
             msg_.optionsData.paymentTokenAmount = _toLD(msg_.optionsData.paymentTokenAmount.toUint64());
+        }
 
         return msg_;
     }
@@ -146,6 +155,7 @@ contract UsdoOptionReceiverModule is BaseUsdo {
             }
         }
     }
+
     function _withdrawExercised(ExerciseOptionsMsg memory msg_) private {
         SendParam memory _send = msg_.lzSendParams.sendParam;
 
@@ -161,7 +171,7 @@ contract UsdoOptionReceiverModule is BaseUsdo {
             }
 
             msg_.lzSendParams.sendParam = _send;
-            IOftSender(tapOft).sendPacket(msg_.lzSendParams, "");
+            IOftSender(tapOft).sendPacket{value: msg.value}(msg_.lzSendParams, "");
 
             // Refund extra amounts
             if (tapBalance - amountToSend > 0) {
@@ -170,6 +180,6 @@ contract UsdoOptionReceiverModule is BaseUsdo {
         } else {
             //send on this chain
             IERC20(tapOft).safeTransfer(msg_.optionsData.from, tapBalance);
-        }               
+        }
     }
 }

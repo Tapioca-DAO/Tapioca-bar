@@ -37,8 +37,8 @@ import {SGLBorrow} from "./SGLBorrow.sol";
 
 /// @title Tapioca market
 contract Singularity is MarketStateView, SGLCommon {
-    using RebaseLibrary for Rebase;
     using SafeCast for uint256;
+    using RebaseLibrary for Rebase;
 
     // ************ //
     // *** VARS *** //
@@ -55,7 +55,6 @@ contract Singularity is MarketStateView, SGLCommon {
     // ************** //
     // *** ERRORS *** //
     // ************** //
-    error BadPair();
     error NotValid();
     error ModuleNotSet();
     error NotAuthorized();
@@ -102,12 +101,12 @@ contract Singularity is MarketStateView, SGLCommon {
         _transferOwnership(address(penrose));
 
         if (address(_initMemoryTokensData._collateral) == address(0)) {
-            revert BadPair();
+            revert NotValid();
         }
         if (address(_initMemoryTokensData._asset) == address(0)) {
-            revert BadPair();
+            revert NotValid();
         }
-        if (address(_initMemoryData._oracle) == address(0)) revert BadPair();
+        if (address(_initMemoryData._oracle) == address(0)) revert NotValid();
 
         _initModules(
             _initMemoryModulesData._liquidationModule,
@@ -140,10 +139,12 @@ contract Singularity is MarketStateView, SGLCommon {
         if (_collateralModule == address(0)) revert NotValid();
         if (_borrowModule == address(0)) revert NotValid();
         if (_leverageModule == address(0)) revert NotValid();
-        liquidationModule = SGLLiquidation(_liquidationModule);
-        collateralModule = SGLCollateral(_collateralModule);
-        borrowModule = SGLBorrow(_borrowModule);
-        leverageModule = SGLLeverage(_leverageModule);
+        assembly {
+            sstore(liquidationModule.slot, _liquidationModule)
+            sstore(collateralModule.slot, _collateralModule)
+            sstore(borrowModule.slot, _borrowModule)
+            sstore(leverageModule.slot, _leverageModule)
+        }
     }
 
     function _initCoreStorage(
@@ -154,12 +155,15 @@ contract Singularity is MarketStateView, SGLCommon {
         ITapiocaOracle _oracle,
         ILeverageExecutor _leverageExecutor
     ) private {
-        asset = _asset;
-        collateral = _collateral;
-        assetId = _assetId;
-        collateralId = _collateralId;
-        oracle = _oracle;
-        leverageExecutor = _leverageExecutor;
+        assembly {
+            // Store the values directly into their respective slots
+            sstore(asset.slot, _asset)
+            sstore(collateral.slot, _collateral)
+            sstore(assetId.slot, _assetId)
+            sstore(collateralId.slot, _collateralId)
+            sstore(oracle.slot, _oracle)
+            sstore(leverageExecutor.slot, _leverageExecutor)
+        }
     }
 
     function _initDefaultValues(
@@ -173,27 +177,30 @@ contract Singularity is MarketStateView, SGLCommon {
         require(
             liquidationCollateralizationRate > collateralizationRate, "SGL: liquidationCollateralizationRate not valid"
         );
-        minimumInterestPerSecond = 158548960; // approx 0.5% APR
-        maximumInterestPerSecond = 317097920000; // approx 1000% APR
+        assembly {
+            sstore(minimumInterestPerSecond.slot, 158548960) // approx 0.5% APR
+            sstore(maximumInterestPerSecond.slot, 317097920000) // approx 1000% APR
+        }
         interestElasticity = 28800e36; // Half or double in 28800 seconds (8 hours) if linear
         startingInterestPerSecond = minimumInterestPerSecond;
         accrueInfo.interestPerSecond = startingInterestPerSecond; // 1% APR, with 1e18 being 100%
         updateExchangeRate();
-        //default fees
-        protocolFee = 10000; // 10%; used for accrual
-        borrowOpeningFee = 50; // 0.05%
-        //liquidation
-        liquidationMultiplier = 12000; //12%
-        lqCollateralizationRate = 25000;
-        EXCHANGE_RATE_PRECISION = _exchangeRatePrecision > 0 ? _exchangeRatePrecision : 1e18;
-        minLiquidatorReward = 8e4;
-        maxLiquidatorReward = 9e4;
-        liquidationBonusAmount = 1e4;
-        minimumTargetUtilization = 3e17;
-        maximumTargetUtilization = 5e17;
-        fullUtilizationMinusMax = FULL_UTILIZATION - maximumTargetUtilization;
-        rateValidDuration = 24 hours;
+        assembly {
+            //default fees
+            sstore(protocolFee.slot, 10000) // 10%; used for accrual
+            sstore(borrowOpeningFee.slot, 50) // 0.05%
 
+            //liquidation
+            sstore(liquidationMultiplier.slot, 12000) //12%
+            sstore(minLiquidatorReward.slot, 80000) //8e4
+            sstore(maxLiquidatorReward.slot, 90000) //9e4
+            sstore(liquidationBonusAmount.slot, 10000) //1e4
+            sstore(minimumTargetUtilization.slot, 300000000000000000) //3e17
+            sstore(maximumTargetUtilization.slot, 500000000000000000) //5e17
+            sstore(rateValidDuration.slot, 86400) //24 hours
+        }
+
+        EXCHANGE_RATE_PRECISION = _exchangeRatePrecision > 0 ? _exchangeRatePrecision : 1e18;
         conservator = owner();
     }
 
@@ -214,16 +221,14 @@ contract Singularity is MarketStateView, SGLCommon {
         successes = new bool[](calls.length);
         results = new bytes[](calls.length);
         if (modules.length != calls.length) revert NotValid();
-        unchecked {
-            for (uint256 i; i < calls.length; i++) {
-                (bool success, bytes memory result) = _extractModule(modules[i]).delegatecall(calls[i]);
+        for (uint256 i; i < calls.length; i++) {
+            (bool success, bytes memory result) = _extractModule(modules[i]).delegatecall(calls[i]);
 
-                if (!success && revertOnFail) {
-                    revert(abi.decode(_getRevertMsg(result), (string)));
-                }
-                successes[i] = success;
-                results[i] = !success ? _getRevertMsg(result) : result;
+            if (!success && revertOnFail) {
+                revert(abi.decode(_getRevertMsg(result), (string)));
             }
+            successes[i] = success;
+            results[i] = !success ? _getRevertMsg(result) : result;
         }
     }
 
@@ -318,8 +323,17 @@ contract Singularity is MarketStateView, SGLCommon {
         uint256 _maximumTargetUtilization,
         uint64 _minimumInterestPerSecond,
         uint64 _maximumInterestPerSecond,
-        uint256 _interestElasticity
+        uint256 _interestElasticity,
+        address _interestHelper
     ) external onlyOwner {
+        // this needs to be set first
+        // if `interestHelper` is address(0), the next _accrue() call won't work
+        if (_interestHelper != address(0)) {
+            emit InterestHelperUpdated(interestHelper, _interestHelper);
+            interestHelper = _interestHelper;
+
+        }
+        
         _accrue();
 
         if (_borrowOpeningFee > FEE_PRECISION) revert NotValid();
@@ -332,13 +346,12 @@ contract Singularity is MarketStateView, SGLCommon {
         }
 
         if (_maximumTargetUtilization > 0) {
-            if (_maximumTargetUtilization >= FULL_UTILIZATION) {
+            if (_maximumTargetUtilization >= 1e18) { //1e18 = FULL_UTILIZATION
                 revert NotValid();
             }
 
             emit MaximumTargetUtilizationUpdated(maximumTargetUtilization, _maximumTargetUtilization);
             maximumTargetUtilization = _maximumTargetUtilization;
-            fullUtilizationMinusMax = FULL_UTILIZATION - maximumTargetUtilization;
         }
 
         if (_minimumInterestPerSecond > 0) {
@@ -388,6 +401,45 @@ contract Singularity is MarketStateView, SGLCommon {
         if (module == address(0)) revert ModuleNotSet();
 
         return module;
+    }
+
+    /// @dev Concrete implementation of `addAsset`.
+    function _addAsset(address from, address to, bool skim, uint256 share) private returns (uint256 fraction) {
+        Rebase memory _totalAsset = totalAsset;
+        uint256 totalAssetShare = _totalAsset.elastic;
+        uint256 allShare = _totalAsset.elastic + yieldBox.toShare(assetId, totalBorrow.elastic, true);
+        fraction = allShare == 0 ? share : (share * _totalAsset.base) / allShare;
+        if (_totalAsset.base + fraction.toUint128() < 1000) {
+            return 0;
+        }
+        totalAsset = _totalAsset.add(share, fraction);
+
+        balanceOf[to] += fraction;
+        emit Transfer(address(0), to, fraction);
+
+        _addTokens(from, to, assetId, share, totalAssetShare, skim);
+        emit LogAddAsset(skim ? address(yieldBox) : from, to, share, fraction);
+    }
+
+    /// @dev Concrete implementation of `removeAsset`.
+    /// @param from The account to remove from. Should always be msg.sender except for `depositFeesToyieldBox()`.
+    function _removeAsset(address from, address to, uint256 fraction) private returns (uint256 share) {
+        if (totalAsset.base == 0) {
+            return 0;
+        }
+        Rebase memory _totalAsset = totalAsset;
+        uint256 allShare = _totalAsset.elastic + yieldBox.toShare(assetId, totalBorrow.elastic, false);
+        share = (fraction * allShare) / _totalAsset.base;
+
+        _totalAsset.base -= fraction.toUint128();
+        if (_totalAsset.base < 1000) revert MinLimit();
+
+        balanceOf[from] -= fraction;
+        emit Transfer(from, address(0), fraction);
+        _totalAsset.elastic -= share.toUint128();
+        totalAsset = _totalAsset;
+        emit LogRemoveAsset(from, to, share, fraction);
+        yieldBox.transfer(address(this), to, assetId, share);
     }
 
     receive() external payable {}

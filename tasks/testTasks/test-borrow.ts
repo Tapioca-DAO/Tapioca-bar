@@ -1,6 +1,6 @@
 import { BigNumberish, Signature, Wallet } from 'ethers';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
-import { getSingularityContract } from './utils';
+import { getSingularityContract } from '../utils';
 import inquirer from 'inquirer';
 
 import TapiocaOFTArtifact from '@tapioca-sdk/artifacts/tapiocaz/TapiocaOFT.json';

@@ -1,6 +1,6 @@
 import { BigNumberish } from 'ethers';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
-import { getSingularityContract } from './utils';
+import { getSingularityContract } from '../utils';
 
 //npx hardhat sameChainBorrow --network arbitrum_goerli --market 0xA67cA6C9874245c3c86F498836fA82D022A3F65d --market-helper 0x678488290Fa0240160cB159c3Dda2748d5413a5D --collateral-amount 2000000000000000000 --borrow-amount 10000000000000000000
 export const sameChainBorrow__task = async (
