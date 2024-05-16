@@ -98,12 +98,13 @@ abstract contract BaseLeverageExecutor is Ownable {
     /**
      * @notice Buys an asked amount of collateral with an asset using the ZeroXSwapper.
      * @dev Expects the token to be already transferred to this contract.
+     * @param refundDustAddress original caller.
      * @param assetAddress asset address.
      * @param collateralAddress collateral address.
      * @param assetAmountIn amount to swap.
      * @param data SLeverageSwapData.
      */
-    function getCollateral(address assetAddress, address collateralAddress, uint256 assetAmountIn, bytes calldata data)
+    function getCollateral(address refundDustAddress, address assetAddress, address collateralAddress, uint256 assetAmountIn, bytes calldata data)
         external
         payable
         virtual
@@ -113,12 +114,13 @@ abstract contract BaseLeverageExecutor is Ownable {
     /**
      * @notice Buys an asked amount of asset with a collateral using the ZeroXSwapper.
      * @dev Expects the token to be already transferred to this contract.
+     * @param refundDustAddress original caller.
      * @param collateralAddress collateral address.
      * @param assetAddress asset address.
      * @param collateralAmountIn amount to swap.
      * @param data SLeverageSwapData.
      */
-    function getAsset(address collateralAddress, address assetAddress, uint256 collateralAmountIn, bytes calldata data)
+    function getAsset(address refundDustAddress, address collateralAddress, address assetAddress, uint256 collateralAmountIn, bytes calldata data)
         external
         virtual
         returns (uint256 assetAmountOut)
@@ -138,6 +140,7 @@ abstract contract BaseLeverageExecutor is Ownable {
      * @param data SLeverageSwapData.
      */
     function _swapAndTransferToSender(
+        address from,
         bool sendBack,
         address tokenIn,
         address tokenOut,
@@ -146,18 +149,33 @@ abstract contract BaseLeverageExecutor is Ownable {
     ) internal returns (uint256 amountOut) {
         SLeverageSwapData memory swapData = abi.decode(data, (SLeverageSwapData));
 
+        amountOut = amountIn; // will be overwritten after `swap`
         // If the tokenIn is a tOFT, unwrap it. Handles ETH and ERC20.
         if (swapData.toftInfo.isTokenInToft) {
             (tokenIn, amountOut) = _handleToftUnwrap(tokenIn, amountIn);
         }
 
-        // Approve the swapper to spend the tokenIn, and perform the swap.
-        tokenIn.safeApprove(address(swapper), amountOut);
         IZeroXSwapper.SZeroXSwapData memory swapperData =
             abi.decode(swapData.swapperData, (IZeroXSwapper.SZeroXSwapData));
+
+        uint256 amountInBefore = IERC20(tokenIn).balanceOf(address(this));
+        uint256 _amountInBeforeSwap = amountOut;
+
+        // Approve the swapper to spend the tokenIn, and perform the swap.
+        tokenIn.safeApprove(address(swapper), amountOut);
         amountOut = swapper.swap(swapperData, amountOut, swapData.minAmountOut);
         if (amountOut < swapData.minAmountOut) revert MinAmountNotValid(swapData.minAmountOut, amountOut);
         tokenIn.safeApprove(address(swapper), 0);
+
+        uint256 amountInAfter = IERC20(tokenIn).balanceOf(address(this));
+
+        // @dev should never be the case otherwise
+        if (amountInBefore > amountInAfter) {
+            uint256 transferred = amountInBefore - amountInAfter;
+            if (transferred < _amountInBeforeSwap) {
+                IERC20(tokenIn).transfer(from, _amountInBeforeSwap - transferred);
+            }
+        }
 
         // If the tokenOut is a tOFT, wrap it. Handles ETH and ERC20.
         // If `sendBack` is true, wrap the `amountOut to` the sender. else, wrap it to this contract.
