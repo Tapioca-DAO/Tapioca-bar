@@ -1,6 +1,7 @@
 import { IYieldBox } from '@typechain/index';
 import {
     deploy__LoadDeployments_Arb,
+    deploy__LoadDeployments_Eth,
     deploy__LoadDeployments_Generic,
 } from '../1-1-deployPostLbp';
 import { TPostDeployParams } from '../1-1-setupPostLbp';
@@ -12,7 +13,7 @@ import { DEPLOYMENT_NAMES, DEPLOY_CONFIG } from '../DEPLOY_CONFIG';
  * Usdo is already registered in `SetupUsdoInPenrose()`
  */
 export async function setupCreateYBAssets(params: TPostDeployParams) {
-    const { hre, tag } = params;
+    const { hre, tag, isTestnet } = params;
 
     const { yieldBox: ybAddress } = deploy__LoadDeployments_Generic({
         hre,
@@ -33,13 +34,14 @@ export async function setupCreateYBAssets(params: TPostDeployParams) {
         hre.SDK.chainInfo.name === 'sepolia' ||
         hre.SDK.chainInfo.name === 'optimism_sepolia'
     ) {
+        const { tSdai } = deploy__LoadDeployments_Eth({ hre, tag });
         await setupCreateYBAssets__addNewAsset({
             ...params,
-            assetAddress: DEPLOY_CONFIG.POST_LBP[hre.SDK.eChainId]!.sDAI!,
-            assetDepName: DEPLOYMENT_NAMES.YB_SDAI_ASSET_WITHOUT_STRATEGY,
-            assetName: 'sDAI',
-            assetType: 1,
-            strategyType: 0,
+            assetAddress: tSdai,
+            strategyDepName: isTestnet
+                ? DEPLOYMENT_NAMES.YB_SDAI_ASSET_WITHOUT_STRATEGY
+                : DEPLOYMENT_NAMES.YB_SDAI_ASSET_WITH_STRATEGY,
+            assetName: 'tsDAI',
             yieldBox,
         });
     }
@@ -48,10 +50,11 @@ export async function setupCreateYBAssets(params: TPostDeployParams) {
         hre.SDK.chainInfo.name === 'arbitrum' ||
         hre.SDK.chainInfo.name === 'arbitrum_sepolia'
     ) {
-        const { mtETH, tETH, tReth, tWSTETH } = deploy__LoadDeployments_Arb({
-            hre,
-            tag,
-        });
+        const { mtETH, tETH, tReth, tWSTETH, tSGLP } =
+            deploy__LoadDeployments_Arb({
+                hre,
+                tag,
+            });
 
         /**
          * SGL
@@ -59,11 +62,11 @@ export async function setupCreateYBAssets(params: TPostDeployParams) {
          */
         await setupCreateYBAssets__addNewAsset({
             ...params,
-            assetAddress: DEPLOY_CONFIG.POST_LBP[hre.SDK.eChainId]!.sGLP!,
-            assetDepName: DEPLOYMENT_NAMES.YB_SGLP_ASSET_WITHOUT_STRATEGY,
-            assetName: 'sGLP',
-            assetType: 1,
-            strategyType: 0,
+            assetAddress: tSGLP,
+            strategyDepName: isTestnet
+                ? DEPLOYMENT_NAMES.YB_SGLP_ASSET_WITHOUT_STRATEGY
+                : DEPLOYMENT_NAMES.YB_SGLP_ASSET_WITH_STRATEGY,
+            assetName: 'tsGLP',
             yieldBox,
         });
 
@@ -74,10 +77,8 @@ export async function setupCreateYBAssets(params: TPostDeployParams) {
         await setupCreateYBAssets__addNewAsset({
             ...params,
             assetAddress: tETH,
-            assetDepName: DEPLOYMENT_NAMES.YB_T_ETH_ASSET_WITHOUT_STRATEGY,
+            strategyDepName: DEPLOYMENT_NAMES.YB_T_ETH_ASSET_WITHOUT_STRATEGY,
             assetName: 'tETH',
-            assetType: 1,
-            strategyType: 0,
             yieldBox,
         });
 
@@ -88,30 +89,25 @@ export async function setupCreateYBAssets(params: TPostDeployParams) {
         await setupCreateYBAssets__addNewAsset({
             ...params,
             assetAddress: mtETH,
-            assetDepName: DEPLOYMENT_NAMES.YB_MT_ETH_ASSET_WITHOUT_STRATEGY,
+            strategyDepName: DEPLOYMENT_NAMES.YB_MT_ETH_ASSET_WITHOUT_STRATEGY,
             assetName: 'mtETH',
-            assetType: 1,
-            strategyType: 0,
             yieldBox,
         });
 
         await setupCreateYBAssets__addNewAsset({
             ...params,
             assetAddress: tReth,
-            assetDepName: DEPLOYMENT_NAMES.YB_T_RETH_ASSET_WITHOUT_STRATEGY,
+            strategyDepName: DEPLOYMENT_NAMES.YB_T_RETH_ASSET_WITHOUT_STRATEGY,
             assetName: 'tReth',
-            assetType: 1,
-            strategyType: 0,
             yieldBox,
         });
 
         await setupCreateYBAssets__addNewAsset({
             ...params,
             assetAddress: tWSTETH,
-            assetDepName: DEPLOYMENT_NAMES.YB_T_WST_ETH_ASSET_WITHOUT_STRATEGY,
+            strategyDepName:
+                DEPLOYMENT_NAMES.YB_T_WST_ETH_ASSET_WITHOUT_STRATEGY,
             assetName: 'tWSTETH',
-            assetType: 1,
-            strategyType: 0,
             yieldBox,
         });
     }
@@ -121,29 +117,20 @@ export async function setupCreateYBAssets__addNewAsset(
     params: TPostDeployParams & {
         assetName: string;
         assetAddress: string;
-        assetDepName: string;
+        strategyDepName: string;
         yieldBox: IYieldBox;
-        assetType: number;
-        strategyType: number;
     },
 ) {
     const {
         deployed,
         assetAddress,
-        assetDepName,
+        strategyDepName,
         assetName,
-        assetType,
         calls,
-        strategyType,
         yieldBox,
     } = params;
-    const assetDep = deployed.find((e) => e.name === assetDepName)!;
-    const assetId = await yieldBox.ids(
-        assetType,
-        assetAddress,
-        assetDep.address,
-        strategyType,
-    );
+    const assetDep = deployed.find((e) => e.name === strategyDepName)!;
+    const assetId = await yieldBox.ids(1, assetAddress, assetDep.address, 0);
 
     if (assetId.eq(0)) {
         console.log(
@@ -152,10 +139,10 @@ export async function setupCreateYBAssets__addNewAsset(
         calls.push({
             target: yieldBox.address,
             callData: yieldBox.interface.encodeFunctionData('registerAsset', [
-                assetType,
+                1, // tokenType
                 assetAddress,
                 assetDep.address,
-                strategyType,
+                0, // tokenId
             ]),
             allowFailure: false,
         });

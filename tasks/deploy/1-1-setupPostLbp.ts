@@ -10,6 +10,9 @@ import { setupUsdoFlashloanHelperInUsdo } from './postDepSetup/setupUsdoFlashloa
 import { setupRegisterMCInPenrose } from './postDepSetup/setupRegisterMCInPenrose';
 import { setupCreateYBAssets } from './postDepSetup/setupCreateYBAssets';
 import { setupInitAndRegisterMarket } from './postDepSetup/setupInitAndRegisterMarket';
+import { setupRegisterBBAsMinterBurnerInUsdo } from './postDepSetup/setupRegisterBBAsMinterBurnerInUsdo';
+import { setupRegisterBBAndSGLMarketsInPenrose } from './postDepSetup/setupRegisterBBAndSGLMArketsInPenrose';
+import { setupRegisterBigBangEthMarket } from './postDepSetup/setupRegisterBigBangEthMarket';
 
 export type TPostDeployParams = {
     hre: HardhatRuntimeEnvironment;
@@ -17,26 +20,48 @@ export type TPostDeployParams = {
     tag: string;
     deployed: TDeploymentVMContract[];
     calls: TapiocaMulticall.CallStruct[];
+    isTestnet: boolean;
 };
 
 export async function setupPostLbp1(params: TTapiocaDeployerVmPass<object>) {
     console.log('\n[+] Running post deploy task');
 
-    const { hre, taskArgs, VM, chainInfo } = params;
+    const { hre, taskArgs, VM, chainInfo, isTestnet } = params;
     const { tag } = taskArgs;
     const deployed = VM.list();
 
-    const calls: TapiocaMulticall.CallStruct[] = [];
+    const calls1: TapiocaMulticall.CallStruct[] = [];
+    const setupParams1: TPostDeployParams = {
+        hre,
+        VM,
+        tag,
+        deployed,
+        calls: calls1,
+        isTestnet,
+    };
 
-    const setupParams: TPostDeployParams = { hre, VM, tag, deployed, calls };
+    await setupUsdoInPenrose(setupParams1);
+    await setupRegisterMCInPenrose(setupParams1);
+    await setupRegisterBBAndSGLMarketsInPenrose(setupParams1);
+    await setupRegisterBigBangEthMarket(setupParams1);
+    await setupUsdoFlashloanHelperInUsdo(setupParams1);
+    await setupCreateYBAssets(setupParams1);
+    await VM.executeMulticall(calls1, { gasLimit: 20_000_000 });
 
-    await setupUsdoInPenrose(setupParams);
-    await setupRegisterMCInPenrose(setupParams);
-    await setupUsdoFlashloanHelperInUsdo(setupParams);
-    await setupCreateYBAssets(setupParams);
-    await setupInitAndRegisterMarket(setupParams);
+    // YB Asset IDs needs to be created before this
+    const calls2: TapiocaMulticall.CallStruct[] = [];
+    const setupParams2: TPostDeployParams = {
+        hre,
+        VM,
+        tag,
+        deployed,
+        calls: calls2,
+        isTestnet,
+    };
+    await setupInitAndRegisterMarket(setupParams2);
+    await setupRegisterBBAsMinterBurnerInUsdo(setupParams2);
 
-    await VM.executeMulticall(calls);
+    await VM.executeMulticall(calls2, { gasLimit: 20_000_000 });
 
     console.log('[+] Post deploy task completed');
 }

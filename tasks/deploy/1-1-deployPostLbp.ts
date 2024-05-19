@@ -13,9 +13,11 @@ import { TTapiocaDeployerVmPass as TTapiocaDeployerVmPass_NODE_PACKAGE } from '@
 import { buildBBMediumRiskMC } from 'tasks/deployBuilds/buildBBMediumRiskMC';
 import { buildBBModules } from 'tasks/deployBuilds/buildBBModules';
 import { buildERC20WithoutStrategy } from 'tasks/deployBuilds/buildERC20WithoutStrategy';
+import { buildGlpStrategy } from 'tasks/deployBuilds/buildGlpStrategy';
 import { buildPenrose } from 'tasks/deployBuilds/buildPenrose';
 import { buildSGLMediumRiskMC } from 'tasks/deployBuilds/buildSGLMediumRiskMC';
 import { buildSGLModules } from 'tasks/deployBuilds/buildSGLModules';
+import { buildSdaiStrategy } from 'tasks/deployBuilds/buildSdaiStrategy';
 import { buildSimpleLeverageExecutor } from 'tasks/deployBuilds/buildSimpleLeverageExecutor';
 import { buildUSDO } from 'tasks/deployBuilds/buildUSDO';
 import { buildUSDOExtExec } from 'tasks/deployBuilds/buildUSDOExtExec';
@@ -23,6 +25,7 @@ import { buildUSDOFlashloanHelper } from 'tasks/deployBuilds/buildUSDOFlashloanH
 import { buildUSDOModules } from 'tasks/deployBuilds/buildUSDOModules';
 import { setupPostLbp1 } from './1-1-setupPostLbp';
 import { DEPLOYMENT_NAMES, DEPLOY_CONFIG } from './DEPLOY_CONFIG';
+import { buildSGLInterestHelper } from 'tasks/deployBuilds/buildSGLInterestHelper';
 
 /**
  * @notice Should be called after TapiocaZ `postLbp` task
@@ -35,7 +38,7 @@ import { DEPLOYMENT_NAMES, DEPLOY_CONFIG } from './DEPLOY_CONFIG';
  * SGL Markets: sGLP
  */
 export const deployPostLbp__task_1 = async (
-    _taskArgs: TTapiocaDeployTaskArgs,
+    _taskArgs: TTapiocaDeployTaskArgs & { noLzPeer?: boolean },
     hre: HardhatRuntimeEnvironment,
 ) => {
     console.log('[+] Deploying Post LBP phase 1');
@@ -57,11 +60,15 @@ export const deployPostLbp__task_1 = async (
     console.log('[+] Deployed Post LBP phase 1');
 };
 
-async function tapiocaPostDeployTask(params: TTapiocaDeployerVmPass<object>) {
+async function tapiocaPostDeployTask(
+    params: TTapiocaDeployerVmPass<{ noLzPeer?: boolean }>,
+) {
     const { hre, taskArgs, VM, chainInfo } = params;
     const { tag } = taskArgs;
 
-    await setLzPeer__task({ tag, targetName: DEPLOYMENT_NAMES.USDO }, hre);
+    if (!taskArgs.noLzPeer) {
+        await setLzPeer__task({ tag, targetName: DEPLOYMENT_NAMES.USDO }, hre);
+    }
 
     await setupPostLbp1(
         params as unknown as TTapiocaDeployerVmPass_NODE_PACKAGE<object>,
@@ -170,7 +177,14 @@ async function tapiocaDeployTask(params: TTapiocaDeployerVmPass<object>) {
             wethAssetId: wethStratWithAsset.meta.ybAssetId,
             owner,
         }),
-    ).add(await buildSGLMediumRiskMC(hre, DEPLOYMENT_NAMES.SGL_MEDIUM_RISK_MC));
+    )
+        .add(
+            await buildSGLMediumRiskMC(
+                hre,
+                DEPLOYMENT_NAMES.SGL_MEDIUM_RISK_MC,
+            ),
+        )
+        .add(await buildSGLInterestHelper(hre));
 
     /**
      * Assets on Arbitrum and Arbitrum Sepolia
@@ -182,7 +196,7 @@ async function tapiocaDeployTask(params: TTapiocaDeployerVmPass<object>) {
         chainInfo.name === 'arbitrum' ||
         chainInfo.name === 'arbitrum_sepolia'
     ) {
-        const { yieldBox, mtETH, tETH, tReth, tWSTETH } =
+        const { yieldBox, mtETH, tETH, tReth, tWSTETH, tSGLP, wethGlpOracle } =
             deploy__LoadDeployments_Arb({
                 hre,
                 tag,
@@ -249,13 +263,30 @@ async function tapiocaDeployTask(params: TTapiocaDeployerVmPass<object>) {
             );
 
         // SGL asset strategies
-        VM.add(
-            await buildERC20WithoutStrategy(hre, {
-                deploymentName: DEPLOYMENT_NAMES.YB_SGLP_ASSET_WITHOUT_STRATEGY,
-                token: DEPLOY_CONFIG.POST_LBP[hre.SDK.eChainId]!.sGLP!,
-                yieldBox,
-            }),
-        );
+        if (isTestnet) {
+            VM.add(
+                await buildERC20WithoutStrategy(hre, {
+                    deploymentName:
+                        DEPLOYMENT_NAMES.YB_SGLP_ASSET_WITHOUT_STRATEGY,
+                    token: tSGLP,
+                    yieldBox,
+                }),
+            );
+        } else {
+            VM.add(
+                await buildGlpStrategy(hre, [
+                    yieldBox,
+                    DEPLOY_CONFIG.POST_LBP[chainInfo.chainId]!.glpStrat!
+                        .gmxRewardRouter,
+                    DEPLOY_CONFIG.POST_LBP[chainInfo.chainId]!.glpStrat!
+                        .glpRewardRouter,
+                    tSGLP,
+                    wethGlpOracle,
+                    '0x',
+                    owner,
+                ]),
+            );
+        }
         // SGL markets
         VM.add(
             await buildSGLMediumRiskMC(hre, DEPLOYMENT_NAMES.SGL_S_GLP_MARKET),
@@ -271,14 +302,27 @@ async function tapiocaDeployTask(params: TTapiocaDeployerVmPass<object>) {
         chainInfo.name === 'sepolia' ||
         chainInfo.name === 'optimism_sepolia'
     ) {
+        const { tSdai } = deploy__LoadDeployments_Eth({ hre, tag });
         // SGL asset strategies
-        VM.add(
-            await buildERC20WithoutStrategy(hre, {
-                deploymentName: DEPLOYMENT_NAMES.YB_SDAI_ASSET_WITHOUT_STRATEGY,
-                token: DEPLOY_CONFIG.POST_LBP[hre.SDK.eChainId]!.sDAI!,
-                yieldBox,
-            }),
-        );
+        if (isTestnet) {
+            VM.add(
+                await buildERC20WithoutStrategy(hre, {
+                    deploymentName:
+                        DEPLOYMENT_NAMES.YB_SDAI_ASSET_WITHOUT_STRATEGY,
+                    token: tSdai,
+                    yieldBox,
+                }),
+            );
+        } else {
+            VM.add(
+                await buildSdaiStrategy(hre, [
+                    yieldBox,
+                    tSdai,
+                    DEPLOY_CONFIG.POST_LBP[chainInfo.chainId]!.sDAI!,
+                    owner,
+                ]),
+            );
+        }
 
         // SGL markets
         VM.add(
@@ -362,17 +406,26 @@ export function deploy__LoadDeployments_Eth(params: {
 }) {
     const { hre, tag } = params;
 
-    const tSdaiOracle = loadGlobalContract(
+    const tSdaiMarketOracle = loadGlobalContract(
         hre,
         TAPIOCA_PROJECTS_NAME.TapiocaPeriph,
         hre.SDK.eChainId,
-        TAPIOCA_PERIPH_CONFIG.DEPLOYMENT_NAMES.S_DAI_ORACLE,
+        TAPIOCA_PERIPH_CONFIG.DEPLOYMENT_NAMES.MARKET_SDAI_ORACLE,
+        tag,
+    ).address;
+
+    const tSdai = loadGlobalContract(
+        hre,
+        TAPIOCA_PROJECTS_NAME.TapiocaZ,
+        hre.SDK.eChainId,
+        TAPIOCA_Z_CONFIG.DEPLOYMENT_NAMES.tsDAI,
         tag,
     ).address;
 
     return {
         ...deploy__LoadDeployments_Generic({ hre, tag }),
-        tSdaiOracle,
+        tSdaiMarketOracle,
+        tSdai,
     };
 }
 
@@ -414,43 +467,51 @@ export function deploy__LoadDeployments_Arb(params: {
         tag,
     ).address;
 
-    const mtEthOracle = loadGlobalContract(
+    const ethMarketOracle = loadGlobalContract(
         hre,
         TAPIOCA_PROJECTS_NAME.TapiocaPeriph,
         hre.SDK.eChainId,
-        TAPIOCA_PERIPH_CONFIG.DEPLOYMENT_NAMES.ETH_SEER_DUAL_ORACLE,
+        TAPIOCA_PERIPH_CONFIG.DEPLOYMENT_NAMES.MARKET_TETH_ORACLE,
         tag,
     ).address;
 
-    const tEthOracle = loadGlobalContract(
+    const tRethMarketOracle = loadGlobalContract(
         hre,
         TAPIOCA_PROJECTS_NAME.TapiocaPeriph,
         hre.SDK.eChainId,
-        TAPIOCA_PERIPH_CONFIG.DEPLOYMENT_NAMES.ETH_SEER_DUAL_ORACLE,
+        TAPIOCA_PERIPH_CONFIG.DEPLOYMENT_NAMES.MARKET_RETH_ORACLE,
         tag,
     ).address;
 
-    const tRethOracle = loadGlobalContract(
+    const tWstEthMarketOracle = loadGlobalContract(
         hre,
         TAPIOCA_PROJECTS_NAME.TapiocaPeriph,
         hre.SDK.eChainId,
-        TAPIOCA_PERIPH_CONFIG.DEPLOYMENT_NAMES.RETH_USD_SEER_CL_MULTI_ORACLE,
+        TAPIOCA_PERIPH_CONFIG.DEPLOYMENT_NAMES.MARKET_WSTETH_ORACLE,
         tag,
     ).address;
 
-    const tWstEthOracle = loadGlobalContract(
+    const tSGLPMarketOracle = loadGlobalContract(
         hre,
         TAPIOCA_PROJECTS_NAME.TapiocaPeriph,
         hre.SDK.eChainId,
-        TAPIOCA_PERIPH_CONFIG.DEPLOYMENT_NAMES.WSTETH_USD_SEER_CL_MULTI_ORACLE,
+        TAPIOCA_PERIPH_CONFIG.DEPLOYMENT_NAMES.MARKET_GLP_ORACLE,
         tag,
     ).address;
 
-    const tSGLPOracle = loadGlobalContract(
+    const wethGlpOracle = loadGlobalContract(
         hre,
         TAPIOCA_PROJECTS_NAME.TapiocaPeriph,
         hre.SDK.eChainId,
-        TAPIOCA_PERIPH_CONFIG.DEPLOYMENT_NAMES.GLP_ORACLE,
+        TAPIOCA_PERIPH_CONFIG.DEPLOYMENT_NAMES.ETH_GLP_ORACLE,
+        tag,
+    ).address;
+
+    const tSGLP = loadGlobalContract(
+        hre,
+        TAPIOCA_PROJECTS_NAME.TapiocaZ,
+        hre.SDK.eChainId,
+        TAPIOCA_Z_CONFIG.DEPLOYMENT_NAMES.tsGLP,
         tag,
     ).address;
 
@@ -460,10 +521,11 @@ export function deploy__LoadDeployments_Arb(params: {
         tETH,
         tReth,
         tWSTETH,
-        mtEthOracle,
-        tEthOracle,
-        tRethOracle,
-        tWstEthOracle,
-        tSGLPOracle,
+        ethMarketOracle,
+        tRethMarketOracle,
+        tWstEthMarketOracle,
+        tSGLPMarketOracle,
+        tSGLP,
+        wethGlpOracle,
     };
 }

@@ -15,12 +15,15 @@ export const DEPLOYMENT_NAMES = {
     YB_T_ETH_ASSET_WITHOUT_STRATEGY: 'YB_T_ETH_ASSET_WITHOUT_STRATEGY',
     YB_T_RETH_ASSET_WITHOUT_STRATEGY: 'YB_T_RETH_ASSET_WITHOUT_STRATEGY',
     YB_T_WST_ETH_ASSET_WITHOUT_STRATEGY: 'YB_T_WST_ETH_ASSET_WITHOUT_STRATEGY',
+    YB_SDAI_ASSET_WITH_STRATEGY: 'YB_SDAI_ASSET_WITH_STRATEGY',
+    YB_SGLP_ASSET_WITH_STRATEGY: 'YB_SGLP_ASSET_WITH_STRATEGY',
     // ORIGINS
     ORIGINS_T_ETH_MARKET: 'ORIGINS_T_ETH_MARKET',
     // SGL
     SGL_S_DAI_MARKET: 'SGL_S_DAI_MARKET',
     SGL_S_GLP_MARKET: 'SGL_S_GLP_MARKET',
     SGL_MEDIUM_RISK_MC: 'SGL_MEDIUM_RISK_MC',
+    SGL_INTEREST_HELPER: 'SGL_INTEREST_HELPER',
     SGL_LIQUIDATION_MODULE: 'SGL_LIQUIDATION_MODULE',
     SGL_BORROW_MODULE: 'SGL_BORROW_MODULE',
     SGL_COLLATERAL_MODULE: 'SGL_COLLATERAL_MODULE',
@@ -56,6 +59,10 @@ type TPostLbp = {
     [key in EChainID]?: {
         sDAI?: string;
         sGLP?: string;
+        glpStrat?: {
+            gmxRewardRouter: string;
+            glpRewardRouter: string;
+        };
         tEthOriginsMarketConfig?: {
             collateralizationRate: BigNumberish;
         };
@@ -108,6 +115,10 @@ const marketConfigMainnet: TPostLbp[EChainID] = {
 const POST_LBP: TPostLbp = {
     [EChainID.ARBITRUM]: {
         sGLP: '0x5402B5F40310bDED796c7D0F3FF6683f5C0cFfdf',
+        glpStrat: {
+            gmxRewardRouter: '0xA906F338CB21815cBc4Bc87ace9e68c87eF8d8F1',
+            glpRewardRouter: '0xB95DB5B167D75e6d04227CfFFA61069348d271F5',
+        },
         ...marketConfigArb,
     },
     [EChainID.ARBITRUM_SEPOLIA]: {
