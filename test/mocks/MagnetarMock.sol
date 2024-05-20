@@ -91,12 +91,6 @@ contract MagnetarMock is PearlmitHandler {
             // }
 
             /// @dev Modules will not return result data.
-            if (_action.id == uint8(MagnetarAction.AssetModule)) {
-                _executeModule(MagnetarModule.YieldBoxModule, _action.call);
-                continue; // skip the rest of the loop
-            }
-
-            /// @dev Modules will not return result data.
             if (_action.id == uint8(MagnetarAction.CollateralModule)) {
                 _executeModule(MagnetarModule.CollateralModule, _action.call);
                 continue; // skip the rest of the loop
