@@ -87,7 +87,7 @@ contract UsdoOptionReceiverModule is BaseUsdo {
             0,
             msg_.optionsData.target,
             uint200(msg_.optionsData.paymentTokenAmount),
-            uint48(block.timestamp + 1)
+            block.timestamp.toUint48()
         ); // Atomic approval
         _approve(address(this), address(pearlmit), msg_.optionsData.paymentTokenAmount);
 
