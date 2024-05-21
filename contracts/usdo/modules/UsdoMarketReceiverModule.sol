@@ -170,7 +170,7 @@ contract UsdoMarketReceiverModule is BaseUsdo {
             value: msg.value,
             call: call
         });
-        IMagnetar(payable(msg_.lendParams.magnetar)).burst{value: msg.value}(magnetarCall);
+        IMagnetar(payable(msg_.lendParams.magnetar)).burst{value: msg_.value}(magnetarCall);
     }
 
     function _lend(MarketLendOrRepayMsg memory msg_, address srcChainSender) private {
@@ -206,7 +206,7 @@ contract UsdoMarketReceiverModule is BaseUsdo {
             call: call
         });
 
-        IMagnetar(payable(msg_.lendParams.magnetar)).burst{value: msg.value}(magnetarCall);
+        IMagnetar(payable(msg_.lendParams.magnetar)).burst{value: msg_.value}(magnetarCall);
     }
 
     function _validateRemoveAsset(MarketRemoveAssetMsg memory msg_, address srcChainSender)
@@ -243,7 +243,7 @@ contract UsdoMarketReceiverModule is BaseUsdo {
             value: msg.value,
             call: call
         });
-        IMagnetar(payable(msg_.externalData.magnetar)).burst{value: msg.value}(magnetarCall);
+        IMagnetar(payable(msg_.externalData.magnetar)).burst{value: msg_.value}(magnetarCall);
     }
 
     function _checkWhitelistStatus(address _addr) private view {
