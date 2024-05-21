@@ -195,7 +195,6 @@ contract SGLLiquidation is SGLCommon {
         return borrowPart >= collateralAmountInAsset ? borrowPart - collateralAmountInAsset : 0;
     }
 
-
     function _updateBorrowAndCollateralShare(
         address user,
         uint256 maxBorrowPart,
@@ -206,11 +205,10 @@ contract SGLLiquidation is SGLCommon {
 
         uint256 _userBorrowPart = userBorrowPart[user];
         uint256 _userCollateralShare = userCollateralShare[user];
-        
+
         // get collateral amount in asset's value
-        uint256 collateralPartInAsset = (
-            yieldBox.toAmount(collateralId, _userCollateralShare, false) * EXCHANGE_RATE_PRECISION
-        ) / _exchangeRate;
+        uint256 collateralPartInAsset =
+            (yieldBox.toAmount(collateralId, _userCollateralShare, false) * EXCHANGE_RATE_PRECISION) / _exchangeRate;
 
         // compute closing factor (liquidatable amount)
         uint256 borrowPartWithBonus = _computeClosingFactor(
@@ -234,14 +232,12 @@ contract SGLLiquidation is SGLCommon {
         borrowAmount = borrowPartWithBonus;
 
         // compute part units, preventing rounding dust when liquidation is full
-        borrowPart = borrowAmount == userTotalBorrowAmount
-            ? _userBorrowPart
-            : totalBorrow.toBase(borrowPartWithBonus, false);
+        borrowPart =
+            borrowAmount == userTotalBorrowAmount ? _userBorrowPart : totalBorrow.toBase(borrowPartWithBonus, false);
         if (borrowPart == 0) revert Solvent();
 
         if (liquidationBonusAmount > 0) {
-            borrowPartWithBonus =
-                borrowPartWithBonus + (borrowPartWithBonus * liquidationBonusAmount) / FEE_PRECISION;
+            borrowPartWithBonus = borrowPartWithBonus + (borrowPartWithBonus * liquidationBonusAmount) / FEE_PRECISION;
         }
 
         if (collateralPartInAsset < borrowPartWithBonus) {
@@ -262,9 +258,8 @@ contract SGLLiquidation is SGLCommon {
                 revert InsufficientLiquidationBonus();
             }
         } else {
-            collateralShare = yieldBox.toShare(
-                collateralId, (borrowPartWithBonus * _exchangeRate) / EXCHANGE_RATE_PRECISION, false
-            );
+            collateralShare =
+                yieldBox.toShare(collateralId, (borrowPartWithBonus * _exchangeRate) / EXCHANGE_RATE_PRECISION, false);
             if (collateralShare > _userCollateralShare) {
                 revert NotEnoughCollateral();
             }

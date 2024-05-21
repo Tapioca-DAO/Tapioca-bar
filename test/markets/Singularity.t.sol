@@ -254,7 +254,9 @@ contract SingularityTest is UsdoTestHelper {
 
         uint256 toSetValue = 101;
         {
-            payload = abi.encodeWithSelector(Singularity.setSingularityConfig.selector, toSetValue, 0, 0, 0, 0, 0, 0, address(0));
+            payload = abi.encodeWithSelector(
+                Singularity.setSingularityConfig.selector, toSetValue, 0, 0, 0, 0, 0, 0, address(0)
+            );
             data = new bytes[](1);
             data[0] = payload;
             penrose.executeMarketFn(mc, data, false);

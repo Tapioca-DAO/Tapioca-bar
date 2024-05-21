@@ -254,7 +254,7 @@ contract OriginsTest is UsdoTestHelper {
     function test_origin_should_borrow_max_2000_ether() public {
         uint256 collateralAmount = 1 ether;
         uint256 borrowAmount = 1900e18;
-        
+
         oracle.set(5e14);
         origins.updateExchangeRate();
 

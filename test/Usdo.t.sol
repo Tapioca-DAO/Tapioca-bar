@@ -857,11 +857,19 @@ contract UsdoTest is UsdoTestHelper {
             });
 
             permitApprovalB_ = __getYieldBoxPermitAssetData(
-                approvalUserB_, address(yieldBox), true, _getYieldBoxPermitAssetTypedDataHash(approvalUserB_, true), userAPKey
+                approvalUserB_,
+                address(yieldBox),
+                true,
+                _getYieldBoxPermitAssetTypedDataHash(approvalUserB_, true),
+                userAPKey
             );
 
             permitApprovalC_ = __getYieldBoxPermitAssetData(
-                approvalUserC_, address(yieldBox), true, _getYieldBoxPermitAssetTypedDataHash(approvalUserC_, true), userAPKey
+                approvalUserC_,
+                address(yieldBox),
+                true,
+                _getYieldBoxPermitAssetTypedDataHash(approvalUserC_, true),
+                userAPKey
             );
 
             YieldBoxApproveAssetMsg[] memory approvals_ = new YieldBoxApproveAssetMsg[](2);
@@ -1194,9 +1202,7 @@ contract UsdoTest is UsdoTestHelper {
         singularity.approve(address(magnetar), type(uint256).max);
 
         uint256 sh = yieldBox.toShare(bUsdoYieldBoxId, tokenAmount_, false);
-        pearlmit.approve(
-            address(yieldBox), bUsdoYieldBoxId, address(singularity), uint200(sh), uint48(block.timestamp)
-        ); // Atomic approval
+        pearlmit.approve(address(yieldBox), bUsdoYieldBoxId, address(singularity), uint200(sh), uint48(block.timestamp)); // Atomic approval
         yieldBox.setApprovalForAll(address(pearlmit), true);
 
         uint256 tokenAmountSD = usdoHelper.toSD(tokenAmount_, aUsdo.decimalConversionRate());
@@ -1281,7 +1287,6 @@ contract UsdoTest is UsdoTestHelper {
     function test_usdo_repay_and_remove_collateral() public {
         singularity.approve(address(magnetar), type(uint256).max);
 
-
         uint256 erc20Amount_ = 1 ether;
         uint256 tokenAmount_ = 0.5 ether;
 
@@ -1361,9 +1366,7 @@ contract UsdoTest is UsdoTestHelper {
          */
         singularity.approveBorrow(address(magnetar), type(uint256).max);
 
-        pearlmit.approve(
-            address(yieldBox), bUsdoYieldBoxId, address(singularity), uint200(sh), uint48(block.timestamp)
-        ); // Atomic approval
+        pearlmit.approve(address(yieldBox), bUsdoYieldBoxId, address(singularity), uint200(sh), uint48(block.timestamp)); // Atomic approval
         yieldBox.setApprovalForAll(address(pearlmit), true);
 
         uint256 userCollateralShareBefore = singularity._userCollateralShare(address(this));
@@ -1604,13 +1607,13 @@ contract UsdoTest is UsdoTestHelper {
         address bob = address(1338);
         address charlie = address(1339);
 
-        uint erc20Amount_ = 10e18;
+        uint256 erc20Amount_ = 10e18;
         //Setup victim account
         {
             vm.startPrank(alice);
             deal(address(bUsdo), alice, erc20Amount_);
             bUsdo.approve(address(yieldBox), type(uint256).max);
-            (,uint shares) = yieldBox.depositAsset(bUsdoYieldBoxId, alice, alice, erc20Amount_, 0);
+            (, uint256 shares) = yieldBox.depositAsset(bUsdoYieldBoxId, alice, alice, erc20Amount_, 0);
 
             yieldBox.setApprovalForAll(address(pearlmit), true);
             pearlmit.approve(
@@ -1623,11 +1626,11 @@ contract UsdoTest is UsdoTestHelper {
 
         //Setup conditions (have borrows to trigger yieldbox.toShare conversion)
         {
-            uint collateralAmount = erc20Amount_*2;
+            uint256 collateralAmount = erc20Amount_ * 2;
             vm.startPrank(charlie);
             deal(address(aUsdo), charlie, collateralAmount);
             aUsdo.approve(address(yieldBox), type(uint256).max);
-            (,uint shares) = yieldBox.depositAsset(aUsdoYieldBoxId, charlie, charlie, collateralAmount, 0);
+            (, uint256 shares) = yieldBox.depositAsset(aUsdoYieldBoxId, charlie, charlie, collateralAmount, 0);
 
             yieldBox.setApprovalForAll(address(pearlmit), true);
             pearlmit.approve(
@@ -1639,25 +1642,25 @@ contract UsdoTest is UsdoTestHelper {
             (modules, calls) = marketHelper.addCollateral(charlie, charlie, false, 0, shares);
             singularity.execute(modules, calls, true);
 
-            (modules, calls) = marketHelper.borrow(charlie, charlie, (erc20Amount_*9)/10);
+            (modules, calls) = marketHelper.borrow(charlie, charlie, (erc20Amount_ * 9) / 10);
             singularity.execute(modules, calls, true);
 
             vm.stopPrank();
         }
 
         //Simulate some yield has accrued in the strategy by donating some amount directly to strategy
-        uint YIELD_AMOUNT = 10*erc20Amount_;
+        uint256 YIELD_AMOUNT = 10 * erc20Amount_;
         deal(address(bUsdo), address(this), YIELD_AMOUNT);
         bUsdo.transfer(address(bUsdoStrategy), YIELD_AMOUNT);
 
         //Bob can extract some asset from Alice without approval
         {
-            uint EXTRACT_AMOUNT = 5;
+            uint256 EXTRACT_AMOUNT = 5;
             vm.startPrank(bob);
             vm.expectRevert();
             singularity.removeAsset(alice, bob, EXTRACT_AMOUNT);
         }
-        }
+    }
 
     function _getMarketPermitTypedDataHash(
         bool permitAsset,
@@ -1676,8 +1679,14 @@ contract UsdoTest is UsdoTestHelper {
         return keccak256(abi.encodePacked("\x19\x01", singularity.DOMAIN_SEPARATOR(), structHash_));
     }
 
-    function _getYieldBoxPermitAllTypedDataHash(ERC20PermitStruct memory _permitData, bool permit) private view returns (bytes32) {
-        bytes32 permitTypeHash_ = permit ? keccak256("PermitAll(address owner,address spender,uint256 nonce,uint256 deadline)") : keccak256("RevokeAll(address owner,address spender,uint256 nonce,uint256 deadline)");
+    function _getYieldBoxPermitAllTypedDataHash(ERC20PermitStruct memory _permitData, bool permit)
+        private
+        view
+        returns (bytes32)
+    {
+        bytes32 permitTypeHash_ = permit
+            ? keccak256("PermitAll(address owner,address spender,uint256 nonce,uint256 deadline)")
+            : keccak256("RevokeAll(address owner,address spender,uint256 nonce,uint256 deadline)");
 
         bytes32 structHash_ = keccak256(
             abi.encode(permitTypeHash_, _permitData.owner, _permitData.spender, _permitData.nonce, _permitData.deadline)
@@ -1691,9 +1700,9 @@ contract UsdoTest is UsdoTestHelper {
         view
         returns (bytes32)
     {
-        bytes32 permitTypeHash_ = permit ?
-            keccak256("Permit(address owner,address spender,uint256 assetId,uint256 nonce,uint256 deadline)") : 
-            keccak256("Revoke(address owner,address spender,uint256 assetId,uint256 nonce,uint256 deadline)");
+        bytes32 permitTypeHash_ = permit
+            ? keccak256("Permit(address owner,address spender,uint256 assetId,uint256 nonce,uint256 deadline)")
+            : keccak256("Revoke(address owner,address spender,uint256 assetId,uint256 nonce,uint256 deadline)");
 
         bytes32 structHash_ = keccak256(
             abi.encode(

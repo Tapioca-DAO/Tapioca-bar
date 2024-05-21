@@ -331,9 +331,8 @@ contract Singularity is MarketStateView, SGLCommon {
         if (_interestHelper != address(0)) {
             emit InterestHelperUpdated(interestHelper, _interestHelper);
             interestHelper = _interestHelper;
-
         }
-        
+
         _accrue();
 
         if (_borrowOpeningFee > FEE_PRECISION) revert NotValid();
@@ -346,7 +345,8 @@ contract Singularity is MarketStateView, SGLCommon {
         }
 
         if (_maximumTargetUtilization > 0) {
-            if (_maximumTargetUtilization >= 1e18) { //1e18 = FULL_UTILIZATION
+            if (_maximumTargetUtilization >= 1e18) {
+                //1e18 = FULL_UTILIZATION
                 revert NotValid();
             }
 

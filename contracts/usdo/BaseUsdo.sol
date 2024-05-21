@@ -33,6 +33,7 @@ abstract contract BaseUsdo is ModuleManager, BaseTapiocaOmnichainEngine, BaseUsd
     using SafeERC20 for IERC20;
 
     IYieldBox public immutable yieldBox;
+
     constructor(UsdoInitStruct memory _data)
         BaseTapiocaOmnichainEngine(
             "Tapioca Usdo",

@@ -145,7 +145,8 @@ contract BBLeverage is BBLendingCommon {
 
         (memoryData.leverageAmount,) =
             yieldBox.withdraw(collateralId, address(this), address(leverageExecutor), 0, share);
-        amountOut = leverageExecutor.getAsset(from, address(collateral), address(asset), memoryData.leverageAmount, data);
+        amountOut =
+            leverageExecutor.getAsset(from, address(collateral), address(asset), memoryData.leverageAmount, data);
         memoryData.shareOut = yieldBox.toShare(assetId, amountOut, false);
         address(asset).safeApprove(address(yieldBox), type(uint256).max);
         yieldBox.depositAsset(assetId, address(this), from, 0, memoryData.shareOut); // TODO Check for rounding attack?

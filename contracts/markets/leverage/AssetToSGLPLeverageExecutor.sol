@@ -82,13 +82,13 @@ contract AssetToSGLPLeverageExecutor is BaseLeverageExecutor, Pausable {
      *
      * @inheritdoc BaseLeverageExecutor
      */
-    function getCollateral(address refundDustAddress, address assetAddress, address collateralAddress, uint256 assetAmountIn, bytes calldata data)
-        external
-        payable
-        override
-        whenNotPaused
-        returns (uint256 collateralAmountOut)
-    {
+    function getCollateral(
+        address refundDustAddress,
+        address assetAddress,
+        address collateralAddress,
+        uint256 assetAmountIn,
+        bytes calldata data
+    ) external payable override whenNotPaused returns (uint256 collateralAmountOut) {
         if (msg.value > 0) revert NativeNotSupported();
 
         // Should be called only by approved SGL/BB markets.
@@ -120,11 +120,13 @@ contract AssetToSGLPLeverageExecutor is BaseLeverageExecutor, Pausable {
      *
      * @inheritdoc BaseLeverageExecutor
      */
-    function getAsset(address refundDustAddress, address collateralAddress, address assetAddress, uint256 collateralAmountIn, bytes calldata data)
-        external
-        override
-        returns (uint256 assetAmountOut)
-    {
+    function getAsset(
+        address refundDustAddress,
+        address collateralAddress,
+        address assetAddress,
+        uint256 collateralAmountIn,
+        bytes calldata data
+    ) external override returns (uint256 assetAmountOut) {
         // Should be called only by approved SGL/BB markets.
         if (!cluster.isWhitelisted(0, msg.sender)) revert SenderNotValid();
 

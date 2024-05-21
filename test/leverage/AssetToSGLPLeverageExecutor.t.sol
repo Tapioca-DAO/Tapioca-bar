@@ -142,7 +142,9 @@ contract AssetToSGLPLeverageExecutorTest is BaseLeverageExecutorTest {
         SGlpLeverageSwapData memory sglLeverageSwapData =
             SGlpLeverageSwapData({token: address(glp), minAmountOut: amountIn, swapData: swapData});
 
-        executor.getCollateral(address(this), address(usdc), address(collateral), amountIn, abi.encode(sglLeverageSwapData));
+        executor.getCollateral(
+            address(this), address(usdc), address(collateral), amountIn, abi.encode(sglLeverageSwapData)
+        );
 
         assertEq(collateral.balanceOf(address(this)), amountIn);
     }
@@ -175,7 +177,6 @@ contract AssetToSGLPLeverageExecutorTest is BaseLeverageExecutorTest {
         assertEq(usdc.balanceOf(address(this)), amountIn);
     }
 
-
     function test_swapper_dust() public {
         address rndAddr = makeAddr("rndAddress");
 
@@ -194,7 +195,9 @@ contract AssetToSGLPLeverageExecutorTest is BaseLeverageExecutorTest {
             sellToken: IERC20(address(usdc)),
             buyToken: IERC20(address(weth)),
             swapTarget: payable(swapperTarget),
-            swapCallData: abi.encodeWithSelector(ZeroXSwapperMockTarget.transferTokensWithDust.selector, address(usdc), address(weth), amountIn, minAmountIn)
+            swapCallData: abi.encodeWithSelector(
+                ZeroXSwapperMockTarget.transferTokensWithDust.selector, address(usdc), address(weth), amountIn, minAmountIn
+                )
         });
         SToftInfo memory toftInfo = SToftInfo({isTokenInToft: false, isTokenOutToft: false});
         SLeverageSwapData memory swapData =
