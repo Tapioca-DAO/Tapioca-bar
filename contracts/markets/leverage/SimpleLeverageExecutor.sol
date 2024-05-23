@@ -4,6 +4,7 @@ pragma solidity 0.8.22;
 // Tapioca
 import {IZeroXSwapper} from "tapioca-periph/interfaces/periph/IZeroXSwapper.sol";
 import {IWeth9} from "tapioca-periph/interfaces/external/weth/IWeth9.sol";
+import {IPearlmit} from "tapioca-periph/interfaces/periph/IPearlmit.sol";
 import {ICluster} from "tapioca-periph/interfaces/periph/ICluster.sol";
 import {BaseLeverageExecutor} from "./BaseLeverageExecutor.sol";
 import {SafeApprove} from "../../libraries/SafeApprove.sol";
@@ -26,8 +27,8 @@ contract SimpleLeverageExecutor is BaseLeverageExecutor {
     // *** ERRORS *** //
     // ************** //
 
-    constructor(IZeroXSwapper _swapper, ICluster _cluster, address _weth)
-        BaseLeverageExecutor(_swapper, _cluster, _weth)
+    constructor(IZeroXSwapper _swapper, ICluster _cluster, address _weth, IPearlmit _pearlmit)
+        BaseLeverageExecutor(_swapper, _cluster, _weth, _pearlmit)
     {}
 
     // ********************* //

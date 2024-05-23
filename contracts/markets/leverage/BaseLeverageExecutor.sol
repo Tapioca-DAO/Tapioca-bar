@@ -3,11 +3,13 @@ pragma solidity 0.8.22;
 
 // External
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 // Tapioca
 import {IZeroXSwapper} from "tapioca-periph/interfaces/periph/IZeroXSwapper.sol";
 import {IWeth9} from "tapioca-periph/interfaces/external/weth/IWeth9.sol";
+import {IPearlmit} from "tapioca-periph/interfaces/periph/IPearlmit.sol";
 import {ICluster} from "tapioca-periph/interfaces/periph/ICluster.sol";
 import {ITOFT} from "tapioca-periph/interfaces/oft/ITOFT.sol";
 import {SafeApprove} from "../../libraries/SafeApprove.sol";
@@ -37,12 +39,14 @@ struct SLeverageSwapData {
 abstract contract BaseLeverageExecutor is Ownable {
     using SafeApprove for address;
     using SafeERC20 for IERC20;
+    using SafeCast for uint256;
 
     // ************ //
     // *** VARS *** //
     // ************ //
 
     IZeroXSwapper public swapper;
+    IPearlmit public pearlmit;
     ICluster public cluster;
     IWeth9 public weth;
 
@@ -60,11 +64,12 @@ abstract contract BaseLeverageExecutor is Ownable {
     error NativeNotSupported();
     error AddressNotValid();
 
-    constructor(IZeroXSwapper _swapper, ICluster _cluster, address _weth) {
+    constructor(IZeroXSwapper _swapper, ICluster _cluster, address _weth, IPearlmit _pearlmit) {
         if (address(_cluster) == address(0)) revert AddressNotValid();
         swapper = _swapper;
         cluster = _cluster;
         weth = IWeth9(_weth);
+        pearlmit = _pearlmit;
     }
 
     receive() external payable {}
@@ -234,9 +239,11 @@ abstract contract BaseLeverageExecutor is Ownable {
             _amountOut = ITOFT(tokenOut).wrap{value: amountOut}(address(this), wrapsTo, amountOut);
         } else {
             // If the tOFT is for an ERC20, wrap it.
-            toftErc20.safeApprove(tokenOut, amountOut);
+            pearlmit.approve(toftErc20, 0, tokenOut, amountOut.toUint200(), block.timestamp.toUint48());
+            toftErc20.safeApprove(address(pearlmit), amountOut);
             _amountOut = ITOFT(tokenOut).wrap(address(this), wrapsTo, amountOut);
-            toftErc20.safeApprove(tokenOut, 0);
+            toftErc20.safeApprove(address(pearlmit), 0);
+            pearlmit.clearAllowance(address(this), toftErc20, 0);
         }
     }
 }

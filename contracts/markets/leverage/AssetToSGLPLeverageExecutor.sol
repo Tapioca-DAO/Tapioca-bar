@@ -3,15 +3,17 @@ pragma solidity 0.8.22;
 
 // External
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {Pausable} from "@openzeppelin/contracts/security/Pausable.sol";
 
 // Tapioca
 import {IGmxRewardRouterV2} from "tapioca-periph/interfaces/external/gmx/IGmxRewardRouterV2.sol";
 import {IGmxGlpManager} from "tapioca-periph/interfaces/external/gmx/IGmxGlpManager.sol";
-import {ITOFT} from "tapioca-periph/interfaces/oft/ITOFT.sol";
 import {BaseLeverageExecutor, SLeverageSwapData} from "./BaseLeverageExecutor.sol";
 import {IZeroXSwapper} from "tapioca-periph/interfaces/periph/IZeroXSwapper.sol";
+import {IPearlmit} from "tapioca-periph/interfaces/periph/IPearlmit.sol";
 import {ICluster} from "tapioca-periph/interfaces/periph/ICluster.sol";
+import {ITOFT} from "tapioca-periph/interfaces/oft/ITOFT.sol";
 import {SafeApprove} from "../../libraries/SafeApprove.sol";
 
 /*
@@ -39,6 +41,7 @@ struct SGlpLeverageSwapData {
 /// @notice Contract for leverage executor for tsGLP markets
 contract AssetToSGLPLeverageExecutor is BaseLeverageExecutor, Pausable {
     using SafeApprove for address;
+    using SafeCast for uint256;
 
     IGmxRewardRouterV2 private immutable glpRewardRouter;
     IGmxGlpManager private immutable glpManager;
@@ -49,8 +52,8 @@ contract AssetToSGLPLeverageExecutor is BaseLeverageExecutor, Pausable {
 
     error NotEnough(uint256 expected, uint256 received);
 
-    constructor(IZeroXSwapper _swapper, ICluster _cluster, IGmxRewardRouterV2 _glpRewardRouter, address _weth)
-        BaseLeverageExecutor(_swapper, _cluster, _weth)
+    constructor(IZeroXSwapper _swapper, ICluster _cluster, IGmxRewardRouterV2 _glpRewardRouter, address _weth, IPearlmit _pearlmit)
+        BaseLeverageExecutor(_swapper, _cluster, _weth, _pearlmit)
     {
         glpManager = IGmxGlpManager(_glpRewardRouter.glpManager());
         glpRewardRouter = _glpRewardRouter;
@@ -107,9 +110,11 @@ contract AssetToSGLPLeverageExecutor is BaseLeverageExecutor, Pausable {
 
         // Wrap into tsGLP to sender
         address sGLP = ITOFT(collateralAddress).erc20();
-        sGLP.safeApprove(collateralAddress, collateralAmountOut);
+        pearlmit.approve(sGLP, 0, collateralAddress, collateralAmountOut.toUint200(), block.timestamp.toUint48());
+        sGLP.safeApprove(address(pearlmit), collateralAmountOut);
         collateralAmountOut = ITOFT(collateralAddress).wrap(address(this), msg.sender, collateralAmountOut);
-        sGLP.safeApprove(collateralAddress, 0);
+        sGLP.safeApprove(address(pearlmit), 0);
+        pearlmit.clearAllowance(address(this), sGLP, 0);
     }
 
     /**

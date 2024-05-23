@@ -99,6 +99,7 @@ contract BigBangTest is UsdoTestHelper {
         vm.label(userA, "userA");
         vm.label(userB, "userB");
 
+        pearlmit = new Pearlmit("Pearlmit", "1");
         {
             tapOFT = new ERC20Mock("Tapioca OFT", "TAP");
             vm.label(address(tapOFT), "tapOFT");
@@ -112,10 +113,10 @@ contract BigBangTest is UsdoTestHelper {
             collateralErc20 = new ERC20Mock("CERC", "CERC");
             vm.label(address(collateralErc20), "collateralErc20");
 
-            asset = new TOFTMock(address(assetErc20));
+            asset = new TOFTMock(address(assetErc20), IPearlmit(address(pearlmit)));
             vm.label(address(asset), "asset");
 
-            collateral = new TOFTMock(address(collateralErc20));
+            collateral = new TOFTMock(address(collateralErc20), IPearlmit(address(pearlmit)));
             vm.label(address(collateral), "collateral");
         }
 
@@ -125,7 +126,6 @@ contract BigBangTest is UsdoTestHelper {
         setUpEndpoints(3, LibraryType.UltraLightNode);
 
         {
-            pearlmit = new Pearlmit("Pearlmit", "1");
             yieldBox = createYieldBox();
             cluster = createCluster(aEid, address(this));
             magnetar = createMagnetar(address(cluster), IPearlmit(address(pearlmit)));
@@ -148,7 +148,7 @@ contract BigBangTest is UsdoTestHelper {
         // }
 
         swapper = createSwapper(yieldBox);
-        leverageExecutor = createLeverageExecutor(address(yieldBox), address(swapper), address(cluster));
+        leverageExecutor = createLeverageExecutor(address(yieldBox), address(swapper), address(cluster), address(pearlmit));
         (penrose,) = createPenrose(
             TestPenroseData(
                 address(yieldBox),
