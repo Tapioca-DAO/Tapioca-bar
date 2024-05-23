@@ -181,7 +181,7 @@ abstract contract BaseLeverageExecutor is Ownable {
         if (amountInBefore > amountInAfter) {
             uint256 transferred = amountInBefore - amountInAfter;
             if (transferred < _amountInBeforeSwap) {
-                IERC20(tokenIn).transfer(from, _amountInBeforeSwap - transferred);
+                IERC20(tokenIn).safeTransfer(from, _amountInBeforeSwap - transferred);
             }
         }
 
