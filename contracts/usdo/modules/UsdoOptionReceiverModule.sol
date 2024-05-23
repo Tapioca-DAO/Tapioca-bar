@@ -19,7 +19,7 @@ import {
     ITapiocaOptionBroker, IExerciseOptionsData
 } from "tapioca-periph/interfaces/tap-token/ITapiocaOptionBroker.sol";
 import {UsdoInitStruct, ExerciseOptionsMsg, LZSendParam} from "tapioca-periph/interfaces/oft/IUsdo.sol";
-import {IOftSender} from "tapioca-periph/interfaces/oft/IOftSender.sol";
+import {ITapiocaOmnichainEngine} from "tapioca-periph/interfaces/periph/ITapiocaOmnichainEngine.sol";
 import {SafeApprove} from "tapioca-periph/libraries/SafeApprove.sol";
 import {UsdoMsgCodec} from "../libraries/UsdoMsgCodec.sol";
 import {BaseUsdo} from "../BaseUsdo.sol";
@@ -195,7 +195,9 @@ contract UsdoOptionReceiverModule is BaseUsdo {
             }
 
             msg_.lzSendParams.sendParam = _send;
-            IOftSender(tapOft).sendPacket{value: msg.value}(msg_.lzSendParams, "");
+            ITapiocaOmnichainEngine(tapOft).sendPacketFrom{value: msg.value}(
+                msg_.optionsData.from, msg_.lzSendParams, ""
+            );
 
             // Refund extra amounts
             if (tapBalance - amountToSend > 0) {
