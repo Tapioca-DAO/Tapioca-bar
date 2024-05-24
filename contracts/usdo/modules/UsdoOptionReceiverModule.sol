@@ -83,6 +83,7 @@ contract UsdoOptionReceiverModule is BaseUsdo {
          */
         // _approve(address(this), _options.target, _options.paymentTokenAmount);
         pearlmit.approve(
+            20,
             address(this),
             0,
             msg_.optionsData.target,
@@ -132,7 +133,7 @@ contract UsdoOptionReceiverModule is BaseUsdo {
         if (!isAllowed) revert UsdoOptionReceiverModule_NotAuthorized(oTapOwner);
         /// @dev Clear the allowance once it's used
         /// usage being the allowance check
-        pearlmit.clearAllowance(oTapOwner, oTap, _options.oTAPTokenID);
+        pearlmit.clearAllowance(oTapOwner, 721, oTap, _options.oTAPTokenID);
     }
 
     function _validateExerciseOptionReceiver(ExerciseOptionsMsg memory msg_)
@@ -166,7 +167,7 @@ contract UsdoOptionReceiverModule is BaseUsdo {
         {
             address oTap = ITapiocaOptionBroker(_options.target).oTAP();
             address oTapOwner = IERC721(oTap).ownerOf(_options.oTAPTokenID);
-            pearlmit.clearAllowance(oTapOwner, oTap, _options.oTAPTokenID);
+            pearlmit.clearAllowance(oTapOwner, 721, oTap, _options.oTAPTokenID);
         }
 
         uint256 bAfter = balanceOf(address(this));
