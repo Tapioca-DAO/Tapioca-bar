@@ -100,7 +100,7 @@ contract MarketLiquidatorReceiver is IMarketLiquidatorReceiver, Ownable, Reentra
 
         // swap TOFT.erc20() with `tokenOut`
         IERC20(erc20).safeApprove(assignedSwapper, unwrapped);
-        uint256 amountOut = IZeroXSwapper(assignedSwapper).swap(swapData.data, collateralAmount, swapData.minAmountOut);
+        uint256 amountOut = IZeroXSwapper(assignedSwapper).swap(swapData.data, unwrapped, swapData.minAmountOut);
         IERC20(erc20).safeApprove(assignedSwapper, 0);
         if (amountOut < swapData.minAmountOut) revert SwapFailed();
 
