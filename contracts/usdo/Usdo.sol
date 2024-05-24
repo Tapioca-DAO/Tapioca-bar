@@ -276,7 +276,8 @@ contract Usdo is BaseUsdo, Pausable, ReentrancyGuard, ERC20Permit {
      * @notice transfers fees to sender
      */
     function extractFees() external onlyOwner {
-        if (_fees > 0) {
+        if(_fees > 0)
+        {
             uint256 balance = balanceOf(address(this));
 
             uint256 toExtract = balance >= _fees ? _fees : balance;

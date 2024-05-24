@@ -119,7 +119,7 @@ contract AssetToSGLPLeverageExecutorTest is BaseLeverageExecutorTest {
         }
     }
 
-    function test_get_collateral() public {
+    function test_getCollateral_Success() public {
         uint256 balanceBefore = glp.balanceOf(address(this));
         assertEq(balanceBefore, 0);
 
@@ -145,6 +145,25 @@ contract AssetToSGLPLeverageExecutorTest is BaseLeverageExecutorTest {
         executor.getCollateral(address(usdc), address(collateral), amountIn, abi.encode(sglLeverageSwapData));
 
         assertEq(collateral.balanceOf(address(this)), amountIn);
+    }
+
+    function test_getCollateral_NativeNotSupported() public {
+        uint256 amountIn = 1 ether;
+        bytes memory data = "";
+
+        vm.expectRevert();
+        executor.getCollateral{value: 1}(address(usdc), address(collateral), amountIn, data);
+    }
+
+    function test_getCollateral_SenderNotValid() public {
+        uint256 amountIn = 1 ether;
+        bytes memory data = "";
+
+        // Remove executor from whitelist
+        cluster.isWhitelisted(0, address(executor));
+
+        vm.expectRevert();
+        executor.getCollateral(address(usdc), address(collateral), amountIn, data);
     }
 
     function test_get_asset() public {
@@ -174,5 +193,16 @@ contract AssetToSGLPLeverageExecutorTest is BaseLeverageExecutorTest {
         executor.getAsset(address(collateral), address(usdc), amountIn, abi.encode(sglLeverageSwapData));
 
         assertEq(usdc.balanceOf(address(this)), amountIn);
+    }
+
+    function test_getAsset_SenderNotValid() public {
+        uint256 amountIn = 1 ether;
+        bytes memory data = "";
+
+        // Remove executor from whitelist
+        cluster.isWhitelisted(0, address(executor));
+
+        vm.expectRevert();
+        executor.getAsset(address(collateral), address(usdc), amountIn, data);
     }
 }

@@ -70,6 +70,7 @@ import {Pearlmit, IPearlmit} from "tapioca-periph/pearlmit/Pearlmit.sol";
 import {UsdoReceiver} from "contracts/usdo/modules/UsdoReceiver.sol";
 import {IOracle} from "tapioca-periph/oracle/interfaces/IOracle.sol";
 import {UsdoHelper} from "contracts/usdo/extensions/UsdoHelper.sol";
+import {USDOFlashloanHelper} from "contracts/usdo/USDOFlashloanHelper.sol";
 import {UsdoSender} from "contracts/usdo/modules/UsdoSender.sol";
 import {Module} from "tapioca-periph/interfaces/bar/IMarket.sol";
 import {MarketHelper} from "contracts/markets/MarketHelper.sol";
@@ -87,6 +88,14 @@ import {ERC20Mock} from "./mocks/ERC20Mock.sol";
 import {UsdoMock} from "./mocks/UsdoMock.sol";
 
 import "forge-std/Test.sol";
+
+import {
+    IUsdo,
+    UsdoInitStruct,
+    UsdoModulesInitStruct,
+    LZSendParam,
+    ERC20PermitStruct
+} from "tapioca-periph/interfaces/oft/IUsdo.sol";
 
 contract UsdoTest is UsdoTestHelper {
     using OptionsBuilder for bytes;
@@ -108,6 +117,7 @@ contract UsdoTest is UsdoTestHelper {
     MagnetarMock magnetar;
 
     UsdoHelper usdoHelper;
+    USDOFlashloanHelper usdoFlashloanHelper;
 
     TapiocaOptionsBrokerMock tOB;
 
@@ -245,6 +255,9 @@ contract UsdoTest is UsdoTestHelper {
 
         usdoHelper = new UsdoHelper();
         vm.label(address(usdoHelper), "usdoHelper");
+
+        usdoFlashloanHelper = new USDOFlashloanHelper(IUsdo(address(aUsdo)), address(this));
+        vm.label(address(usdoFlashloanHelper), "usdoFlashloanHelper");
 
         // config and wire the ofts
         address[] memory ofts = new address[](2);
@@ -1710,4 +1723,98 @@ contract UsdoTest is UsdoTestHelper {
             keccak256(abi.encode(typeHash, hashedName, hashedVersion, block.chainid, address(yieldBox)));
         return domainSeparator;
     }
+
+    //New tests
+
+    function test_mint() public {
+        uint256 amount = 100;
+
+        aUsdo.mint(userA, amount);
+
+        assertEq(aUsdo.balanceOf(userA), amount);
+    }
+
+     function test_Burn() public {
+        uint256 tokensToMint = 1000;
+        uint256 burnAmount = 100;
+
+        aUsdo.mint(userA, tokensToMint);
+
+        uint256 initialBalanceOfFrom = aUsdo.balanceOf(userA);
+
+        aUsdo.burn(userA, burnAmount);
+
+        assertEq(aUsdo.balanceOf(userA), initialBalanceOfFrom - burnAmount);
+    }
+
+    function test_Usdo_Allowance() public {
+        //arrange
+        uint256 allowance = 1000;
+
+        //act
+        usdoFlashloanHelper.approve(address(userA), allowance);
+
+        //assert
+        assertEq(usdoFlashloanHelper.allowance(address(this), address(userA)), allowance);
+    }
+
+    function test_MaxFlashLoan_SupplyMoreThanMax() public {
+        aUsdo.mint(address(this), 400_000 * 10 ** 18);
+        uint256 maxLoan = usdoFlashloanHelper.maxFlashLoan(address(aUsdo));
+        assertEq(maxLoan, usdoFlashloanHelper.maxFlashMint());
+    }
+
+    function test_MaxFlashLoan_SupplylessThanMax() public {
+        aUsdo.mint(address(this), 50_000 * 10 ** 18);
+        uint256 maxLoan = usdoFlashloanHelper.maxFlashLoan(address(aUsdo));
+        assertEq(maxLoan, 50_000 * 10 ** 18);
+    }
+
+    //@audit
+    function test_FlashFee_ValidToken() public {
+        uint256 amount = 1000 * 10 ** 18;
+        uint256 fee = usdoFlashloanHelper.flashFee(address(aUsdo), amount);
+        uint256 expectedFee = (amount * 1) / 1e5;
+        assertEq(fee, expectedFee);
+    }
+
+    function test_FlashFee_InvalidToken() public {
+        uint256 amount = 1000 * 10 ** 18;
+        vm.expectRevert();
+        usdoFlashloanHelper.flashFee(address(this), amount);
+    }
+
+    function test_SetMaxFlashMintable_AsOwner() public {
+        uint256 newMaxFlashMint = 600_000 * 10 ** 18;
+        usdoFlashloanHelper.setMaxFlashMintable(newMaxFlashMint);
+        assertEq(usdoFlashloanHelper.maxFlashMint(), newMaxFlashMint);
+    }
+
+    function test_SetMaxFlashMintable_AsNonOwner() public {
+        uint256 newMaxFlashMint = 600_000 * 10 ** 18;
+        vm.prank(address(aUsdo));
+        vm.expectRevert();
+        usdoFlashloanHelper.setMaxFlashMintable(newMaxFlashMint);
+    }
+
+     function test_SetFlashMintFee_AsOwner_ValidValue() public {
+        uint256 newFlashMintFee = 50000;
+        usdoFlashloanHelper.setFlashMintFee(newFlashMintFee);
+        assertEq(usdoFlashloanHelper.flashMintFee(), newFlashMintFee);
+    }
+
+    function test_SetFlashMintFee_AsOwner_InvalidValue() public {
+        uint256 invalidFlashMintFee = 100000;
+        vm.expectRevert();
+        usdoFlashloanHelper.setFlashMintFee(invalidFlashMintFee);
+    }
+
+    function test_SetFlashMintFee_AsNonOwner() public {
+        uint256 newFlashMintFee = 50000;
+        vm.prank(address(userA));
+        vm.expectRevert();
+        usdoFlashloanHelper.setFlashMintFee(newFlashMintFee);
+    }
+    
+    // Flashloan tests
 }
