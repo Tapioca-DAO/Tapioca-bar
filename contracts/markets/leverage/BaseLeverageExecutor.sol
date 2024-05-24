@@ -166,6 +166,9 @@ abstract contract BaseLeverageExecutor is Ownable {
         IZeroXSwapper.SZeroXSwapData memory swapperData =
             abi.decode(swapData.swapperData, (IZeroXSwapper.SZeroXSwapData));
 
+        if (address(swapperData.sellToken) != tokenIn) revert TokenNotValid();
+        if (address(swapperData.buyToken) != tokenOut) revert TokenNotValid();
+
         uint256 amountInBefore = IERC20(tokenIn).balanceOf(address(this));
         uint256 _amountInBeforeSwap = amountOut;
 
