@@ -102,6 +102,7 @@ contract OriginsTest is UsdoTestHelper {
         setUpEndpoints(3, LibraryType.UltraLightNode);
 
         {
+            pearlmit = new Pearlmit("Pearlmit", "1", address(this), 0);
             yieldBox = createYieldBox();
             cluster = createCluster(aEid, address(this));
             magnetar = createMagnetar(address(cluster), IPearlmit(address(pearlmit)));

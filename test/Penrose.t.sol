@@ -72,7 +72,7 @@ contract PenroseTest is UsdoTestHelper {
 
     function setUp() public override {
         {
-            pearlmit = new Pearlmit("Pearlmit", "1");
+            pearlmit = new Pearlmit("Pearlmit", "1", address(this), 0);
             yieldBox = createYieldBox();
             cluster = createCluster(aEid, __owner);
             magnetar = createMagnetar(address(cluster), IPearlmit(address(pearlmit)));
@@ -121,7 +121,8 @@ contract PenroseTest is UsdoTestHelper {
             )
         );
 
-        leverageExecutor = createLeverageExecutor(address(yieldBox), address(swapper), address(cluster), address(pearlmit));
+        leverageExecutor =
+            createLeverageExecutor(address(yieldBox), address(swapper), address(cluster), address(pearlmit));
         (penrose, masterContract) = createPenrose(
             TestPenroseData(
                 address(yieldBox),
