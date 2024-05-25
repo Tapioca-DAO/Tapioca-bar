@@ -241,7 +241,8 @@ contract BigBang is MarketStateView, BBCommon {
         _accrue();
         uint256 toMint = viewOpenInterest();
         if (toMint == 0) {
-            debtMinted = totalBorrow.elastic - totalBorrow.base;
+            // Round down to not over mint
+            debtMinted = totalBorrow.toBase(totalBorrow.elastic, false) - totalBorrow.base;
         }
         debtMinted += toMint;
         return toMint;
