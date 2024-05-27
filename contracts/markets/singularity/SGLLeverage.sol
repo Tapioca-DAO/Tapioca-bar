@@ -38,6 +38,10 @@ contract SGLLeverage is SGLLendingCommon {
         uint256 supplyAmount;
         bytes data;
     }
+    struct _BuyCollateralMemoryData {
+        uint256 supplyShareToAmount;
+        uint256 borrowShareToAmount;
+    }
 
     /// @notice Lever up: Borrow more and buy collateral with it.
     /// @param from The user who buys
@@ -57,6 +61,7 @@ contract SGLLeverage is SGLLendingCommon {
         }
         // Stack too deep fix
         _BuyCollateralCalldata memory calldata_;
+        _BuyCollateralMemoryData memory memoryData;
         {
             calldata_.from = from;
             calldata_.borrowAmount = borrowAmount;
@@ -66,27 +71,36 @@ contract SGLLeverage is SGLLendingCommon {
 
         // Let this fail first to save gas:
         uint256 supplyShare = yieldBox.toShare(assetId, calldata_.supplyAmount, true);
-        uint256 supplyShareToAmount;
         if (supplyShare > 0) {
-            (supplyShareToAmount,) =
+            (memoryData.supplyShareToAmount,) =
                 yieldBox.withdraw(assetId, calldata_.from, address(leverageExecutor), 0, supplyShare);
         }
         (, uint256 borrowShare) = _borrow(calldata_.from, address(this), calldata_.borrowAmount);
 
-        (uint256 borrowShareToAmount,) =
-            yieldBox.withdraw(assetId, address(this), address(leverageExecutor), 0, borrowShare);
-        amountOut = leverageExecutor.getCollateral(
-            from, address(asset), address(collateral), supplyShareToAmount + borrowShareToAmount, calldata_.data
-        );
-        uint256 collateralShare = yieldBox.toShare(collateralId, amountOut, false);
-        if (collateralShare == 0) revert CollateralShareNotValid();
+        {
+            (memoryData.borrowShareToAmount,) =
+                yieldBox.withdraw(assetId, address(this), address(leverageExecutor), 0, borrowShare);
 
-        address(collateral).safeApprove(address(yieldBox), type(uint256).max);
-        yieldBox.depositAsset(collateralId, address(this), calldata_.from, 0, collateralShare);
-        address(collateral).safeApprove(address(yieldBox), 0);
+            updateExchangeRate();
+            uint256 assetPartInCollateral = (memoryData.supplyShareToAmount + memoryData.borrowShareToAmount) * exchangeRate / EXCHANGE_RATE_PRECISION;
+            _allowedBorrow(calldata_.from, yieldBox.toShare(collateralId, assetPartInCollateral, false));
 
-        _allowedBorrow(calldata_.from, collateralShare);
-        _addCollateral(calldata_.from, calldata_.from, false, 0, collateralShare, false);
+            amountOut = leverageExecutor.getCollateral(
+                from, address(asset), address(collateral), memoryData.supplyShareToAmount + memoryData.borrowShareToAmount, calldata_.data
+            );
+        }
+
+        {
+            uint256 collateralShare = yieldBox.toShare(collateralId, amountOut, false);
+            if (collateralShare == 0) revert CollateralShareNotValid();
+
+            address(collateral).safeApprove(address(yieldBox), type(uint256).max);
+            yieldBox.depositAsset(collateralId, address(this), calldata_.from, 0, collateralShare);
+            address(collateral).safeApprove(address(yieldBox), 0);
+
+            _addCollateral(calldata_.from, calldata_.from, false, 0, collateralShare, false);
+        }
+
         if (amountOut == 0) revert AmountNotValid();
     }
 

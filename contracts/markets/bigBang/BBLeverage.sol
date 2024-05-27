@@ -92,6 +92,11 @@ contract BBLeverage is BBLendingCommon {
                 yieldBox.withdraw(assetId, address(this), address(leverageExecutor), 0, borrowShare);
         }
         {
+            updateExchangeRate();
+            uint256 assetPartInCollateral = (memoryData.supplyShareToAmount + memoryData.borrowShareToAmount) * exchangeRate / EXCHANGE_RATE_PRECISION;
+            uint256 _share = yieldBox.toShare(collateralId, assetPartInCollateral, false);
+            _allowedBorrow(calldata_.from, _share);
+
             amountOut = leverageExecutor.getCollateral(
                 from,
                 address(asset),
@@ -107,7 +112,6 @@ contract BBLeverage is BBLendingCommon {
         address(collateral).safeApprove(address(yieldBox), 0);
 
         if (collateralShare == 0) revert CollateralShareNotValid();
-        _allowedBorrow(calldata_.from, collateralShare);
         _addCollateral(calldata_.from, calldata_.from, false, 0, collateralShare, false);
         if (amountOut == 0) revert AmountNotValid();
     }
