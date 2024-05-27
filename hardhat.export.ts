@@ -51,7 +51,7 @@ const supportedChains = SDK.API.utils.getSupportedChains().reduce(
 );
 
 const config: HardhatUserConfig & { dodoc: any } = {
-    SDK: { project: TAPIOCA_PROJECTS_NAME.TapiocaZ },
+    SDK: { project: TAPIOCA_PROJECTS_NAME.TapiocaBar },
     solidity: {
         compilers: [
             {
