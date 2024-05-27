@@ -32,6 +32,7 @@ contract BBCommon is BBStorage {
     // ************** //
     error NotEnough();
     error TransferFailed();
+    error AccruePaused();
 
     // ********************** //
     // *** VIEW FUNCTIONS *** //
@@ -65,6 +66,7 @@ contract BBCommon is BBStorage {
     // ************************ //
     /// @notice Accrues the interest on the borrowed tokens and handles the accumulation of fees.
     function accrue() external {
+        if (pauseOptions[PauseType.AddCollateral] || pauseOptions[PauseType.RemoveCollateral]) revert AccruePaused();
         _accrue();
     }
 
