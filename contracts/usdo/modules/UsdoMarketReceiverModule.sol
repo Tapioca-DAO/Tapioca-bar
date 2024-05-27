@@ -22,6 +22,7 @@ import {MagnetarOptionModule} from "tapioca-periph/Magnetar/modules/MagnetarOpti
 import {MagnetarMintModule} from "tapioca-periph/Magnetar/modules/MagnetarMintModule.sol";
 import {IMagnetarHelper} from "tapioca-periph/interfaces/periph/IMagnetarHelper.sol";
 import {IMintData} from "tapioca-periph/interfaces/oft/IUsdo.sol";
+import {IMarket} from "tapioca-periph/interfaces/bar/IMarket.sol";
 import {SafeApprove} from "../../libraries/SafeApprove.sol";
 import {UsdoMsgCodec} from "../libraries/UsdoMsgCodec.sol";
 import {BaseUsdo} from "../BaseUsdo.sol";
@@ -163,6 +164,14 @@ contract UsdoMarketReceiverModule is BaseUsdo {
         }
 
         _validateAndSpendAllowance(msg_.user, srcChainSender, msg_.lendParams.depositAmount);
+
+        if (msg_.lendParams.removeCollateralAmount > 0) {
+            IMarket(msg_.lendParams.market).updateExchangeRate();
+            uint256 exchangeRatePrecision = IMarket(msg_.lendParams.market)._exchangeRatePrecision();
+            uint256 exchangeRate = IMarket(msg_.lendParams.market)._exchangeRate();
+            uint256 collateralPartInAsset = (msg_.lendParams.removeCollateralAmount * exchangeRatePrecision + exchangeRate - 1) / exchangeRate;
+            _validateAndSpendAllowance(msg_.user, srcChainSender, collateralPartInAsset);
+        }
 
         bytes memory call = abi.encodeWithSelector(
             MagnetarCollateralModule.depositRepayAndRemoveCollateralFromMarket.selector,

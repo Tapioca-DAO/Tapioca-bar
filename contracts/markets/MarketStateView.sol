@@ -130,4 +130,8 @@ abstract contract MarketStateView is Market {
     function _yieldBox() external view returns (address) {
         return address(yieldBox);
     }
+
+    function _exchangeRatePrecision() external view returns (uint256) {
+        return EXCHANGE_RATE_PRECISION;
+    }
 }
