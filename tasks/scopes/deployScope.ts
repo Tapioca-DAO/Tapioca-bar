@@ -3,6 +3,7 @@ import { scope } from 'hardhat/config';
 import { TAP_TASK } from 'tapioca-sdk';
 import { deployPostLbp__task_1 } from 'tasks/deploy/1-1-deployPostLbp';
 import { deployPostLbp__task_2 } from 'tasks/deploy/1-2-deployPostLbp';
+import { deployFinal__task } from 'tasks/deploy/2-deployFinal';
 
 const deployScope = scope('deploys', 'Deployment tasks');
 
@@ -31,4 +32,12 @@ TAP_TASK(
             'The delta in percentage to take into account when computing CR',
         )
         .addFlag('noTransfer', 'Will not transfer USDO to the other chain'),
+);
+
+TAP_TASK(
+    deployScope.task(
+        'final',
+        'Will deploy the final phase, which consist of setting the USDO oracle and the BB market.',
+        deployFinal__task,
+    ),
 );

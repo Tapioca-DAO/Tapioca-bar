@@ -80,8 +80,6 @@ async function tapiocaDeployTask(
         tag,
     );
 
-    console.log(usdoStrategy.address);
-
     if (
         chainInfo.name === 'arbitrum' ||
         chainInfo.name === 'arbitrum_sepolia'
