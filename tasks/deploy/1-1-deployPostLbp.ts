@@ -103,6 +103,7 @@ async function tapiocaDeployTask(params: TTapiocaDeployerVmPass<object>) {
                 cluster,
                 zeroXSwapper,
                 weth: DEPLOY_CONFIG.MISC[hre.SDK.eChainId]!.WETH!,
+                pearlmit,
                 tag,
             }),
         )
