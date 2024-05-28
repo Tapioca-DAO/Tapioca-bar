@@ -32,7 +32,7 @@ import { IYieldBox } from '@typechain/index';
  * - Transfer USDO to Ethereum for the DAI pool.
  */
 export const deployPostLbp__task_2 = async (
-    _taskArgs: TTapiocaDeployTaskArgs & { delta: string },
+    _taskArgs: TTapiocaDeployTaskArgs & { delta: string; noTransfer?: boolean },
     hre: HardhatRuntimeEnvironment,
 ) => {
     console.log('[+] Deploying Post LBP phase 2');
@@ -49,7 +49,7 @@ export const deployPostLbp__task_2 = async (
 };
 
 async function tapiocaDeployTask(
-    params: TTapiocaDeployerVmPass<{ delta: string }>,
+    params: TTapiocaDeployerVmPass<{ delta: string; noTransfer?: boolean }>,
 ) {
     const { hre, VM, tapiocaMulticallAddr, taskArgs, isTestnet, chainInfo } =
         params;
@@ -105,7 +105,7 @@ async function tapiocaDeployTask(
 }
 
 async function tapiocaPostDeployTask(
-    params: TTapiocaDeployerVmPass<{ delta: string }>,
+    params: TTapiocaDeployerVmPass<{ delta: string; noTransfer?: boolean }>,
 ) {
     const { hre, taskArgs, VM, chainInfo, tapiocaMulticallAddr } = params;
     const { tag, delta } = taskArgs;
@@ -232,7 +232,7 @@ async function tapiocaPostDeployTask(
      *  Transfer USDO to Ethereum for the DAI pool
      */
     let msgValue = hre.ethers.BigNumber.from(0);
-    {
+    if (!taskArgs.noTransfer) {
         let chainName;
         if (chainInfo.name === 'arbitrum_sepolia') {
             console.log(

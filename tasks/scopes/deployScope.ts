@@ -29,5 +29,6 @@ TAP_TASK(
         .addParam(
             'delta',
             'The delta in percentage to take into account when computing CR',
-        ),
+        )
+        .addFlag('noTransfer', 'Will not transfer USDO to the other chain'),
 );
