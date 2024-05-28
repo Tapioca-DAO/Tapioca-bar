@@ -26,6 +26,7 @@ import { buildUSDOModules } from 'tasks/deployBuilds/buildUSDOModules';
 import { setupPostLbp1 } from './1-1-setupPostLbp';
 import { DEPLOYMENT_NAMES, DEPLOY_CONFIG } from './DEPLOY_CONFIG';
 import { buildSGLInterestHelper } from 'tasks/deployBuilds/buildSGLInterestHelper';
+import { buildMarketHelper } from 'tasks/deployBuilds/buildMarketHelper';
 
 /**
  * @notice Should be called after TapiocaZ `postLbp` task
@@ -193,6 +194,7 @@ async function tapiocaDeployTask(params: TTapiocaDeployerVmPass<object>) {
      * SGL Markets: sGLP
      * BB Markets: mtETH,tReth, tWSTETH
      */
+    VM.add(await buildMarketHelper(hre));
     if (
         chainInfo.name === 'arbitrum' ||
         chainInfo.name === 'arbitrum_sepolia'
