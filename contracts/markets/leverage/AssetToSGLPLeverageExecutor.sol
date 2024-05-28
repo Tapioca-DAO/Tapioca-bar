@@ -52,9 +52,13 @@ contract AssetToSGLPLeverageExecutor is BaseLeverageExecutor, Pausable {
 
     error NotEnough(uint256 expected, uint256 received);
 
-    constructor(IZeroXSwapper _swapper, ICluster _cluster, IGmxRewardRouterV2 _glpRewardRouter, address _weth, IPearlmit _pearlmit)
-        BaseLeverageExecutor(_swapper, _cluster, _weth, _pearlmit)
-    {
+    constructor(
+        IZeroXSwapper _swapper,
+        ICluster _cluster,
+        IGmxRewardRouterV2 _glpRewardRouter,
+        address _weth,
+        IPearlmit _pearlmit
+    ) BaseLeverageExecutor(_swapper, _cluster, _weth, _pearlmit) {
         glpManager = IGmxGlpManager(_glpRewardRouter.glpManager());
         glpRewardRouter = _glpRewardRouter;
     }
@@ -110,11 +114,11 @@ contract AssetToSGLPLeverageExecutor is BaseLeverageExecutor, Pausable {
 
         // Wrap into tsGLP to sender
         address sGLP = ITOFT(collateralAddress).erc20();
-        pearlmit.approve(sGLP, 0, collateralAddress, collateralAmountOut.toUint200(), block.timestamp.toUint48());
+        pearlmit.approve(20, sGLP, 0, collateralAddress, collateralAmountOut.toUint200(), block.timestamp.toUint48());
         sGLP.safeApprove(address(pearlmit), collateralAmountOut);
         collateralAmountOut = ITOFT(collateralAddress).wrap(address(this), msg.sender, collateralAmountOut);
         sGLP.safeApprove(address(pearlmit), 0);
-        pearlmit.clearAllowance(address(this), sGLP, 0);
+        pearlmit.clearAllowance(address(this), 20, sGLP, 0);
     }
 
     /**
