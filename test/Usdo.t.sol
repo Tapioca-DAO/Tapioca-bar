@@ -1231,7 +1231,8 @@ contract UsdoTest is UsdoTestHelper {
                 unwrap: false,
                 amount: 0,
                 withdraw: false,
-                receiver: address(this)
+                receiver: address(this),
+                extractFromSender: false
             }),
             value: 0
         });
@@ -1399,7 +1400,8 @@ contract UsdoTest is UsdoTestHelper {
                 unwrap: false,
                 amount: 0,
                 withdraw: false,
-                receiver: address(this)
+                receiver: address(this),
+                extractFromSender: false
             }),
             value: 0
         });
@@ -1539,7 +1541,8 @@ contract UsdoTest is UsdoTestHelper {
                     unwrap: false,
                     amount: 0,
                     withdraw: false,
-                    receiver: address(this)
+                    receiver: address(this),
+                    extractFromSender: false
                 }),
                 collateralWithdrawData: MagnetarWithdrawData({
                     yieldBox: address(0),
@@ -1547,7 +1550,8 @@ contract UsdoTest is UsdoTestHelper {
                     unwrap: false,
                     amount: 0,
                     withdraw: false,
-                    receiver: address(this)
+                    receiver: address(this),
+                    extractFromSender: false
                 })
             }),
             value: 0
