@@ -45,7 +45,7 @@ contract AssetToSDaiLeverageExecutorTest is BaseLeverageExecutorTest {
     ZeroXSwapper swapper;
 
     function setUp() public {
-        pearlmit = new Pearlmit("Pearlmit", "1");
+        pearlmit = new Pearlmit("Test", "1", address(this), 0);
         {
             dai = new ERC20Mock("DAI", "DAI");
             vm.label(address(dai), "dai");

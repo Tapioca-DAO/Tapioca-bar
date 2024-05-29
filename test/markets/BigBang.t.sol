@@ -99,7 +99,7 @@ contract BigBangTest is UsdoTestHelper {
         vm.label(userA, "userA");
         vm.label(userB, "userB");
 
-        pearlmit = new Pearlmit("Pearlmit", "1");
+        pearlmit = new Pearlmit("Test", "1", address(this), 0);
         {
             tapOFT = new ERC20Mock("Tapioca OFT", "TAP");
             vm.label(address(tapOFT), "tapOFT");
