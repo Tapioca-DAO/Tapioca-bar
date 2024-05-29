@@ -229,9 +229,9 @@ contract BigBang is MarketStateView, BBCommon {
 
     /// @notice Reset the open interest debt and return the value
     function consumeMintableOpenInterestDebt() external onlyOwner returns (uint256) {
-        uint256 _openInterestsDebt = openInterestsDebt;
-        openInterestsDebt = 0;
-        return _openInterestsDebt;
+        uint256 _openInterestDebt = openInterestDebt;
+        openInterestDebt = 0;
+        return _openInterestDebt;
     }
 
     /// @notice updates the pause state of the contract
