@@ -51,9 +51,9 @@ contract BBStorage is Ownable, Market, ReentrancyGuard {
     uint256 public maxMintFeeStart;
     uint256 public minMintFeeStart;
 
-    uint256 public debtMinted;
-
     uint256 internal constant DEBT_PRECISION = 1e18;
+
+    uint256 public openInterestsDebt;
 
     // ************** //
     // *** EVENTS *** //

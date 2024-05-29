@@ -198,16 +198,6 @@ contract BigBang is MarketStateView, BBCommon {
     // ************************ //
     // *** PUBLIC FUNCTIONS *** //
     // ************************ //
-    /// @notice returns open interest debt
-    /// @dev accrue needs to be called before
-    function viewOpenInterest() public view returns (uint256) {
-        uint256 debt = totalBorrow.elastic - totalBorrow.base;
-        if (debtMinted > debt) {
-            return 0;
-        }
-
-        return debt - debtMinted;
-    }
 
     /// @notice Allows batched call to BingBang.
     /// @param calls An array encoded call data.
@@ -236,16 +226,12 @@ contract BigBang is MarketStateView, BBCommon {
     // ************************* //
     // *** OWNER FUNCTIONS ***** //
     // ************************* //
-    /// @notice computes mintable debt and updates `debtMinted`
-    function computeOpenInterestMintable() external onlyOwner returns (uint256) {
-        _accrue();
-        uint256 toMint = viewOpenInterest();
-        if (toMint == 0) {
-            // Round down to not over mint
-            debtMinted = totalBorrow.toBase(totalBorrow.elastic, false) - totalBorrow.base;
-        }
-        debtMinted += toMint;
-        return toMint;
+
+    /// @notice Reset the open interest debt and return the value
+    function consumeMintableOpenInterestDebt() external onlyOwner returns (uint256) {
+        uint256 _openInterestsDebt = openInterestsDebt;
+        openInterestsDebt = 0;
+        return _openInterestsDebt;
     }
 
     /// @notice updates the pause state of the contract

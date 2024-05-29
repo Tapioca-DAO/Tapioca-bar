@@ -111,6 +111,7 @@ contract BBCommon is BBStorage {
             extraAmount = max;
         }
         _totalBorrow.elastic += extraAmount.toUint128();
+        openInterestsDebt += extraAmount;
 
         totalBorrow = _totalBorrow;
         accrueInfo = _accrueInfo;
