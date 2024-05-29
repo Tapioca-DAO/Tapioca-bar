@@ -47,9 +47,13 @@ async function tapiocaPostDeployTask(params: TTapiocaDeployerVmPass<unknown>) {
         hre,
         TAPIOCA_PROJECTS_NAME.TapiocaPeriph,
         chainInfo.chainId,
-        TAPIOCA_PERIPH_CONFIG.DEPLOYMENT_NAMES.USDO_USDC_UNI_V3_POOL,
+        TAPIOCA_PERIPH_CONFIG.DEPLOYMENT_NAMES.USDO_USDC_UNI_V3_ORACLE,
         tag,
     ).address;
+    const usdoOracle = await hre.ethers.getContractAt(
+        'ITapiocaOracle',
+        usdoOracleAddy,
+    );
 
     const penroseExecuteMarketFnsAddys: string[] = [];
     const penroseExecuteMarketFnsData: string[] = [];
