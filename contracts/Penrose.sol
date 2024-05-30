@@ -166,6 +166,7 @@ contract Penrose is Ownable, PearlmitHandler {
     /// @notice event emitted when markets are re-accrued
     event ReaccruedMarkets(bool indexed mainMarketIncluded);
     event LogDeploy(address indexed masterContract, bytes data, address indexed cloneAddress);
+    event UnregisterContract(address indexed bb);
 
     // ************** //
     // *** ERRORS *** //
@@ -448,6 +449,13 @@ contract Penrose is Ownable, PearlmitHandler {
         emit RegisterBigBangMasterContract(mcAddress, contractType_);
     }
 
+    /// @notice removes a registered SGL/BB/Origin market
+    /// @param mkt the market address
+    function unregisterContract(address mkt) external onlyOwner {
+        isMarketRegistered[mkt] = false;
+        emit UnregisterContract(sgl);
+    }
+
     /// @notice Registers a Singularity market
     /// @dev can only be called by the owner
     /// @param mc The address of the master contract which must be already registered
@@ -547,6 +555,16 @@ contract Penrose is Ownable, PearlmitHandler {
             ++i;
         }
     }
+
+    /// @dev might be used as a setter for storage slots
+    function executeTargetFn(address target, bytes memory data) external onlyOwner returns (bool success, bytes memory returnData) {
+        if (!cluster.isWhitelisted(0, target)) revert NotAuthorized();
+        (success, returnData) = target.delegatecall(data);
+    }
+
+    // ************************ //
+    // *** PUBLIC FUNCTIONS *** //
+    // ************************ //
 
     /// @notice Calls `accrue()` on all BigBang registered markets
     /// @dev callable by BigBang ETH market only
