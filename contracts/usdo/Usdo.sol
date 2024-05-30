@@ -176,6 +176,25 @@ contract Usdo is BaseUsdo, Pausable, ReentrancyGuard, ERC20Permit {
         );
     }
 
+    /**
+     * @dev See `TapiocaOmnichainSender.sendPacketFrom`
+     */
+    function sendPacketFrom(address _from, LZSendParam calldata _lzSendParam, bytes calldata _composeMsg)
+        public
+        payable
+        whenNotPaused
+        returns (MessagingReceipt memory msgReceipt, OFTReceipt memory oftReceipt)
+    {
+        (msgReceipt, oftReceipt) = abi.decode(
+            _executeModule(
+                uint8(IUsdo.Module.UsdoSender),
+                abi.encodeCall(TapiocaOmnichainSender.sendPacketFrom, (_from, _lzSendParam, _composeMsg)),
+                false
+            ),
+            (MessagingReceipt, OFTReceipt)
+        );
+    }
+
     /// @dev override default `send` behavior to add `whenNotPaused` modifier
     function send(SendParam calldata _sendParam, MessagingFee calldata _fee, address _refundAddress)
         external
