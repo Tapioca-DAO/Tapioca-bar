@@ -451,7 +451,7 @@ contract Penrose is Ownable, PearlmitHandler {
 
     /// @notice removes a registered SGL/BB/Origin market
     /// @param mkt the market address
-    /// @param marketType 1 - BB, 2 - Origins
+    /// @param marketType 0 - SGL, 1 - BB, 2 - Origins
 
     function unregisterContract(address mkt, uint256 marketType) external onlyOwner {
         address _mc = masterContractOf[mkt];
