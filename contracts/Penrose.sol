@@ -581,7 +581,11 @@ contract Penrose is Ownable, PearlmitHandler {
     }
 
     /// @dev might be used as a setter for storage slots
-    function executeTargetFn(address target, bytes memory data) external onlyOwner returns (bool success, bytes memory returnData) {
+    function executeTargetFn(address target, bytes memory data)
+        external
+        onlyOwner
+        returns (bool success, bytes memory returnData)
+    {
         if (!cluster.isWhitelisted(0, target)) revert NotAuthorized();
         (success, returnData) = target.delegatecall(data);
     }
@@ -603,13 +607,14 @@ contract Penrose is Ownable, PearlmitHandler {
     // ************************* //
     function _findBigBangIndex(address[] memory _arr, address _address) internal pure returns (uint256) {
         uint256 len = _arr.length;
-        for (uint i; i < len; i++) {
+        for (uint256 i; i < len; i++) {
             if (_arr[i] == _address) {
                 return i;
             }
         }
         revert AddressNotValid();
     }
+
     function _reAccrueMarkets(bool includeMainMarket) private {
         uint256 len = allBigBangMarkets.length;
         address[] memory markets = allBigBangMarkets;
