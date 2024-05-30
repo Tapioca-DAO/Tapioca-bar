@@ -451,9 +451,33 @@ contract Penrose is Ownable, PearlmitHandler {
 
     /// @notice removes a registered SGL/BB/Origin market
     /// @param mkt the market address
-    function unregisterContract(address mkt) external onlyOwner {
+    /// @param marketType 1 - BB, 2 - Origins
+
+    function unregisterContract(address mkt, uint256 marketType) external onlyOwner {
+        address _mc = masterContractOf[mkt];
+
+        // set `isMarketRegistered` to false and remove `masterContractOf`
         isMarketRegistered[mkt] = false;
-        emit UnregisterContract(sgl);
+        delete masterContractOf[mkt];
+
+        // remove it from `allBigBangMarkets` or `allOriginsMarkets`
+        uint256 index;
+        if (marketType == 1) {
+            index = _findBigBangIndex(allBigBangMarkets, mkt);
+            allBigBangMarkets[index] = allBigBangMarkets[allBigBangMarkets.length - 1];
+            allBigBangMarkets.pop();
+        } else if (marketType == 2) {
+            index = _findBigBangIndex(allOriginsMarkets, mkt);
+            allOriginsMarkets[index] = allOriginsMarkets[allOriginsMarkets.length - 1];
+            allOriginsMarkets.pop();
+        }
+
+        // remove it from clonesOf
+        index = _findBigBangIndex(clonesOf[_mc], mkt);
+        clonesOf[_mc][index] = clonesOf[_mc][clonesOf[_mc].length - 1];
+        clonesOf[_mc].pop();
+
+        emit UnregisterContract(mkt);
     }
 
     /// @notice Registers a Singularity market
@@ -577,6 +601,15 @@ contract Penrose is Ownable, PearlmitHandler {
     // ************************* //
     // *** PRIVATE FUNCTIONS *** //
     // ************************* //
+    function _findBigBangIndex(address[] memory _arr, address _address) internal pure returns (uint256) {
+        uint256 len = _arr.length;
+        for (uint i; i < len; i++) {
+            if (_arr[i] == _address) {
+                return i;
+            }
+        }
+        revert AddressNotValid();
+    }
     function _reAccrueMarkets(bool includeMainMarket) private {
         uint256 len = allBigBangMarkets.length;
         address[] memory markets = allBigBangMarkets;
