@@ -83,7 +83,6 @@ contract MarketLiquidatorReceiver is IMarketLiquidatorReceiver, Ownable, Reentra
 
         // unwrap TOFT
         uint256 unwrapped = ITOFT(tokenIn).unwrap(address(this), collateralAmount);
-        if (unwrapped < swapData.minAmountOut) revert NotEnough();
 
         // get ERC20
         address erc20 = ITOFT(tokenIn).erc20();
