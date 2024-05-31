@@ -398,6 +398,8 @@ contract UsdoTest is UsdoTestHelper {
     function test_usdo_erc20_approvals() public {
         address userC_ = vm.addr(0x3);
 
+        cluster.updateContract(0, address(bUsdo), true);
+
         ERC20PermitApprovalMsg memory permitApprovalB_;
         ERC20PermitApprovalMsg memory permitApprovalC_;
         bytes memory approvalsMsg_;
@@ -1219,7 +1221,8 @@ contract UsdoTest is UsdoTestHelper {
                 amount: 0,
                 withdraw: false,
                 receiver: address(this)
-            })
+            }),
+            value: 0
         });
 
         bytes memory marketMsg_ = usdoHelper.buildMarketLendOrRepayMsg(marketMsg);
@@ -1387,7 +1390,8 @@ contract UsdoTest is UsdoTestHelper {
                 amount: 0,
                 withdraw: false,
                 receiver: address(this)
-            })
+            }),
+            value: 0
         });
 
         bytes memory marketMsg_ = usdoHelper.buildMarketLendOrRepayMsg(marketMsg);
@@ -1535,7 +1539,8 @@ contract UsdoTest is UsdoTestHelper {
                     withdraw: false,
                     receiver: address(this)
                 })
-            })
+            }),
+            value: 0
         });
         bytes memory marketMsg_ = usdoHelper.buildMarketRemoveAssetMsg(marketMsg);
 
