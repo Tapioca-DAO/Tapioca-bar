@@ -32,8 +32,10 @@ contract MarketLiquidatorReceiver is IMarketLiquidatorReceiver, Ownable, Reentra
     address public immutable weth;
 
     mapping(address tokenIn => address swapper) public swappers;
+    mapping(address market => bool whitelisted) public allowedCallers;
 
     event SwapperAssigned(address indexed tokenIn, address indexed swapper);
+    event AllowedCallerSet(address indexed market, bool allowed);
 
     error NotAuthorized();
     error NotEnough();
@@ -64,6 +66,10 @@ contract MarketLiquidatorReceiver is IMarketLiquidatorReceiver, Ownable, Reentra
         uint256 collateralAmount,
         bytes calldata data
     ) external nonReentrant returns (bool) {
+        // Check caller
+        if (!allowedCallers[msg.sender]) revert NotAuthorized();
+
+        // Check if the initiator is the owner
         if (initiator != owner()) revert NotAuthorized();
 
         // retrieve swapper
@@ -103,6 +109,16 @@ contract MarketLiquidatorReceiver is IMarketLiquidatorReceiver, Ownable, Reentra
         IERC20(tokenOut).safeTransfer(msg.sender, amountOut);
 
         return true;
+    }
+
+    /**
+     * @notice Set an allowed caller for a market
+     * @param _market the market address
+     * @param _allowed the allowed status
+     */
+    function setAllowedCaller(address _market, bool _allowed) external onlyOwner {
+        allowedCallers[_market] = _allowed;
+        emit AllowedCallerSet(_market, _allowed);
     }
 
     /// @notice assigns swapper for token
