@@ -101,17 +101,6 @@ contract Usdo is BaseUsdo, Pausable, ReentrancyGuard, ERC20Permit {
     receive() external payable {}
 
     /**
-     * @inheritdoc BaseTapiocaOmnichainEngine
-     */
-    function transferFrom(address _from, address _to, uint256 _amount)
-        public
-        override(BaseTapiocaOmnichainEngine, ERC20)
-        returns (bool)
-    {
-        return BaseTapiocaOmnichainEngine.transferFrom(_from, _to, _amount);
-    }
-
-    /**
      * @dev Slightly modified version of the OFT _lzReceive() operation.
      * The composed message is sent to `address(this)` instead of `toAddress`.
      * @dev Internal function to handle the receive on the LayerZero endpoint.
