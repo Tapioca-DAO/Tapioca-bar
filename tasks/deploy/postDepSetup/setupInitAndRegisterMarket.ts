@@ -12,7 +12,7 @@ import {
 } from '../1-1-deployPostLbp';
 import { TPostDeployParams } from '../1-1-setupPostLbp';
 import { DEPLOYMENT_NAMES, DEPLOY_CONFIG } from '../DEPLOY_CONFIG';
-import { loadLocalContract } from 'tapioca-sdk';
+import { checkExists, loadLocalContract } from 'tapioca-sdk';
 
 export async function setupInitAndRegisterMarket(params: TPostDeployParams) {
     const { hre, deployed, tag } = params;
@@ -34,6 +34,10 @@ export async function setupInitAndRegisterMarket(params: TPostDeployParams) {
         tag,
     );
 
+    const interestHelper = deployed.find(
+        (e) => e.name === DEPLOYMENT_NAMES.SGL_INTEREST_HELPER,
+    )!.address;
+
     const { yieldBox: yieldBoxDep } = deploy__LoadDeployments_Generic({
         hre,
         tag,
@@ -53,11 +57,11 @@ export async function setupInitAndRegisterMarket(params: TPostDeployParams) {
     ) {
         const {
             mtETH,
-            mtEthOracle,
+            ethMarketOracle,
             tReth,
-            tRethOracle,
+            tRethMarketOracle,
             tWSTETH,
-            tWstEthOracle,
+            tWstEthMarketOracle,
         } = deploy__LoadDeployments_Arb({
             hre,
             tag,
@@ -73,7 +77,7 @@ export async function setupInitAndRegisterMarket(params: TPostDeployParams) {
                 collateralAddr: mtETH,
                 strategyDepName:
                     DEPLOYMENT_NAMES.YB_MT_ETH_ASSET_WITHOUT_STRATEGY,
-                oracleAddr: mtEthOracle,
+                oracleAddr: ethMarketOracle,
                 debtRateAgainstEth: mtEthDeployConf.debtRateAgainstEth,
                 debtRateMin: mtEthDeployConf.debtRateMin,
                 debtRateMax: mtEthDeployConf.debtRateMax,
@@ -98,7 +102,7 @@ export async function setupInitAndRegisterMarket(params: TPostDeployParams) {
                 collateralAddr: tReth,
                 strategyDepName:
                     DEPLOYMENT_NAMES.YB_T_RETH_ASSET_WITHOUT_STRATEGY,
-                oracleAddr: tRethOracle,
+                oracleAddr: tRethMarketOracle,
                 debtRateAgainstEth: tRethDeployConf.debtRateAgainstEth,
                 debtRateMin: tRethDeployConf.debtRateMin,
                 debtRateMax: tRethDeployConf.debtRateMax,
@@ -123,7 +127,7 @@ export async function setupInitAndRegisterMarket(params: TPostDeployParams) {
                 collateralAddr: tWSTETH,
                 strategyDepName:
                     DEPLOYMENT_NAMES.YB_T_WST_ETH_ASSET_WITHOUT_STRATEGY,
-                oracleAddr: tWstEthOracle,
+                oracleAddr: tWstEthMarketOracle,
                 debtRateAgainstEth: tWSTETHDeployConf.debtRateAgainstEth,
                 debtRateMin: tWSTETHDeployConf.debtRateMin,
                 debtRateMax: tWSTETHDeployConf.debtRateMax,
@@ -148,7 +152,10 @@ export async function setupInitAndRegisterMarket(params: TPostDeployParams) {
         hre.SDK.chainInfo.name === 'sepolia' ||
         hre.SDK.chainInfo.name === 'optimism_sepolia'
     ) {
-        const { tSdaiOracle } = deploy__LoadDeployments_Eth({ hre, tag });
+        const { tSdaiMarketOracle, tSdai } = deploy__LoadDeployments_Eth({
+            hre,
+            tag,
+        });
         {
             const tSdaiDeployConf =
                 DEPLOY_CONFIG.POST_LBP[hre.SDK.eChainId]!.tSdaiMarketConfig!;
@@ -156,8 +163,8 @@ export async function setupInitAndRegisterMarket(params: TPostDeployParams) {
                 ...params,
                 factory: await hre.ethers.getContractFactory('Singularity'),
                 marketName: DEPLOYMENT_NAMES.SGL_S_DAI_MARKET,
-                collateralAddr: DEPLOY_CONFIG.POST_LBP[hre.SDK.eChainId]!.sDAI!,
-                oracleAddr: tSdaiOracle,
+                collateralAddr: tSdai,
+                oracleAddr: tSdaiMarketOracle,
                 strategyDepName:
                     DEPLOYMENT_NAMES.YB_SDAI_ASSET_WITHOUT_STRATEGY,
                 usdoStrategy: usdoStrategy.address,
@@ -169,6 +176,7 @@ export async function setupInitAndRegisterMarket(params: TPostDeployParams) {
                 leverageExecutorAddr,
                 penroseAddr,
                 yieldBox,
+                interestHelper,
             });
         }
     }
@@ -177,7 +185,10 @@ export async function setupInitAndRegisterMarket(params: TPostDeployParams) {
         hre.SDK.chainInfo.name === 'arbitrum' ||
         hre.SDK.chainInfo.name === 'arbitrum_sepolia'
     ) {
-        const { tSGLPOracle } = deploy__LoadDeployments_Arb({ hre, tag });
+        const { tSGLPMarketOracle, tSGLP } = deploy__LoadDeployments_Arb({
+            hre,
+            tag,
+        });
         // SGLP
         {
             const tSglpDeployConf =
@@ -187,8 +198,8 @@ export async function setupInitAndRegisterMarket(params: TPostDeployParams) {
                 ...params,
                 factory: await hre.ethers.getContractFactory('Singularity'),
                 marketName: DEPLOYMENT_NAMES.SGL_S_GLP_MARKET,
-                collateralAddr: DEPLOY_CONFIG.POST_LBP[hre.SDK.eChainId]!.sGLP!,
-                oracleAddr: tSGLPOracle,
+                collateralAddr: tSGLP,
+                oracleAddr: tSGLPMarketOracle,
                 strategyDepName:
                     DEPLOYMENT_NAMES.YB_SGLP_ASSET_WITHOUT_STRATEGY,
                 usdoStrategy: usdoStrategy.address,
@@ -200,6 +211,7 @@ export async function setupInitAndRegisterMarket(params: TPostDeployParams) {
                 leverageExecutorAddr,
                 penroseAddr,
                 yieldBox,
+                interestHelper,
             });
         }
     }
@@ -257,6 +269,11 @@ async function initBBMarket(
             strategyAddr,
             0,
         );
+        if (collateralId.eq(0)) {
+            throw new Error(
+                `Collateral id is 0 for collateral ${collateralAddr} on strategy ${params.strategyDepName} ${strategyAddr}`,
+            );
+        }
 
         const modulesData = {
             _liquidationModule: loadModule({
@@ -326,6 +343,7 @@ async function initSGLMarket(
         exchangeRatePrecision: BigNumberish;
         collateralizationRate: BigNumberish;
         liquidationCollateralizationRate: BigNumberish;
+        interestHelper: string;
     },
 ) {
     const {
@@ -345,10 +363,12 @@ async function initSGLMarket(
         oracleAddr,
         collateralizationRate,
         liquidationCollateralizationRate,
+        interestHelper,
     } = params;
 
     const marketDep = deployed.find((e) => e.name === marketName)!;
     const market = factory.attach(marketDep.address);
+    const penrose = await hre.ethers.getContractAt('Penrose', penroseAddr);
 
     if ((await market._penrose()).toLowerCase() !== penroseAddr.toLowerCase()) {
         console.log(`\t[+] Init market ${marketName} ${marketDep.address}`);
@@ -363,6 +383,11 @@ async function initSGLMarket(
             collateralStrategy,
             0,
         );
+        if (collateralId.eq(0)) {
+            throw new Error(
+                `Collateral id is 0 for collateral ${collateralAddr} on strategy ${strategyDepName} ${collateralStrategy}`,
+            );
+        }
 
         const modulesData = {
             _liquidationModule: loadModule({
@@ -411,6 +436,35 @@ async function initSGLMarket(
         calls.push({
             target: market.address,
             callData: market.interface.encodeFunctionData('init', [sglData]),
+            allowFailure: false,
+        });
+        const addrZero = hre.ethers.constants.AddressZero;
+        // Set interest helper
+        console.log(
+            `\t[+] Set interest helper ${interestHelper} in market ${marketName}`,
+        );
+        console.log(penrose.address);
+        calls.push({
+            target: penrose.address,
+            callData: penrose.interface.encodeFunctionData('executeMarketFn', [
+                [market.address],
+                [
+                    market.interface.encodeFunctionData(
+                        'setSingularityConfig',
+                        [
+                            addrZero,
+                            addrZero,
+                            addrZero,
+                            addrZero,
+                            addrZero,
+                            addrZero,
+                            addrZero,
+                            interestHelper,
+                        ],
+                    ),
+                ],
+                true, // revert on failure
+            ]),
             allowFailure: false,
         });
     }

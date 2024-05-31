@@ -51,7 +51,7 @@ const supportedChains = SDK.API.utils.getSupportedChains().reduce(
 );
 
 const config: HardhatUserConfig & { dodoc: any } = {
-    SDK: { project: TAPIOCA_PROJECTS_NAME.TapiocaZ },
+    SDK: { project: TAPIOCA_PROJECTS_NAME.TapiocaBar },
     solidity: {
         compilers: [
             {
@@ -82,7 +82,7 @@ const config: HardhatUserConfig & { dodoc: any } = {
                     evmVersion: 'paris', // Latest before Shanghai
                     optimizer: {
                         enabled: true,
-                        runs: 800,
+                        runs: 500,
                     },
                 },
             },
@@ -102,7 +102,7 @@ const config: HardhatUserConfig & { dodoc: any } = {
                     evmVersion: 'paris', // Latest before Shanghai
                     optimizer: {
                         enabled: true,
-                        runs: 2500,
+                        runs: 1500,
                     },
                 },
             },

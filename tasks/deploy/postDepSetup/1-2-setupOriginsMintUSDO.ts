@@ -9,8 +9,8 @@ export async function mintOriginUSDO__deployPostLbp_2(params: {
     multicallAddr: string;
     collateralAmount: BigNumber;
     borrowAmount: BigNumber;
-}): Promise<TapiocaMulticall.CallStruct[]> {
-    const calls: TapiocaMulticall.CallStruct[] = [];
+}): Promise<TapiocaMulticall.CallValueStruct[]> {
+    const calls: TapiocaMulticall.CallValueStruct[] = [];
 
     const { hre, tag, collateralAmount, multicallAddr, borrowAmount } = params;
     const { origins, yieldBox, tETH } =
@@ -20,6 +20,7 @@ export async function mintOriginUSDO__deployPostLbp_2(params: {
         });
 
     const collateralAssetId = await origins._collateralId();
+    const assetId = await origins._assetId();
 
     // Step 1 - Deposit ETH to YieldBox
     {
@@ -31,6 +32,7 @@ export async function mintOriginUSDO__deployPostLbp_2(params: {
                 yieldBox.address,
                 collateralAmount,
             ]),
+            value: 0,
         });
 
         // yieldBox.depositAsset( collateralAssetId,multicallAddr,multicallAddr,collateralAmount,0);
@@ -44,6 +46,7 @@ export async function mintOriginUSDO__deployPostLbp_2(params: {
                 collateralAmount,
                 0,
             ]),
+            value: 0,
         });
     }
 
@@ -57,6 +60,7 @@ export async function mintOriginUSDO__deployPostLbp_2(params: {
                 'setApprovalForAsset',
                 [origins.address, collateralAssetId, true],
             ),
+            value: 0,
         });
 
         // origins.addCollateral(collateralAmount, 0);
@@ -67,6 +71,7 @@ export async function mintOriginUSDO__deployPostLbp_2(params: {
                 collateralAmount,
                 0,
             ]),
+            value: 0,
         });
 
         // origins.borrow(borrowAmount);
@@ -76,6 +81,21 @@ export async function mintOriginUSDO__deployPostLbp_2(params: {
             callData: origins.interface.encodeFunctionData('borrow', [
                 borrowAmount,
             ]),
+            value: 0,
+        });
+
+        // yieldBox.withdraw(assetId, multicallAddr, multicallAddr, borrowAmount, 0);
+        calls.push({
+            target: yieldBox.address,
+            allowFailure: false,
+            callData: yieldBox.interface.encodeFunctionData('withdraw', [
+                assetId,
+                multicallAddr,
+                multicallAddr,
+                borrowAmount,
+                0,
+            ]),
+            value: 0,
         });
 
         // yieldBox.setApprovalForAsset(origins.address, collateralAssetId, false);
@@ -86,6 +106,7 @@ export async function mintOriginUSDO__deployPostLbp_2(params: {
                 'setApprovalForAsset',
                 [origins.address, collateralAssetId, false],
             ),
+            value: 0,
         });
     }
 

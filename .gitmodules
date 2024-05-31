@@ -22,3 +22,6 @@
 [submodule "gitmodule/tapiocaz"]
 	path = gitmodule/tapiocaz
 	url = https://github.com/Tapioca-DAO/tapiocaz
+[submodule "gitmodule/tapioca-yieldbox-strategies"]
+	path = gitmodule/tapioca-yieldbox-strategies
+	url = https://github.com/Tapioca-DAO/tapioca-yieldbox-strategies
