@@ -67,14 +67,18 @@ contract AssetTotsDaiLeverageExecutor is BaseLeverageExecutor {
 
         //re-check minAmount to verify the DAI<>sDAI ratio
         SLeverageSwapData memory swapData = abi.decode(data, (SLeverageSwapData));
-        if (collateralAmountOut < swapData.minAmountOut) revert MinAmountNotValid(swapData.minAmountOut, collateralAmountOut);
+        if (collateralAmountOut < swapData.minAmountOut) {
+            revert MinAmountNotValid(swapData.minAmountOut, collateralAmountOut);
+        }
 
         // Wrap into tsDai to sender
-        pearlmit.approve(sDaiAddress, 0, collateralAddress, collateralAmountOut.toUint200(), block.timestamp.toUint48());
+        pearlmit.approve(
+            20, sDaiAddress, 0, collateralAddress, collateralAmountOut.toUint200(), block.timestamp.toUint48()
+        );
         sDaiAddress.safeApprove(address(pearlmit), collateralAmountOut);
         collateralAmountOut = ITOFT(collateralAddress).wrap(address(this), msg.sender, collateralAmountOut);
         sDaiAddress.safeApprove(address(pearlmit), 0);
-        pearlmit.clearAllowance(address(this), sDaiAddress, 0);
+        pearlmit.clearAllowance(address(this), 20, sDaiAddress, 0);
     }
 
     /**
