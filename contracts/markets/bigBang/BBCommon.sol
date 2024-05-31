@@ -88,6 +88,14 @@ contract BBCommon is BBStorage {
     }
 
     function _accrue() internal override {
+        // accrue ETH market first
+        {
+            address ethMarket = penrose.bigBangEthMarket();
+            if (ethMarket != address(this) && ethMarket != address(0)) {
+                IBigBang(ethMarket).accrue();
+            }
+        }
+
         IBigBang.AccrueInfo memory _accrueInfo = accrueInfo;
         // Number of seconds since accrue was called
         uint256 elapsedTime = block.timestamp - _accrueInfo.lastAccrued;
