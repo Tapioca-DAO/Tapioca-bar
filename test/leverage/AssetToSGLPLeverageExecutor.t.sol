@@ -54,7 +54,7 @@ contract AssetToSGLPLeverageExecutorTest is BaseLeverageExecutorTest {
     GmxMarketMock gmxMock;
 
     function setUp() public {
-        pearlmit = new Pearlmit("Pearlmit", "1");
+        pearlmit = new Pearlmit("Test", "1", address(this), 0);
         {
             weth = new ERC20Mock("weth", "weth");
             vm.label(address(weth), "weth");

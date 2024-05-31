@@ -184,7 +184,7 @@ contract Usdo is BaseUsdo, Pausable, ReentrancyGuard, ERC20Permit {
         whenNotPaused
         returns (MessagingReceipt memory msgReceipt, OFTReceipt memory oftReceipt)
     {
-        this.send(_sendParam, _fee, _refundAddress);
+        (msgReceipt, oftReceipt) = this.send(_sendParam, _fee, _refundAddress);
     }
 
     /// =====================

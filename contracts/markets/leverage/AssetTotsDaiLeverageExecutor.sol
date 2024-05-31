@@ -3,6 +3,7 @@ pragma solidity 0.8.22;
 
 // External
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
+import {Pausable} from "@openzeppelin/contracts/security/Pausable.sol";
 
 //interfaces
 import {ISavingsDai} from "tapioca-periph/interfaces/external/makerdao/ISavingsDai.sol";
@@ -24,13 +25,27 @@ import {SafeApprove} from "../../libraries/SafeApprove.sol";
    
 */
 
-contract AssetTotsDaiLeverageExecutor is BaseLeverageExecutor {
+contract AssetTotsDaiLeverageExecutor is BaseLeverageExecutor, Pausable {
     using SafeApprove for address;
     using SafeCast for uint256;
 
     constructor(IZeroXSwapper _swapper, ICluster _cluster, address _weth, IPearlmit _pearlmit)
         BaseLeverageExecutor(_swapper, _cluster, _weth, _pearlmit)
     {}
+
+    // ********************** //
+    // *** OWNER METHODS *** //
+    // ********************** //
+    /**
+     * @notice Un/Pauses this contract.
+     */
+    function setPause(bool _pauseState) external onlyOwner {
+        if (_pauseState) {
+            _pause();
+        } else {
+            _unpause();
+        }
+    }
 
     // ********************* //
     // *** PUBLIC METHODS *** //
@@ -48,7 +63,7 @@ contract AssetTotsDaiLeverageExecutor is BaseLeverageExecutor {
         address collateralAddress,
         uint256 assetAmountIn,
         bytes calldata data
-    ) external payable override returns (uint256 collateralAmountOut) {
+    ) external payable override whenNotPaused returns (uint256 collateralAmountOut) {
         if (msg.value > 0) revert NativeNotSupported();
 
         // Should be called only by approved SGL/BB markets.
@@ -93,7 +108,7 @@ contract AssetTotsDaiLeverageExecutor is BaseLeverageExecutor {
         address assetAddress,
         uint256 collateralAmountIn,
         bytes calldata data
-    ) external override returns (uint256 assetAmountOut) {
+    ) external override whenNotPaused returns (uint256 assetAmountOut) {
         // Should be called only by approved SGL/BB markets.
         if (!cluster.isWhitelisted(0, msg.sender)) revert SenderNotValid();
 
