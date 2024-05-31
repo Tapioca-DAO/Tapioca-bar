@@ -133,7 +133,8 @@ contract AssetToSGLPLeverageExecutorTest is BaseLeverageExecutorTest {
         deal(address(usdc), address(executor), amountIn);
         deal(address(usdc), address(swapperTarget), amountIn);
         deal(address(weth), address(swapperTarget), amountIn);
-        deal(address(glp), address(executor), amountIn);
+        deal(address(weth), address(executor), amountIn);
+        deal(address(glp), address(gmxMock), amountIn);
 
         IZeroXSwapper.SZeroXSwapData memory zeroXSwapData = IZeroXSwapper.SZeroXSwapData({
             sellToken: IERC20(address(usdc)),
@@ -145,7 +146,7 @@ contract AssetToSGLPLeverageExecutorTest is BaseLeverageExecutorTest {
         SLeverageSwapData memory swapData =
             SLeverageSwapData({minAmountOut: 0, toftInfo: toftInfo, swapperData: abi.encode(zeroXSwapData)});
         SGlpLeverageSwapData memory sglLeverageSwapData =
-            SGlpLeverageSwapData({token: address(glp), minAmountOut: amountIn, swapData: swapData});
+            SGlpLeverageSwapData({token: address(weth), minAmountOut: amountIn, swapData: swapData});
 
         executor.getCollateral(
             address(this), address(usdc), address(collateral), amountIn, abi.encode(sglLeverageSwapData)
@@ -194,7 +195,8 @@ contract AssetToSGLPLeverageExecutorTest is BaseLeverageExecutorTest {
         deal(address(usdc), address(executor), amountIn);
         deal(address(usdc), address(swapperTarget), amountIn);
         deal(address(weth), address(swapperTarget), amountIn);
-        deal(address(glp), address(executor), amountIn);
+        deal(address(weth), address(executor), amountIn);
+        deal(address(glp), address(gmxMock), amountIn);
 
         IZeroXSwapper.SZeroXSwapData memory zeroXSwapData = IZeroXSwapper.SZeroXSwapData({
             sellToken: IERC20(address(usdc)),
@@ -208,7 +210,7 @@ contract AssetToSGLPLeverageExecutorTest is BaseLeverageExecutorTest {
         SLeverageSwapData memory swapData =
             SLeverageSwapData({minAmountOut: 0, toftInfo: toftInfo, swapperData: abi.encode(zeroXSwapData)});
         SGlpLeverageSwapData memory sglLeverageSwapData =
-            SGlpLeverageSwapData({token: address(glp), minAmountOut: minAmountIn, swapData: swapData});
+            SGlpLeverageSwapData({token: address(weth), minAmountOut: minAmountIn, swapData: swapData});
 
         executor.getCollateral(rndAddr, address(usdc), address(collateral), amountIn, abi.encode(sglLeverageSwapData));
 
