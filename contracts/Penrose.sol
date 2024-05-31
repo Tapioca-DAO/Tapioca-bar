@@ -166,6 +166,7 @@ contract Penrose is Ownable, PearlmitHandler {
     /// @notice event emitted when markets are re-accrued
     event ReaccruedMarkets(bool indexed mainMarketIncluded);
     event LogDeploy(address indexed masterContract, bytes data, address indexed cloneAddress);
+    event UnregisterContract(address indexed bb);
 
     // ************** //
     // *** ERRORS *** //
@@ -448,6 +449,37 @@ contract Penrose is Ownable, PearlmitHandler {
         emit RegisterBigBangMasterContract(mcAddress, contractType_);
     }
 
+    /// @notice removes a registered SGL/BB/Origin market
+    /// @param mkt the market address
+    /// @param marketType 0 - SGL, 1 - BB, 2 - Origins
+
+    function unregisterContract(address mkt, uint256 marketType) external onlyOwner {
+        address _mc = masterContractOf[mkt];
+
+        // set `isMarketRegistered` to false and remove `masterContractOf`
+        isMarketRegistered[mkt] = false;
+        delete masterContractOf[mkt];
+
+        // remove it from `allBigBangMarkets` or `allOriginsMarkets`
+        uint256 index;
+        if (marketType == 1) {
+            index = _findBigBangIndex(allBigBangMarkets, mkt);
+            allBigBangMarkets[index] = allBigBangMarkets[allBigBangMarkets.length - 1];
+            allBigBangMarkets.pop();
+        } else if (marketType == 2) {
+            index = _findBigBangIndex(allOriginsMarkets, mkt);
+            allOriginsMarkets[index] = allOriginsMarkets[allOriginsMarkets.length - 1];
+            allOriginsMarkets.pop();
+        }
+
+        // remove it from clonesOf
+        index = _findBigBangIndex(clonesOf[_mc], mkt);
+        clonesOf[_mc][index] = clonesOf[_mc][clonesOf[_mc].length - 1];
+        clonesOf[_mc].pop();
+
+        emit UnregisterContract(mkt);
+    }
+
     /// @notice Registers a Singularity market
     /// @dev can only be called by the owner
     /// @param mc The address of the master contract which must be already registered
@@ -548,6 +580,20 @@ contract Penrose is Ownable, PearlmitHandler {
         }
     }
 
+    /// @dev might be used as a setter for storage slots
+    function executeTargetFn(address target, bytes memory data)
+        external
+        onlyOwner
+        returns (bool success, bytes memory returnData)
+    {
+        if (!cluster.isWhitelisted(0, target)) revert NotAuthorized();
+        (success, returnData) = target.delegatecall(data);
+    }
+
+    // ************************ //
+    // *** PUBLIC FUNCTIONS *** //
+    // ************************ //
+
     /// @notice Calls `accrue()` on all BigBang registered markets
     /// @dev callable by BigBang ETH market only
     function reAccrueBigBangMarkets() external notPaused {
@@ -559,6 +605,16 @@ contract Penrose is Ownable, PearlmitHandler {
     // ************************* //
     // *** PRIVATE FUNCTIONS *** //
     // ************************* //
+    function _findBigBangIndex(address[] memory _arr, address _address) internal pure returns (uint256) {
+        uint256 len = _arr.length;
+        for (uint256 i; i < len; i++) {
+            if (_arr[i] == _address) {
+                return i;
+            }
+        }
+        revert AddressNotValid();
+    }
+
     function _reAccrueMarkets(bool includeMainMarket) private {
         uint256 len = allBigBangMarkets.length;
         address[] memory markets = allBigBangMarkets;
