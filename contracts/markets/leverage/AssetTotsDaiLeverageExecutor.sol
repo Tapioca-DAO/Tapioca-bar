@@ -60,7 +60,7 @@ contract AssetTotsDaiLeverageExecutor is BaseLeverageExecutor {
 
         // Wrap into tsDai to sender
         sDaiAddress.safeApprove(collateralAddress, collateralAmountOut);
-        ITOFT(collateralAddress).wrap(address(this), msg.sender, collateralAmountOut);
+        collateralAmountOut = ITOFT(collateralAddress).wrap(address(this), msg.sender, collateralAmountOut);
         sDaiAddress.safeApprove(collateralAddress, 0);
     }
 
