@@ -69,6 +69,11 @@ contract UsdoOptionReceiverModule is BaseUsdo {
         msg_ = _validateExerciseOptionReceiver(msg_);
 
         /**
+         * @dev Validate caller
+         */
+        _validateExerciseOptionCaller(msg_.optionsData, srcChainSender);
+
+        /**
          * @dev retrieve paymentToken amount
          */
         _internalTransferWithAllowance(msg_.optionsData.from, srcChainSender, msg_.optionsData.paymentTokenAmount);
@@ -90,6 +95,7 @@ contract UsdoOptionReceiverModule is BaseUsdo {
          * @dev exercise and refund if less paymentToken amount was used
          */
         _exerciseAndRefund(msg_.optionsData);
+        _approve(address(this), address(pearlmit), 0);
 
         /**
          * @dev retrieve exercised amount
@@ -112,6 +118,23 @@ contract UsdoOptionReceiverModule is BaseUsdo {
         }
     }
 
+    /**
+     *   @notice checks that the caller is allowed by the owner of the token
+     */
+    function _validateExerciseOptionCaller(IExerciseOptionsData memory _options, address _srcChainSender) internal {
+        address oTap = ITapiocaOptionBroker(_options.target).oTAP();
+        address oTapOwner = IERC721(oTap).ownerOf(_options.oTAPTokenID);
+        if (oTapOwner != _srcChainSender || oTapOwner != _options.from) {
+            revert UsdoOptionReceiverModule_NotAuthorized(_options.from);
+        }
+
+        bool isAllowed = isERC721Approved(oTapOwner, address(this), oTap, _options.oTAPTokenID);
+        if (!isAllowed) revert UsdoOptionReceiverModule_NotAuthorized(oTapOwner);
+        /// @dev Clear the allowance once it's used
+        /// usage being the allowance check
+        pearlmit.clearAllowance(oTapOwner, oTap, _options.oTAPTokenID);
+    }
+
     function _validateExerciseOptionReceiver(ExerciseOptionsMsg memory msg_)
         private
         view
@@ -132,19 +155,13 @@ contract UsdoOptionReceiverModule is BaseUsdo {
 
     function _exerciseAndRefund(IExerciseOptionsData memory _options) private {
         uint256 bBefore = balanceOf(address(this));
-        address oTap = ITapiocaOptionBroker(_options.target).oTAP();
-        address oTapOwner = IERC721(oTap).ownerOf(_options.oTAPTokenID);
 
-        if (
-            oTapOwner != _options.from && !IERC721(oTap).isApprovedForAll(oTapOwner, _options.from)
-                && IERC721(oTap).getApproved(_options.oTAPTokenID) != _options.from
-        ) revert UsdoOptionReceiverModule_NotAuthorized(oTapOwner);
         ITapiocaOptionBroker(_options.target).exerciseOption(
             _options.oTAPTokenID,
             address(this), //payment token
             _options.tapAmount
         );
-        _approve(address(this), address(pearlmit), 0);
+
         uint256 bAfter = balanceOf(address(this));
 
         // Refund if less was used.
