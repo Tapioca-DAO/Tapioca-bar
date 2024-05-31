@@ -171,7 +171,7 @@ contract UsdoTest is UsdoTestHelper {
         setUpEndpoints(3, LibraryType.UltraLightNode);
 
         {
-            pearlmit = new Pearlmit("Pearlmit", "1");
+            pearlmit = new Pearlmit("Pearlmit", "1", address(this), 0);
             yieldBox = createYieldBox();
             cluster = createCluster(aEid, __owner);
             magnetar = createMagnetar(address(cluster), IPearlmit(address(pearlmit)));
@@ -262,7 +262,8 @@ contract UsdoTest is UsdoTestHelper {
         tOB = new TapiocaOptionsBrokerMock(address(tapOFT), IPearlmit(address(pearlmit)));
 
         swapper = createSwapper(yieldBox);
-        leverageExecutor = createLeverageExecutor(address(yieldBox), address(swapper), address(cluster), address(pearlmit));
+        leverageExecutor =
+            createLeverageExecutor(address(yieldBox), address(swapper), address(cluster), address(pearlmit));
         (penrose, masterContract) = createPenrose(
             TestPenroseData(
                 address(yieldBox),
@@ -597,9 +598,7 @@ contract UsdoTest is UsdoTestHelper {
             tOB.setPaymentTokenAmount(erc20Amount_);
         }
 
-        pearlmit.approve(
-            tOB.oTAP(), 0, address(magnetar), type(uint200).max, uint48(block.timestamp)
-        );
+        pearlmit.approve(721, tOB.oTAP(), 0, address(magnetar), type(uint200).max, uint48(block.timestamp));
 
         //useful in case of withdraw after borrow
         LZSendParam memory withdrawLzSendParam_;
@@ -1167,7 +1166,7 @@ contract UsdoTest is UsdoTestHelper {
         uint256 tokenAmount_ = 0.5 ether;
 
         deal(address(bUsdo), address(this), erc20Amount_);
-        pearlmit.approve(address(bUsdo), 0, address(magnetar), uint200(tokenAmount_), uint48(block.timestamp)); // Atomic approval
+        pearlmit.approve(20, address(bUsdo), 0, address(magnetar), uint200(tokenAmount_), uint48(block.timestamp)); // Atomic approval
         bUsdo.approve(address(pearlmit), tokenAmount_);
 
         LZSendParam memory withdrawLzSendParam_;
@@ -1206,7 +1205,9 @@ contract UsdoTest is UsdoTestHelper {
         singularity.approve(address(magnetar), type(uint256).max);
 
         uint256 sh = yieldBox.toShare(bUsdoYieldBoxId, tokenAmount_, false);
-        pearlmit.approve(address(yieldBox), bUsdoYieldBoxId, address(singularity), uint200(sh), uint48(block.timestamp)); // Atomic approval
+        pearlmit.approve(
+            1155, address(yieldBox), bUsdoYieldBoxId, address(singularity), uint200(sh), uint48(block.timestamp)
+        ); // Atomic approval
         yieldBox.setApprovalForAll(address(pearlmit), true);
 
         uint256 tokenAmountSD = usdoHelper.toSD(tokenAmount_, aUsdo.decimalConversionRate());
@@ -1308,7 +1309,7 @@ contract UsdoTest is UsdoTestHelper {
 
             yieldBox.setApprovalForAll(address(pearlmit), true);
             pearlmit.approve(
-                address(yieldBox), bUsdoYieldBoxId, address(singularity), uint200(sh), uint48(block.timestamp)
+                1155, address(yieldBox), bUsdoYieldBoxId, address(singularity), uint200(sh), uint48(block.timestamp)
             ); // Atomic approval
             singularity.addAsset(address(this), address(this), false, sh);
 
@@ -1316,7 +1317,7 @@ contract UsdoTest is UsdoTestHelper {
             yieldBox.depositAsset(aUsdoYieldBoxId, address(this), address(this), erc20Amount_, 0);
 
             pearlmit.approve(
-                address(yieldBox), collateralId, address(singularity), uint200(sh), uint48(block.timestamp)
+                1155, address(yieldBox), collateralId, address(singularity), uint200(sh), uint48(block.timestamp)
             ); // Atomic approval
 
             uint256 collateralShare = yieldBox.toShare(aUsdoYieldBoxId, erc20Amount_, false);
@@ -1370,7 +1371,9 @@ contract UsdoTest is UsdoTestHelper {
          */
         singularity.approveBorrow(address(magnetar), type(uint256).max);
 
-        pearlmit.approve(address(yieldBox), bUsdoYieldBoxId, address(singularity), uint200(sh), uint48(block.timestamp)); // Atomic approval
+        pearlmit.approve(
+            1155, address(yieldBox), bUsdoYieldBoxId, address(singularity), uint200(sh), uint48(block.timestamp)
+        ); // Atomic approval
         yieldBox.setApprovalForAll(address(pearlmit), true);
 
         uint256 userCollateralShareBefore = singularity._userCollateralShare(address(this));
@@ -1467,7 +1470,7 @@ contract UsdoTest is UsdoTestHelper {
             uint256 sh = yieldBox.toShare(bUsdoYieldBoxId, erc20Amount_, false);
             yieldBox.setApprovalForAll(address(pearlmit), true);
             pearlmit.approve(
-                address(yieldBox), bUsdoYieldBoxId, address(singularity), uint200(sh), uint48(block.timestamp)
+                1155, address(yieldBox), bUsdoYieldBoxId, address(singularity), uint200(sh), uint48(block.timestamp)
             );
             singularity.addAsset(address(this), address(this), false, sh);
         }
@@ -1621,7 +1624,7 @@ contract UsdoTest is UsdoTestHelper {
 
             yieldBox.setApprovalForAll(address(pearlmit), true);
             pearlmit.approve(
-                address(yieldBox), bUsdoYieldBoxId, address(singularity), uint200(shares), uint48(block.timestamp)
+                1155, address(yieldBox), bUsdoYieldBoxId, address(singularity), uint200(shares), uint48(block.timestamp)
             );
             singularity.addAsset(alice, alice, false, shares);
 
@@ -1638,7 +1641,7 @@ contract UsdoTest is UsdoTestHelper {
 
             yieldBox.setApprovalForAll(address(pearlmit), true);
             pearlmit.approve(
-                address(yieldBox), aUsdoYieldBoxId, address(singularity), uint200(shares), uint48(block.timestamp)
+                1155, address(yieldBox), aUsdoYieldBoxId, address(singularity), uint200(shares), uint48(block.timestamp)
             );
 
             Module[] memory modules;

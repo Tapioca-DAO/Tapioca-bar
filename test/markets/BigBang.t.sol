@@ -126,6 +126,7 @@ contract BigBangTest is UsdoTestHelper {
         setUpEndpoints(3, LibraryType.UltraLightNode);
 
         {
+            pearlmit = new Pearlmit("Pearlmit", "1", address(this), 0);
             yieldBox = createYieldBox();
             cluster = createCluster(aEid, address(this));
             magnetar = createMagnetar(address(cluster), IPearlmit(address(pearlmit)));
@@ -148,7 +149,8 @@ contract BigBangTest is UsdoTestHelper {
         // }
 
         swapper = createSwapper(yieldBox);
-        leverageExecutor = createLeverageExecutor(address(yieldBox), address(swapper), address(cluster), address(pearlmit));
+        leverageExecutor =
+            createLeverageExecutor(address(yieldBox), address(swapper), address(cluster), address(pearlmit));
         (penrose,) = createPenrose(
             TestPenroseData(
                 address(yieldBox),
@@ -204,7 +206,7 @@ contract BigBangTest is UsdoTestHelper {
         yieldBox.setApprovalForAll(address(bigBang), true);
         yieldBox.setApprovalForAll(address(pearlmit), true);
         pearlmit.approve(
-            address(yieldBox), assetYieldBoxId, address(bigBang), type(uint200).max, uint48(block.timestamp)
+            1155, address(yieldBox), assetYieldBoxId, address(bigBang), type(uint200).max, uint48(block.timestamp)
         );
     }
 
@@ -215,7 +217,7 @@ contract BigBangTest is UsdoTestHelper {
         yieldBox.setApprovalForAll(address(bigBang), true);
         yieldBox.setApprovalForAll(address(pearlmit), true);
         pearlmit.approve(
-            address(yieldBox), collateralYieldBoxId, address(bigBang), type(uint200).max, uint48(block.timestamp)
+            1155, address(yieldBox), collateralYieldBoxId, address(bigBang), type(uint200).max, uint48(block.timestamp)
         );
 
         uint256 share = yieldBox.toShare(collateralYieldBoxId, amount, false);
@@ -235,7 +237,7 @@ contract BigBangTest is UsdoTestHelper {
 
     function repay(uint256 part) public {
         pearlmit.approve(
-            address(yieldBox), assetYieldBoxId, address(bigBang), type(uint200).max, uint48(block.timestamp)
+            1155, address(yieldBox), assetYieldBoxId, address(bigBang), type(uint200).max, uint48(block.timestamp)
         );
         (Module[] memory modules, bytes[] memory calls) = marketHelper.repay(address(this), address(this), false, part);
         bigBang.execute(modules, calls, true);
@@ -724,7 +726,7 @@ contract BigBangTest is UsdoTestHelper {
         yieldBox.setApprovalForAll(address(bigBang), true);
         yieldBox.setApprovalForAll(address(pearlmit), true);
         pearlmit.approve(
-            address(yieldBox), assetYieldBoxId, address(bigBang), type(uint200).max, uint48(block.timestamp)
+            1155, address(yieldBox), assetYieldBoxId, address(bigBang), type(uint200).max, uint48(block.timestamp)
         );
 
         vm.stopPrank();

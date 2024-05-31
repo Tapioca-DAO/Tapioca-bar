@@ -76,6 +76,7 @@ contract AssetToSDaiLeverageExecutorTest is BaseLeverageExecutorTest {
 
             swapperTarget = new ZeroXSwapperMockTarget();
             swapper = new ZeroXSwapper(address(swapperTarget), ICluster(address(cluster)), address(this));
+            pearlmit = new Pearlmit("Pearlmit", "1", address(this), 0);
 
             executor = new AssetTotsDaiLeverageExecutor(
                 IZeroXSwapper(address(swapper)), ICluster(address(cluster)), address(0), IPearlmit(address(pearlmit))

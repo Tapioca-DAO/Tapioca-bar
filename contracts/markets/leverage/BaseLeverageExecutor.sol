@@ -242,11 +242,11 @@ abstract contract BaseLeverageExecutor is Ownable {
             _amountOut = ITOFT(tokenOut).wrap{value: amountOut}(address(this), wrapsTo, amountOut);
         } else {
             // If the tOFT is for an ERC20, wrap it.
-            pearlmit.approve(toftErc20, 0, tokenOut, amountOut.toUint200(), block.timestamp.toUint48());
+            pearlmit.approve(20, toftErc20, 0, tokenOut, amountOut.toUint200(), block.timestamp.toUint48());
             toftErc20.safeApprove(address(pearlmit), amountOut);
             _amountOut = ITOFT(tokenOut).wrap(address(this), wrapsTo, amountOut);
             toftErc20.safeApprove(address(pearlmit), 0);
-            pearlmit.clearAllowance(address(this), toftErc20, 0);
+            pearlmit.clearAllowance(address(this), 20, toftErc20, 0);
         }
     }
 }
