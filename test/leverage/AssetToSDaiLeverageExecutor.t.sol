@@ -115,7 +115,7 @@ contract AssetToSDaiLeverageExecutorTest is BaseLeverageExecutorTest {
         SLeverageSwapData memory swapData =
             SLeverageSwapData({minAmountOut: 0, toftInfo: toftInfo, swapperData: abi.encode(zeroXSwapData)});
 
-        executor.getCollateral(address(asset), address(toft), amountIn, abi.encode(swapData));
+        executor.getCollateral(address(this), address(asset), address(toft), amountIn, abi.encode(swapData));
 
         assertEq(toft.balanceOf(address(this)), amountIn);
     }
@@ -142,7 +142,7 @@ contract AssetToSDaiLeverageExecutorTest is BaseLeverageExecutorTest {
         SLeverageSwapData memory swapData =
             SLeverageSwapData({minAmountOut: 0, toftInfo: toftInfo, swapperData: abi.encode(zeroXSwapData)});
 
-        executor.getAsset(address(toft), address(asset), amountIn, abi.encode(swapData));
+        executor.getAsset(address(this), address(toft), address(asset), amountIn, abi.encode(swapData));
         assertEq(asset.balanceOf(address(this)), amountIn);
     }
 }

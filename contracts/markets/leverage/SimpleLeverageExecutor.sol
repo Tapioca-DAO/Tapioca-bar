@@ -38,6 +38,7 @@ contract SimpleLeverageExecutor is BaseLeverageExecutor {
      * @inheritdoc BaseLeverageExecutor
      */
     function getCollateral(
+        address refundDustAddress,
         address assetAddress,
         address collateralAddress,
         uint256 assetAmountIn,
@@ -45,13 +46,14 @@ contract SimpleLeverageExecutor is BaseLeverageExecutor {
     ) external payable override returns (uint256 collateralAmountOut) {
         // Should be called only by approved SGL/BB markets.
         if (!cluster.isWhitelisted(0, msg.sender)) revert SenderNotValid();
-        return _swapAndTransferToSender(true, assetAddress, collateralAddress, assetAmountIn, swapperData);
+        return _swapAndTransferToSender(refundDustAddress, true, assetAddress, collateralAddress, assetAmountIn, swapperData);
     }
 
     /**
      * @inheritdoc BaseLeverageExecutor
      */
     function getAsset(
+        address refundDustAddress,
         address collateralAddress,
         address assetAddress,
         uint256 collateralAmountIn,
@@ -59,6 +61,6 @@ contract SimpleLeverageExecutor is BaseLeverageExecutor {
     ) external override returns (uint256 assetAmountOut) {
         // Should be called only by approved SGL/BB markets.
         if (!cluster.isWhitelisted(0, msg.sender)) revert SenderNotValid();
-        return _swapAndTransferToSender(true, collateralAddress, assetAddress, collateralAmountIn, swapperData);
+        return _swapAndTransferToSender(refundDustAddress, true, collateralAddress, assetAddress, collateralAmountIn, swapperData);
     }
 }

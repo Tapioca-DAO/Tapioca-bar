@@ -37,7 +37,7 @@ contract AssetTotsDaiLeverageExecutor is BaseLeverageExecutor {
      * @dev Expects SLeverageSwapData.toftInfo.isTokenOutToft to be false. Does the wrapping internally.
      * @inheritdoc BaseLeverageExecutor
      */
-    function getCollateral(address assetAddress, address collateralAddress, uint256 assetAmountIn, bytes calldata data)
+    function getCollateral(address refundDustAddress, address assetAddress, address collateralAddress, uint256 assetAmountIn, bytes calldata data)
         external
         payable
         override
@@ -52,7 +52,7 @@ contract AssetTotsDaiLeverageExecutor is BaseLeverageExecutor {
         (address sDaiAddress, address daiAddress) = _getAddresses(collateralAddress);
 
         //swap USDO (asset) with DAI
-        uint256 daiAmount = _swapAndTransferToSender(false, assetAddress, daiAddress, assetAmountIn, data);
+        uint256 daiAmount = _swapAndTransferToSender(refundDustAddress, false, assetAddress, daiAddress, assetAmountIn, data);
 
         //obtain sDai
         daiAddress.safeApprove(sDaiAddress, daiAmount);
@@ -70,7 +70,7 @@ contract AssetTotsDaiLeverageExecutor is BaseLeverageExecutor {
      * @dev Expects SLeverageSwapData.toftInfo.isTokenOutToft to be false. Does the wrapping internally.
      * @inheritdoc BaseLeverageExecutor
      */
-    function getAsset(address collateralAddress, address assetAddress, uint256 collateralAmountIn, bytes calldata data)
+    function getAsset(address refundDustAddress, address collateralAddress, address assetAddress, uint256 collateralAmountIn, bytes calldata data)
         external
         override
         returns (uint256 assetAmountOut)
@@ -87,7 +87,7 @@ contract AssetTotsDaiLeverageExecutor is BaseLeverageExecutor {
         // swap DAI with USDO, and transfer to sender
         // If sendBack true and swapData.swapperData.toftInfo.isTokenOutToft false
         // The asset will be transfer via IERC20 transfer.
-        assetAmountOut = _swapAndTransferToSender(true, daiAddress, assetAddress, obtainedDai, data);
+        assetAmountOut = _swapAndTransferToSender(refundDustAddress, true, daiAddress, assetAddress, obtainedDai, data);
     }
 
     // ********************** //
