@@ -52,6 +52,7 @@
         "@nomiclabs/hardhat-ethers": "^2.1.1",
         "@nomiclabs/hardhat-etherscan": "^3.1.7",
         "@openzeppelin/contracts": "^4.9.5",
+        "@swc/core": "^1.5.24",
         "@typechain/ethers-v5": "^10.1.0",
         "@typechain/hardhat": "^6.1.2",
         "@types/chai": "^4.2.22",
