@@ -31,12 +31,10 @@ contract SGLInterestHelper is ISGLInterestHelper {
     // ************************** //
     // *** PRIVATE FUNCTIONS *** //
     // ************************* //
-    function getInterestRate(
-        InterestRateCall memory data
-    )
+    function getInterestRate(InterestRateCall memory data)
         external
-        override
         view
+        override
         returns (
             ISingularity.AccrueInfo memory _accrueInfo,
             Rebase memory _totalBorrow,
@@ -52,7 +50,8 @@ contract SGLInterestHelper is ISGLInterestHelper {
         extraAmount = 0;
         feeFraction = 0;
 
-        uint256 fullAssetAmount = data.yieldBox.toAmount(data.assetId, _totalAsset.elastic, false) + _totalBorrow.elastic;
+        uint256 fullAssetAmount =
+            data.yieldBox.toAmount(data.assetId, _totalAsset.elastic, false) + _totalBorrow.elastic;
 
         utilization =
             fullAssetAmount == 0 ? 0 : (uint256(_totalBorrow.elastic) * UTILIZATION_PRECISION) / fullAssetAmount;
@@ -89,8 +88,7 @@ contract SGLInterestHelper is ISGLInterestHelper {
 
         // Update interest rate
         if (utilization < data.minimumTargetUtilization) {
-            uint256 underFactor =
-                ((data.minimumTargetUtilization - utilization) * 1e18) / data.minimumTargetUtilization;
+            uint256 underFactor = ((data.minimumTargetUtilization - utilization) * 1e18) / data.minimumTargetUtilization;
             uint256 scale = data.interestElasticity + (underFactor * underFactor * elapsedTime);
             _accrueInfo.interestPerSecond =
                 ((uint256(_accrueInfo.interestPerSecond) * data.interestElasticity) / scale).toUint64();
@@ -98,7 +96,8 @@ contract SGLInterestHelper is ISGLInterestHelper {
                 _accrueInfo.interestPerSecond = data.minimumInterestPerSecond; // 0.25% APR minimum
             }
         } else if (utilization > data.maximumTargetUtilization) {
-            uint256 overFactor = ((utilization - data.maximumTargetUtilization) * 1e18) / (FULL_UTILIZATION - data.maximumTargetUtilization);
+            uint256 overFactor = ((utilization - data.maximumTargetUtilization) * 1e18)
+                / (FULL_UTILIZATION - data.maximumTargetUtilization);
             uint256 scale = data.interestElasticity + (overFactor * overFactor * elapsedTime);
             uint256 newInterestPerSecond = (uint256(_accrueInfo.interestPerSecond) * scale) / data.interestElasticity;
             if (newInterestPerSecond > data.maximumInterestPerSecond) {

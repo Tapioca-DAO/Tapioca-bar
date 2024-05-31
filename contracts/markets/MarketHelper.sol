@@ -21,6 +21,7 @@ import {IMarket, Module} from "tapioca-periph/interfaces/bar/IMarket.sol";
 
 contract MarketHelper {
     using RebaseLibrary for Rebase;
+
     error ExchangeRateNotValid();
 
     /// @notice transforms amount to shares for a market's permit operation
@@ -85,7 +86,7 @@ contract MarketHelper {
             data.feeDecimalsPrecision = feeDecimalsPrecision;
         }
 
-        (,,collateralShare) = _viewLiqudationBorrowAndCollateralShare(data, sglAddress);
+        (,, collateralShare) = _viewLiqudationBorrowAndCollateralShare(data, sglAddress);
     }
 
     /// @notice Adds `collateral` from msg.sender to the account `to`.
@@ -264,6 +265,7 @@ contract MarketHelper {
     error BadDebt();
     error InsufficientLiquidationBonus();
     error NotEnoughCollateral();
+
     struct _ViewLiquidationStruct {
         address user;
         uint256 maxBorrowPart;
@@ -280,11 +282,12 @@ contract MarketHelper {
         uint256 exchangeRatePrecision;
         uint256 feeDecimalsPrecision;
     }
+
     function _viewLiqudationBorrowAndCollateralShare(_ViewLiquidationStruct memory _data, address sglAddress)
         private
         view
         returns (uint256 borrowAmount, uint256 borrowPart, uint256 collateralShare)
-    {   
+    {
         IMarket market = IMarket(sglAddress);
         if (_data.exchangeRate == 0) revert ExchangeRateNotValid();
 
@@ -294,11 +297,7 @@ contract MarketHelper {
         ) / _data.exchangeRate;
 
         // compute closing factor (liquidatable amount)
-        uint256 borrowPartWithBonus = market.computeClosingFactor(
-            _data.userBorrowPart,
-            collateralPartInAsset,
-            1e5
-        );
+        uint256 borrowPartWithBonus = market.computeClosingFactor(_data.userBorrowPart, collateralPartInAsset, 1e5);
 
         // limit liquidable amount before bonus to the current debt
         uint256 userTotalBorrowAmount = _data.totalBorrow.toElastic(_data.userBorrowPart, true);
@@ -318,8 +317,7 @@ contract MarketHelper {
         if (borrowPart == 0) revert Solvent();
 
         if (_data.liquidationBonusAmount > 0) {
-            borrowPartWithBonus =
-                borrowPartWithBonus + (borrowPartWithBonus * _data.liquidationBonusAmount) / 1e5;
+            borrowPartWithBonus = borrowPartWithBonus + (borrowPartWithBonus * _data.liquidationBonusAmount) / 1e5;
         }
 
         if (collateralPartInAsset < borrowPartWithBonus) {

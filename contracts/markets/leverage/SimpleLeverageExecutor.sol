@@ -46,7 +46,9 @@ contract SimpleLeverageExecutor is BaseLeverageExecutor {
     ) external payable override returns (uint256 collateralAmountOut) {
         // Should be called only by approved SGL/BB markets.
         if (!cluster.isWhitelisted(0, msg.sender)) revert SenderNotValid();
-        return _swapAndTransferToSender(refundDustAddress, true, assetAddress, collateralAddress, assetAmountIn, swapperData);
+        return _swapAndTransferToSender(
+            refundDustAddress, true, assetAddress, collateralAddress, assetAmountIn, swapperData
+        );
     }
 
     /**
@@ -61,6 +63,8 @@ contract SimpleLeverageExecutor is BaseLeverageExecutor {
     ) external override returns (uint256 assetAmountOut) {
         // Should be called only by approved SGL/BB markets.
         if (!cluster.isWhitelisted(0, msg.sender)) revert SenderNotValid();
-        return _swapAndTransferToSender(refundDustAddress, true, collateralAddress, assetAddress, collateralAmountIn, swapperData);
+        return _swapAndTransferToSender(
+            refundDustAddress, true, collateralAddress, assetAddress, collateralAmountIn, swapperData
+        );
     }
 }

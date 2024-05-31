@@ -104,12 +104,13 @@ abstract contract BaseLeverageExecutor is Ownable {
      * @param assetAmountIn amount to swap.
      * @param data SLeverageSwapData.
      */
-    function getCollateral(address refundDustAddress, address assetAddress, address collateralAddress, uint256 assetAmountIn, bytes calldata data)
-        external
-        payable
-        virtual
-        returns (uint256 collateralAmountOut)
-    {}
+    function getCollateral(
+        address refundDustAddress,
+        address assetAddress,
+        address collateralAddress,
+        uint256 assetAmountIn,
+        bytes calldata data
+    ) external payable virtual returns (uint256 collateralAmountOut) {}
 
     /**
      * @notice Buys an asked amount of asset with a collateral using the ZeroXSwapper.
@@ -120,11 +121,13 @@ abstract contract BaseLeverageExecutor is Ownable {
      * @param collateralAmountIn amount to swap.
      * @param data SLeverageSwapData.
      */
-    function getAsset(address refundDustAddress, address collateralAddress, address assetAddress, uint256 collateralAmountIn, bytes calldata data)
-        external
-        virtual
-        returns (uint256 assetAmountOut)
-    {}
+    function getAsset(
+        address refundDustAddress,
+        address collateralAddress,
+        address assetAddress,
+        uint256 collateralAmountIn,
+        bytes calldata data
+    ) external virtual returns (uint256 assetAmountOut) {}
 
     // *********************** //
     // *** INTERNAL METHODS *** //

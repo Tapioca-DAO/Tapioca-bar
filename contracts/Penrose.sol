@@ -87,7 +87,6 @@ contract Penrose is Ownable, PearlmitHandler {
     mapping(address => bool) public isOriginRegistered;
     address[] public allOriginsMarkets;
 
-
     /// @notice Mapping from clone contracts to their masterContract.
     mapping(address => address) public masterContractOf;
 
@@ -247,7 +246,6 @@ contract Penrose is Ownable, PearlmitHandler {
         cloneCount = clonesOf[masterContract].length;
     }
 
-
     // *********************** //
     // *** OWNER FUNCTIONS *** //
     // *********************** //
@@ -258,11 +256,12 @@ contract Penrose is Ownable, PearlmitHandler {
     /// @param data Additional abi encoded calldata that is passed to the new clone via `IMasterContract.init`.
     /// @param useCreate2 Creates the clone by using the CREATE2 opcode, in this case `data` will be used as salt.
     /// @return cloneAddress Address of the created clone contract.
-    function deploy(
-        address masterContract,
-        bytes calldata data,
-        bool useCreate2
-    ) public payable onlyOwner returns (address cloneAddress) {
+    function deploy(address masterContract, bytes calldata data, bool useCreate2)
+        public
+        payable
+        onlyOwner
+        returns (address cloneAddress)
+    {
         require(masterContract != address(0), "BoringFactory: No masterContract");
         bytes20 targetBytes = bytes20(masterContract); // Takes the first 20 bytes of the masterContract's address
 
