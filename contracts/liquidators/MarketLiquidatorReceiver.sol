@@ -3,6 +3,7 @@ pragma solidity 0.8.22;
 
 // External
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 // Tapioca
@@ -25,20 +26,17 @@ import {ITOFT} from "tapioca-periph/interfaces/oft/ITOFT.sol";
 /// @title ExampleMarketLiquidatorReceiver.
 /// @notice Example of a liquidator receiver contract.
 /// @dev This contract uses ZeroXSwapper to swap tokens.
-contract MarketLiquidatorReceiver is IMarketLiquidatorReceiver, Ownable {
+contract MarketLiquidatorReceiver is IMarketLiquidatorReceiver, Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     address public immutable weth;
 
     mapping(address tokenIn => address swapper) public swappers;
 
-    uint256 private _entered;
-
     event SwapperAssigned(address indexed tokenIn, address indexed swapper);
 
     error NotAuthorized();
     error NotEnough();
-    error Reentrancy();
     error NoSwapperAssigned();
     error SwapFailed();
     error NotValid();
@@ -65,9 +63,7 @@ contract MarketLiquidatorReceiver is IMarketLiquidatorReceiver, Ownable {
         address tokenOut,
         uint256 collateralAmount,
         bytes calldata data
-    ) external returns (bool) {
-        if (_entered != 0) revert Reentrancy();
-        _entered = 1;
+    ) external nonReentrant returns (bool) {
         if (initiator != owner()) revert NotAuthorized();
 
         // retrieve swapper
@@ -106,7 +102,6 @@ contract MarketLiquidatorReceiver is IMarketLiquidatorReceiver, Ownable {
         // tokenOut should be USDO
         IERC20(tokenOut).safeTransfer(msg.sender, amountOut);
 
-        _entered = 0;
         return true;
     }
 
