@@ -17,8 +17,8 @@ import {
     MintFromBBAndLendOnSGLData,
     ExitPositionAndRemoveCollateralData
 } from "tapioca-periph/interfaces/periph/IMagnetar.sol";
+import {MagnetarCollateralModule} from "tapioca-periph/Magnetar/modules/MagnetarCollateralModule.sol";
 import {MagnetarOptionModule} from "tapioca-periph/Magnetar/modules/MagnetarOptionModule.sol";
-import {MagnetarAssetModule} from "tapioca-periph/Magnetar/modules/MagnetarAssetModule.sol";
 import {MagnetarMintModule} from "tapioca-periph/Magnetar/modules/MagnetarMintModule.sol";
 import {IMagnetarHelper} from "tapioca-periph/interfaces/periph/IMagnetarHelper.sol";
 import {IMintData} from "tapioca-periph/interfaces/oft/IUsdo.sol";
@@ -152,7 +152,7 @@ contract UsdoMarketReceiverModule is BaseUsdo {
         _validateAndSpendAllowance(msg_.user, srcChainSender, msg_.lendParams.depositAmount);
 
         bytes memory call = abi.encodeWithSelector(
-            MagnetarAssetModule.depositRepayAndRemoveCollateralFromMarket.selector,
+            MagnetarCollateralModule.depositRepayAndRemoveCollateralFromMarket.selector,
             DepositRepayAndRemoveCollateralFromMarketData({
                 market: msg_.lendParams.market,
                 marketHelper: msg_.lendParams.marketHelper,
@@ -165,7 +165,7 @@ contract UsdoMarketReceiverModule is BaseUsdo {
         );
         MagnetarCall[] memory magnetarCall = new MagnetarCall[](1);
         magnetarCall[0] = MagnetarCall({
-            id: uint8(MagnetarAction.AssetModule),
+            id: uint8(MagnetarAction.CollateralModule),
             target: msg_.lendParams.magnetar, //ignored in modules call
             value: msg.value,
             call: call
