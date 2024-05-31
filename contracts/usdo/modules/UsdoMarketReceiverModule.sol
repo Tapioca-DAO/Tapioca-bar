@@ -159,8 +159,7 @@ contract UsdoMarketReceiverModule is BaseUsdo {
 
     function _repay(MarketLendOrRepayMsg memory msg_, address srcChainSender) private {
         if (msg_.lendParams.repayAmount == 0) {
-            msg_.lendParams.repayAmount = IMagnetarHelper(IMagnetar(payable(msg_.lendParams.magnetar)).helper())
-                .getBorrowPartForAmount(msg_.lendParams.market, msg_.lendParams.depositAmount);
+            msg_.lendParams.repayAmount = msg_.lendParams.depositAmount;
         }
 
         _validateAndSpendAllowance(msg_.user, srcChainSender, msg_.lendParams.depositAmount);
