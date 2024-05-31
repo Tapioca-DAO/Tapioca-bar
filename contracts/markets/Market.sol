@@ -432,7 +432,7 @@ abstract contract Market is MarketERC20, Ownable {
                 (pearlmitAllowed,) = penrose.pearlmit().allowance(from, msg.sender, address(yieldBox), collateralId);
             }
             require(allowanceBorrow[from][msg.sender] >= share || pearlmitAllowed >= share, "Market: not approved");
-            if (pearlmitAllowed != 0) return;
+            if (pearlmitAllowed >= share) return;
             if (allowanceBorrow[from][msg.sender] != type(uint256).max) {
                 allowanceBorrow[from][msg.sender] -= share;
             }

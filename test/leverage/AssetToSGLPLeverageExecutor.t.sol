@@ -25,6 +25,7 @@ import {ERC20Mock} from "../mocks/ERC20Mock.sol";
 import {IGmxRewardRouterV2} from "tapioca-periph/interfaces/external/gmx/IGmxRewardRouterV2.sol";
 import {IZeroXSwapper} from "tapioca-periph/interfaces/periph/IZeroXSwapper.sol";
 import {BaseLeverageExecutorTest} from "./BaseLeverageExecutorTest.t.sol";
+import {Pearlmit, IPearlmit} from "tapioca-periph/pearlmit/Pearlmit.sol";
 import {ICluster} from "tapioca-periph/interfaces/periph/ICluster.sol";
 import {ZeroXSwapper} from "tapioca-periph/Swapper/ZeroXSwapper.sol";
 import {GmxMarketMock} from "../mocks/GmxMarketMock.sol";
@@ -40,6 +41,7 @@ contract AssetToSGLPLeverageExecutorTest is BaseLeverageExecutorTest {
     AssetToSGLPLeverageExecutor executor;
     YieldBox yieldBox;
     Cluster cluster;
+    Pearlmit pearlmit;
 
     uint256 usdcYieldBoxId;
     uint256 wethYieldBoxId;
@@ -52,6 +54,7 @@ contract AssetToSGLPLeverageExecutorTest is BaseLeverageExecutorTest {
     GmxMarketMock gmxMock;
 
     function setUp() public {
+        pearlmit = new Pearlmit("Pearlmit", "1");
         {
             weth = new ERC20Mock("weth", "weth");
             vm.label(address(weth), "weth");
@@ -62,7 +65,7 @@ contract AssetToSGLPLeverageExecutorTest is BaseLeverageExecutorTest {
             glp = new ERC20Mock("glp", "glp");
             vm.label(address(glp), "glp");
 
-            collateral = new TOFTMock(address(glp));
+            collateral = new TOFTMock(address(glp), IPearlmit(address(pearlmit)));
             vm.label(address(collateral), "collateral");
 
             gmxMock = new GmxMarketMock(address(0), address(0), address(0));
@@ -92,11 +95,13 @@ contract AssetToSGLPLeverageExecutorTest is BaseLeverageExecutorTest {
             swapperTarget = new ZeroXSwapperMockTarget();
             swapper = new ZeroXSwapper(address(swapperTarget), ICluster(address(cluster)), address(this));
 
+
             executor = new AssetToSGLPLeverageExecutor(
                 IZeroXSwapper(address(swapper)),
                 ICluster(address(cluster)),
                 IGmxRewardRouterV2(address(gmxMock)),
-                address(0)
+                address(0), 
+                IPearlmit(address(pearlmit))
             );
         }
 

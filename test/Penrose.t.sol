@@ -121,7 +121,7 @@ contract PenroseTest is UsdoTestHelper {
             )
         );
 
-        leverageExecutor = createLeverageExecutor(address(yieldBox), address(swapper), address(cluster));
+        leverageExecutor = createLeverageExecutor(address(yieldBox), address(swapper), address(cluster), address(pearlmit));
         (penrose, masterContract) = createPenrose(
             TestPenroseData(
                 address(yieldBox),

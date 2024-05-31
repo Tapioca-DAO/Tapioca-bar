@@ -106,11 +106,11 @@ contract UsdoTestHelper is TestHelper, TestUtils {
         return new OracleMock("Oracle Test", "ORCT", 1 ether);
     }
 
-    function createLeverageExecutor(address, address _swapper, address _cluster)
+    function createLeverageExecutor(address, address _swapper, address _cluster, address _pearlmit)
         public
         returns (SimpleLeverageExecutor)
     {
-        return new SimpleLeverageExecutor(IZeroXSwapper(_swapper), ICluster(_cluster), address(0));
+        return new SimpleLeverageExecutor(IZeroXSwapper(_swapper), ICluster(_cluster), address(0), IPearlmit(_pearlmit));
     }
 
     function createPenrose(TestPenroseData memory _data) public returns (Penrose pen, Singularity mediumRiskMC) {

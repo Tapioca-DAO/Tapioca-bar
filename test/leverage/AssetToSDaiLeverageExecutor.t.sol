@@ -24,6 +24,7 @@ import {BaseLeverageExecutorTest} from "./BaseLeverageExecutorTest.t.sol";
 import {ICluster} from "tapioca-periph/interfaces/periph/ICluster.sol";
 import {ZeroXSwapper} from "tapioca-periph/Swapper/ZeroXSwapper.sol";
 import {TOFTMock} from "../mocks/TOFTMock.sol";
+import {Pearlmit, IPearlmit} from "tapioca-periph/pearlmit/Pearlmit.sol";
 
 import "forge-std/Test.sol";
 
@@ -35,6 +36,7 @@ contract AssetToSDaiLeverageExecutorTest is BaseLeverageExecutorTest {
     AssetTotsDaiLeverageExecutor executor;
     YieldBox yieldBox;
     Cluster cluster;
+    Pearlmit pearlmit;
 
     uint256 toftYieldBoxId;
     uint256 assetYieldBoxId;
@@ -43,6 +45,7 @@ contract AssetToSDaiLeverageExecutorTest is BaseLeverageExecutorTest {
     ZeroXSwapper swapper;
 
     function setUp() public {
+        pearlmit = new Pearlmit("Pearlmit", "1");
         {
             dai = new ERC20Mock("DAI", "DAI");
             vm.label(address(dai), "dai");
@@ -53,7 +56,7 @@ contract AssetToSDaiLeverageExecutorTest is BaseLeverageExecutorTest {
             sDai = new SavingsDaiMock(address(dai));
             vm.label(address(sDai), "sDai");
 
-            toft = new TOFTMock(address(sDai));
+            toft = new TOFTMock(address(sDai), IPearlmit(address(pearlmit)));
             vm.label(address(toft), "toft");
         }
         {
@@ -75,7 +78,7 @@ contract AssetToSDaiLeverageExecutorTest is BaseLeverageExecutorTest {
             swapper = new ZeroXSwapper(address(swapperTarget), ICluster(address(cluster)), address(this));
 
             executor = new AssetTotsDaiLeverageExecutor(
-                IZeroXSwapper(address(swapper)), ICluster(address(cluster)), address(0)
+                IZeroXSwapper(address(swapper)), ICluster(address(cluster)), address(0), IPearlmit(address(pearlmit))
             );
         }
 

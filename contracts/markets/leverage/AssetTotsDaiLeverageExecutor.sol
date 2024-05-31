@@ -1,10 +1,14 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.22;
 
+// External
+import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
+
 //interfaces
 import {ISavingsDai} from "tapioca-periph/interfaces/external/makerdao/ISavingsDai.sol";
 import {BaseLeverageExecutor, SLeverageSwapData} from "./BaseLeverageExecutor.sol";
 import {IZeroXSwapper} from "tapioca-periph/interfaces/periph/IZeroXSwapper.sol";
+import {IPearlmit} from "tapioca-periph/interfaces/periph/IPearlmit.sol";
 import {ICluster} from "tapioca-periph/interfaces/periph/ICluster.sol";
 import {ITOFT} from "tapioca-periph/interfaces/oft/ITOFT.sol";
 import {SafeApprove} from "../../libraries/SafeApprove.sol";
@@ -22,9 +26,10 @@ import {SafeApprove} from "../../libraries/SafeApprove.sol";
 
 contract AssetTotsDaiLeverageExecutor is BaseLeverageExecutor {
     using SafeApprove for address;
+    using SafeCast for uint256;
 
-    constructor(IZeroXSwapper _swapper, ICluster _cluster, address _weth)
-        BaseLeverageExecutor(_swapper, _cluster, _weth)
+    constructor(IZeroXSwapper _swapper, ICluster _cluster, address _weth, IPearlmit _pearlmit)
+        BaseLeverageExecutor(_swapper, _cluster, _weth, _pearlmit)
     {}
 
     // ********************* //
@@ -65,9 +70,11 @@ contract AssetTotsDaiLeverageExecutor is BaseLeverageExecutor {
         if (collateralAmountOut < swapData.minAmountOut) revert MinAmountNotValid(swapData.minAmountOut, collateralAmountOut);
 
         // Wrap into tsDai to sender
-        sDaiAddress.safeApprove(collateralAddress, collateralAmountOut);
+        pearlmit.approve(sDaiAddress, 0, collateralAddress, collateralAmountOut.toUint200(), block.timestamp.toUint48());
+        sDaiAddress.safeApprove(address(pearlmit), collateralAmountOut);
         collateralAmountOut = ITOFT(collateralAddress).wrap(address(this), msg.sender, collateralAmountOut);
-        sDaiAddress.safeApprove(collateralAddress, 0);
+        sDaiAddress.safeApprove(address(pearlmit), 0);
+        pearlmit.clearAllowance(address(this), sDaiAddress, 0);
     }
 
     /**

@@ -262,7 +262,7 @@ contract UsdoTest is UsdoTestHelper {
         tOB = new TapiocaOptionsBrokerMock(address(tapOFT), IPearlmit(address(pearlmit)));
 
         swapper = createSwapper(yieldBox);
-        leverageExecutor = createLeverageExecutor(address(yieldBox), address(swapper), address(cluster));
+        leverageExecutor = createLeverageExecutor(address(yieldBox), address(swapper), address(cluster), address(pearlmit));
         (penrose, masterContract) = createPenrose(
             TestPenroseData(
                 address(yieldBox),
@@ -596,6 +596,10 @@ contract UsdoTest is UsdoTestHelper {
             // @dev set `paymentTokenAmount` on `tOB`
             tOB.setPaymentTokenAmount(erc20Amount_);
         }
+
+        pearlmit.approve(
+            tOB.oTAP(), 0, address(magnetar), type(uint200).max, uint48(block.timestamp)
+        );
 
         //useful in case of withdraw after borrow
         LZSendParam memory withdrawLzSendParam_;
