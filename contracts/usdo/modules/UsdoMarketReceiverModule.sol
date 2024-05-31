@@ -67,14 +67,13 @@ contract UsdoMarketReceiverModule is BaseUsdo {
         MarketLendOrRepayMsg memory msg_ = UsdoMsgCodec.decodeMarketLendOrRepayMsg(_data);
 
         /**
-        * @dev validate data
-        */
+         * @dev validate data
+         */
         msg_ = _validateLendOrRepayReceiver(msg_);
 
-
         /**
-        * @dev Lend or Repay through `magnetar`
-        */
+         * @dev Lend or Repay through `magnetar`
+         */
         if (msg_.lendParams.repay) {
             _repay(msg_, srcChainSender);
         } else {
@@ -82,8 +81,8 @@ contract UsdoMarketReceiverModule is BaseUsdo {
         }
 
         /**
-        * @dev Pearlmit revokes
-        */
+         * @dev Pearlmit revokes
+         */
         approve(address(pearlmit), 0);
 
         emit LendOrRepayReceived(msg_.user, srcChainSender, msg_.lendParams.repay, msg_.lendParams.market);
@@ -101,19 +100,23 @@ contract UsdoMarketReceiverModule is BaseUsdo {
         MarketRemoveAssetMsg memory msg_ = UsdoMsgCodec.decodeMarketRemoveAssetMsg(_data);
 
         /**
-        * @dev validate data
-        */
+         * @dev validate data
+         */
         msg_ = _validateRemoveAsset(msg_, srcChainSender);
 
         /**
-        * @dev Remove asset through `magnetar`
-        */
+         * @dev Remove asset through `magnetar`
+         */
         _removeAsset(msg_);
 
         emit RemoveAssetReceived(msg_.user, srcChainSender, msg_.externalData.magnetar);
     }
 
-    function _validateLendOrRepayReceiver(MarketLendOrRepayMsg memory msg_) private view returns (MarketLendOrRepayMsg memory){
+    function _validateLendOrRepayReceiver(MarketLendOrRepayMsg memory msg_)
+        private
+        view
+        returns (MarketLendOrRepayMsg memory)
+    {
         _checkWhitelistStatus(msg_.lendParams.magnetar);
         _checkWhitelistStatus(msg_.lendParams.marketHelper);
         _checkWhitelistStatus(msg_.lendParams.market);
@@ -148,7 +151,6 @@ contract UsdoMarketReceiverModule is BaseUsdo {
 
         _validateAndSpendAllowance(msg_.user, srcChainSender, msg_.lendParams.depositAmount);
 
-
         bytes memory call = abi.encodeWithSelector(
             MagnetarAssetModule.depositRepayAndRemoveCollateralFromMarket.selector,
             DepositRepayAndRemoveCollateralFromMarketData({
@@ -173,7 +175,7 @@ contract UsdoMarketReceiverModule is BaseUsdo {
 
     function _lend(MarketLendOrRepayMsg memory msg_, address srcChainSender) private {
         if (msg_.user != srcChainSender) {
-                uint256 allowanceAmont = msg_.lendParams.depositAmount + msg_.lendParams.lockData.amount;
+            uint256 allowanceAmont = msg_.lendParams.depositAmount + msg_.lendParams.lockData.amount;
             _spendAllowance(msg_.user, srcChainSender, allowanceAmont);
         }
 
@@ -207,10 +209,14 @@ contract UsdoMarketReceiverModule is BaseUsdo {
         IMagnetar(payable(msg_.lendParams.magnetar)).burst{value: msg.value}(magnetarCall);
     }
 
-    function _validateRemoveAsset(MarketRemoveAssetMsg memory msg_, address srcChainSender) private returns(MarketRemoveAssetMsg memory){
+    function _validateRemoveAsset(MarketRemoveAssetMsg memory msg_, address srcChainSender)
+        private
+        returns (MarketRemoveAssetMsg memory)
+    {
         _checkWhitelistStatus(msg_.externalData.magnetar);
         _checkWhitelistStatus(msg_.externalData.singularity);
         _checkWhitelistStatus(msg_.externalData.bigBang);
+        _checkWhitelistStatus(msg_.externalData.marketHelper);
 
         msg_.removeAndRepayData.removeAmount = _toLD(msg_.removeAndRepayData.removeAmount.toUint64());
         msg_.removeAndRepayData.repayAmount = _toLD(msg_.removeAndRepayData.repayAmount.toUint64());
