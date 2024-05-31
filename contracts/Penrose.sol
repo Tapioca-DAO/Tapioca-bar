@@ -232,7 +232,7 @@ contract Penrose is Ownable, PearlmitHandler {
         for (uint256 i; i < len; i++) {
             IBigBang market = IBigBang(allBigBangMarkets[i]);
             if (isMarketRegistered[address(market)]) {
-                _totalUsdoDebt += market.viewOpenInterest();
+                _totalUsdoDebt += market.openInterestDebt();
             }
         }
 
@@ -322,7 +322,7 @@ contract Penrose is Ownable, PearlmitHandler {
         for (uint256 i; i < len; i++) {
             IBigBang market = IBigBang(allBigBangMarkets[i]);
             if (isMarketRegistered[address(market)]) {
-                sum += market.computeOpenInterestMintable();
+                sum += market.consumeMintableOpenInterestDebt();
             }
         }
 
