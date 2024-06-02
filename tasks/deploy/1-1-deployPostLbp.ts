@@ -78,9 +78,9 @@ export const deployPostLbp__task_1 = async (
             hre,
             // Static simulation needs to be false, constructor relies on external call. We're using 0x00 replacement with DeployerVM, which creates a false positive for static simulation.
             staticSimulation: false,
-            // overrideOptions: {
-            //     gasLimit: 20_000_000,
-            // },
+            overrideOptions: {
+                gasLimit: 20_000_000,
+            },
             // max size is 24kb, let's do 3 contracts per batch, 72kb
             // bytecodeSizeLimit: 70_000, // EVM starts to complain for contract size but we can still deploy, just need to tune down the limit
         },
@@ -232,10 +232,7 @@ async function tapiocaDeployTask(params: TTapiocaDeployerVmPass<object>) {
      * BB Markets: mtETH,tReth, tWSTETH
      */
     VM.add(await buildMarketHelper(hre));
-    if (
-        chainInfo.name === 'arbitrum' ||
-        chainInfo.name === 'arbitrum_sepolia'
-    ) {
+    if (isHostChain) {
         const { yieldBox, mtETH, tETH, tReth, tWSTETH, tSGLP, wethGlpOracle } =
             deploy__LoadDeployments_Arb({
                 hre,

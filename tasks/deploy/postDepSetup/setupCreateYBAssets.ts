@@ -13,7 +13,7 @@ import { DEPLOYMENT_NAMES, DEPLOY_CONFIG } from '../DEPLOY_CONFIG';
  * Usdo is already registered in `SetupUsdoInPenrose()`
  */
 export async function setupCreateYBAssets(params: TPostDeployParams) {
-    const { hre, tag, isTestnet } = params;
+    const { hre, tag, isTestnet, isHostChain, isSideChain } = params;
 
     const { yieldBox: ybAddress } = deploy__LoadDeployments_Generic({
         hre,
@@ -29,11 +29,7 @@ export async function setupCreateYBAssets(params: TPostDeployParams) {
      * SGL
      * Register sDAI as YB assets
      */
-    if (
-        hre.SDK.chainInfo.name === 'ethereum' ||
-        hre.SDK.chainInfo.name === 'sepolia' ||
-        hre.SDK.chainInfo.name === 'optimism_sepolia'
-    ) {
+    if (isSideChain) {
         const { tSdai } = deploy__LoadDeployments_Eth({ hre, tag });
         await setupCreateYBAssets__addNewAsset({
             ...params,
@@ -46,10 +42,7 @@ export async function setupCreateYBAssets(params: TPostDeployParams) {
         });
     }
 
-    if (
-        hre.SDK.chainInfo.name === 'arbitrum' ||
-        hre.SDK.chainInfo.name === 'arbitrum_sepolia'
-    ) {
+    if (isHostChain) {
         const { mtETH, tETH, tReth, tWSTETH, tSGLP } =
             deploy__LoadDeployments_Arb({
                 hre,
