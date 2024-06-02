@@ -52,8 +52,16 @@ export const deployPostLbp__task_2 = async (
 async function tapiocaDeployTask(
     params: TTapiocaDeployerVmPass<{ delta: string; noTransfer?: boolean }>,
 ) {
-    const { hre, VM, tapiocaMulticallAddr, taskArgs, isTestnet, chainInfo } =
-        params;
+    const {
+        hre,
+        VM,
+        tapiocaMulticallAddr,
+        taskArgs,
+        isTestnet,
+        chainInfo,
+        isHostChain,
+        isSideChain,
+    } = params;
     const { tag } = taskArgs;
     const owner = tapiocaMulticallAddr;
 
@@ -81,10 +89,7 @@ async function tapiocaDeployTask(
         tag,
     );
 
-    if (
-        chainInfo.name === 'arbitrum' ||
-        chainInfo.name === 'arbitrum_sepolia'
-    ) {
+    if (isHostChain) {
         VM.add(
             await buildOrigins(hre, {
                 asset: usdo.address,

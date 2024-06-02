@@ -21,12 +21,22 @@ export type TPostDeployParams = {
     deployed: TDeploymentVMContract[];
     calls: TapiocaMulticall.CallStruct[];
     isTestnet: boolean;
+    isHostChain: boolean;
+    isSideChain: boolean;
 };
 
 export async function setupPostLbp1(params: TTapiocaDeployerVmPass<object>) {
     console.log('\n[+] Running post deploy task');
 
-    const { hre, taskArgs, VM, chainInfo, isTestnet } = params;
+    const {
+        hre,
+        taskArgs,
+        VM,
+        chainInfo,
+        isTestnet,
+        isHostChain,
+        isSideChain,
+    } = params;
     const { tag } = taskArgs;
     const deployed = VM.list();
 
@@ -38,6 +48,8 @@ export async function setupPostLbp1(params: TTapiocaDeployerVmPass<object>) {
         deployed,
         calls: calls1,
         isTestnet,
+        isHostChain,
+        isSideChain,
     };
 
     await setupUsdoInPenrose(setupParams1);
@@ -57,6 +69,8 @@ export async function setupPostLbp1(params: TTapiocaDeployerVmPass<object>) {
         deployed,
         calls: calls2,
         isTestnet,
+        isHostChain,
+        isSideChain,
     };
     await setupInitAndRegisterMarket(setupParams2);
     await setupRegisterBBAsMinterBurnerInUsdo(setupParams2);

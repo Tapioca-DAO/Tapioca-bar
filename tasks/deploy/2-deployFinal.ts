@@ -69,14 +69,19 @@ async function tapiocaDeploy(params: TTapiocaDeployerVmPass<unknown>) {
 }
 
 async function tapiocaPostDeployTask(params: TTapiocaDeployerVmPass<unknown>) {
-    const { hre, taskArgs, VM, chainInfo, tapiocaMulticallAddr } = params;
+    const {
+        hre,
+        taskArgs,
+        VM,
+        chainInfo,
+        tapiocaMulticallAddr,
+        isHostChain,
+        isSideChain,
+    } = params;
     const { tag } = taskArgs;
     const bb = await hre.ethers.getContractAt('BigBang', '');
 
-    if (
-        hre.SDK.chainInfo.name === 'arbitrum' ||
-        hre.SDK.chainInfo.name === 'arbitrum_sepolia'
-    ) {
+    if (isHostChain) {
         const penrose = await hre.ethers.getContractAt(
             'Penrose',
             loadLocalContract(

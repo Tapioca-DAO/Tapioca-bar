@@ -2,7 +2,7 @@ import { TPostDeployParams } from '../1-1-setupPostLbp';
 import { DEPLOYMENT_NAMES } from '../DEPLOY_CONFIG';
 
 export async function setupRegisterMCInPenrose(params: TPostDeployParams) {
-    const { hre, VM, deployed, calls } = params;
+    const { hre, VM, deployed, calls, isHostChain, isSideChain } = params;
 
     const penroseDep = deployed.find(
         (e) => e.name === DEPLOYMENT_NAMES.PENROSE,
@@ -34,10 +34,7 @@ export async function setupRegisterMCInPenrose(params: TPostDeployParams) {
         });
     }
 
-    if (
-        hre.SDK.chainInfo.name === 'arbitrum' ||
-        hre.SDK.chainInfo.name === 'arbitrum_sepolia'
-    ) {
+    if (isHostChain) {
         const bbMediumRiskMC = deployed.find(
             (e) => e.name === DEPLOYMENT_NAMES.BB_MEDIUM_RISK_MC,
         )!;

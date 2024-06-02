@@ -4,7 +4,7 @@ import { DEPLOYMENT_NAMES } from '../DEPLOY_CONFIG';
 export async function setupRegisterBBAsMinterBurnerInUsdo(
     params: TPostDeployParams,
 ) {
-    const { hre, deployed, tag } = params;
+    const { hre, deployed, tag, isHostChain, isSideChain } = params;
 
     const registerMinterBurner = async (
         marketName: string,
@@ -45,10 +45,7 @@ export async function setupRegisterBBAsMinterBurnerInUsdo(
         }
     };
 
-    if (
-        hre.SDK.chainInfo.name === 'arbitrum_sepolia' ||
-        hre.SDK.chainInfo.name === 'arbitrum'
-    ) {
+    if (isHostChain) {
         const bbmtEthMarketAddr = deployed.find(
             (e) => e.name === DEPLOYMENT_NAMES.BB_MT_ETH_MARKET,
         )!.address;

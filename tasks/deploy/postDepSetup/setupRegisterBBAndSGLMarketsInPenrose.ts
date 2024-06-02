@@ -4,7 +4,7 @@ import { DEPLOYMENT_NAMES } from '../DEPLOY_CONFIG';
 export async function setupRegisterBBAndSGLMarketsInPenrose(
     params: TPostDeployParams,
 ) {
-    const { hre, VM, deployed, calls } = params;
+    const { hre, VM, deployed, calls, isHostChain, isSideChain } = params;
 
     const penroseDep = deployed.find(
         (e) => e.name === DEPLOYMENT_NAMES.PENROSE,
@@ -36,10 +36,7 @@ export async function setupRegisterBBAndSGLMarketsInPenrose(
         }
     };
 
-    if (
-        hre.SDK.chainInfo.name === 'arbitrum' ||
-        hre.SDK.chainInfo.name === 'arbitrum_sepolia'
-    ) {
+    if (isHostChain) {
         /**
          * BigBang markets
          */
@@ -95,10 +92,7 @@ export async function setupRegisterBBAndSGLMarketsInPenrose(
         );
     }
 
-    if (
-        hre.SDK.chainInfo.name === 'sepolia' ||
-        hre.SDK.chainInfo.name === 'optimism_sepolia'
-    ) {
+    if (isSideChain) {
         const sglMediumRiskMC = deployed.find(
             (e) => e.name === DEPLOYMENT_NAMES.SGL_MEDIUM_RISK_MC,
         )!;

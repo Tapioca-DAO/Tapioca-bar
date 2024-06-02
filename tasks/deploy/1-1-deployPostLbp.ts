@@ -106,8 +106,16 @@ async function tapiocaPostDeployTask(
 }
 
 async function tapiocaDeployTask(params: TTapiocaDeployerVmPass<object>) {
-    const { hre, VM, tapiocaMulticallAddr, taskArgs, isTestnet, chainInfo } =
-        params;
+    const {
+        hre,
+        VM,
+        tapiocaMulticallAddr,
+        taskArgs,
+        isTestnet,
+        chainInfo,
+        isHostChain,
+        isSideChain,
+    } = params;
     const { tag } = taskArgs;
     const owner = tapiocaMulticallAddr;
 
@@ -329,11 +337,7 @@ async function tapiocaDeployTask(params: TTapiocaDeployerVmPass<object>) {
      * SGL Assets on Ethereum and Sepolia
      * SGL Markets: sDAI
      */
-    if (
-        chainInfo.name === 'ethereum' ||
-        chainInfo.name === 'sepolia' ||
-        chainInfo.name === 'optimism_sepolia'
-    ) {
+    if (isSideChain) {
         const { tSdai } = deploy__LoadDeployments_Eth({ hre, tag });
         // SGL asset strategies
         if (isTestnet) {
