@@ -8,7 +8,10 @@ import * as TAPIOCA_PERIPH_CONFIG from '@tapioca-periph/config';
 import { TAPIOCA_PROJECTS_NAME } from '@tapioca-sdk/api/config';
 import { TapiocaMulticall } from '@tapioca-sdk/typechain/tapioca-periphery';
 import * as TAPIOCA_Z_CONFIG from '@tapiocaz/config';
-import { SendParamStruct } from '@typechain/contracts/usdo/Usdo';
+import {
+    LZSendParamStruct,
+    SendParamStruct,
+} from '@typechain/contracts/usdo/Usdo';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import {
     checkExists,
@@ -21,6 +24,7 @@ import { DEPLOY_CONFIG, DEPLOYMENT_NAMES } from './DEPLOY_CONFIG';
 import { mintOriginUSDO__deployPostLbp_2 } from './postDepSetup/1-2-setupOriginsMintUSDO';
 import { Options } from '@layerzerolabs/lz-v2-utilities';
 import { IYieldBox } from '@typechain/index';
+import { BigNumberish } from 'ethers';
 
 /**
  * @notice Called after Bar `postLbp1`
@@ -111,8 +115,20 @@ async function tapiocaDeployTask(
 async function tapiocaPostDeployTask(
     params: TTapiocaDeployerVmPass<{ delta: string; noTransfer?: boolean }>,
 ) {
-    const { hre, taskArgs, VM, chainInfo, tapiocaMulticallAddr } = params;
+    const {
+        hre,
+        taskArgs,
+        VM,
+        chainInfo,
+        tapiocaMulticallAddr,
+        isTestnet,
+        isHostChain,
+    } = params;
     const { tag, delta } = taskArgs;
+
+    if (!isHostChain) {
+        throw new Error('[-] Post deploy task 2 is only for host chain');
+    }
 
     const { usdo, origins } = await loadContracts__deployPostLbp__task_2({
         hre,
@@ -148,6 +164,17 @@ async function tapiocaPostDeployTask(
             },
         ],
     );
+
+    // Mint erc20mock tETH for testnet
+    if (isTestnet) {
+        await testnetMintMockTeth({
+            hre,
+            amount: hre.ethers.utils.parseEther('100000'),
+            calls,
+            tag,
+            to: tapiocaMulticallAddr,
+        });
+    }
 
     /**
      * Mint USDO on Origin for the USDC and DAI pools
@@ -294,13 +321,21 @@ async function tapiocaPostDeployTask(
         );
         console.log('[+] To address', tapiocaMulticallTargetChain.address);
 
+        const lzSendParam: LZSendParamStruct = {
+            fee: {
+                lzTokenFee: 0,
+                nativeFee: usdoQuoteSend.nativeFee,
+            },
+            extraOptions: sendData.extraOptions,
+            refundAddress: tapiocaMulticallAddr,
+            sendParam: sendData,
+        };
         calls.push({
             target: usdo.address,
             allowFailure: false,
-            callData: usdo.interface.encodeFunctionData('send', [
-                sendData,
-                { lzTokenFee: 0, nativeFee: usdoQuoteSend.nativeFee },
-                tapiocaMulticallAddr,
+            callData: usdo.interface.encodeFunctionData('sendPacket', [
+                lzSendParam,
+                '0x',
             ]),
             value: usdoQuoteSend.nativeFee,
         });
@@ -361,4 +396,80 @@ export async function loadContracts__deployPostLbp__task_2(params: {
         tETH,
         usdo,
     };
+}
+
+async function testnetMintMockTeth(params: {
+    hre: HardhatRuntimeEnvironment;
+    tag: string;
+    amount: BigNumberish;
+    to: string;
+    calls: TapiocaMulticall.CallValueStruct[];
+}) {
+    const { hre, tag, amount, calls, to } = params;
+
+    console.log(
+        '[+] Minting tETH for testnet',
+        hre.ethers.utils.formatEther(amount),
+    );
+
+    const tEth = await hre.ethers.getContractAt(
+        'ITOFT',
+        loadGlobalContract(
+            hre,
+            TAPIOCA_PROJECTS_NAME.TapiocaZ,
+            hre.SDK.eChainId,
+            TAPIOCA_Z_CONFIG.DEPLOYMENT_NAMES.tETH,
+            tag,
+        ).address,
+    );
+
+    const wrappedErc20Mock = await hre.ethers.getContractAt(
+        'ERC20Mock',
+        await tEth.erc20(),
+    );
+    const pearlmit = await hre.ethers.getContractAt(
+        'Pearlmit',
+        await tEth.pearlmit(),
+    );
+
+    calls.push({
+        target: wrappedErc20Mock.address,
+        callData: wrappedErc20Mock.interface.encodeFunctionData('mintTo', [
+            to,
+            amount,
+        ]),
+        allowFailure: false,
+        value: 0,
+    });
+
+    calls.push({
+        target: wrappedErc20Mock.address,
+        callData: wrappedErc20Mock.interface.encodeFunctionData('approve', [
+            pearlmit.address,
+            amount,
+        ]),
+        allowFailure: false,
+        value: 0,
+    });
+
+    calls.push({
+        target: pearlmit.address,
+        callData: pearlmit.interface.encodeFunctionData('approve', [
+            20,
+            wrappedErc20Mock.address,
+            0,
+            tEth.address,
+            amount,
+            (await hre.ethers.provider.getBlock('latest')).timestamp + 1000,
+        ]),
+        allowFailure: false,
+        value: 0,
+    });
+
+    calls.push({
+        target: tEth.address,
+        callData: tEth.interface.encodeFunctionData('wrap', [to, to, amount]),
+        allowFailure: false,
+        value: 0,
+    });
 }
