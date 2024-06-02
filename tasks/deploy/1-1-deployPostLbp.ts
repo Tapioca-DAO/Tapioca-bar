@@ -79,10 +79,10 @@ export const deployPostLbp__task_1 = async (
             // Static simulation needs to be false, constructor relies on external call. We're using 0x00 replacement with DeployerVM, which creates a false positive for static simulation.
             staticSimulation: false,
             overrideOptions: {
-                gasLimit: 20_000_000,
+                gasLimit: 10_000_000,
             },
             // max size is 24kb, let's do 3 contracts per batch, 72kb
-            // bytecodeSizeLimit: 70_000, // EVM starts to complain for contract size but we can still deploy, just need to tune down the limit
+            bytecodeSizeLimit: 70_000, // EVM starts to complain for contract size but we can still deploy, just need to tune down the limit
         },
         tapiocaDeployTask,
         tapiocaPostDeployTask,

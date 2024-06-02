@@ -139,6 +139,10 @@ const POST_LBP: TPostLbp = {
         sDAI: '0x37359B8bfbFAE28E513EE31a2A94A9Ec60668d90',
         ...marketConfigMainnet,
     },
+    [EChainID.FUJI_AVALANCHE]: {
+        sDAI: '0xed18DBCb2810E4178c23668794198C81B0668b23',
+        ...marketConfigMainnet,
+    },
 };
 
 POST_LBP['31337' as EChainID] = POST_LBP[EChainID.ARBITRUM]; // Copy from Arbitrum
@@ -181,6 +185,9 @@ const MISC: TMisc = {
     },
     [EChainID.OPTIMISM_SEPOLIA]: {
         WETH: '0x4fB538Ed1a085200bD08F66083B72c0bfEb29112',
+    },
+    [EChainID.FUJI_AVALANCHE]: {
+        WETH: '0x4404EF158716dfad1c2BEffE9c7c8Fa261684544',
     },
 };
 
