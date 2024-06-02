@@ -5,14 +5,14 @@ import {
 } from '@tapioca-sdk/ethers/hardhat/DeployerVM';
 import { TapiocaMulticall } from '@tapioca-sdk/typechain/tapioca-periphery';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
-import { setupUsdoInPenrose } from './postDepSetup/setupUsdoInPenrose';
-import { setupUsdoFlashloanHelperInUsdo } from './postDepSetup/setupUsdoFlashloanHelperInUsdo';
-import { setupRegisterMCInPenrose } from './postDepSetup/setupRegisterMCInPenrose';
 import { setupCreateYBAssets } from './postDepSetup/setupCreateYBAssets';
 import { setupInitAndRegisterMarket } from './postDepSetup/setupInitAndRegisterMarket';
+import { setupRegisterBBAndSGLMarketsInPenrose } from './postDepSetup/setupRegisterBBAndSGLMarketsInPenrose';
 import { setupRegisterBBAsMinterBurnerInUsdo } from './postDepSetup/setupRegisterBBAsMinterBurnerInUsdo';
-import { setupRegisterBBAndSGLMarketsInPenrose } from './postDepSetup/setupRegisterBBAndSGLMArketsInPenrose';
 import { setupRegisterBigBangEthMarket } from './postDepSetup/setupRegisterBigBangEthMarket';
+import { setupRegisterMCInPenrose } from './postDepSetup/setupRegisterMCInPenrose';
+import { setupUsdoFlashloanHelperInUsdo } from './postDepSetup/setupUsdoFlashloanHelperInUsdo';
+import { setupUsdoInPenrose } from './postDepSetup/setupUsdoInPenrose';
 
 export type TPostDeployParams = {
     hre: HardhatRuntimeEnvironment;

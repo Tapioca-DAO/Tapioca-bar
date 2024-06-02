@@ -30,6 +30,7 @@ import { buildMarketHelper } from 'tasks/deployBuilds/buildMarketHelper';
 
 /**
  * @notice Should be called after TapiocaZ `postLbp` task
+ *
  * Deploys on Ethereum and Sepolia
  * Penrose, SGL, USDO, YB Assets
  * SGL Markets: sDAI
@@ -37,6 +38,34 @@ import { buildMarketHelper } from 'tasks/deployBuilds/buildMarketHelper';
  * Deploys on Arbitrum and Arbitrum Sepolia
  * BB Markets: mtETH, tReth, tWSTETH
  * SGL Markets: sGLP
+ *
+ * Deploys: Arb, Eth
+ * - USDO
+ * - Penrose
+ * - SGL
+ * - BB
+ * - Market Helper
+ * - USDO Flashloan Helper
+ * - USDO Modules
+ * - SGL Modules
+ * - BB Modules
+ * - SGL Interest Helper
+ * - SGL Medium Risk MC
+ * - BB Medium Risk MC
+ * - Simple Leverage Executor
+ * - USDO Flashloan Helper
+ *
+ * Post deploy:
+ * - Set LZ Peer in USDO
+ * - Creating USDO Strat Asset and setting it in Penrose
+ * - Registering MCs in Penrose
+ * - Registering BB and SGL markets in Penrose
+ * - Registering Big Bang Eth Market
+ * - Registering USDO Flashloan Helper as Minter/Burner in USDO
+ * - Creating YB Assets for SGL and BB markets (sDAI, mtETH, tReth, tWSTETH, sGLP)
+ * - Init BB and SGL markets (Calls: market init + set interest helper)
+ * - Registering BB markets as Minter/Burner in USDO
+ *
  */
 export const deployPostLbp__task_1 = async (
     _taskArgs: TTapiocaDeployTaskArgs & { noLzPeer?: boolean },
@@ -348,9 +377,9 @@ export function deploy__LoadDeployments_Generic(params: {
     ).address;
     const yieldBox = loadGlobalContract(
         hre,
-        TAPIOCA_PROJECTS_NAME.YieldBox,
+        TAPIOCA_PROJECTS_NAME.TapiocaPeriph,
         hre.SDK.eChainId,
-        TAP_YIELDBOX.DEPLOYMENT_NAMES.YieldBox,
+        TAPIOCA_PERIPH_CONFIG.DEPLOYMENT_NAMES.YIELDBOX,
         tag,
     ).address;
     const cluster = loadGlobalContract(

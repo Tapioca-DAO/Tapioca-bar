@@ -24,7 +24,8 @@ import { IYieldBox } from '@typechain/index';
 
 /**
  * @notice Called after Bar `postLbp1`
- * Deploy the tETH origin contract. This contracts uses native ETH on Arb, and mock tWETH on testnet.
+ * Deploys:
+ * - tETH origin contract. This contracts uses native ETH on Arb, and mock tWETH on testnet.
  *
  * Post deploy:
  * - Sets Origin as minter in USDO.
@@ -331,9 +332,9 @@ export async function loadContracts__deployPostLbp__task_2(params: {
         'tapioca-periph/interfaces/yieldbox/IYieldBox.sol:IYieldBox',
         loadGlobalContract(
             hre,
-            TAPIOCA_PROJECTS_NAME.YieldBox,
+            TAPIOCA_PROJECTS_NAME.TapiocaPeriph,
             hre.SDK.eChainId,
-            TAP_YIELDBOX_CONFIG.DEPLOYMENT_NAMES.YieldBox,
+            TAPIOCA_PERIPH_CONFIG.DEPLOYMENT_NAMES.YIELDBOX,
             tag,
         ).address,
     )) as IYieldBox;
