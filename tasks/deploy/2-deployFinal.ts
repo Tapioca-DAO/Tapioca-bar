@@ -38,42 +38,12 @@ export const deployFinal__task = async (
             hre,
             staticSimulation: false,
         },
-        tapiocaDeploy,
+        // eslint-disable-next-line @typescript-eslint/no-empty-function
+        async () => {},
         tapiocaPostDeployTask,
     );
     console.log('[+] Deployed final phase');
 };
-
-async function tapiocaDeploy(params: TTapiocaDeployerVmPass<unknown>) {
-    const { hre, taskArgs, VM, chainInfo, tapiocaMulticallAddr } = params;
-    const { tag } = taskArgs;
-
-    const yieldBox = loadGlobalContract(
-        hre,
-        TAPIOCA_PROJECTS_NAME.TapiocaPeriph,
-        hre.SDK.eChainId,
-        TAPIOCA_PERIPH_CONFIG.DEPLOYMENT_NAMES.YIELDBOX,
-        tag,
-    ).address;
-
-    const { tSglSdai } = await loadContract__deployFinal__task({ hre, tag });
-
-    VM.add(
-        await buildERC20WithoutStrategy(hre, {
-            deploymentName:
-                DEPLOYMENT_NAMES.YB_T_SGL_SDAI_ASSET_WITHOUT_STRATEGY,
-            token: tSglSdai.address,
-            yieldBox,
-        }),
-    ).add(
-        await buildERC20WithoutStrategy(hre, {
-            deploymentName:
-                DEPLOYMENT_NAMES.YB_T_SGL_SDAI_ASSET_WITHOUT_STRATEGY,
-            token: tSglSdai.address,
-            yieldBox,
-        }),
-    );
-}
 
 async function tapiocaPostDeployTask(params: TTapiocaDeployerVmPass<unknown>) {
     const {
@@ -185,7 +155,7 @@ async function tapiocaPostDeployTask(params: TTapiocaDeployerVmPass<unknown>) {
             await createEmptyStratYbAsset__task(
                 {
                     deploymentName:
-                        DEPLOYMENT_NAMES.YB_T_SGL_SDAI_ASSET_WITHOUT_STRATEGY,
+                        DEPLOYMENT_NAMES.YB_T_SGL_SGLP_ASSET_WITHOUT_STRATEGY,
                     tag,
                     token: tSglSglp.address,
                 },
