@@ -38,7 +38,6 @@ export const deployFinal__task = async (
             hre,
             staticSimulation: false,
         },
-        // eslint-disable-next-line @typescript-eslint/no-empty-function
         tapiocaDeploy,
         tapiocaPostDeployTask,
     );
@@ -61,7 +60,8 @@ async function tapiocaDeploy(params: TTapiocaDeployerVmPass<unknown>) {
 
     VM.add(
         await buildERC20WithoutStrategy(hre, {
-            deploymentName: DEPLOYMENT_NAMES.YB_T_SGL_SDAI_ASSET_WITH_STRATEGY,
+            deploymentName:
+                DEPLOYMENT_NAMES.YB_T_SGL_SDAI_ASSET_WITHOUT_STRATEGY,
             token: tSglSdai.address,
             yieldBox,
         }),
@@ -159,7 +159,7 @@ async function tapiocaPostDeployTask(params: TTapiocaDeployerVmPass<unknown>) {
             await createEmptyStratYbAsset__task(
                 {
                     deploymentName:
-                        DEPLOYMENT_NAMES.YB_T_SGL_SDAI_ASSET_WITH_STRATEGY,
+                        DEPLOYMENT_NAMES.YB_T_SGL_SDAI_ASSET_WITHOUT_STRATEGY,
                     tag,
                     token: tSglSdai.address,
                 },
