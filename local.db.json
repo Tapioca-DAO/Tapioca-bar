@@ -893,6 +893,14 @@
             "lastBlockHeight": 34373743,
             "contracts": [
                 {
+                    "address": "0x94C2938070a6A7157a1BBe53266643dd0DC37dBf",
+                    "name": "YB_T_SGL_SDAI_ASSET_WITH_STRATEGY",
+                    "meta": {
+                        "token": "0xc1729F1f3A7cd974eC98df81C14631a451DF3BFf",
+                        "ybAssetId": 13
+                    }
+                },
+                {
                     "name": "ORIGINS_T_ETH_MARKET",
                     "address": "0xf60014ac306C0472F51a9f0B9D1aFbFa59f9dbdD",
                     "meta": {
