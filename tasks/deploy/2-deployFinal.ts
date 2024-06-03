@@ -166,6 +166,25 @@ async function tapiocaPostDeployTask(params: TTapiocaDeployerVmPass<unknown>) {
                 hre,
             );
         }
+        // Register tSglSglp asset in yieldbox
+        {
+            const tSglSglp = loadGlobalContract(
+                hre,
+                TAPIOCA_PROJECTS_NAME.TapiocaZ,
+                chainInfo.chainId,
+                TAPIOCA_Z_CONFIG.DEPLOYMENT_NAMES.T_SGL_GLP_MARKET,
+                tag,
+            );
+            await createEmptyStratYbAsset__task(
+                {
+                    deploymentName:
+                        DEPLOYMENT_NAMES.YB_T_SGL_SDAI_ASSET_WITHOUT_STRATEGY,
+                    tag,
+                    token: tSglSglp.address,
+                },
+                hre,
+            );
+        }
 
         await VM.executeMulticall(calls);
     }
