@@ -37,7 +37,11 @@ import { BigNumberish } from 'ethers';
  * - Transfer USDO to Ethereum for the DAI pool.
  */
 export const deployPostLbp__task_2 = async (
-    _taskArgs: TTapiocaDeployTaskArgs & { delta: string; noTransfer?: boolean },
+    _taskArgs: TTapiocaDeployTaskArgs & {
+        delta: string;
+        transferTo: string;
+        noTransfer?: boolean;
+    },
     hre: HardhatRuntimeEnvironment,
 ) => {
     console.log('[+] Deploying Post LBP phase 2');
@@ -54,7 +58,11 @@ export const deployPostLbp__task_2 = async (
 };
 
 async function tapiocaDeployTask(
-    params: TTapiocaDeployerVmPass<{ delta: string; noTransfer?: boolean }>,
+    params: TTapiocaDeployerVmPass<{
+        delta: string;
+        transferTo: string;
+        noTransfer?: boolean;
+    }>,
 ) {
     const {
         hre,
@@ -113,7 +121,11 @@ async function tapiocaDeployTask(
 }
 
 async function tapiocaPostDeployTask(
-    params: TTapiocaDeployerVmPass<{ delta: string; noTransfer?: boolean }>,
+    params: TTapiocaDeployerVmPass<{
+        delta: string;
+        transferTo: string;
+        noTransfer?: boolean;
+    }>,
 ) {
     const {
         hre,
@@ -123,11 +135,21 @@ async function tapiocaPostDeployTask(
         tapiocaMulticallAddr,
         isTestnet,
         isHostChain,
+        isSideChain,
     } = params;
-    const { tag, delta } = taskArgs;
+    const { tag, delta, transferTo, noTransfer } = taskArgs;
 
     if (!isHostChain) {
         throw new Error('[-] Post deploy task 2 is only for host chain');
+    }
+    if (!taskArgs.noTransfer) {
+        const dstChainInfo = hre.SDK.utils.getChainBy(
+            'name',
+            taskArgs.transferTo,
+        );
+        if (!dstChainInfo) {
+            throw new Error('[-] Destination chain not found in chain info');
+        }
     }
 
     const { usdo, origins } = await loadContracts__deployPostLbp__task_2({
@@ -264,25 +286,22 @@ async function tapiocaPostDeployTask(
      */
     let msgValue = hre.ethers.BigNumber.from(0);
     if (!taskArgs.noTransfer) {
-        let chainName;
-        if (chainInfo.name === 'arbitrum_sepolia') {
-            console.log(
-                '[+] Transferring USDO to Optimism Sep for the DAI pool',
-            );
-            chainName = 'optimism_sepolia';
-        } else if (chainInfo.name === 'arbitrum') {
-            console.log('[+] Transferring USDO to Ethereum for the DAI pool');
-            chainName = 'ethereum';
-        } else {
-            throw new Error('Not implemented');
-        }
+        const dstChainInfo = hre.SDK.utils.getChainBy(
+            'name',
+            taskArgs.transferTo,
+        );
 
-        console.log('[+] Loading TapiocaMulticall from', chainName, 'tag', tag);
+        console.log(
+            '[+] Loading TapiocaMulticall from',
+            dstChainInfo.name,
+            'tag',
+            tag,
+        );
         const tapiocaMulticallTargetChain = checkExists(
             hre,
             hre.SDK.db.findGlobalDeployment(
                 TAPIOCA_PROJECTS_NAME.Generic,
-                hre.SDK.utils.getChainBy('name', chainName).chainId,
+                dstChainInfo.chainId,
                 hre.SDK.DeployerVM.TAPIOCA_MULTICALL_NAME,
                 tag,
             ),
@@ -299,7 +318,7 @@ async function tapiocaPostDeployTask(
                     .split('0x')[1]
                     .padStart(64, '0'),
             ),
-            dstEid: hre.SDK.utils.getChainBy('name', chainName).lzChainId,
+            dstEid: dstChainInfo.lzChainId,
             extraOptions: Options.newOptions()
                 .addExecutorLzReceiveOption(200_000)
                 .toHex(),
