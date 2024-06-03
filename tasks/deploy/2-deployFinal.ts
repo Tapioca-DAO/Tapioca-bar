@@ -65,6 +65,13 @@ async function tapiocaDeploy(params: TTapiocaDeployerVmPass<unknown>) {
             token: tSglSdai.address,
             yieldBox,
         }),
+    ).add(
+        await buildERC20WithoutStrategy(hre, {
+            deploymentName:
+                DEPLOYMENT_NAMES.YB_T_SGL_SDAI_ASSET_WITHOUT_STRATEGY,
+            token: tSglSdai.address,
+            yieldBox,
+        }),
     );
 }
 
