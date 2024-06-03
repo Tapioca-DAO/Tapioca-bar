@@ -893,11 +893,11 @@
             "lastBlockHeight": 34373743,
             "contracts": [
                 {
-                    "address": "0xE525543585cc58c77994d3b8F3D8ba3E16570284",
+                    "address": "0xD7275082168898E28d6fcDe4f8022235669Bf9bE",
                     "name": "YB_T_SGL_SDAI_ASSET_WITHOUT_STRATEGY",
                     "meta": {
-                        "token": "0xc1729F1f3A7cd974eC98df81C14631a451DF3BFf",
-                        "ybAssetId": 14
+                        "token": "0x7C3A083a61955519C15C4e89792dAF0C6bA37734",
+                        "ybAssetId": 18
                     }
                 },
                 {
