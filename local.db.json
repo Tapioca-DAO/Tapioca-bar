@@ -893,11 +893,19 @@
             "lastBlockHeight": 34373743,
             "contracts": [
                 {
-                    "address": "0xD7275082168898E28d6fcDe4f8022235669Bf9bE",
-                    "name": "YB_T_SGL_SDAI_ASSET_WITHOUT_STRATEGY",
+                    "address": "0x7924F61532BFfeAF927429DAe7aB5cceC6CE1955",
+                    "name": "YB_T_SGL_SGLP_ASSET_WITHOUT_STRATEGY",
                     "meta": {
                         "token": "0x7C3A083a61955519C15C4e89792dAF0C6bA37734",
-                        "ybAssetId": 18
+                        "ybAssetId": 20
+                    }
+                },
+                {
+                    "address": "0x46bF1Ea6113E734c3C58C1C7F14C8c75C9300a03",
+                    "name": "YB_T_SGL_SDAI_ASSET_WITHOUT_STRATEGY",
+                    "meta": {
+                        "token": "0x964F75A175e31ee1554F852Da09Fbf19f49D6faF",
+                        "ybAssetId": 19
                     }
                 },
                 {
