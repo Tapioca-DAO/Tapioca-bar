@@ -1,5 +1,4 @@
 import * as TAP_TOKEN_CONFIG from '@tap-token/config';
-import * as TAP_YIELDBOX from '@tap-yieldbox/config';
 import * as TAPIOCA_PERIPH_CONFIG from '@tapioca-periph/config';
 import { TAPIOCA_PROJECTS_NAME } from '@tapioca-sdk/api/config';
 import { TTapiocaDeployTaskArgs } from '@tapioca-sdk/ethers/hardhat/DeployerVM';
@@ -14,7 +13,9 @@ import { buildBBMediumRiskMC } from 'tasks/deployBuilds/buildBBMediumRiskMC';
 import { buildBBModules } from 'tasks/deployBuilds/buildBBModules';
 import { buildERC20WithoutStrategy } from 'tasks/deployBuilds/buildERC20WithoutStrategy';
 import { buildGlpStrategy } from 'tasks/deployBuilds/buildGlpStrategy';
+import { buildMarketHelper } from 'tasks/deployBuilds/buildMarketHelper';
 import { buildPenrose } from 'tasks/deployBuilds/buildPenrose';
+import { buildSGLInterestHelper } from 'tasks/deployBuilds/buildSGLInterestHelper';
 import { buildSGLMediumRiskMC } from 'tasks/deployBuilds/buildSGLMediumRiskMC';
 import { buildSGLModules } from 'tasks/deployBuilds/buildSGLModules';
 import { buildSdaiStrategy } from 'tasks/deployBuilds/buildSdaiStrategy';
@@ -25,8 +26,6 @@ import { buildUSDOFlashloanHelper } from 'tasks/deployBuilds/buildUSDOFlashloanH
 import { buildUSDOModules } from 'tasks/deployBuilds/buildUSDOModules';
 import { setupPostLbp1 } from './1-1-setupPostLbp';
 import { DEPLOYMENT_NAMES, DEPLOY_CONFIG } from './DEPLOY_CONFIG';
-import { buildSGLInterestHelper } from 'tasks/deployBuilds/buildSGLInterestHelper';
-import { buildMarketHelper } from 'tasks/deployBuilds/buildMarketHelper';
 
 /**
  * @notice Should be called after TapiocaZ `postLbp` task
@@ -127,7 +126,7 @@ async function tapiocaDeployTask(params: TTapiocaDeployerVmPass<object>) {
         wethStratWithAsset,
         yieldBox,
         zeroXSwapper,
-    } = deploy__LoadDeployments_Generic({ hre, tag });
+    } = deploy__LoadDeployments_Generic({ hre, tag, isTestnet });
 
     /**
      * USDO
@@ -237,6 +236,7 @@ async function tapiocaDeployTask(params: TTapiocaDeployerVmPass<object>) {
             deploy__LoadDeployments_Arb({
                 hre,
                 tag,
+                isTestnet,
             });
 
         // @ts-ignore
@@ -335,7 +335,7 @@ async function tapiocaDeployTask(params: TTapiocaDeployerVmPass<object>) {
      * SGL Markets: sDAI
      */
     if (isSideChain) {
-        const { tSdai } = deploy__LoadDeployments_Eth({ hre, tag });
+        const { tSdai } = deploy__LoadDeployments_Eth({ hre, tag, isTestnet });
         // SGL asset strategies
         if (isTestnet) {
             VM.add(
@@ -367,8 +367,9 @@ async function tapiocaDeployTask(params: TTapiocaDeployerVmPass<object>) {
 export function deploy__LoadDeployments_Generic(params: {
     hre: HardhatRuntimeEnvironment;
     tag: string;
+    isTestnet: boolean;
 }) {
-    const { hre, tag } = params;
+    const { hre, tag, isTestnet } = params;
     const tapToken = loadGlobalContract(
         hre,
         TAPIOCA_PROJECTS_NAME.TapToken,
@@ -402,7 +403,9 @@ export function deploy__LoadDeployments_Generic(params: {
         hre,
         TAPIOCA_PROJECTS_NAME.TapiocaPeriph,
         hre.SDK.eChainId,
-        TAPIOCA_PERIPH_CONFIG.DEPLOYMENT_NAMES.ZERO_X_SWAPPER,
+        isTestnet
+            ? TAPIOCA_PERIPH_CONFIG.DEPLOYMENT_NAMES.ZERO_X_SWAPPER_MOCK
+            : TAPIOCA_PERIPH_CONFIG.DEPLOYMENT_NAMES.ZERO_X_SWAPPER,
         params.tag,
     ).address;
 
@@ -436,8 +439,9 @@ export function deploy__LoadDeployments_Generic(params: {
 export function deploy__LoadDeployments_Eth(params: {
     hre: HardhatRuntimeEnvironment;
     tag: string;
+    isTestnet: boolean;
 }) {
-    const { hre, tag } = params;
+    const { hre, tag, isTestnet } = params;
 
     const tSdaiMarketOracle = loadGlobalContract(
         hre,
@@ -456,7 +460,7 @@ export function deploy__LoadDeployments_Eth(params: {
     ).address;
 
     return {
-        ...deploy__LoadDeployments_Generic({ hre, tag }),
+        ...deploy__LoadDeployments_Generic({ hre, tag, isTestnet }),
         tSdaiMarketOracle,
         tSdai,
     };
@@ -465,8 +469,9 @@ export function deploy__LoadDeployments_Eth(params: {
 export function deploy__LoadDeployments_Arb(params: {
     hre: HardhatRuntimeEnvironment;
     tag: string;
+    isTestnet: boolean;
 }) {
-    const { hre, tag } = params;
+    const { hre, tag, isTestnet } = params;
 
     const mtETH = loadGlobalContract(
         hre,
@@ -549,7 +554,7 @@ export function deploy__LoadDeployments_Arb(params: {
     ).address;
 
     return {
-        ...deploy__LoadDeployments_Generic({ hre, tag }),
+        ...deploy__LoadDeployments_Generic({ hre, tag, isTestnet }),
         mtETH,
         tETH,
         tReth,
