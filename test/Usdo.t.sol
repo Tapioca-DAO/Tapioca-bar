@@ -172,7 +172,7 @@ contract UsdoTest is UsdoTestHelper {
 
         {
             pearlmit = new Pearlmit("Pearlmit", "1", address(this), 0);
-            yieldBox = createYieldBox();
+            yieldBox = createYieldBox(pearlmit, address(this));
             cluster = createCluster(aEid, __owner);
             magnetar = createMagnetar(address(cluster), IPearlmit(address(pearlmit)));
 

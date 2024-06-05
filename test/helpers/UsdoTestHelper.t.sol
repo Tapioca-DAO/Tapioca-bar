@@ -19,7 +19,7 @@ import {SGLLiquidation} from "contracts/markets/singularity/SGLLiquidation.sol";
 import {SGLCollateral} from "contracts/markets/singularity/SGLCollateral.sol";
 import {SGLLeverage} from "contracts/markets/singularity/SGLLeverage.sol";
 import {Singularity} from "contracts/markets/singularity/Singularity.sol";
-import {IPearlmit} from "tapioca-periph/interfaces/periph/IPearlmit.sol";
+import {Pearlmit, IPearlmit} from "tapioca-periph/pearlmit/Pearlmit.sol";
 import {ICluster} from "tapioca-periph/interfaces/periph/ICluster.sol";
 import {SGLBorrow} from "contracts/markets/singularity/SGLBorrow.sol";
 import {IWrappedNative} from "yieldbox/interfaces/IWrappedNative.sol";
@@ -88,10 +88,10 @@ contract UsdoTestHelper is TestHelper, TestUtils {
         return new MagnetarMock(cluster, _pearlmit);
     }
 
-    function createYieldBox() public returns (YieldBox) {
+    function createYieldBox(Pearlmit pearlmit, address owner) public returns (YieldBox) {
         YieldBoxURIBuilder uriBuilder = new YieldBoxURIBuilder();
 
-        return new YieldBox(IWrappedNative(address(0)), uriBuilder);
+        return new YieldBox(IWrappedNative(address(0)), uriBuilder, pearlmit, owner);
     }
 
     function createCluster(uint32 hostEid, address owner) public returns (Cluster) {

@@ -125,7 +125,7 @@ contract SingularityTest is UsdoTestHelper {
 
         {
             pearlmit = new Pearlmit("Pearlmit", "1", address(this), 0);
-            yieldBox = createYieldBox();
+            yieldBox = createYieldBox(pearlmit, address(this));
             cluster = createCluster(aEid, address(this));
             magnetar = createMagnetar(address(cluster), IPearlmit(address(pearlmit)));
 
