@@ -80,6 +80,7 @@ async function tapiocaDeployTask(
     const { yieldBox, tETH, ethMarketOracle } = deploy__LoadDeployments_Arb({
         hre,
         tag,
+        isTestnet,
     });
 
     const usdo = loadLocalContract(

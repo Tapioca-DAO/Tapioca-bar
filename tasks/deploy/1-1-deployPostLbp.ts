@@ -26,6 +26,7 @@ import { buildUSDOFlashloanHelper } from 'tasks/deployBuilds/buildUSDOFlashloanH
 import { buildUSDOModules } from 'tasks/deployBuilds/buildUSDOModules';
 import { setupPostLbp1 } from './1-1-setupPostLbp';
 import { DEPLOYMENT_NAMES, DEPLOY_CONFIG } from './DEPLOY_CONFIG';
+import { buildUsdoHelper } from 'tasks/deployBuilds/buildUsdoHelper';
 
 /**
  * @notice Should be called after TapiocaZ `postLbp` task
@@ -61,7 +62,7 @@ import { DEPLOYMENT_NAMES, DEPLOY_CONFIG } from './DEPLOY_CONFIG';
  * - Registering BB and SGL markets in Penrose
  * - Registering Big Bang Eth Market
  * - Registering USDO Flashloan Helper as Minter/Burner in USDO
- * - Creating YB Assets for SGL and BB markets (sDAI, mtETH, tReth, tWSTETH, sGLP)
+ * - Creating and registering YB Assets for SGL and BB markets (sDAI, mtETH, tReth, tWSTETH, sGLP)
  * - Init BB and SGL markets (Calls: market init + set interest helper)
  * - Registering BB markets as Minter/Burner in USDO
  *
@@ -77,11 +78,6 @@ export const deployPostLbp__task_1 = async (
             hre,
             // Static simulation needs to be false, constructor relies on external call. We're using 0x00 replacement with DeployerVM, which creates a false positive for static simulation.
             staticSimulation: false,
-            overrideOptions: {
-                gasLimit: 10_000_000,
-            },
-            // max size is 24kb, let's do 3 contracts per batch, 72kb
-            bytecodeSizeLimit: 70_000, // EVM starts to complain for contract size but we can still deploy, just need to tune down the limit
         },
         tapiocaDeployTask,
         tapiocaPostDeployTask,
@@ -134,7 +130,8 @@ async function tapiocaDeployTask(params: TTapiocaDeployerVmPass<object>) {
     // @ts-ignore
     (await buildUSDOModules(hre)).forEach((module) => VM.add(module));
 
-    VM.add(await buildUSDOExtExec(hre))
+    VM.add(await buildUsdoHelper(hre))
+        .add(await buildUSDOExtExec(hre))
         .add(
             await buildSimpleLeverageExecutor(hre, {
                 cluster,
