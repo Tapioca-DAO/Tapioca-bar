@@ -73,7 +73,7 @@ contract PenroseTest is UsdoTestHelper {
     function setUp() public override {
         {
             pearlmit = new Pearlmit("Pearlmit", "1", address(this), 0);
-            yieldBox = createYieldBox();
+            yieldBox = createYieldBox(pearlmit, address(this));
             cluster = createCluster(aEid, __owner);
             magnetar = createMagnetar(address(cluster), IPearlmit(address(pearlmit)));
 
@@ -159,11 +159,13 @@ contract PenroseTest is UsdoTestHelper {
         cluster.updateContract(0, address(asset), true);
         cluster.updateContract(0, address(collateral), true);
     }
+
     function test_penrose_unregister_singularity() public {
         penrose.unregisterContract(address(singularity), 0);
         address[] memory markets = penrose.singularityMarkets();
         assertEq(markets.length, 0);
     }
+
     function test_penrose_list_markets() public {
         address[] memory markets = penrose.singularityMarkets();
         assertLe(markets.length, 1);

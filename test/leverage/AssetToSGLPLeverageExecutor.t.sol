@@ -73,7 +73,7 @@ contract AssetToSGLPLeverageExecutorTest is BaseLeverageExecutorTest {
         }
         {
             YieldBoxURIBuilder uriBuilder = new YieldBoxURIBuilder();
-            yieldBox = new YieldBox(IWrappedNative(address(0)), uriBuilder);
+            yieldBox = new YieldBox(IWrappedNative(address(0)), uriBuilder, pearlmit, address(this));
 
             ERC20WithoutStrategy usdcStrategy = createEmptyStrategy(address(yieldBox), address(usdc));
             usdcYieldBoxId = yieldBox.registerAsset(TokenType.ERC20, address(usdc), IStrategy(address(usdcStrategy)), 0);
