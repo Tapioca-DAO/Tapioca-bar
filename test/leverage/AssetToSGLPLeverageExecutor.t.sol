@@ -95,8 +95,6 @@ contract AssetToSGLPLeverageExecutorTest is BaseLeverageExecutorTest {
             swapperTarget = new ZeroXSwapperMockTarget();
             swapper = new ZeroXSwapper(address(swapperTarget), ICluster(address(cluster)), address(this));
 
-            pearlmit = new Pearlmit("Pearlmit", "1", address(this), 0);
-
             executor = new AssetToSGLPLeverageExecutor(
                 IZeroXSwapper(address(swapper)),
                 ICluster(address(cluster)),
