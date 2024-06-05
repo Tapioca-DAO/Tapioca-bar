@@ -226,6 +226,11 @@ contract BigBang is MarketStateView, BBCommon {
     // ************************* //
     // *** OWNER FUNCTIONS ***** //
     // ************************* //
+    function setDebtRateHelper(address _helper) external onlyOwner {
+        if (_helper == address(0)) revert NotValid();
+        emit DebtRateHelperUpdated(debtRateHelper, _helper);
+        debtRateHelper = _helper;
+    }
 
     /// @notice Reset the open interest debt and return the value
     function consumeMintableOpenInterestDebt() external onlyOwner returns (uint256) {

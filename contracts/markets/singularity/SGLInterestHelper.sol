@@ -28,9 +28,6 @@ contract SGLInterestHelper is ISGLInterestHelper {
     uint256 private constant UTILIZATION_PRECISION = 1e18;
     uint256 private constant FEE_PRECISION = 1e5;
 
-    // ************************** //
-    // *** PRIVATE FUNCTIONS *** //
-    // ************************* //
     function getInterestRate(InterestRateCall memory data)
         external
         view

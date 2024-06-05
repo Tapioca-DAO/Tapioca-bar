@@ -7,6 +7,7 @@ import {BBCollateral} from "contracts/markets/bigBang/BBCollateral.sol";
 import {BBLeverage} from "contracts/markets/bigBang/BBLeverage.sol";
 import {BigBang} from "contracts/markets/bigBang/BigBang.sol";
 import {BBBorrow} from "contracts/markets/bigBang/BBBorrow.sol";
+import {BBDebtRateHelper} from "contracts/markets/bigBang/BBDebtRateHelper.sol";
 import {MarketHelper} from "contracts/markets/MarketHelper.sol";
 import {Market} from "contracts/markets/Market.sol";
 
@@ -187,6 +188,7 @@ contract BigBangTest is UsdoTestHelper {
         );
         vm.label(address(bigBang), "BigBang");
 
+
         assetYieldBoxId = bigBang._assetId();
 
         // set asset oracle
@@ -197,6 +199,10 @@ contract BigBangTest is UsdoTestHelper {
 
         penrose.executeMarketFn(markets, marketsData, true);
         penrose.setBigBangEthMarket(address(bigBang));
+
+        BBDebtRateHelper bbRateHelper = new BBDebtRateHelper();
+        marketsData[0] = abi.encodeWithSelector(BigBang.setDebtRateHelper.selector, address(bbRateHelper));
+        penrose.executeMarketFn(markets, marketsData, true);
     }
 
     function depositAsset(uint256 amount) public {
