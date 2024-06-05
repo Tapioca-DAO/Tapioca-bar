@@ -646,6 +646,15 @@
             "lastBlockHeight": 33677553,
             "contracts": [
                 {
+                    "name": "USDO_HELPER",
+                    "address": "0x4e0b6382CC90A167242e1bACC1541fEC056c33e4",
+                    "meta": {
+                        "args": [],
+                        "salt": "0x8d3e81756906a30203358b8a9bd4dcb66075d3ec3b3a1df4a8e7ed2eaf341276",
+                        "create2": true
+                    }
+                },
+                {
                     "address": "0x8b56A3B92a8FEd6bD9279F1AB02d62936BEbe780",
                     "name": "YB_USDO_ASSET_WITHOUT_STRATEGY",
                     "meta": {
@@ -892,6 +901,15 @@
             "name": "arbitrum_sepolia",
             "lastBlockHeight": 34373743,
             "contracts": [
+                {
+                    "name": "USDO_HELPER",
+                    "address": "0x6dC5ee7F9EcBe2B20aD6C7848563d6e2f386b8A5",
+                    "meta": {
+                        "args": [],
+                        "salt": "0xa1347ce53f3ab9c10ff5334e9cfb3b55cdd9a74d37bf20faa0bcdd8ac0f7f3a5",
+                        "create2": true
+                    }
+                },
                 {
                     "address": "0x7924F61532BFfeAF927429DAe7aB5cceC6CE1955",
                     "name": "YB_T_SGL_SGLP_ASSET_WITHOUT_STRATEGY",
