@@ -7,6 +7,7 @@ import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {IERC20} from "@boringcrypto/boring-solidity/contracts/ERC20.sol";
 
 // Tapioca
+import {IBigBangDebtRateHelper} from "tapioca-periph/interfaces/bar/IBigBangDebtRateHelper.sol";
 import {IBigBang} from "tapioca-periph/interfaces/bar/IBigBang.sol";
 import {SafeApprove} from "../../libraries/SafeApprove.sol";
 import {BBStorage} from "./BBStorage.sol";
@@ -44,21 +45,14 @@ contract BBCommon is BBStorage {
 
     /// @notice returns the current debt rate
     function getDebtRate() public view returns (uint256) {
-        if (isMainMarket) return penrose.bigBangEthDebtRate(); // default 0.5%
-        if (totalBorrow.elastic == 0) return minDebtRate;
-
-        uint256 _ethMarketTotalDebt = IBigBang(penrose.bigBangEthMarket()).getTotalDebt();
-        uint256 _currentDebt = totalBorrow.elastic;
-        uint256 _maxDebtPoint = (_ethMarketTotalDebt * debtRateAgainstEthMarket) / 1e18;
-
-        if (_currentDebt >= _maxDebtPoint) return maxDebtRate;
-
-        uint256 debtPercentage = (_currentDebt * DEBT_PRECISION) / _maxDebtPoint;
-        uint256 debt = ((maxDebtRate - minDebtRate) * debtPercentage) / DEBT_PRECISION + minDebtRate;
-
-        if (debt > maxDebtRate) return maxDebtRate;
-
-        return debt;
+        return IBigBangDebtRateHelper(debtRateHelper).getDebtRate(IBigBangDebtRateHelper.DebtRateCall({
+            isMainMarket: isMainMarket,
+            penrose: penrose,
+            elastic: totalBorrow.elastic,
+            debtRateAgainstEthMarket: debtRateAgainstEthMarket,
+            maxDebtRate: maxDebtRate,
+            minDebtRate: minDebtRate
+        }));
     }
 
     // ************************ //
