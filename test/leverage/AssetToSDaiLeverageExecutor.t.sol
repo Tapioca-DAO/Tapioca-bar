@@ -61,7 +61,7 @@ contract AssetToSDaiLeverageExecutorTest is BaseLeverageExecutorTest {
         }
         {
             YieldBoxURIBuilder uriBuilder = new YieldBoxURIBuilder();
-            yieldBox = new YieldBox(IWrappedNative(address(0)), uriBuilder);
+            yieldBox = new YieldBox(IWrappedNative(address(0)), uriBuilder, pearlmit, address(this));
 
             ERC20WithoutStrategy assetStrategy = createEmptyStrategy(address(yieldBox), address(asset));
             assetYieldBoxId =
