@@ -86,6 +86,8 @@ import {OracleMock} from "./mocks/OracleMock.sol";
 import {ERC20Mock} from "./mocks/ERC20Mock.sol";
 import {UsdoMock} from "./mocks/UsdoMock.sol";
 
+import {TapiocaOmnichainEngineCodec} from "tapioca-periph/tapiocaOmnichainEngine/TapiocaOmnichainEngineCodec.sol";
+
 import "forge-std/Test.sol";
 
 contract UsdoTest is UsdoTestHelper {
@@ -361,9 +363,7 @@ contract UsdoTest is UsdoTestHelper {
             _lzOFTComposedData.extraOptions,
             _lzOFTComposedData.guid,
             _lzOFTComposedData.to,
-            abi.encodePacked(
-                OFTMsgCodec.addressToBytes32(_lzOFTComposedData.srcMsgSender), _lzOFTComposedData.composeMsg
-            )
+            _lzOFTComposedData.composeMsg
         );
     }
 
@@ -455,7 +455,8 @@ contract UsdoTest is UsdoTestHelper {
         MessagingFee memory msgFee_ = prepareLzCallReturn_.msgFee;
         LZSendParam memory lzSendParam_ = prepareLzCallReturn_.lzSendParam;
 
-        (MessagingReceipt memory msgReceipt_,) = aUsdo.sendPacket{value: msgFee_.nativeFee}(lzSendParam_, composeMsg_);
+        (MessagingReceipt memory msgReceipt_,, bytes memory sentMsg,) =
+            aUsdo.sendPacket{value: msgFee_.nativeFee}(lzSendParam_, composeMsg_);
 
         verifyPackets(uint32(bEid), address(bUsdo));
 
@@ -469,7 +470,7 @@ contract UsdoTest is UsdoTestHelper {
             LzOFTComposedData(
                 PT_APPROVALS,
                 msgReceipt_.guid,
-                composeMsg_,
+                sentMsg,
                 bEid,
                 address(bUsdo), // Compose creator (at lzReceive)
                 address(bUsdo), // Compose receiver (at lzCompose)
@@ -554,7 +555,8 @@ contract UsdoTest is UsdoTestHelper {
         MessagingFee memory msgFee_ = prepareLzCallReturn2_.msgFee;
         LZSendParam memory lzSendParam_ = prepareLzCallReturn2_.lzSendParam;
 
-        (MessagingReceipt memory msgReceipt_,) = aUsdo.sendPacket{value: msgFee_.nativeFee}(lzSendParam_, composeMsg_);
+        (MessagingReceipt memory msgReceipt_,, bytes memory sentMsg,) =
+            aUsdo.sendPacket{value: msgFee_.nativeFee}(lzSendParam_, composeMsg_);
 
         {
             verifyPackets(uint32(bEid), address(bUsdo));
@@ -566,7 +568,7 @@ contract UsdoTest is UsdoTestHelper {
                 LzOFTComposedData(
                     PT_REMOTE_TRANSFER,
                     msgReceipt_.guid,
-                    composeMsg_,
+                    sentMsg,
                     bEid,
                     address(bUsdo), // Compose creator (at lzReceive)
                     address(bUsdo), // Compose receiver (at lzCompose)
@@ -693,7 +695,8 @@ contract UsdoTest is UsdoTestHelper {
         MessagingFee memory msgFee_ = prepareLzCallReturn2_.msgFee;
         LZSendParam memory lzSendParam_ = prepareLzCallReturn2_.lzSendParam;
 
-        (MessagingReceipt memory msgReceipt_,) = aUsdo.sendPacket{value: msgFee_.nativeFee}(lzSendParam_, composeMsg_);
+        (MessagingReceipt memory msgReceipt_,, bytes memory sentMsg,) =
+            aUsdo.sendPacket{value: msgFee_.nativeFee}(lzSendParam_, composeMsg_);
 
         {
             verifyPackets(uint32(bEid), address(bUsdo));
@@ -702,7 +705,7 @@ contract UsdoTest is UsdoTestHelper {
                 LzOFTComposedData(
                     PT_TAP_EXERCISE,
                     msgReceipt_.guid,
-                    composeMsg_,
+                    sentMsg,
                     bEid,
                     address(bUsdo), // Compose creator (at lzReceive)
                     address(bUsdo), // Compose receiver (at lzCompose)
@@ -763,7 +766,8 @@ contract UsdoTest is UsdoTestHelper {
 
         assertEq(yieldBox.isApprovedForAll(address(userA), address(userB)), false);
 
-        (MessagingReceipt memory msgReceipt_,) = aUsdo.sendPacket{value: msgFee_.nativeFee}(lzSendParam_, composeMsg_);
+        (MessagingReceipt memory msgReceipt_,, bytes memory sentMsg,) =
+            aUsdo.sendPacket{value: msgFee_.nativeFee}(lzSendParam_, composeMsg_);
 
         verifyPackets(uint32(bEid), address(bUsdo));
 
@@ -771,7 +775,7 @@ contract UsdoTest is UsdoTestHelper {
             LzOFTComposedData(
                 PT_YB_APPROVE_ALL,
                 msgReceipt_.guid,
-                composeMsg_,
+                sentMsg,
                 bEid,
                 address(bUsdo), // Compose creator (at lzReceive)
                 address(bUsdo), // Compose receiver (at lzCompose)
@@ -827,7 +831,8 @@ contract UsdoTest is UsdoTestHelper {
         yieldBox.setApprovalForAll(address(userB), true);
         assertEq(yieldBox.isApprovedForAll(address(userA), address(userB)), true);
 
-        (MessagingReceipt memory msgReceipt_,) = aUsdo.sendPacket{value: msgFee_.nativeFee}(lzSendParam_, composeMsg_);
+        (MessagingReceipt memory msgReceipt_,, bytes memory sentMsg,) =
+            aUsdo.sendPacket{value: msgFee_.nativeFee}(lzSendParam_, composeMsg_);
 
         verifyPackets(uint32(bEid), address(bUsdo));
 
@@ -835,7 +840,7 @@ contract UsdoTest is UsdoTestHelper {
             LzOFTComposedData(
                 PT_YB_APPROVE_ALL,
                 msgReceipt_.guid,
-                composeMsg_,
+                sentMsg,
                 bEid,
                 address(bUsdo), // Compose creator (at lzReceive)
                 address(bUsdo), // Compose receiver (at lzCompose)
@@ -915,7 +920,8 @@ contract UsdoTest is UsdoTestHelper {
         assertEq(yieldBox.isApprovedForAsset(address(userA), address(userB), aUsdoYieldBoxId), false);
         assertEq(yieldBox.isApprovedForAsset(address(userA), address(this), bUsdoYieldBoxId), false);
 
-        (MessagingReceipt memory msgReceipt_,) = aUsdo.sendPacket{value: msgFee_.nativeFee}(lzSendParam_, composeMsg_);
+        (MessagingReceipt memory msgReceipt_,, bytes memory sentMsg,) =
+            aUsdo.sendPacket{value: msgFee_.nativeFee}(lzSendParam_, composeMsg_);
 
         verifyPackets(uint32(bEid), address(bUsdo));
 
@@ -923,7 +929,7 @@ contract UsdoTest is UsdoTestHelper {
             LzOFTComposedData(
                 PT_YB_APPROVE_ASSET,
                 msgReceipt_.guid,
-                composeMsg_,
+                sentMsg,
                 bEid,
                 address(bUsdo), // Compose creator (at lzReceive)
                 address(bUsdo), // Compose receiver (at lzCompose)
@@ -1008,7 +1014,8 @@ contract UsdoTest is UsdoTestHelper {
         assertEq(yieldBox.isApprovedForAsset(address(userA), address(userB), aUsdoYieldBoxId), true);
         assertEq(yieldBox.isApprovedForAsset(address(userA), address(this), bUsdoYieldBoxId), true);
 
-        (MessagingReceipt memory msgReceipt_,) = aUsdo.sendPacket{value: msgFee_.nativeFee}(lzSendParam_, composeMsg_);
+        (MessagingReceipt memory msgReceipt_,, bytes memory sentMsg,) =
+            aUsdo.sendPacket{value: msgFee_.nativeFee}(lzSendParam_, composeMsg_);
 
         verifyPackets(uint32(bEid), address(bUsdo));
 
@@ -1016,7 +1023,7 @@ contract UsdoTest is UsdoTestHelper {
             LzOFTComposedData(
                 PT_YB_APPROVE_ASSET,
                 msgReceipt_.guid,
-                composeMsg_,
+                sentMsg,
                 bEid,
                 address(bUsdo), // Compose creator (at lzReceive)
                 address(bUsdo), // Compose receiver (at lzCompose)
@@ -1077,7 +1084,8 @@ contract UsdoTest is UsdoTestHelper {
         MessagingFee memory msgFee_ = prepareLzCallReturn_.msgFee;
         LZSendParam memory lzSendParam_ = prepareLzCallReturn_.lzSendParam;
 
-        (MessagingReceipt memory msgReceipt_,) = aUsdo.sendPacket{value: msgFee_.nativeFee}(lzSendParam_, composeMsg_);
+        (MessagingReceipt memory msgReceipt_,, bytes memory sentMsg,) =
+            aUsdo.sendPacket{value: msgFee_.nativeFee}(lzSendParam_, composeMsg_);
 
         verifyPackets(uint32(bEid), address(bUsdo));
 
@@ -1085,7 +1093,7 @@ contract UsdoTest is UsdoTestHelper {
             LzOFTComposedData(
                 PT_MARKET_PERMIT,
                 msgReceipt_.guid,
-                composeMsg_,
+                sentMsg,
                 bEid,
                 address(bUsdo), // Compose creator (at lzReceive)
                 address(bUsdo), // Compose receiver (at lzCompose)
@@ -1145,7 +1153,8 @@ contract UsdoTest is UsdoTestHelper {
         MessagingFee memory msgFee_ = prepareLzCallReturn_.msgFee;
         LZSendParam memory lzSendParam_ = prepareLzCallReturn_.lzSendParam;
 
-        (MessagingReceipt memory msgReceipt_,) = aUsdo.sendPacket{value: msgFee_.nativeFee}(lzSendParam_, composeMsg_);
+        (MessagingReceipt memory msgReceipt_,, bytes memory sentMsg,) =
+            aUsdo.sendPacket{value: msgFee_.nativeFee}(lzSendParam_, composeMsg_);
 
         verifyPackets(uint32(bEid), address(bUsdo));
 
@@ -1153,7 +1162,7 @@ contract UsdoTest is UsdoTestHelper {
             LzOFTComposedData(
                 PT_MARKET_PERMIT,
                 msgReceipt_.guid,
-                composeMsg_,
+                sentMsg,
                 bEid,
                 address(bUsdo), // Compose creator (at lzReceive)
                 address(bUsdo), // Compose receiver (at lzCompose)
@@ -1264,12 +1273,16 @@ contract UsdoTest is UsdoTestHelper {
                 refundAddress: address(this)
             })
         );
-        bytes memory composeMsg_ = prepareLzCallReturn2_.composeMsg;
         bytes memory oftMsgOptions_ = prepareLzCallReturn2_.oftMsgOptions;
-        MessagingFee memory msgFee_ = prepareLzCallReturn2_.msgFee;
-        LZSendParam memory lzSendParam_ = prepareLzCallReturn2_.lzSendParam;
+        MessagingReceipt memory msgReceipt_;
+        bytes memory sentMsg;
 
-        (MessagingReceipt memory msgReceipt_,) = aUsdo.sendPacket{value: msgFee_.nativeFee}(lzSendParam_, composeMsg_);
+        {
+            bytes memory composeMsg_ = prepareLzCallReturn2_.composeMsg;
+            MessagingFee memory msgFee_ = prepareLzCallReturn2_.msgFee;
+            LZSendParam memory lzSendParam_ = prepareLzCallReturn2_.lzSendParam;
+            (msgReceipt_,, sentMsg,) = aUsdo.sendPacket{value: msgFee_.nativeFee}(lzSendParam_, composeMsg_);
+        }
 
         {
             verifyPackets(uint32(bEid), address(bUsdo));
@@ -1278,7 +1291,7 @@ contract UsdoTest is UsdoTestHelper {
                 LzOFTComposedData(
                     PT_YB_SEND_SGL_LEND_OR_REPAY,
                     msgReceipt_.guid,
-                    composeMsg_,
+                    sentMsg,
                     bEid,
                     address(bUsdo), // Compose creator (at lzReceive)
                     address(bUsdo), // Compose receiver (at lzCompose)
@@ -1438,7 +1451,8 @@ contract UsdoTest is UsdoTestHelper {
         MessagingFee memory msgFee_ = prepareLzCallReturn2_.msgFee;
         LZSendParam memory lzSendParam_ = prepareLzCallReturn2_.lzSendParam;
 
-        (MessagingReceipt memory msgReceipt_,) = aUsdo.sendPacket{value: msgFee_.nativeFee}(lzSendParam_, composeMsg_);
+        (MessagingReceipt memory msgReceipt_,, bytes memory sentMsg,) =
+            aUsdo.sendPacket{value: msgFee_.nativeFee}(lzSendParam_, composeMsg_);
 
         {
             verifyPackets(uint32(bEid), address(bUsdo));
@@ -1447,7 +1461,7 @@ contract UsdoTest is UsdoTestHelper {
                 LzOFTComposedData(
                     PT_YB_SEND_SGL_LEND_OR_REPAY,
                     msgReceipt_.guid,
-                    composeMsg_,
+                    sentMsg,
                     bEid,
                     address(bUsdo), // Compose creator (at lzReceive)
                     address(bUsdo), // Compose receiver (at lzCompose)
@@ -1588,7 +1602,8 @@ contract UsdoTest is UsdoTestHelper {
         MessagingFee memory msgFee_ = prepareLzCallReturn2_.msgFee;
         LZSendParam memory lzSendParam_ = prepareLzCallReturn2_.lzSendParam;
 
-        (MessagingReceipt memory msgReceipt_,) = aUsdo.sendPacket{value: msgFee_.nativeFee}(lzSendParam_, composeMsg_);
+        (MessagingReceipt memory msgReceipt_,, bytes memory sentMsg,) =
+            aUsdo.sendPacket{value: msgFee_.nativeFee}(lzSendParam_, composeMsg_);
 
         {
             verifyPackets(uint32(bEid), address(bUsdo));
@@ -1597,7 +1612,7 @@ contract UsdoTest is UsdoTestHelper {
                 LzOFTComposedData(
                     PT_MARKET_REMOVE_ASSET,
                     msgReceipt_.guid,
-                    composeMsg_,
+                    sentMsg,
                     bEid,
                     address(bUsdo), // Compose creator (at lzReceive)
                     address(bUsdo), // Compose receiver (at lzCompose)
