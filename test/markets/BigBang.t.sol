@@ -188,7 +188,6 @@ contract BigBangTest is UsdoTestHelper {
         );
         vm.label(address(bigBang), "BigBang");
 
-
         assetYieldBoxId = bigBang._assetId();
 
         // set asset oracle
@@ -701,8 +700,9 @@ contract BigBangTest is UsdoTestHelper {
         assertEq(info[0].market.userCollateralShare, bigBang._userCollateralShare(address(this)));
         assertEq(info[0].market.userBorrowPart, bigBang._userBorrowPart(address(this)));
 
-        uint256 borrowAmountFromHelper =
-            magnetarHelper.getAmountForBorrowPart(IMarket(address(bigBang)), bigBang._userBorrowPart(address(this)));
+        uint256 borrowAmountFromHelper = magnetarHelper.getAmountForBorrowPart(
+            IMarket(address(bigBang)), bigBang._userBorrowPart(address(this)), false
+        );
         assertGe(borrowAmountFromHelper, borrowAmount);
     }
 
