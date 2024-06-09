@@ -177,10 +177,9 @@ contract Singularity is MarketStateView, SGLCommon {
         require(
             liquidationCollateralizationRate > collateralizationRate, "SGL: liquidationCollateralizationRate not valid"
         );
-        assembly {
-            sstore(minimumInterestPerSecond.slot, 158548960) // approx 0.5% APR
-            sstore(maximumInterestPerSecond.slot, 317097920000) // approx 1000% APR
-        }
+       
+        minimumInterestPerSecond = 158548960;
+        maximumInterestPerSecond = 317097920000;
         interestElasticity = 28800e36; // Half or double in 28800 seconds (8 hours) if linear
         startingInterestPerSecond = minimumInterestPerSecond;
         accrueInfo.interestPerSecond = startingInterestPerSecond; // 1% APR, with 1e18 being 100%
