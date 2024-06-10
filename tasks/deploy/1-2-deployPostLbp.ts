@@ -34,6 +34,7 @@ import { BigNumberish } from 'ethers';
  * Post deploy:
  * - Sets Origin as minter in USDO.
  * - Mint USDO on Origin for the USDC and DAI pools.
+ * - Mint extra USDO (10) to initiate SGL assets in YB.
  * - Transfer USDO to Ethereum for the DAI pool.
  */
 export const deployPostLbp__task_2 = async (
@@ -201,7 +202,12 @@ async function tapiocaPostDeployTask(
 
     /**
      * Mint USDO on Origin for the USDC and DAI pools
+     * Also mint extra amount of USDO to initiate SGL assets in YB
      */
+    const EXTRA_ETH_AMOUNT_TO_SEED_SGL_YB_ASSET =
+        DEPLOY_CONFIG.USDO_UNISWAP_POOL[chainInfo.chainId]!
+            .EXTRA_ETH_AMOUNT_TO_SEED_SGL_YB_ASSET!;
+
     const ETH_AMOUNT_FOR_USDC =
         DEPLOY_CONFIG.USDO_UNISWAP_POOL[chainInfo.chainId]!
             .ETH_AMOUNT_TO_MINT_FOR_USDC_POOL!;
@@ -220,6 +226,15 @@ async function tapiocaPostDeployTask(
         `[+] Exchange rate of USD/tETH: ${hre.ethers.utils.formatEther(
             exchangeRate,
         )}`,
+    );
+
+    let borrowAmountForExtraUsdo = hre.ethers.BigNumber.from(10)
+        .pow(36)
+        .div(exchangeRate)
+        .mul(EXTRA_ETH_AMOUNT_TO_SEED_SGL_YB_ASSET)
+        .div((1e18).toString()); // Convert rate from USD/tETH to tETH/USD, then multiply by ETH amount
+    borrowAmountForExtraUsdo = borrowAmountForExtraUsdo.sub(
+        borrowAmountForExtraUsdo.mul(delta).div(100),
     );
 
     let borrowAmountForUSDC = hre.ethers.BigNumber.from(10)
@@ -243,6 +258,28 @@ async function tapiocaPostDeployTask(
      * Mint USDO on Origin
      */
     {
+        // Mint extra amount to help seed SGL YB assets
+        console.log(
+            '[+] Borrowing USDO against ETH to help seed SGL YB assets using',
+            hre.ethers.utils.formatUnits(
+                EXTRA_ETH_AMOUNT_TO_SEED_SGL_YB_ASSET,
+                'ether',
+            ),
+            'ETH as collateral and borrowing',
+            hre.ethers.utils.formatUnits(borrowAmountForExtraUsdo, 'ether'),
+            'USDO',
+        );
+
+        calls.push(
+            ...(await mintOriginUSDO__deployPostLbp_2({
+                hre,
+                tag,
+                multicallAddr: tapiocaMulticallAddr,
+                collateralAmount: ETH_AMOUNT_FOR_USDC,
+                borrowAmount: borrowAmountForExtraUsdo,
+            })),
+        );
+
         // Mint USDO with ETH for USDC pool on Arb
         console.log(
             '[+] Borrowing USDO against ETH for USDC pool using',
