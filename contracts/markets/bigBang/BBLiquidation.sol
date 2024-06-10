@@ -231,6 +231,8 @@ contract BBLiquidation is BBCommon {
                 revert InsufficientLiquidationBonus();
             }
         } else {
+            uint totalUserBorrowWithBonus = userTotalBorrowAmount + (userTotalBorrowAmount * liquidationBonusAmount) / FEE_PRECISION;
+            if (collateralPartInAsset < totalUserBorrowWithBonus) revert BadDebt();
             collateralShare =
                 yieldBox.toShare(collateralId, (borrowPartWithBonus * _exchangeRate) / EXCHANGE_RATE_PRECISION, false);
             if (collateralShare > userCollateralShare[user]) {
