@@ -25,6 +25,64 @@ contract MarketHelper {
     uint256 internal constant FEE_PRECISION = 1e5;
 
     error ExchangeRateNotValid();
+    error Solvent();
+    error BadDebt();
+    error InsufficientLiquidationBonus();
+    error NotEnoughCollateral();
+
+    /// @notice returns the maximum liquidatable amount for user
+    /// @param market the SGL/BB address
+    /// @param borrowPart amount borrowed
+    /// @param collateralPartInAsset collateral's value in borrowed asset
+    function computeClosingFactor(IMarket market, uint256 borrowPart, uint256 collateralPartInAsset)
+        public
+        view
+        returns (uint256)
+    {
+        (uint128 totalBorrowElastic, uint128 totalBorrowBase) = market._totalBorrow();
+        Rebase memory _totalBorrow = Rebase({elastic: totalBorrowElastic, base: totalBorrowBase});
+        return _computeClosingFactor(
+            borrowPart,
+            collateralPartInAsset,
+            FEE_PRECISION,
+            market._liquidationCollateralizationRate(),
+            market._liquidationMultiplier(),
+            _totalBorrow
+        );
+    }
+    function _computeClosingFactor(
+        uint256 borrowPart,
+        uint256 collateralPartInAsset,
+        uint256 ratesPrecision,
+        uint256 _liquidationCollateralizationRate,
+        uint256 _liquidationMultiplier,
+        Rebase memory _totalBorrow
+    ) internal pure returns (uint256) {
+        // Obviously it's not `borrowPart` anymore but `borrowAmount`
+        borrowPart = (borrowPart * _totalBorrow.elastic) / _totalBorrow.base;
+
+        //borrowPart and collateralPartInAsset should already be scaled due to the exchange rate computation
+        uint256 liquidationStartsAt =
+            (collateralPartInAsset * _liquidationCollateralizationRate) / (10 ** ratesPrecision);
+
+        if (borrowPart < liquidationStartsAt) return 0;
+
+        //compute numerator
+        uint256 numerator = borrowPart - liquidationStartsAt;
+        //compute denominator
+        uint256 diff = (_liquidationCollateralizationRate * ((10 ** ratesPrecision) + _liquidationMultiplier))
+            / (10 ** ratesPrecision);
+        int256 denominator = (int256(10 ** ratesPrecision) - int256(diff)) * int256(1e13);
+
+        //compute closing factor
+        int256 x = (int256(numerator) * int256(1e18)) / denominator;
+        int256 xPos = x < 0 ? -x : x;
+
+        //assure closing factor validity
+        if (uint256(xPos) > borrowPart) return borrowPart;
+
+        return uint256(xPos);
+    }
 
     /// @notice returns the solvency status of a market's position
     /// @param _market the BB or SGL market
@@ -285,11 +343,6 @@ contract MarketHelper {
         );
     }
 
-    error Solvent();
-    error BadDebt();
-    error InsufficientLiquidationBonus();
-    error NotEnoughCollateral();
-
     struct _ViewLiquidationStruct {
         address user;
         uint256 maxBorrowPart;
@@ -321,7 +374,7 @@ contract MarketHelper {
         ) / _data.exchangeRate;
 
         // compute closing factor (liquidatable amount)
-        uint256 borrowPartWithBonus = market.computeClosingFactor(_data.userBorrowPart, collateralPartInAsset, 1e5);
+        uint256 borrowPartWithBonus = computeClosingFactor(market, _data.userBorrowPart, collateralPartInAsset);
 
         // limit liquidable amount before bonus to the current debt
         uint256 userTotalBorrowAmount = _data.totalBorrow.toElastic(_data.userBorrowPart, true);
@@ -341,7 +394,7 @@ contract MarketHelper {
         if (borrowPart == 0) revert Solvent();
 
         if (_data.liquidationBonusAmount > 0) {
-            borrowPartWithBonus = borrowPartWithBonus + (borrowPartWithBonus * _data.liquidationBonusAmount) / 1e5;
+            borrowPartWithBonus = borrowPartWithBonus + (borrowPartWithBonus * _data.liquidationBonusAmount) / FEE_PRECISION;
         }
 
         if (collateralPartInAsset < borrowPartWithBonus) {
@@ -353,7 +406,7 @@ contract MarketHelper {
             // so liquidation can proceed if liquidator's minimum is met
             if (_data.minLiquidationBonus > 0) {
                 // `collateralPartInAsset > borrowAmount` as `borrowAmount <= userTotalBorrowAmount`
-                uint256 effectiveBonus = ((collateralPartInAsset - borrowAmount) * 1e5) / borrowAmount;
+                uint256 effectiveBonus = ((collateralPartInAsset - borrowAmount) * FEE_PRECISION) / borrowAmount;
                 if (effectiveBonus < _data.minLiquidationBonus) {
                     revert InsufficientLiquidationBonus();
                 }
