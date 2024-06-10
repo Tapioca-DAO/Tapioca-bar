@@ -56,13 +56,15 @@ import { buildUsdoHelper } from 'tasks/deployBuilds/buildUsdoHelper';
  * - USDO Flashloan Helper
  *
  * Post deploy:
+ *  !!! REQUIRE HAVING 1 amount of tsDAI, tmtEth, tReth, tWSTETH, tSGLP, tWeth in TapiocaMulticall !!!
  * - Set LZ Peer in USDO
  * - Creating USDO Strat Asset and setting it in Penrose
  * - Registering MCs in Penrose
  * - Registering BB and SGL markets in Penrose
  * - Registering Big Bang Eth Market
  * - Registering USDO Flashloan Helper as Minter/Burner in USDO
- * - Creating and registering YB Assets for SGL and BB markets (sDAI, mtETH, tReth, tWSTETH, sGLP)
+ * - Creating and registering YB Assets for SGL and BB markets (sDAI, mtETH, tReth, tWSTETH, sGLP, weth)
+ * - Deposit Yb Assets (tsDai, tmtETH, tTReth, tTWSTETH, tSGLP, tWeth) in YieldBox
  * - Init BB and SGL markets (Calls: market init + set interest helper)
  * - Registering BB markets as Minter/Burner in USDO
  *
