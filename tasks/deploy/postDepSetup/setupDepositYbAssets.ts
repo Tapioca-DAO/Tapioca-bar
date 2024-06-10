@@ -77,7 +77,7 @@ export async function setupDepositYbAssets(params: TPostDeployParams) {
 
         // tReth
         await depositAsset({
-            tokenAddr: mtETH,
+            tokenAddr: tReth,
             stratName: DEPLOYMENT_NAMES.YB_T_RETH_ASSET_WITHOUT_STRATEGY,
         });
 
