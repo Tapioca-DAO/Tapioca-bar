@@ -17,6 +17,7 @@ remappings = [
 	"tapioca-strategies/=gitmodule/tapioca-yieldbox-strategies/contracts/",
 	"yieldbox/=gitmodule/tap-yieldbox/contracts/",
 	"mocks/=gitmodule/tapioca-mocks/contracts/",
+	'tapiocaz/=gitmodule/tapiocaz/contracts/',
 	"permitc/=gitmodule/tapioca-periph/gitmodule/permitc/src/", # Needs to be init in the periph repo
 ]
 
