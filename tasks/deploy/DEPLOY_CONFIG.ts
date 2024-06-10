@@ -155,6 +155,7 @@ type TUSDOUniswapPool = {
     [key in EChainID]?: {
         ETH_AMOUNT_TO_MINT_FOR_USDC_POOL: BigNumber;
         ETH_AMOUNT_TO_MINT_FOR_DAI_POOL: BigNumber;
+        EXTRA_ETH_AMOUNT_TO_SEED_SGL_YB_ASSET: BigNumber;
     };
 };
 
@@ -162,10 +163,12 @@ const USDO_UNISWAP_POOL: TUSDOUniswapPool = {
     [EChainID.ARBITRUM]: {
         ETH_AMOUNT_TO_MINT_FOR_USDC_POOL: ethers.utils.parseEther('0'),
         ETH_AMOUNT_TO_MINT_FOR_DAI_POOL: ethers.utils.parseEther('0'),
+        EXTRA_ETH_AMOUNT_TO_SEED_SGL_YB_ASSET: ethers.utils.parseEther('0.001'),
     },
     [EChainID.ARBITRUM_SEPOLIA]: {
         ETH_AMOUNT_TO_MINT_FOR_USDC_POOL: ethers.utils.parseEther('1'),
         ETH_AMOUNT_TO_MINT_FOR_DAI_POOL: ethers.utils.parseEther('1'),
+        EXTRA_ETH_AMOUNT_TO_SEED_SGL_YB_ASSET: ethers.utils.parseEther('0.001'),
     },
 };
 

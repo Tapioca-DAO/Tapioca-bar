@@ -13,6 +13,7 @@ import { setupRegisterBigBangEthMarket } from './postDepSetup/setupRegisterBigBa
 import { setupRegisterMCInPenrose } from './postDepSetup/setupRegisterMCInPenrose';
 import { setupUsdoFlashloanHelperInUsdo } from './postDepSetup/setupUsdoFlashloanHelperInUsdo';
 import { setupUsdoInPenrose } from './postDepSetup/setupUsdoInPenrose';
+import { setupDepositYbAssets } from './postDepSetup/setupDepositYbAssets';
 
 export type TPostDeployParams = {
     hre: HardhatRuntimeEnvironment;
@@ -63,15 +64,10 @@ export async function setupPostLbp1(params: TTapiocaDeployerVmPass<object>) {
     // YB Asset IDs needs to be created before this
     const calls2: TapiocaMulticall.CallStruct[] = [];
     const setupParams2: TPostDeployParams = {
-        hre,
-        VM,
-        tag,
-        deployed,
+        ...setupParams1,
         calls: calls2,
-        isTestnet,
-        isHostChain,
-        isSideChain,
     };
+    await setupDepositYbAssets(setupParams2);
     await setupInitAndRegisterMarket(setupParams2);
     await setupRegisterBBAsMinterBurnerInUsdo(setupParams2);
 
