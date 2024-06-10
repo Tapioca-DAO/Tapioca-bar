@@ -190,7 +190,7 @@ contract BBLiquidation is BBCommon {
 
         // compute closing factor (liquidatable amount)
         uint256 borrowPartWithBonus =
-            computeClosingFactor(userBorrowPart[user], collateralPartInAsset, FEE_PRECISION_DECIMALS);
+            _computeClosingFactor(userBorrowPart[user], collateralPartInAsset, FEE_PRECISION_DECIMALS, liquidationCollateralizationRate, liquidationMultiplier, totalBorrow);
 
         // limit liquidable amount before bonus to the current debt
         uint256 userTotalBorrowAmount = totalBorrow.toElastic(userBorrowPart[user], true);

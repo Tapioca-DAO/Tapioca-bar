@@ -1058,6 +1058,8 @@ contract UsdoTest is UsdoTestHelper {
             approvalMsg_ = usdoHelper.buildMarketPermitApprovalMsg(permitApproval_);
         }
 
+        cluster.updateContract(0, address(bUsdo), true);
+
         PrepareLzCallReturn memory prepareLzCallReturn_ = usdoHelper.prepareLzCall(
             IUsdo(address(aUsdo)),
             PrepareLzCallData({
@@ -1126,6 +1128,8 @@ contract UsdoTest is UsdoTestHelper {
 
             approvalMsg_ = usdoHelper.buildMarketPermitApprovalMsg(permitApproval_);
         }
+
+        cluster.updateContract(0, address(bUsdo), true);
 
         PrepareLzCallReturn memory prepareLzCallReturn_ = usdoHelper.prepareLzCall(
             IUsdo(address(aUsdo)),

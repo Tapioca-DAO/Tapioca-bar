@@ -7,6 +7,10 @@ import {IERC1155Receiver} from "@openzeppelin/contracts/token/ERC1155/IERC1155Re
 import {EIP712, ECDSA} from "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 import {IERC20} from "@boringcrypto/boring-solidity/contracts/ERC20.sol";
 
+// Tapioca
+import {IPenrose} from "tapioca-periph/interfaces/bar/IPenrose.sol";
+import {ICluster} from "tapioca-periph/interfaces/periph/ICluster.sol";
+
 /*
 
 ████████╗ █████╗ ██████╗ ██╗ ██████╗  ██████╗ █████╗ 
@@ -22,6 +26,10 @@ contract MarketERC20 is IERC20, IERC20Permit, IERC1155Receiver, EIP712 {
     // ************ //
     // *** VARS *** //
     // ************ //
+
+    /// @notice returns Penrose address
+    IPenrose internal penrose;
+
 
     // keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
     bytes32 private constant _PERMIT_TYPEHASH = 0x6e71edae12b1b97f4d1f60370fef10105fa2faae0126114a169c64845d6126c9;
@@ -206,6 +214,8 @@ contract MarketERC20 is IERC20, IERC20Permit, IERC1155Receiver, EIP712 {
         bytes32 s
     ) internal {
         require(block.timestamp <= deadline, "ERC20Permit: expired deadline");
+
+        if (!ICluster(penrose.cluster()).isWhitelisted(0, msg.sender)) require (owner == msg.sender, "MarketERC20: not authorized");
 
         bytes32 structHash;
 
