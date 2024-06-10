@@ -5,7 +5,7 @@ import {
     deploy__LoadDeployments_Generic,
 } from '../1-1-deployPostLbp';
 import { TPostDeployParams } from '../1-1-setupPostLbp';
-import { DEPLOYMENT_NAMES, DEPLOY_CONFIG } from '../DEPLOY_CONFIG';
+import { DEPLOYMENT_NAMES } from '../DEPLOY_CONFIG';
 
 /**
  * @notice - Register sDAI and sGLP as YB assets for SGL.
@@ -18,6 +18,7 @@ export async function setupCreateYBAssets(params: TPostDeployParams) {
     const { yieldBox: ybAddress } = deploy__LoadDeployments_Generic({
         hre,
         tag,
+        isTestnet,
     });
 
     const yieldBox = (await hre.ethers.getContractAt(
@@ -30,7 +31,7 @@ export async function setupCreateYBAssets(params: TPostDeployParams) {
      * Register sDAI as YB assets
      */
     if (isSideChain) {
-        const { tSdai } = deploy__LoadDeployments_Eth({ hre, tag });
+        const { tSdai } = deploy__LoadDeployments_Eth({ hre, tag, isTestnet });
         await setupCreateYBAssets__addNewAsset({
             ...params,
             assetAddress: tSdai,
@@ -47,6 +48,7 @@ export async function setupCreateYBAssets(params: TPostDeployParams) {
             deploy__LoadDeployments_Arb({
                 hre,
                 tag,
+                isTestnet,
             });
 
         /**

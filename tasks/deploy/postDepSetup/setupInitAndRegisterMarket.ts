@@ -15,7 +15,7 @@ import { DEPLOYMENT_NAMES, DEPLOY_CONFIG } from '../DEPLOY_CONFIG';
 import { checkExists, loadLocalContract } from 'tapioca-sdk';
 
 export async function setupInitAndRegisterMarket(params: TPostDeployParams) {
-    const { hre, deployed, tag, isSideChain, isHostChain } = params;
+    const { hre, deployed, tag, isSideChain, isHostChain, isTestnet } = params;
 
     const leverageExecutorAddr = deployed.find(
         (e) => e.name === DEPLOYMENT_NAMES.SIMPLE_LEVERAGE_EXECUTOR,
@@ -41,6 +41,7 @@ export async function setupInitAndRegisterMarket(params: TPostDeployParams) {
     const { yieldBox: yieldBoxDep } = deploy__LoadDeployments_Generic({
         hre,
         tag,
+        isTestnet,
     });
 
     const yieldBox = (await hre.ethers.getContractAt(
@@ -62,6 +63,7 @@ export async function setupInitAndRegisterMarket(params: TPostDeployParams) {
         } = deploy__LoadDeployments_Arb({
             hre,
             tag,
+            isTestnet,
         });
         // MT_ETH
         {
@@ -148,6 +150,7 @@ export async function setupInitAndRegisterMarket(params: TPostDeployParams) {
         const { tSdaiMarketOracle, tSdai } = deploy__LoadDeployments_Eth({
             hre,
             tag,
+            isTestnet,
         });
         {
             const tSdaiDeployConf =
@@ -178,6 +181,7 @@ export async function setupInitAndRegisterMarket(params: TPostDeployParams) {
         const { tSGLPMarketOracle, tSGLP } = deploy__LoadDeployments_Arb({
             hre,
             tag,
+            isTestnet,
         });
         // SGLP
         {
