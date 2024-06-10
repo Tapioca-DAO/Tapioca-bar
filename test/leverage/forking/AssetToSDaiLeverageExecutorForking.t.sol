@@ -11,7 +11,6 @@ import {IStrategy} from "yieldbox/interfaces/IStrategy.sol";
 import {Cluster, ICluster} from "tapioca-periph/Cluster/Cluster.sol";
 import {YieldBox} from "yieldbox/YieldBox.sol";
 import {ERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-// import {IZeroXSwapper} from "tapioca-periph/interfaces/periph/IZeroXSwapper.sol";
 import {ISavingsDai} from "tapioca-periph/interfaces/external/makerdao/ISavingsDai.sol";
 import {BaseLeverageExecutorTest} from "../BaseLeverageExecutorTest.t.sol";
 import {ZeroXSwapper, IZeroXSwapper} from "tapioca-periph/Swapper/ZeroXSwapper.sol";
