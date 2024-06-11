@@ -45,9 +45,6 @@ abstract contract Market is MarketERC20, Ownable {
 
     /// @notice pause options
     mapping(PauseType pauseProp => bool pauseStatus) internal pauseOptions;
-    /// @notice conservator's addresss
-    /// @dev conservator can pause/unpause the contract
-    address internal conservator;
 
     /// @notice returns YieldBox address
     IYieldBox internal yieldBox;
@@ -202,7 +199,6 @@ abstract contract Market is MarketERC20, Ownable {
     /// @dev values are updated only if > 0 or not address(0)
     /// @param _oracle oracle address
     /// @param _oracleData oracle data
-    /// @param _conservator conservator address; conservator is allowed to pause/unpause the contract
     /// @param _protocolFee protocol fee percentage
     /// @param _liquidationBonusAmount extra amount factored in the closing factor computation
     /// @param _minLiquidatorReward minimum reward percentage a liquidator can receive
@@ -213,7 +209,6 @@ abstract contract Market is MarketERC20, Ownable {
     function setMarketConfig(
         ITapiocaOracle _oracle,
         bytes calldata _oracleData,
-        address _conservator,
         uint256 _protocolFee,
         uint256 _liquidationBonusAmount,
         uint256 _minLiquidatorReward,
@@ -229,11 +224,6 @@ abstract contract Market is MarketERC20, Ownable {
         if (_oracleData.length > 0) {
             oracleData = _oracleData;
             emit OracleDataUpdated();
-        }
-
-        if (_conservator != address(0)) {
-            emit ConservatorUpdated(conservator, _conservator);
-            conservator = _conservator;
         }
 
         if (_protocolFee > 0) {

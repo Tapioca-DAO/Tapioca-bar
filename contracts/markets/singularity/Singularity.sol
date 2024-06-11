@@ -200,7 +200,6 @@ contract Singularity is MarketStateView, SGLCommon {
         }
 
         EXCHANGE_RATE_PRECISION = _exchangeRatePrecision > 0 ? _exchangeRatePrecision : 1e18;
-        conservator = owner();
     }
 
     // ************************ //
@@ -270,7 +269,7 @@ contract Singularity is MarketStateView, SGLCommon {
     /// @dev can only be called by the conservator
     /// @param val the new value
     function updatePause(PauseType _type, bool val, bool resetAccrueTimestmap) external {
-        if (msg.sender != conservator) revert NotAuthorized();
+        if (!penrose.cluster().hasRole(msg.sender, keccak256("PAUSABLE")) && msg.sender != owner()) revert NotAuthorized();
         if (val == pauseOptions[_type]) revert SameState();
         emit PausedUpdated(_type, pauseOptions[_type], val);
         pauseOptions[_type] = val;

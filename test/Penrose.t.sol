@@ -208,8 +208,7 @@ contract PenroseTest is UsdoTestHelper {
     }
 
     function test_penrose_should_not_withdraw_when_paused() public {
-        penrose.setConservator(address(this));
-        penrose.updatePause(true);
+        penrose.setPause(true);
 
         IMarket[] memory markets = new IMarket[](1);
         markets[0] = IMarket(address(0));

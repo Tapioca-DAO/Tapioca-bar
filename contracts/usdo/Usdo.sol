@@ -69,6 +69,9 @@ contract Usdo is BaseUsdo, Pausable, ReentrancyGuard, ERC20Permit {
 
     event SetMinterStatus(address indexed _for, bool _status);
     event SetBurnerStatus(address indexed _for, bool _status);
+    event ConservatorUpdated(address indexed old, address indexed _new);
+
+    error AddressNotValid();
 
     constructor(UsdoInitStruct memory _initData, UsdoModulesInitStruct memory _modulesData)
         BaseUsdo(_initData)
@@ -308,7 +311,8 @@ contract Usdo is BaseUsdo, Pausable, ReentrancyGuard, ERC20Permit {
     /**
      * @notice Un/Pauses this contract.
      */
-    function setPause(bool _pauseState) external onlyOwner {
+    function setPause(bool _pauseState) external {
+        if (!getCluster().hasRole(msg.sender, keccak256("PAUSABLE")) && msg.sender != owner()) revert Usdo_NotAuthorized();
         if (_pauseState) {
             _pause();
         } else {

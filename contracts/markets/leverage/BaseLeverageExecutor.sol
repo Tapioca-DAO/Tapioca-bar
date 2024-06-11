@@ -51,6 +51,7 @@ abstract contract BaseLeverageExecutor is Ownable {
     IWeth9 public weth;
 
     event AddressUpdated(address indexed oldAddr, address indexed newAddr);
+    event ConservatorUpdated(address indexed old, address indexed _new);
 
     // ************** //
     // *** ERRORS *** //
@@ -63,6 +64,7 @@ abstract contract BaseLeverageExecutor is Ownable {
     error TokenNotValid();
     error NativeNotSupported();
     error AddressNotValid();
+    error NotAuthorized();
 
     constructor(IZeroXSwapper _swapper, ICluster _cluster, address _weth, IPearlmit _pearlmit) {
         if (address(_cluster) == address(0)) revert AddressNotValid();
@@ -77,6 +79,9 @@ abstract contract BaseLeverageExecutor is Ownable {
     // ******************** //
     // *** OWNER METHODS *** //
     // ******************** //
+    /**
+     * @notice Sets the WETH address
+     */
     function setWeth(address _weth) external onlyOwner {
         emit AddressUpdated(address(weth), _weth);
         weth = IWeth9(_weth);
