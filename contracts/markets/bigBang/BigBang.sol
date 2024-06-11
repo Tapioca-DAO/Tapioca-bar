@@ -192,7 +192,6 @@ contract BigBang is MarketStateView, BBCommon {
         leverageExecutor = _leverageExecutor;
 
         _transferOwnership(address(penrose));
-        conservator = address(penrose);
     }
 
     // ************************ //
@@ -243,7 +242,7 @@ contract BigBang is MarketStateView, BBCommon {
     /// @dev can only be called by the conservator
     /// @param val the new value
     function updatePause(PauseType _type, bool val) external {
-        require(msg.sender == conservator, "Market: unauthorized");
+        require(penrose.cluster().hasRole(msg.sender, keccak256("PAUSABLE")) || msg.sender == owner(), "Market: unauthorized");
         require(val != pauseOptions[_type], "Market: same state");
         emit PausedUpdated(_type, pauseOptions[_type], val);
         pauseOptions[_type] = val;
@@ -252,7 +251,7 @@ contract BigBang is MarketStateView, BBCommon {
     /// @notice updates the pause state of the contract for all types
     /// @param val the new val
     function updatePauseAll(bool val) external {
-        require(msg.sender == conservator, "Market: unauthorized");
+        require(penrose.cluster().hasRole(msg.sender, keccak256("PAUSABLE")) || msg.sender == owner(), "Market: unauthorized");
 
         pauseOptions[PauseType.Borrow] = val;
         pauseOptions[PauseType.Repay] = val;

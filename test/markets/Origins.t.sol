@@ -145,7 +145,8 @@ contract OriginsTest is UsdoTestHelper {
             collateralYieldBoxId,
             ITapiocaOracle(address(oracle)),
             0,
-            99999
+            99999,
+            address(penrose)
         );
 
         vm.label(address(origins), "Origins");
@@ -186,7 +187,6 @@ contract OriginsTest is UsdoTestHelper {
             origins.setMarketConfig(
                 ITapiocaOracle(toSetAddress),
                 "",
-                toSetAddress,
                 toSetValue,
                 toSetValue,
                 toSetValue,
@@ -199,7 +199,6 @@ contract OriginsTest is UsdoTestHelper {
 
         {
             assertEq(address(origins._oracle()), address(toSetAddress));
-            assertEq(origins._conservator(), toSetAddress);
             assertEq(origins._protocolFee(), toSetValue);
             assertEq(origins._minLiquidatorReward(), toSetValue);
             assertEq(origins._maxLiquidatorReward(), toSetMaxValue);
@@ -209,12 +208,13 @@ contract OriginsTest is UsdoTestHelper {
         }
     }
 
-    function test_should_not_work_when_paused() public {
+    function test_should_not_work_when_paused_origins() public {
         {
+            ICluster _cl = penrose.cluster();
+            _cl.setRoleForContract(address(this), keccak256("PAUSABLE"), true);
             origins.setMarketConfig(
                 ITapiocaOracle(address(0)),
                 "",
-                address(this), //conservator
                 0,
                 0,
                 0,

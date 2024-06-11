@@ -448,7 +448,6 @@ contract BigBangTest is UsdoTestHelper {
                 Market.setMarketConfig.selector,
                 toSetAddress,
                 "",
-                toSetAddress,
                 toSetValue,
                 toSetValue,
                 toSetValue,
@@ -467,7 +466,6 @@ contract BigBangTest is UsdoTestHelper {
 
         {
             assertEq(address(bigBang._oracle()), address(toSetAddress));
-            assertEq(bigBang._conservator(), toSetAddress);
             assertEq(bigBang._protocolFee(), toSetValue);
             assertEq(bigBang._minLiquidatorReward(), toSetValue);
             assertEq(bigBang._maxLiquidatorReward(), toSetMaxValue);
@@ -485,11 +483,12 @@ contract BigBangTest is UsdoTestHelper {
 
     function test_should_not_work_when_paused() public {
         {
+            ICluster _cl = penrose.cluster();
+            _cl.setRoleForContract(address(this), keccak256("PAUSABLE"), true);
             bytes memory payload = abi.encodeWithSelector(
                 Market.setMarketConfig.selector,
                 address(0),
                 "",
-                address(this), //conservator
                 0,
                 0,
                 0,

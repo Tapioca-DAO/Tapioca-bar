@@ -280,7 +280,6 @@ contract SingularityTest is UsdoTestHelper {
                 Market.setMarketConfig.selector,
                 toSetAddress,
                 "",
-                toSetAddress,
                 toSetValue,
                 toSetValue,
                 toSetValue,
@@ -299,7 +298,6 @@ contract SingularityTest is UsdoTestHelper {
 
         {
             assertEq(address(singularity._oracle()), address(toSetAddress));
-            assertEq(singularity._conservator(), toSetAddress);
             assertEq(singularity._protocolFee(), toSetValue);
             assertEq(singularity._minLiquidatorReward(), toSetValue);
             assertEq(singularity._maxLiquidatorReward(), toSetMaxValue);
@@ -327,11 +325,12 @@ contract SingularityTest is UsdoTestHelper {
 
     function test_should_not_work_when_paused() public {
         {
+            ICluster _cl = penrose.cluster();
+            _cl.setRoleForContract(address(this), keccak256("PAUSABLE"), true);
             bytes memory payload = abi.encodeWithSelector(
                 Market.setMarketConfig.selector,
                 address(0),
                 "",
-                address(this), //conservator
                 0,
                 0,
                 0,
