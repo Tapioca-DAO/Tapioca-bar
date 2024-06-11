@@ -27,6 +27,7 @@ import { buildUSDOModules } from 'tasks/deployBuilds/buildUSDOModules';
 import { setupPostLbp1 } from './1-1-setupPostLbp';
 import { DEPLOYMENT_NAMES, DEPLOY_CONFIG } from './DEPLOY_CONFIG';
 import { buildUsdoHelper } from 'tasks/deployBuilds/buildUsdoHelper';
+import { buildBBDebtRateHelper } from 'tasks/deployBuilds/buildBBDebtRateHelper';
 
 /**
  * @notice Should be called after TapiocaZ `postLbp` task
@@ -240,6 +241,7 @@ async function tapiocaDeployTask(params: TTapiocaDeployerVmPass<object>) {
 
         // @ts-ignore
         (await buildBBModules(hre)).forEach((module) => VM.add(module));
+        VM.add(await buildBBDebtRateHelper(hre));
 
         // BB Asset strategies
         VM.add(
