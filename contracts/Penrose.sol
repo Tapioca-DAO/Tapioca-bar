@@ -4,6 +4,7 @@ pragma solidity 0.8.22;
 // External
 import {IMasterContract} from "@boringcrypto/boring-solidity/contracts/interfaces/IMasterContract.sol";
 import {IERC20} from "@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol";
+import {Pausable} from "@openzeppelin/contracts/security/Pausable.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 // Tapioca
@@ -35,7 +36,7 @@ import {SafeApprove} from "./libraries/SafeApprove.sol";
 
 /// @title Global market registry
 /// @notice Singularity management
-contract Penrose is Ownable, PearlmitHandler {
+contract Penrose is Ownable, Pausable, PearlmitHandler {
     using SafeApprove for address;
 
     error AddressNotValid();
@@ -43,10 +44,6 @@ contract Penrose is Ownable, PearlmitHandler {
     // ************ //
     // *** VARS *** //
     // ************ //
-    /// @notice returns the Conservator address
-    address public conservator;
-    /// @notice returns the pause state of the contract
-    bool public paused;
     /// @notice returns the Cluster contract
     ICluster public cluster;
 
@@ -151,8 +148,6 @@ contract Penrose is Ownable, PearlmitHandler {
     event UsdoTokenUpdated(address indexed usdoToken, uint256 indexed assetId);
     /// @notice event emitted when conservator is updated
     event ConservatorUpdated(address indexed old, address indexed _new);
-    /// @notice event emitted when pause state is updated
-    event PausedUpdated(bool indexed oldState, bool indexed newState);
     /// @notice event emitted when BigBang ETH market address is updated
     event BigBangEthMarketUpdated(address indexed _oldAddress, address indexed _newAddress);
     /// @notice event emitted when BigBang ETH market debt rate is updated
@@ -173,7 +168,6 @@ contract Penrose is Ownable, PearlmitHandler {
     // ************** //
     error NotRegistered();
     error NotValid();
-    error Paused();
     error NotAuthorized();
     error Registered();
     error ZeroAddress();
@@ -191,11 +185,6 @@ contract Penrose is Ownable, PearlmitHandler {
 
     modifier registeredBigBangMasterContract(address mc) {
         if (!isBigBangMasterContractRegistered[mc]) revert NotRegistered();
-        _;
-    }
-
-    modifier notPaused() {
-        if (paused) revert Paused();
         _;
     }
 
@@ -298,7 +287,7 @@ contract Penrose is Ownable, PearlmitHandler {
     /// @notice Loop through the master contracts and call `_depositFeesToTwTap()` to each one of their clones.
     /// @param markets_ Singularity &/ BigBang markets array
     /// @param twTap the TwTap contract
-    function withdrawAllMarketFees(IMarket[] calldata markets_, ITwTap twTap) external onlyOwner notPaused {
+    function withdrawAllMarketFees(IMarket[] calldata markets_, ITwTap twTap) external onlyOwner whenNotPaused {
         if (address(twTap) == address(0)) revert ZeroAddress();
 
         uint256 length = markets_.length;
@@ -378,23 +367,16 @@ contract Penrose is Ownable, PearlmitHandler {
         bigBangEthMarket = _market;
     }
 
-    /// @notice updates the pause state of the contract
-    /// @dev can only be called by the conservator
-    /// @param val the new value
-    function updatePause(bool val) external {
-        if (msg.sender != conservator) revert NotAuthorized();
-        if (val == paused) revert NotValid();
-        emit PausedUpdated(paused, val);
-        paused = val;
-    }
-
-    /// @notice Set the Conservator address
-    /// @dev Conservator can pause the contract
-    /// @param _conservator The new address
-    function setConservator(address _conservator) external onlyOwner {
-        if (_conservator == address(0)) revert ZeroAddress();
-        emit ConservatorUpdated(conservator, _conservator);
-        conservator = _conservator;
+    /**
+     * @notice Un/Pauses this contract.
+     */
+    function setPause(bool _pauseState) external {
+        if (!cluster.hasRole(msg.sender, keccak256("PAUSABLE")) && msg.sender != owner()) revert NotAuthorized();
+        if (_pauseState) {
+            _pause();
+        } else {
+            _unpause();
+        }
     }
 
     /// @notice Set the USDO token
@@ -596,7 +578,7 @@ contract Penrose is Ownable, PearlmitHandler {
 
     /// @notice Calls `accrue()` on all BigBang registered markets
     /// @dev callable by BigBang ETH market only
-    function reAccrueBigBangMarkets() external notPaused {
+    function reAccrueBigBangMarkets() external whenNotPaused {
         if (msg.sender == bigBangEthMarket) {
             _reAccrueMarkets(false);
         }

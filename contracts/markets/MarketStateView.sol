@@ -23,10 +23,6 @@ abstract contract MarketStateView is Market {
         return pauseOptions[_pauseProp];
     }
 
-    function _conservator() external view returns (address) {
-        return conservator;
-    }
-
     function _penrose() external view returns (address) {
         return address(penrose);
     }
