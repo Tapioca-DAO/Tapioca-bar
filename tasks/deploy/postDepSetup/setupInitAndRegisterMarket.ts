@@ -211,6 +211,7 @@ export async function setupInitAndRegisterMarket(params: TPostDeployParams) {
     }
 }
 
+// Init BB Markets + set interest helper
 async function initBBMarket(
     params: TPostDeployParams & {
         factory: BigBang__factory;
@@ -317,6 +318,21 @@ async function initBBMarket(
         calls.push({
             target: market.address,
             callData: market.interface.encodeFunctionData('init', [bbData]),
+            allowFailure: false,
+        });
+
+        const debtHelper = loadLocalContract(
+            hre,
+            hre.SDK.eChainId,
+            DEPLOYMENT_NAMES.BB_DEBT_RATE_HELPER,
+            params.tag,
+        );
+
+        calls.push({
+            target: market.address,
+            callData: market.interface.encodeFunctionData('setDebtRateHelper', [
+                debtHelper.address,
+            ]),
             allowFailure: false,
         });
     }
