@@ -83,28 +83,28 @@ type TPostLbp = {
 
 const marketConfigArb: TPostLbp[EChainID] = {
     tEthOriginsMarketConfig: {
-        collateralizationRate: 100_000, // 100%
+        collateralizationRate: 99_000, // 99%
     },
     mtEthMarketConfig: {
         debtRateAgainstEth: 0,
-        debtRateMin: 0,
+        debtRateMin: 0, // Set in Penrose contract
         debtRateMax: 0,
-        collateralizationRate: 87_000, // 87%
-        liquidationCollateralizationRate: 93_000, //  93%
+        collateralizationRate: 85_000, // 85%
+        liquidationCollateralizationRate: 90_000, //  91%
     },
     tRethMarketConfig: {
         debtRateAgainstEth: ethers.utils.parseEther('0.15'), // 15%
-        debtRateMin: ethers.utils.parseEther('0.05'), // 5%
-        debtRateMax: ethers.utils.parseEther('0.35'), // 35%
-        collateralizationRate: 87_000, // 87%
-        liquidationCollateralizationRate: 93_000, // 93%
+        debtRateMin: ethers.utils.parseEther('0.1'), // 10%
+        debtRateMax: ethers.utils.parseEther('0.15'), // 15%
+        collateralizationRate: 85_000, // 87%
+        liquidationCollateralizationRate: 90_000, // 93%
     },
     twSTETHMarketConfig: {
         debtRateAgainstEth: ethers.utils.parseEther('0.15'), // 15%
-        debtRateMin: ethers.utils.parseEther('0.05'), // 5%
-        debtRateMax: ethers.utils.parseEther('0.35'), // 35%
-        collateralizationRate: 86_000, // 86%
-        liquidationCollateralizationRate: 92_000, // 92%
+        debtRateMin: ethers.utils.parseEther('0.1'), // 10%
+        debtRateMax: ethers.utils.parseEther('0.15'), // 15%
+        collateralizationRate: 85_000,
+        liquidationCollateralizationRate: 90_000,
     },
 
     tSGlpMarketConfig: {
