@@ -55,7 +55,7 @@ contract USDOFlashloanHelper is IERC3156FlashLender, Ownable {
         usdo = _usdo;
 
         flashMintFee = 1; // 0.001%
-        maxFlashMint = 100_000 * 1e18; // 100k USDO
+        maxFlashMint = 750_000 * 1e18; // 750k USDO
 
         _transferOwnership(_owner);
     }
