@@ -454,7 +454,8 @@ contract BigBangTest is UsdoTestHelper {
                 toSetMaxValue,
                 toSetValue,
                 toSetValue,
-                toSetMaxValue
+                toSetMaxValue,
+                toSetValue
             );
             address[] memory mc = new address[](1);
             mc[0] = address(bigBang);
@@ -472,6 +473,7 @@ contract BigBangTest is UsdoTestHelper {
             assertEq(bigBang._totalBorrowCap(), toSetValue);
             assertEq(bigBang._collateralizationRate(), toSetValue);
             assertEq(bigBang._liquidationCollateralizationRate(), toSetMaxValue);
+            assertEq(bigBang._minBorrowAmount(), toSetValue);
         }
     }
 
@@ -489,6 +491,7 @@ contract BigBangTest is UsdoTestHelper {
                 Market.setMarketConfig.selector,
                 address(0),
                 "",
+                0,
                 0,
                 0,
                 0,

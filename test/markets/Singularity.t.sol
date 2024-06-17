@@ -286,7 +286,8 @@ contract SingularityTest is UsdoTestHelper {
                 toSetMaxValue,
                 toSetValue,
                 toSetValue,
-                toSetMaxValue
+                toSetMaxValue,
+                toSetValue
             );
             address[] memory mc = new address[](1);
             mc[0] = address(singularity);
@@ -304,6 +305,7 @@ contract SingularityTest is UsdoTestHelper {
             assertEq(singularity._totalBorrowCap(), toSetValue);
             assertEq(singularity._collateralizationRate(), toSetValue);
             assertEq(singularity._liquidationCollateralizationRate(), toSetMaxValue);
+            assertEq(singularity._minBorrowAmount(), toSetValue);
         }
     }
 
@@ -331,6 +333,7 @@ contract SingularityTest is UsdoTestHelper {
                 Market.setMarketConfig.selector,
                 address(0),
                 "",
+                0,
                 0,
                 0,
                 0,

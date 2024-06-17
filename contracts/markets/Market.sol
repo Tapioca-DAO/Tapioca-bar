@@ -103,6 +103,8 @@ abstract contract Market is MarketERC20, Ownable {
     ILeverageExecutor internal leverageExecutor;
     /// @notice returns the maximum accepted slippage for liquidation
     uint256 internal maxLiquidationSlippage = 1000; //1%
+
+    uint256 internal minBorrowAmount;
     // ***************** //
     // *** CONSTANTS *** //
     // ***************** //
@@ -112,6 +114,7 @@ abstract contract Market is MarketERC20, Ownable {
 
     error ExchangeRateNotValid();
     error AllowanceNotValid();
+    error MinBorrowAmountNotMet();
 
     // ************** //
     // *** EVENTS *** //
@@ -215,7 +218,8 @@ abstract contract Market is MarketERC20, Ownable {
         uint256 _maxLiquidatorReward,
         uint256 _totalBorrowCap,
         uint256 _collateralizationRate,
-        uint256 _liquidationCollateralizationRate
+        uint256 _liquidationCollateralizationRate,
+        uint256 _minBorrowAmount
     ) external onlyOwner {
         if (address(_oracle) != address(0)) {
             oracle = _oracle;
@@ -277,6 +281,11 @@ abstract contract Market is MarketERC20, Ownable {
             require(_liquidationCollateralizationRate <= FEE_PRECISION, "Market: not valid");
             liquidationCollateralizationRate = _liquidationCollateralizationRate;
             emit ValueUpdated(8, _liquidationCollateralizationRate);
+        }
+
+        if (_minBorrowAmount > 0) {
+            minBorrowAmount = _minBorrowAmount;
+            emit ValueUpdated(9, _minBorrowAmount);
         }
     }
 

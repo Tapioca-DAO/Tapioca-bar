@@ -190,6 +190,7 @@ contract BigBang is MarketStateView, BBCommon {
         minMintFeeStart = 1000000000000000000; // 1*1e18
 
         leverageExecutor = _leverageExecutor;
+        minBorrowAmount = 1e15;
 
         _transferOwnership(address(penrose));
     }
