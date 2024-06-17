@@ -130,4 +130,8 @@ abstract contract MarketStateView is Market {
     function _exchangeRatePrecision() external view returns (uint256) {
         return EXCHANGE_RATE_PRECISION;
     }
+
+    function _minBorrowAmount() external view returns (uint256) {
+        return minBorrowAmount;
+    }
 }

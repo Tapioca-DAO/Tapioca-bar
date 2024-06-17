@@ -193,7 +193,8 @@ contract OriginsTest is UsdoTestHelper {
                 toSetMaxValue,
                 toSetValue,
                 toSetValue,
-                toSetMaxValue
+                toSetMaxValue,
+                toSetValue
             );
         }
 
@@ -205,6 +206,7 @@ contract OriginsTest is UsdoTestHelper {
             assertEq(origins._totalBorrowCap(), toSetValue);
             assertEq(origins._collateralizationRate(), toSetValue);
             assertEq(origins._liquidationCollateralizationRate(), toSetMaxValue);
+            assertEq(origins._minBorrowAmount(), toSetValue);
         }
     }
 
@@ -215,6 +217,7 @@ contract OriginsTest is UsdoTestHelper {
             origins.setMarketConfig(
                 ITapiocaOracle(address(0)),
                 "",
+                0,
                 0,
                 0,
                 0,
