@@ -192,8 +192,7 @@ contract Origins is Ownable, Market, MarketStateView, ReentrancyGuard {
     {
         if (!allowedParticipants[msg.sender]) revert NotAuthorized();
 
-        if (amount == 0) return (0, 0);
-        if (amount < minBorrowAmount) revert MinBorrowAmountNotMet();
+        if (amount <= minBorrowAmount) revert MinBorrowAmountNotMet();
 
         (part, share) = _borrow(msg.sender, msg.sender, amount);
     }

@@ -41,8 +41,7 @@ contract BBBorrow is BBLendingCommon {
         solvent(from)
         returns (uint256 part, uint256 share)
     {
-        if (amount == 0) return (0, 0);
-        if (amount < minBorrowAmount) revert MinBorrowAmountNotMet();
+        if (amount <= minBorrowAmount) revert MinBorrowAmountNotMet();
 
         penrose.reAccrueBigBangMarkets();
 
