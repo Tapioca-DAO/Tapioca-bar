@@ -32,6 +32,18 @@ TAP_TASK(
             'The delta in percentage to take into account when computing CR',
         )
         .addParam('transferTo', 'The name of the chain to transfer the USDO to')
+        .addParam(
+            'ethAmountForUsdcUsdo',
+            'The amount of ETH to use for Origin USDC to mint USDO',
+        )
+        .addParam(
+            'ethAmountForDaiUsdo',
+            'The amount of ETH to use for Origin DAI to mint USDO',
+        )
+        .addParam(
+            'ethAmountForExtraUsdo',
+            'The amount of ETH to mint extra USDO to init YB markets',
+        )
         .addFlag('noTransfer', 'Will not transfer USDO to the other chain'),
 );
 

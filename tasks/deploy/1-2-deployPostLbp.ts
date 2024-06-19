@@ -32,6 +32,9 @@ export const deployPostLbp__task_2 = async (
     _taskArgs: TTapiocaDeployTaskArgs & {
         delta: string;
         transferTo: string;
+        ethAmountForUsdcUsdo: string;
+        ethAmountForDaiUsdo: string;
+        ethAmountForExtraUsdo: string;
         noTransfer?: boolean;
     },
     hre: HardhatRuntimeEnvironment,
@@ -53,6 +56,9 @@ async function tapiocaDeployTask(
     params: TTapiocaDeployerVmPass<{
         delta: string;
         transferTo: string;
+        ethAmountForUsdcUsdo: string;
+        ethAmountForDaiUsdo: string;
+        ethAmountForExtraUsdo: string;
         noTransfer?: boolean;
     }>,
 ) {
@@ -124,6 +130,9 @@ async function tapiocaPostDeployTask(
     params: TTapiocaDeployerVmPass<{
         delta: string;
         transferTo: string;
+        ethAmountForUsdcUsdo: string;
+        ethAmountForDaiUsdo: string;
+        ethAmountForExtraUsdo: string;
         noTransfer?: boolean;
     }>,
 ) {
@@ -199,16 +208,16 @@ async function tapiocaPostDeployTask(
      * Mint USDO on Origin for the USDC and DAI pools
      * Also mint extra amount of USDO to initiate SGL assets in YB
      */
-    const EXTRA_ETH_AMOUNT_TO_SEED_SGL_YB_ASSET =
-        DEPLOY_CONFIG.USDO_UNISWAP_POOL[chainInfo.chainId]!
-            .EXTRA_ETH_AMOUNT_TO_SEED_SGL_YB_ASSET!;
+    const EXTRA_ETH_AMOUNT_TO_SEED_SGL_YB_ASSET = hre.ethers.utils.parseEther(
+        taskArgs.ethAmountForExtraUsdo,
+    );
 
-    const ETH_AMOUNT_FOR_USDC =
-        DEPLOY_CONFIG.USDO_UNISWAP_POOL[chainInfo.chainId]!
-            .ETH_AMOUNT_TO_MINT_FOR_USDC_POOL!;
-    const ETH_AMOUNT_FOR_DAI =
-        DEPLOY_CONFIG.USDO_UNISWAP_POOL[chainInfo.chainId]!
-            .ETH_AMOUNT_TO_MINT_FOR_DAI_POOL!;
+    const ETH_AMOUNT_FOR_USDC = hre.ethers.utils.parseEther(
+        taskArgs.ethAmountForUsdcUsdo,
+    );
+    const ETH_AMOUNT_FOR_DAI = hre.ethers.utils.parseEther(
+        taskArgs.ethAmountForDaiUsdo,
+    );
 
     if (ETH_AMOUNT_FOR_USDC.isZero() || ETH_AMOUNT_FOR_DAI.isZero()) {
         throw new Error(
