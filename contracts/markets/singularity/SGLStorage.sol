@@ -52,6 +52,8 @@ contract SGLStorage is Ownable, Market, ReentrancyGuard {
 
     address public interestHelper;
 
+    uint256 public minLendAmount;
+
     // ************** //
     // *** EVENTS *** //
     // ************** //
@@ -62,31 +64,33 @@ contract SGLStorage is Ownable, Market, ReentrancyGuard {
         uint256 indexed accruedAmount, uint256 indexed feeFraction, uint64 indexed rate, uint256 utilization
     );
     /// @notice event emitted when collateral is added
-    event LogAddCollateral(address indexed from, address indexed to, uint256 indexed share);
+    event LogAddCollateral(address indexed from, address indexed to, uint256 share);
     /// @notice event emitted when asset is added
-    event LogAddAsset(address indexed from, address indexed to, uint256 indexed share, uint256 fraction);
+    event LogAddAsset(address indexed from, address indexed to, uint256 share, uint256 fraction);
     /// @notice event emitted when collateral is removed
-    event LogRemoveCollateral(address indexed from, address indexed to, uint256 indexed share);
+    event LogRemoveCollateral(address indexed from, address indexed to, uint256 share);
     /// @notice event emitted when asset is removed
-    event LogRemoveAsset(address indexed from, address indexed to, uint256 indexed share, uint256 fraction);
+    event LogRemoveAsset(address indexed from, address indexed to, uint256 share, uint256 fraction);
     /// @notice event emitted when asset is borrowed
-    event LogBorrow(address indexed from, address indexed to, uint256 indexed amount, uint256 feeAmount, uint256 part);
+    event LogBorrow(address indexed from, address indexed to, uint256 amount, uint256 feeAmount, uint256 part);
     /// @notice event emitted when asset is repayed
-    event LogRepay(address indexed from, address indexed to, uint256 indexed amount, uint256 part);
+    event LogRepay(address indexed from, address indexed to, uint256 amount, uint256 part);
     /// @notice event emitted when fees are extracted
-    event LogWithdrawFees(address indexed feeTo, uint256 indexed feesEarnedFraction);
+    event LogWithdrawFees(address indexed feeTo, uint256 feesEarnedFraction);
     /// @notice event emitted when the minimum target utilization is updated
-    event MinimumTargetUtilizationUpdated(uint256 indexed oldVal, uint256 indexed newVal);
+    event MinimumTargetUtilizationUpdated(uint256 oldVal, uint256 newVal);
     /// @notice event emitted when the maximum target utilization is updated
-    event MaximumTargetUtilizationUpdated(uint256 indexed oldVal, uint256 indexed newVal);
+    event MaximumTargetUtilizationUpdated(uint256 oldVal, uint256 newVal);
     /// @notice event emitted when the minimum interest per second is updated
-    event MinimumInterestPerSecondUpdated(uint256 indexed oldVal, uint256 indexed newVal);
+    event MinimumInterestPerSecondUpdated(uint256 oldVal, uint256 newVal);
     /// @notice event emitted when the maximum interest per second is updated
-    event MaximumInterestPerSecondUpdated(uint256 indexed oldVal, uint256 indexed newVal);
+    event MaximumInterestPerSecondUpdated(uint256 oldVal, uint256 newVal);
     /// @notice event emitted when the interest elasticity updated
-    event InterestElasticityUpdated(uint256 indexed oldVal, uint256 indexed newVal);
+    event InterestElasticityUpdated(uint256 oldVal, uint256 newVal);
     /// @notice event emitted when the interest helper is updated
-    event InterestHelperUpdated(address indexed oldVal, address indexed newVal);
+    event InterestHelperUpdated(address oldVal, address newVal);
+    /// @notice event emitted when the `minLendAmount` is updated
+    event MinLendAmountUpdate(uint256 _oldVal, uint256 _newVal);
 
     // ***************** //
     // *** CONSTANTS *** //
