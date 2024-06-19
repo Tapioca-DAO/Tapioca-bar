@@ -196,6 +196,18 @@ contract BigBang is MarketStateView, BBCommon {
     }
 
     // ************************ //
+    // *** VIEW FUNCTIONS ***** //
+    // ************************ //
+    /// @notice Returns variable opening fee
+    /// @param amount the borrow amount to compute for
+    function computeVariableOpeningFee(uint256 amount) external view returns (uint256) {
+         //get asset <> USDC price ( USDO <> USDC )
+        (bool updated, uint256 _exchangeRate) = assetOracle.peek(oracleData);(oracleData);
+        if (!updated) revert OracleCallFailed();
+        return _computeVariableOpeningFeeView(amount, _exchangeRate);
+    }
+
+    // ************************ //
     // *** PUBLIC FUNCTIONS *** //
     // ************************ //
 
