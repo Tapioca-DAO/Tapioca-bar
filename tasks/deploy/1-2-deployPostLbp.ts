@@ -3,28 +3,19 @@ import {
     TTapiocaDeployTaskArgs,
 } from 'tapioca-sdk/dist/ethers/hardhat/DeployerVM';
 
-import * as TAP_YIELDBOX_CONFIG from '@tap-yieldbox/config';
 import * as TAPIOCA_PERIPH_CONFIG from '@tapioca-periph/config';
 import { TAPIOCA_PROJECTS_NAME } from '@tapioca-sdk/api/config';
 import { TapiocaMulticall } from '@tapioca-sdk/typechain/tapioca-periphery';
 import * as TAPIOCA_Z_CONFIG from '@tapiocaz/config';
-import {
-    LZSendParamStruct,
-    SendParamStruct,
-} from '@typechain/contracts/usdo/Usdo';
+import { IYieldBox } from '@typechain/index';
+import { BigNumberish } from 'ethers';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
-import {
-    checkExists,
-    loadGlobalContract,
-    loadLocalContract,
-} from 'tapioca-sdk';
+import { loadGlobalContract, loadLocalContract } from 'tapioca-sdk';
 import { buildOrigins } from 'tasks/deployBuilds/buildOrigins';
 import { deploy__LoadDeployments_Arb } from './1-1-deployPostLbp';
 import { DEPLOY_CONFIG, DEPLOYMENT_NAMES } from './DEPLOY_CONFIG';
 import { mintOriginUSDO__deployPostLbp_2 } from './postDepSetup/1-2-setupOriginsMintUSDO';
-import { Options } from '@layerzerolabs/lz-v2-utilities';
-import { IYieldBox } from '@typechain/index';
-import { BigNumberish } from 'ethers';
+import { sendOftToken } from './postDepSetup/utils_sendOftToken';
 
 /**
  * @notice Called after Bar `postLbp1`
@@ -84,6 +75,12 @@ async function tapiocaDeployTask(
         isTestnet,
     });
 
+    const penrose = loadLocalContract(
+        hre,
+        hre.SDK.eChainId,
+        DEPLOYMENT_NAMES.PENROSE,
+        tag,
+    );
     const usdo = loadLocalContract(
         hre,
         hre.SDK.eChainId,
@@ -115,6 +112,7 @@ async function tapiocaDeployTask(
                         .tEthOriginsMarketConfig!.collateralizationRate,
                 deploymentName: DEPLOYMENT_NAMES.ORIGINS_T_ETH_MARKET,
                 oracle: ethMarketOracle,
+                penrose: penrose.address,
                 owner,
                 yieldBox,
             }),
@@ -145,10 +143,7 @@ async function tapiocaPostDeployTask(
         throw new Error('[-] Post deploy task 2 is only for host chain');
     }
     if (!taskArgs.noTransfer) {
-        const dstChainInfo = hre.SDK.utils.getChainBy(
-            'name',
-            taskArgs.transferTo,
-        );
+        const dstChainInfo = hre.SDK.utils.getChainBy('name', transferTo);
         if (!dstChainInfo) {
             throw new Error('[-] Destination chain not found in chain info');
         }
@@ -324,82 +319,18 @@ async function tapiocaPostDeployTask(
      */
     let msgValue = hre.ethers.BigNumber.from(0);
     if (!taskArgs.noTransfer) {
-        const dstChainInfo = hre.SDK.utils.getChainBy(
-            'name',
-            taskArgs.transferTo,
+        msgValue = await sendOftToken(
+            params,
+            calls,
+            usdo.address,
+            hre.ethers.utils.parseEther('4'),
         );
-
-        console.log(
-            '[+] Loading TapiocaMulticall from',
-            dstChainInfo.name,
-            'tag',
-            tag,
-        );
-        const tapiocaMulticallTargetChain = checkExists(
-            hre,
-            hre.SDK.db.findGlobalDeployment(
-                TAPIOCA_PROJECTS_NAME.Generic,
-                dstChainInfo.chainId,
-                hre.SDK.DeployerVM.TAPIOCA_MULTICALL_NAME,
-                tag,
-            ),
-            hre.SDK.DeployerVM.TAPIOCA_MULTICALL_NAME,
-            TAPIOCA_PROJECTS_NAME.Generic,
-        );
-        const minAmountLD = await usdo.removeDust(borrowAmountForDAI);
-
-        const sendData: SendParamStruct = {
-            amountLD: borrowAmountForDAI,
-            minAmountLD,
-            to: '0x'.concat(
-                tapiocaMulticallTargetChain.address
-                    .split('0x')[1]
-                    .padStart(64, '0'),
-            ),
-            dstEid: dstChainInfo.lzChainId,
-            extraOptions: Options.newOptions()
-                .addExecutorLzReceiveOption(200_000)
-                .toHex(),
-            composeMsg: '0x',
-            oftCmd: '0x',
-        };
-
-        const usdoQuoteSend = await usdo.callStatic.quoteSend(sendData, false);
-        console.log(
-            '[+] Sending',
-            hre.ethers.utils.formatUnits(borrowAmountForDAI, 'ether'),
-            'USDO',
-            'min amount out: ',
-            hre.ethers.utils.formatUnits(minAmountLD, 'ether'),
-        );
-        console.log(
-            '[+] Quote for sending USDO:',
-            hre.ethers.utils.formatUnits(usdoQuoteSend.nativeFee, 'ether'),
-        );
-        console.log('[+] To address', tapiocaMulticallTargetChain.address);
-
-        const lzSendParam: LZSendParamStruct = {
-            fee: {
-                lzTokenFee: 0,
-                nativeFee: usdoQuoteSend.nativeFee,
-            },
-            extraOptions: sendData.extraOptions,
-            refundAddress: tapiocaMulticallAddr,
-            sendParam: sendData,
-        };
-        calls.push({
-            target: usdo.address,
-            allowFailure: false,
-            callData: usdo.interface.encodeFunctionData('sendPacket', [
-                lzSendParam,
-                '0x',
-            ]),
-            value: usdoQuoteSend.nativeFee,
-        });
-        msgValue = usdoQuoteSend.nativeFee;
     }
+
     await VM.executeMulticallValue(calls, {
-        overrideOptions: { value: msgValue },
+        overrideOptions: {
+            value: msgValue,
+        },
     });
 }
 
