@@ -59,6 +59,7 @@ contract Singularity is MarketStateView, SGLCommon {
     error ModuleNotSet();
     error NotAuthorized();
     error SameState();
+    error MinLendAmountNotMet();
 
     struct _InitMemoryData {
         IPenrose penrose_;
@@ -172,6 +173,7 @@ contract Singularity is MarketStateView, SGLCommon {
         uint256 _exchangeRatePrecision
     ) private {
         minBorrowAmount = 1e15;
+        minLendAmount = 1e15;
         collateralizationRate = _collateralizationRate > 0 ? _collateralizationRate : 75000;
         liquidationCollateralizationRate =
             _liquidationCollateralizationRate > 0 ? _liquidationCollateralizationRate : 80000;
@@ -243,7 +245,10 @@ contract Singularity is MarketStateView, SGLCommon {
         optionNotPaused(PauseType.AddAsset)
         allowedLend(from, share)
         returns (uint256 fraction)
-    {
+    {   
+        uint256 _amount = yieldBox.toAmount(assetId, share, false);
+        if (_amount <= minLendAmount) revert MinLendAmountNotMet();
+
         _accrue();
         fraction = _addAsset(from, to, skim, share);
     }
@@ -323,7 +328,8 @@ contract Singularity is MarketStateView, SGLCommon {
         uint64 _minimumInterestPerSecond,
         uint64 _maximumInterestPerSecond,
         uint256 _interestElasticity,
-        address _interestHelper
+        address _interestHelper,
+        uint256 _minLendAmount
     ) external onlyOwner {
         // this needs to be set first
         // if `interestHelper` is address(0), the next _accrue() call won't work
@@ -378,6 +384,11 @@ contract Singularity is MarketStateView, SGLCommon {
             if (_liquidationMultiplier > FEE_PRECISION) revert NotValid();
             emit LiquidationMultiplierUpdated(liquidationMultiplier, _liquidationMultiplier);
             liquidationMultiplier = _liquidationMultiplier;
+        }
+
+        if (_minLendAmount > 0) {
+            emit MinLendAmountUpdate(minLendAmount, _minLendAmount);
+            minLendAmount = _minLendAmount;
         }
     }
 
