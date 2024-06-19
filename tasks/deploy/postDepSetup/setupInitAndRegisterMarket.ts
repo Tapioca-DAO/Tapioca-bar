@@ -328,10 +328,19 @@ async function initBBMarket(
             params.tag,
         );
 
+        const penrose = await hre.ethers.getContractAt('Penrose', penroseAddr);
+
+        const setDebtHelperCall = market.interface.encodeFunctionData(
+            'setDebtRateHelper',
+            [debtHelper.address],
+        );
+
         calls.push({
-            target: market.address,
-            callData: market.interface.encodeFunctionData('setDebtRateHelper', [
-                debtHelper.address,
+            target: penrose.address,
+            callData: penrose.interface.encodeFunctionData('executeMarketFn', [
+                [market.address],
+                [setDebtHelperCall],
+                true,
             ]),
             allowFailure: false,
         });

@@ -36,9 +36,14 @@ TAP_TASK(
 );
 
 TAP_TASK(
-    deployScope.task(
-        'final',
-        'Will deploy the final phase, which consist of setting the USDO oracle and the BB market.',
-        deployFinal__task,
-    ),
+    deployScope
+        .task(
+            'final',
+            'Will deploy the final phase, which consist of setting the USDO oracle and the BB market.',
+            deployFinal__task,
+        )
+        .addParam(
+            'transferTo',
+            'The name of the chain to transfer the USDO to',
+        ),
 );
