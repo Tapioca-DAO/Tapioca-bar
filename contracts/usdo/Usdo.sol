@@ -75,7 +75,7 @@ contract Usdo is BaseUsdo, Pausable, ReentrancyGuard, ERC20Permit {
 
     constructor(UsdoInitStruct memory _initData, UsdoModulesInitStruct memory _modulesData)
         BaseUsdo(_initData)
-        ERC20Permit("Tapioca Usdo")
+        ERC20Permit("USDO Stablecoin")
     {
         if (_modulesData.usdoSenderModule == address(0)) revert Usdo_NotValid();
         if (_modulesData.usdoReceiverModule == address(0)) {
@@ -309,7 +309,9 @@ contract Usdo is BaseUsdo, Pausable, ReentrancyGuard, ERC20Permit {
      * @notice Un/Pauses this contract.
      */
     function setPause(bool _pauseState) external {
-        if (!getCluster().hasRole(msg.sender, keccak256("PAUSABLE")) && msg.sender != owner()) revert Usdo_NotAuthorized();
+        if (!getCluster().hasRole(msg.sender, keccak256("PAUSABLE")) && msg.sender != owner()) {
+            revert Usdo_NotAuthorized();
+        }
         if (_pauseState) {
             _pause();
         } else {

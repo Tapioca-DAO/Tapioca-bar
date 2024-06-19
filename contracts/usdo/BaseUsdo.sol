@@ -36,7 +36,7 @@ abstract contract BaseUsdo is ModuleManager, BaseTapiocaOmnichainEngine, BaseUsd
 
     constructor(UsdoInitStruct memory _data)
         BaseTapiocaOmnichainEngine(
-            "Tapioca Usdo",
+            "USDO Stablecoin",
             "USDO",
             _data.endpoint,
             _data.delegate,
