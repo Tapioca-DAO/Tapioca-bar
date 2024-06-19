@@ -389,6 +389,13 @@ async function initSGLMarket(
     const market = factory.attach(marketDep.address);
     const penrose = await hre.ethers.getContractAt('Penrose', penroseAddr);
 
+    const sglInit = loadLocalContract(
+        hre,
+        hre.SDK.eChainId,
+        DEPLOYMENT_NAMES.SGL_INIT,
+        params.tag,
+    );
+
     if ((await market._penrose()).toLowerCase() !== penroseAddr.toLowerCase()) {
         console.log(`\t[+] Init market ${marketName} ${marketDep.address}`);
 
@@ -454,7 +461,10 @@ async function initSGLMarket(
 
         calls.push({
             target: market.address,
-            callData: market.interface.encodeFunctionData('init', [sglData]),
+            callData: market.interface.encodeFunctionData('init', [
+                sglInit.address,
+                sglData,
+            ]),
             allowFailure: false,
         });
         const addrZero = hre.ethers.constants.AddressZero;
@@ -479,6 +489,7 @@ async function initSGLMarket(
                             addrZero,
                             addrZero,
                             interestHelper,
+                            addrZero,
                         ],
                     ),
                 ],
