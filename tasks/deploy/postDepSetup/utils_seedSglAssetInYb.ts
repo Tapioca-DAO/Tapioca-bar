@@ -4,6 +4,7 @@ import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { loadLocalContract } from 'tapioca-sdk';
 import { deploy__LoadDeployments_Generic } from '../1-1-deployPostLbp';
 import { DEPLOYMENT_NAMES } from '../DEPLOY_CONFIG';
+import { BigNumberish } from 'ethers';
 
 /**
  * @notice - Deposit USDO and add SGL asset in YieldBox
@@ -15,8 +16,10 @@ export async function depositUsdoYbAndAddSgl(params: {
     calls: TapiocaMulticall.CallStruct[];
     tag: string;
     isTestnet: boolean;
+    amount: BigNumberish;
 }) {
-    const { hre, multicallAddr, marketName, calls, tag, isTestnet } = params;
+    const { hre, multicallAddr, marketName, calls, tag, isTestnet, amount } =
+        params;
     const usdoStrat = loadLocalContract(
         hre,
         hre.SDK.chainInfo.chainId,
@@ -50,7 +53,6 @@ export async function depositUsdoYbAndAddSgl(params: {
         ybAddress,
     )) as IYieldBox;
 
-    const amount = hre.ethers.utils.parseEther('1');
     const assetId = await yieldBox.ids(1, usdo.address, usdoStrat, 0);
     const shares = await yieldBox.toShare(assetId, amount, false);
 

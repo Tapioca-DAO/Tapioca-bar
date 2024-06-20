@@ -333,7 +333,9 @@ async function tapiocaPostDeployTask(
             })),
         );
     }
+    await VM.executeMulticall(calls);
 
+    const calls2: TapiocaMulticall.CallValueStruct[] = [];
     /**
      *  Transfer USDO to Ethereum for the DAI pool
      */
@@ -341,13 +343,13 @@ async function tapiocaPostDeployTask(
     if (!taskArgs.noTransfer) {
         msgValue = await sendOftToken(
             params,
-            calls,
+            calls2,
             usdo.address,
             await usdo.balanceOf(tapiocaMulticallAddr),
         );
     }
 
-    const sanitizedCalls = calls.map((c) => ({
+    const sanitizedCalls = calls2.map((c) => ({
         ...c,
         value: c.value === undefined ? 0 : c.value,
     }));

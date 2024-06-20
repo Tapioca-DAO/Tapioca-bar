@@ -94,6 +94,7 @@ async function tapiocaPostDeployTask(
             tag,
             multicallAddr: tapiocaMulticallAddr,
             isTestnet,
+            amount: hre.ethers.utils.parseEther('0.01'),
         });
         await VM.executeMulticall(calls);
 
@@ -102,7 +103,7 @@ async function tapiocaPostDeployTask(
             calls: calls2,
             tapTakParams: params,
             toftAddr: tSglSdai.address,
-            wrapAmount: hre.ethers.utils.parseEther('0.1'),
+            wrapAmount: hre.ethers.utils.parseEther('0.01'),
         });
 
         calls2 = calls2.map((c) => ({ ...c, value: 0 })); // Value property is not used in wrapToft, we need to set it
@@ -110,7 +111,7 @@ async function tapiocaPostDeployTask(
             params,
             calls2,
             tSglSdai.address,
-            hre.ethers.utils.parseEther('0.1'),
+            hre.ethers.utils.parseEther('0.01'),
         );
 
         await VM.executeMulticallValue(calls2, {
@@ -226,6 +227,7 @@ async function tapiocaPostDeployTask(
                 tag,
                 multicallAddr: tapiocaMulticallAddr,
                 isTestnet,
+                amount: hre.ethers.utils.parseEther('0.001'),
             });
         }
         await VM.executeMulticall(calls);
