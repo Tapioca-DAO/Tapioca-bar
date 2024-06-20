@@ -124,7 +124,7 @@ const POST_LBP: TPostLbp = {
     [EChainID.ARBITRUM]: {
         sGLP: '0x5402B5F40310bDED796c7D0F3FF6683f5C0cFfdf',
         glpStrat: {
-            gmxRewardRouter: '0xA906F338CB21815cBc4Bc87ace9e68c87eF8d8F1',
+            gmxRewardRouter: '0x159854e14A862Df9E39E1D128b8e5F70B4A3cE9B',
             glpRewardRouter: '0xB95DB5B167D75e6d04227CfFFA61069348d271F5',
         },
         ...marketConfigArb,
