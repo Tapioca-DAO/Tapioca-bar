@@ -16,6 +16,7 @@ import { deploy__LoadDeployments_Arb } from './1-1-deployPostLbp';
 import { DEPLOY_CONFIG, DEPLOYMENT_NAMES } from './DEPLOY_CONFIG';
 import { mintOriginUSDO__deployPostLbp_2 } from './postDepSetup/1-2-setupOriginsMintUSDO';
 import { sendOftToken } from './postDepSetup/utils_sendOftToken';
+import { wrapToft } from './2-deployFinal';
 
 /**
  * @notice Called after Bar `postLbp1`
@@ -158,7 +159,7 @@ async function tapiocaPostDeployTask(
         }
     }
 
-    const { usdo, origins } = await loadContracts__deployPostLbp__task_2({
+    const { usdo, origins, tETH } = await loadContracts__deployPostLbp__task_2({
         hre,
         tag,
     });
@@ -258,6 +259,16 @@ async function tapiocaPostDeployTask(
         borrowAmountForDAI.mul(delta).div(100),
     );
 
+    await wrapToft({
+        calls,
+        tapTakParams: params,
+        toftAddr: tETH.address,
+        wrapAmount:
+            EXTRA_ETH_AMOUNT_TO_SEED_SGL_YB_ASSET.add(ETH_AMOUNT_FOR_DAI).add(
+                ETH_AMOUNT_FOR_USDC,
+            ),
+    });
+
     /***
      * Mint USDO on Origin
      */
@@ -332,11 +343,15 @@ async function tapiocaPostDeployTask(
             params,
             calls,
             usdo.address,
-            hre.ethers.utils.parseEther('4'),
+            await usdo.balanceOf(tapiocaMulticallAddr),
         );
     }
 
-    await VM.executeMulticallValue(calls, {
+    const sanitizedCalls = calls.map((c) => ({
+        ...c,
+        value: c.value === undefined ? 0 : c.value,
+    }));
+    await VM.executeMulticallValue(sanitizedCalls, {
         overrideOptions: {
             value: msgValue,
         },
