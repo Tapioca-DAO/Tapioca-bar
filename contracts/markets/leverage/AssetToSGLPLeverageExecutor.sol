@@ -63,6 +63,12 @@ contract AssetToSGLPLeverageExecutor is BaseLeverageExecutor, Pausable {
         glpRewardRouter = _glpRewardRouter;
     }
 
+function someTest(SGlpLeverageSwapData memory lala) external {
+    //do nothing
+}
+function someTestTwo(SLeverageSwapData memory lala) external {
+    //do nothing
+}
     // ********************** //
     // *** OWNER METHODS *** //
     // ********************** //

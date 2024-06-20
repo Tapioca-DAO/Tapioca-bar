@@ -191,6 +191,7 @@ contract BigBang is MarketStateView, BBCommon {
 
         leverageExecutor = _leverageExecutor;
         minBorrowAmount = 1e15;
+        minCollateralAmount = 1e15;
 
         _transferOwnership(address(penrose));
     }

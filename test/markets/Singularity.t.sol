@@ -290,6 +290,7 @@ contract SingularityTest is UsdoTestHelper {
                 toSetValue,
                 toSetValue,
                 toSetMaxValue,
+                toSetValue,
                 toSetValue
             );
             address[] memory mc = new address[](1);
@@ -333,7 +334,7 @@ contract SingularityTest is UsdoTestHelper {
             ICluster _cl = penrose.cluster();
             _cl.setRoleForContract(address(this), keccak256("PAUSABLE"), true);
             bytes memory payload =
-                abi.encodeWithSelector(Market.setMarketConfig.selector, address(0), "", 0, 0, 0, 0, 0, 0, 0, 0);
+                abi.encodeWithSelector(Market.setMarketConfig.selector, address(0), "", 0, 0, 0, 0, 0, 0, 0, 0, 0);
             address[] memory mc = new address[](1);
             mc[0] = address(singularity);
 

@@ -36,6 +36,11 @@ contract SGLCollateral is SGLLendingCommon {
         if (share == 0) {
             share = yieldBox.toShare(collateralId, amount, false);
         }
+        if (amount == 0) {
+            amount = yieldBox.toAmount(collateralId, share, false);
+        }
+        if (amount <= minCollateralAmount) revert MinCollateralAmountNotMet();
+        
         _allowedBorrow(from, share);
 
         _addCollateral(from, to, skim, amount, share, true);

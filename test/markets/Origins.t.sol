@@ -194,6 +194,7 @@ contract OriginsTest is UsdoTestHelper {
                 toSetValue,
                 toSetValue,
                 toSetMaxValue,
+                toSetValue,
                 toSetValue
             );
         }
@@ -217,6 +218,7 @@ contract OriginsTest is UsdoTestHelper {
             origins.setMarketConfig(
                 ITapiocaOracle(address(0)),
                 "",
+                0,
                 0,
                 0,
                 0,

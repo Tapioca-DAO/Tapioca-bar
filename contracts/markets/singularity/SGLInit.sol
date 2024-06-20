@@ -154,6 +154,7 @@ contract SGLInit is MarketStateView, SGLCommon {
     ) private {
         minBorrowAmount = 1e15;
         minLendAmount = 1e15;
+        minCollateralAmount = 1e15;
         collateralizationRate = _collateralizationRate > 0 ? _collateralizationRate : 75000;
         liquidationCollateralizationRate =
             _liquidationCollateralizationRate > 0 ? _liquidationCollateralizationRate : 80000;

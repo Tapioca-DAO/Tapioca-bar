@@ -455,6 +455,7 @@ contract BigBangTest is UsdoTestHelper {
                 toSetValue,
                 toSetValue,
                 toSetMaxValue,
+                toSetValue,
                 toSetValue
             );
             address[] memory mc = new address[](1);
@@ -491,6 +492,7 @@ contract BigBangTest is UsdoTestHelper {
                 Market.setMarketConfig.selector,
                 address(0),
                 "",
+                0,
                 0,
                 0,
                 0,
