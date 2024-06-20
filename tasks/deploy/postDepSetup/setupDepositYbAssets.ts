@@ -1,12 +1,17 @@
+import { TTapiocaDeployerVmPass } from 'tapioca-sdk/ethers/hardhat/DeployerVM';
 import {
     deploy__LoadDeployments_Arb,
     deploy__LoadDeployments_Eth,
 } from '../1-1-deployPostLbp';
 import { TPostDeployParams } from '../1-1-setupPostLbp';
+import { wrapToft } from '../2-deployFinal';
 import { DEPLOYMENT_NAMES } from '../DEPLOY_CONFIG';
 import { depositSglAssetYB } from './utils_seedSglAssetInYb';
 
-export async function setupDepositYbAssets(params: TPostDeployParams) {
+export async function setupDepositYbAssets(
+    taskParams: TTapiocaDeployerVmPass<any>,
+    params: TPostDeployParams,
+) {
     const {
         hre,
         VM,
@@ -39,6 +44,13 @@ export async function setupDepositYbAssets(params: TPostDeployParams) {
     if (isSideChain) {
         const { tSdai } = deploy__LoadDeployments_Eth({ hre, tag, isTestnet });
 
+        await wrapToft({
+            calls,
+            tapTakParams: taskParams,
+            toftAddr: tSdai,
+            wrapAmount: hre.ethers.utils.parseEther('0.1'),
+        });
+
         await depositAsset({
             tokenAddr: tSdai,
             stratName: isTestnet
@@ -56,6 +68,12 @@ export async function setupDepositYbAssets(params: TPostDeployParams) {
             });
 
         // tsGLP
+        await wrapToft({
+            calls,
+            tapTakParams: taskParams,
+            toftAddr: tSGLP,
+            wrapAmount: hre.ethers.utils.parseEther('0.1'),
+        });
         await depositAsset({
             tokenAddr: tSGLP,
             stratName: isTestnet
@@ -64,24 +82,48 @@ export async function setupDepositYbAssets(params: TPostDeployParams) {
         });
 
         // tETH
+        await wrapToft({
+            calls,
+            tapTakParams: taskParams,
+            toftAddr: tETH,
+            wrapAmount: hre.ethers.utils.parseEther('0.0001'),
+        });
         await depositAsset({
             tokenAddr: tETH,
             stratName: DEPLOYMENT_NAMES.YB_T_ETH_ASSET_WITHOUT_STRATEGY,
         });
 
         // mtETH
+        await wrapToft({
+            calls,
+            tapTakParams: taskParams,
+            toftAddr: mtETH,
+            wrapAmount: hre.ethers.utils.parseEther('0.0001'),
+        });
         await depositAsset({
             tokenAddr: mtETH,
             stratName: DEPLOYMENT_NAMES.YB_MT_ETH_ASSET_WITHOUT_STRATEGY,
         });
 
         // tReth
+        await wrapToft({
+            calls,
+            tapTakParams: taskParams,
+            toftAddr: tReth,
+            wrapAmount: hre.ethers.utils.parseEther('0.0001'),
+        });
         await depositAsset({
             tokenAddr: tReth,
             stratName: DEPLOYMENT_NAMES.YB_T_RETH_ASSET_WITHOUT_STRATEGY,
         });
 
         // tWSTETH
+        await wrapToft({
+            calls,
+            tapTakParams: taskParams,
+            toftAddr: tWSTETH,
+            wrapAmount: hre.ethers.utils.parseEther('0.0001'),
+        });
         await depositAsset({
             tokenAddr: tWSTETH,
             stratName: DEPLOYMENT_NAMES.YB_T_WST_ETH_ASSET_WITHOUT_STRATEGY,

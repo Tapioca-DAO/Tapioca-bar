@@ -82,6 +82,9 @@ export const deployPostLbp__task_1 = async (
             hre,
             // Static simulation needs to be false, constructor relies on external call. We're using 0x00 replacement with DeployerVM, which creates a false positive for static simulation.
             staticSimulation: false,
+            overrideOptions: {
+                gasLimit: 10_000_000,
+            },
         },
         tapiocaDeployTask,
         tapiocaPostDeployTask,

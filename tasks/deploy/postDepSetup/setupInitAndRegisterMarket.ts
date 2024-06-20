@@ -161,8 +161,9 @@ export async function setupInitAndRegisterMarket(params: TPostDeployParams) {
                 marketName: DEPLOYMENT_NAMES.SGL_S_DAI_MARKET,
                 collateralAddr: tSdai,
                 oracleAddr: tSdaiMarketOracle,
-                strategyDepName:
-                    DEPLOYMENT_NAMES.YB_SDAI_ASSET_WITHOUT_STRATEGY,
+                strategyDepName: isTestnet
+                    ? DEPLOYMENT_NAMES.YB_SDAI_ASSET_WITHOUT_STRATEGY
+                    : DEPLOYMENT_NAMES.YB_SDAI_ASSET_WITH_STRATEGY,
                 usdoStrategy: usdoStrategy.address,
                 usdoAddr: usdo,
                 collateralizationRate: tSdaiDeployConf.collateralizationRate,
@@ -194,8 +195,9 @@ export async function setupInitAndRegisterMarket(params: TPostDeployParams) {
                 marketName: DEPLOYMENT_NAMES.SGL_S_GLP_MARKET,
                 collateralAddr: tSGLP,
                 oracleAddr: tSGLPMarketOracle,
-                strategyDepName:
-                    DEPLOYMENT_NAMES.YB_SGLP_ASSET_WITHOUT_STRATEGY,
+                strategyDepName: isTestnet
+                    ? DEPLOYMENT_NAMES.YB_SGLP_ASSET_WITHOUT_STRATEGY
+                    : DEPLOYMENT_NAMES.YB_SGLP_ASSET_WITH_STRATEGY,
                 usdoStrategy: usdoStrategy.address,
                 usdoAddr: usdo,
                 collateralizationRate: tSglpDeployConf.collateralizationRate,

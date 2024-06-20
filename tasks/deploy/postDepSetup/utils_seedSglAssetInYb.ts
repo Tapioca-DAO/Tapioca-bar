@@ -228,12 +228,17 @@ export async function depositSglAssetYB(params: {
 
     const asset = await yieldboxContract.ids(1, tokenAddr, strat, 0);
     const amount = await tokenContract.balanceOf(tapiocaMulticallAddr);
+
     console.log(
         '[+] Depositing asset in YieldBox',
         await tokenContract.name(),
         tokenAddr,
         hre.ethers.utils.formatEther(amount),
     );
+    if (amount.eq(0)) {
+        console.log('[-] No balance to deposit');
+        return;
+    }
 
     calls.push(
         {

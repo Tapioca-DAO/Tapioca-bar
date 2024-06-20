@@ -20,6 +20,7 @@ import {
     depositUsdoYbAndAddSgl,
 } from './postDepSetup/utils_seedSglAssetInYb';
 import { sendOftToken } from './postDepSetup/utils_sendOftToken';
+import { BigNumberish } from 'ethers';
 
 /**
  * @notice Needs to be called from SIDE CHAIN first then HOST CHAIN
@@ -99,8 +100,9 @@ async function tapiocaPostDeployTask(
         let calls2: TapiocaMulticall.CallValueStruct[] = [];
         await wrapToft({
             calls: calls2,
-            taskParams: params,
+            tapTakParams: params,
             toftAddr: tSglSdai.address,
+            wrapAmount: hre.ethers.utils.parseEther('0.1'),
         });
 
         calls2 = calls2.map((c) => ({ ...c, value: 0 })); // Value property is not used in wrapToft, we need to set it
@@ -261,13 +263,14 @@ async function tapiocaPostDeployTask(
     }
 }
 
-async function wrapToft(params: {
-    taskParams: TTapiocaDeployerVmPass<unknown>;
+export async function wrapToft(params: {
+    tapTakParams: TTapiocaDeployerVmPass<any>;
     calls: TapiocaMulticall.CallStruct[];
     toftAddr: string;
+    wrapAmount: BigNumberish;
 }) {
-    const { calls, taskParams, toftAddr } = params;
-    const { hre, tapiocaMulticallAddr, taskArgs } = taskParams;
+    const { calls, tapTakParams, toftAddr, wrapAmount } = params;
+    const { hre, tapiocaMulticallAddr, taskArgs } = tapTakParams;
     const { tag } = taskArgs;
 
     const pearlmit = await hre.ethers.getContractAt(
@@ -287,14 +290,20 @@ async function wrapToft(params: {
     const toft = await hre.ethers.getContractAt('TOFT', toftAddr);
     const erc20Addr = await toft.erc20();
     const erc20 = await hre.ethers.getContractAt('ERC20Mock', erc20Addr);
-    const amountToMint = hre.ethers.utils.parseEther('0.1');
+
+    console.log('[+] Wrapping toft token', wrapAmount.toString());
+    const balance = await erc20.balanceOf(tapiocaMulticallAddr);
+    if (balance.eq(0)) {
+        console.log('[-] No balance to deposit', balance);
+        return;
+    }
 
     calls.push(
         {
             target: erc20Addr,
             callData: erc20.interface.encodeFunctionData('approve', [
                 pearlmit.address,
-                amountToMint,
+                wrapAmount,
             ]),
             allowFailure: false,
         },
@@ -305,7 +314,7 @@ async function wrapToft(params: {
                 erc20Addr,
                 0,
                 toft.address,
-                amountToMint,
+                wrapAmount,
                 blockTimestamp + 1800,
             ]),
             allowFailure: false,
@@ -315,7 +324,7 @@ async function wrapToft(params: {
             callData: toft.interface.encodeFunctionData('wrap', [
                 tapiocaMulticallAddr,
                 tapiocaMulticallAddr,
-                amountToMint,
+                wrapAmount,
             ]),
             allowFailure: false,
         },

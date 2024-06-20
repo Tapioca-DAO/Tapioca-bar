@@ -67,7 +67,7 @@ export async function setupPostLbp1(params: TTapiocaDeployerVmPass<object>) {
         ...setupParams1,
         calls: calls2,
     };
-    await setupDepositYbAssets(setupParams2);
+    await setupDepositYbAssets(params, setupParams2);
     await setupInitAndRegisterMarket(setupParams2);
     await setupRegisterBBAsMinterBurnerInUsdo(setupParams2);
 
