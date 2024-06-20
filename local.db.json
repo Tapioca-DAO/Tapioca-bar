@@ -913,6 +913,77 @@
             "lastBlockHeight": 223640996,
             "contracts": [
                 {
+                    "name": "SGL_INIT",
+                    "address": "0xaAb9AD910623Ac0b20Dd6255473D05612b1b90A8",
+                    "meta": {
+                        "args": [],
+                        "salt": "0x14d17727ec835b56440c42d7fbd4f5aa8ad3e3dd845225e68cc50004c2650428",
+                        "create2": true
+                    }
+                },
+                {
+                    "name": "SGL_LIQUIDATION_MODULE",
+                    "address": "0xccaBefEaFb2944982ABe4Cb2Cd202BB01b5D1B82",
+                    "meta": {
+                        "args": [],
+                        "salt": "0x04f6df8209bcbfeb6971b2a845a1a66998dc0e5712315d7a0e51dd84d438a764",
+                        "create2": true
+                    }
+                },
+                {
+                    "name": "SGL_BORROW_MODULE",
+                    "address": "0x005f9b78283C4B7A6073d408557D5321f7063685",
+                    "meta": {
+                        "args": [],
+                        "salt": "0xffca862b1daa87a894cec84e7e66289e312794e2d2bd0127adf9e773c3513f68",
+                        "create2": true
+                    }
+                },
+                {
+                    "name": "SGL_COLLATERAL_MODULE",
+                    "address": "0xbD061F8FEb2520FF51DBB4a25053418a13CBB83E",
+                    "meta": {
+                        "args": [],
+                        "salt": "0x55da216d1712884925badc5d1670ecca9dea8f416e7709b1ac0b2a0053702e21",
+                        "create2": true
+                    }
+                },
+                {
+                    "name": "SGL_LEVERAGE_MODULE",
+                    "address": "0x4d75eFd1F8bcC2AFFEE5E6570daD0f0B9c8FA297",
+                    "meta": {
+                        "args": [],
+                        "salt": "0xbece0b82176a98bbe00a279c311361338d931e65d49ed232ad5e9b09af4bb178",
+                        "create2": true
+                    }
+                },
+                {
+                    "name": "YB_SGLP_ASSET_WITH_STRATEGY",
+                    "address": "0x2f7A49a652C6bFF1466150F519DDe182888a0610",
+                    "meta": {
+                        "args": [
+                            "0xc9bc6133C18718b4CF6c58F43d845135256fee9c",
+                            "0x159854e14A862Df9E39E1D128b8e5F70B4A3cE9B",
+                            "0xB95DB5B167D75e6d04227CfFFA61069348d271F5",
+                            "0xb5b79BeC825713A71CB32C19060A68aC37E72ade",
+                            "0x45755Ab5B9B957E65Ee4Ec73023E94Ae9Ff5C98C",
+                            "0x",
+                            "0x4364aef7C6f644bb0e719784F1A35100beAee6Db"
+                        ],
+                        "salt": "0x55da8658d7b49c21739a3cb60f8535ab5982e13d2833f27fed287bb631758fcf",
+                        "create2": true
+                    }
+                },
+                {
+                    "name": "SGL_S_GLP_MARKET",
+                    "address": "0xCcEA9B907A1B2DF7F7f3D35Ab9ba946DB4ED9BE3",
+                    "meta": {
+                        "args": [],
+                        "salt": "0x6c30078c28e3a76ac30b62bf2291466094d481c8c61b77ae2502d8dc96674f97",
+                        "create2": true
+                    }
+                },
+                {
                     "address": "0x2CA1cC749F33C34251a6DaaeAA38C60A48cC6aE4",
                     "name": "YB_T_SGL_SDAI_ASSET_WITHOUT_STRATEGY",
                     "meta": {
@@ -1035,15 +1106,6 @@
                     }
                 },
                 {
-                    "name": "SGL_INIT",
-                    "address": "0x8e550b02fdFfC6C524EC21ed6B4b3f94dc9928b9",
-                    "meta": {
-                        "args": [],
-                        "salt": "0x33f96e4eba6018b6ca8034062e1b60114c17e131c440c85af3e1e37669e0ae05",
-                        "create2": true
-                    }
-                },
-                {
                     "name": "USDO_HELPER",
                     "address": "0xb25f283CcA93509eCA1Ac607dae9F1fdD9466A9f",
                     "meta": {
@@ -1108,42 +1170,6 @@
                             "0x4364aef7C6f644bb0e719784F1A35100beAee6Db"
                         ],
                         "salt": "0x0a15c3628db59808d99627c26b8064e902998b7deff74e13a47e70d7e67aa3f7",
-                        "create2": true
-                    }
-                },
-                {
-                    "name": "SGL_LIQUIDATION_MODULE",
-                    "address": "0xa15a4C0e5281961d681F2401C124bd598AAa8147",
-                    "meta": {
-                        "args": [],
-                        "salt": "0x4b3566bdec3018db0fdf74f4dd92f5eb6b585d75211db89ab3161efd095254c3",
-                        "create2": true
-                    }
-                },
-                {
-                    "name": "SGL_BORROW_MODULE",
-                    "address": "0x3099BAA39CA6bFd1369E2546531e1810cE3C2b8a",
-                    "meta": {
-                        "args": [],
-                        "salt": "0x0b9db99ca628de8381a223cf12d9e369771ae33b8c2f266ee2d43964c4518a4e",
-                        "create2": true
-                    }
-                },
-                {
-                    "name": "SGL_COLLATERAL_MODULE",
-                    "address": "0xBE6956dAD351993bF3B1849c28f79CF233257012",
-                    "meta": {
-                        "args": [],
-                        "salt": "0x6a6841a0c18c5acb6762ce053253ba3f9ba7d0c518545e8458a28f4e759b8f24",
-                        "create2": true
-                    }
-                },
-                {
-                    "name": "SGL_LEVERAGE_MODULE",
-                    "address": "0x9c74B88Bd74B2b1fDaE58aFa1fF585345B3baF16",
-                    "meta": {
-                        "args": [],
-                        "salt": "0xe66e7135ff5840d3ca6d59a2d3b165b87ee1603c5ac3e63e8f099841d231a7b7",
                         "create2": true
                     }
                 },
@@ -1318,32 +1344,6 @@
                     "meta": {
                         "args": [],
                         "salt": "0x07e7b30f45c2c6354e623f515871e13b8b778e4765aa19af35d715a0ad562808",
-                        "create2": true
-                    }
-                },
-                {
-                    "name": "YB_SGLP_ASSET_WITH_STRATEGY",
-                    "address": "0xE48FE16F951597008266a8Db508a7da84aa46fCB",
-                    "meta": {
-                        "args": [
-                            "0xc9bc6133C18718b4CF6c58F43d845135256fee9c",
-                            "0xA906F338CB21815cBc4Bc87ace9e68c87eF8d8F1",
-                            "0xB95DB5B167D75e6d04227CfFFA61069348d271F5",
-                            "0xb5b79BeC825713A71CB32C19060A68aC37E72ade",
-                            "0x45755Ab5B9B957E65Ee4Ec73023E94Ae9Ff5C98C",
-                            "0x",
-                            "0x4364aef7C6f644bb0e719784F1A35100beAee6Db"
-                        ],
-                        "salt": "0xf4be87fb028f505d413e49f591196c0a8cbc9a445925a8f83410bd8251cfd2dc",
-                        "create2": true
-                    }
-                },
-                {
-                    "name": "SGL_S_GLP_MARKET",
-                    "address": "0x8837bA623bF4a48f6b6f8F3322FD669bd52Edf73",
-                    "meta": {
-                        "args": [],
-                        "salt": "0xd27a6b4a9a98b40eb5c47bed690e601817333dc031058b64f1768cc6fdc69dc5",
                         "create2": true
                     }
                 }
