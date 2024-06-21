@@ -59,10 +59,13 @@ type TBBMarketConfig = {
     debtRateMax: BigNumberish;
     collateralizationRate: BigNumberish;
     liquidationCollateralizationRate: BigNumberish;
+    totalBorrowCap: BigNumberish;
 };
 type TSGLMarketConfig = {
     collateralizationRate: BigNumberish;
     liquidationCollateralizationRate: BigNumberish;
+    minimumInterestPerSecond: BigNumberish;
+    maximumInterestPerSecond: BigNumberish;
 };
 type TPostLbp = {
     [key in EChainID]?: {
@@ -91,27 +94,31 @@ const marketConfigArb: TPostLbp[EChainID] = {
         debtRateAgainstEth: 0,
         debtRateMin: 0, // Set in Penrose contract
         debtRateMax: 0,
-        collateralizationRate: 85_000, // 85%
-        liquidationCollateralizationRate: 90_000, //  91%
+        collateralizationRate: 82_000,
+        liquidationCollateralizationRate: 85_000,
+        totalBorrowCap: ethers.utils.parseEther('31000000'), // 31_000_000
     },
     tRethMarketConfig: {
-        debtRateAgainstEth: ethers.utils.parseEther('0.15'), // 15%
+        debtRateAgainstEth: ethers.utils.parseEther('0.5'), // 50 %
         debtRateMin: ethers.utils.parseEther('0.1'), // 10%
         debtRateMax: ethers.utils.parseEther('0.15'), // 15%
-        collateralizationRate: 85_000, // 87%
-        liquidationCollateralizationRate: 90_000, // 93%
+        collateralizationRate: 82_000,
+        liquidationCollateralizationRate: 85_000,
+        totalBorrowCap: ethers.utils.parseEther('4200000'), // 4_200_000
     },
     twSTETHMarketConfig: {
-        debtRateAgainstEth: ethers.utils.parseEther('0.15'), // 15%
+        debtRateAgainstEth: ethers.utils.parseEther('0.5'), // 50 %
         debtRateMin: ethers.utils.parseEther('0.1'), // 10%
         debtRateMax: ethers.utils.parseEther('0.15'), // 15%
-        collateralizationRate: 85_000,
-        liquidationCollateralizationRate: 90_000,
+        collateralizationRate: 82_000,
+        liquidationCollateralizationRate: 85_000,
+        totalBorrowCap: ethers.utils.parseEther('4100000'), // 4_100_000
     },
-
     tSGlpMarketConfig: {
-        collateralizationRate: 85_000, // 85%
-        liquidationCollateralizationRate: 90_000, // 90%
+        collateralizationRate: 82_000,
+        liquidationCollateralizationRate: 83_000,
+        minimumInterestPerSecond: 951293760, // 3%
+        maximumInterestPerSecond: 15854896000, // 50%
     },
 };
 
@@ -119,6 +126,8 @@ const marketConfigMainnet: TPostLbp[EChainID] = {
     tSdaiMarketConfig: {
         collateralizationRate: 98_000, // 98%
         liquidationCollateralizationRate: 99_000, // 99%
+        minimumInterestPerSecond: 0,
+        maximumInterestPerSecond: 0,
     },
 };
 const POST_LBP: TPostLbp = {
