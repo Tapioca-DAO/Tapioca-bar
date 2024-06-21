@@ -363,6 +363,12 @@ contract BigBang is MarketStateView, BBCommon {
     ) external onlyOwner {
         isMainMarket = collateralId == penrose.mainAssetId();
 
+        if (_liquidationMultiplier > 0) {
+            if (_liquidationMultiplier >= FEE_PRECISION) revert NotValid();
+            emit LiquidationMultiplierUpdated(liquidationMultiplier, _liquidationMultiplier);
+            liquidationMultiplier = _liquidationMultiplier;
+        }
+
         if (!isMainMarket) {
             _accrue();
             if (_minDebtRate > 0) {
@@ -381,12 +387,6 @@ contract BigBang is MarketStateView, BBCommon {
             if (_debtRateAgainstEthMarket > 0) {
                 emit DebtRateAgainstEthUpdated(debtRateAgainstEthMarket, _debtRateAgainstEthMarket);
                 debtRateAgainstEthMarket = _debtRateAgainstEthMarket;
-            }
-
-            if (_liquidationMultiplier > 0) {
-                if (_liquidationMultiplier >= FEE_PRECISION) revert NotValid();
-                emit LiquidationMultiplierUpdated(liquidationMultiplier, _liquidationMultiplier);
-                liquidationMultiplier = _liquidationMultiplier;
             }
         }
     }
