@@ -162,8 +162,8 @@ contract SGLInit is MarketStateView, SGLCommon {
             liquidationCollateralizationRate > collateralizationRate, "SGL: liquidationCollateralizationRate not valid"
         );
 
-        minimumInterestPerSecond = 158548960;
-        maximumInterestPerSecond = 317097920000;
+        minimumInterestPerSecond = 951293760; // 3%
+        maximumInterestPerSecond = 15854896000; // 50%
         interestElasticity = 3600e36; // Half or double in 3600 seconds (1 hours) if linear
         startingInterestPerSecond = minimumInterestPerSecond;
         accrueInfo.interestPerSecond = startingInterestPerSecond; // 1% APR, with 1e18 being 100%
