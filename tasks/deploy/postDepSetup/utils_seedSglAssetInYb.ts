@@ -56,6 +56,11 @@ export async function depositUsdoYbAndAddSgl(params: {
     const assetId = await yieldBox.ids(1, usdo.address, usdoStrat, 0);
     const shares = await yieldBox.toShare(assetId, amount, false);
 
+    console.log(
+        '[+] Depositing USDO in YieldBox',
+        hre.ethers.utils.formatEther(amount),
+    );
+
     calls.push(
         // usdo.approve(yieldBox.address, amount);
         {
@@ -238,8 +243,7 @@ export async function depositSglAssetYB(params: {
         hre.ethers.utils.formatEther(amount),
     );
     if (amount.eq(0)) {
-        console.log('[-] No balance to deposit');
-        return;
+        throw new Error('[-] No balance to deposit');
     }
 
     calls.push(
