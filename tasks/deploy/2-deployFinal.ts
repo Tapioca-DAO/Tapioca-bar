@@ -303,7 +303,7 @@ export async function wrapToft(params: {
     console.log('[+] Wrapping toft token', wrapAmount.toString());
     const balance = await erc20.balanceOf(tapiocaMulticallAddr);
     if (balance.eq(0)) {
-        // throw new Error(`[-] No balance to wrap ${balance}`);
+        throw new Error(`[-] No balance to wrap ${balance}`);
     }
 
     calls.push(

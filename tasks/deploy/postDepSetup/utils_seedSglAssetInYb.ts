@@ -132,6 +132,7 @@ export async function depositSglAssetYB(params: {
     hre: HardhatRuntimeEnvironment;
     tokenAddr: string;
     stratName: string;
+    amount: BigNumberish;
     tapiocaMulticallAddr: string;
     calls: TapiocaMulticall.CallStruct[];
     tag: string;
@@ -147,6 +148,7 @@ export async function depositSglAssetYB(params: {
         tag,
         isTestnet,
         freeMint,
+        amount,
     } = params;
 
     const { yieldBox: ybAddress, pearlmit } = deploy__LoadDeployments_Generic({
@@ -234,17 +236,6 @@ export async function depositSglAssetYB(params: {
     }
 
     const asset = await yieldboxContract.ids(1, tokenAddr, strat, 0);
-    const amount = await tokenContract.balanceOf(tapiocaMulticallAddr);
-
-    console.log(
-        '[+] Depositing asset in YieldBox',
-        await tokenContract.name(),
-        tokenAddr,
-        hre.ethers.utils.formatEther(amount),
-    );
-    if (amount.eq(0)) {
-        throw new Error('[-] No balance to deposit');
-    }
 
     calls.push(
         {
