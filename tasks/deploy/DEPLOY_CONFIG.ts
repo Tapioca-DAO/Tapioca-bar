@@ -92,8 +92,8 @@ const marketConfigArb: TPostLbp[EChainID] = {
     },
     mtEthMarketConfig: {
         debtRateAgainstEth: 0,
-        debtRateMin: 0, // Set in Penrose contract
-        debtRateMax: 0,
+        debtRateMin: 0,
+        debtRateMax: 0, // ethers.utils.parseEther('0.08')
         collateralizationRate: 82_000,
         liquidationCollateralizationRate: 85_000,
         totalBorrowCap: ethers.utils.parseEther('31000000'), // 31_000_000
@@ -115,7 +115,7 @@ const marketConfigArb: TPostLbp[EChainID] = {
         totalBorrowCap: ethers.utils.parseEther('4100000'), // 4_100_000
     },
     tSGlpMarketConfig: {
-        collateralizationRate: 82_000,
+        collateralizationRate: 80_000,
         liquidationCollateralizationRate: 83_000,
         minimumInterestPerSecond: 951293760, // 3%
         maximumInterestPerSecond: 15854896000, // 50%

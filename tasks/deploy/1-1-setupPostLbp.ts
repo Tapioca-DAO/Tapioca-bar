@@ -14,6 +14,7 @@ import { setupRegisterMCInPenrose } from './postDepSetup/setupRegisterMCInPenros
 import { setupUsdoFlashloanHelperInUsdo } from './postDepSetup/setupUsdoFlashloanHelperInUsdo';
 import { setupUsdoInPenrose } from './postDepSetup/setupUsdoInPenrose';
 import { setupDepositYbAssets } from './postDepSetup/setupDepositYbAssets';
+import { setupPenroseMainAssets } from './postDepSetup/setupPenroseMainAssets';
 
 export type TPostDeployParams = {
     hre: HardhatRuntimeEnvironment;
@@ -67,6 +68,7 @@ export async function setupPostLbp1(params: TTapiocaDeployerVmPass<object>) {
         ...setupParams1,
         calls: calls2,
     };
+    await setupPenroseMainAssets(setupParams2);
     await setupDepositYbAssets(params, setupParams2);
     await setupInitAndRegisterMarket(setupParams2);
     await setupRegisterBBAsMinterBurnerInUsdo(setupParams2);

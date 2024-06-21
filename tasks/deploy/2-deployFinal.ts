@@ -219,24 +219,25 @@ async function tapiocaPostDeployTask(
         }
 
         // Deposit SglSdai & SglSglp assets in yieldbox
-        // {
-        //     await depositUsdoYbAndAddSgl({
-        //         hre,
-        //         marketName: DEPLOYMENT_NAMES.SGL_S_GLP_MARKET,
-        //         calls,
-        //         tag,
-        //         multicallAddr: tapiocaMulticallAddr,
-        //         isTestnet,
-        //         amount: hre.ethers.utils.parseEther('5'),
-        //     });
+        {
+            await depositUsdoYbAndAddSgl({
+                hre,
+                marketName: DEPLOYMENT_NAMES.SGL_S_GLP_MARKET,
+                calls,
+                tag,
+                multicallAddr: tapiocaMulticallAddr,
+                isTestnet,
+                amount: hre.ethers.utils.parseEther('5'),
+            });
 
-        //     await wrapToft({
-        //         calls: calls,
-        //         tapTakParams: params,
-        //         toftAddr: tSglSglp.address,
-        //         wrapAmount: hre.ethers.utils.parseEther('5'),
-        //     });
-        // }
+            await wrapToft({
+                calls: calls,
+                tapTakParams: params,
+                toftAddr: tSglSglp.address,
+                wrapAmount: hre.ethers.utils.parseEther('1'),
+                noCheckAmount: true,
+            });
+        }
         await VM.executeMulticall(calls);
 
         // Need to first register the assets to get the IDs
@@ -277,8 +278,9 @@ export async function wrapToft(params: {
     calls: TapiocaMulticall.CallStruct[];
     toftAddr: string;
     wrapAmount: BigNumberish;
+    noCheckAmount?: boolean;
 }) {
-    const { calls, tapTakParams, toftAddr, wrapAmount } = params;
+    const { calls, tapTakParams, toftAddr, wrapAmount, noCheckAmount } = params;
     const { hre, tapiocaMulticallAddr, taskArgs } = tapTakParams;
     const { tag } = taskArgs;
 
@@ -302,7 +304,7 @@ export async function wrapToft(params: {
 
     console.log('[+] Wrapping toft token', wrapAmount.toString());
     const balance = await erc20.balanceOf(tapiocaMulticallAddr);
-    if (balance.eq(0)) {
+    if (!noCheckAmount && balance.eq(0)) {
         throw new Error(`[-] No balance to wrap ${balance}`);
     }
 
