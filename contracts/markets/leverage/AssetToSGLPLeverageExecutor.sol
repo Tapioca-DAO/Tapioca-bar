@@ -2,7 +2,7 @@
 pragma solidity 0.8.22;
 
 // External
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {Pausable} from "@openzeppelin/contracts/security/Pausable.sol";
 
@@ -42,6 +42,7 @@ struct SGlpLeverageSwapData {
 contract AssetToSGLPLeverageExecutor is BaseLeverageExecutor, Pausable {
     using SafeApprove for address;
     using SafeCast for uint256;
+    using SafeERC20 for IERC20;
 
     IGmxRewardRouterV2 private immutable glpRewardRouter;
     IGmxGlpManager private immutable glpManager;
@@ -63,12 +64,10 @@ contract AssetToSGLPLeverageExecutor is BaseLeverageExecutor, Pausable {
         glpRewardRouter = _glpRewardRouter;
     }
 
-function someTest(SGlpLeverageSwapData memory lala) external {
-    //do nothing
-}
-function someTestTwo(SLeverageSwapData memory lala) external {
-    //do nothing
-}
+    function artifactGeneration(SGlpLeverageSwapData memory _var) external {
+        //do nothing
+    }
+
     // ********************** //
     // *** OWNER METHODS *** //
     // ********************** //
@@ -122,9 +121,12 @@ function someTestTwo(SLeverageSwapData memory lala) external {
         // Wrap into tsGLP to sender
         address sGLP = ITOFT(collateralAddress).erc20();
         pearlmit.approve(20, sGLP, 0, collateralAddress, collateralAmountOut.toUint200(), block.timestamp.toUint48());
+
         sGLP.safeApprove(address(pearlmit), collateralAmountOut);
-        collateralAmountOut = ITOFT(collateralAddress).wrap(address(this), msg.sender, collateralAmountOut);
+        collateralAmountOut = ITOFT(collateralAddress).wrap(address(this), address(this), collateralAmountOut);
+        IERC20(collateralAddress).safeTransfer(msg.sender, collateralAmountOut);
         sGLP.safeApprove(address(pearlmit), 0);
+
         pearlmit.clearAllowance(address(this), 20, sGLP, 0);
     }
 
