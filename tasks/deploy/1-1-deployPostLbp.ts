@@ -29,6 +29,7 @@ import { DEPLOYMENT_NAMES, DEPLOY_CONFIG } from './DEPLOY_CONFIG';
 import { buildUsdoHelper } from 'tasks/deployBuilds/buildUsdoHelper';
 import { buildBBDebtRateHelper } from 'tasks/deployBuilds/buildBBDebtRateHelper';
 import { buildSglInit } from 'tasks/deployBuilds/buildSglInit';
+import { buildSglSimpleExecutor } from 'tasks/deployBuilds/buildSglSimpleExecutor';
 
 /**
  * @notice Should be called after TapiocaZ `postLbp` task
@@ -82,9 +83,6 @@ export const deployPostLbp__task_1 = async (
             hre,
             // Static simulation needs to be false, constructor relies on external call. We're using 0x00 replacement with DeployerVM, which creates a false positive for static simulation.
             staticSimulation: false,
-            overrideOptions: {
-                gasLimit: 10_000_000,
-            },
         },
         tapiocaDeployTask,
         tapiocaPostDeployTask,
@@ -144,6 +142,18 @@ async function tapiocaDeployTask(params: TTapiocaDeployerVmPass<object>) {
             await buildSimpleLeverageExecutor(hre, {
                 cluster,
                 zeroXSwapper,
+                weth: DEPLOY_CONFIG.MISC[hre.SDK.eChainId]!.WETH!,
+                pearlmit,
+                tag,
+            }),
+        )
+        .add(
+            await buildSglSimpleExecutor(hre, {
+                cluster,
+                zeroXSwapper,
+                glpRewardRouter:
+                    DEPLOY_CONFIG.POST_LBP[chainInfo.chainId]!.glpStrat!
+                        .glpRewardRouter,
                 weth: DEPLOY_CONFIG.MISC[hre.SDK.eChainId]!.WETH!,
                 pearlmit,
                 tag,
