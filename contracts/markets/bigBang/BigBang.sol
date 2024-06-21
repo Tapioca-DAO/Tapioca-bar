@@ -178,15 +178,15 @@ contract BigBang is MarketStateView, BBCommon {
 
         EXCHANGE_RATE_PRECISION = _exchangeRatePrecision > 0 ? _exchangeRatePrecision : 1e18;
 
-        minLiquidatorReward = 8e4;
-        maxLiquidatorReward = 9e4;
-        liquidationBonusAmount = 1e4;
+        minLiquidatorReward = 88e3;
+        maxLiquidatorReward = 925e2;
+        liquidationBonusAmount = 3e3;
         liquidationMultiplier = 12000; //12%
 
         rateValidDuration = 24 hours;
         minMintFee = 0;
         maxMintFee = 1000; // 1%
-        maxMintFeeStart = 975000000000000000; // 0.975 *1e18
+        maxMintFeeStart = 980000000000000000; // 0.98 *1e18
         minMintFeeStart = 1000000000000000000; // 1*1e18
 
         leverageExecutor = _leverageExecutor;
@@ -202,7 +202,7 @@ contract BigBang is MarketStateView, BBCommon {
     /// @notice Returns variable opening fee
     /// @param amount the borrow amount to compute for
     function computeVariableOpeningFee(uint256 amount) external view returns (uint256) {
-         //get asset <> USDC price ( USDO <> USDC )
+        //get asset <> USDC price ( USDO <> USDC )
         (bool updated, uint256 _exchangeRate) = assetOracle.peek(oracleData);
         if (!updated) revert OracleCallFailed();
         return _computeVariableOpeningFeeView(amount, _exchangeRate);
@@ -256,7 +256,10 @@ contract BigBang is MarketStateView, BBCommon {
     /// @dev can only be called by the conservator
     /// @param val the new value
     function updatePause(PauseType _type, bool val) external {
-        require(penrose.cluster().hasRole(msg.sender, keccak256("PAUSABLE")) || msg.sender == owner(), "Market: unauthorized");
+        require(
+            penrose.cluster().hasRole(msg.sender, keccak256("PAUSABLE")) || msg.sender == owner(),
+            "Market: unauthorized"
+        );
         require(val != pauseOptions[_type], "Market: same state");
         emit PausedUpdated(_type, pauseOptions[_type], val);
         pauseOptions[_type] = val;
@@ -265,7 +268,10 @@ contract BigBang is MarketStateView, BBCommon {
     /// @notice updates the pause state of the contract for all types
     /// @param val the new val
     function updatePauseAll(bool val) external {
-        require(penrose.cluster().hasRole(msg.sender, keccak256("PAUSABLE")) || msg.sender == owner(), "Market: unauthorized");
+        require(
+            penrose.cluster().hasRole(msg.sender, keccak256("PAUSABLE")) || msg.sender == owner(),
+            "Market: unauthorized"
+        );
 
         pauseOptions[PauseType.Borrow] = val;
         pauseOptions[PauseType.Repay] = val;

@@ -164,7 +164,7 @@ contract SGLInit is MarketStateView, SGLCommon {
 
         minimumInterestPerSecond = 158548960;
         maximumInterestPerSecond = 317097920000;
-        interestElasticity = 28800e36; // Half or double in 28800 seconds (8 hours) if linear
+        interestElasticity = 3600e36; // Half or double in 3600 seconds (1 hours) if linear
         startingInterestPerSecond = minimumInterestPerSecond;
         accrueInfo.interestPerSecond = startingInterestPerSecond; // 1% APR, with 1e18 being 100%
         updateExchangeRate();
@@ -175,11 +175,11 @@ contract SGLInit is MarketStateView, SGLCommon {
 
             //liquidation
             sstore(liquidationMultiplier.slot, 12000) //12%
-            sstore(minLiquidatorReward.slot, 80000) //8e4
-            sstore(maxLiquidatorReward.slot, 90000) //9e4
+            sstore(minLiquidatorReward.slot, 88000) // 88e3
+            sstore(maxLiquidatorReward.slot, 92500) // 925e2
             sstore(liquidationBonusAmount.slot, 10000) //1e4
-            sstore(minimumTargetUtilization.slot, 300000000000000000) //3e17
-            sstore(maximumTargetUtilization.slot, 500000000000000000) //5e17
+            sstore(minimumTargetUtilization.slot, 600000000000000000) // 60%
+            sstore(maximumTargetUtilization.slot, 700000000000000000) // 70%
             sstore(rateValidDuration.slot, 86400) //24 hours
         }
 
