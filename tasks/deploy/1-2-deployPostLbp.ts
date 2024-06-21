@@ -216,11 +216,13 @@ async function tapiocaPostDeployTask(
     const ETH_AMOUNT_FOR_USDC = hre.ethers.utils.parseEther(
         taskArgs.ethAmountForUsdcUsdo,
     );
-    const ETH_AMOUNT_FOR_DAI = hre.ethers.utils.parseEther(
-        taskArgs.ethAmountForDaiUsdo,
-    );
 
-    if (ETH_AMOUNT_FOR_USDC.isZero() || ETH_AMOUNT_FOR_DAI.isZero()) {
+    // const ETH_AMOUNT_FOR_DAI = hre.ethers.utils.parseEther(
+    //     taskArgs.ethAmountForDaiUsdo,
+    // );
+
+    // || ETH_AMOUNT_FOR_DAI.isZero()/
+    if (ETH_AMOUNT_FOR_USDC.isZero()) {
         throw new Error(
             '[-] Skipping USDO minting as the collateral amount is 0. Check CONFIG file',
         );
@@ -250,23 +252,24 @@ async function tapiocaPostDeployTask(
     borrowAmountForUSDC = borrowAmountForUSDC.sub(
         borrowAmountForUSDC.mul(delta).div(100),
     );
-    let borrowAmountForDAI = hre.ethers.BigNumber.from(10)
-        .pow(36)
-        .div(exchangeRate)
-        .mul(ETH_AMOUNT_FOR_DAI)
-        .div((1e18).toString()); // Convert rate from USD/tETH to tETH/USD, then multiply by ETH amount
-    borrowAmountForDAI = borrowAmountForDAI.sub(
-        borrowAmountForDAI.mul(delta).div(100),
-    );
+
+    console.log('borrowAmountForExtraUsdo', borrowAmountForExtraUsdo);
+    console.log('borrowAmountForUSDC', borrowAmountForUSDC);
+    // let borrowAmountForDAI = hre.ethers.BigNumber.from(10)
+    //     .pow(36)
+    //     .div(exchangeRate)
+    //     .mul(ETH_AMOUNT_FOR_DAI)
+    //     .div((1e18).toString()); // Convert rate from USD/tETH to tETH/USD, then multiply by ETH amount
+    // borrowAmountForDAI = borrowAmountForDAI.sub(
+    //     borrowAmountForDAI.mul(delta).div(100),
+    // );
 
     await wrapToft({
         calls,
         tapTakParams: params,
         toftAddr: tETH.address,
         wrapAmount:
-            EXTRA_ETH_AMOUNT_TO_SEED_SGL_YB_ASSET.add(ETH_AMOUNT_FOR_DAI).add(
-                ETH_AMOUNT_FOR_USDC,
-            ),
+            EXTRA_ETH_AMOUNT_TO_SEED_SGL_YB_ASSET.add(ETH_AMOUNT_FOR_USDC),
     });
 
     /***
@@ -290,7 +293,7 @@ async function tapiocaPostDeployTask(
                 hre,
                 tag,
                 multicallAddr: tapiocaMulticallAddr,
-                collateralAmount: ETH_AMOUNT_FOR_USDC,
+                collateralAmount: EXTRA_ETH_AMOUNT_TO_SEED_SGL_YB_ASSET,
                 borrowAmount: borrowAmountForExtraUsdo,
             })),
         );
@@ -315,49 +318,60 @@ async function tapiocaPostDeployTask(
         );
 
         // Mint USDO with ETH for DAI pool on mainnet
-        console.log(
-            '[+] Borrowing USDO against ETH for DAI pool using',
-            hre.ethers.utils.formatUnits(ETH_AMOUNT_FOR_DAI, 'ether'),
-            'ETH as collateral and borrowing',
-            hre.ethers.utils.formatUnits(borrowAmountForDAI, 'ether'),
-            'USDO',
-        );
+        // console.log(
+        //     '[+] Borrowing USDO against ETH for DAI pool using',
+        //     hre.ethers.utils.formatUnits(ETH_AMOUNT_FOR_DAI, 'ether'),
+        //     'ETH as collateral and borrowing',
+        //     hre.ethers.utils.formatUnits(borrowAmountForDAI, 'ether'),
+        //     'USDO',
+        // );
 
-        calls.push(
-            ...(await mintOriginUSDO__deployPostLbp_2({
-                hre,
-                tag,
-                multicallAddr: tapiocaMulticallAddr,
-                collateralAmount: ETH_AMOUNT_FOR_DAI,
-                borrowAmount: borrowAmountForDAI,
-            })),
-        );
+        // calls.push(
+        //     ...(await mintOriginUSDO__deployPostLbp_2({
+        //         hre,
+        //         tag,
+        //         multicallAddr: tapiocaMulticallAddr,
+        //         collateralAmount: ETH_AMOUNT_FOR_DAI,
+        //         borrowAmount: borrowAmountForDAI,
+        //     })),
+        // );
     }
+
+    const signer = (await hre.ethers.getSigners())[0];
+    calls.push({
+        target: usdo.address,
+        callData: usdo.interface.encodeFunctionData('transfer', [
+            signer.address,
+            borrowAmountForUSDC,
+        ]),
+        allowFailure: false,
+        value: 0,
+    });
     await VM.executeMulticall(calls);
 
-    const calls2: TapiocaMulticall.CallValueStruct[] = [];
-    /**
-     *  Transfer USDO to Ethereum for the DAI pool
-     */
-    let msgValue = hre.ethers.BigNumber.from(0);
-    if (!taskArgs.noTransfer) {
-        msgValue = await sendOftToken(
-            params,
-            calls2,
-            usdo.address,
-            await usdo.balanceOf(tapiocaMulticallAddr),
-        );
-    }
+    // const calls2: TapiocaMulticall.CallValueStruct[] = [];
+    // /**
+    //  *  Transfer USDO to Ethereum for the DAI pool
+    //  */
+    // let msgValue = hre.ethers.BigNumber.from(0);
+    // if (!taskArgs.noTransfer) {
+    //     msgValue = await sendOftToken(
+    //         params,
+    //         calls2,
+    //         usdo.address,
+    //         await usdo.balanceOf(tapiocaMulticallAddr),
+    //     );
+    // }
 
-    const sanitizedCalls = calls2.map((c) => ({
-        ...c,
-        value: c.value === undefined ? 0 : c.value,
-    }));
-    await VM.executeMulticallValue(sanitizedCalls, {
-        overrideOptions: {
-            value: msgValue,
-        },
-    });
+    // const sanitizedCalls = calls2.map((c) => ({
+    //     ...c,
+    //     value: c.value === undefined ? 0 : c.value,
+    // }));
+    // await VM.executeMulticallValue(sanitizedCalls, {
+    //     overrideOptions: {
+    //         value: msgValue,
+    //     },
+    // });
 }
 
 export async function loadContracts__deployPostLbp__task_2(params: {

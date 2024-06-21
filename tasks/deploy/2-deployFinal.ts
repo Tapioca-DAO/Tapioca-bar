@@ -190,7 +190,7 @@ async function tapiocaPostDeployTask(
             });
         }
 
-        const { tSglSdai, tSglSglp } = await loadContract__deployFinal__task({
+        const { tSglSglp } = await loadContract__deployFinal__task({
             hre,
             tag,
         });
@@ -207,58 +207,65 @@ async function tapiocaPostDeployTask(
                 hre,
             );
 
-            await createEmptyStratYbAsset__task(
-                {
-                    deploymentName:
-                        DEPLOYMENT_NAMES.YB_T_SGL_SDAI_ASSET_WITHOUT_STRATEGY,
-                    tag,
-                    token: tSglSdai.address,
-                },
-                hre,
-            );
+            // await createEmptyStratYbAsset__task(
+            //     {
+            //         deploymentName:
+            //             DEPLOYMENT_NAMES.YB_T_SGL_SDAI_ASSET_WITHOUT_STRATEGY,
+            //         tag,
+            //         token: tSglSdai.address,
+            //     },
+            //     hre,
+            // );
         }
 
         // Deposit SglSdai & SglSglp assets in yieldbox
-        {
-            await depositUsdoYbAndAddSgl({
-                hre,
-                marketName: DEPLOYMENT_NAMES.SGL_S_GLP_MARKET,
-                calls,
-                tag,
-                multicallAddr: tapiocaMulticallAddr,
-                isTestnet,
-                amount: hre.ethers.utils.parseEther('0.001'),
-            });
-        }
+        // {
+        //     await depositUsdoYbAndAddSgl({
+        //         hre,
+        //         marketName: DEPLOYMENT_NAMES.SGL_S_GLP_MARKET,
+        //         calls,
+        //         tag,
+        //         multicallAddr: tapiocaMulticallAddr,
+        //         isTestnet,
+        //         amount: hre.ethers.utils.parseEther('5'),
+        //     });
+
+        //     await wrapToft({
+        //         calls: calls,
+        //         tapTakParams: params,
+        //         toftAddr: tSglSglp.address,
+        //         wrapAmount: hre.ethers.utils.parseEther('5'),
+        //     });
+        // }
         await VM.executeMulticall(calls);
 
         // Need to first register the assets to get the IDs
         // Deposit tSglSdai & tSglSglp in yieldbox
         {
             const calls2: TapiocaMulticall.CallStruct[] = [];
-            await depositSglAssetYB({
-                hre,
-                tokenAddr: tSglSglp.address,
-                stratName:
-                    DEPLOYMENT_NAMES.YB_T_SGL_SGLP_ASSET_WITHOUT_STRATEGY,
-                calls: calls2,
-                tag,
-                tapiocaMulticallAddr,
-                isTestnet,
-                freeMint: false,
-            });
+            // await depositSglAssetYB({
+            //     hre,
+            //     tokenAddr: tSglSglp.address,
+            //     stratName:
+            //         DEPLOYMENT_NAMES.YB_T_SGL_SGLP_ASSET_WITHOUT_STRATEGY,
+            //     calls: calls2,
+            //     tag,
+            //     tapiocaMulticallAddr,
+            //     isTestnet,
+            //     freeMint: false,
+            // });
 
-            await depositSglAssetYB({
-                hre,
-                tokenAddr: tSglSdai.address,
-                stratName:
-                    DEPLOYMENT_NAMES.YB_T_SGL_SDAI_ASSET_WITHOUT_STRATEGY,
-                calls: calls2,
-                tag,
-                tapiocaMulticallAddr,
-                isTestnet,
-                freeMint: false,
-            });
+            // await depositSglAssetYB({
+            //     hre,
+            //     tokenAddr: tSglSdai.address,
+            //     stratName:
+            //         DEPLOYMENT_NAMES.YB_T_SGL_SDAI_ASSET_WITHOUT_STRATEGY,
+            //     calls: calls2,
+            //     tag,
+            //     tapiocaMulticallAddr,
+            //     isTestnet,
+            //     freeMint: false,
+            // });
 
             await VM.executeMulticall(calls2);
         }
@@ -296,8 +303,7 @@ export async function wrapToft(params: {
     console.log('[+] Wrapping toft token', wrapAmount.toString());
     const balance = await erc20.balanceOf(tapiocaMulticallAddr);
     if (balance.eq(0)) {
-        console.log('[-] No balance to deposit', balance);
-        return;
+        // throw new Error(`[-] No balance to wrap ${balance}`);
     }
 
     calls.push(
@@ -338,13 +344,13 @@ async function loadContract__deployFinal__task(params: {
     tag: string;
 }) {
     const { hre, tag } = params;
-    const tSglSdai = loadGlobalContract(
-        hre,
-        TAPIOCA_PROJECTS_NAME.TapiocaZ,
-        hre.SDK.chainInfo.chainId,
-        TAPIOCA_Z_CONFIG.DEPLOYMENT_NAMES.T_SGL_SDAI_MARKET,
-        tag,
-    );
+    // const tSglSdai = loadGlobalContract(
+    //     hre,
+    //     TAPIOCA_PROJECTS_NAME.TapiocaZ,
+    //     hre.SDK.chainInfo.chainId,
+    //     TAPIOCA_Z_CONFIG.DEPLOYMENT_NAMES.T_SGL_SDAI_MARKET,
+    //     tag,
+    // );
     const tSglSglp = loadGlobalContract(
         hre,
         TAPIOCA_PROJECTS_NAME.TapiocaZ,
@@ -353,5 +359,5 @@ async function loadContract__deployFinal__task(params: {
         tag,
     );
 
-    return { tSglSdai, tSglSglp };
+    return { tSglSglp };
 }
