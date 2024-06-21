@@ -9,6 +9,7 @@ import { loadGlobalContract, setLzPeer__task } from 'tapioca-sdk';
 import { TTapiocaDeployerVmPass } from 'tapioca-sdk/dist/ethers/hardhat/DeployerVM';
 // Used to bypass inference conflict
 import { TTapiocaDeployerVmPass as TTapiocaDeployerVmPass_NODE_PACKAGE } from '@tapioca-sdk/ethers/hardhat/DeployerVM';
+import { buildBBDebtRateHelper } from 'tasks/deployBuilds/buildBBDebtRateHelper';
 import { buildBBMediumRiskMC } from 'tasks/deployBuilds/buildBBMediumRiskMC';
 import { buildBBModules } from 'tasks/deployBuilds/buildBBModules';
 import { buildERC20WithoutStrategy } from 'tasks/deployBuilds/buildERC20WithoutStrategy';
@@ -19,17 +20,16 @@ import { buildSGLInterestHelper } from 'tasks/deployBuilds/buildSGLInterestHelpe
 import { buildSGLMediumRiskMC } from 'tasks/deployBuilds/buildSGLMediumRiskMC';
 import { buildSGLModules } from 'tasks/deployBuilds/buildSGLModules';
 import { buildSdaiStrategy } from 'tasks/deployBuilds/buildSdaiStrategy';
+import { buildSglInit } from 'tasks/deployBuilds/buildSglInit';
+import { buildSglGlpLeverageExecutor } from 'tasks/deployBuilds/buildSglSimpleExecutor';
 import { buildSimpleLeverageExecutor } from 'tasks/deployBuilds/buildSimpleLeverageExecutor';
 import { buildUSDO } from 'tasks/deployBuilds/buildUSDO';
 import { buildUSDOExtExec } from 'tasks/deployBuilds/buildUSDOExtExec';
 import { buildUSDOFlashloanHelper } from 'tasks/deployBuilds/buildUSDOFlashloanHelper';
 import { buildUSDOModules } from 'tasks/deployBuilds/buildUSDOModules';
+import { buildUsdoHelper } from 'tasks/deployBuilds/buildUsdoHelper';
 import { setupPostLbp1 } from './1-1-setupPostLbp';
 import { DEPLOYMENT_NAMES, DEPLOY_CONFIG } from './DEPLOY_CONFIG';
-import { buildUsdoHelper } from 'tasks/deployBuilds/buildUsdoHelper';
-import { buildBBDebtRateHelper } from 'tasks/deployBuilds/buildBBDebtRateHelper';
-import { buildSglInit } from 'tasks/deployBuilds/buildSglInit';
-import { buildSglSimpleExecutor } from 'tasks/deployBuilds/buildSglSimpleExecutor';
 
 /**
  * @notice Should be called after TapiocaZ `postLbp` task
@@ -148,7 +148,7 @@ async function tapiocaDeployTask(params: TTapiocaDeployerVmPass<object>) {
             }),
         )
         .add(
-            await buildSglSimpleExecutor(hre, {
+            await buildSglGlpLeverageExecutor(hre, {
                 cluster,
                 zeroXSwapper,
                 glpRewardRouter:

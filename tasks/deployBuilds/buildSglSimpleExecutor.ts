@@ -4,7 +4,7 @@ import { AssetToSGLPLeverageExecutor__factory } from '@typechain/index';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { DEPLOYMENT_NAMES } from 'tasks/deploy/DEPLOY_CONFIG';
 
-export const buildSglSimpleExecutor = async (
+export const buildSglGlpLeverageExecutor = async (
     hre: HardhatRuntimeEnvironment,
     params: {
         zeroXSwapper: string;
@@ -19,7 +19,7 @@ export const buildSglSimpleExecutor = async (
         contract: await hre.ethers.getContractFactory(
             'AssetToSGLPLeverageExecutor',
         ),
-        deploymentName: DEPLOYMENT_NAMES.SGL_LEVERAGE_EXECUTOR,
+        deploymentName: DEPLOYMENT_NAMES.SGL_GLP_LEVERAGE_EXECUTOR,
         args: [
             params.zeroXSwapper,
             params.cluster,
