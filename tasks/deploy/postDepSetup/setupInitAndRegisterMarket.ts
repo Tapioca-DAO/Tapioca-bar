@@ -184,6 +184,13 @@ export async function setupInitAndRegisterMarket(params: TPostDeployParams) {
             tag,
             isTestnet,
         });
+        const glpLeverageExecutor = loadLocalContract(
+            hre,
+            hre.SDK.eChainId,
+            DEPLOYMENT_NAMES.SGL_GLP_LEVERAGE_EXECUTOR,
+            tag,
+        );
+
         // SGLP
         {
             const tSglpDeployConf =
@@ -204,7 +211,7 @@ export async function setupInitAndRegisterMarket(params: TPostDeployParams) {
                 liquidationCollateralizationRate:
                     tSglpDeployConf.liquidationCollateralizationRate,
                 exchangeRatePrecision: (1e18).toString(),
-                leverageExecutorAddr,
+                leverageExecutorAddr: glpLeverageExecutor.address,
                 penroseAddr,
                 yieldBox,
                 interestHelper,
