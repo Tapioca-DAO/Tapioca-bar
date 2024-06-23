@@ -55,6 +55,8 @@ contract BBStorage is Ownable, Market, ReentrancyGuard {
 
     uint256 public openInterestDebt;
 
+    address public debtRateHelper;
+
     // ************** //
     // *** EVENTS *** //
     // ************** //
@@ -82,6 +84,8 @@ contract BBStorage is Ownable, Market, ReentrancyGuard {
     event UpdateMinMaxMintFee(uint256 indexed oldMin, uint256 indexed newMin, uint256 indexed oldMax, uint256 newMax);
     /// @notice event emitted when min and max mint range values are updated
     event UpdateMinMaxMintRange(uint256 indexed oldMin, uint256 indexed newMin, uint256 indexed oldMax, uint256 newMax);
+    /// @notice event emitted when debt rate helper is updated
+    event DebtRateHelperUpdated(address indexed oldVal, address indexed newVal);
 
     constructor() MarketERC20("Tapioca BigBang") {}
 
