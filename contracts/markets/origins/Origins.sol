@@ -99,6 +99,7 @@ contract Origins is Ownable, Market, MarketStateView, ReentrancyGuard {
         liquidationCollateralizationRate = 1e5;
 
         rateValidDuration = 24 hours;
+        minBorrowAmount = 1e15;
 
         _transferOwnership(_owner);
     }
@@ -191,7 +192,8 @@ contract Origins is Ownable, Market, MarketStateView, ReentrancyGuard {
     {
         if (!allowedParticipants[msg.sender]) revert NotAuthorized();
 
-        if (amount == 0) return (0, 0);
+        if (amount <= minBorrowAmount) revert MinBorrowAmountNotMet();
+
         (part, share) = _borrow(msg.sender, msg.sender, amount);
     }
 

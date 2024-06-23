@@ -171,6 +171,7 @@ contract Singularity is MarketStateView, SGLCommon {
         uint256 _liquidationCollateralizationRate,
         uint256 _exchangeRatePrecision
     ) private {
+        minBorrowAmount = 1e15;
         collateralizationRate = _collateralizationRate > 0 ? _collateralizationRate : 75000;
         liquidationCollateralizationRate =
             _liquidationCollateralizationRate > 0 ? _liquidationCollateralizationRate : 80000;
