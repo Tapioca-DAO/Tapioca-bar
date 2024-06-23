@@ -76,7 +76,6 @@ contract AssetToSDaiLeverageExecutorTest is BaseLeverageExecutorTest {
 
             swapperTarget = new ZeroXSwapperMockTarget();
             swapper = new ZeroXSwapper(address(swapperTarget), ICluster(address(cluster)), address(this));
-            pearlmit = new Pearlmit("Pearlmit", "1", address(this), 0);
 
             executor = new AssetTotsDaiLeverageExecutor(
                 IZeroXSwapper(address(swapper)), ICluster(address(cluster)), address(0), IPearlmit(address(pearlmit))
@@ -99,7 +98,7 @@ contract AssetToSDaiLeverageExecutorTest is BaseLeverageExecutorTest {
         }
     }
 
-    function test_get_collateral() public {
+    function test_get_collateral_sdai() public {
         uint256 balanceBefore = toft.balanceOf(address(this));
         assertEq(balanceBefore, 0);
 

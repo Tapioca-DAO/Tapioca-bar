@@ -79,7 +79,7 @@ import {Penrose} from "contracts/Penrose.sol";
 
 // Tapioca Tests
 import {UsdoTestHelper, TestPenroseData, TestSingularityData} from "./helpers/UsdoTestHelper.t.sol";
-import {TapiocaOptionsBrokerMock} from "./mocks/TapiocaOptionsBrokerMock.sol";
+import {TapiocaOptionsBrokerMock, OTapMock} from "./mocks/TapiocaOptionsBrokerMock.sol";
 import {MagnetarMock} from "./mocks/MagnetarMock.sol";
 import {SwapperMock} from "./mocks/SwapperMock.sol";
 import {OracleMock} from "./mocks/OracleMock.sol";
@@ -587,6 +587,9 @@ contract UsdoTest is UsdoTestHelper {
     function test_exercise_option() public {
         uint256 erc20Amount_ = 1 ether;
 
+        address oTapMock = tOB.oTapMock();
+        OTapMock(oTapMock).setOwner(address(this));
+
         //setup
         {
             deal(address(aUsdo), address(this), erc20Amount_);
@@ -599,6 +602,7 @@ contract UsdoTest is UsdoTestHelper {
         }
 
         pearlmit.approve(721, tOB.oTAP(), 0, address(magnetar), type(uint200).max, uint48(block.timestamp));
+        pearlmit.approve(721, tOB.oTAP(), 0, address(bUsdo), type(uint200).max, uint48(block.timestamp));
 
         //useful in case of withdraw after borrow
         LZSendParam memory withdrawLzSendParam_;
