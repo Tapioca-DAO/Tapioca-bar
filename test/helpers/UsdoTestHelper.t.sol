@@ -26,6 +26,7 @@ import {IWrappedNative} from "yieldbox/interfaces/IWrappedNative.sol";
 import {IOracle} from "tapioca-periph/oracle/interfaces/IOracle.sol";
 import {IPenrose} from "tapioca-periph/interfaces/bar/IPenrose.sol";
 import {YieldBoxURIBuilder} from "yieldbox/YieldBoxURIBuilder.sol";
+import {SGLInit} from "contracts/markets/singularity/SGLInit.sol";
 import {TokenType} from "yieldbox/enums/YieldBoxTokenType.sol";
 import {IYieldBox} from "yieldbox/interfaces/IYieldBox.sol";
 import {IStrategy} from "yieldbox/interfaces/IStrategy.sol";
@@ -216,13 +217,14 @@ contract UsdoTestHelper is TestHelper, TestUtils {
         returns (Singularity)
     {
         Singularity sgl = new Singularity();
+        SGLInit sglInit = new SGLInit();
         (
             Singularity._InitMemoryModulesData memory _modulesData,
             Singularity._InitMemoryTokensData memory _tokensData,
             Singularity._InitMemoryData memory _data
         ) = _getSingularityInitData(_sgl, address(_penrose));
         {
-            sgl.init(abi.encode(_modulesData, _tokensData, _data));
+            sgl.init(address(sglInit), abi.encode(_modulesData, _tokensData, _data));
         }
 
         {

@@ -7,6 +7,7 @@ import {SGLCollateral} from "contracts/markets/singularity/SGLCollateral.sol";
 import {SGLLeverage} from "contracts/markets/singularity/SGLLeverage.sol";
 import {Singularity} from "contracts/markets/singularity/Singularity.sol";
 import {SGLBorrow} from "contracts/markets/singularity/SGLBorrow.sol";
+import {SGLInit} from "contracts/markets/singularity/SGLInit.sol";
 import {MarketHelper} from "contracts/markets/MarketHelper.sol";
 import {Market} from "contracts/markets/Market.sol";
 
@@ -77,6 +78,7 @@ contract SingularityTest is UsdoTestHelper {
     SimpleLeverageExecutor leverageExecutor;
     Singularity masterContract;
     Singularity singularity;
+    SGLInit sglInit;
     MarketHelper marketHelper;
     OracleMock oracle;
     MarketLiquidatorReceiverMock liquidatorMock;
@@ -128,6 +130,7 @@ contract SingularityTest is UsdoTestHelper {
             yieldBox = createYieldBox(pearlmit, address(this));
             cluster = createCluster(aEid, address(this));
             magnetar = createMagnetar(address(cluster), IPearlmit(address(pearlmit)));
+            sglInit = new SGLInit();
 
             vm.label(address(endpoints[aEid]), "aEndpoint");
             vm.label(address(endpoints[bEid]), "bEndpoint");
@@ -311,7 +314,7 @@ contract SingularityTest is UsdoTestHelper {
 
     function test_initialize_twice() public {
         vm.expectRevert();
-        singularity.init("");
+        singularity.init(address(sglInit), "");
         singularity.accrue();
     }
 
@@ -329,19 +332,8 @@ contract SingularityTest is UsdoTestHelper {
         {
             ICluster _cl = penrose.cluster();
             _cl.setRoleForContract(address(this), keccak256("PAUSABLE"), true);
-            bytes memory payload = abi.encodeWithSelector(
-                Market.setMarketConfig.selector,
-                address(0),
-                "",
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0
-            );
+            bytes memory payload =
+                abi.encodeWithSelector(Market.setMarketConfig.selector, address(0), "", 0, 0, 0, 0, 0, 0, 0, 0);
             address[] memory mc = new address[](1);
             mc[0] = address(singularity);
 
