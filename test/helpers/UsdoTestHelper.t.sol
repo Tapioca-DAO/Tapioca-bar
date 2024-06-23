@@ -241,7 +241,8 @@ contract UsdoTestHelper is TestHelper, TestUtils {
                 0,
                 0,
                 0,
-                address(sglInterestHelper)
+                address(sglInterestHelper),
+                0
             );
             address[] memory mc = new address[](1);
             mc[0] = address(sgl);
