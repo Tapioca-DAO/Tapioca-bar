@@ -22,7 +22,31 @@ import {IMarket, Module} from "tapioca-periph/interfaces/bar/IMarket.sol";
 contract MarketHelper {
     using RebaseLibrary for Rebase;
 
+    uint256 internal constant FEE_PRECISION = 1e5;
+
     error ExchangeRateNotValid();
+
+    /// @notice returns the solvency status of a market's position
+    /// @param _market the BB or SGL market
+    function isPositionSolvent(address _market, address _user, uint256 _exchangeRate, bool _forLiquidation) external view returns (bool) {
+        IMarket market = IMarket(_market);
+
+        uint256 borrowPart = market._userBorrowPart(_user);
+        if (borrowPart == 0) return true;
+        uint256 collateralShare = market._userCollateralShare(_user);
+        if (collateralShare == 0) return false;
+
+        IYieldBox yieldBox = IYieldBox(market._yieldBox());
+
+        (uint128 totalBorrowElastic, uint128 totalBorrowBase) = market._totalBorrow();
+        Rebase memory _totalBorrow = Rebase({elastic: totalBorrowElastic, base: totalBorrowBase});
+
+        uint256 collateralAmount = yieldBox.toAmount(market._collateralId(), collateralShare, false);
+        return collateralAmount * (market._exchangeRatePrecision() / FEE_PRECISION)
+            * (_forLiquidation ? market._liquidationCollateralizationRate() : market._collateralizationRate())
+        // Moved exchangeRate here instead of dividing the other side to preserve more precision
+        >= (borrowPart * _totalBorrow.elastic * _exchangeRate) / _totalBorrow.base;
+    }
 
     /// @notice transforms amount to shares for a market's permit operation
     /// @param amount the amount to transform
