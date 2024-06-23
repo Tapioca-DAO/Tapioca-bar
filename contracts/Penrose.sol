@@ -136,7 +136,7 @@ contract Penrose is Ownable, PearlmitHandler {
     // *** EVENTS *** //
     // ************** //
     /// @notice event emitted when fees are extracted
-    event ProtocolWithdrawal(IMarket[] indexed markets, uint256 indexed timestamp);
+    event ProtocolWithdrawal(IMarket[] markets, uint256 indexed timestamp);
     /// @notice event emitted when Singularity master contract is registered
     event RegisterSingularityMasterContract(address indexed location, IPenrose.ContractType indexed risk);
     /// @notice event emitted when BigBang master contract is registered
