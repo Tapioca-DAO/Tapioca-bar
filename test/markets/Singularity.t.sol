@@ -544,7 +544,7 @@ contract SingularityTest is UsdoTestHelper {
         assertGe(share, 1);
 
         uint256 borrowAmountFromHelper = magnetarHelper.getAmountForBorrowPart(
-            IMarket(address(singularity)), singularity._userBorrowPart(address(this))
+            IMarket(address(singularity)), singularity._userBorrowPart(address(this)), false
         );
         assertGe(borrowAmountFromHelper, borrowAmount);
     }
