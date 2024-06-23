@@ -539,7 +539,7 @@ contract BigBangTest is UsdoTestHelper {
     }
 
     function test_borrow_and_liquidate() public {
-        uint256 collateralAmount = 1 ether;
+        uint256 collateralAmount = 1.2 ether;
         uint256 borrowAmount = 5e17;
 
         {
