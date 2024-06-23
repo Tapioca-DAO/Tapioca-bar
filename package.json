@@ -48,7 +48,6 @@
         "@nomicfoundation/hardhat-chai-matchers": "^1.0.3",
         "@nomicfoundation/hardhat-foundry": "^1.1.1",
         "@nomicfoundation/hardhat-network-helpers": "^1.0.4",
-        "@nomicfoundation/hardhat-toolbox": "^2.0.2",
         "@nomiclabs/hardhat-ethers": "^2.1.1",
         "@nomiclabs/hardhat-etherscan": "^3.1.7",
         "@openzeppelin/contracts": "^4.9.5",
@@ -93,6 +92,7 @@
     },
     "dependencies": {
         "@layerzerolabs/lz-v2-utilities": "2.3.6",
+        "@nomicfoundation/hardhat-verify": "^2.0.8",
         "@nomiclabs/hardhat-vyper": "^3.0.1",
         "@openzeppelin/contracts-upgradeable": "^4.8.1",
         "@primitivefi/hardhat-dodoc": "^0.2.3",
@@ -102,8 +102,11 @@
         "inquirer": "^8.2.5",
         "load-json-file": "^7.0.1",
         "lodash": "^4.17.21",
-        "tapioca-sdk": "^1.8.11",
+        "tapioca-sdk": "^1.8.22",
         "tsconfig-paths": "^4.2.0",
         "uuid": "^9.0.0"
+    },
+    "resolutions": {
+        "@ethersproject/providers": "npm:ethersproject-providers-arbitrum-hotfix@5.7.10"
     }
 }

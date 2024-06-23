@@ -34,10 +34,15 @@ import { BigNumberish } from 'ethers';
  * Post deploy:
  * - Sets Origin as minter in USDO.
  * - Mint USDO on Origin for the USDC and DAI pools.
+ * - Mint extra USDO (10) to initiate SGL assets in YB.
  * - Transfer USDO to Ethereum for the DAI pool.
  */
 export const deployPostLbp__task_2 = async (
-    _taskArgs: TTapiocaDeployTaskArgs & { delta: string; noTransfer?: boolean },
+    _taskArgs: TTapiocaDeployTaskArgs & {
+        delta: string;
+        transferTo: string;
+        noTransfer?: boolean;
+    },
     hre: HardhatRuntimeEnvironment,
 ) => {
     console.log('[+] Deploying Post LBP phase 2');
@@ -54,7 +59,11 @@ export const deployPostLbp__task_2 = async (
 };
 
 async function tapiocaDeployTask(
-    params: TTapiocaDeployerVmPass<{ delta: string; noTransfer?: boolean }>,
+    params: TTapiocaDeployerVmPass<{
+        delta: string;
+        transferTo: string;
+        noTransfer?: boolean;
+    }>,
 ) {
     const {
         hre,
@@ -72,6 +81,7 @@ async function tapiocaDeployTask(
     const { yieldBox, tETH, ethMarketOracle } = deploy__LoadDeployments_Arb({
         hre,
         tag,
+        isTestnet,
     });
 
     const usdo = loadLocalContract(
@@ -113,7 +123,11 @@ async function tapiocaDeployTask(
 }
 
 async function tapiocaPostDeployTask(
-    params: TTapiocaDeployerVmPass<{ delta: string; noTransfer?: boolean }>,
+    params: TTapiocaDeployerVmPass<{
+        delta: string;
+        transferTo: string;
+        noTransfer?: boolean;
+    }>,
 ) {
     const {
         hre,
@@ -123,11 +137,21 @@ async function tapiocaPostDeployTask(
         tapiocaMulticallAddr,
         isTestnet,
         isHostChain,
+        isSideChain,
     } = params;
-    const { tag, delta } = taskArgs;
+    const { tag, delta, transferTo, noTransfer } = taskArgs;
 
     if (!isHostChain) {
         throw new Error('[-] Post deploy task 2 is only for host chain');
+    }
+    if (!taskArgs.noTransfer) {
+        const dstChainInfo = hre.SDK.utils.getChainBy(
+            'name',
+            taskArgs.transferTo,
+        );
+        if (!dstChainInfo) {
+            throw new Error('[-] Destination chain not found in chain info');
+        }
     }
 
     const { usdo, origins } = await loadContracts__deployPostLbp__task_2({
@@ -178,7 +202,12 @@ async function tapiocaPostDeployTask(
 
     /**
      * Mint USDO on Origin for the USDC and DAI pools
+     * Also mint extra amount of USDO to initiate SGL assets in YB
      */
+    const EXTRA_ETH_AMOUNT_TO_SEED_SGL_YB_ASSET =
+        DEPLOY_CONFIG.USDO_UNISWAP_POOL[chainInfo.chainId]!
+            .EXTRA_ETH_AMOUNT_TO_SEED_SGL_YB_ASSET!;
+
     const ETH_AMOUNT_FOR_USDC =
         DEPLOY_CONFIG.USDO_UNISWAP_POOL[chainInfo.chainId]!
             .ETH_AMOUNT_TO_MINT_FOR_USDC_POOL!;
@@ -197,6 +226,15 @@ async function tapiocaPostDeployTask(
         `[+] Exchange rate of USD/tETH: ${hre.ethers.utils.formatEther(
             exchangeRate,
         )}`,
+    );
+
+    let borrowAmountForExtraUsdo = hre.ethers.BigNumber.from(10)
+        .pow(36)
+        .div(exchangeRate)
+        .mul(EXTRA_ETH_AMOUNT_TO_SEED_SGL_YB_ASSET)
+        .div((1e18).toString()); // Convert rate from USD/tETH to tETH/USD, then multiply by ETH amount
+    borrowAmountForExtraUsdo = borrowAmountForExtraUsdo.sub(
+        borrowAmountForExtraUsdo.mul(delta).div(100),
     );
 
     let borrowAmountForUSDC = hre.ethers.BigNumber.from(10)
@@ -220,6 +258,28 @@ async function tapiocaPostDeployTask(
      * Mint USDO on Origin
      */
     {
+        // Mint extra amount to help seed SGL YB assets
+        console.log(
+            '[+] Borrowing USDO against ETH to help seed SGL YB assets using',
+            hre.ethers.utils.formatUnits(
+                EXTRA_ETH_AMOUNT_TO_SEED_SGL_YB_ASSET,
+                'ether',
+            ),
+            'ETH as collateral and borrowing',
+            hre.ethers.utils.formatUnits(borrowAmountForExtraUsdo, 'ether'),
+            'USDO',
+        );
+
+        calls.push(
+            ...(await mintOriginUSDO__deployPostLbp_2({
+                hre,
+                tag,
+                multicallAddr: tapiocaMulticallAddr,
+                collateralAmount: ETH_AMOUNT_FOR_USDC,
+                borrowAmount: borrowAmountForExtraUsdo,
+            })),
+        );
+
         // Mint USDO with ETH for USDC pool on Arb
         console.log(
             '[+] Borrowing USDO against ETH for USDC pool using',
@@ -264,25 +324,22 @@ async function tapiocaPostDeployTask(
      */
     let msgValue = hre.ethers.BigNumber.from(0);
     if (!taskArgs.noTransfer) {
-        let chainName;
-        if (chainInfo.name === 'arbitrum_sepolia') {
-            console.log(
-                '[+] Transferring USDO to Optimism Sep for the DAI pool',
-            );
-            chainName = 'optimism_sepolia';
-        } else if (chainInfo.name === 'arbitrum') {
-            console.log('[+] Transferring USDO to Ethereum for the DAI pool');
-            chainName = 'ethereum';
-        } else {
-            throw new Error('Not implemented');
-        }
+        const dstChainInfo = hre.SDK.utils.getChainBy(
+            'name',
+            taskArgs.transferTo,
+        );
 
-        console.log('[+] Loading TapiocaMulticall from', chainName, 'tag', tag);
+        console.log(
+            '[+] Loading TapiocaMulticall from',
+            dstChainInfo.name,
+            'tag',
+            tag,
+        );
         const tapiocaMulticallTargetChain = checkExists(
             hre,
             hre.SDK.db.findGlobalDeployment(
                 TAPIOCA_PROJECTS_NAME.Generic,
-                hre.SDK.utils.getChainBy('name', chainName).chainId,
+                dstChainInfo.chainId,
                 hre.SDK.DeployerVM.TAPIOCA_MULTICALL_NAME,
                 tag,
             ),
@@ -299,7 +356,7 @@ async function tapiocaPostDeployTask(
                     .split('0x')[1]
                     .padStart(64, '0'),
             ),
-            dstEid: hre.SDK.utils.getChainBy('name', chainName).lzChainId,
+            dstEid: dstChainInfo.lzChainId,
             extraOptions: Options.newOptions()
                 .addExecutorLzReceiveOption(200_000)
                 .toHex(),

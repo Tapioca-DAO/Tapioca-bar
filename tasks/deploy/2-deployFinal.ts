@@ -15,6 +15,10 @@ import {
 import { DEPLOYMENT_NAMES } from './DEPLOY_CONFIG';
 import { buildERC20WithoutStrategy } from 'tasks/deployBuilds/buildERC20WithoutStrategy';
 import * as TAPIOCA_Z_CONFIG from '@tapiocaz/config';
+import {
+    depositSglAssetYB,
+    depositUsdoYbAndAddSgl,
+} from './postDepSetup/utils_seedSglAssetInYb';
 
 /**
  * @notice needs to be called after tapioca periph final
@@ -22,9 +26,11 @@ import * as TAPIOCA_Z_CONFIG from '@tapiocaz/config';
  *
  * Deploy: Arb
  * - tSglSdai without strategy
+ * - tSglSglp without strategy
  *
- * Post deploy: Arb
- * - Registers tSglSdai asset it in the yieldbox
+ * Post deploy: Arb, Eth
+ * - Registers tSglSdai & tSglSglp asset it in the yieldbox
+ * - Deposit tSglSdai & tSglSglp in the yieldbox
  * - Sets the USDO oracle in BigBang markets
  */
 export const deployFinal__task = async (
@@ -39,34 +45,11 @@ export const deployFinal__task = async (
             staticSimulation: false,
         },
         // eslint-disable-next-line @typescript-eslint/no-empty-function
-        tapiocaDeploy,
+        async () => {},
         tapiocaPostDeployTask,
     );
     console.log('[+] Deployed final phase');
 };
-
-async function tapiocaDeploy(params: TTapiocaDeployerVmPass<unknown>) {
-    const { hre, taskArgs, VM, chainInfo, tapiocaMulticallAddr } = params;
-    const { tag } = taskArgs;
-
-    const yieldBox = loadGlobalContract(
-        hre,
-        TAPIOCA_PROJECTS_NAME.TapiocaPeriph,
-        hre.SDK.eChainId,
-        TAPIOCA_PERIPH_CONFIG.DEPLOYMENT_NAMES.YIELDBOX,
-        tag,
-    ).address;
-
-    const { tSglSdai } = await loadContract__deployFinal__task({ hre, tag });
-
-    VM.add(
-        await buildERC20WithoutStrategy(hre, {
-            deploymentName: DEPLOYMENT_NAMES.YB_T_SGL_SDAI_ASSET_WITH_STRATEGY,
-            token: tSglSdai.address,
-            yieldBox,
-        }),
-    );
-}
 
 async function tapiocaPostDeployTask(params: TTapiocaDeployerVmPass<unknown>) {
     const {
@@ -77,6 +60,7 @@ async function tapiocaPostDeployTask(params: TTapiocaDeployerVmPass<unknown>) {
         tapiocaMulticallAddr,
         isHostChain,
         isSideChain,
+        isTestnet,
     } = params;
     const { tag } = taskArgs;
     const bb = await hre.ethers.getContractAt('BigBang', '');
@@ -150,24 +134,82 @@ async function tapiocaPostDeployTask(params: TTapiocaDeployerVmPass<unknown>) {
             });
         }
 
-        // Register deployed tSglSdai asset in yieldbox
+        const { tSglSdai, tSglSglp } = await loadContract__deployFinal__task({
+            hre,
+            tag,
+        });
+
+        // Register deployed tSglSdai & tSglSglp asset in yieldbox
         {
-            const { tSglSdai } = await loadContract__deployFinal__task({
-                hre,
-                tag,
-            });
             await createEmptyStratYbAsset__task(
                 {
                     deploymentName:
-                        DEPLOYMENT_NAMES.YB_T_SGL_SDAI_ASSET_WITH_STRATEGY,
+                        DEPLOYMENT_NAMES.YB_T_SGL_SDAI_ASSET_WITHOUT_STRATEGY,
                     tag,
                     token: tSglSdai.address,
                 },
                 hre,
             );
+
+            await createEmptyStratYbAsset__task(
+                {
+                    deploymentName:
+                        DEPLOYMENT_NAMES.YB_T_SGL_SGLP_ASSET_WITHOUT_STRATEGY,
+                    tag,
+                    token: tSglSglp.address,
+                },
+                hre,
+            );
         }
 
+        // Deposit SglSdai & SglSglp assets in yieldbox
+        {
+            await depositUsdoYbAndAddSgl({
+                hre,
+                marketName: TAPIOCA_Z_CONFIG.DEPLOYMENT_NAMES.T_SGL_GLP_MARKET,
+                calls,
+                tag,
+                multicallAddr: tapiocaMulticallAddr,
+                isTestnet,
+            });
+            await depositUsdoYbAndAddSgl({
+                hre,
+                marketName: TAPIOCA_Z_CONFIG.DEPLOYMENT_NAMES.T_SGL_GLP_MARKET,
+                calls,
+                tag,
+                multicallAddr: tapiocaMulticallAddr,
+                isTestnet,
+            });
+        }
         await VM.executeMulticall(calls);
+
+        // Need to first register the assets to get the IDs
+        // Deposit tSglSdai & tSglSglp in yieldbox
+        {
+            const calls2: TapiocaMulticall.CallStruct[] = [];
+            await depositSglAssetYB({
+                hre,
+                tokenAddr: tSglSdai.address,
+                stratName:
+                    DEPLOYMENT_NAMES.YB_T_SGL_SDAI_ASSET_WITHOUT_STRATEGY,
+                calls: calls2,
+                tag,
+                tapiocaMulticallAddr,
+                isTestnet,
+            });
+
+            await depositSglAssetYB({
+                hre,
+                tokenAddr: tSglSglp.address,
+                stratName:
+                    DEPLOYMENT_NAMES.YB_T_SGL_SGLP_ASSET_WITHOUT_STRATEGY,
+                calls: calls2,
+                tag,
+                tapiocaMulticallAddr,
+                isTestnet,
+            });
+            await VM.executeMulticall(calls2);
+        }
     }
 }
 
@@ -183,6 +225,13 @@ async function loadContract__deployFinal__task(params: {
         TAPIOCA_Z_CONFIG.DEPLOYMENT_NAMES.T_SGL_SDAI_MARKET,
         tag,
     );
+    const tSglSglp = loadGlobalContract(
+        hre,
+        TAPIOCA_PROJECTS_NAME.TapiocaZ,
+        hre.SDK.chainInfo.chainId,
+        TAPIOCA_Z_CONFIG.DEPLOYMENT_NAMES.T_SGL_GLP_MARKET,
+        tag,
+    );
 
-    return { tSglSdai };
+    return { tSglSdai, tSglSglp };
 }

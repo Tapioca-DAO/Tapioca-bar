@@ -7,6 +7,7 @@ export const DEPLOYMENT_NAMES = {
     USDO: 'USDO',
     USDO_EXT_EXEC: 'USDO_EXT_EXEC',
     USDO_FLASHLOAN_HELPER: 'USDO_FLASHLOAN_HELPER',
+    USDO_HELPER: 'USDO_HELPER',
     SIMPLE_LEVERAGE_EXECUTOR: 'SIMPLE_LEVERAGE_EXECUTOR',
     MARKET_HELPER: 'MARKET_HELPER',
     YB_USDO_ASSET_WITHOUT_STRATEGY: 'YB_USDO_ASSET_WITHOUT_STRATEGY',
@@ -18,7 +19,10 @@ export const DEPLOYMENT_NAMES = {
     YB_T_WST_ETH_ASSET_WITHOUT_STRATEGY: 'YB_T_WST_ETH_ASSET_WITHOUT_STRATEGY',
     YB_SDAI_ASSET_WITH_STRATEGY: 'YB_SDAI_ASSET_WITH_STRATEGY',
     YB_SGLP_ASSET_WITH_STRATEGY: 'YB_SGLP_ASSET_WITH_STRATEGY',
-    YB_T_SGL_SDAI_ASSET_WITH_STRATEGY: 'YB_T_SGL_SDAI_ASSET_WITH_STRATEGY',
+    YB_T_SGL_SDAI_ASSET_WITHOUT_STRATEGY:
+        'YB_T_SGL_SDAI_ASSET_WITHOUT_STRATEGY',
+    YB_T_SGL_SGLP_ASSET_WITHOUT_STRATEGY:
+        'YB_T_SGL_SGLP_ASSET_WITHOUT_STRATEGY',
     // ORIGINS
     ORIGINS_T_ETH_MARKET: 'ORIGINS_T_ETH_MARKET',
     // SGL
@@ -39,6 +43,7 @@ export const DEPLOYMENT_NAMES = {
     BB_BORROW_MODULE: 'BB_BORROW_MODULE',
     BB_COLLATERAL_MODULE: 'BB_COLLATERAL_MODULE',
     BB_LEVERAGE_MODULE: 'BB_LEVERAGE_MODULE',
+    BB_DEBT_RATE_HELPER: 'BB_DEBT_RATE_HELPER',
     // USDO
     USDO_SENDER_MODULE: 'USDO_SENDER_MODULE',
     USDO_RECEIVER_MODULE: 'USDO_RECEIVER_MODULE',
@@ -78,28 +83,28 @@ type TPostLbp = {
 
 const marketConfigArb: TPostLbp[EChainID] = {
     tEthOriginsMarketConfig: {
-        collateralizationRate: 100_000, // 100%
+        collateralizationRate: 99_000, // 99%
     },
     mtEthMarketConfig: {
         debtRateAgainstEth: 0,
-        debtRateMin: 0,
+        debtRateMin: 0, // Set in Penrose contract
         debtRateMax: 0,
-        collateralizationRate: 87_000, // 87%
-        liquidationCollateralizationRate: 93_000, //  93%
+        collateralizationRate: 85_000, // 85%
+        liquidationCollateralizationRate: 90_000, //  91%
     },
     tRethMarketConfig: {
         debtRateAgainstEth: ethers.utils.parseEther('0.15'), // 15%
-        debtRateMin: ethers.utils.parseEther('0.05'), // 5%
-        debtRateMax: ethers.utils.parseEther('0.35'), // 35%
-        collateralizationRate: 87_000, // 87%
-        liquidationCollateralizationRate: 93_000, // 93%
+        debtRateMin: ethers.utils.parseEther('0.1'), // 10%
+        debtRateMax: ethers.utils.parseEther('0.15'), // 15%
+        collateralizationRate: 85_000, // 87%
+        liquidationCollateralizationRate: 90_000, // 93%
     },
     twSTETHMarketConfig: {
         debtRateAgainstEth: ethers.utils.parseEther('0.15'), // 15%
-        debtRateMin: ethers.utils.parseEther('0.05'), // 5%
-        debtRateMax: ethers.utils.parseEther('0.35'), // 35%
-        collateralizationRate: 86_000, // 86%
-        liquidationCollateralizationRate: 92_000, // 92%
+        debtRateMin: ethers.utils.parseEther('0.1'), // 10%
+        debtRateMax: ethers.utils.parseEther('0.15'), // 15%
+        collateralizationRate: 85_000,
+        liquidationCollateralizationRate: 90_000,
     },
 
     tSGlpMarketConfig: {
@@ -151,6 +156,7 @@ type TUSDOUniswapPool = {
     [key in EChainID]?: {
         ETH_AMOUNT_TO_MINT_FOR_USDC_POOL: BigNumber;
         ETH_AMOUNT_TO_MINT_FOR_DAI_POOL: BigNumber;
+        EXTRA_ETH_AMOUNT_TO_SEED_SGL_YB_ASSET: BigNumber;
     };
 };
 
@@ -158,10 +164,12 @@ const USDO_UNISWAP_POOL: TUSDOUniswapPool = {
     [EChainID.ARBITRUM]: {
         ETH_AMOUNT_TO_MINT_FOR_USDC_POOL: ethers.utils.parseEther('0'),
         ETH_AMOUNT_TO_MINT_FOR_DAI_POOL: ethers.utils.parseEther('0'),
+        EXTRA_ETH_AMOUNT_TO_SEED_SGL_YB_ASSET: ethers.utils.parseEther('0.001'),
     },
     [EChainID.ARBITRUM_SEPOLIA]: {
         ETH_AMOUNT_TO_MINT_FOR_USDC_POOL: ethers.utils.parseEther('1'),
         ETH_AMOUNT_TO_MINT_FOR_DAI_POOL: ethers.utils.parseEther('1'),
+        EXTRA_ETH_AMOUNT_TO_SEED_SGL_YB_ASSET: ethers.utils.parseEther('0.001'),
     },
 };
 
