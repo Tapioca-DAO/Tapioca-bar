@@ -29,7 +29,6 @@ contract BBLendingCommon is BBCommon {
     // *** ERRORS *** //
     // ************** //
     error BorrowCapReached();
-    error OracleCallFailed();
     error NothingToRepay();
     error RepayAmountNotValid();
 
@@ -76,32 +75,6 @@ contract BBLendingCommon is BBCommon {
 
         //deposit borrowed amount to user
         share = _depositAmountToYb(asset, to, assetId, amount);
-    }
-
-    function _computeVariableOpeningFee(uint256 amount) internal returns (uint256) {
-        if (amount == 0) return 0;
-
-        //get asset <> USDC price ( USDO <> USDC )
-        (bool updated, uint256 _exchangeRate) = assetOracle.get(oracleData);
-        if (!updated) revert OracleCallFailed();
-
-        if (_exchangeRate >= minMintFeeStart) {
-            return (amount * minMintFee) / FEE_PRECISION;
-        }
-        if (_exchangeRate <= maxMintFeeStart) {
-            return (amount * maxMintFee) / FEE_PRECISION;
-        }
-
-        uint256 fee = maxMintFee
-            - (((_exchangeRate - maxMintFeeStart) * (maxMintFee - minMintFee)) / (minMintFeeStart - maxMintFeeStart));
-
-        if (fee > maxMintFee) return (amount * maxMintFee) / FEE_PRECISION;
-        if (fee < minMintFee) return (amount * minMintFee) / FEE_PRECISION;
-
-        if (fee > 0) {
-            return (amount * fee) / FEE_PRECISION;
-        }
-        return 0;
     }
 
     /// @dev Concrete implementation of `repay`.
