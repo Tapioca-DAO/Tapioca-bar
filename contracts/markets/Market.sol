@@ -51,8 +51,6 @@ abstract contract Market is MarketERC20, Ownable {
 
     /// @notice returns YieldBox address
     IYieldBox internal yieldBox;
-    /// @notice returns Penrose address
-    IPenrose internal penrose;
 
     IPearlmit internal pearlmit;
 
@@ -295,25 +293,6 @@ abstract contract Market is MarketERC20, Ownable {
     // ********************** //
     // *** VIEW FUNCTIONS *** //
     // ********************** //
-    /// @notice returns the maximum liquidatable amount for user
-    /// @param borrowPart amount borrowed
-    /// @param collateralPartInAsset collateral's value in borrowed asset
-    /// @param ratesPrecision collateralizationRate and liquidationCollateralizationRate precision
-    function computeClosingFactor(uint256 borrowPart, uint256 collateralPartInAsset, uint256 ratesPrecision)
-        public
-        view
-        returns (uint256)
-    {
-        return _computeClosingFactor(
-            borrowPart,
-            collateralPartInAsset,
-            ratesPrecision,
-            liquidationCollateralizationRate,
-            liquidationMultiplier,
-            totalBorrow
-        );
-    }
-
     function _computeClosingFactor(
         uint256 borrowPart,
         uint256 collateralPartInAsset,
@@ -321,7 +300,7 @@ abstract contract Market is MarketERC20, Ownable {
         uint256 _liquidationCollateralizationRate,
         uint256 _liquidationMultiplier,
         Rebase memory _totalBorrow
-    ) internal view returns (uint256) {
+    ) internal pure returns (uint256) {
         // Obviously it's not `borrowPart` anymore but `borrowAmount`
         borrowPart = (borrowPart * _totalBorrow.elastic) / _totalBorrow.base;
 
@@ -334,7 +313,7 @@ abstract contract Market is MarketERC20, Ownable {
         //compute numerator
         uint256 numerator = borrowPart - liquidationStartsAt;
         //compute denominator
-        uint256 diff = (liquidationCollateralizationRate * ((10 ** ratesPrecision) + _liquidationMultiplier))
+        uint256 diff = (_liquidationCollateralizationRate * ((10 ** ratesPrecision) + _liquidationMultiplier))
             / (10 ** ratesPrecision);
         int256 denominator = (int256(10 ** ratesPrecision) - int256(diff)) * int256(1e13);
 
