@@ -134,4 +134,8 @@ abstract contract MarketStateView is Market {
     function _minBorrowAmount() external view returns (uint256) {
         return minBorrowAmount;
     }
+
+    function _minCollateralAmount() external view returns (uint256) {
+        return minCollateralAmount;
+    }
 }

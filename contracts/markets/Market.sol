@@ -105,6 +105,7 @@ abstract contract Market is MarketERC20, Ownable {
     uint256 internal maxLiquidationSlippage = 1000; //1%
 
     uint256 internal minBorrowAmount;
+    uint256 internal minCollateralAmount;
     // ***************** //
     // *** CONSTANTS *** //
     // ***************** //
@@ -115,6 +116,7 @@ abstract contract Market is MarketERC20, Ownable {
     error ExchangeRateNotValid();
     error AllowanceNotValid();
     error MinBorrowAmountNotMet();
+    error MinCollateralAmountNotMet();
 
     // ************** //
     // *** EVENTS *** //
@@ -209,6 +211,8 @@ abstract contract Market is MarketERC20, Ownable {
     /// @param _totalBorrowCap max amount that can be borrowed from the contract
     /// @param _collateralizationRate the new collateralization rate value (75000 is 75%)
     /// @param _liquidationCollateralizationRate the new liquidation collateralization rate value (75000 is 75%)
+    /// @param _minBorrowAmount the new minimum borrow amount
+    /// @param _minCollateralAmount the new minimum collateral amount
     function setMarketConfig(
         ITapiocaOracle _oracle,
         bytes calldata _oracleData,
@@ -219,7 +223,8 @@ abstract contract Market is MarketERC20, Ownable {
         uint256 _totalBorrowCap,
         uint256 _collateralizationRate,
         uint256 _liquidationCollateralizationRate,
-        uint256 _minBorrowAmount
+        uint256 _minBorrowAmount,
+        uint256 _minCollateralAmount
     ) external onlyOwner {
         if (address(_oracle) != address(0)) {
             oracle = _oracle;
@@ -286,6 +291,11 @@ abstract contract Market is MarketERC20, Ownable {
         if (_minBorrowAmount > 0) {
             minBorrowAmount = _minBorrowAmount;
             emit ValueUpdated(9, _minBorrowAmount);
+        }
+
+        if (_minCollateralAmount > 0) {
+            minCollateralAmount = _minCollateralAmount;
+            emit ValueUpdated(10, _minCollateralAmount);
         }
     }
 
