@@ -9,7 +9,9 @@ export const DEPLOYMENT_NAMES = {
     USDO_FLASHLOAN_HELPER: 'USDO_FLASHLOAN_HELPER',
     USDO_HELPER: 'USDO_HELPER',
     SIMPLE_LEVERAGE_EXECUTOR: 'SIMPLE_LEVERAGE_EXECUTOR',
+    SGL_GLP_LEVERAGE_EXECUTOR: 'SGL_GLP_LEVERAGE_EXECUTOR',
     MARKET_HELPER: 'MARKET_HELPER',
+    MARKET_LIQUIDATOR_RECEIVER: 'MARKET_LIQUIDATOR_RECEIVER',
     YB_USDO_ASSET_WITHOUT_STRATEGY: 'YB_USDO_ASSET_WITHOUT_STRATEGY',
     YB_SDAI_ASSET_WITHOUT_STRATEGY: 'YB_SDAI_ASSET_WITHOUT_STRATEGY',
     YB_SGLP_ASSET_WITHOUT_STRATEGY: 'YB_SGLP_ASSET_WITHOUT_STRATEGY',
@@ -34,6 +36,7 @@ export const DEPLOYMENT_NAMES = {
     SGL_BORROW_MODULE: 'SGL_BORROW_MODULE',
     SGL_COLLATERAL_MODULE: 'SGL_COLLATERAL_MODULE',
     SGL_LEVERAGE_MODULE: 'SGL_LEVERAGE_MODULE',
+    SGL_INIT: 'SGL_INIT',
     // BB
     BB_MT_ETH_MARKET: 'BB_MT_ETH_MARKET',
     BB_T_RETH_MARKET: 'BB_T_RETH_MARKET',
@@ -57,10 +60,13 @@ type TBBMarketConfig = {
     debtRateMax: BigNumberish;
     collateralizationRate: BigNumberish;
     liquidationCollateralizationRate: BigNumberish;
+    totalBorrowCap: BigNumberish;
 };
 type TSGLMarketConfig = {
     collateralizationRate: BigNumberish;
     liquidationCollateralizationRate: BigNumberish;
+    minimumInterestPerSecond: BigNumberish;
+    maximumInterestPerSecond: BigNumberish;
 };
 type TPostLbp = {
     [key in EChainID]?: {
@@ -87,29 +93,33 @@ const marketConfigArb: TPostLbp[EChainID] = {
     },
     mtEthMarketConfig: {
         debtRateAgainstEth: 0,
-        debtRateMin: 0, // Set in Penrose contract
-        debtRateMax: 0,
-        collateralizationRate: 85_000, // 85%
-        liquidationCollateralizationRate: 90_000, //  91%
+        debtRateMin: 0,
+        debtRateMax: 0, // ethers.utils.parseEther('0.08')
+        collateralizationRate: 82_000,
+        liquidationCollateralizationRate: 85_000,
+        totalBorrowCap: ethers.utils.parseEther('31000000'), // 31_000_000
     },
     tRethMarketConfig: {
-        debtRateAgainstEth: ethers.utils.parseEther('0.15'), // 15%
+        debtRateAgainstEth: ethers.utils.parseEther('0.5'), // 50 %
         debtRateMin: ethers.utils.parseEther('0.1'), // 10%
         debtRateMax: ethers.utils.parseEther('0.15'), // 15%
-        collateralizationRate: 85_000, // 87%
-        liquidationCollateralizationRate: 90_000, // 93%
+        collateralizationRate: 82_000,
+        liquidationCollateralizationRate: 85_000,
+        totalBorrowCap: ethers.utils.parseEther('4200000'), // 4_200_000
     },
     twSTETHMarketConfig: {
-        debtRateAgainstEth: ethers.utils.parseEther('0.15'), // 15%
+        debtRateAgainstEth: ethers.utils.parseEther('0.5'), // 50 %
         debtRateMin: ethers.utils.parseEther('0.1'), // 10%
         debtRateMax: ethers.utils.parseEther('0.15'), // 15%
-        collateralizationRate: 85_000,
-        liquidationCollateralizationRate: 90_000,
+        collateralizationRate: 82_000,
+        liquidationCollateralizationRate: 85_000,
+        totalBorrowCap: ethers.utils.parseEther('4100000'), // 4_100_000
     },
-
     tSGlpMarketConfig: {
-        collateralizationRate: 85_000, // 85%
-        liquidationCollateralizationRate: 90_000, // 90%
+        collateralizationRate: 80_000,
+        liquidationCollateralizationRate: 83_000,
+        minimumInterestPerSecond: 951293760, // 3%
+        maximumInterestPerSecond: 15854896000, // 50%
     },
 };
 
@@ -117,13 +127,15 @@ const marketConfigMainnet: TPostLbp[EChainID] = {
     tSdaiMarketConfig: {
         collateralizationRate: 98_000, // 98%
         liquidationCollateralizationRate: 99_000, // 99%
+        minimumInterestPerSecond: 0,
+        maximumInterestPerSecond: 0,
     },
 };
 const POST_LBP: TPostLbp = {
     [EChainID.ARBITRUM]: {
         sGLP: '0x5402B5F40310bDED796c7D0F3FF6683f5C0cFfdf',
         glpStrat: {
-            gmxRewardRouter: '0xA906F338CB21815cBc4Bc87ace9e68c87eF8d8F1',
+            gmxRewardRouter: '0x159854e14A862Df9E39E1D128b8e5F70B4A3cE9B',
             glpRewardRouter: '0xB95DB5B167D75e6d04227CfFFA61069348d271F5',
         },
         ...marketConfigArb,
@@ -151,27 +163,6 @@ const POST_LBP: TPostLbp = {
 };
 
 POST_LBP['31337' as EChainID] = POST_LBP[EChainID.ARBITRUM]; // Copy from Arbitrum
-
-type TUSDOUniswapPool = {
-    [key in EChainID]?: {
-        ETH_AMOUNT_TO_MINT_FOR_USDC_POOL: BigNumber;
-        ETH_AMOUNT_TO_MINT_FOR_DAI_POOL: BigNumber;
-        EXTRA_ETH_AMOUNT_TO_SEED_SGL_YB_ASSET: BigNumber;
-    };
-};
-
-const USDO_UNISWAP_POOL: TUSDOUniswapPool = {
-    [EChainID.ARBITRUM]: {
-        ETH_AMOUNT_TO_MINT_FOR_USDC_POOL: ethers.utils.parseEther('0'),
-        ETH_AMOUNT_TO_MINT_FOR_DAI_POOL: ethers.utils.parseEther('0'),
-        EXTRA_ETH_AMOUNT_TO_SEED_SGL_YB_ASSET: ethers.utils.parseEther('0.001'),
-    },
-    [EChainID.ARBITRUM_SEPOLIA]: {
-        ETH_AMOUNT_TO_MINT_FOR_USDC_POOL: ethers.utils.parseEther('1'),
-        ETH_AMOUNT_TO_MINT_FOR_DAI_POOL: ethers.utils.parseEther('1'),
-        EXTRA_ETH_AMOUNT_TO_SEED_SGL_YB_ASSET: ethers.utils.parseEther('0.001'),
-    },
-};
 
 type TMisc = {
     [key in EChainID]?: {
@@ -201,6 +192,5 @@ const MISC: TMisc = {
 
 export const DEPLOY_CONFIG = {
     POST_LBP,
-    USDO_UNISWAP_POOL,
     MISC,
 };

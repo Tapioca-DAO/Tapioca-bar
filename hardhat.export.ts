@@ -75,7 +75,7 @@ const config: HardhatUserConfig & { dodoc: any } = {
                     evmVersion: 'paris', // Latest before Shanghai
                     optimizer: {
                         enabled: true,
-                        runs: 10,
+                        runs: 500,
                     },
                 },
             },
@@ -85,7 +85,7 @@ const config: HardhatUserConfig & { dodoc: any } = {
                     evmVersion: 'paris', // Latest before Shanghai
                     optimizer: {
                         enabled: true,
-                        runs: 500,
+                        runs: 400,
                     },
                 },
             },
@@ -180,6 +180,7 @@ const config: HardhatUserConfig & { dodoc: any } = {
     },
     etherscan: {
         apiKey: {
+            arbitrumOne: process.env.SCAN_API_KEY ?? '',
             sepolia: process.env.SCAN_API_KEY ?? '',
             arbitrumSepolia: process.env.SCAN_API_KEY ?? '',
             optimismSepolia: process.env.SCAN_API_KEY ?? '',

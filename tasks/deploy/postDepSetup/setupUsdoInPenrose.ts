@@ -9,7 +9,12 @@ export async function setupUsdoInPenrose(params: TPostDeployParams) {
     const penroseDep = deployed.find(
         (e) => e.name === DEPLOYMENT_NAMES.PENROSE,
     )!;
-    const usdoDep = deployed.find((e) => e.name === DEPLOYMENT_NAMES.USDO)!;
+    const usdoDep = loadLocalContract(
+        hre,
+        hre.SDK.chainInfo.chainId,
+        DEPLOYMENT_NAMES.USDO,
+        tag,
+    );
 
     const penrose = await hre.ethers.getContractAt(
         'Penrose',

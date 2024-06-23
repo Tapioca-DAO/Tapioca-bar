@@ -4,6 +4,7 @@ import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { loadLocalContract } from 'tapioca-sdk';
 import { deploy__LoadDeployments_Generic } from '../1-1-deployPostLbp';
 import { DEPLOYMENT_NAMES } from '../DEPLOY_CONFIG';
+import { BigNumberish } from 'ethers';
 
 /**
  * @notice - Deposit USDO and add SGL asset in YieldBox
@@ -15,8 +16,10 @@ export async function depositUsdoYbAndAddSgl(params: {
     calls: TapiocaMulticall.CallStruct[];
     tag: string;
     isTestnet: boolean;
+    amount: BigNumberish;
 }) {
-    const { hre, multicallAddr, marketName, calls, tag, isTestnet } = params;
+    const { hre, multicallAddr, marketName, calls, tag, isTestnet, amount } =
+        params;
     const usdoStrat = loadLocalContract(
         hre,
         hre.SDK.chainInfo.chainId,
@@ -37,20 +40,26 @@ export async function depositUsdoYbAndAddSgl(params: {
         loadLocalContract(hre, hre.SDK.chainInfo.chainId, marketName, tag)
             .address,
     );
-    const { yieldBox: ybAddress } = deploy__LoadDeployments_Generic({
-        hre,
-        tag,
-        isTestnet,
-    });
+    const { yieldBox: ybAddress, pearlmit: pearlmitAddr } =
+        deploy__LoadDeployments_Generic({
+            hre,
+            tag,
+            isTestnet,
+        });
 
+    const pearlmit = await hre.ethers.getContractAt('Pearlmit', pearlmitAddr);
     const yieldBox = (await hre.ethers.getContractAt(
         'tapioca-periph/interfaces/yieldbox/IYieldBox.sol:IYieldBox',
         ybAddress,
     )) as IYieldBox;
 
-    const amount = hre.ethers.utils.parseEther('1');
     const assetId = await yieldBox.ids(1, usdo.address, usdoStrat, 0);
     const shares = await yieldBox.toShare(assetId, amount, false);
+
+    console.log(
+        '[+] Depositing USDO in YieldBox',
+        hre.ethers.utils.formatEther(amount),
+    );
 
     calls.push(
         // usdo.approve(yieldBox.address, amount);
@@ -83,6 +92,28 @@ export async function depositUsdoYbAndAddSgl(params: {
             ),
             allowFailure: false,
         },
+        // yieldbox.setApprovalForAll(pearlmit.address, true);
+        {
+            target: yieldBox.address,
+            callData: yieldBox.interface.encodeFunctionData(
+                'setApprovalForAll',
+                [pearlmit.address, true],
+            ),
+            allowFailure: false,
+        },
+        // pearlmit.approve(20, usdo.address, 0, sglMarket.address, shares, blockTimestamp + 1800);
+        {
+            target: pearlmit.address,
+            callData: pearlmit.interface.encodeFunctionData('approve', [
+                1155,
+                yieldBox.address,
+                assetId,
+                sglMarket.address,
+                shares,
+                (await hre.ethers.provider.getBlock('latest')).timestamp + 1800,
+            ]),
+            allowFailure: false,
+        },
         // sglMarket.lend(usdo.address, asset, amount);
         {
             target: sglMarket.address,
@@ -101,10 +132,12 @@ export async function depositSglAssetYB(params: {
     hre: HardhatRuntimeEnvironment;
     tokenAddr: string;
     stratName: string;
+    amount: BigNumberish;
     tapiocaMulticallAddr: string;
     calls: TapiocaMulticall.CallStruct[];
     tag: string;
     isTestnet: boolean;
+    freeMint?: boolean;
 }) {
     const {
         hre,
@@ -114,16 +147,23 @@ export async function depositSglAssetYB(params: {
         calls,
         tag,
         isTestnet,
+        freeMint,
+        amount,
     } = params;
 
-    const { yieldBox: ybAddress } = deploy__LoadDeployments_Generic({
+    const { yieldBox: ybAddress, pearlmit } = deploy__LoadDeployments_Generic({
         hre,
         tag,
         isTestnet,
     });
 
+    const pearlmitContract = await hre.ethers.getContractAt(
+        'Pearlmit',
+        pearlmit,
+    );
+
     const yieldboxContract = await hre.ethers.getContractAt(
-        'YieldBox',
+        'tapioca-periph/interfaces/yieldbox/IYieldBox.sol:IYieldBox',
         ybAddress,
     );
     const strat = loadLocalContract(
@@ -135,7 +175,10 @@ export async function depositSglAssetYB(params: {
 
     const tokenContract = await hre.ethers.getContractAt('TOFT', tokenAddr);
 
-    if (isTestnet) {
+    const blockTimestamp = await (
+        await hre.ethers.provider.getBlock('latest')
+    ).timestamp;
+    if (isTestnet && freeMint) {
         console.log('[+] Testnet | Free minting and wrapping tAsset');
         const erc20Addr = await tokenContract.erc20();
         const erc20 = await hre.ethers.getContractAt('ERC20Mock', erc20Addr);
@@ -160,9 +203,24 @@ export async function depositSglAssetYB(params: {
             {
                 target: erc20Addr,
                 callData: erc20.interface.encodeFunctionData('approve', [
-                    tokenAddr,
+                    pearlmit,
                     amountToMint,
                 ]),
+                allowFailure: false,
+            },
+            {
+                target: pearlmit,
+                callData: pearlmitContract.interface.encodeFunctionData(
+                    'approve',
+                    [
+                        20,
+                        erc20Addr,
+                        0,
+                        tokenAddr,
+                        amountToMint,
+                        blockTimestamp + 1800,
+                    ],
+                ),
                 allowFailure: false,
             },
             {
@@ -178,20 +236,25 @@ export async function depositSglAssetYB(params: {
     }
 
     const asset = await yieldboxContract.ids(1, tokenAddr, strat, 0);
-    const amount = await tokenContract.balanceOf(tapiocaMulticallAddr);
-    console.log(
-        '[+] Depositing asset in YieldBox',
-        await tokenContract.name(),
-        tokenAddr,
-        hre.ethers.utils.formatEther(amount),
-    );
 
     calls.push(
         {
             target: tokenAddr,
             callData: tokenContract.interface.encodeFunctionData('approve', [
+                pearlmit,
+                amount,
+            ]),
+            allowFailure: false,
+        },
+        {
+            target: pearlmit,
+            callData: pearlmitContract.interface.encodeFunctionData('approve', [
+                20,
+                tokenAddr,
+                0,
                 ybAddress,
                 amount,
+                blockTimestamp + 1800,
             ]),
             allowFailure: false,
         },

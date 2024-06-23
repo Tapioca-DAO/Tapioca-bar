@@ -15,6 +15,7 @@ export const buildOrigins = async (
         collateralStrategy: string;
         oracle: string;
         collateralizationRate: BigNumberish;
+        penrose: string;
     },
 ): Promise<IDeployerVMAdd<Origins__factory>> => {
     const { deploymentName } = params;
@@ -49,6 +50,7 @@ export const buildOrigins = async (
             params.oracle,
             exchangeRatePrecision,
             params.collateralizationRate,
+            params.penrose,
         ],
         dependsOn: [],
     };

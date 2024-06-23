@@ -14,6 +14,7 @@ import { setupRegisterMCInPenrose } from './postDepSetup/setupRegisterMCInPenros
 import { setupUsdoFlashloanHelperInUsdo } from './postDepSetup/setupUsdoFlashloanHelperInUsdo';
 import { setupUsdoInPenrose } from './postDepSetup/setupUsdoInPenrose';
 import { setupDepositYbAssets } from './postDepSetup/setupDepositYbAssets';
+import { setupPenroseMainAssets } from './postDepSetup/setupPenroseMainAssets';
 
 export type TPostDeployParams = {
     hre: HardhatRuntimeEnvironment;
@@ -59,7 +60,7 @@ export async function setupPostLbp1(params: TTapiocaDeployerVmPass<object>) {
     await setupRegisterBigBangEthMarket(setupParams1);
     await setupUsdoFlashloanHelperInUsdo(setupParams1);
     await setupCreateYBAssets(setupParams1);
-    await VM.executeMulticall(calls1, { gasLimit: 20_000_000 });
+    await VM.executeMulticall(calls1, { gasLimit: 10_000_000 });
 
     // YB Asset IDs needs to be created before this
     const calls2: TapiocaMulticall.CallStruct[] = [];
@@ -67,11 +68,12 @@ export async function setupPostLbp1(params: TTapiocaDeployerVmPass<object>) {
         ...setupParams1,
         calls: calls2,
     };
-    await setupDepositYbAssets(setupParams2);
+    await setupPenroseMainAssets(setupParams2);
+    await setupDepositYbAssets(params, setupParams2);
     await setupInitAndRegisterMarket(setupParams2);
     await setupRegisterBBAsMinterBurnerInUsdo(setupParams2);
 
-    await VM.executeMulticall(calls2, { gasLimit: 20_000_000 });
+    await VM.executeMulticall(calls2, { gasLimit: 10_000_000 });
 
     console.log('[+] Post deploy task completed');
 }

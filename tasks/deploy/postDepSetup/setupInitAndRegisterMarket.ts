@@ -84,6 +84,7 @@ export async function setupInitAndRegisterMarket(params: TPostDeployParams) {
                 liquidationCollateralizationRate:
                     mtEthDeployConf.liquidationCollateralizationRate,
                 exchangeRatePrecision: (1e18).toString(),
+                totalBorrowCap: mtEthDeployConf.totalBorrowCap,
                 leverageExecutorAddr,
                 penroseAddr,
                 yieldBox,
@@ -109,6 +110,7 @@ export async function setupInitAndRegisterMarket(params: TPostDeployParams) {
                 liquidationCollateralizationRate:
                     tRethDeployConf.liquidationCollateralizationRate,
                 exchangeRatePrecision: (1e18).toString(),
+                totalBorrowCap: tRethDeployConf.totalBorrowCap,
                 leverageExecutorAddr,
                 penroseAddr,
                 yieldBox,
@@ -134,6 +136,7 @@ export async function setupInitAndRegisterMarket(params: TPostDeployParams) {
                 liquidationCollateralizationRate:
                     tWSTETHDeployConf.liquidationCollateralizationRate,
                 exchangeRatePrecision: (1e18).toString(),
+                totalBorrowCap: tWSTETHDeployConf.totalBorrowCap,
                 leverageExecutorAddr,
                 penroseAddr,
                 yieldBox,
@@ -161,14 +164,19 @@ export async function setupInitAndRegisterMarket(params: TPostDeployParams) {
                 marketName: DEPLOYMENT_NAMES.SGL_S_DAI_MARKET,
                 collateralAddr: tSdai,
                 oracleAddr: tSdaiMarketOracle,
-                strategyDepName:
-                    DEPLOYMENT_NAMES.YB_SDAI_ASSET_WITHOUT_STRATEGY,
+                strategyDepName: isTestnet
+                    ? DEPLOYMENT_NAMES.YB_SDAI_ASSET_WITHOUT_STRATEGY
+                    : DEPLOYMENT_NAMES.YB_SDAI_ASSET_WITH_STRATEGY,
                 usdoStrategy: usdoStrategy.address,
                 usdoAddr: usdo,
                 collateralizationRate: tSdaiDeployConf.collateralizationRate,
                 liquidationCollateralizationRate:
                     tSdaiDeployConf.liquidationCollateralizationRate,
                 exchangeRatePrecision: (1e18).toString(),
+                minimumInterestPerSecond:
+                    tSdaiDeployConf.minimumInterestPerSecond,
+                maximumInterestPerSecond:
+                    tSdaiDeployConf.maximumInterestPerSecond,
                 leverageExecutorAddr,
                 penroseAddr,
                 yieldBox,
@@ -183,6 +191,13 @@ export async function setupInitAndRegisterMarket(params: TPostDeployParams) {
             tag,
             isTestnet,
         });
+        const glpLeverageExecutor = loadLocalContract(
+            hre,
+            hre.SDK.eChainId,
+            DEPLOYMENT_NAMES.SGL_GLP_LEVERAGE_EXECUTOR,
+            tag,
+        );
+
         // SGLP
         {
             const tSglpDeployConf =
@@ -194,15 +209,20 @@ export async function setupInitAndRegisterMarket(params: TPostDeployParams) {
                 marketName: DEPLOYMENT_NAMES.SGL_S_GLP_MARKET,
                 collateralAddr: tSGLP,
                 oracleAddr: tSGLPMarketOracle,
-                strategyDepName:
-                    DEPLOYMENT_NAMES.YB_SGLP_ASSET_WITHOUT_STRATEGY,
+                strategyDepName: isTestnet
+                    ? DEPLOYMENT_NAMES.YB_SGLP_ASSET_WITHOUT_STRATEGY
+                    : DEPLOYMENT_NAMES.YB_SGLP_ASSET_WITH_STRATEGY,
                 usdoStrategy: usdoStrategy.address,
                 usdoAddr: usdo,
                 collateralizationRate: tSglpDeployConf.collateralizationRate,
                 liquidationCollateralizationRate:
                     tSglpDeployConf.liquidationCollateralizationRate,
                 exchangeRatePrecision: (1e18).toString(),
-                leverageExecutorAddr,
+                leverageExecutorAddr: glpLeverageExecutor.address,
+                minimumInterestPerSecond:
+                    tSglpDeployConf.minimumInterestPerSecond,
+                maximumInterestPerSecond:
+                    tSglpDeployConf.maximumInterestPerSecond,
                 penroseAddr,
                 yieldBox,
                 interestHelper,
@@ -228,6 +248,7 @@ async function initBBMarket(
         liquidationCollateralizationRate: BigNumberish;
         debtRateMin: BigNumberish;
         debtRateMax: BigNumberish;
+        totalBorrowCap: BigNumberish;
     },
 ) {
     const {
@@ -247,6 +268,7 @@ async function initBBMarket(
         leverageExecutorAddr,
         liquidationCollateralizationRate,
         oracleAddr,
+        totalBorrowCap,
     } = params;
 
     const marketDep = deployed.find((e) => e.name === marketName)!;
@@ -328,10 +350,36 @@ async function initBBMarket(
             params.tag,
         );
 
+        const penrose = await hre.ethers.getContractAt('Penrose', penroseAddr);
+
+        const setDebtHelperCall = market.interface.encodeFunctionData(
+            'setDebtRateHelper',
+            [debtHelper.address],
+        );
+        const addrZero = hre.ethers.constants.AddressZero;
+        const setMarketConfigCall = market.interface.encodeFunctionData(
+            'setMarketConfig',
+            [
+                addrZero,
+                addrZero,
+                addrZero,
+                addrZero,
+                addrZero,
+                addrZero,
+                totalBorrowCap, // Total borrow cap
+                addrZero,
+                addrZero,
+                addrZero,
+                addrZero,
+            ],
+        );
+
         calls.push({
-            target: market.address,
-            callData: market.interface.encodeFunctionData('setDebtRateHelper', [
-                debtHelper.address,
+            target: penrose.address,
+            callData: penrose.interface.encodeFunctionData('executeMarketFn', [
+                [market.address, market.address],
+                [setDebtHelperCall, setMarketConfigCall],
+                true,
             ]),
             allowFailure: false,
         });
@@ -354,6 +402,8 @@ async function initSGLMarket(
         collateralizationRate: BigNumberish;
         liquidationCollateralizationRate: BigNumberish;
         interestHelper: string;
+        minimumInterestPerSecond: BigNumberish;
+        maximumInterestPerSecond: BigNumberish;
     },
 ) {
     const {
@@ -374,11 +424,20 @@ async function initSGLMarket(
         collateralizationRate,
         liquidationCollateralizationRate,
         interestHelper,
+        minimumInterestPerSecond,
+        maximumInterestPerSecond,
     } = params;
 
     const marketDep = deployed.find((e) => e.name === marketName)!;
     const market = factory.attach(marketDep.address);
     const penrose = await hre.ethers.getContractAt('Penrose', penroseAddr);
+
+    const sglInit = loadLocalContract(
+        hre,
+        hre.SDK.eChainId,
+        DEPLOYMENT_NAMES.SGL_INIT,
+        params.tag,
+    );
 
     if ((await market._penrose()).toLowerCase() !== penroseAddr.toLowerCase()) {
         console.log(`\t[+] Init market ${marketName} ${marketDep.address}`);
@@ -445,7 +504,10 @@ async function initSGLMarket(
 
         calls.push({
             target: market.address,
-            callData: market.interface.encodeFunctionData('init', [sglData]),
+            callData: market.interface.encodeFunctionData('init', [
+                sglInit.address,
+                sglData,
+            ]),
             allowFailure: false,
         });
         const addrZero = hre.ethers.constants.AddressZero;
@@ -453,26 +515,27 @@ async function initSGLMarket(
         console.log(
             `\t[+] Set interest helper ${interestHelper} in market ${marketName}`,
         );
-        console.log(penrose.address);
+
+        const setInterestHelperCall = market.interface.encodeFunctionData(
+            'setSingularityConfig',
+            [
+                addrZero,
+                addrZero,
+                addrZero,
+                addrZero,
+                minimumInterestPerSecond,
+                maximumInterestPerSecond,
+                addrZero,
+                interestHelper,
+                addrZero,
+            ],
+        );
+
         calls.push({
             target: penrose.address,
             callData: penrose.interface.encodeFunctionData('executeMarketFn', [
                 [market.address],
-                [
-                    market.interface.encodeFunctionData(
-                        'setSingularityConfig',
-                        [
-                            addrZero,
-                            addrZero,
-                            addrZero,
-                            addrZero,
-                            addrZero,
-                            addrZero,
-                            addrZero,
-                            interestHelper,
-                        ],
-                    ),
-                ],
+                [setInterestHelperCall],
                 true, // revert on failure
             ]),
             allowFailure: false,

@@ -8,7 +8,7 @@ export const buildSdaiStrategy = async (
     args: Parameters<SDaiStrategy__factory['deploy']>,
 ): Promise<IDeployerVMAdd<SDaiStrategy__factory>> => {
     return {
-        contract: await hre.ethers.getContractFactory('SDaiStrategy'),
+        contract: new SDaiStrategy__factory(hre.ethers.provider.getSigner()),
         deploymentName: DEPLOYMENT_NAMES.YB_SDAI_ASSET_WITH_STRATEGY,
         args,
     };
