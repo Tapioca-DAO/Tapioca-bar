@@ -161,11 +161,15 @@ abstract contract BaseLeverageExecutor is Ownable {
         bytes memory data
     ) internal returns (uint256 amountOut) {
         SLeverageSwapData memory swapData = abi.decode(data, (SLeverageSwapData));
+        address toftTokenOut = tokenOut; // Used later to wrap and send back after swap
 
         amountOut = amountIn; // will be overwritten after `swap`
         // If the tokenIn is a tOFT, unwrap it. Handles ETH and ERC20.
         if (swapData.toftInfo.isTokenInToft) {
             (tokenIn, amountOut) = _handleToftUnwrap(tokenIn, amountIn);
+        }
+        if (swapData.toftInfo.isTokenOutToft) {
+            tokenOut = ITOFT(tokenOut).erc20();
         }
 
         IZeroXSwapper.SZeroXSwapData memory swapperData =
@@ -196,7 +200,7 @@ abstract contract BaseLeverageExecutor is Ownable {
         // If the tokenOut is a tOFT, wrap it. Handles ETH and ERC20.
         // If `sendBack` is true, wrap the `amountOut to` the sender. else, wrap it to this contract.
         if (swapData.toftInfo.isTokenOutToft) {
-            amountOut = _handleToftWrapToSender(sendBack, tokenOut, amountOut);
+            amountOut = _handleToftWrapToSender(sendBack, toftTokenOut, amountOut);
         } else if (sendBack == true) {
             // If the token wasn't sent by the wrap OP, send it as a transfer.
             IERC20(tokenOut).safeTransfer(msg.sender, amountOut);
@@ -249,7 +253,10 @@ abstract contract BaseLeverageExecutor is Ownable {
             // If the tOFT is for an ERC20, wrap it.
             pearlmit.approve(20, toftErc20, 0, tokenOut, amountOut.toUint200(), block.timestamp.toUint48());
             toftErc20.safeApprove(address(pearlmit), amountOut);
-            _amountOut = ITOFT(tokenOut).wrap(address(this), wrapsTo, amountOut);
+
+            _amountOut = ITOFT(tokenOut).wrap(address(this), address(this), amountOut);
+            IERC20(tokenOut).safeTransfer(wrapsTo, _amountOut);
+
             toftErc20.safeApprove(address(pearlmit), 0);
             pearlmit.clearAllowance(address(this), 20, toftErc20, 0);
         }

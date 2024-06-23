@@ -92,7 +92,7 @@ abstract contract Market is MarketERC20, Ownable {
     uint256 internal maxLiquidatorReward = 925e2; // 92.5%
     /// @notice max liquidatable bonus amount
     /// @dev max % added to the amount that can be liquidated
-    uint256 internal liquidationBonusAmount = 5e3; // 5%
+    uint256 internal liquidationBonusAmount = 3e3; // 3%
     /// @notice collateralization rate
     uint256 internal collateralizationRate; // 75%
     /// @notice liquidation collateralization rate

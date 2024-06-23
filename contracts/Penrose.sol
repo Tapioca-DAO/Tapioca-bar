@@ -50,17 +50,17 @@ contract Penrose is Ownable, Pausable, PearlmitHandler {
     /// @notice returns the YieldBox contract
     IYieldBox public immutable yieldBox;
     /// @notice returns the TAP contract
-    IERC20 public immutable tapToken;
+    IERC20 public tapToken;
     /// @notice returns TAP asset id registered in the YieldBox contract
-    uint256 public immutable tapAssetId;
+    uint256 public tapAssetId;
     /// @notice returns USDO contract
     IERC20 public usdoToken;
     /// @notice returns USDO asset id registered in the YieldBox contract
     uint256 public usdoAssetId;
     /// @notice returns the WETH/main contract
-    IERC20 public immutable mainToken;
+    IERC20 public mainToken;
     /// @notice returns WETH/main asset id registered in the YieldBox contract
-    uint256 public immutable mainAssetId;
+    uint256 public mainAssetId;
 
     /// @notice Singularity master contracts
     IPenrose.MasterContract[] public singularityMasterContracts;
@@ -124,7 +124,7 @@ contract Penrose is Ownable, Pausable, PearlmitHandler {
         tapAssetId = _tapAssetId;
         mainAssetId = _mainAssetId;
 
-        bigBangEthDebtRate = 5e15;
+        bigBangEthDebtRate = 8e16;
 
         _transferOwnership(_owner);
     }
@@ -162,6 +162,7 @@ contract Penrose is Ownable, Pausable, PearlmitHandler {
     event ReaccruedMarkets(bool indexed mainMarketIncluded);
     event LogDeploy(address indexed masterContract, bytes data, address indexed cloneAddress);
     event UnregisterContract(address indexed bb);
+    event MainTokensUpdated();
 
     // ************** //
     // *** ERRORS *** //
@@ -324,6 +325,28 @@ contract Penrose is Ownable, Pausable, PearlmitHandler {
             uint256 rewardTokenId = ITwTap(twTap).rewardTokenIndex(address(usdoToken));
             _distributeOnTwTap(sum, rewardTokenId, address(usdoToken), ITwTap(twTap));
         }
+    }
+
+    /**
+     * @notice Set the main token addresses and IDs
+     */
+    function setMainTokens(address _mainToken, uint256 _mainAssetId, address _tapToken, uint256 _tapTokenAssetId)
+        external
+        onlyOwner
+    {
+        if (_mainToken != address(0)) {
+            mainToken = IERC20(_mainToken);
+        }
+        if (_mainAssetId != 0) {
+            mainAssetId = _mainAssetId;
+        }
+        if (_tapToken != address(0)) {
+            tapToken = IERC20(_tapToken);
+        }
+        if (_tapTokenAssetId != 0) {
+            tapAssetId = _tapTokenAssetId;
+        }
+        emit MainTokensUpdated();
     }
 
     /// @notice sets the Cluster address

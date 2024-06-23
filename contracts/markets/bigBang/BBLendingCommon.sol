@@ -100,10 +100,15 @@ contract BBLendingCommon is BBCommon {
         userBorrowPart[to] -= part;
 
         // @dev amount includes the opening & accrued fees
-        yieldBox.withdraw(assetId, from, address(this), amount, 0);
+        uint256 _share = yieldBox.toShare(assetId, amount, false);
+        bool isErr = pearlmit.transferFromERC1155(from, address(this), address(yieldBox), assetId, _share);
+        if (isErr) {
+            revert TransferFailed();
+        }
+        (uint256 amountOut,) = yieldBox.withdraw(assetId, address(this), address(this), 0, _share);
 
         // @dev burn USDO
-        IUsdo(address(asset)).burn(address(this), amount);
+        IUsdo(address(asset)).burn(address(this), amountOut);
 
         emit LogRepay(from, to, amount, part);
     }
