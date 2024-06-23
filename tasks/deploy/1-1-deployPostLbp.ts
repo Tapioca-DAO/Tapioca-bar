@@ -30,6 +30,7 @@ import { buildUSDOModules } from 'tasks/deployBuilds/buildUSDOModules';
 import { buildUsdoHelper } from 'tasks/deployBuilds/buildUsdoHelper';
 import { setupPostLbp1 } from './1-1-setupPostLbp';
 import { DEPLOYMENT_NAMES, DEPLOY_CONFIG } from './DEPLOY_CONFIG';
+import { buildMarketLiquidatorReceiver } from 'tasks/deployBuilds/buildMarketLiquidatorReceiver';
 
 /**
  * @notice Should be called after TapiocaZ `postLbp` task
@@ -128,6 +129,12 @@ async function tapiocaDeployTask(params: TTapiocaDeployerVmPass<object>) {
         yieldBox,
         zeroXSwapper,
     } = deploy__LoadDeployments_Generic({ hre, tag, isTestnet });
+
+    VM.add(
+        await buildMarketLiquidatorReceiver(hre, [
+            DEPLOY_CONFIG.MISC[hre.SDK.eChainId]!.WETH!,
+        ]),
+    );
 
     /**
      * USDO
