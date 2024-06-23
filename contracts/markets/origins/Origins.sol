@@ -12,6 +12,7 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 // Tapioca
 import {IYieldBox} from "tapioca-periph/interfaces/yieldbox/IYieldBox.sol";
+import {IPenrose} from "tapioca-periph/interfaces/bar/IPenrose.sol";
 import {IUsdo} from "tapioca-periph/interfaces/oft/IUsdo.sol";
 import {SafeApprove} from "../../libraries/SafeApprove.sol";
 import {MarketStateView} from "../MarketStateView.sol";
@@ -72,7 +73,8 @@ contract Origins is Ownable, Market, MarketStateView, ReentrancyGuard {
         uint256 _collateralId,
         ITapiocaOracle _oracle,
         uint256 _exchangeRatePrecision,
-        uint256 _collateralizationRate
+        uint256 _collateralizationRate,
+        IPenrose _penrose
     ) MarketERC20("Origins") {
         allowedParticipants[_owner] = true;
 
@@ -88,6 +90,7 @@ contract Origins is Ownable, Market, MarketStateView, ReentrancyGuard {
         collateral = _collateral;
         collateralId = _collateralId;
         oracle = _oracle;
+        penrose = _penrose;
         updateExchangeRate();
 
         EXCHANGE_RATE_PRECISION = _exchangeRatePrecision > 0 ? _exchangeRatePrecision : 1e18;
@@ -97,7 +100,6 @@ contract Origins is Ownable, Market, MarketStateView, ReentrancyGuard {
 
         rateValidDuration = 24 hours;
 
-        conservator = _owner;
         _transferOwnership(_owner);
     }
 
@@ -117,7 +119,7 @@ contract Origins is Ownable, Market, MarketStateView, ReentrancyGuard {
     /// @dev can only be called by the conservator
     /// @param val the new value
     function updatePause(PauseType _type, bool val) external {
-        require(msg.sender == conservator, "Market: unauthorized");
+        require(penrose.cluster().hasRole(msg.sender, keccak256("PAUSABLE")) || msg.sender == owner(), "Market: unauthorized");
         require(val != pauseOptions[_type], "Market: same state");
         emit PausedUpdated(_type, pauseOptions[_type], val);
         pauseOptions[_type] = val;
@@ -126,7 +128,7 @@ contract Origins is Ownable, Market, MarketStateView, ReentrancyGuard {
     /// @notice updates the pause state of the contract for all types
     /// @param val the new val
     function updatePauseAll(bool val) external {
-        require(msg.sender == conservator, "Market: unauthorized");
+        require(penrose.cluster().hasRole(msg.sender, keccak256("PAUSABLE")) || msg.sender == owner(), "Market: unauthorized");
 
         pauseOptions[PauseType.Borrow] = val;
         pauseOptions[PauseType.Repay] = val;

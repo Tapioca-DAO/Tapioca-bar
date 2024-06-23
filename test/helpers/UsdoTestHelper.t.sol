@@ -144,7 +144,8 @@ contract UsdoTestHelper is TestHelper, TestUtils {
         uint256 collateralId,
         ITapiocaOracle oracle,
         uint256 exchangePrecision,
-        uint256 collateralizationRate
+        uint256 collateralizationRate,
+        address penrose
     ) public returns (Origins) {
         return new Origins(
             owner,
@@ -155,7 +156,8 @@ contract UsdoTestHelper is TestHelper, TestUtils {
             collateralId,
             oracle,
             exchangePrecision,
-            collateralizationRate
+            collateralizationRate,
+            IPenrose(penrose)
         );
     }
 
