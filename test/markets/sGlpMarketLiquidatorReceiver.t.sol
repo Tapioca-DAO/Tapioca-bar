@@ -96,7 +96,7 @@ contract sGlpMarketLiquidatorReceiverTest is BaseLiquidatorReceiverTest {
             swapperTarget = new ZeroXSwapperMockTarget();
             swapper = new ZeroXSwapper(address(swapperTarget), ICluster(address(cluster)), address(this));
 
-            receiver = new sGlpMarketLiquidatorReceiver(address(weth), address(swapper), IGmxRewardRouterV2(address(gmxMock)), IGmxGlpManager(address(gmxMock)));
+            receiver = new sGlpMarketLiquidatorReceiver(address(weth), ICluster(address(cluster)), address(swapper), IGmxRewardRouterV2(address(gmxMock)), IGmxGlpManager(address(gmxMock)));
         }
 
         {
