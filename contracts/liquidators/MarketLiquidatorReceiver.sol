@@ -4,6 +4,7 @@ pragma solidity 0.8.22;
 // External
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import {ICluster} from "tapioca-periph/interfaces/periph/ICluster.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 // Tapioca
@@ -29,6 +30,7 @@ contract MarketLiquidatorReceiver is IMarketLiquidatorReceiver, Ownable, Reentra
     address public swapper;
     address public immutable weth;
     mapping(address => bool) public allowedParticipants;
+    ICluster public immutable cluster;
 
     event SwapperAssigned(address indexed oldSwapper, address indexed swapper);
     event AllowedParticipantAssigned(address indexed participant, bool status);
@@ -39,12 +41,15 @@ contract MarketLiquidatorReceiver is IMarketLiquidatorReceiver, Ownable, Reentra
     error SwapFailed();
     error NotValid();
 
-    constructor(address _weth, address _swapper) {
+    constructor(address _weth, ICluster _cluster, address _swapper) {
         if (_weth == address(0)) revert NotValid();
         if (_swapper == address(0)) revert NotValid();
+        if (address(_cluster) == address(0)) revert NotValid();
         
         weth = _weth;
+        emit SwapperAssigned(swapper, _swapper);
         swapper = _swapper;
+        cluster = _cluster;
     }
 
     struct SSwapData {
@@ -73,6 +78,8 @@ contract MarketLiquidatorReceiver is IMarketLiquidatorReceiver, Ownable, Reentra
     ) external nonReentrant returns (bool) {
         // Check caller
         if (!allowedParticipants[initiator]) revert NotAuthorized();
+        if (!cluster.isWhitelisted(0, msg.sender)) revert WhitelistError();
+        if (!cluster.isWhitelisted(0, address(this))) revert WhitelistError();
 
         // check if contract received enough collateral
         uint256 collateralBalance = IERC20(tokenIn).balanceOf(address(this));

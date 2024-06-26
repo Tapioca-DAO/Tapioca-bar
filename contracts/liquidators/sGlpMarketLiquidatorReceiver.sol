@@ -12,6 +12,7 @@ import {IGmxRewardRouterV2} from "tapioca-periph/interfaces/external/gmx/IGmxRew
 import {IGmxGlpManager} from "tapioca-periph/interfaces/external/gmx/IGmxGlpManager.sol";
 import {IZeroXSwapper} from "tapioca-periph/interfaces/periph/IZeroXSwapper.sol";
 import {IWeth9} from "tapioca-periph/interfaces/external/weth/IWeth9.sol";
+import {ICluster} from "tapioca-periph/interfaces/periph/ICluster.sol";
 import {ITOFT} from "tapioca-periph/interfaces/oft/ITOFT.sol";
 
 /*
@@ -31,9 +32,11 @@ contract sGlpMarketLiquidatorReceiver is IMarketLiquidatorReceiver, Ownable, Ree
     address public swapper;
     address public immutable weth;
     mapping(address => bool) public allowedParticipants;
-
+    ICluster public immutable cluster;
     IGmxRewardRouterV2 private immutable glpRewardRouter;
     IGmxGlpManager private immutable glpManager;
+
+    address public constant USDC = 0xaf88d065e77c8cC2239327C5EDb3A432268e5831;
 
     event SwapperAssigned(address indexed oldSwapper, address indexed swapper);
     event AllowedParticipantAssigned(address indexed participant, bool status);
@@ -45,14 +48,17 @@ contract sGlpMarketLiquidatorReceiver is IMarketLiquidatorReceiver, Ownable, Ree
     error SellGlpFailed();
     error NotValid();
 
-    constructor(address _weth, address _swapper, IGmxRewardRouterV2 _glpRewardRouter, IGmxGlpManager _glpManager) {
+    constructor(address _weth, ICluster _cluster, address _swapper, IGmxRewardRouterV2 _glpRewardRouter, IGmxGlpManager _glpManager) {
         if (_weth == address(0)) revert NotValid();
         if (_swapper == address(0)) revert NotValid();
+        if (address(_cluster) == address(0)) revert NotValid();
         if (address(_glpRewardRouter) == address(0)) revert NotValid();
         if (address(_glpManager) == address(0)) revert NotValid();
         
         weth = _weth;
+        emit SwapperAssigned(swapper, _swapper);
         swapper = _swapper;
+        cluster = _cluster;
         glpManager = _glpManager;
         glpRewardRouter = _glpRewardRouter;
     }
@@ -73,7 +79,7 @@ contract sGlpMarketLiquidatorReceiver is IMarketLiquidatorReceiver, Ownable, Ree
     /// @notice returns the swapper sell token
     /// @param marketToken the market's TOFT collateral
     function querySellToken(address marketToken) external pure returns(address) {
-        return 0xaf88d065e77c8cC2239327C5EDb3A432268e5831;
+        return USDC;
     }
 
     /// @notice action performed during the liquidation process
@@ -91,6 +97,8 @@ contract sGlpMarketLiquidatorReceiver is IMarketLiquidatorReceiver, Ownable, Ree
     ) external nonReentrant returns (bool) {
         // Check caller
         if (!allowedParticipants[initiator]) revert NotAuthorized();
+        if (!cluster.isWhitelisted(0, msg.sender)) revert WhitelistError();
+        if (!cluster.isWhitelisted(0, address(this))) revert WhitelistError();
 
         // check if contract received enough collateral
         uint256 collateralBalance = IERC20(tokenIn).balanceOf(address(this));
