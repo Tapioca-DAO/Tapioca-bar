@@ -36,9 +36,14 @@ contract SGLCollateral is SGLLendingCommon {
         if (share == 0) {
             share = yieldBox.toShare(collateralId, amount, false);
         }
+        if (amount == 0) {
+            amount = yieldBox.toAmount(collateralId, share, false);
+        }
+        if (amount <= minCollateralAmount) revert MinCollateralAmountNotMet();
+        
         _allowedBorrow(from, share);
 
-        _addCollateral(from, to, skim, amount, share);
+        _addCollateral(from, to, skim, amount, share, true);
     }
 
     /// @notice Removes `share` amount of collateral and transfers it to `to`.
@@ -48,7 +53,7 @@ contract SGLCollateral is SGLLendingCommon {
     function removeCollateral(address from, address to, uint256 share)
         external
         optionNotPaused(PauseType.RemoveCollateral)
-        solvent(from, false)
+        solvent(from)
         allowedBorrow(from, share)
         notSelf(to)
     {

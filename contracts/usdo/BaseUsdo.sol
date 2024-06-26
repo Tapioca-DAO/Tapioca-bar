@@ -33,12 +33,18 @@ abstract contract BaseUsdo is ModuleManager, BaseTapiocaOmnichainEngine, BaseUsd
     using SafeERC20 for IERC20;
 
     IYieldBox public immutable yieldBox;
-    ICluster public cluster;
 
     constructor(UsdoInitStruct memory _data)
-        BaseTapiocaOmnichainEngine("Tapioca Usdo", "USDO", _data.endpoint, _data.delegate, _data.extExec, _data.pearlmit)
+        BaseTapiocaOmnichainEngine(
+            "USDO Stablecoin",
+            "USDO",
+            _data.endpoint,
+            _data.delegate,
+            _data.extExec,
+            _data.pearlmit,
+            ICluster(_data.cluster)
+        )
     {
         yieldBox = IYieldBox(_data.yieldBox);
-        cluster = ICluster(_data.cluster);
     }
 }

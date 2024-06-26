@@ -24,6 +24,7 @@ import {BaseLeverageExecutorTest} from "./BaseLeverageExecutorTest.t.sol";
 import {ICluster} from "tapioca-periph/interfaces/periph/ICluster.sol";
 import {ZeroXSwapper} from "tapioca-periph/Swapper/ZeroXSwapper.sol";
 import {TOFTMock} from "../mocks/TOFTMock.sol";
+import {Pearlmit, IPearlmit} from "tapioca-periph/pearlmit/Pearlmit.sol";
 
 import "forge-std/Test.sol";
 
@@ -35,6 +36,7 @@ contract AssetToSDaiLeverageExecutorTest is BaseLeverageExecutorTest {
     AssetTotsDaiLeverageExecutor executor;
     YieldBox yieldBox;
     Cluster cluster;
+    Pearlmit pearlmit;
 
     uint256 toftYieldBoxId;
     uint256 assetYieldBoxId;
@@ -43,6 +45,7 @@ contract AssetToSDaiLeverageExecutorTest is BaseLeverageExecutorTest {
     ZeroXSwapper swapper;
 
     function setUp() public {
+        pearlmit = new Pearlmit("Test", "1", address(this), 0);
         {
             dai = new ERC20Mock("DAI", "DAI");
             vm.label(address(dai), "dai");
@@ -53,12 +56,12 @@ contract AssetToSDaiLeverageExecutorTest is BaseLeverageExecutorTest {
             sDai = new SavingsDaiMock(address(dai));
             vm.label(address(sDai), "sDai");
 
-            toft = new TOFTMock(address(sDai));
+            toft = new TOFTMock(address(sDai), IPearlmit(address(pearlmit)));
             vm.label(address(toft), "toft");
         }
         {
             YieldBoxURIBuilder uriBuilder = new YieldBoxURIBuilder();
-            yieldBox = new YieldBox(IWrappedNative(address(0)), uriBuilder);
+            yieldBox = new YieldBox(IWrappedNative(address(0)), uriBuilder, pearlmit, address(this));
 
             ERC20WithoutStrategy assetStrategy = createEmptyStrategy(address(yieldBox), address(asset));
             assetYieldBoxId =
@@ -72,9 +75,11 @@ contract AssetToSDaiLeverageExecutorTest is BaseLeverageExecutorTest {
             cluster = new Cluster(0, address(this));
 
             swapperTarget = new ZeroXSwapperMockTarget();
-            swapper = new ZeroXSwapper(address(swapperTarget), address(0), ICluster(address(cluster)), address(this));
+            swapper = new ZeroXSwapper(address(swapperTarget), ICluster(address(cluster)), address(this));
 
-            executor = new AssetTotsDaiLeverageExecutor(IZeroXSwapper(address(swapper)), ICluster(address(cluster)));
+            executor = new AssetTotsDaiLeverageExecutor(
+                IZeroXSwapper(address(swapper)), ICluster(address(cluster)), address(0), IPearlmit(address(pearlmit))
+            );
         }
 
         {
@@ -93,7 +98,7 @@ contract AssetToSDaiLeverageExecutorTest is BaseLeverageExecutorTest {
         }
     }
 
-    function test_get_collateral() public {
+    function test_get_collateral_sdai() public {
         uint256 balanceBefore = toft.balanceOf(address(this));
         assertEq(balanceBefore, 0);
 
@@ -113,7 +118,7 @@ contract AssetToSDaiLeverageExecutorTest is BaseLeverageExecutorTest {
         SLeverageSwapData memory swapData =
             SLeverageSwapData({minAmountOut: 0, toftInfo: toftInfo, swapperData: abi.encode(zeroXSwapData)});
 
-        executor.getCollateral(address(asset), address(toft), amountIn, abi.encode(swapData));
+        executor.getCollateral(address(this), address(asset), address(toft), amountIn, abi.encode(swapData));
 
         assertEq(toft.balanceOf(address(this)), amountIn);
     }
@@ -140,7 +145,7 @@ contract AssetToSDaiLeverageExecutorTest is BaseLeverageExecutorTest {
         SLeverageSwapData memory swapData =
             SLeverageSwapData({minAmountOut: 0, toftInfo: toftInfo, swapperData: abi.encode(zeroXSwapData)});
 
-        executor.getAsset(address(toft), address(asset), amountIn, abi.encode(swapData));
+        executor.getAsset(address(this), address(toft), address(asset), amountIn, abi.encode(swapData));
         assertEq(asset.balanceOf(address(this)), amountIn);
     }
 }

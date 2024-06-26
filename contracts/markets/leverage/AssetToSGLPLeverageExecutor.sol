@@ -2,16 +2,18 @@
 pragma solidity 0.8.22;
 
 // External
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {Pausable} from "@openzeppelin/contracts/security/Pausable.sol";
 
 // Tapioca
 import {IGmxRewardRouterV2} from "tapioca-periph/interfaces/external/gmx/IGmxRewardRouterV2.sol";
 import {IGmxGlpManager} from "tapioca-periph/interfaces/external/gmx/IGmxGlpManager.sol";
-import {ITOFT} from "tapioca-periph/interfaces/oft/ITOFT.sol";
 import {BaseLeverageExecutor, SLeverageSwapData} from "./BaseLeverageExecutor.sol";
 import {IZeroXSwapper} from "tapioca-periph/interfaces/periph/IZeroXSwapper.sol";
+import {IPearlmit} from "tapioca-periph/interfaces/periph/IPearlmit.sol";
 import {ICluster} from "tapioca-periph/interfaces/periph/ICluster.sol";
+import {ITOFT} from "tapioca-periph/interfaces/oft/ITOFT.sol";
 import {SafeApprove} from "../../libraries/SafeApprove.sol";
 
 /*
@@ -39,6 +41,8 @@ struct SGlpLeverageSwapData {
 /// @notice Contract for leverage executor for tsGLP markets
 contract AssetToSGLPLeverageExecutor is BaseLeverageExecutor, Pausable {
     using SafeApprove for address;
+    using SafeCast for uint256;
+    using SafeERC20 for IERC20;
 
     IGmxRewardRouterV2 private immutable glpRewardRouter;
     IGmxGlpManager private immutable glpManager;
@@ -49,16 +53,39 @@ contract AssetToSGLPLeverageExecutor is BaseLeverageExecutor, Pausable {
 
     error NotEnough(uint256 expected, uint256 received);
 
-    constructor(IZeroXSwapper _swapper, ICluster _cluster, IGmxRewardRouterV2 _glpRewardRouter)
-        BaseLeverageExecutor(_swapper, _cluster)
-    {
+    constructor(
+        IZeroXSwapper _swapper,
+        ICluster _cluster,
+        IGmxRewardRouterV2 _glpRewardRouter,
+        address _weth,
+        IPearlmit _pearlmit
+    ) BaseLeverageExecutor(_swapper, _cluster, _weth, _pearlmit) {
         glpManager = IGmxGlpManager(_glpRewardRouter.glpManager());
         glpRewardRouter = _glpRewardRouter;
     }
 
-    // ********************* //
+    function artifactGeneration(SGlpLeverageSwapData memory _var) external {
+        //do nothing
+    }
+
+    // ********************** //
+    // *** OWNER METHODS *** //
+    // ********************** //
+    /**
+     * @notice Un/Pauses this contract.
+     */
+    function setPause(bool _pauseState) external {
+        if (!cluster.hasRole(msg.sender, keccak256("PAUSABLE")) && msg.sender != owner()) revert NotAuthorized();
+        if (_pauseState) {
+            _pause();
+        } else {
+            _unpause();
+        }
+    }
+
+    // ********************** //
     // *** PUBLIC METHODS *** //
-    // ********************* //
+    // ********************** //
 
     /**
      * @dev USDO > SGlpLeverageSwapData.token > wrap to tsGLP
@@ -68,13 +95,13 @@ contract AssetToSGLPLeverageExecutor is BaseLeverageExecutor, Pausable {
      *
      * @inheritdoc BaseLeverageExecutor
      */
-    function getCollateral(address assetAddress, address collateralAddress, uint256 assetAmountIn, bytes calldata data)
-        external
-        payable
-        override
-        whenNotPaused
-        returns (uint256 collateralAmountOut)
-    {
+    function getCollateral(
+        address refundDustAddress,
+        address assetAddress,
+        address collateralAddress,
+        uint256 assetAmountIn,
+        bytes calldata data
+    ) external payable override whenNotPaused returns (uint256 collateralAmountOut) {
         if (msg.value > 0) revert NativeNotSupported();
 
         // Should be called only by approved SGL/BB markets.
@@ -85,7 +112,7 @@ contract AssetToSGLPLeverageExecutor is BaseLeverageExecutor, Pausable {
 
         // Swap asset with `SGlpLeverageSwapData.token`
         uint256 tokenAmount = _swapAndTransferToSender(
-            false, assetAddress, glpSwapData.token, assetAmountIn, abi.encode(glpSwapData.swapData)
+            refundDustAddress, false, assetAddress, glpSwapData.token, assetAmountIn, abi.encode(glpSwapData.swapData)
         );
 
         // Swap `SGlpLeverageSwapData.token` with GLP
@@ -93,9 +120,14 @@ contract AssetToSGLPLeverageExecutor is BaseLeverageExecutor, Pausable {
 
         // Wrap into tsGLP to sender
         address sGLP = ITOFT(collateralAddress).erc20();
-        sGLP.safeApprove(collateralAddress, collateralAmountOut);
-        ITOFT(collateralAddress).wrap(address(this), msg.sender, collateralAmountOut);
-        sGLP.safeApprove(collateralAddress, 0);
+        pearlmit.approve(20, sGLP, 0, collateralAddress, collateralAmountOut.toUint200(), block.timestamp.toUint48());
+
+        sGLP.safeApprove(address(pearlmit), collateralAmountOut);
+        collateralAmountOut = ITOFT(collateralAddress).wrap(address(this), address(this), collateralAmountOut);
+        IERC20(collateralAddress).safeTransfer(msg.sender, collateralAmountOut);
+        sGLP.safeApprove(address(pearlmit), 0);
+
+        pearlmit.clearAllowance(address(this), 20, sGLP, 0);
     }
 
     /**
@@ -106,11 +138,13 @@ contract AssetToSGLPLeverageExecutor is BaseLeverageExecutor, Pausable {
      *
      * @inheritdoc BaseLeverageExecutor
      */
-    function getAsset(address collateralAddress, address assetAddress, uint256 collateralAmountIn, bytes calldata data)
-        external
-        override
-        returns (uint256 assetAmountOut)
-    {
+    function getAsset(
+        address refundDustAddress,
+        address collateralAddress,
+        address assetAddress,
+        uint256 collateralAmountIn,
+        bytes calldata data
+    ) external override whenNotPaused returns (uint256 assetAmountOut) {
         // Should be called only by approved SGL/BB markets.
         if (!cluster.isWhitelisted(0, msg.sender)) revert SenderNotValid();
 
@@ -118,17 +152,17 @@ contract AssetToSGLPLeverageExecutor is BaseLeverageExecutor, Pausable {
         SGlpLeverageSwapData memory tokenSwapData = abi.decode(data, (SGlpLeverageSwapData));
 
         // Unwrap tsGLP
-        ITOFT(collateralAddress).unwrap(address(this), collateralAmountIn);
+        uint256 unwrapped = ITOFT(collateralAddress).unwrap(address(this), collateralAmountIn);
 
         // Swap GLP with `SGlpLeverageSwapData.token`
         address sGLP = ITOFT(collateralAddress).erc20();
-        uint256 tokenAmount = _sellGlp(tokenSwapData.token, tokenSwapData.minAmountOut, sGLP, collateralAmountIn);
+        uint256 tokenAmount = _sellGlp(tokenSwapData.token, tokenSwapData.minAmountOut, sGLP, unwrapped);
 
         // Swap `SGlpLeverageSwapData.token` with asset.
         // If sendBack true and swapData.swapperData.toftInfo.isTokenOutToft false
         // The asset will be transfer via IERC20 transfer.
         assetAmountOut = _swapAndTransferToSender(
-            true, tokenSwapData.token, assetAddress, tokenAmount, abi.encode(tokenSwapData.swapData)
+            refundDustAddress, true, tokenSwapData.token, assetAddress, tokenAmount, abi.encode(tokenSwapData.swapData)
         );
     }
 

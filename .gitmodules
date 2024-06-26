@@ -16,6 +16,12 @@
 [submodule "gitmodule/tapioca-mocks"]
 	path = gitmodule/tapioca-mocks
 	url = https://github.com/Tapioca-DAO/tapioca-mocks
-[submodule "gitmodule/permitc"]
-	path = gitmodule/permitc
-	url = https://github.com/limitbreakinc/PermitC.git
+[submodule "gitmodule/tap-token"]
+	path = gitmodule/tap-token
+	url = https://github.com/Tapioca-DAO/tap-token
+[submodule "gitmodule/tapiocaz"]
+	path = gitmodule/tapiocaz
+	url = https://github.com/Tapioca-DAO/tapiocaz
+[submodule "gitmodule/tapioca-yieldbox-strategies"]
+	path = gitmodule/tapioca-yieldbox-strategies
+	url = https://github.com/Tapioca-DAO/tapioca-yieldbox-strategies

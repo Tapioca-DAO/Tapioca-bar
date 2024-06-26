@@ -11,6 +11,7 @@ import {IERC20} from "@boringcrypto/boring-solidity/contracts/libraries/BoringER
 // Tapioca
 import {SimpleLeverageExecutor} from "contracts/markets/leverage/SimpleLeverageExecutor.sol";
 import {ILeverageExecutor} from "tapioca-periph/interfaces/bar/ILeverageExecutor.sol";
+import {SGLInterestHelper} from "contracts/markets/singularity/SGLInterestHelper.sol";
 import {ITapiocaOracle} from "tapioca-periph/interfaces/periph/ITapiocaOracle.sol";
 import {ERC20WithoutStrategy} from "yieldbox/strategies/ERC20WithoutStrategy.sol";
 import {IZeroXSwapper} from "tapioca-periph/interfaces/periph/IZeroXSwapper.sol";
@@ -18,13 +19,14 @@ import {SGLLiquidation} from "contracts/markets/singularity/SGLLiquidation.sol";
 import {SGLCollateral} from "contracts/markets/singularity/SGLCollateral.sol";
 import {SGLLeverage} from "contracts/markets/singularity/SGLLeverage.sol";
 import {Singularity} from "contracts/markets/singularity/Singularity.sol";
-import {IPearlmit} from "tapioca-periph/interfaces/periph/IPearlmit.sol";
+import {Pearlmit, IPearlmit} from "tapioca-periph/pearlmit/Pearlmit.sol";
 import {ICluster} from "tapioca-periph/interfaces/periph/ICluster.sol";
 import {SGLBorrow} from "contracts/markets/singularity/SGLBorrow.sol";
 import {IWrappedNative} from "yieldbox/interfaces/IWrappedNative.sol";
 import {IOracle} from "tapioca-periph/oracle/interfaces/IOracle.sol";
 import {IPenrose} from "tapioca-periph/interfaces/bar/IPenrose.sol";
 import {YieldBoxURIBuilder} from "yieldbox/YieldBoxURIBuilder.sol";
+import {SGLInit} from "contracts/markets/singularity/SGLInit.sol";
 import {TokenType} from "yieldbox/enums/YieldBoxTokenType.sol";
 import {IYieldBox} from "yieldbox/interfaces/IYieldBox.sol";
 import {IStrategy} from "yieldbox/interfaces/IStrategy.sol";
@@ -87,10 +89,10 @@ contract UsdoTestHelper is TestHelper, TestUtils {
         return new MagnetarMock(cluster, _pearlmit);
     }
 
-    function createYieldBox() public returns (YieldBox) {
+    function createYieldBox(Pearlmit pearlmit, address owner) public returns (YieldBox) {
         YieldBoxURIBuilder uriBuilder = new YieldBoxURIBuilder();
 
-        return new YieldBox(IWrappedNative(address(0)), uriBuilder);
+        return new YieldBox(IWrappedNative(address(0)), uriBuilder, pearlmit, owner);
     }
 
     function createCluster(uint32 hostEid, address owner) public returns (Cluster) {
@@ -105,20 +107,28 @@ contract UsdoTestHelper is TestHelper, TestUtils {
         return new OracleMock("Oracle Test", "ORCT", 1 ether);
     }
 
-    function createLeverageExecutor(address, address _swapper, address _cluster)
+    function createLeverageExecutor(address, address _swapper, address _cluster, address _pearlmit)
         public
         returns (SimpleLeverageExecutor)
     {
-        return new SimpleLeverageExecutor(IZeroXSwapper(_swapper), ICluster(_cluster));
+        return new SimpleLeverageExecutor(IZeroXSwapper(_swapper), ICluster(_cluster), address(0), IPearlmit(_pearlmit));
     }
 
     function createPenrose(TestPenroseData memory _data) public returns (Penrose pen, Singularity mediumRiskMC) {
+        address tapStrat = address(createYieldBoxEmptyStrategy(_data.yb, _data.tap));
+        address tokenStrat = address(createYieldBoxEmptyStrategy(_data.yb, _data.token));
+
+        uint256 tapAssetId = IYieldBox(_data.yb).registerAsset(TokenType.ERC20, _data.tap, tapStrat, 0);
+        uint256 tokenAssetId = IYieldBox(_data.yb).registerAsset(TokenType.ERC20, _data.token, tokenStrat, 0);
+
         pen = new Penrose(
             IYieldBox(_data.yb),
             ICluster(_data.cluster),
             IERC20(_data.tap),
             IERC20(_data.token),
             _data.pearlmit,
+            tapAssetId,
+            tokenAssetId,
             _data.owner
         );
         mediumRiskMC = new Singularity();
@@ -135,7 +145,8 @@ contract UsdoTestHelper is TestHelper, TestUtils {
         uint256 collateralId,
         ITapiocaOracle oracle,
         uint256 exchangePrecision,
-        uint256 collateralizationRate
+        uint256 collateralizationRate,
+        address penrose
     ) public returns (Origins) {
         return new Origins(
             owner,
@@ -146,7 +157,8 @@ contract UsdoTestHelper is TestHelper, TestUtils {
             collateralId,
             oracle,
             exchangePrecision,
-            collateralizationRate
+            collateralizationRate,
+            IPenrose(penrose)
         );
     }
 
@@ -205,18 +217,43 @@ contract UsdoTestHelper is TestHelper, TestUtils {
         returns (Singularity)
     {
         Singularity sgl = new Singularity();
+        SGLInit sglInit = new SGLInit();
         (
             Singularity._InitMemoryModulesData memory _modulesData,
             Singularity._InitMemoryTokensData memory _tokensData,
             Singularity._InitMemoryData memory _data
         ) = _getSingularityInitData(_sgl, address(_penrose));
         {
-            sgl.init(abi.encode(_modulesData, _tokensData, _data));
+            sgl.init(address(sglInit), abi.encode(_modulesData, _tokensData, _data));
         }
 
         {
             _penrose.addSingularity(_mc, address(sgl));
         }
+
+        {
+            SGLInterestHelper sglInterestHelper = new SGLInterestHelper();
+
+            bytes memory payload = abi.encodeWithSelector(
+                Singularity.setSingularityConfig.selector,
+                sgl.borrowOpeningFee(),
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                address(sglInterestHelper),
+                0
+            );
+            address[] memory mc = new address[](1);
+            mc[0] = address(sgl);
+
+            bytes[] memory data = new bytes[](1);
+            data[0] = payload;
+            _penrose.executeMarketFn(mc, data, false);
+        }
+
         return sgl;
     }
 

@@ -1,7 +1,10 @@
 // Plugins
+import '@nomiclabs/hardhat-ethers';
+import '@nomicfoundation/hardhat-verify';
+import '@typechain/hardhat';
+
 import '@nomicfoundation/hardhat-chai-matchers';
 import '@nomicfoundation/hardhat-foundry';
-import '@nomicfoundation/hardhat-toolbox';
 import '@primitivefi/hardhat-dodoc';
 import '@typechain/hardhat';
 import 'hardhat-contract-sizer';
@@ -51,7 +54,7 @@ const supportedChains = SDK.API.utils.getSupportedChains().reduce(
 );
 
 const config: HardhatUserConfig & { dodoc: any } = {
-    SDK: { project: TAPIOCA_PROJECTS_NAME.TapiocaZ },
+    SDK: { project: TAPIOCA_PROJECTS_NAME.TapiocaBar },
     solidity: {
         compilers: [
             {
@@ -72,7 +75,17 @@ const config: HardhatUserConfig & { dodoc: any } = {
                     evmVersion: 'paris', // Latest before Shanghai
                     optimizer: {
                         enabled: true,
-                        runs: 800,
+                        runs: 500,
+                    },
+                },
+            },
+            'contracts/markets/bigBang/BigBang.sol': {
+                version: '0.8.22',
+                settings: {
+                    evmVersion: 'paris', // Latest before Shanghai
+                    optimizer: {
+                        enabled: true,
+                        runs: 400,
                     },
                 },
             },
@@ -82,7 +95,17 @@ const config: HardhatUserConfig & { dodoc: any } = {
                     evmVersion: 'paris', // Latest before Shanghai
                     optimizer: {
                         enabled: true,
-                        runs: 1500,
+                        runs: 700,
+                    },
+                },
+            },
+            'contracts/markets/bigBang/BBLeverage.sol': {
+                version: '0.8.22',
+                settings: {
+                    evmVersion: 'paris', // Latest before Shanghai
+                    optimizer: {
+                        enabled: true,
+                        runs: 800,
                     },
                 },
             },
@@ -92,7 +115,27 @@ const config: HardhatUserConfig & { dodoc: any } = {
                     evmVersion: 'paris', // Latest before Shanghai
                     optimizer: {
                         enabled: true,
-                        runs: 300,
+                        runs: 1,
+                    },
+                },
+            },
+            'contracts/markets/bigBang/BBLiquidation.sol': {
+                version: '0.8.22',
+                settings: {
+                    evmVersion: 'paris', // Latest before Shanghai
+                    optimizer: {
+                        enabled: true,
+                        runs: 2000,
+                    },
+                },
+            },
+            'contracts/usdo/modules/UsdoMarketReceiverModule.sol': {
+                version: '0.8.22',
+                settings: {
+                    evmVersion: 'paris', // Latest before Shanghai
+                    optimizer: {
+                        enabled: true,
+                        runs: 200,
                     },
                 },
             },
@@ -137,6 +180,7 @@ const config: HardhatUserConfig & { dodoc: any } = {
     },
     etherscan: {
         apiKey: {
+            arbitrumOne: process.env.SCAN_API_KEY ?? '',
             sepolia: process.env.SCAN_API_KEY ?? '',
             arbitrumSepolia: process.env.SCAN_API_KEY ?? '',
             optimismSepolia: process.env.SCAN_API_KEY ?? '',

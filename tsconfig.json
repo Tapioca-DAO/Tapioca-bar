@@ -1,4 +1,7 @@
 {
+    "ts-node": {
+      "swc": true
+    },
     "compilerOptions": {
       "target": "es2020",
       "module": "commonjs",
@@ -12,6 +15,10 @@
       "paths": {
         "@tapioca-sdk/*": ["gitmodule/tapioca-sdk/src/*"],
         "@typechain/*": ["gen/typechain/*"],
+        "@tapiocaz/config":["gitmodule/tapiocaz/tasks/deploy/DEPLOY_CONFIG.ts"],
+        "@tap-token/config":["gitmodule/tap-token/tasks/deploy/DEPLOY_CONFIG.ts"],
+        "@tapioca-periph/config":["gitmodule/tapioca-periph/tasks/deploy/DEPLOY_CONFIG.ts"],
+        "@tap-yieldbox/config":["gitmodule/tap-yieldbox/tasks/deploy/DEPLOY_CONFIG.ts"],
       }
     },
     "include": [

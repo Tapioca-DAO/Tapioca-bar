@@ -19,4 +19,14 @@ contract ZeroXSwapperMockTarget {
     function transferTokens(address token, uint256 amount) public payable {
         IERC20(token).safeTransfer(msg.sender, amount);
     }
+
+    function transferTokensWithDust(address tokenIn, address tokenOut, uint256 amountIn, uint256 amountOut)
+        public
+        payable
+    {
+        IERC20(tokenIn).safeTransferFrom(msg.sender, address(this), amountIn);
+
+        IERC20(tokenOut).safeTransfer(msg.sender, amountOut);
+        IERC20(tokenIn).safeTransfer(msg.sender, amountIn - amountOut);
+    }
 }

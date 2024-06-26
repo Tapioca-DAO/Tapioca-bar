@@ -29,11 +29,11 @@ contract SGLBorrow is SGLLendingCommon {
     function borrow(address from, address to, uint256 amount)
         external
         optionNotPaused(PauseType.Borrow)
-        solvent(from, false)
+        solvent(from)
         notSelf(to)
         returns (uint256 part, uint256 share)
     {
-        if (amount == 0) return (0, 0);
+        if (amount <= minBorrowAmount) revert MinBorrowAmountNotMet();
 
         uint256 feeAmount = (amount * borrowOpeningFee) / FEE_PRECISION;
         uint256 allowanceShare =
@@ -57,10 +57,10 @@ contract SGLBorrow is SGLLendingCommon {
         notSelf(to)
         returns (uint256 amount)
     {
-        updateExchangeRate();
+        _tryUpdateOracleRate();
 
         _accrue();
 
-        amount = _repay(from, to, skim, part);
+        amount = _repay(from, to, skim, part, true);
     }
 }

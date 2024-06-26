@@ -8,15 +8,17 @@ broadcast = 'gen/broadcast'
 solc_version='0.8.22'
 evm_version='paris'
 optimizer = true
-optimizer_runs = 100
+optimizer_runs = 30
 
 remappings = [
 	"solidity-bytes-utils/=node_modules/@layerzerolabs/solidity-bytes-utils/",
 	"tapioca-sdk/=gitmodule/tapioca-sdk/contracts/",
 	"tapioca-periph/=gitmodule/tapioca-periph/contracts/",
+	"tapioca-strategies/=gitmodule/tapioca-yieldbox-strategies/contracts/",
 	"yieldbox/=gitmodule/tap-yieldbox/contracts/",
 	"mocks/=gitmodule/tapioca-mocks/contracts/",
-	"permitc/=gitmodule/permitc/src/"
+	'tapiocaz/=gitmodule/tapiocaz/contracts/',
+	"permitc/=gitmodule/tapioca-periph/gitmodule/permitc/src/", # Needs to be init in the periph repo
 ]
 
 # forge-dpeloy

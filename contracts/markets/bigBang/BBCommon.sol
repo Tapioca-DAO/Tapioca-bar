@@ -7,6 +7,7 @@ import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {IERC20} from "@boringcrypto/boring-solidity/contracts/ERC20.sol";
 
 // Tapioca
+import {IBigBangDebtRateHelper} from "tapioca-periph/interfaces/bar/IBigBangDebtRateHelper.sol";
 import {IBigBang} from "tapioca-periph/interfaces/bar/IBigBang.sol";
 import {SafeApprove} from "../../libraries/SafeApprove.sol";
 import {BBStorage} from "./BBStorage.sol";
@@ -32,6 +33,8 @@ contract BBCommon is BBStorage {
     // ************** //
     error NotEnough();
     error TransferFailed();
+    error AccruePaused();
+    error OracleCallFailed();
 
     // ********************** //
     // *** VIEW FUNCTIONS *** //
@@ -43,21 +46,14 @@ contract BBCommon is BBStorage {
 
     /// @notice returns the current debt rate
     function getDebtRate() public view returns (uint256) {
-        if (isMainMarket) return penrose.bigBangEthDebtRate(); // default 0.5%
-        if (totalBorrow.elastic == 0) return minDebtRate;
-
-        uint256 _ethMarketTotalDebt = IBigBang(penrose.bigBangEthMarket()).getTotalDebt();
-        uint256 _currentDebt = totalBorrow.elastic;
-        uint256 _maxDebtPoint = (_ethMarketTotalDebt * debtRateAgainstEthMarket) / 1e18;
-
-        if (_currentDebt >= _maxDebtPoint) return maxDebtRate;
-
-        uint256 debtPercentage = (_currentDebt * DEBT_PRECISION) / _maxDebtPoint;
-        uint256 debt = ((maxDebtRate - minDebtRate) * debtPercentage) / DEBT_PRECISION + minDebtRate;
-
-        if (debt > maxDebtRate) return maxDebtRate;
-
-        return debt;
+        return IBigBangDebtRateHelper(debtRateHelper).getDebtRate(IBigBangDebtRateHelper.DebtRateCall({
+            isMainMarket: isMainMarket,
+            penrose: penrose,
+            elastic: totalBorrow.elastic,
+            debtRateAgainstEthMarket: debtRateAgainstEthMarket,
+            maxDebtRate: maxDebtRate,
+            minDebtRate: minDebtRate
+        }));
     }
 
     // ************************ //
@@ -65,6 +61,7 @@ contract BBCommon is BBStorage {
     // ************************ //
     /// @notice Accrues the interest on the borrowed tokens and handles the accumulation of fees.
     function accrue() external {
+        if (pauseOptions[PauseType.AddCollateral] || pauseOptions[PauseType.RemoveCollateral]) revert AccruePaused();
         _accrue();
     }
 
@@ -76,8 +73,8 @@ contract BBCommon is BBStorage {
 
         // Calculate fees
         _totalBorrow = totalBorrow;
-        uint256 extraAmount = (uint256(_totalBorrow.elastic) * (getDebtRate() / 31536000) * elapsedTime) / 1e18;
-        uint256 max = type(uint128).max - totalBorrowCap;
+        uint256 extraAmount = (uint256(_totalBorrow.elastic) * (getDebtRate() / 31557600) * elapsedTime) / 1e18;
+        uint256 max = type(uint128).max - totalBorrow.elastic;
 
         if (extraAmount > max) {
             extraAmount = max;
@@ -86,12 +83,21 @@ contract BBCommon is BBStorage {
     }
 
     function _accrue() internal override {
+        // accrue ETH market first
+        {
+            address ethMarket = penrose.bigBangEthMarket();
+            if (ethMarket != address(this) && ethMarket != address(0)) {
+                IBigBang(ethMarket).accrue();
+            }
+        }
+
         IBigBang.AccrueInfo memory _accrueInfo = accrueInfo;
         // Number of seconds since accrue was called
         uint256 elapsedTime = block.timestamp - _accrueInfo.lastAccrued;
         if (elapsedTime == 0) {
             return;
         }
+
         //update debt rate
         uint256 annumDebtRate = getDebtRate();
         _accrueInfo.debtRate = (annumDebtRate / 31557600).toUint64(); //per second; account for leap years
@@ -104,20 +110,50 @@ contract BBCommon is BBStorage {
         extraAmount = (uint256(_totalBorrow.elastic) * _accrueInfo.debtRate * elapsedTime) / 1e18;
 
         // cap `extraAmount` to avoid overflow risk when converting it from uint256 to uint128
-        uint256 max = type(uint128).max - totalBorrowCap;
+        uint256 max = type(uint128).max - totalBorrow.elastic;
 
         if (extraAmount > max) {
             extraAmount = max;
         }
         _totalBorrow.elastic += extraAmount.toUint128();
+        openInterestDebt += extraAmount;
 
         totalBorrow = _totalBorrow;
         accrueInfo = _accrueInfo;
 
         emit LogAccrue(extraAmount, _accrueInfo.debtRate);
     }
+    
+    function _computeVariableOpeningFee(uint256 amount) internal returns (uint256) {
+        //get asset <> USDC price ( USDO <> USDC )
+        (bool updated, uint256 _exchangeRate) = assetOracle.get(oracleData);
+        if (!updated) revert OracleCallFailed();
+        return _computeVariableOpeningFeeView(amount, _exchangeRate);
+    }
 
-    /// @dev Helper function to move tokens.
+    function _computeVariableOpeningFeeView(uint256 amount, uint256 _exchangeRate) internal view returns (uint256) {
+        if (amount == 0) return 0;
+
+        if (_exchangeRate >= minMintFeeStart) {
+            return (amount * minMintFee) / FEE_PRECISION;
+        }
+        if (_exchangeRate <= maxMintFeeStart) {
+            return (amount * maxMintFee) / FEE_PRECISION;
+        }
+
+        uint256 fee = maxMintFee
+            - (((_exchangeRate - maxMintFeeStart) * (maxMintFee - minMintFee)) / (minMintFeeStart - maxMintFeeStart));
+
+        if (fee > maxMintFee) return (amount * maxMintFee) / FEE_PRECISION;
+        if (fee < minMintFee) return (amount * minMintFee) / FEE_PRECISION;
+
+        if (fee > 0) {
+            return (amount * fee) / FEE_PRECISION;
+        }
+        return 0;
+    }
+
+    /// @dev Helper function to move tokens.xc
     /// @param from Account to debit tokens from, in `yieldBox`.
     /// @param _tokenId The ERC-20 token asset ID in yieldBox.
     /// @param share The amount in shares to add.
@@ -148,5 +184,6 @@ contract BBCommon is BBStorage {
     {
         address(token).safeApprove(address(yieldBox), amount);
         (, share) = yieldBox.depositAsset(id, address(this), to, amount, 0);
+        address(token).safeApprove(address(yieldBox), 0);
     }
 }

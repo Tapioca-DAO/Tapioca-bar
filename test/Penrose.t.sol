@@ -72,8 +72,8 @@ contract PenroseTest is UsdoTestHelper {
 
     function setUp() public override {
         {
-            pearlmit = new Pearlmit("Pearlmit", "1");
-            yieldBox = createYieldBox();
+            pearlmit = new Pearlmit("Pearlmit", "1", address(this), 0);
+            yieldBox = createYieldBox(pearlmit, address(this));
             cluster = createCluster(aEid, __owner);
             magnetar = createMagnetar(address(cluster), IPearlmit(address(pearlmit)));
 
@@ -121,7 +121,8 @@ contract PenroseTest is UsdoTestHelper {
             )
         );
 
-        leverageExecutor = createLeverageExecutor(address(yieldBox), address(swapper), address(cluster));
+        leverageExecutor =
+            createLeverageExecutor(address(yieldBox), address(swapper), address(cluster), address(pearlmit));
         (penrose, masterContract) = createPenrose(
             TestPenroseData(
                 address(yieldBox),
@@ -157,6 +158,12 @@ contract PenroseTest is UsdoTestHelper {
         cluster.updateContract(0, address(singularity), true);
         cluster.updateContract(0, address(asset), true);
         cluster.updateContract(0, address(collateral), true);
+    }
+
+    function test_penrose_unregister_singularity() public {
+        penrose.unregisterContract(address(singularity), 0);
+        address[] memory markets = penrose.singularityMarkets();
+        assertEq(markets.length, 0);
     }
 
     function test_penrose_list_markets() public {
@@ -201,8 +208,7 @@ contract PenroseTest is UsdoTestHelper {
     }
 
     function test_penrose_should_not_withdraw_when_paused() public {
-        penrose.setConservator(address(this));
-        penrose.updatePause(true);
+        penrose.setPause(true);
 
         IMarket[] memory markets = new IMarket[](1);
         markets[0] = IMarket(address(0));

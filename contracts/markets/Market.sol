@@ -44,69 +44,68 @@ abstract contract Market is MarketERC20, Ownable {
     }
 
     /// @notice pause options
-    mapping(PauseType pauseProp => bool pauseStatus) public pauseOptions;
-    /// @notice conservator's addresss
-    /// @dev conservator can pause/unpause the contract
-    address public conservator;
+    mapping(PauseType pauseProp => bool pauseStatus) internal pauseOptions;
 
     /// @notice returns YieldBox address
-    IYieldBox public yieldBox;
-    /// @notice returns Penrose address
-    IPenrose public penrose;
+    IYieldBox internal yieldBox;
 
-    IPearlmit public pearlmit;
+    IPearlmit internal pearlmit;
 
     /// @notice collateral token address
-    IERC20 public collateral;
+    IERC20 internal collateral;
     /// @notice collateral token YieldBox id
-    uint256 public collateralId;
+    uint256 internal collateralId;
     /// @notice asset token address
-    IERC20 public asset;
+    IERC20 internal asset;
     /// @notice asset token YieldBox id
-    uint256 public assetId;
+    uint256 internal assetId;
     /// @notice oracle address
-    ITapiocaOracle public oracle;
+    ITapiocaOracle internal oracle;
     /// @notice oracleData
-    bytes public oracleData;
+    bytes internal oracleData;
     /// @notice Exchange and interest rate tracking.
     /// This is 'cached' here because calls to Oracles can be very expensive.
     /// Asset -> collateral = assetAmount * exchangeRate.
-    uint256 public exchangeRate;
+    uint256 internal exchangeRate;
     /// @notice cached rate is valid only for the `rateValidDuration` time
-    uint256 public rateValidDuration;
+    uint256 internal rateValidDuration;
     /// @notice latest timestamp when `exchangeRate` was updated
-    uint256 public rateTimestamp;
+    uint256 internal rateTimestamp;
 
     /// @notice total amount borrowed
     /// @dev elastic = Total token amount to be repayed by borrowers, base = Total parts of the debt held by borrowers
-    Rebase public totalBorrow;
+    Rebase internal totalBorrow;
     /// @notice total collateral supplied
-    uint256 public totalCollateralShare;
+    uint256 internal totalCollateralShare;
     /// @notice max borrow cap
-    uint256 public totalBorrowCap;
+    uint256 internal totalBorrowCap;
     /// @notice borrow amount per user
-    mapping(address => uint256) public userBorrowPart;
+    mapping(address => uint256) internal userBorrowPart;
     /// @notice collateral share per user
-    mapping(address => uint256) public userCollateralShare;
+    mapping(address => uint256) internal userCollateralShare;
 
     /// @notice accrual protocol rewards
-    uint256 public protocolFee; // 10%
+    uint256 internal protocolFee; // 10%
     /// @notice min % a liquidator can receive in rewards
-    uint256 public minLiquidatorReward = 8e4; //80%
+    uint256 internal minLiquidatorReward = 88e3; // 88%
     /// @notice max % a liquidator can receive in rewards
-    uint256 public maxLiquidatorReward = 9e4; //90%
+    uint256 internal maxLiquidatorReward = 925e2; // 92.5%
     /// @notice max liquidatable bonus amount
     /// @dev max % added to the amount that can be liquidated
-    uint256 public liquidationBonusAmount = 1e4; //10%
+    uint256 internal liquidationBonusAmount = 3e3; // 3%
     /// @notice collateralization rate
-    uint256 public collateralizationRate; // 75%
+    uint256 internal collateralizationRate; // 75%
     /// @notice liquidation collateralization rate
-    uint256 public liquidationCollateralizationRate; //80%
+    uint256 internal liquidationCollateralizationRate; //80%
     /// @notice liquidation multiplier used to compute liquidator rewards
-    uint256 public liquidationMultiplier = 12000; //12%
+    uint256 internal liquidationMultiplier = 12000; //12%
     /// @notice returns the leverage executor
-    ILeverageExecutor public leverageExecutor;
+    ILeverageExecutor internal leverageExecutor;
+    /// @notice returns the maximum accepted slippage for liquidation
+    uint256 internal maxLiquidationSlippage = 1000; //1%
 
+    uint256 internal minBorrowAmount;
+    uint256 internal minCollateralAmount;
     // ***************** //
     // *** CONSTANTS *** //
     // ***************** //
@@ -116,22 +115,24 @@ abstract contract Market is MarketERC20, Ownable {
 
     error ExchangeRateNotValid();
     error AllowanceNotValid();
+    error MinBorrowAmountNotMet();
+    error MinCollateralAmountNotMet();
 
     // ************** //
     // *** EVENTS *** //
     // ************** //
     /// @notice event emitted when `leverageExecutor` is updated
-    event LeverageExecutorSet(address indexed oldVal, address indexed newVal);
+    event LeverageExecutorSet(address oldVal, address newVal);
     /// @notice event emitted when `exchangeRate` validation duration is updated
     event ExchangeRateDurationUpdated(uint256 _oldVal, uint256 _newVal);
     /// @notice event emitted when conservator is updated
-    event ConservatorUpdated(address indexed old, address indexed _new);
+    event ConservatorUpdated(address old, address _new);
     /// @notice event emitted when pause state is changed
-    event PausedUpdated(PauseType indexed _type, bool indexed oldState, bool indexed newState);
+    event PausedUpdated(PauseType indexed _type, bool oldState, bool newState);
     /// @notice event emitted when cached exchange rate is updated
-    event LogExchangeRate(uint256 indexed rate);
+    event LogExchangeRate(uint256 rate);
     /// @notice event emitted when borrow cap is updated
-    event LogBorrowCapUpdated(uint256 indexed _oldVal, uint256 indexed _newVal);
+    event LogBorrowCapUpdated(uint256 _oldVal, uint256 _newVal);
     /// @notice event emitted when oracle data is updated
     event OracleDataUpdated();
     /// @notice event emitted when oracle is updated
@@ -139,16 +140,18 @@ abstract contract Market is MarketERC20, Ownable {
     /// @notice event emitted when a position is liquidated
     event Liquidated(
         address indexed liquidator,
-        address[] indexed users,
-        uint256 indexed liquidatorReward,
+        address[] users,
+        uint256 liquidatorReward,
         uint256 protocolReward,
         uint256 repayedAmount,
         uint256 collateralShareRemoved
     );
     /// @notice event emitted when the liquidation multiplier rate is updated
-    event LiquidationMultiplierUpdated(uint256 indexed oldVal, uint256 indexed newVal);
+    event LiquidationMultiplierUpdated(uint256 oldVal, uint256 newVal);
     /// @notice event emitted on setMarketConfig updates
-    event ValueUpdated(uint256 indexed valType, uint256 indexed _newVal);
+    event ValueUpdated(uint256 valType, uint256 _newVal);
+    /// @notice event emitted when then liquidation max slippage is updated
+    event LiquidationMaxSlippageUpdated(uint256 oldVal, uint256 newVal);
 
     modifier optionNotPaused(PauseType _type) {
         require(!pauseOptions[_type], "Market: paused");
@@ -161,13 +164,13 @@ abstract contract Market is MarketERC20, Ownable {
     }
 
     /// @dev Checks if the user is solvent in the closed liquidation case at the end of the function body.
-    modifier solvent(address from, bool liquidation) {
+    modifier solvent(address from) {
         updateExchangeRate();
         _accrue();
 
         _;
 
-        require(_isSolvent(from, exchangeRate, liquidation), "Market: insolvent");
+        require(_isSolvent(from, exchangeRate, false), "Market: insolvent");
     }
 
     bool internal initialized;
@@ -188,11 +191,19 @@ abstract contract Market is MarketERC20, Ownable {
         leverageExecutor = _executor;
     }
 
+    /// @notice updates `maxLiquidationSlippage`
+    /// @dev not included in `setMarketConfig` for faster updates
+    /// @param _val the new slippage value
+    function setLiquidationMaxSlippage(uint256 _val) external onlyOwner {
+        require(_val < FEE_PRECISION, "Market: not valid");
+        emit LiquidationMaxSlippageUpdated(maxLiquidationSlippage, _val);
+        maxLiquidationSlippage = _val;
+    }
+
     /// @notice sets common market configuration
     /// @dev values are updated only if > 0 or not address(0)
     /// @param _oracle oracle address
     /// @param _oracleData oracle data
-    /// @param _conservator conservator address; conservator is allowed to pause/unpause the contract
     /// @param _protocolFee protocol fee percentage
     /// @param _liquidationBonusAmount extra amount factored in the closing factor computation
     /// @param _minLiquidatorReward minimum reward percentage a liquidator can receive
@@ -200,31 +211,28 @@ abstract contract Market is MarketERC20, Ownable {
     /// @param _totalBorrowCap max amount that can be borrowed from the contract
     /// @param _collateralizationRate the new collateralization rate value (75000 is 75%)
     /// @param _liquidationCollateralizationRate the new liquidation collateralization rate value (75000 is 75%)
+    /// @param _minBorrowAmount the new minimum borrow amount
+    /// @param _minCollateralAmount the new minimum collateral amount
     function setMarketConfig(
         ITapiocaOracle _oracle,
         bytes calldata _oracleData,
-        address _conservator,
         uint256 _protocolFee,
         uint256 _liquidationBonusAmount,
         uint256 _minLiquidatorReward,
         uint256 _maxLiquidatorReward,
         uint256 _totalBorrowCap,
         uint256 _collateralizationRate,
-        uint256 _liquidationCollateralizationRate
+        uint256 _liquidationCollateralizationRate,
+        uint256 _minBorrowAmount,
+        uint256 _minCollateralAmount
     ) external onlyOwner {
         if (address(_oracle) != address(0)) {
             oracle = _oracle;
             emit OracleUpdated(address(_oracle));
         }
-
         if (_oracleData.length > 0) {
             oracleData = _oracleData;
             emit OracleDataUpdated();
-        }
-
-        if (_conservator != address(0)) {
-            emit ConservatorUpdated(conservator, _conservator);
-            conservator = _conservator;
         }
 
         if (_protocolFee > 0) {
@@ -279,30 +287,21 @@ abstract contract Market is MarketERC20, Ownable {
             liquidationCollateralizationRate = _liquidationCollateralizationRate;
             emit ValueUpdated(8, _liquidationCollateralizationRate);
         }
+
+        if (_minBorrowAmount > 0) {
+            minBorrowAmount = _minBorrowAmount;
+            emit ValueUpdated(9, _minBorrowAmount);
+        }
+
+        if (_minCollateralAmount > 0) {
+            minCollateralAmount = _minCollateralAmount;
+            emit ValueUpdated(10, _minCollateralAmount);
+        }
     }
 
     // ********************** //
     // *** VIEW FUNCTIONS *** //
     // ********************** //
-    /// @notice returns the maximum liquidatable amount for user
-    /// @param borrowPart amount borrowed
-    /// @param collateralPartInAsset collateral's value in borrowed asset
-    /// @param ratesPrecision collateralizationRate and liquidationCollateralizationRate precision
-    function computeClosingFactor(uint256 borrowPart, uint256 collateralPartInAsset, uint256 ratesPrecision)
-        public
-        view
-        returns (uint256)
-    {
-        return _computeClosingFactor(
-            borrowPart,
-            collateralPartInAsset,
-            ratesPrecision,
-            liquidationCollateralizationRate,
-            liquidationMultiplier,
-            totalBorrow
-        );
-    }
-
     function _computeClosingFactor(
         uint256 borrowPart,
         uint256 collateralPartInAsset,
@@ -310,7 +309,7 @@ abstract contract Market is MarketERC20, Ownable {
         uint256 _liquidationCollateralizationRate,
         uint256 _liquidationMultiplier,
         Rebase memory _totalBorrow
-    ) internal view returns (uint256) {
+    ) internal pure returns (uint256) {
         // Obviously it's not `borrowPart` anymore but `borrowAmount`
         borrowPart = (borrowPart * _totalBorrow.elastic) / _totalBorrow.base;
 
@@ -323,8 +322,8 @@ abstract contract Market is MarketERC20, Ownable {
         //compute numerator
         uint256 numerator = borrowPart - liquidationStartsAt;
         //compute denominator
-        uint256 diff =
-            (collateralizationRate * ((10 ** ratesPrecision) + _liquidationMultiplier)) / (10 ** ratesPrecision);
+        uint256 diff = (_liquidationCollateralizationRate * ((10 ** ratesPrecision) + _liquidationMultiplier))
+            / (10 ** ratesPrecision);
         int256 denominator = (int256(10 ** ratesPrecision) - int256(diff)) * int256(1e13);
 
         //compute closing factor
@@ -372,17 +371,13 @@ abstract contract Market is MarketERC20, Ownable {
     /// @return rate The new exchange rate.
     function updateExchangeRate() public returns (bool updated, uint256 rate) {
         (updated, rate) = oracle.get(oracleData);
+        require(updated, "Market: rate too old");
+        require(rate != 0, "Market: invalid rate");
 
-        if (updated) {
-            require(rate != 0, "Market: invalid rate");
-            exchangeRate = rate;
-            rateTimestamp = block.timestamp;
-            emit LogExchangeRate(rate);
-        } else {
-            require(rateTimestamp + rateValidDuration >= block.timestamp, "Market: rate too old");
-            // Return the old rate if fetching wasn't successful & rate isn't too old
-            rate = exchangeRate;
-        }
+        exchangeRate = rate;
+        rateTimestamp = block.timestamp;
+
+        emit LogExchangeRate(rate);
     }
 
     /// @notice computes the possible liquidator reward
@@ -406,7 +401,13 @@ abstract contract Market is MarketERC20, Ownable {
         if (from != msg.sender) {
             if (share == 0) revert AllowanceNotValid();
 
-            require(allowance[from][msg.sender] >= share, "Market: not approved");
+            uint256 pearlmitAllowed;
+            // Here we approve the market token, because it is unique to the market
+            if (penrose.cluster().isWhitelisted(0, msg.sender)) {
+                (pearlmitAllowed,) = penrose.pearlmit().allowance(from, msg.sender, 20, address(this), 0);
+            }
+            require(allowance[from][msg.sender] >= share || pearlmitAllowed >= share, "Market: not approved");
+            if (pearlmitAllowed >= share) return;
             if (allowance[from][msg.sender] != type(uint256).max) {
                 allowance[from][msg.sender] -= share;
             }
@@ -420,16 +421,21 @@ abstract contract Market is MarketERC20, Ownable {
         if (from != msg.sender) {
             if (share == 0) revert AllowanceNotValid();
 
-            // TODO review risk of using this
-            (uint256 pearlmitAllowed,) = penrose.pearlmit().allowance(from, msg.sender, address(yieldBox), collateralId);
+            uint256 pearlmitAllowed;
+            // Here we approve the YB collateral token, because market token is already used in `_allowedLend`
+            if (penrose.cluster().isWhitelisted(0, msg.sender)) {
+                (pearlmitAllowed,) =
+                    penrose.pearlmit().allowance(from, msg.sender, 1155, address(yieldBox), collateralId);
+            }
             require(allowanceBorrow[from][msg.sender] >= share || pearlmitAllowed >= share, "Market: not approved");
+            if (pearlmitAllowed >= share) return;
             if (allowanceBorrow[from][msg.sender] != type(uint256).max) {
                 allowanceBorrow[from][msg.sender] -= share;
             }
         }
     }
 
-    function _updateOracleRateForLiquidations() internal {
+    function _tryUpdateOracleRate() internal {
         try oracle.get(oracleData) returns (bool _updated, uint256 _exchangeRate) {
             if (_updated && _exchangeRate > 0) {
                 exchangeRate = _exchangeRate; //update cached rate

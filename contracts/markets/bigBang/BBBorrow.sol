@@ -38,10 +38,11 @@ contract BBBorrow is BBLendingCommon {
         external
         optionNotPaused(PauseType.Borrow)
         notSelf(to)
-        solvent(from, false)
+        solvent(from)
         returns (uint256 part, uint256 share)
     {
-        if (amount == 0) return (0, 0);
+        if (amount <= minBorrowAmount) revert MinBorrowAmountNotMet();
+
         penrose.reAccrueBigBangMarkets();
 
         uint256 feeAmount = _computeVariableOpeningFee(amount);
@@ -63,11 +64,11 @@ contract BBBorrow is BBLendingCommon {
         notSelf(to)
         returns (uint256 amount)
     {
-        updateExchangeRate();
+        _tryUpdateOracleRate();
 
         _accrue();
         penrose.reAccrueBigBangMarkets();
 
-        amount = _repay(from, to, part);
+        amount = _repay(from, to, part, true);
     }
 }

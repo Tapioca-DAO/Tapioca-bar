@@ -66,61 +66,50 @@ contract MagnetarMock is PearlmitHandler {
 
         for (uint256 i; i < length; i++) {
             MagnetarCall calldata _action = calls[i];
-            if (!_action.allowFailure) {
-                require(
-                    _action.call.length > 0,
-                    string.concat("Magnetar: Missing call for action with index", string(abi.encode(i)))
-                );
-            }
+
             valAccumulator += _action.value;
 
             /// @dev Permit on YB, or an SGL/BB market
-            if (_action.id == MagnetarAction.Permit) {
-                _processPermitOperation(_action.target, _action.call, _action.allowFailure);
+            if (_action.id == uint8(MagnetarAction.Permit)) {
+                _processPermitOperation(_action.target, _action.call);
                 continue; // skip the rest of the loop
             }
 
             /// @dev Wrap/unwrap singular operations
-            if (_action.id == MagnetarAction.Wrap) {
+            if (_action.id == uint8(MagnetarAction.Wrap)) {
                 continue; // skip the rest of the loop
             }
 
             /// @dev Market singular operations
-            if (_action.id == MagnetarAction.Market) {
+            if (_action.id == uint8(MagnetarAction.Market)) {
                 continue; // skip the rest of the loop
             }
 
-            /// @dev Tap singular operations
-            if (_action.id == MagnetarAction.TapToken) {
-                continue; // skip the rest of the loop
-            }
-
-            /// @dev Modules will not return result data.
-            if (_action.id == MagnetarAction.AssetModule) {
-                _executeModule(MagnetarModule.YieldBoxModule, _action.call);
-                continue; // skip the rest of the loop
-            }
+            // /// @dev Tap singular operations
+            // if (_action.id == MagnetarAction.TapToken) {
+            //     continue; // skip the rest of the loop
+            // }
 
             /// @dev Modules will not return result data.
-            if (_action.id == MagnetarAction.CollateralModule) {
+            if (_action.id == uint8(MagnetarAction.CollateralModule)) {
                 _executeModule(MagnetarModule.CollateralModule, _action.call);
                 continue; // skip the rest of the loop
             }
 
             /// @dev Modules will not return result data.
-            if (_action.id == MagnetarAction.MintModule) {
+            if (_action.id == uint8(MagnetarAction.MintModule)) {
                 _executeModule(MagnetarModule.MintModule, _action.call);
                 continue; // skip the rest of the loop
             }
 
             /// @dev Modules will not return result data.
-            if (_action.id == MagnetarAction.OptionModule) {
+            if (_action.id == uint8(MagnetarAction.OptionModule)) {
                 _executeModule(MagnetarModule.OptionModule, _action.call);
                 continue; // skip the rest of the loop
             }
 
             /// @dev Modules will not return result data.
-            if (_action.id == MagnetarAction.YieldBoxModule) {
+            if (_action.id == uint8(MagnetarAction.YieldBoxModule)) {
                 _executeModule(MagnetarModule.YieldBoxModule, _action.call);
                 continue; // skip the rest of the loop
             }
@@ -133,9 +122,8 @@ contract MagnetarMock is PearlmitHandler {
      *
      * @param _target The contract address to call.
      * @param _actionCalldata The calldata to send to the target.
-     * @param _allowFailure Whether to allow the call to fail.
      */
-    function _processPermitOperation(address _target, bytes calldata _actionCalldata, bool _allowFailure) private {
+    function _processPermitOperation(address _target, bytes calldata _actionCalldata) private {
         /// @dev owner address should always be first param.
         // permitAction(bytes,uint16)
         // permit(address owner...)
@@ -153,7 +141,7 @@ contract MagnetarMock is PearlmitHandler {
             /// @dev Owner param check. See Warning above.
             _checkSender(abi.decode(_actionCalldata[4:36], (address)));
             // No need to send value on permit
-            _executeCall(_target, _actionCalldata, 0, _allowFailure);
+            _executeCall(_target, _actionCalldata, 0);
             return;
         }
         revert MagnetarMock_ActionNotValid(MagnetarAction.Permit, _actionCalldata);
@@ -167,9 +155,9 @@ contract MagnetarMock is PearlmitHandler {
             revert MagnetarMock_NotAuthorized();
         }
 
-        IYieldBox yieldBox = IYieldBox(IMarket(_data.market).yieldBox());
+        IYieldBox yieldBox = IYieldBox(IMarket(_data.market)._yieldBox());
 
-        uint256 assetId = IMarket(_data.market).assetId();
+        uint256 assetId = IMarket(_data.market)._assetId();
         (, address assetAddress,,) = yieldBox.assets(assetId);
 
         // deposit to YieldBox
@@ -197,7 +185,7 @@ contract MagnetarMock is PearlmitHandler {
         if (_data.collateralAmount > 0) {
             address collateralWithdrawReceiver = _data.withdrawCollateralParams.withdraw ? address(this) : _data.user;
             uint256 collateralShare =
-                yieldBox.toShare(IMarket(_data.market).collateralId(), _data.collateralAmount, false);
+                yieldBox.toShare(IMarket(_data.market)._collateralId(), _data.collateralAmount, false);
 
             (Module[] memory modules, bytes[] memory calls) = IMarketHelper(_data.marketHelper).removeCollateral(
                 _data.user, collateralWithdrawReceiver, collateralShare
@@ -221,7 +209,7 @@ contract MagnetarMock is PearlmitHandler {
 
         IMarket bigBang = IMarket(_data.externalContracts.bigBang);
         ISingularity singularity = ISingularity(_data.externalContracts.singularity);
-        IYieldBox yieldBox = IYieldBox(singularity.yieldBox());
+        IYieldBox yieldBox = IYieldBox(singularity._yieldBox());
 
         if (address(singularity) != address(0)) {
             yieldBox.setApprovalForAll(address(singularity), true);
@@ -232,7 +220,7 @@ contract MagnetarMock is PearlmitHandler {
 
         // if `depositData.deposit`:
         //      - deposit SGL asset to YB for `_data.user`
-        uint256 sglAssetId = singularity.assetId();
+        uint256 sglAssetId = singularity._assetId();
         (, address sglAssetAddress,,) = yieldBox.assets(sglAssetId);
         if (_data.depositData.deposit) {
             _data.depositData.amount = _extractTokens(_data.user, sglAssetAddress, _data.depositData.amount);
@@ -276,11 +264,11 @@ contract MagnetarMock is PearlmitHandler {
 
         IMarket bigBang = IMarket(_data.externalData.bigBang);
         ISingularity singularity = ISingularity(_data.externalData.singularity);
-        IYieldBox yieldBox = IYieldBox(singularity.yieldBox());
+        IYieldBox yieldBox = IYieldBox(singularity._yieldBox());
 
         uint256 _removeAmount = _data.removeAndRepayData.removeAmount;
         if (_data.removeAndRepayData.removeAssetFromSGL) {
-            uint256 _assetId = singularity.assetId();
+            uint256 _assetId = singularity._assetId();
             uint256 share = yieldBox.toShare(_assetId, _removeAmount, false);
 
             address removeAssetTo = _data.removeAndRepayData.assetWithdrawData.withdraw
@@ -290,7 +278,7 @@ contract MagnetarMock is PearlmitHandler {
         }
 
         if (_data.removeAndRepayData.removeCollateralFromBB) {
-            uint256 _collateralId = bigBang.collateralId();
+            uint256 _collateralId = bigBang._collateralId();
             uint256 collateralShare = yieldBox.toShare(_collateralId, _data.removeAndRepayData.collateralAmount, false);
             address removeCollateralTo =
                 _data.removeAndRepayData.collateralWithdrawData.withdraw ? address(this) : _data.user;
@@ -309,9 +297,9 @@ contract MagnetarMock is PearlmitHandler {
     {
         if (!cluster.isWhitelisted(cluster.lzChainId(), address(_data.market))) revert MagnetarMock_NotAuthorized();
 
-        IYieldBox yieldBox = IYieldBox(IMarket(_data.market).yieldBox());
+        IYieldBox yieldBox = IYieldBox(IMarket(_data.market)._yieldBox());
 
-        uint256 collateralId = IMarket(_data.market).collateralId();
+        uint256 collateralId = IMarket(_data.market)._collateralId();
         (, address collateralAddress,,) = yieldBox.assets(collateralId);
 
         uint256 _share = yieldBox.toShare(collateralId, _data.collateralAmount, false);
@@ -361,9 +349,7 @@ contract MagnetarMock is PearlmitHandler {
     /**
      * @dev Executes a call to an address, optionally reverting on failure. Make sure to sanitize prior to calling.
      */
-    function _executeCall(address _target, bytes calldata _actionCalldata, uint256 _actionValue, bool _allowFailure)
-        private
-    {
+    function _executeCall(address _target, bytes calldata _actionCalldata, uint256 _actionValue) private {
         bool success;
         bytes memory returnData;
 
@@ -373,7 +359,7 @@ contract MagnetarMock is PearlmitHandler {
             (success, returnData) = _target.call(_actionCalldata);
         }
 
-        if (!success && !_allowFailure) {
+        if (!success) {
             _getRevertMsg(returnData);
         }
     }
@@ -390,37 +376,7 @@ contract MagnetarMock is PearlmitHandler {
         }
         IYieldBox _yieldBox = IYieldBox(data.yieldBox);
 
-        // perform a same chain withdrawal
-        if (data.lzSendParams.sendParam.dstEid == 0) {
-            _withdrawHere(_yieldBox, data.assetId, data.lzSendParams.sendParam.to, data.lzSendParams.sendParam.amountLD);
-            return;
-        }
-
-        if (msg.value > 0) {
-            if (msg.value != data.composeGas) revert MagnetarMock_GasMismatch(data.composeGas, msg.value);
-        }
-
-        // perform a cross chain withdrawal
-        (, address asset,,) = _yieldBox.assets(data.assetId);
-        if (!cluster.isWhitelisted(0, asset)) {
-            revert MagnetarMock_TargetNotWhitelisted(asset);
-        }
-
-        _yieldBox.withdraw(data.assetId, address(this), address(this), data.lzSendParams.sendParam.amountLD, 0);
-        // TODO: decide about try-catch here
-        if (data.unwrap) {
-            _lzCustomWithdraw(
-                asset,
-                data.lzSendParams,
-                data.sendGas,
-                data.sendVal,
-                data.composeGas,
-                data.composeVal,
-                data.composeMsgType
-            );
-        } else {
-            _lzWithdraw(asset, data.lzSendParams, data.sendGas, data.sendVal);
-        }
+        _withdrawHere(_yieldBox, data.assetId, data.receiver, data.amount);
     }
 
     function _extractTokens(address _from, address _token, uint256 _amount) private returns (uint256) {
@@ -433,8 +389,8 @@ contract MagnetarMock is PearlmitHandler {
         return balanceAfter - balanceBefore;
     }
 
-    function _withdrawHere(IYieldBox _yieldBox, uint256 _assetId, bytes32 _to, uint256 _amount) private {
-        _yieldBox.withdraw(_assetId, address(this), OFTMsgCodec.bytes32ToAddress(_to), _amount, 0);
+    function _withdrawHere(IYieldBox _yieldBox, uint256 _assetId, address _to, uint256 _amount) private {
+        _yieldBox.withdraw(_assetId, address(this), _to, _amount, 0);
     }
 
     function _lzWithdraw(address _asset, LZSendParam memory _lzSendParam, uint128 _lzSendGas, uint128 _lzSendVal)
@@ -480,7 +436,8 @@ contract MagnetarMock is PearlmitHandler {
                     prevOptionsData: bytes("")
                 }),
                 lzReceiveGas: _lzSendGas + _lzComposeGas,
-                lzReceiveValue: _lzComposeVal
+                lzReceiveValue: _lzComposeVal,
+                refundAddress: address(this)
             })
         );
 
@@ -515,7 +472,8 @@ contract MagnetarMock is PearlmitHandler {
                     prevOptionsData: bytes("")
                 }),
                 lzReceiveGas: _lzSendGas,
-                lzReceiveValue: _lzSendVal
+                lzReceiveValue: _lzSendVal,
+                refundAddress: address(this)
             })
         );
     }

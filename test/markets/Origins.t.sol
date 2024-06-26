@@ -39,7 +39,6 @@ import {Pearlmit, IPearlmit} from "tapioca-periph/pearlmit/Pearlmit.sol";
 
 import "forge-std/Test.sol";
 
-//TODO continue
 contract OriginsTest is UsdoTestHelper {
     uint32 aEid = 1;
     uint32 bEid = 2;
@@ -79,6 +78,7 @@ contract OriginsTest is UsdoTestHelper {
         vm.label(userA, "userA");
         vm.label(userB, "userB");
 
+        pearlmit = new Pearlmit("Test", "1", address(this), 0);
         {
             tapOFT = new ERC20Mock("Tapioca OFT", "TAP");
             vm.label(address(tapOFT), "tapOFT");
@@ -92,18 +92,18 @@ contract OriginsTest is UsdoTestHelper {
             collateralErc20 = new ERC20Mock("CERC", "CERC");
             vm.label(address(collateralErc20), "collateralErc20");
 
-            asset = new TOFTMock(address(assetErc20));
+            asset = new TOFTMock(address(assetErc20), IPearlmit(address(pearlmit)));
             vm.label(address(asset), "asset");
 
-            collateral = new TOFTMock(address(collateralErc20));
+            collateral = new TOFTMock(address(collateralErc20), IPearlmit(address(pearlmit)));
             vm.label(address(collateral), "collateral");
         }
 
         setUpEndpoints(3, LibraryType.UltraLightNode);
 
         {
-            pearlmit = new Pearlmit("Pearlmit", "1");
-            yieldBox = createYieldBox();
+            pearlmit = new Pearlmit("Pearlmit", "1", address(this), 0);
+            yieldBox = createYieldBox(pearlmit, address(this));
             cluster = createCluster(aEid, address(this));
             magnetar = createMagnetar(address(cluster), IPearlmit(address(pearlmit)));
 
@@ -145,7 +145,8 @@ contract OriginsTest is UsdoTestHelper {
             collateralYieldBoxId,
             ITapiocaOracle(address(oracle)),
             0,
-            95000
+            99999,
+            address(penrose)
         );
 
         vm.label(address(origins), "Origins");
@@ -186,35 +187,39 @@ contract OriginsTest is UsdoTestHelper {
             origins.setMarketConfig(
                 ITapiocaOracle(toSetAddress),
                 "",
-                toSetAddress,
                 toSetValue,
                 toSetValue,
                 toSetValue,
                 toSetMaxValue,
                 toSetValue,
                 toSetValue,
-                toSetMaxValue
+                toSetMaxValue,
+                toSetValue,
+                toSetValue
             );
         }
 
         {
-            assertEq(address(origins.oracle()), address(toSetAddress));
-            assertEq(origins.conservator(), toSetAddress);
-            assertEq(origins.protocolFee(), toSetValue);
-            assertEq(origins.minLiquidatorReward(), toSetValue);
-            assertEq(origins.maxLiquidatorReward(), toSetMaxValue);
-            assertEq(origins.totalBorrowCap(), toSetValue);
-            assertEq(origins.collateralizationRate(), toSetValue);
-            assertEq(origins.liquidationCollateralizationRate(), toSetMaxValue);
+            assertEq(address(origins._oracle()), address(toSetAddress));
+            assertEq(origins._protocolFee(), toSetValue);
+            assertEq(origins._minLiquidatorReward(), toSetValue);
+            assertEq(origins._maxLiquidatorReward(), toSetMaxValue);
+            assertEq(origins._totalBorrowCap(), toSetValue);
+            assertEq(origins._collateralizationRate(), toSetValue);
+            assertEq(origins._liquidationCollateralizationRate(), toSetMaxValue);
+            assertEq(origins._minBorrowAmount(), toSetValue);
         }
     }
 
-    function test_should_not_work_when_paused() public {
+    function test_should_not_work_when_paused_origins() public {
         {
+            ICluster _cl = penrose.cluster();
+            _cl.setRoleForContract(address(this), keccak256("PAUSABLE"), true);
             origins.setMarketConfig(
                 ITapiocaOracle(address(0)),
                 "",
-                address(this), //conservator
+                0,
+                0,
                 0,
                 0,
                 0,
@@ -239,6 +244,33 @@ contract OriginsTest is UsdoTestHelper {
         origins.updatePause(Market.PauseType.Borrow, true);
         vm.expectRevert("Market: paused");
         origins.borrow(1);
+    }
+
+    function test_origin_should_borrow_max() public {
+        uint256 collateralAmount = 1 ether;
+        uint256 borrowAmount = 9e17;
+
+        deal(address(collateral), address(this), collateralAmount);
+
+        depositCollateral(collateralAmount);
+
+        borrow(borrowAmount, false);
+    }
+
+    function test_origin_should_borrow_max_2000_ether() public {
+        uint256 collateralAmount = 1 ether;
+        uint256 borrowAmount = 1900e18;
+
+        oracle.set(5e14);
+        origins.updateExchangeRate();
+
+        deal(address(collateral), address(this), collateralAmount);
+
+        depositCollateral(collateralAmount);
+
+        borrow(borrowAmount, false);
+
+        borrow(100e18, true);
     }
 
     function test_should_borrow_without_lenders() public {
@@ -267,7 +299,7 @@ contract OriginsTest is UsdoTestHelper {
 
         repay(borrowAmount);
 
-        uint256 borrowPart = origins.userBorrowPart(address(this));
+        uint256 borrowPart = origins._userBorrowPart(address(this));
         assertEq(borrowPart, 0);
     }
 
@@ -300,13 +332,13 @@ contract OriginsTest is UsdoTestHelper {
 
         skip(86400 * 1000);
 
-        uint256 borrowPart = origins.userBorrowPart(address(this));
+        uint256 borrowPart = origins._userBorrowPart(address(this));
         assertEq(borrowPart, borrowAmount);
 
         depositAsset(borrowAmount);
 
         repay(borrowAmount);
-        borrowPart = origins.userBorrowPart(address(this));
+        borrowPart = origins._userBorrowPart(address(this));
         assertEq(borrowPart, 0);
     }
 }

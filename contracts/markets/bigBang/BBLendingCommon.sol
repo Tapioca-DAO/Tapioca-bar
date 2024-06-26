@@ -29,21 +29,22 @@ contract BBLendingCommon is BBCommon {
     // *** ERRORS *** //
     // ************** //
     error BorrowCapReached();
-    error OracleCallFailed();
     error NothingToRepay();
     error RepayAmountNotValid();
 
     // ************************** //
     // *** PRIVATE FUNCTIONS *** //
     // ************************* //
-    function _addCollateral(address from, address to, bool skim, uint256 amount, uint256 share) internal {
+    function _addCollateral(address from, address to, bool skim, uint256 amount, uint256 share, bool addTokens)
+        internal
+    {
         if (share == 0) {
             share = yieldBox.toShare(collateralId, amount, false);
         }
         userCollateralShare[to] += share;
         uint256 oldTotalCollateralShare = totalCollateralShare;
         totalCollateralShare = oldTotalCollateralShare + share;
-        _addTokens(from, collateralId, share, oldTotalCollateralShare, skim);
+        if (addTokens) _addTokens(from, collateralId, share, oldTotalCollateralShare, skim);
         emit LogAddCollateral(skim ? address(yieldBox) : from, to, share);
     }
 
@@ -76,47 +77,22 @@ contract BBLendingCommon is BBCommon {
         share = _depositAmountToYb(asset, to, assetId, amount);
     }
 
-    function _computeVariableOpeningFee(uint256 amount) internal returns (uint256) {
-        if (amount == 0) return 0;
-
-        //get asset <> USDC price ( USDO <> USDC )
-        (bool updated, uint256 _exchangeRate) = assetOracle.get(oracleData);
-        if (!updated) revert OracleCallFailed();
-
-        if (_exchangeRate >= minMintFeeStart) {
-            return (amount * minMintFee) / FEE_PRECISION;
-        }
-        if (_exchangeRate <= maxMintFeeStart) {
-            return (amount * maxMintFee) / FEE_PRECISION;
-        }
-
-        uint256 fee = maxMintFee
-            - (((_exchangeRate - maxMintFeeStart) * (maxMintFee - minMintFee)) / (minMintFeeStart - maxMintFeeStart));
-
-        if (fee > maxMintFee) return (amount * maxMintFee) / FEE_PRECISION;
-        if (fee < minMintFee) return (amount * minMintFee) / FEE_PRECISION;
-
-        if (fee > 0) {
-            return (amount * fee) / FEE_PRECISION;
-        }
-        return 0;
-    }
-
     /// @dev Concrete implementation of `repay`.
-    function _repay(address from, address to, uint256 part) internal returns (uint256 amount) {
+    function _repay(address from, address to, uint256 part, bool checkAllowance) internal returns (uint256 amount) {
         if (part > userBorrowPart[to]) {
             part = userBorrowPart[to];
         }
         if (part == 0) revert NothingToRepay();
 
         // @dev check allowance
-        if (msg.sender != from) {
+        if (checkAllowance && msg.sender != from) {
             uint256 partInAmount;
             Rebase memory _totalBorrow = totalBorrow;
-            (_totalBorrow, partInAmount) = _totalBorrow.sub(part, false);
+            (_totalBorrow, partInAmount) = _totalBorrow.sub(part, true);
             uint256 allowanceShare =
                 _computeAllowanceAmountInAsset(to, exchangeRate, partInAmount, _safeDecimals(asset));
-            _allowedBorrow(from, allowanceShare);
+            if (allowanceShare == 0) revert NotEnough();
+            _allowedLend(from, allowanceShare);
         }
 
         // @dev sub `part` of totalBorrow
@@ -124,10 +100,15 @@ contract BBLendingCommon is BBCommon {
         userBorrowPart[to] -= part;
 
         // @dev amount includes the opening & accrued fees
-        yieldBox.withdraw(assetId, from, address(this), amount, 0);
+        uint256 _share = yieldBox.toShare(assetId, amount, false);
+        bool isErr = pearlmit.transferFromERC1155(from, address(this), address(yieldBox), assetId, _share);
+        if (isErr) {
+            revert TransferFailed();
+        }
+        (uint256 amountOut,) = yieldBox.withdraw(assetId, address(this), address(this), 0, _share);
 
         // @dev burn USDO
-        IUsdo(address(asset)).burn(address(this), amount);
+        IUsdo(address(asset)).burn(address(this), amountOut);
 
         emit LogRepay(from, to, amount, part);
     }

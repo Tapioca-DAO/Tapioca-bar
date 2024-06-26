@@ -2,10 +2,16 @@
 pragma solidity 0.8.22;
 
 //LZ
+import {
+    MessagingReceipt,
+    OFTReceipt,
+    SendParam,
+    MessagingFee
+} from "@layerzerolabs/lz-evm-oapp-v2/contracts/oft/interfaces/IOFT.sol";
 import {IMessagingChannel} from "@layerzerolabs/lz-evm-protocol-v2/contracts/interfaces/IMessagingChannel.sol";
-import {MessagingReceipt, OFTReceipt} from "@layerzerolabs/lz-evm-oapp-v2/contracts/oft/interfaces/IOFT.sol";
 import {OAppReceiver} from "@layerzerolabs/lz-evm-oapp-v2/contracts/oapp/OAppReceiver.sol";
 import {Origin} from "@layerzerolabs/lz-evm-oapp-v2/contracts/oapp/OApp.sol";
+import {OFTCore} from "@layerzerolabs/lz-evm-oapp-v2/contracts/oft/OFT.sol";
 
 // External
 import {ERC20Permit, ERC20} from "@openzeppelin/contracts/token/ERC20/extensions/draft-ERC20Permit.sol";
@@ -63,10 +69,13 @@ contract Usdo is BaseUsdo, Pausable, ReentrancyGuard, ERC20Permit {
 
     event SetMinterStatus(address indexed _for, bool _status);
     event SetBurnerStatus(address indexed _for, bool _status);
+    event ConservatorUpdated(address indexed old, address indexed _new);
+
+    error AddressNotValid();
 
     constructor(UsdoInitStruct memory _initData, UsdoModulesInitStruct memory _modulesData)
         BaseUsdo(_initData)
-        ERC20Permit("Tapioca Usdo")
+        ERC20Permit("USDO Stablecoin")
     {
         if (_modulesData.usdoSenderModule == address(0)) revert Usdo_NotValid();
         if (_modulesData.usdoReceiverModule == address(0)) {
@@ -84,8 +93,7 @@ contract Usdo is BaseUsdo, Pausable, ReentrancyGuard, ERC20Permit {
         _setModule(uint8(IUsdo.Module.UsdoMarketReceiver), _modulesData.marketReceiverModule);
         _setModule(uint8(IUsdo.Module.UsdoOptionReceiver), _modulesData.optionReceiverModule);
 
-        allowedMinter[_getChainId()][_initData.delegate] = true;
-        allowedBurner[_getChainId()][_initData.delegate] = true;
+        _transferOwnership(_initData.delegate);
     }
 
     /**
@@ -97,17 +105,6 @@ contract Usdo is BaseUsdo, Pausable, ReentrancyGuard, ERC20Permit {
     }
 
     receive() external payable {}
-
-    /**
-     * @inheritdoc BaseTapiocaOmnichainEngine
-     */
-    function transferFrom(address _from, address _to, uint256 _amount)
-        public
-        override(BaseTapiocaOmnichainEngine, ERC20)
-        returns (bool)
-    {
-        return BaseTapiocaOmnichainEngine.transferFrom(_from, _to, _amount);
-    }
 
     /**
      * @dev Slightly modified version of the OFT _lzReceive() operation.
@@ -135,27 +132,6 @@ contract Usdo is BaseUsdo, Pausable, ReentrancyGuard, ERC20Permit {
             abi.encodeWithSelector(OAppReceiver.lzReceive.selector, _origin, _guid, _message, _executor, _extraData),
             false
         );
-    }
-
-    /**
-     * @notice Execute a call to a module.
-     * @dev Example on how `_data` should be encoded:
-     *      - abi.encodeCall(IERC20.transfer, (to, amount));
-     * @dev Use abi.encodeCall to encode the function call and its parameters with type safety.
-     *
-     * @param _module The module to execute.
-     * @param _data The data to execute. Should be ABI encoded with the selector.
-     * @param _forwardRevert If true, forward the revert message from the module.
-     *
-     * @return returnData The return data from the module execution, if any.
-     */
-    function executeModule(IUsdo.Module _module, bytes memory _data, bool _forwardRevert)
-        external
-        payable
-        whenNotPaused
-        returns (bytes memory returnData)
-    {
-        return _executeModule(uint8(_module), _data, _forwardRevert);
     }
 
     /**
@@ -189,16 +165,73 @@ contract Usdo is BaseUsdo, Pausable, ReentrancyGuard, ERC20Permit {
         public
         payable
         whenNotPaused
-        returns (MessagingReceipt memory msgReceipt, OFTReceipt memory oftReceipt)
+        returns (
+            MessagingReceipt memory msgReceipt,
+            OFTReceipt memory oftReceipt,
+            bytes memory message,
+            bytes memory options
+        )
     {
-        (msgReceipt, oftReceipt) = abi.decode(
+        (msgReceipt, oftReceipt, message, options) = abi.decode(
             _executeModule(
                 uint8(IUsdo.Module.UsdoSender),
                 abi.encodeCall(TapiocaOmnichainSender.sendPacket, (_lzSendParam, _composeMsg)),
                 false
             ),
-            (MessagingReceipt, OFTReceipt)
+            (MessagingReceipt, OFTReceipt, bytes, bytes)
         );
+    }
+
+    /**
+     * @dev See `TapiocaOmnichainSender.sendPacketFrom`
+     */
+    function sendPacketFrom(address _from, LZSendParam calldata _lzSendParam, bytes calldata _composeMsg)
+        public
+        payable
+        whenNotPaused
+        returns (
+            MessagingReceipt memory msgReceipt,
+            OFTReceipt memory oftReceipt,
+            bytes memory message,
+            bytes memory options
+        )
+    {
+        (msgReceipt, oftReceipt, message, options) = abi.decode(
+            _executeModule(
+                uint8(IUsdo.Module.UsdoSender),
+                abi.encodeCall(TapiocaOmnichainSender.sendPacketFrom, (_from, _lzSendParam, _composeMsg)),
+                false
+            ),
+            (MessagingReceipt, OFTReceipt, bytes, bytes)
+        );
+    }
+
+    /**
+     * See `OFTCore::send()`
+     * @dev override default `send` behavior to add `whenNotPaused` modifier
+     */
+    function send(SendParam calldata _sendParam, MessagingFee calldata _fee, address _refundAddress)
+        external
+        payable
+        override(OFTCore)
+        whenNotPaused
+        returns (MessagingReceipt memory msgReceipt, OFTReceipt memory oftReceipt)
+    {
+        // @dev Applies the token transfers regarding this send() operation.
+        // - amountSentLD is the amount in local decimals that was ACTUALLY sent/debited from the sender.
+        // - amountReceivedLD is the amount in local decimals that will be received/credited to the recipient on the remote OFT instance.
+        (uint256 amountSentLD, uint256 amountReceivedLD) =
+            _debit(msg.sender, _sendParam.amountLD, _sendParam.minAmountLD, _sendParam.dstEid);
+
+        // @dev Builds the options and OFT message to quote in the endpoint.
+        (bytes memory message, bytes memory options) = _buildMsgAndOptions(_sendParam, amountReceivedLD);
+
+        // @dev Sends the message to the LayerZero endpoint and returns the LayerZero msg receipt.
+        msgReceipt = _lzSend(_sendParam.dstEid, message, options, _fee, _refundAddress);
+        // @dev Formulate the OFT receipt.
+        oftReceipt = OFTReceipt(amountSentLD, amountReceivedLD);
+
+        emit OFTSent(msgReceipt.guid, _sendParam.dstEid, msg.sender, amountSentLD, amountReceivedLD);
     }
 
     /// =====================
@@ -275,7 +308,10 @@ contract Usdo is BaseUsdo, Pausable, ReentrancyGuard, ERC20Permit {
     /**
      * @notice Un/Pauses this contract.
      */
-    function setPause(bool _pauseState) external onlyOwner {
+    function setPause(bool _pauseState) external {
+        if (!getCluster().hasRole(msg.sender, keccak256("PAUSABLE")) && msg.sender != owner()) {
+            revert Usdo_NotAuthorized();
+        }
         if (_pauseState) {
             _pause();
         } else {
@@ -302,14 +338,6 @@ contract Usdo is BaseUsdo, Pausable, ReentrancyGuard, ERC20Permit {
             _fees -= toExtract;
             _transfer(address(this), msg.sender, toExtract);
         }
-    }
-
-    /**
-     * @notice set the Cluster address.
-     * @param _cluster the new Cluster address
-     */
-    function setCluster(address _cluster) external virtual onlyOwner {
-        cluster = ICluster(_cluster);
     }
 
     /**

@@ -13,7 +13,9 @@ import {IYieldBox} from "tapioca-periph/interfaces/yieldbox/IYieldBox.sol";
 import {IPearlmit} from "tapioca-periph/interfaces/periph/IPearlmit.sol";
 import {IPenrose} from "tapioca-periph/interfaces/bar/IPenrose.sol";
 import {Module} from "tapioca-periph/interfaces/bar/IMarket.sol";
+import {IUsdo} from "tapioca-periph/interfaces/oft/IUsdo.sol";
 import {SafeApprove} from "../../libraries/SafeApprove.sol";
+import {MarketStateView} from "../MarketStateView.sol";
 import {BBLiquidation} from "./BBLiquidation.sol";
 import {BBCollateral} from "./BBCollateral.sol";
 import {BBLeverage} from "./BBLeverage.sol";
@@ -32,7 +34,7 @@ import {BBBorrow} from "./BBBorrow.sol";
    
 */
 
-contract BigBang is BBCommon {
+contract BigBang is MarketStateView, BBCommon {
     using RebaseLibrary for Rebase;
     using BoringERC20 for IERC20;
     using SafeApprove for address;
@@ -158,6 +160,7 @@ contract BigBang is BBCommon {
         if (_liquidationCollateralizationRate > FEE_PRECISION) {
             revert NotValid();
         }
+
         asset = IERC20(_asset);
         assetId = penrose.usdoAssetId();
         collateral = _collateral;
@@ -175,21 +178,34 @@ contract BigBang is BBCommon {
 
         EXCHANGE_RATE_PRECISION = _exchangeRatePrecision > 0 ? _exchangeRatePrecision : 1e18;
 
-        minLiquidatorReward = 8e4;
-        maxLiquidatorReward = 9e4;
-        liquidationBonusAmount = 1e4;
+        minLiquidatorReward = 88e3;
+        maxLiquidatorReward = 925e2;
+        liquidationBonusAmount = 3e3;
         liquidationMultiplier = 12000; //12%
 
         rateValidDuration = 24 hours;
         minMintFee = 0;
         maxMintFee = 1000; // 1%
-        maxMintFeeStart = 975000000000000000; // 0.975 *1e18
+        maxMintFeeStart = 980000000000000000; // 0.98 *1e18
         minMintFeeStart = 1000000000000000000; // 1*1e18
 
         leverageExecutor = _leverageExecutor;
+        minBorrowAmount = 1e15;
+        minCollateralAmount = 1e15;
 
         _transferOwnership(address(penrose));
-        conservator = address(penrose);
+    }
+
+    // ************************ //
+    // *** VIEW FUNCTIONS ***** //
+    // ************************ //
+    /// @notice Returns variable opening fee
+    /// @param amount the borrow amount to compute for
+    function computeVariableOpeningFee(uint256 amount) external view returns (uint256) {
+        //get asset <> USDC price ( USDO <> USDC )
+        (bool updated, uint256 _exchangeRate) = assetOracle.peek(oracleData);
+        if (!updated) revert OracleCallFailed();
+        return _computeVariableOpeningFeeView(amount, _exchangeRate);
     }
 
     // ************************ //
@@ -223,11 +239,27 @@ contract BigBang is BBCommon {
     // ************************* //
     // *** OWNER FUNCTIONS ***** //
     // ************************* //
+    function setDebtRateHelper(address _helper) external onlyOwner {
+        if (_helper == address(0)) revert NotValid();
+        emit DebtRateHelperUpdated(debtRateHelper, _helper);
+        debtRateHelper = _helper;
+    }
+
+    /// @notice Reset the open interest debt and return the value
+    function consumeMintableOpenInterestDebt() external onlyOwner returns (uint256) {
+        uint256 _openInterestDebt = openInterestDebt;
+        openInterestDebt = 0;
+        return _openInterestDebt;
+    }
+
     /// @notice updates the pause state of the contract
     /// @dev can only be called by the conservator
     /// @param val the new value
     function updatePause(PauseType _type, bool val) external {
-        require(msg.sender == conservator, "Market: unauthorized");
+        require(
+            penrose.cluster().hasRole(msg.sender, keccak256("PAUSABLE")) || msg.sender == owner(),
+            "Market: unauthorized"
+        );
         require(val != pauseOptions[_type], "Market: same state");
         emit PausedUpdated(_type, pauseOptions[_type], val);
         pauseOptions[_type] = val;
@@ -236,7 +268,10 @@ contract BigBang is BBCommon {
     /// @notice updates the pause state of the contract for all types
     /// @param val the new val
     function updatePauseAll(bool val) external {
-        require(msg.sender == conservator, "Market: unauthorized");
+        require(
+            penrose.cluster().hasRole(msg.sender, keccak256("PAUSABLE")) || msg.sender == owner(),
+            "Market: unauthorized"
+        );
 
         pauseOptions[PauseType.Borrow] = val;
         pauseOptions[PauseType.Repay] = val;
@@ -262,7 +297,7 @@ contract BigBang is BBCommon {
     function setMinAndMaxMintRange(uint256 _min, uint256 _max) external onlyOwner {
         emit UpdateMinMaxMintRange(minMintFeeStart, _min, maxMintFeeStart, _max);
 
-        if (_min >= _max) revert NotValid();
+        if (_max >= _min) revert NotValid();
 
         minMintFeeStart = _min;
         maxMintFeeStart = _max;
@@ -328,6 +363,12 @@ contract BigBang is BBCommon {
     ) external onlyOwner {
         isMainMarket = collateralId == penrose.mainAssetId();
 
+        if (_liquidationMultiplier > 0) {
+            if (_liquidationMultiplier >= FEE_PRECISION) revert NotValid();
+            emit LiquidationMultiplierUpdated(liquidationMultiplier, _liquidationMultiplier);
+            liquidationMultiplier = _liquidationMultiplier;
+        }
+
         if (!isMainMarket) {
             _accrue();
             if (_minDebtRate > 0) {
@@ -346,12 +387,6 @@ contract BigBang is BBCommon {
             if (_debtRateAgainstEthMarket > 0) {
                 emit DebtRateAgainstEthUpdated(debtRateAgainstEthMarket, _debtRateAgainstEthMarket);
                 debtRateAgainstEthMarket = _debtRateAgainstEthMarket;
-            }
-
-            if (_liquidationMultiplier > 0) {
-                if (_liquidationMultiplier >= FEE_PRECISION) revert NotValid();
-                emit LiquidationMultiplierUpdated(liquidationMultiplier, _liquidationMultiplier);
-                liquidationMultiplier = _liquidationMultiplier;
             }
         }
     }

@@ -12,8 +12,10 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 // Tapioca
 import {IYieldBox} from "tapioca-periph/interfaces/yieldbox/IYieldBox.sol";
+import {IPenrose} from "tapioca-periph/interfaces/bar/IPenrose.sol";
 import {IUsdo} from "tapioca-periph/interfaces/oft/IUsdo.sol";
 import {SafeApprove} from "../../libraries/SafeApprove.sol";
+import {MarketStateView} from "../MarketStateView.sol";
 import {Market, MarketERC20} from "../Market.sol";
 
 // solhint-disable max-line-length
@@ -30,7 +32,7 @@ import {Market, MarketERC20} from "../Market.sol";
 */
 
 /// @notice used for initial USDO mint
-contract Origins is Ownable, Market, ReentrancyGuard {
+contract Origins is Ownable, Market, MarketStateView, ReentrancyGuard {
     using RebaseLibrary for Rebase;
     using BoringERC20 for IERC20;
     using SafeCast for uint256;
@@ -59,6 +61,8 @@ contract Origins is Ownable, Market, ReentrancyGuard {
     event LogBorrow(address indexed from, address indexed to, uint256 indexed amount, uint256 part);
     /// @notice event emitted when a repay operation is performed
     event LogRepay(address indexed from, address indexed to, uint256 indexed amount, uint256 part);
+    /// @notice event emitted when an allowed participant status changes
+    event UpdateParticipants(address indexed participant, bool indexed status);
 
     constructor(
         address _owner,
@@ -69,7 +73,8 @@ contract Origins is Ownable, Market, ReentrancyGuard {
         uint256 _collateralId,
         ITapiocaOracle _oracle,
         uint256 _exchangeRatePrecision,
-        uint256 _collateralizationRate
+        uint256 _collateralizationRate,
+        IPenrose _penrose
     ) MarketERC20("Origins") {
         allowedParticipants[_owner] = true;
 
@@ -85,6 +90,7 @@ contract Origins is Ownable, Market, ReentrancyGuard {
         collateral = _collateral;
         collateralId = _collateralId;
         oracle = _oracle;
+        penrose = _penrose;
         updateExchangeRate();
 
         EXCHANGE_RATE_PRECISION = _exchangeRatePrecision > 0 ? _exchangeRatePrecision : 1e18;
@@ -93,19 +99,28 @@ contract Origins is Ownable, Market, ReentrancyGuard {
         liquidationCollateralizationRate = 1e5;
 
         rateValidDuration = 24 hours;
+        minBorrowAmount = 1e15;
 
-        conservator = _owner;
         _transferOwnership(_owner);
     }
 
     // ************************* //
     // *** OWNER FUNCTIONS ***** //
     // ************************* //
+
+    /// @notice sets or removes an allowed participant
+    /// @param _participant the participant's address
+    /// @param _val true/false
+    function updateAllowedParticipants(address _participant, bool _val) external onlyOwner {
+        allowedParticipants[_participant] = _val;
+        emit UpdateParticipants(_participant, _val);
+    }
+
     /// @notice updates the pause state of the contract
     /// @dev can only be called by the conservator
     /// @param val the new value
     function updatePause(PauseType _type, bool val) external {
-        require(msg.sender == conservator, "Market: unauthorized");
+        require(penrose.cluster().hasRole(msg.sender, keccak256("PAUSABLE")) || msg.sender == owner(), "Market: unauthorized");
         require(val != pauseOptions[_type], "Market: same state");
         emit PausedUpdated(_type, pauseOptions[_type], val);
         pauseOptions[_type] = val;
@@ -114,7 +129,7 @@ contract Origins is Ownable, Market, ReentrancyGuard {
     /// @notice updates the pause state of the contract for all types
     /// @param val the new val
     function updatePauseAll(bool val) external {
-        require(msg.sender == conservator, "Market: unauthorized");
+        require(penrose.cluster().hasRole(msg.sender, keccak256("PAUSABLE")) || msg.sender == owner(), "Market: unauthorized");
 
         pauseOptions[PauseType.Borrow] = val;
         pauseOptions[PauseType.Repay] = val;
@@ -160,11 +175,7 @@ contract Origins is Ownable, Market, ReentrancyGuard {
 
     /// @notice Removes `share` amount of collateral
     /// @param share Amount of shares to remove.
-    function removeCollateral(uint256 share)
-        external
-        optionNotPaused(PauseType.RemoveCollateral)
-        solvent(msg.sender, false)
-    {
+    function removeCollateral(uint256 share) external optionNotPaused(PauseType.RemoveCollateral) solvent(msg.sender) {
         if (!allowedParticipants[msg.sender]) revert NotAuthorized();
         _removeCollateral(msg.sender, msg.sender, share);
     }
@@ -176,12 +187,13 @@ contract Origins is Ownable, Market, ReentrancyGuard {
     function borrow(uint256 amount)
         external
         optionNotPaused(PauseType.Borrow)
-        solvent(msg.sender, false)
+        solvent(msg.sender)
         returns (uint256 part, uint256 share)
     {
         if (!allowedParticipants[msg.sender]) revert NotAuthorized();
 
-        if (amount == 0) return (0, 0);
+        if (amount <= minBorrowAmount) revert MinBorrowAmountNotMet();
+
         (part, share) = _borrow(msg.sender, msg.sender, amount);
     }
 
@@ -254,6 +266,7 @@ contract Origins is Ownable, Market, ReentrancyGuard {
     {
         address(token).safeApprove(address(yieldBox), amount);
         (, share) = yieldBox.depositAsset(id, address(this), to, amount, 0);
+        address(token).safeApprove(address(yieldBox), 0);
     }
 
     function _addCollateral(address from, address to, uint256 amount, uint256 share) internal {

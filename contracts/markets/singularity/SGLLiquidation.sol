@@ -36,30 +36,14 @@ contract SGLLiquidation is SGLCommon {
     // *** ERRORS *** //
     // ************** //
     error AmountNotValid();
-    error ForbiddenAction();
     error NothingToLiquidate();
     error LengthMismatch();
-    error OnCollateralReceiverFailed();
+    error OnCollateralReceiverFailed(uint256 returned, uint256 minAccepted);
     error BadDebt();
     error NotEnoughCollateral();
     error Solvent();
     error InsufficientLiquidationBonus();
     error NotAuthorized();
-
-    // ********************** //
-    // *** VIEW FUNCTIONS *** //
-    // ********************** //
-    /// @notice returns the collateral amount used in a liquidation
-    /// @dev useful to compute minAmountOut for collateral to asset swap
-    function viewLiquidationCollateralAmount(_ViewLiquidationStruct memory _data)
-        external
-        view
-        returns (uint256 collateralAmount)
-    {
-        (,, uint256 collateralShare) = _viewLiqudationBorrowAndCollateralShare(_data);
-
-        collateralAmount = _data.yieldBox.toAmount(_data.collateralId, collateralShare, false);
-    }
 
     // *********************** //
     // *** OWNER FUNCTIONS *** //
@@ -72,7 +56,7 @@ contract SGLLiquidation is SGLCommon {
         bytes calldata liquidatorReceiverData,
         bool swapCollateral
     ) external onlyOwner {
-        _updateOracleRateForLiquidations();
+        _tryUpdateOracleRate();
 
         //check from whitelist status
         {
@@ -90,7 +74,7 @@ contract SGLLiquidation is SGLCommon {
 
         uint256 collateralShare = userCollateralShare[user];
 
-        if (requiredCollateral < collateralShare) revert ForbiddenAction();
+        if (requiredCollateral < collateralShare) revert NotAuthorized();
 
         // update totalBorrow
         uint256 borrowAmount = totalBorrow.toElastic(userBorrowPart[user], true);
@@ -109,12 +93,13 @@ contract SGLLiquidation is SGLCommon {
         address(asset).safeApprove(address(yieldBox), borrowAmount);
         uint256 borrowShare = yieldBox.toShare(assetId, borrowAmount, false);
         yieldBox.depositAsset(assetId, address(this), address(this), borrowAmount, 0);
+        address(asset).safeApprove(address(yieldBox), 0);
         totalAsset.elastic += borrowShare.toUint128();
 
         // swap collateral with asset and send it to `receiver`
         if (swapCollateral) {
             (, uint256 returnedAmount) =
-                _swapCollateralWithAsset(collateralShare, liquidatorReceiver, liquidatorReceiverData);
+                _swapCollateralWithAsset(collateralShare, liquidatorReceiver, liquidatorReceiverData, 0, false);
             asset.safeTransfer(receiver, returnedAmount);
         } else {
             uint256 collateralAmount = yieldBox.toAmount(collateralId, collateralShare, false);
@@ -146,7 +131,7 @@ contract SGLLiquidation is SGLCommon {
             revert LengthMismatch();
         }
 
-        _updateOracleRateForLiquidations();
+        _tryUpdateOracleRate();
 
         _accrue();
 
@@ -161,20 +146,32 @@ contract SGLLiquidation is SGLCommon {
     function _swapCollateralWithAsset(
         uint256 _collateralShare,
         IMarketLiquidatorReceiver _liquidatorReceiver,
-        bytes memory _liquidatorReceiverData
+        bytes memory _liquidatorReceiverData,
+        uint256 _exchangeRate,
+        bool checkReturned
     ) private returns (uint256 returnedShare, uint256 returnedAmount) {
         uint256 collateralAmount = yieldBox.toAmount(collateralId, _collateralShare, false);
         yieldBox.withdraw(collateralId, address(this), address(_liquidatorReceiver), collateralAmount, 0);
 
-        uint256 assetBalanceBefore = asset.balanceOf(address(this));
-        //msg.sender should be validated against `initiator` on IMarketLiquidatorReceiver
-        _liquidatorReceiver.onCollateralReceiver(
-            msg.sender, address(collateral), address(asset), collateralAmount, _liquidatorReceiverData
-        );
-        uint256 assetBalanceAfter = asset.balanceOf(address(this));
+        {
+            uint256 assetBalanceBefore = asset.balanceOf(address(this));
+            //msg.sender should be validated against `initiator` on IMarketLiquidatorReceiver
+            _liquidatorReceiver.onCollateralReceiver(
+                msg.sender, address(collateral), address(asset), collateralAmount, _liquidatorReceiverData
+            );
+            uint256 assetBalanceAfter = asset.balanceOf(address(this));
+            returnedAmount = assetBalanceAfter - assetBalanceBefore;
 
-        returnedAmount = assetBalanceAfter - assetBalanceBefore;
-        if (returnedAmount == 0) revert OnCollateralReceiverFailed();
+            if (checkReturned) {
+                uint256 receivableAsset = collateralAmount * EXCHANGE_RATE_PRECISION / _exchangeRate;
+                uint256 minReceivableAsset =
+                    receivableAsset - (receivableAsset * maxLiquidationSlippage / FEE_PRECISION); //1% slippage
+                if (returnedAmount < minReceivableAsset) {
+                    revert OnCollateralReceiverFailed(returnedAmount, minReceivableAsset);
+                }
+            }
+        }
+        if (returnedAmount == 0) revert OnCollateralReceiverFailed(0, 0);
         returnedShare = yieldBox.toShare(assetId, returnedAmount, false);
     }
 
@@ -189,7 +186,7 @@ contract SGLLiquidation is SGLCommon {
 
         uint256 collateralAmountInAsset = yieldBox.toAmount(
             collateralId,
-            (userCollateralShare[user] * (EXCHANGE_RATE_PRECISION / FEE_PRECISION) * lqCollateralizationRate),
+            (userCollateralShare[user] * (EXCHANGE_RATE_PRECISION / FEE_PRECISION) * liquidationCollateralizationRate),
             false
         ) / _exchangeRate;
         // Obviously it's not `borrowPart` anymore but `borrowAmount`
@@ -198,45 +195,49 @@ contract SGLLiquidation is SGLCommon {
         return borrowPart >= collateralAmountInAsset ? borrowPart - collateralAmountInAsset : 0;
     }
 
-    function _viewLiqudationBorrowAndCollateralShare(_ViewLiquidationStruct memory _data)
-        private
-        view
-        returns (uint256 borrowAmount, uint256 borrowPart, uint256 collateralShare)
-    {
-        if (_data.exchangeRate == 0) revert ExchangeRateNotValid();
+    function _updateBorrowAndCollateralShare(
+        address user,
+        uint256 maxBorrowPart,
+        uint256 minLiquidationBonus, // min liquidation bonus to accept (default 0)
+        uint256 _exchangeRate
+    ) private returns (uint256 borrowAmount, uint256 borrowPart, uint256 collateralShare) {
+        if (_exchangeRate == 0) revert ExchangeRateNotValid();
+
+        uint256 _userBorrowPart = userBorrowPart[user];
+        uint256 _userCollateralShare = userCollateralShare[user];
 
         // get collateral amount in asset's value
-        uint256 collateralPartInAsset = (
-            _data.yieldBox.toAmount(_data.collateralId, _data.userCollateralShare, false) * _data.exchangeRatePrecision
-        ) / _data.exchangeRate;
+        uint256 collateralPartInAsset =
+            (yieldBox.toAmount(collateralId, _userCollateralShare, false) * EXCHANGE_RATE_PRECISION) / _exchangeRate;
 
         // compute closing factor (liquidatable amount)
         uint256 borrowPartWithBonus = _computeClosingFactor(
-            _data.userBorrowPart,
+            _userBorrowPart,
             collateralPartInAsset,
-            _data.feeDecimalsPrecision,
-            _data.liquidationCollateralizationRate,
-            _data.liquidationMultiplier,
-            _data.totalBorrow
+            FEE_PRECISION_DECIMALS,
+            liquidationCollateralizationRate,
+            liquidationMultiplier,
+            totalBorrow
         );
 
         // limit liquidable amount before bonus to the current debt
-        uint256 userTotalBorrowAmount = _data.totalBorrow.toElastic(_data.userBorrowPart, true);
+        uint256 userTotalBorrowAmount = totalBorrow.toElastic(_userBorrowPart, true);
         borrowPartWithBonus = borrowPartWithBonus > userTotalBorrowAmount ? userTotalBorrowAmount : borrowPartWithBonus;
 
+        // make sure liquidator cannot bypass bad debt handling
+        if (collateralPartInAsset < borrowPartWithBonus) revert BadDebt();
+
         // check the amount to be repaid versus liquidator supplied limit
-        borrowPartWithBonus = borrowPartWithBonus > _data.maxBorrowPart ? _data.maxBorrowPart : borrowPartWithBonus;
+        borrowPartWithBonus = borrowPartWithBonus > maxBorrowPart ? maxBorrowPart : borrowPartWithBonus;
         borrowAmount = borrowPartWithBonus;
 
         // compute part units, preventing rounding dust when liquidation is full
-        borrowPart = borrowAmount == userTotalBorrowAmount
-            ? _data.userBorrowPart
-            : _data.totalBorrow.toBase(borrowPartWithBonus, false);
+        borrowPart =
+            borrowAmount == userTotalBorrowAmount ? _userBorrowPart : totalBorrow.toBase(borrowPartWithBonus, false);
         if (borrowPart == 0) revert Solvent();
 
-        if (_data.liquidationBonusAmount > 0) {
-            borrowPartWithBonus =
-                borrowPartWithBonus + (borrowPartWithBonus * _data.liquidationBonusAmount) / FEE_PRECISION;
+        if (liquidationBonusAmount > 0) {
+            borrowPartWithBonus = borrowPartWithBonus + (borrowPartWithBonus * liquidationBonusAmount) / FEE_PRECISION;
         }
 
         if (collateralPartInAsset < borrowPartWithBonus) {
@@ -246,50 +247,25 @@ contract SGLLiquidation is SGLCommon {
             // If current debt is covered by collateral fully
             // then there is some liquidation bonus,
             // so liquidation can proceed if liquidator's minimum is met
-            if (_data.minLiquidationBonus > 0) {
+            if (minLiquidationBonus > 0) {
                 // `collateralPartInAsset > borrowAmount` as `borrowAmount <= userTotalBorrowAmount`
                 uint256 effectiveBonus = ((collateralPartInAsset - borrowAmount) * FEE_PRECISION) / borrowAmount;
-                if (effectiveBonus < _data.minLiquidationBonus) {
+                if (effectiveBonus < minLiquidationBonus) {
                     revert InsufficientLiquidationBonus();
                 }
-                collateralShare = _data.userCollateralShare;
+                collateralShare = _userCollateralShare;
             } else {
                 revert InsufficientLiquidationBonus();
             }
         } else {
-            collateralShare = _data.yieldBox.toShare(
-                _data.collateralId, (borrowPartWithBonus * _data.exchangeRate) / _data.exchangeRatePrecision, false
-            );
-            if (collateralShare > _data.userCollateralShare) {
+            uint totalUserBorrowWithBonus = userTotalBorrowAmount + (userTotalBorrowAmount * liquidationBonusAmount) / FEE_PRECISION;
+            if (collateralPartInAsset < totalUserBorrowWithBonus) revert BadDebt();
+            collateralShare =
+                yieldBox.toShare(collateralId, (borrowPartWithBonus * _exchangeRate) / EXCHANGE_RATE_PRECISION, false);
+            if (collateralShare > _userCollateralShare) {
                 revert NotEnoughCollateral();
             }
         }
-    }
-
-    function _updateBorrowAndCollateralShare(
-        address user,
-        uint256 maxBorrowPart,
-        uint256 minLiquidationBonus, // min liquidation bonus to accept (default 0)
-        uint256 _exchangeRate
-    ) private returns (uint256 borrowAmount, uint256 borrowPart, uint256 collateralShare) {
-        (borrowAmount, borrowPart, collateralShare) = _viewLiqudationBorrowAndCollateralShare(
-            _ViewLiquidationStruct(
-                user,
-                maxBorrowPart,
-                minLiquidationBonus,
-                _exchangeRate,
-                yieldBox,
-                collateralId,
-                userCollateralShare[user],
-                userBorrowPart[user],
-                totalBorrow,
-                liquidationBonusAmount,
-                liquidationCollateralizationRate,
-                liquidationMultiplier,
-                EXCHANGE_RATE_PRECISION,
-                FEE_PRECISION_DECIMALS
-            )
-        );
 
         userBorrowPart[user] -= borrowPart;
         userCollateralShare[user] -= collateralShare;
@@ -304,12 +280,31 @@ contract SGLLiquidation is SGLCommon {
 
         if (feeShare > 0) {
             uint256 feeAmount = yieldBox.toAmount(assetId, feeShare, false);
-            yieldBox.depositAsset(assetId, address(this), address(penrose), feeAmount, 0);
+
+            uint256 fullAssetAmount = yieldBox.toAmount(assetId, totalAsset.elastic, false) + totalBorrow.elastic;
+            uint256 feeFraction = (feeAmount * totalAsset.base) / fullAssetAmount;
+            balanceOf[address(penrose)] += feeFraction;
+            totalAsset.base += feeFraction.toUint128();
+            totalAsset.elastic += feeShare.toUint128();
+
+            yieldBox.depositAsset(assetId, address(this), address(this), 0, feeShare);
         }
         if (callerShare > 0) {
             uint256 callerAmount = yieldBox.toAmount(assetId, callerShare, false);
             yieldBox.depositAsset(assetId, address(this), msg.sender, callerAmount, 0);
         }
+    }
+
+    struct __LiquidateUserData {
+        uint256 callerReward;
+        uint256 borrowAmount;
+        uint256 borrowPart;
+        uint256 collateralShare;
+        uint256 borrowShare;
+        uint256 returnedShare;
+        uint256 extraShare;
+        uint256 feeShare;
+        uint256 callerShare;
     }
 
     function _liquidateUser(
@@ -320,28 +315,40 @@ contract SGLLiquidation is SGLCommon {
         uint256 _exchangeRate,
         uint256 minLiquidationBonus
     ) private {
-        uint256 callerReward = _getCallerReward(user, _exchangeRate);
-        (uint256 borrowAmount,, uint256 collateralShare) =
+        __LiquidateUserData memory data;
+
+        data.callerReward = _getCallerReward(user, _exchangeRate);
+        (data.borrowAmount, data.borrowPart, data.collateralShare) =
             _updateBorrowAndCollateralShare(user, maxBorrowPart, minLiquidationBonus, _exchangeRate);
-        uint256 borrowShare = yieldBox.toShare(assetId, borrowAmount, true);
-        totalCollateralShare = totalCollateralShare > collateralShare ? totalCollateralShare - collateralShare : 0;
+        data.borrowShare = yieldBox.toShare(assetId, data.borrowAmount, true);
 
-        (uint256 returnedShare,) =
-            _swapCollateralWithAsset(collateralShare, _liquidatorReceiver, _liquidatorReceiverData);
+        {
+            totalCollateralShare =
+                totalCollateralShare > data.collateralShare ? totalCollateralShare - data.collateralShare : 0;
+            totalBorrow.elastic -= data.borrowAmount.toUint128();
+            totalBorrow.base -= data.borrowPart.toUint128();
+        }
 
-        if (returnedShare < borrowShare) revert AmountNotValid();
+        {
+            (data.returnedShare,) = _swapCollateralWithAsset(
+                data.collateralShare, _liquidatorReceiver, _liquidatorReceiverData, _exchangeRate, true
+            );
+            if (data.returnedShare < data.borrowShare) revert AmountNotValid();
 
-        uint256 extraShare = returnedShare > borrowShare ? returnedShare - borrowShare : 0;
+            data.extraShare = data.returnedShare > data.borrowShare ? data.returnedShare - data.borrowShare : 0;
+            address(asset).safeApprove(address(yieldBox), type(uint256).max);
+            yieldBox.depositAsset(assetId, address(this), address(this), 0, data.returnedShare - data.extraShare);
+            totalAsset.elastic += (data.returnedShare - data.extraShare).toUint128();
+            emit LogAddAsset(address(this), address(this), (data.returnedShare - data.extraShare), 0);
 
-        address(asset).safeApprove(address(yieldBox), type(uint256).max);
-        yieldBox.depositAsset(assetId, address(this), address(this), 0, returnedShare - extraShare);
-        totalAsset.elastic += (returnedShare - extraShare).toUint128();
-        emit LogAddAsset(address(this), address(this), (returnedShare - extraShare), 0);
-        (uint256 feeShare, uint256 callerShare) = _extractLiquidationFees(extraShare, callerReward);
-        address(asset).safeApprove(address(yieldBox), 0);
-        address[] memory _users = new address[](1);
-        _users[0] = user;
-        emit Liquidated(msg.sender, _users, callerShare, feeShare, borrowAmount, collateralShare);
+            (data.feeShare, data.callerShare) = _extractLiquidationFees(data.extraShare, data.callerReward);
+            address(asset).safeApprove(address(yieldBox), 0);
+            address[] memory _users = new address[](1);
+            _users[0] = user;
+            emit Liquidated(
+                msg.sender, _users, data.callerShare, data.feeShare, data.borrowAmount, data.collateralShare
+            );
+        }
     }
 
     struct __ClosedLiquidationCalldata {
