@@ -74,8 +74,8 @@ contract sGlpMarketLiquidatorReceiver is IMarketLiquidatorReceiver, Ownable, Ree
 
     /// @notice returns the swapper sell token
     /// @param marketToken the market's TOFT collateral
-    function querySellToken(address marketToken) external view returns(address) {
-        return ITOFT(marketToken).erc20();
+    function querySellToken(address marketToken) external pure returns(address) {
+        return 0xaf88d065e77c8cC2239327C5EDb3A432268e5831;
     }
 
     /// @notice action performed during the liquidation process
