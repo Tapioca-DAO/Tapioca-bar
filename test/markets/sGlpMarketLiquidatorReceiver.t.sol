@@ -96,7 +96,7 @@ contract sGlpMarketLiquidatorReceiverTest is BaseLiquidatorReceiverTest {
             swapperTarget = new ZeroXSwapperMockTarget();
             swapper = new ZeroXSwapper(address(swapperTarget), ICluster(address(cluster)), address(this));
 
-            receiver = new sGlpMarketLiquidatorReceiver(address(weth), ICluster(address(cluster)), address(swapper), IGmxRewardRouterV2(address(gmxMock)), IGmxGlpManager(address(gmxMock)));
+            receiver = new sGlpMarketLiquidatorReceiver(address(weth), address(swapper), IGmxRewardRouterV2(address(gmxMock)), IGmxGlpManager(address(gmxMock)));
         }
 
         {
@@ -110,7 +110,7 @@ contract sGlpMarketLiquidatorReceiverTest is BaseLiquidatorReceiverTest {
             cluster.updateContract(0, address(usdc), true);
             cluster.updateContract(0, address(weth), true);
             cluster.updateContract(0, address(gmxMock), true);
-            cluster.setRoleForContract(address(this), keccak256("LIQUIDATOR"), true);
+            receiver.setAllowedParticipant(address(this), true);
             vm.label(address(cluster), "cluster");
             vm.label(address(receiver), "receiver");
             vm.label(address(swapper), "swapper");
