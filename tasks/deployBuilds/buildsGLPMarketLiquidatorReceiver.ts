@@ -11,7 +11,7 @@ export const buildsGLPMarketLiquidatorReceiver = async (
         contract: await hre.ethers.getContractFactory(
             'SGlpMarketLiquidatorReceiver',
         ),
-        deploymentName: DEPLOYMENT_NAMES.sGlpMARKET_LIQUIDATOR_RECEIVER,
+        deploymentName: DEPLOYMENT_NAMES.SGlpMARKET_LIQUIDATOR_RECEIVER,
         args,
     };
 };
