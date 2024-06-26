@@ -12,7 +12,6 @@ import {IGmxRewardRouterV2} from "tapioca-periph/interfaces/external/gmx/IGmxRew
 import {IGmxGlpManager} from "tapioca-periph/interfaces/external/gmx/IGmxGlpManager.sol";
 import {IZeroXSwapper} from "tapioca-periph/interfaces/periph/IZeroXSwapper.sol";
 import {IWeth9} from "tapioca-periph/interfaces/external/weth/IWeth9.sol";
-import {ICluster} from "tapioca-periph/interfaces/periph/ICluster.sol";
 import {ITOFT} from "tapioca-periph/interfaces/oft/ITOFT.sol";
 
 /*
@@ -31,12 +30,13 @@ contract sGlpMarketLiquidatorReceiver is IMarketLiquidatorReceiver, Ownable, Ree
 
     address public swapper;
     address public immutable weth;
-    ICluster public immutable cluster;
+    mapping(address => bool) public allowedParticipants;
 
     IGmxRewardRouterV2 private immutable glpRewardRouter;
     IGmxGlpManager private immutable glpManager;
 
     event SwapperAssigned(address indexed oldSwapper, address indexed swapper);
+    event AllowedParticipantAssigned(address indexed participant, bool status);
 
     error NotAuthorized();
     error WhitelistError();
@@ -45,16 +45,14 @@ contract sGlpMarketLiquidatorReceiver is IMarketLiquidatorReceiver, Ownable, Ree
     error SellGlpFailed();
     error NotValid();
 
-    constructor(address _weth, ICluster _cluster, address _swapper, IGmxRewardRouterV2 _glpRewardRouter, IGmxGlpManager _glpManager) {
+    constructor(address _weth, address _swapper, IGmxRewardRouterV2 _glpRewardRouter, IGmxGlpManager _glpManager) {
         if (_weth == address(0)) revert NotValid();
         if (_swapper == address(0)) revert NotValid();
-        if (address(_cluster) == address(0)) revert NotValid();
         if (address(_glpRewardRouter) == address(0)) revert NotValid();
         if (address(_glpManager) == address(0)) revert NotValid();
         
         weth = _weth;
         swapper = _swapper;
-        cluster = _cluster;
         glpManager = _glpManager;
         glpRewardRouter = _glpRewardRouter;
     }
@@ -92,9 +90,7 @@ contract sGlpMarketLiquidatorReceiver is IMarketLiquidatorReceiver, Ownable, Ree
         bytes calldata data
     ) external nonReentrant returns (bool) {
         // Check caller
-        if (!cluster.hasRole(initiator, keccak256("LIQUIDATOR"))) revert NotAuthorized();
-        if (!cluster.isWhitelisted(0, msg.sender)) revert WhitelistError();
-        if (!cluster.isWhitelisted(0, address(this))) revert WhitelistError();
+        if (!allowedParticipants[initiator]) revert NotAuthorized();
 
         // check if contract received enough collateral
         uint256 collateralBalance = IERC20(tokenIn).balanceOf(address(this));
@@ -132,8 +128,15 @@ contract sGlpMarketLiquidatorReceiver is IMarketLiquidatorReceiver, Ownable, Ree
         swapper = _swapper;
     }
 
+    /// @notice assigns participant status
+    /// @param _participant the EOA/contract address
+    /// @param _val the status
+    function setAllowedParticipant(address _participant, bool _val) external onlyOwner {
+        allowedParticipants[_participant] = _val;
+        emit AllowedParticipantAssigned(_participant, _val);
+    }
 
-       /**
+    /**
      * @dev Sells GLP for `token`. The `token` is chosen off-chain and is computed to be the best to sell GLP for,
      * for swapping the `token` to USDO.
      *
