@@ -12,6 +12,7 @@ export const DEPLOYMENT_NAMES = {
     SGL_GLP_LEVERAGE_EXECUTOR: 'SGL_GLP_LEVERAGE_EXECUTOR',
     MARKET_HELPER: 'MARKET_HELPER',
     MARKET_LIQUIDATOR_RECEIVER: 'MARKET_LIQUIDATOR_RECEIVER',
+    sGlpMARKET_LIQUIDATOR_RECEIVER: 'sGlpMARKET_LIQUIDATOR_RECEIVER',
     YB_USDO_ASSET_WITHOUT_STRATEGY: 'YB_USDO_ASSET_WITHOUT_STRATEGY',
     YB_SDAI_ASSET_WITHOUT_STRATEGY: 'YB_SDAI_ASSET_WITHOUT_STRATEGY',
     YB_SGLP_ASSET_WITHOUT_STRATEGY: 'YB_SGLP_ASSET_WITHOUT_STRATEGY',
@@ -75,6 +76,7 @@ type TPostLbp = {
         glpStrat?: {
             gmxRewardRouter: string;
             glpRewardRouter: string;
+            glpManager: string;
         };
         tEthOriginsMarketConfig?: {
             collateralizationRate: BigNumberish;
@@ -137,6 +139,7 @@ const POST_LBP: TPostLbp = {
         glpStrat: {
             gmxRewardRouter: '0x159854e14A862Df9E39E1D128b8e5F70B4A3cE9B',
             glpRewardRouter: '0xB95DB5B167D75e6d04227CfFFA61069348d271F5',
+            glpManager: '0x3963FfC9dff443c2A94f21b129D429891E32ec18',
         },
         ...marketConfigArb,
     },
