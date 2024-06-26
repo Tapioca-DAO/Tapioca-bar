@@ -135,7 +135,8 @@ async function tapiocaDeployTask(params: TTapiocaDeployerVmPass<object>) {
         await buildMarketLiquidatorReceiver(hre, [
             DEPLOY_CONFIG.MISC[hre.SDK.eChainId]!.WETH!,
             cluster,
-            zeroXSwapper
+            zeroXSwapper,
+            owner,
         ]),
     );
 
@@ -145,9 +146,9 @@ async function tapiocaDeployTask(params: TTapiocaDeployerVmPass<object>) {
             cluster,
             zeroXSwapper,
             DEPLOY_CONFIG.POST_LBP[chainInfo.chainId]!.glpStrat!
-                        .glpRewardRouter,
-            DEPLOY_CONFIG.POST_LBP[chainInfo.chainId]!.glpStrat!
-                        .glpManager,
+                .glpRewardRouter,
+            DEPLOY_CONFIG.POST_LBP[chainInfo.chainId]!.glpStrat!.glpManager,
+            owner,
         ]),
     );
 

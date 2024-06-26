@@ -26,7 +26,7 @@ import {ITOFT} from "tapioca-periph/interfaces/oft/ITOFT.sol";
    
 */
 
-contract sGlpMarketLiquidatorReceiver is IMarketLiquidatorReceiver, Ownable, ReentrancyGuard {
+contract SGlpMarketLiquidatorReceiver is IMarketLiquidatorReceiver, Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     address public swapper;
@@ -48,19 +48,28 @@ contract sGlpMarketLiquidatorReceiver is IMarketLiquidatorReceiver, Ownable, Ree
     error SellGlpFailed();
     error NotValid();
 
-    constructor(address _weth, ICluster _cluster, address _swapper, IGmxRewardRouterV2 _glpRewardRouter, IGmxGlpManager _glpManager) {
+    constructor(
+        address _weth,
+        ICluster _cluster,
+        address _swapper,
+        IGmxRewardRouterV2 _glpRewardRouter,
+        IGmxGlpManager _glpManager,
+        address _owner
+    ) {
         if (_weth == address(0)) revert NotValid();
         if (_swapper == address(0)) revert NotValid();
         if (address(_cluster) == address(0)) revert NotValid();
         if (address(_glpRewardRouter) == address(0)) revert NotValid();
         if (address(_glpManager) == address(0)) revert NotValid();
-        
+
         weth = _weth;
         emit SwapperAssigned(swapper, _swapper);
         swapper = _swapper;
         cluster = _cluster;
         glpManager = _glpManager;
         glpRewardRouter = _glpRewardRouter;
+
+        transferOwnership(_owner);
     }
 
     struct SSwapData {
@@ -78,7 +87,7 @@ contract sGlpMarketLiquidatorReceiver is IMarketLiquidatorReceiver, Ownable, Ree
 
     /// @notice returns the swapper sell token
     /// @param marketToken the market's TOFT collateral
-    function querySellToken(address marketToken) external pure returns(address) {
+    function querySellToken(address marketToken) external pure returns (address) {
         return USDC;
     }
 
@@ -119,7 +128,8 @@ contract sGlpMarketLiquidatorReceiver is IMarketLiquidatorReceiver, Ownable, Ree
 
         // swap TOFT.erc20() with `tokenOut`
         IERC20(swapData.token).safeApprove(swapper, tokenAmount);
-        uint256 amountOut = IZeroXSwapper(swapper).swap(swapData.zeroXswapData.data, tokenAmount, swapData.zeroXswapData.minAmountOut);
+        uint256 amountOut =
+            IZeroXSwapper(swapper).swap(swapData.zeroXswapData.data, tokenAmount, swapData.zeroXswapData.minAmountOut);
         IERC20(swapData.token).safeApprove(swapper, 0);
         if (amountOut < swapData.zeroXswapData.minAmountOut) revert SwapFailed();
 

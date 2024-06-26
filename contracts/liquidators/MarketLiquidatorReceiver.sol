@@ -41,15 +41,17 @@ contract MarketLiquidatorReceiver is IMarketLiquidatorReceiver, Ownable, Reentra
     error SwapFailed();
     error NotValid();
 
-    constructor(address _weth, ICluster _cluster, address _swapper) {
+    constructor(address _weth, ICluster _cluster, address _swapper, address _owner) {
         if (_weth == address(0)) revert NotValid();
         if (_swapper == address(0)) revert NotValid();
         if (address(_cluster) == address(0)) revert NotValid();
-        
+
         weth = _weth;
         emit SwapperAssigned(swapper, _swapper);
         swapper = _swapper;
         cluster = _cluster;
+
+        transferOwnership(_owner);
     }
 
     struct SSwapData {
@@ -59,7 +61,7 @@ contract MarketLiquidatorReceiver is IMarketLiquidatorReceiver, Ownable, Reentra
 
     /// @notice returns the swapper sell token
     /// @param marketToken the market's TOFT collateral
-    function querySellToken(address marketToken) external view returns(address) {
+    function querySellToken(address marketToken) external view returns (address) {
         return ITOFT(marketToken).erc20();
     }
 
@@ -129,7 +131,6 @@ contract MarketLiquidatorReceiver is IMarketLiquidatorReceiver, Ownable, Reentra
         allowedParticipants[_participant] = _val;
         emit AllowedParticipantAssigned(_participant, _val);
     }
-
 
     receive() external payable {}
 }
