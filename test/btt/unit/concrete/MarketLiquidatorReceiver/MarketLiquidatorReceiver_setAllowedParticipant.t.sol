@@ -6,11 +6,11 @@ import {MarketLiquidatorReceiver} from "contracts/liquidators/MarketLiquidatorRe
 
 import {MarketLiquidatorReceiver_Unit_Shared} from "../../shared/MarketLiquidatorReceiver_Unit_Shared.t.sol";
 
-contract MarketLiquidatorReceiver_setSwapper is MarketLiquidatorReceiver_Unit_Shared {
+contract MarketLiquidatorReceiver_setAllowedParticipant is MarketLiquidatorReceiver_Unit_Shared {
     function test_RevertWhen_TheCallerIsNotTheOwner() external {
         vm.startPrank(userA);
         vm.expectRevert();
-        receiver.setSwapper(address(0));
+        receiver.setAllowedParticipant(address(0), true);
         vm.stopPrank();
     }
 
@@ -18,10 +18,10 @@ contract MarketLiquidatorReceiver_setSwapper is MarketLiquidatorReceiver_Unit_Sh
         address rndAddr = makeAddr("rndAddress");
 
         vm.expectEmit();
-        emit MarketLiquidatorReceiver.SwapperAssigned(address(swapper), rndAddr);
-        receiver.setSwapper(rndAddr);
+        emit MarketLiquidatorReceiver.AllowedParticipantAssigned(rndAddr, true);
+        receiver.setAllowedParticipant(rndAddr, true);
 
-        address assignedSwapper = receiver.swapper();
-        assertEq(assignedSwapper, rndAddr);
+        bool isWhitelisted = receiver.allowedParticipants(rndAddr);
+        assertTrue(isWhitelisted);
     }
 }

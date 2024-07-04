@@ -1,0 +1,11 @@
+sGlpMarketLiquidatorReceiver_onCollateralReceiver.t.sol
+├── when sGlpMarketLiquidatorReceiver onCollateralReceiver is called from random user
+│   └── it should revert 
+├── when sGlpMarketLiquidatorReceiver onCollateralReceiver is called from non-whitelisted
+│   └── it should revert 
+├── when sGlpMarketLiquidatorReceiver onCollateralReceiver is called and target is not whitelisted
+│   └── it should revert 
+├── when sGlpMarketLiquidatorReceiver onCollateralReceiver is called and balance is less
+│   └── it should revert 
+└── when sGlpMarketLiquidatorReceiver onCollateralReceiver is called correctly
+    └── it should swap 
