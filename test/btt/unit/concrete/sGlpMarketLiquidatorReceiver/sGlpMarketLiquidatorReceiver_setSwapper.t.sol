@@ -2,15 +2,15 @@
 pragma solidity 0.8.22;
 
 // contracts
-import {MarketLiquidatorReceiver} from "contracts/liquidators/MarketLiquidatorReceiver.sol";
+import {SGlpMarketLiquidatorReceiver} from "contracts/liquidators/sGlpMarketLiquidatorReceiver.sol";
 
 import {MarketLiquidatorReceiver_Unit_Shared} from "../../shared/MarketLiquidatorReceiver_Unit_Shared.t.sol";
 
-contract MarketLiquidatorReceiver_setSwapper is MarketLiquidatorReceiver_Unit_Shared {
+contract sGlpMarketLiquidatorReceiver_setSwapper is MarketLiquidatorReceiver_Unit_Shared {
     function test_RevertWhen_TheCallerIsNotTheOwner() external {
         vm.startPrank(userA);
         vm.expectRevert();
-        receiver.setSwapper(address(0));
+        sGlpReceiver.setSwapper(address(0));
         vm.stopPrank();
     }
 
@@ -18,10 +18,10 @@ contract MarketLiquidatorReceiver_setSwapper is MarketLiquidatorReceiver_Unit_Sh
         address rndAddr = makeAddr("rndAddress");
 
         vm.expectEmit();
-        emit MarketLiquidatorReceiver.SwapperAssigned(address(swapper), rndAddr);
-        receiver.setSwapper(rndAddr);
+        emit SGlpMarketLiquidatorReceiver.SwapperAssigned(address(swapper), rndAddr);
+        sGlpReceiver.setSwapper(rndAddr);
 
-        address assignedSwapper = receiver.swapper();
+        address assignedSwapper = sGlpReceiver.swapper();
         assertEq(assignedSwapper, rndAddr);
     }
 }
