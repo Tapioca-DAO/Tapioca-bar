@@ -647,7 +647,7 @@
             "contracts": [
                 {
                     "name": "MARKET_LIQUIDATOR_RECEIVER",
-                    "address": "0xf71f74c08Fcdc3cA373AaB87E1755F4F368E701A",
+                    "address": "0x6Ef396A1D0b77C5F6eec6e194A7e7deb93E9ca1A",
                     "meta": {
                         "args": [
                             "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
@@ -661,7 +661,7 @@
                 },
                 {
                     "name": "SGlpMARKET_LIQUIDATOR_RECEIVER",
-                    "address": "0x7d980D450895297eD829B1F735e51980329F328c",
+                    "address": "0x2B718a53788e37888ef19e4cfac939642A6Ad73D",
                     "meta": {
                         "args": [
                             "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
