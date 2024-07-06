@@ -1239,7 +1239,7 @@ contract UsdoTest is UsdoTestHelper {
                 market: address(singularity),
                 removeCollateral: false,
                 removeCollateralAmount: 0,
-                lockData: IOptionsLockData({lock: false, target: address(0), lockDuration: 0, amount: 0, fraction: 0}),
+                lockData: IOptionsLockData({lock: false, target: address(0), tAsset:address(0), lockDuration: 0, amount: 0, fraction: 0, minDiscountOut: 0}),
                 participateData: IOptionsParticipateData({participate: false, target: address(0), tOLPTokenId: 0})
             }),
             withdrawParams: MagnetarWithdrawData({
@@ -1412,7 +1412,7 @@ contract UsdoTest is UsdoTestHelper {
                 market: address(singularity),
                 removeCollateral: true,
                 removeCollateralAmount: tokenAmountSD,
-                lockData: IOptionsLockData({lock: false, target: address(0), lockDuration: 0, amount: 0, fraction: 0}),
+                lockData: IOptionsLockData({lock: false, target: address(0), tAsset:address(0), lockDuration: 0, amount: 0, fraction: 0, minDiscountOut: 0}),
                 participateData: IOptionsParticipateData({participate: false, target: address(0), tOLPTokenId: 0})
             }),
             withdrawParams: MagnetarWithdrawData({
