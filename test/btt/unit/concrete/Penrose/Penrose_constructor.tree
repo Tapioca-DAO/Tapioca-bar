@@ -1,0 +1,3 @@
+Penrose_constructor.t.sol
+└── when penrose is created
+    └── it should have all initial state variables set

@@ -1,0 +1,15 @@
+Penrose_masterContracts.t.sol
+├── when registerBigBangMasterContract is called from non-owner
+│  └── it should revert
+├── when registerBigBangMasterContract is called from owner for already registered
+│   └── it should revert
+├── when registerBigBangMasterContract is called from owner for new contract
+│   ├── it should not revert
+│   └── it should emit RegisterBigBangMasterContract event
+├── when registerSingularityMasterContract is called from non-owner
+│   └── it should revert
+├── when registerSingularityMasterContract is called from owner for already registered
+│   └── it should revert
+└── when registerSingularityMasterContract is called from owner for new contract
+    ├── it should not revert
+    └── it should emit RegisterSingularityMasterContract event

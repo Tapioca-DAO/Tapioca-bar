@@ -1,0 +1,9 @@
+Penrose_origins.t.sol
+├── when addOriginsMarket is called from non-owner
+│   └── it should revert
+├── when addOriginsMarket is called from owner for already registered contract
+│   └── it should revert
+└── when addOriginsMarket is called from owner for new contract
+    ├── it should not revert
+    ├── it should increase length of allOriginsMarkets
+    └── it should emit RegisterOrigins event
