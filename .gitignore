@@ -10,3 +10,13 @@ docs
 gen
 
 .DS_Store
+
+# Invariants
+crytic-export/
+_corpus/
+out/
+cache/
+.DS_Store
+**/.DS_Store
+#TODO remove this
+lib/ 

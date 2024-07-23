@@ -7,6 +7,7 @@
 [submodule "gitmodule/tapioca-periph"]
 	path = gitmodule/tapioca-periph
 	url = https://github.com/Tapioca-DAO/tapioca-periph.git
+	branch = GT_deployment-script-final-phase-3
 [submodule "gitmodule/tapioca-yieldbox"]
 	path = gitmodule/tapioca-yieldbox
 	url = https://github.com/Tapioca-DAO/tap-yieldbox

@@ -28,3 +28,7 @@ fs_permissions = [
 
 [etherscan]
 arbitrum-sepolia = { key = "${ARBITRUM_SEPOLIA_API_KEY}", url = "https://api-sepolia.arbiscan.io/api"}
+
+[fuzz]
+runs = 500000
+max_test_rejects = 5000010
