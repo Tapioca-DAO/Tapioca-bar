@@ -13,12 +13,11 @@ optimizer_runs = 30
 remappings = [
 	"solidity-bytes-utils/=node_modules/@layerzerolabs/solidity-bytes-utils/",
 	"tapioca-sdk/=gitmodule/tapioca-sdk/contracts/",
-	"tapioca-periph/=gitmodule/tapioca-periph/contracts/",
-	"tapioca-strategies/=gitmodule/tapioca-yieldbox-strategies/contracts/",
-	"yieldbox/=gitmodule/tap-yieldbox/contracts/",
-	"mocks/=gitmodule/tapioca-mocks/contracts/",
-	'tapiocaz/=gitmodule/tapiocaz/contracts/',
-	"permitc/=gitmodule/tapioca-periph/gitmodule/permitc/src/", # Needs to be init in the periph repo
+	"tap-utils/=lib/tap-utils/contracts/",
+	"tapioca-strategies/=lib/tapioca-yieldbox-strategies/contracts/",
+	"yieldbox/=lib/tap-yieldbox/contracts/",
+	'tapiocaz/=lib/tapiocaz/contracts/',
+	"permitc/=lib/tap-utils/lib/permitc/src/", # Needs to be init in the periph repo
 ]
 
 # forge-dpeloy

@@ -12,21 +12,21 @@ import {MarketHelper} from "contracts/markets/MarketHelper.sol";
 import {Market} from "contracts/markets/Market.sol";
 
 import {ERC20WithoutStrategy} from "yieldbox/strategies/ERC20WithoutStrategy.sol";
-import {MagnetarHelper} from "tapioca-periph/Magnetar/MagnetarHelper.sol";
+import {MagnetarHelper} from "tap-utils/Magnetar/MagnetarHelper.sol";
 
 // import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {IMarketLiquidatorReceiver} from "tapioca-periph/interfaces/bar/IMarketLiquidatorReceiver.sol";
+import {IMarketLiquidatorReceiver} from "tap-utils/interfaces/bar/IMarketLiquidatorReceiver.sol";
 import {IERC20} from "@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol";
-import {ILeverageExecutor} from "tapioca-periph/interfaces/bar/ILeverageExecutor.sol";
-import {ITapiocaOracle} from "tapioca-periph/interfaces/periph/ITapiocaOracle.sol";
-import {IZeroXSwapper} from "tapioca-periph/interfaces/periph/IZeroXSwapper.sol";
-import {ISingularity} from "tapioca-periph/interfaces/bar/ISingularity.sol";
-import {IMarket, Module} from "tapioca-periph/interfaces/bar/IMarket.sol";
-import {ICluster} from "tapioca-periph/interfaces/periph/ICluster.sol";
+import {ILeverageExecutor} from "tap-utils/interfaces/bar/ILeverageExecutor.sol";
+import {ITapiocaOracle} from "tap-utils/interfaces/periph/ITapiocaOracle.sol";
+import {IZeroXSwapper} from "tap-utils/interfaces/periph/IZeroXSwapper.sol";
+import {ISingularity} from "tap-utils/interfaces/bar/ISingularity.sol";
+import {IMarket, Module} from "tap-utils/interfaces/bar/IMarket.sol";
+import {ICluster} from "tap-utils/interfaces/periph/ICluster.sol";
 import {IWrappedNative} from "yieldbox/interfaces/IWrappedNative.sol";
-import {ITwTap} from "tapioca-periph/interfaces/tap-token/ITwTap.sol";
-import {IOracle} from "tapioca-periph/oracle/interfaces/IOracle.sol";
-import {IPenrose} from "tapioca-periph/interfaces/bar/IPenrose.sol";
+import {ITwTap} from "tap-utils/interfaces/tap-token/ITwTap.sol";
+import {IOracle} from "tap-utils/oracle/interfaces/IOracle.sol";
+import {IPenrose} from "tap-utils/interfaces/bar/IPenrose.sol";
 import {IYieldBox} from "yieldbox/interfaces/IYieldBox.sol";
 import {IStrategy} from "yieldbox/interfaces/IStrategy.sol";
 
@@ -34,7 +34,7 @@ import {YieldBoxURIBuilder} from "yieldbox/YieldBoxURIBuilder.sol";
 import {TokenType} from "yieldbox/enums/YieldBoxTokenType.sol";
 import {YieldBox} from "yieldbox/YieldBox.sol";
 
-import {Cluster} from "tapioca-periph/Cluster/Cluster.sol";
+import {Cluster} from "tap-utils/Cluster/Cluster.sol";
 import {Penrose} from "contracts/Penrose.sol";
 
 import {MarketLiquidatorReceiverMock} from "../mocks/MarketLiquidatorReceiverMock.sol";
@@ -50,7 +50,7 @@ import {UsdoHelper} from "contracts/usdo/extensions/UsdoHelper.sol";
 import {UsdoSender} from "contracts/usdo/modules/UsdoSender.sol";
 
 import {UsdoTestHelper, TestPenroseData, TestSingularityData} from "../helpers/UsdoTestHelper.t.sol";
-import {Pearlmit, IPearlmit} from "tapioca-periph/pearlmit/Pearlmit.sol";
+import {Pearlmit, IPearlmit} from "tap-utils/pearlmit/Pearlmit.sol";
 
 import "forge-std/Test.sol";
 

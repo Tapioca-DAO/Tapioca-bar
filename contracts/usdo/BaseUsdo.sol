@@ -6,10 +6,10 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // Tapioca
-import {BaseTapiocaOmnichainEngine} from "tapioca-periph/tapiocaOmnichainEngine/BaseTapiocaOmnichainEngine.sol";
-import {IYieldBox} from "tapioca-periph/interfaces/yieldbox/IYieldBox.sol";
-import {ICluster} from "tapioca-periph/interfaces/periph/ICluster.sol";
-import {UsdoInitStruct} from "tapioca-periph/interfaces/oft/IUsdo.sol";
+import {BaseTapiocaOmnichainEngine} from "tap-utils/tapiocaOmnichainEngine/BaseTapiocaOmnichainEngine.sol";
+import {IYieldBox} from "tap-utils/interfaces/yieldbox/IYieldBox.sol";
+import {ICluster} from "tap-utils/interfaces/periph/ICluster.sol";
+import {UsdoInitStruct} from "tap-utils/interfaces/oft/IUsdo.sol";
 import {BaseUsdoTokenMsgType} from "./BaseUsdoTokenMsgType.sol";
 import {ModuleManager} from "./modules/ModuleManager.sol";
 

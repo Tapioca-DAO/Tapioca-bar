@@ -10,7 +10,7 @@ import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 // Tapioca
-import {ISingularity} from "tapioca-periph/interfaces/bar/ISingularity.sol";
+import {ISingularity} from "tap-utils/interfaces/bar/ISingularity.sol";
 import {Market, MarketERC20} from "../Market.sol";
 
 // solhint-disable max-line-length

@@ -7,8 +7,8 @@ import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {IERC20} from "@boringcrypto/boring-solidity/contracts/ERC20.sol";
 
 // Tapioca
-import {IBigBangDebtRateHelper} from "tapioca-periph/interfaces/bar/IBigBangDebtRateHelper.sol";
-import {IBigBang} from "tapioca-periph/interfaces/bar/IBigBang.sol";
+import {IBigBangDebtRateHelper} from "tap-utils/interfaces/bar/IBigBangDebtRateHelper.sol";
+import {IBigBang} from "tap-utils/interfaces/bar/IBigBang.sol";
 import {SafeApprove} from "../../libraries/SafeApprove.sol";
 import {BBStorage} from "./BBStorage.sol";
 
