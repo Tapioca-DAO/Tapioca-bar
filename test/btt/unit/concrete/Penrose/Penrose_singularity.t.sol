@@ -13,7 +13,6 @@ import {Singularity} from "contracts/markets/singularity/Singularity.sol";
 import {Markets_Unit_Shared} from "../../shared/Markets_Unit_Shared.t.sol";
 import {IPenrose} from "tapioca-periph/interfaces/bar/IPenrose.sol";
 
-
 contract Penrose_singularity is Markets_Unit_Shared {
     function test_RevertWhen_RegisterSingularityIsCalledFromNon_owner() external {
         address rndAddr = makeAddr("rndAddress");

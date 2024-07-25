@@ -13,7 +13,7 @@ import {TOFTMock_test} from "../../mocks/TOFTMock_test.sol";
 import {YieldBoxTestUtils} from "../../utils/YieldBoxTestUtils.sol";
 
 // contracts
-import {SGlpMarketLiquidatorReceiver} from "contracts/liquidators/sGlpMarketLiquidatorReceiver.sol";
+// import {SGlpMarketLiquidatorReceiver} from "contracts/liquidators/sGlpMarketLiquidatorReceiver.sol";
 import {IGmxRewardRouterV2} from "tapioca-periph/interfaces/external/gmx/IGmxRewardRouterV2.sol";
 import {MarketLiquidatorReceiver} from "contracts/liquidators/MarketLiquidatorReceiver.sol";
 import {IGmxGlpManager} from "tapioca-periph/interfaces/external/gmx/IGmxGlpManager.sol";
@@ -27,7 +27,6 @@ import {ICluster} from "tapioca-periph/interfaces/periph/ICluster.sol";
 import {ZeroXSwapper} from "tapioca-periph/Swapper/ZeroXSwapper.sol";
 import {Cluster} from "tapioca-periph/Cluster/Cluster.sol";
 
-
 abstract contract MarketLiquidatorReceiver_Unit_Shared is Base_Test {
     ERC20Mock_test sGlp;
     ERC20Mock_test usdo;
@@ -39,7 +38,7 @@ abstract contract MarketLiquidatorReceiver_Unit_Shared is Base_Test {
     ZeroXSwapper swapper;
     ZeroXSwapperMockTarget_test swapperTarget;
     MarketLiquidatorReceiver receiver;
-    SGlpMarketLiquidatorReceiver sGlpReceiver;
+    //SGlpMarketLiquidatorReceiver sGlpReceiver;
     GmxMarketMock_test gmxMock;
 
     function setUp() public virtual override {
@@ -74,13 +73,11 @@ abstract contract MarketLiquidatorReceiver_Unit_Shared is Base_Test {
         ERC20WithoutStrategy wethStrategy = ybUtils.createEmptyStrategy(address(yieldBox), address(weth));
         wethYieldBoxId = yieldBox.registerAsset(TokenType.ERC20, address(weth), IStrategy(address(wethStrategy)), 0);
 
-        
         gmxMock = new GmxMarketMock_test(address(0), address(0), address(0));
         gmxMock.setGlp(address(sGlp));
 
-        // IGmxRewardRouterV2 _glpRewardRouter,
-        // IGmxGlpManager _glpManager,
-        receiver = new MarketLiquidatorReceiver(address(weth), ICluster(address(cluster)), address(swapper), address(this));
-        sGlpReceiver= new SGlpMarketLiquidatorReceiver(address(weth), ICluster(address(cluster)), address(swapper), IGmxRewardRouterV2(address(gmxMock)), IGmxGlpManager(address(gmxMock)), address(this));
+        receiver =
+            new MarketLiquidatorReceiver(address(weth), ICluster(address(cluster)), address(swapper), address(this));
+        // sGlpReceiver= new SGlpMarketLiquidatorReceiver(address(weth), ICluster(address(cluster)), address(swapper), IGmxRewardRouterV2(address(gmxMock)), IGmxGlpManager(address(gmxMock)), address(this));
     }
 }

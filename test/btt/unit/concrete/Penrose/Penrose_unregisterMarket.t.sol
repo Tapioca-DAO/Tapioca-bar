@@ -41,7 +41,8 @@ contract Penrose_unregisterContract is Markets_Unit_Shared {
                 0
             )
         );
-        address _contract = penrose.registerBigBang(rndAddr, abi.encode(initModulesData, initDebtData, initMemoryData), true);
+        address _contract =
+            penrose.registerBigBang(rndAddr, abi.encode(initModulesData, initDebtData, initMemoryData), true);
         assertTrue(penrose.isMarketRegistered(_contract));
 
         penrose.unregisterContract(_contract, 1);

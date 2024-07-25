@@ -14,7 +14,6 @@ import {ITwTap} from "tapioca-periph/interfaces/tap-token/ITwTap.sol";
 
 import {IPenrose} from "tapioca-periph/interfaces/bar/IPenrose.sol";
 
-
 contract Penrose_withdrawAllMarketFees is Markets_Unit_Shared {
     function test_RevertWhen_WithdrawAllMarketFeesIsCalledFromNon_owner() external {
         address rndAddr = makeAddr("rndAddress");
@@ -47,9 +46,8 @@ contract Penrose_withdrawAllMarketFees is Markets_Unit_Shared {
     }
 
     function test_WhenWithdrawAllMarketFeesIsCalledFromOwner() external {
-
         BigBang mc = new BigBang();
-        
+
         address rndAddr = makeAddr("rndAddress");
         penrose.registerBigBangMasterContract(address(mc), IPenrose.ContractType.lowRisk);
 
@@ -71,9 +69,10 @@ contract Penrose_withdrawAllMarketFees is Markets_Unit_Shared {
                 0
             )
         );
-        address _contract = penrose.registerBigBang(address(mc), abi.encode(initModulesData, initDebtData, initMemoryData), true);
+        address _contract =
+            penrose.registerBigBang(address(mc), abi.encode(initModulesData, initDebtData, initMemoryData), true);
         assertTrue(penrose.isMarketRegistered(_contract));
-        
+
         IMarket[] memory markets = new IMarket[](1);
         markets[0] = IMarket(_contract);
         penrose.withdrawAllMarketFees(markets, ITwTap(address(rndAddr)));
