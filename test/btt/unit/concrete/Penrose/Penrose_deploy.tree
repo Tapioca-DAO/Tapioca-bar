@@ -1,0 +1,15 @@
+Penrose_deploy.t.sol
+├── when deploy is called from non-owner
+│   └── it should revert
+├── when deploy is called from owner with no master contract
+│   └── it should revert
+├── when deploy is called from owner with master contract for create
+│   ├── it should not revert
+│   ├── it should set clonesOf
+│   ├── it should set masterContractOf
+│   └── it should emit LogDeploy
+└── when deploy is called from owner with master contract for create2
+    ├── it should not revert
+    ├── it should set clonesOf
+    ├── it should set masterContractOf
+    └── it should emit LogDeploy

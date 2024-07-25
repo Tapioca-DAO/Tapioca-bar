@@ -1,0 +1,10 @@
+Penrose_withdrawAllMarketFees.t.sol
+├── when withdrawAllMarketFees is called from non-owner
+│   └── it should revert
+├── when withdrawAllMarketFees is called from owner and penrose is paused
+│   └── it should revert
+├── when withdrawAllMarketFees is called from owner and twTap is address0
+│   └── it should revert
+└── when withdrawAllMarketFees is called from owner
+    ├── it should not revert
+    └── it should emit ProtocolWithdrawal event

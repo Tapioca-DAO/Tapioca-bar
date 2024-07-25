@@ -475,12 +475,16 @@ contract Penrose is Ownable, Pausable, PearlmitHandler {
             index = _findBigBangIndex(allOriginsMarkets, mkt);
             allOriginsMarkets[index] = allOriginsMarkets[allOriginsMarkets.length - 1];
             allOriginsMarkets.pop();
+
+            isOriginRegistered[mkt] = false;
         }
 
-        // remove it from clonesOf
-        index = _findBigBangIndex(clonesOf[_mc], mkt);
-        clonesOf[_mc][index] = clonesOf[_mc][clonesOf[_mc].length - 1];
-        clonesOf[_mc].pop();
+        if (marketType != 2) {
+            // remove it from clonesOf
+            index = _findBigBangIndex(clonesOf[_mc], mkt);
+            clonesOf[_mc][index] = clonesOf[_mc][clonesOf[_mc].length - 1];
+            clonesOf[_mc].pop();
+        }
 
         emit UnregisterContract(mkt);
     }

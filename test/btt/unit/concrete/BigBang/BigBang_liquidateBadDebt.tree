@@ -1,0 +1,11 @@
+BigBang_liquidateBadDebt.t.sol
+├── when liquidateBadDebt is called from non-owner
+│   └── it should revert
+├── when liquidateBadDebt is called and from is not whitelisted
+│   └── it should revert
+├── when liquidateBadDebt is called and requiredCollateral is less than collateralShare
+│   └── it should revert
+├── when liquidateBadDebt is called and returnedAmount is 0
+│   └── it should revert
+└── when liquidateBadDebt is called and all parameters are valid
+    └── it should not revert

@@ -1,0 +1,13 @@
+Penrose_unregisterContract.t.sol
+├── when unregisterContract is called from non-owner
+│   └── it should revert
+├── when unregisterContract is called from owner for type1
+│   ├── it should not revert
+│   ├── it should decrease length of allBigBangMarkets
+│   ├── it should decrease length of clonesOf
+│   └── it should emit UnregisterContract event
+└── when unregisterContract is called from owner for type2
+    ├── it should not revert
+    ├── it should decrease length of allOriginsMarkets
+    ├── it should decrease length of clonesOf
+    └── it should emit UnregisterContract event
