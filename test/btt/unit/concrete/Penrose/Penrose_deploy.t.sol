@@ -12,10 +12,10 @@ import {ITapiocaOracle} from "tapioca-periph/interfaces/periph/ITapiocaOracle.so
 
 import {Markets_Unit_Shared} from "../../shared/Markets_Unit_Shared.t.sol";
 
-contract Penrose_deploy is Markets_Unit_Shared{
+contract Penrose_deploy is Markets_Unit_Shared {
     function test_RevertWhen_DeployIsCalledFromNon_owner() external {
         address rndAddr = makeAddr("rndAddress");
-        
+
         vm.startPrank(userA);
         vm.expectRevert();
         penrose.deploy(rndAddr, "0x", false);

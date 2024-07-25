@@ -2,6 +2,7 @@
 pragma solidity 0.8.22;
 
 import {Markets_Unit_Shared} from "../../shared/Markets_Unit_Shared.t.sol";
+
 contract Penrose_origins is Markets_Unit_Shared {
     function test_RevertWhen_AddOriginsMarketIsCalledFromNon_owner() external {
         address rndAddr = makeAddr("rndAddress");
@@ -9,7 +10,7 @@ contract Penrose_origins is Markets_Unit_Shared {
         vm.startPrank(userA);
         vm.expectRevert();
         penrose.addOriginsMarket(rndAddr);
-        vm.stopPrank(); 
+        vm.stopPrank();
     }
 
     function test_RevertWhen_AddOriginsMarketIsCalledFromOwnerForAlreadyRegisteredContract() external {

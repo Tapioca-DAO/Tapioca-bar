@@ -1,0 +1,9 @@
+BigBang_viewMethods.t.sol
+├── when computeVariableOpeningFee is called and assetOracle is not set
+│   └── it should revert
+├── when computeVariableOpeningFee is called
+│   └── it should return a value
+├── when getDebtRate is called
+│   └── it should return a value
+└── when computeVariableOpeningFee and oracle is not working
+    └── it should revert

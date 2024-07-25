@@ -1,0 +1,3 @@
+BigBang_constructor.t.sol
+└── when BigBang is created
+    └── it should have all initial state variables set

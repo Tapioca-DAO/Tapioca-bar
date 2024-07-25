@@ -1,0 +1,13 @@
+BigBang_borrow.t.sol
+├── when borrow is called and contract is paused
+│   └── it should revert
+├── when borrow is called for the contract itself
+│   └── it should revert
+├── when borrow is called with amount smaller than minBorrowAmount
+│   └── it should revert
+├── when borrow is called for sender
+│   └── it should not revert
+├── when borrow is called for another user without allowed borrowed
+│   └── it should revert
+└── when borrow is called for another user with allowed borrowed
+    └── it should not revert

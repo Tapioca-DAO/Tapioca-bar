@@ -5,8 +5,9 @@ pragma solidity 0.8.22;
 import {IERC20} from "@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol";
 
 // mocks
-import {ERC20Mock_test} from "../../mocks/ERC20Mock_test.sol";
 import {OracleMock_test} from "../../mocks/OracleMock_test.sol";
+import {ERC20Mock_test} from "../../mocks/ERC20Mock_test.sol";
+import {UsdoMock_test} from "../../mocks/UsdoMock_test.sol";
 
 // utils
 import {YieldBoxTestUtils} from "../../utils/YieldBoxTestUtils.sol";
@@ -27,6 +28,13 @@ import {BBLeverage} from "contracts/markets/bigBang/BBLeverage.sol";
 import {BBBorrow} from "contracts/markets/bigBang/BBBorrow.sol";
 import {BigBang} from "contracts/markets/bigBang/BigBang.sol";
 
+import {TapiocaOmnichainExtExec} from "tapioca-periph/tapiocaOmnichainEngine/extension/TapiocaOmnichainExtExec.sol";
+import {UsdoMarketReceiverModule} from "contracts/usdo/modules/UsdoMarketReceiverModule.sol";
+import {UsdoOptionReceiverModule} from "contracts/usdo/modules/UsdoOptionReceiverModule.sol";
+import {UsdoReceiver} from "contracts/usdo/modules/UsdoReceiver.sol";
+import {UsdoSender} from "contracts/usdo/modules/UsdoSender.sol";
+import {IUsdo, UsdoInitStruct, UsdoModulesInitStruct} from "tapioca-periph/interfaces/oft/IUsdo.sol";
+
 // dependencies
 import {ILeverageExecutor} from "tapioca-periph/interfaces/bar/ILeverageExecutor.sol";
 import {ITapiocaOracle} from "tapioca-periph/interfaces/periph/ITapiocaOracle.sol";
@@ -41,9 +49,11 @@ import {Cluster} from "tapioca-periph/Cluster/Cluster.sol";
 import {Base_Test} from "../../Base_Test.t.sol";
 
 abstract contract Markets_Unit_Shared is Base_Test {
+    ERC20Mock_test nonMainToken;
+    uint256 nonMainTokenId;
     ERC20Mock_test mainToken;
     uint256 mainTokenId;
-    ERC20Mock_test usdo;
+    UsdoMock_test usdo;
     uint256 usdoId;
     ERC20Mock_test tapToken;
     uint256 tapId;
@@ -72,7 +82,6 @@ abstract contract Markets_Unit_Shared is Base_Test {
         uint256 debtRateMax;
     }
 
-
     function setUp() public virtual override {
         super.setUp();
 
@@ -81,12 +90,50 @@ abstract contract Markets_Unit_Shared is Base_Test {
         mainToken = new ERC20Mock_test("mainToken", "mainToken");
         vm.label(address(mainToken), "mainToken Mock");
 
-        usdo = new ERC20Mock_test("Usdo", "Usdo");
+        nonMainToken = new ERC20Mock_test("nonMainToken", "nonMainToken");
+        vm.label(address(nonMainToken), "nonMainToken Mock");
+
+        TapiocaOmnichainExtExec extExec = new TapiocaOmnichainExtExec();
+        vm.label(address(extExec), "TapiocaOmnichainExtExec");
+
+        UsdoInitStruct memory usdoInitStruct = UsdoInitStruct({
+            endpoint: address(endpoints[aEid]),
+            delegate: address(this),
+            yieldBox: address(yieldBox),
+            cluster: address(cluster),
+            extExec: address(extExec),
+            pearlmit: IPearlmit(address(pearlmit))
+        });
+        UsdoSender usdoSender = new UsdoSender(usdoInitStruct);
+        UsdoReceiver usdoReceiver = new UsdoReceiver(usdoInitStruct);
+        UsdoMarketReceiverModule usdoMarketReceiverModule = new UsdoMarketReceiverModule(usdoInitStruct);
+        UsdoOptionReceiverModule usdoOptionsReceiverModule = new UsdoOptionReceiverModule(usdoInitStruct);
+        vm.label(address(usdoSender), "usdoSender");
+        vm.label(address(usdoReceiver), "usdoReceiver");
+        vm.label(address(usdoMarketReceiverModule), "usdoMarketReceiverModule");
+        vm.label(address(usdoOptionsReceiverModule), "usdoOptionsReceiverModule");
+
+        UsdoModulesInitStruct memory usdoModulesInitStruct = UsdoModulesInitStruct({
+            usdoSenderModule: address(usdoSender),
+            usdoReceiverModule: address(usdoReceiver),
+            marketReceiverModule: address(usdoMarketReceiverModule),
+            optionReceiverModule: address(usdoOptionsReceiverModule)
+        });
+        usdo = UsdoMock_test(
+            payable(_deployOApp(type(UsdoMock_test).creationCode, abi.encode(usdoInitStruct, usdoModulesInitStruct)))
+        );
         vm.label(address(usdo), "Usdo Mock");
 
         ERC20WithoutStrategy mainTokenStrategy = ybUtils.createEmptyStrategy(address(yieldBox), address(mainToken));
         vm.label(address(mainTokenStrategy), "mainTokenStrategy");
-        mainTokenId = yieldBox.registerAsset(TokenType.ERC20, address(mainToken), IStrategy(address(mainTokenStrategy)), 0);
+        mainTokenId =
+            yieldBox.registerAsset(TokenType.ERC20, address(mainToken), IStrategy(address(mainTokenStrategy)), 0);
+
+        ERC20WithoutStrategy nonMainTokenStrategy =
+            ybUtils.createEmptyStrategy(address(yieldBox), address(nonMainToken));
+        vm.label(address(nonMainTokenStrategy), "nonMainTokenStrategy");
+        nonMainTokenId =
+            yieldBox.registerAsset(TokenType.ERC20, address(nonMainToken), IStrategy(address(nonMainTokenStrategy)), 0);
 
         ERC20WithoutStrategy usdoStrategy = ybUtils.createEmptyStrategy(address(yieldBox), address(usdo));
         vm.label(address(usdoStrategy), "usdoStrategy");
@@ -102,11 +149,19 @@ abstract contract Markets_Unit_Shared is Base_Test {
         cluster = new Cluster(0, address(this));
         vm.label(address(cluster), "Cluster Test");
 
-        penrose = new Penrose(IYieldBox(address(yieldBox)), ICluster(address(cluster)), IERC20(address(tapToken)), IERC20(address(mainToken)), IPearlmit(address(pearlmit)), tapId, mainTokenId, address(this));
+        penrose = new Penrose(
+            IYieldBox(address(yieldBox)),
+            ICluster(address(cluster)),
+            IERC20(address(tapToken)),
+            IERC20(address(mainToken)),
+            IPearlmit(address(pearlmit)),
+            tapId,
+            mainTokenId,
+            address(this)
+        );
 
-        oracle = new OracleMock_test("A","A", 1 ether);
+        oracle = new OracleMock_test("A", "A", 1 ether);
     }
-
 
     function _getSingularityInitData(TestSingularityData memory _sgl, address _penrose)
         internal

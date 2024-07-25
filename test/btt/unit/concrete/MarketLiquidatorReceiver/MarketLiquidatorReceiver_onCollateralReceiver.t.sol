@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.22;
 
-// external 
+// external
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 // contracts
@@ -63,13 +63,11 @@ contract MarketLiquidatorReceiver_onCollateralReceivertsol is MarketLiquidatorRe
             swapTarget: payable(swapperTarget),
             swapCallData: abi.encodeWithSelector(
                 ZeroXSwapperMockTarget_test.transferTokensWithDust.selector, address(weth), address(usdo), amount, amount
-            )
+                )
         });
 
-        MarketLiquidatorReceiver.SSwapData memory swapData = MarketLiquidatorReceiver.SSwapData({
-            minAmountOut: amount,
-            data: zeroXSwapData
-        });
+        MarketLiquidatorReceiver.SSwapData memory swapData =
+            MarketLiquidatorReceiver.SSwapData({minAmountOut: amount, data: zeroXSwapData});
 
         uint256 usdoBalanceBefore = usdo.balanceOf(address(this));
         receiver.onCollateralReceiver(rndAddr, address(tWeth), address(usdo), amount, abi.encode(swapData));
