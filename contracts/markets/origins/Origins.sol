@@ -5,15 +5,15 @@ pragma solidity 0.8.22;
 import {RebaseLibrary, Rebase} from "@boringcrypto/boring-solidity/contracts/libraries/BoringRebase.sol";
 import {BoringERC20} from "@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import {ITapiocaOracle} from "tapioca-periph/interfaces/periph/ITapiocaOracle.sol";
+import {ITapiocaOracle} from "tap-utils/interfaces/periph/ITapiocaOracle.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {IERC20} from "@boringcrypto/boring-solidity/contracts/ERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 // Tapioca
-import {IYieldBox} from "tapioca-periph/interfaces/yieldbox/IYieldBox.sol";
-import {IPenrose} from "tapioca-periph/interfaces/bar/IPenrose.sol";
-import {IUsdo} from "tapioca-periph/interfaces/oft/IUsdo.sol";
+import {IYieldBox} from "tap-utils/interfaces/yieldbox/IYieldBox.sol";
+import {IPenrose} from "tap-utils/interfaces/bar/IPenrose.sol";
+import {IUsdo} from "tap-utils/interfaces/oft/IUsdo.sol";
 import {SafeApprove} from "../../libraries/SafeApprove.sol";
 import {MarketStateView} from "../MarketStateView.sol";
 import {Market, MarketERC20} from "../Market.sol";

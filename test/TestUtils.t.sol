@@ -7,8 +7,8 @@ import {
     YieldBoxApproveAllMsg,
     YieldBoxApproveAssetMsg,
     MarketPermitActionMsg
-} from "tapioca-periph/interfaces/oft/IUsdo.sol";
-import {ERC20PermitStruct, ERC20PermitApprovalMsg} from "tapioca-periph/interfaces/periph/ITapiocaOmnichainEngine.sol";
+} from "tap-utils/interfaces/oft/IUsdo.sol";
+import {ERC20PermitStruct, ERC20PermitApprovalMsg} from "tap-utils/interfaces/periph/ITapiocaOmnichainEngine.sol";
 
 import "forge-std/Test.sol";
 

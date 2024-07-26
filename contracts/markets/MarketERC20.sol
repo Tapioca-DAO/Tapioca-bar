@@ -8,8 +8,8 @@ import {EIP712, ECDSA} from "@openzeppelin/contracts/utils/cryptography/EIP712.s
 import {IERC20} from "@boringcrypto/boring-solidity/contracts/ERC20.sol";
 
 // Tapioca
-import {IPenrose} from "tapioca-periph/interfaces/bar/IPenrose.sol";
-import {ICluster} from "tapioca-periph/interfaces/periph/ICluster.sol";
+import {IPenrose} from "tap-utils/interfaces/bar/IPenrose.sol";
+import {ICluster} from "tap-utils/interfaces/periph/ICluster.sol";
 
 /*
 

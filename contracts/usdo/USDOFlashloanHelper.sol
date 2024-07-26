@@ -6,9 +6,9 @@ import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeE
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 // Tapioca
-import {IERC3156FlashBorrower} from "tapioca-periph/interfaces/bar/IERC3156FlashBorrower.sol";
-import {IERC3156FlashLender} from "tapioca-periph/interfaces/bar/IERC3156FlashLender.sol";
-import {IUsdo} from "tapioca-periph/interfaces/oft/IUsdo.sol";
+import {IERC3156FlashBorrower} from "tap-utils/interfaces/bar/IERC3156FlashBorrower.sol";
+import {IERC3156FlashLender} from "tap-utils/interfaces/bar/IERC3156FlashLender.sol";
+import {IUsdo} from "tap-utils/interfaces/oft/IUsdo.sol";
 
 /*
 
