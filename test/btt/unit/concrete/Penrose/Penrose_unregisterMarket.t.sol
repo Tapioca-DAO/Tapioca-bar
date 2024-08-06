@@ -8,10 +8,10 @@ import {BigBang} from "contracts/markets/bigBang/BigBang.sol";
 import {ILeverageExecutor} from "tapioca-periph/interfaces/bar/ILeverageExecutor.sol";
 import {ITapiocaOracle} from "tapioca-periph/interfaces/periph/ITapiocaOracle.sol";
 
-import {Markets_Unit_Shared} from "../../shared/Markets_Unit_Shared.t.sol";
 import {IPenrose} from "tapioca-periph/interfaces/bar/IPenrose.sol";
+import {BigBang_Unit_Shared} from "../../shared/BigBang_Unit_Shared.t.sol";
 
-contract Penrose_unregisterContract is Markets_Unit_Shared {
+contract Penrose_unregisterContract is BigBang_Unit_Shared {
     function test_RevertWhen_UnregisterContractIsCalledFromNon_owner() external {
         address rndAddr = makeAddr("rndAddress");
 
@@ -30,7 +30,7 @@ contract Penrose_unregisterContract is Markets_Unit_Shared {
             BigBang._InitMemoryDebtData memory initDebtData,
             BigBang._InitMemoryData memory initMemoryData
         ) = _getBigBangInitData(
-            TestBigBangData(
+            BigBangInitData(
                 address(penrose),
                 address(mainToken), //asset
                 mainTokenId,

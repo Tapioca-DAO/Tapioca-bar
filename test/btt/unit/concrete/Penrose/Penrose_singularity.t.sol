@@ -6,14 +6,14 @@ import {IERC20} from "@boringcrypto/boring-solidity/contracts/libraries/BoringER
 
 // dependencies
 import {ILeverageExecutor} from "tapioca-periph/interfaces/bar/ILeverageExecutor.sol";
-import {IOracle} from "tapioca-periph/oracle/interfaces/IOracle.sol";
+import {ITapiocaOracle} from "tapioca-periph/interfaces/periph/ITapiocaOracle.sol";
 
 import {Singularity} from "contracts/markets/singularity/Singularity.sol";
 
-import {Markets_Unit_Shared} from "../../shared/Markets_Unit_Shared.t.sol";
+import {Singularity_Unit_Shared} from "../../shared/Singularity_Unit_Shared.t.sol";
 import {IPenrose} from "tapioca-periph/interfaces/bar/IPenrose.sol";
 
-contract Penrose_singularity is Markets_Unit_Shared {
+contract Penrose_singularity is Singularity_Unit_Shared {
     function test_RevertWhen_RegisterSingularityIsCalledFromNon_owner() external {
         address rndAddr = makeAddr("rndAddress");
         penrose.registerSingularityMasterContract(rndAddr, IPenrose.ContractType.lowRisk);
@@ -46,13 +46,13 @@ contract Penrose_singularity is Markets_Unit_Shared {
             Singularity._InitMemoryTokensData memory tokensData,
             Singularity._InitMemoryData memory data
         ) = _getSingularityInitData(
-            TestSingularityData(
+            SingularityInitData(
                 address(penrose),
                 IERC20(address(mainToken)), //asset
                 mainTokenId,
                 IERC20(address(usdo)), //collateral
                 usdoId,
-                IOracle(address(rndAddr)),
+                ITapiocaOracle(address(rndAddr)),
                 ILeverageExecutor(address(rndAddr))
             ),
             address(penrose)
