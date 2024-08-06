@@ -1,13 +1,34 @@
 BigBang_repay.t.sol
-├── when repay is called and contract is paused
-│   └── it should revert
-├── when repay is called for the contract itself
-│   └── it should revert
-├── when repay is called for no position
-│   └── it should revert
-├── when repay is called for sender
-│   └── it should not revert
-├── when repay is called for another user without allowed lend
-│   └── it should revert
-└── when repay is called for another user with allowed lend
-    └── it should not revert
+├── when contract is paused
+│   └── it should revert with 'Market: paused'
+└── when contract is not paused
+    ├── when called for itself
+    │   └── it should revert with 'Market: cannot execute on itself'
+    ├── when it's called for a valid sender by itself
+    │   ├── when it's called without a position
+    │   │   └── it should revert
+    │   └── when user has a borrowed position
+    │       ├── when oracle fails to fetch the latest prices
+    │       │   ├── it should continue with the repayment
+    │       │   └── it should use the cached rates
+    │       ├── when user doesn't have enough assets in YieldBox
+    │       │   └── it should revert
+    │       └── when user deposited assets into YieldBox for repayment
+    │           ├── it should emit 'ReaccruedMarkets'
+    │           ├── it should emit 'LogAccrue'
+    │           ├── it should decrease 'userBorrowPart'
+    │           ├── it should decrease 'totalBorrow.base'
+    │           ├── it should decrease 'totalBorrow.elastic'
+    │           ├── it should burn asset's supply
+    │           └── it should emit 'LogRepay'
+    └── when it's called from another user
+        ├── when user does not have enough allowance
+        │   └── it should revert with 'Market: not approved'
+        └── when user has been given allowance
+            └── it should emit 'ReaccruedMarkets'
+                ├── it should emit 'LogAccrue'
+                ├── it should decrease 'userBorrowPart'
+                ├── it should decrease 'totalBorrow.base'
+                ├── it should decrease 'totalBorrow.elastic'
+                ├── it should burn asset's supply
+                └── it should emit 'LogRepay'

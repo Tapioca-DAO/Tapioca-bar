@@ -1,113 +1,138 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.22;
 
+// external
+import {IERC20} from "@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol";
+
 // mocks
 import {OracleMock_test} from "../../mocks/OracleMock_test.sol";
 
-// external
+// Tapioca
 import {BBDebtRateHelper} from "contracts/markets/bigBang/BBDebtRateHelper.sol";
+import {BBLiquidation} from "contracts/markets/bigBang/BBLiquidation.sol";
+import {BBCollateral} from "contracts/markets/bigBang/BBCollateral.sol";
+import {BBLeverage} from "contracts/markets/bigBang/BBLeverage.sol";
+import {BBBorrow} from "contracts/markets/bigBang/BBBorrow.sol";
 import {BigBang} from "contracts/markets/bigBang/BigBang.sol";
 
-// dependencies
 import {ILeverageExecutor} from "tapioca-periph/interfaces/bar/ILeverageExecutor.sol";
 import {ITapiocaOracle} from "tapioca-periph/interfaces/periph/ITapiocaOracle.sol";
 import {IPenrose} from "tapioca-periph/interfaces/bar/IPenrose.sol";
-import {MarketHelper} from "contracts/markets/MarketHelper.sol";
 
+// tests
 import {Markets_Unit_Shared} from "./Markets_Unit_Shared.t.sol";
 
 abstract contract BigBang_Unit_Shared is Markets_Unit_Shared {
-    MarketHelper public marketHelper;
+    // ************ //
+    // *** VARS *** //
+    // ************ //
+    OracleMock_test assetOracle; // BigBang assets oracle (USDC <> USDO equivalent)
+    BBDebtRateHelper debtHelper; // BigBang Debt rate helper
 
+    BigBang bbMc;
+    BigBang mainBB;
+    BigBang secondaryBB;
+
+    // ************* //
+    // *** SETUP *** //
+    // ************* //
     function setUp() public virtual override {
         super.setUp();
-        marketHelper = new MarketHelper();
+
+        // create default BigBang oracle
+        assetOracle = _createOracle("Asset oracle");
+
+        // create default BB master contract
+        bbMc = new BigBang();
+        penrose.registerBigBangMasterContract(address(bbMc), IPenrose.ContractType.lowRisk);
+
+        // create BBDebtRateHelper
+        debtHelper = new BBDebtRateHelper();
+
+        // create main BB market
+        // it handles after deployment set-up
+        mainBB = BigBang(payable(_registerBBMarket(address(mainToken), mainTokenId, true)));
+
+        // create another BB market
+        // it handles after deployment set-up
+        secondaryBB = BigBang(payable(_registerBBMarket(address(randomCollateral), randomCollateralId, false)));
     }
 
-    function _setPenroseBigBangDefaults(address mainBBMarket) internal {
-        __setBigBangDefaults(mainBBMarket);
+    // **************** //
+    // *** INTERNAL *** //
+    // **************** //
 
-        penrose.setBigBangEthMarket(mainBBMarket);
-        penrose.setBigBangEthMarketDebtRate(0.5 ether);
+    function _getBigBangInitData(BigBangInitData memory _bb)
+        internal
+        returns (
+            BigBang._InitMemoryModulesData memory modulesData,
+            BigBang._InitMemoryDebtData memory debtData,
+            BigBang._InitMemoryData memory data
+        )
+    {
+        BBCollateral bbCollateral = new BBCollateral();
+        BBLiquidation bbLiq = new BBLiquidation();
+        BBLeverage bbLev = new BBLeverage();
+        BBBorrow bbBorrow = new BBBorrow();
+
+        modulesData =
+            BigBang._InitMemoryModulesData(address(bbLiq), address(bbBorrow), address(bbCollateral), address(bbLev));
+
+        debtData = BigBang._InitMemoryDebtData(_bb.debtRateAgainstEth, _bb.debtRateMin, _bb.debtRateMax);
+
+        data = BigBang._InitMemoryData(
+            IPenrose(_bb.penrose),
+            IERC20(_bb.collateral),
+            _bb.collateralId,
+            ITapiocaOracle(address(_bb.oracle)),
+            DEFAULT_EXCHANGE_RATE,
+            COLLATERALIZATION_RATE,
+            LIQUIDATION_COLLATERALIZATION_RATE,
+            _bb.leverageExecutor
+        );
     }
 
-    function _setSecondaryBigBangDefaults(address bb) internal {
-        __setBigBangDefaults(bb);
-    }
+    function _registerBBMarket(address _collateral, uint256 _collateralId, bool _isMain) internal returns (address) {
+        // *** DEPLOYMENT *** //
+        (
+            BigBang._InitMemoryModulesData memory initModulesData,
+            BigBang._InitMemoryDebtData memory initDebtData,
+            BigBang._InitMemoryData memory initMemoryData
+        ) = _getBigBangInitData(
+            BigBangInitData(
+                address(penrose),
+                _collateral, //collateral
+                _collateralId,
+                ITapiocaOracle(address(oracle)),
+                ILeverageExecutor(makeAddr("rndAddress")),
+                _isMain ? VALUE_ZERO : BB_DEBT_RATE_AGAINST_MAIN_MARKET,
+                _isMain ? VALUE_ZERO : BB_MIN_DEBT_RATE,
+                _isMain ? VALUE_ZERO : BB_MAX_DEBT_RATE
+            )
+        );
 
-    function __setBigBangDefaults(address bb) private {
-        BBDebtRateHelper debtHelper = new BBDebtRateHelper();
-        OracleMock_test assetOracle = new OracleMock_test("A", "A", 0.5 ether);
+        address _contract =
+            penrose.registerBigBang(address(bbMc), abi.encode(initModulesData, initDebtData, initMemoryData), true);
 
+        // *** AFTER DEPLOYMENT *** //
         address[] memory mc = new address[](1);
         bytes[] memory data = new bytes[](1);
 
-        mc[0] = address(bb);
+        mc[0] = _contract;
         data[0] = abi.encodeWithSelector(BigBang.setDebtRateHelper.selector, address(debtHelper));
         penrose.executeMarketFn(mc, data, true);
 
         data[0] = abi.encodeWithSelector(BigBang.setAssetOracle.selector, address(assetOracle), "0x");
         penrose.executeMarketFn(mc, data, true);
 
-        usdo.setMinterStatus(bb, true);
-        usdo.setBurnerStatus(bb, true);
-    }
+        usdo.setMinterStatus(_contract, true);
+        usdo.setBurnerStatus(_contract, true);
 
-    function _registerSecondaryDefaultBigBang() internal returns (address) {
-        address rndAddr = makeAddr("rndAddress");
-        BigBang bbMc = new BigBang();
-        penrose.registerBigBangMasterContract(address(bbMc), IPenrose.ContractType.lowRisk);
-        penrose.setUsdoToken(address(usdo), usdoId);
-
-        (
-            BigBang._InitMemoryModulesData memory initModulesData,
-            BigBang._InitMemoryDebtData memory initDebtData,
-            BigBang._InitMemoryData memory initMemoryData
-        ) = _getBigBangInitData(
-            TestBigBangData(
-                address(penrose),
-                address(nonMainToken), //collateral
-                nonMainTokenId,
-                ITapiocaOracle(address(oracle)),
-                ILeverageExecutor(address(rndAddr)),
-                0.2 ether,
-                0.005 ether,
-                0.05 ether
-            )
-        );
-
-        address _contract =
-            penrose.registerBigBang(address(bbMc), abi.encode(initModulesData, initDebtData, initMemoryData), true);
+        if (_isMain) {
+            penrose.setBigBangEthMarket(_contract);
+        }
 
         return _contract;
     }
 
-    function _registerDefaultBigBang() internal returns (address) {
-        address rndAddr = makeAddr("rndAddress");
-
-        BigBang bbMc = new BigBang();
-        penrose.registerBigBangMasterContract(address(bbMc), IPenrose.ContractType.lowRisk);
-        penrose.setUsdoToken(address(usdo), usdoId);
-
-        (
-            BigBang._InitMemoryModulesData memory initModulesData,
-            BigBang._InitMemoryDebtData memory initDebtData,
-            BigBang._InitMemoryData memory initMemoryData
-        ) = _getBigBangInitData(
-            TestBigBangData(
-                address(penrose),
-                address(mainToken), //collateral
-                mainTokenId,
-                ITapiocaOracle(address(oracle)),
-                ILeverageExecutor(address(rndAddr)),
-                0,
-                0,
-                0
-            )
-        );
-        address _contract =
-            penrose.registerBigBang(address(bbMc), abi.encode(initModulesData, initDebtData, initMemoryData), true);
-
-        return _contract;
-    }
 }
