@@ -10,7 +10,7 @@ import {ERC20Mock_test} from "../../mocks/ERC20Mock_test.sol";
 import {TOFTMock_test} from "../../mocks/TOFTMock_test.sol";
 
 // contracts
-// import {SGlpMarketLiquidatorReceiver} from "contracts/liquidators/sGlpMarketLiquidatorReceiver.sol";
+import {SGlpMarketLiquidatorReceiver} from "contracts/liquidators/sGlpMarketLiquidatorReceiver.sol";
 import {IGmxRewardRouterV2} from "tapioca-periph/interfaces/external/gmx/IGmxRewardRouterV2.sol";
 import {MarketLiquidatorReceiver} from "contracts/liquidators/MarketLiquidatorReceiver.sol";
 import {IGmxGlpManager} from "tapioca-periph/interfaces/external/gmx/IGmxGlpManager.sol";
@@ -33,7 +33,7 @@ abstract contract MarketLiquidatorReceiver_Unit_Shared is Base_Test {
     ZeroXSwapper swapper;
     ZeroXSwapperMockTarget_test swapperTarget;
     MarketLiquidatorReceiver receiver;
-    //SGlpMarketLiquidatorReceiver sGlpReceiver;
+    SGlpMarketLiquidatorReceiver sGlpReceiver;
     GmxMarketMock_test gmxMock;
 
     function setUp() public virtual override {
@@ -65,6 +65,6 @@ abstract contract MarketLiquidatorReceiver_Unit_Shared is Base_Test {
 
         receiver =
             new MarketLiquidatorReceiver(address(weth), ICluster(address(cluster)), address(swapper), address(this));
-        // sGlpReceiver= new SGlpMarketLiquidatorReceiver(address(weth), ICluster(address(cluster)), address(swapper), IGmxRewardRouterV2(address(gmxMock)), IGmxGlpManager(address(gmxMock)), address(this));
+        sGlpReceiver= new SGlpMarketLiquidatorReceiver(address(weth), ICluster(address(cluster)), address(swapper), IGmxRewardRouterV2(address(gmxMock)), IGmxGlpManager(address(gmxMock)), address(this));
     }
 }
