@@ -23,6 +23,7 @@ contract MarketHelper {
     using RebaseLibrary for Rebase;
 
     uint256 internal constant FEE_PRECISION = 1e5;
+    uint256 internal constant FEE_PRECISION_DECIMALS = 5;
 
     error ExchangeRateNotValid();
     error Solvent();
@@ -44,7 +45,7 @@ contract MarketHelper {
         return _computeClosingFactor(
             borrowPart,
             collateralPartInAsset,
-            FEE_PRECISION,
+            FEE_PRECISION_DECIMALS,
             market._liquidationCollateralizationRate(),
             market._liquidationMultiplier(),
             _totalBorrow

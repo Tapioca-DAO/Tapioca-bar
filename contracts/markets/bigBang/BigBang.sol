@@ -127,10 +127,11 @@ contract BigBang is MarketStateView, BBCommon {
     function _initDebtStorage(uint256 _debtRateAgainstEth, uint256 _debtRateMin, uint256 _debtRateMax) private {
         isMainMarket = collateralId == penrose.mainAssetId();
         if (!isMainMarket) {
-            if (minDebtRate != 0 && maxDebtRate != 0) {
+            if (_debtRateMin != 0 && _debtRateMax != 0) {
                 if (_debtRateMin >= _debtRateMax) revert DebtRatesNotValid();
                 if (_debtRateMax > 1e18) revert MaxDebtRateNotValid();
             }
+            
             debtRateAgainstEthMarket = _debtRateAgainstEth;
             maxDebtRate = _debtRateMax;
             minDebtRate = _debtRateMin;

@@ -121,6 +121,7 @@ abstract contract Utils is Test, Constants {
     }
 
     function _approveViaPearlmit(
+        uint256 tokenType,
         address token,
         IPearlmit pearlmit,
         address from,
@@ -132,11 +133,8 @@ abstract contract Utils is Test, Constants {
         // Reset prank
         _resetPrank({msgSender: from});
 
-        // Set approvals to pearlmit
-        IERC20(token).approve(address(pearlmit), amount);
-
         // Approve via pearlmit
-        pearlmit.approve(TOKEN_TYPE_ERC20, token, tokenId, operator, uint200(amount), uint48(expiration));
+        pearlmit.approve(tokenType, token, tokenId, operator, uint200(amount), uint48(expiration));
     }
 
     function _approveYieldBoxAssetId(YieldBox yieldBox, address from, address operator, uint256 assetId) internal {

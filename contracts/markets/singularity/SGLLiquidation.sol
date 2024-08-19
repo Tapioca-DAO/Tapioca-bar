@@ -55,7 +55,12 @@ contract SGLLiquidation is SGLCommon {
         IMarketLiquidatorReceiver liquidatorReceiver,
         bytes calldata liquidatorReceiverData,
         bool swapCollateral
-    ) external onlyOwner {
+    ) external {
+        require(
+            penrose.cluster().hasRole(msg.sender, keccak256("LIQUIDATOR")) || msg.sender == owner(),
+            "Market: unauthorized"
+        );
+
         _tryUpdateOracleRate();
 
         //check from whitelist status

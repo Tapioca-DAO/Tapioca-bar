@@ -20,12 +20,14 @@ import {Usdo} from "contracts/usdo/Usdo.sol";
 
 // tests
 import {TestHelper} from "../LZSetup/TestHelper.sol";
+import {Events} from "./utils/Events.sol";
 import {Utils} from "./utils/Utils.sol";
 import {Types} from "./utils/Types.sol";
 
 import {ERC20Mock_test} from "./mocks/ERC20Mock_test.sol";
+import {TOFTMock_test} from "./mocks/TOFTMock_test.sol";
 
-abstract contract Base_Test is TestHelper, Utils, Types {
+abstract contract Base_Test is TestHelper, Utils, Types, Events {
     // ************ //
     // *** VARS *** //
     // ************ //
@@ -45,7 +47,8 @@ abstract contract Base_Test is TestHelper, Utils, Types {
     Penrose penrose;
 
     // tokens
-    ERC20Mock_test mainToken; // used as the main token in Penrose
+    ERC20Mock_test mainTokenErc20; // used as the main token underlying erc20
+    TOFTMock_test mainToken; // used as the main token in Penrose
     uint256 mainTokenId; // used as the main token Id in Penrose
 
     ERC20Mock_test tapToken; // no need for real TAP; used only to simulate fees
@@ -66,7 +69,7 @@ abstract contract Base_Test is TestHelper, Utils, Types {
         setUpEndpoints(3, LibraryType.UltraLightNode);
 
         // create mock main token
-        mainToken = _createToken("MainToken");
+        mainTokenErc20 = _createToken("MainTokenErc20");
         // create mock tap token
         tapToken = _createToken("TapToken");
 
@@ -76,6 +79,9 @@ abstract contract Base_Test is TestHelper, Utils, Types {
         pearlmit = _createPearlmit(address(this));
         // create real YieldBox
         yieldBox = _createYieldBox(address(this), pearlmit);
+
+        mainToken = new TOFTMock_test(address(mainTokenErc20), IPearlmit(address(pearlmit)));
+        vm.label(address(mainToken), "MainToken TOFT");
 
         // create YieldBox id for main token mock
         mainTokenId = yieldBox.registerAsset(
@@ -149,14 +155,18 @@ abstract contract Base_Test is TestHelper, Utils, Types {
         penrose.setUsdoToken(address(usdo), usdoId);
         // set BB default debt rate
         penrose.setBigBangEthMarketDebtRate(DEFAULT_PENROSE_DEBT_RATE);
+
+        cluster.setRoleForContract(address(this), keccak256("LIQUIDATOR"), true);
+
+        deal(address(mainTokenErc20), address(mainToken), type(uint128).max);
     }
 
     // ***************** //
     // *** MODIFIERS *** //
     // ***************** //
-
     /// @notice Modifier to approve an operator in YB via Pearlmit.
     modifier whenApprovedViaPearlmit(
+        uint256 _type,
         address _token,
         uint256 _tokenId,
         address _from,
@@ -165,6 +175,7 @@ abstract contract Base_Test is TestHelper, Utils, Types {
         uint256 _expiration
     ) {
         _approveViaPearlmit({
+            tokenType: _type,
             token: _token,
             pearlmit: IPearlmit(address(pearlmit)),
             from: _from,
@@ -229,8 +240,12 @@ abstract contract Base_Test is TestHelper, Utils, Types {
     /// @notice Modifier to verify a value is less than or equal to a minimum and greater than or equal to a maximum
     /// @dev combined version of `assumeLtE` and `assumeGtE`
     modifier assumeRange(uint256 value, uint256 min, uint256 max) {
-        vm.assume(value >= min);
-        vm.assume(value <= max);
+        vm.assume(value >= min && value <= max);
+        _;
+    }
+
+    modifier whenWhitelisted(address _addy) {
+        cluster.updateContract(0, _addy, true);
         _;
     }
 }

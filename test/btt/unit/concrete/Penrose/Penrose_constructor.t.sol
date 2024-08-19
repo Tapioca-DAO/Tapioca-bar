@@ -12,7 +12,7 @@ contract Penrose_constructor is BigBang_Unit_Shared {
         assertEq(address(penrose.mainToken()), address(mainToken));
         assertEq(penrose.tapAssetId(), tapTokenId);
         assertEq(penrose.mainAssetId(), mainTokenId);
-        assertEq(penrose.bigBangEthDebtRate(), 8e16);
+        assertEq(penrose.bigBangEthDebtRate(), 5e17);
         assertEq(penrose.owner(), address(this));
     }
 }

@@ -82,7 +82,6 @@ contract MarketLiquidatorReceiver is IMarketLiquidatorReceiver, Ownable, Reentra
         if (!allowedParticipants[initiator]) revert NotAuthorized();
         if (!cluster.isWhitelisted(0, msg.sender)) revert WhitelistError();
         if (!cluster.isWhitelisted(0, address(this))) revert WhitelistError();
-
         // check if contract received enough collateral
         uint256 collateralBalance = IERC20(tokenIn).balanceOf(address(this));
         if (collateralBalance < collateralAmount) revert NotEnough();

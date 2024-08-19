@@ -3,11 +3,11 @@ BigBang_addCollateral.t.sol
 ├── when contract is paused
 │   └── it should revert with 'Market: paused'
 └── when contract is not paused
-    ├── when called for itself
+    ├── given called for itself
     │   └── it should revert with 'Market: cannot execute on itself'
-    ├── when amount is too low
+    ├── given amount is too low
     │   └── it should revert
-    ├── when it's called for a valid sender by itself
+    ├── given called for a valid sender by itself
     │   ├── when collateral is skimmed
     │   │   ├── it should increase 'userCollateralShare'
     │   │   ├── it should increase 'totalCollateralShare'
@@ -20,17 +20,17 @@ BigBang_addCollateral.t.sol
     │       ├── it should increase market's YieldBox balance
     │       ├── it should decrease user's YieldBox balance for collateral token
     │       └── it should emit 'LogAddCollateral'
-    └── when it's called from another user
+    └── given called from another user
         ├── when user does not have enough allowance
         │   └── it should revert with 'Market: not approved'
         └── when user has been given allowance
-            ├── when collateral is not skimmed
+            ├── given collateral is not skimmed
             │   ├── it should increase 'userCollateralShare'
             │   ├── it should increase 'totalCollateralShare'
             │   ├── it should increase market's YieldBox balance
             │   ├── it should emit 'LogAddCollateral'
             │   └── it should decrease user's YieldBox balance 
-            └── when collateral is skimmed/
+            └── given collateral is skimmed
                 ├── it should increase 'userCollateralShare'
                 ├── it should increase 'totalCollateralShare'
                 ├── it should emit 'LogAddCollateral'

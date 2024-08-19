@@ -45,4 +45,16 @@ abstract contract Types {
         // debt rate max for non main BB market
         uint256 debtRateMax;
     }
+
+    struct SSwapData {
+        uint256 minAmountOut;
+        SZeroXSwapData data;
+    }
+
+    struct SZeroXSwapData {
+        address sellToken;
+        address buyToken;
+        address payable swapTarget;
+        bytes swapCallData;
+    }
 }

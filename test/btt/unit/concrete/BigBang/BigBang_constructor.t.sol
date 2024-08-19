@@ -5,16 +5,11 @@ pragma solidity 0.8.22;
 import {IERC20} from "@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol";
 
 // Tapioca
-import {BBDebtRateHelper} from "contracts/markets/bigBang/BBDebtRateHelper.sol";
-import {BBLiquidation} from "contracts/markets/bigBang/BBLiquidation.sol";
-import {BBCollateral} from "contracts/markets/bigBang/BBCollateral.sol";
-import {BBLeverage} from "contracts/markets/bigBang/BBLeverage.sol";
-import {BBBorrow} from "contracts/markets/bigBang/BBBorrow.sol";
 import {BigBang} from "contracts/markets/bigBang/BigBang.sol";
 
 import {ILeverageExecutor} from "tapioca-periph/interfaces/bar/ILeverageExecutor.sol";
 import {ITapiocaOracle} from "tapioca-periph/interfaces/periph/ITapiocaOracle.sol";
-import {IPenrose} from "tapioca-periph/interfaces/bar/IPenrose.sol";
+
 // tests
 import {BigBang_Unit_Shared} from "../../shared/BigBang_Unit_Shared.t.sol";
 
@@ -101,11 +96,13 @@ contract BigBang_constructor is BigBang_Unit_Shared {
 
         // Debt rate > max
         initMemoryData._liquidationCollateralizationRate = LIQUIDATION_COLLATERALIZATION_RATE;
+        initDebtData._debtRateMin = 1;
         initDebtData._debtRateMax = 1e18 + 1;
         vm.expectRevert(BigBang.MaxDebtRateNotValid.selector);
         penrose.registerBigBang(address(bbMc), abi.encode(initModulesData, initDebtData, initMemoryData), true);
 
         // Debt rate Max < Debt rate Min
+        initDebtData._debtRateMin = 1;
         initDebtData._debtRateMax = initDebtData._debtRateMin;
         vm.expectRevert(BigBang.DebtRatesNotValid.selector);
         penrose.registerBigBang(address(bbMc), abi.encode(initModulesData, initDebtData, initMemoryData), true);

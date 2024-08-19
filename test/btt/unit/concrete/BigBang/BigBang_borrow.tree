@@ -4,11 +4,11 @@ BigBang_borrow.t.sol
 └── when contract is not puased
     ├── when called for itself
     │   └── it should revert with 'Market: cannot execute on itself'
-    ├── when amount is too low
+    ├── given amount is too low
     │   └── it should revert
-    ├── when it's called for a valid sender by itself
+    ├── when called for a valid sender by itself
     │   ├── when position is solvent
-    │   │   ├── when borrow cap is not reached
+    │   │   ├── given borrow cap is not reached yet
     │   │   │   ├── when opening fee is not 0
     │   │   │   │   ├── it should emit LogBorrow
     │   │   │   │   ├── it should increase asset supply
@@ -25,16 +25,16 @@ BigBang_borrow.t.sol
     │   │   │       ├── it should increase 'userBorrowPart'
     │   │   │       ├── it should increase user's YieldBox position
     │   │   │       └── it should have a 'userBorrowPart' equal to the borrowed amount
-    │   │   └── when borrow cap is reached
+    │   │   └── when borrow cap is fully reached
     │   │       └── it should revert
     │   └── when position is not solvent
     │       └── it should revert with 'Market: insolvent'
-    └── when it's called from another user
-        ├── when user does not have enough allowance
+    └── when called from another user
+        ├── given user does not have enough allowance
         │   └── it should revert with 'Market: not approved'
-        └── when user has been given allowance
-            ├── when borrow cap is not reached
-            │   ├── when opening fee is not 0
+        └── given user has allowance
+            ├── given borrow cap is not reached
+            │   ├── when opening fee is not zero
             │   │   ├── it should emit LogBorrow
             │   │   ├── it should increase asset supply
             │   │   ├── it should increase 'totalBorrow.base'
@@ -42,7 +42,7 @@ BigBang_borrow.t.sol
             │   │   ├── it should increase 'userBorrowPart'
             │   │   ├── it should increase user's YieldBox position
             │   │   └── it should have a 'userBorrowPart' equal to amount + fee
-            │   └── when opening fee is 0
+            │   └── when opening fee is zero
             │       ├── it should emit LogBorrow
             │       ├── it should increase asset supply
             │       ├── it should increase 'totalBorrow.base'

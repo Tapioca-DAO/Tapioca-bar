@@ -16,6 +16,8 @@ abstract contract Constants {
     address public constant ADDRESS_ZERO = address(0);
     uint256 public constant VALUE_ZERO = 0;
 
+    uint256 public constant MAX_ITERATIONS = 10;
+
     // **************** //
     // *** PEARLMIT *** //
     // **************** //
@@ -57,4 +59,5 @@ abstract contract Constants {
     uint256 public constant MIN_BORROW_AMOUNT = 1e15;
     uint256 public constant MIN_COLLATERAL_AMOUNT = 1e15;
     uint256 public constant FEE_PRECISION = 1e5;
+    uint256 public constant MIN_LIQUIDATION_BONUS = 1e5;
 }

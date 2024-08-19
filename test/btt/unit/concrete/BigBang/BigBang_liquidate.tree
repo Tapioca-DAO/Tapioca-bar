@@ -1,66 +1,27 @@
-BigBang_liquidate.t.sol/
-├── when contract is paused/
+BigBang_liquidate.t.sol
+├── when contract is paused
 │   └── it should revert with 'Market: paused'
-├── when contract is not paused/
-│   ├── when it's called with wrong parameters/
-│   │   ├── when liquidate is called for no users/
-│   │   │   └── it should revert
-│   │   ├── when liquidate is called for different arrays/
-│   │   │   └── it should revert
-│   │   ├── when liquidate is called for solvent users/
-│   │   │   └── it should revert
-│   │   └── when liquidate is called and returnedShare is less than borrowShare/
-│   │       └── it should revert
-│   └── when parameters are valid/
-│       ├── when collateral does not cover borrow amount/
-│       │   └── it should revert with 'BadDebt'
-│       ├── when closing factor is less than current collateral/
-│       │   ├── when 'minLiquidationBonus' is zero/
-│       │   │   └── it should revert
-│       │   ├── when 'minLiquidationBonus' is not respected/
-│       │   │   └── it should revert
-│       │   └── when 'minLiquidationBonus' is met/
-│       │       ├── it should emit 'ReaccruedMarkets'
-│       │       ├── it should emit 'LogAccrue'
-│       │       ├── it should emit 'Liquidated'
-│       │       ├── it should decrease 'totalBorrow.base'
-│       │       ├── it should decrease 'totalBorrow.elastic'
-│       │       ├── it should burn asset's supply
-│       │       ├── it should decrease 'userCollateralShare'
-│       │       ├── it should decrease 'totalCollateralShare'
-│       │       └── when liquidator receivers rewards/
-│       │           ├── it should be deposited to YieldBox
-│       │           └── it should l
-│       └── BigBang_liquidate.t.sol
-├── when contract is paused/
-│   └── it should revert with 'Market: paused'
-└── when contract is not paused/
-    ├── when it's called with wrong parameters/
-    │   ├── when liquidate is called for no users/
+└── when contract is not paused
+    ├── when it's called with wrong parameters
+    │   ├── when liquidate is called for no users
     │   │   └── it should revert
-    │   ├── when liquidate is called for different arrays/
+    │   ├── when liquidate is called for different arrays
     │   │   └── it should revert
-    │   ├── when liquidate is called for solvent users/
+    │   ├── when liquidate is called for solvent users
     │   │   └── it should revert
-    │   └── when liquidate is called and returnedShare is less than borrowShare/
+    │   └── when liquidate is called and returnedShare is less than borrowShare
     │       └── it should revert
-    └── when parameters are valid/
-        ├── when collateral does not cover borrow amount/
+    └── when parameters are valid
+        ├── when collateral does not cover borrow amount
         │   └── it should revert with 'BadDebt'
-        └── when closing factor is less than current collateral/
-            ├── when 'minLiquidationBonus' is zero/
-            │   └── it should revert
-            ├── when 'minLiquidationBonus' is not respected/
-            │   └── it should revert
-            └── when 'minLiquidationBonus' is met/
-                ├── it should emit 'ReaccruedMarkets'
-                ├── it should emit 'LogAccrue'
+        └── when closing factor is less than current collateral
+            └── when 'minLiquidationBonus' is met
                 ├── it should emit 'Liquidated'
                 ├── it should decrease 'totalBorrow.base'
                 ├── it should decrease 'totalBorrow.elastic'
                 ├── it should burn asset's supply
                 ├── it should decrease 'userCollateralShare'
                 ├── it should decrease 'totalCollateralShare'
-                └── when liquidator receivers rewards/
+                └── when liquidator receivers rewards
                     ├── it should be deposited to YieldBox
                     └── it should leave protocol's rewards in the contract

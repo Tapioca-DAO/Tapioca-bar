@@ -6,30 +6,23 @@ BigBang_sellCollateral.t.sol
     │   ├── when called for itself
     │   │   └── it should revert with 'Market: cannot execute on itself'
     │   ├── when sellCollateral is called and leverageExecutor is address0
-    │   │   └── it should revert
-    │   └── when position is not solvent
     │       └── it should revert
     ├── when it's called for a valid sender by itself
     │   ├── when there's no approval
     │   │   └── it should revert
     │   └── when sender gave repayment approval
-    │       ├── when tokens weren't added to YieldBox
-    │       │   └── it should revert
-    │       └── when tokens were added to YieldBox for leverage repayment
+    │       └── when tokens were added to YieldBox for leverage down
     │           ├── when leverage executor returns amount0
     │           │   └── it should revert
-    │           ├── when obtained shares are more than borrowed parts
-    │           │   ├── it should let leftovers to user's YieldBox balance
+    │           ├── when obtained shares are greater than borrowed parts
     │           │   ├── it should empty 'userBorrowPart'
     │           │   ├── it should decrease 'userCollateralShare'
     │           │   ├── it should decrease 'totalCollateralShare'
-    │           │   ├── it should emit 'LogRemoveCollateral'
     │           │   ├── it should decrease 'userBorrowPart'
     │           │   ├── it should decrease 'totalBorrow.base'
     │           │   ├── it should decrease 'totalBorrow.elastic'
-    │           │   ├── it should decrease asset's supply
-    │           │   └── it should emit 'LogRepay'
-    │           └── when obtained shares are less than the entire position
+    │           │   └── it should decrease asset's supply
+    │           └── when obtained shares are less than the full position
     │               ├── it should use the entire balance
     │               ├── it should decrease 'userCollateralShare'
     │               ├── it should decrease 'totalCollateralShare'
@@ -42,30 +35,23 @@ BigBang_sellCollateral.t.sol
     └── when it's called from another user
         ├── when user does not have enough allowance
         │   └── it should revert with 'Market: not approved'
-        └── when user has been given allowance
-            ├── when tokens weren't added to YieldBox
-            │   └── it should revert
+        └── when user has allowance
             └── when tokens were added to YieldBox for leverage repayment
-                ├── when leverage executor returns amount0
+                ├── when leverage executor returns amount zero
                 │   └── it should revert
                 ├── when obtained shares are more than borrowed parts
-                │   ├── it should let leftovers to user's YieldBox balance
                 │   ├── it should empty 'userBorrowPart'
                 │   ├── it should decrease 'userCollateralShare'
                 │   ├── it should decrease 'totalCollateralShare'
-                │   ├── it should emit 'LogRemoveCollateral'
                 │   ├── it should decrease 'userBorrowPart'
                 │   ├── it should decrease 'totalBorrow.base'
                 │   ├── it should decrease 'totalBorrow.elastic'
-                │   ├── it should decrease asset's supply
-                │   └── it should emit 'LogRepay'
+                │   └── it should decrease asset's supply
                 └── when obtained shares are less than the entire position
                     ├── it should use the entire balance
                     ├── it should decrease 'userCollateralShare'
                     ├── it should decrease 'totalCollateralShare'
-                    ├── it should emit 'LogRemoveCollateral'
                     ├── it should decrease 'userBorrowPart'
                     ├── it should decrease 'totalBorrow.base'
                     ├── it should decrease 'totalBorrow.elastic'
-                    ├── it should decrease asset's supply
-                    └── it should emit 'LogRepay'
+                    └── it should decrease asset's supply

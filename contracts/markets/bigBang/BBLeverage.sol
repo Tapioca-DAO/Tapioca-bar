@@ -141,7 +141,6 @@ contract BBLeverage is BBLendingCommon {
             revert LeverageExecutorNotValid();
         }
         penrose.reAccrueBigBangMarkets();
-
         _allowedBorrow(from, share);
         _removeCollateral(from, address(this), share);
 
