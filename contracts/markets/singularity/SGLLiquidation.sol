@@ -61,7 +61,7 @@ contract SGLLiquidation is SGLCommon {
             "Market: unauthorized"
         );
 
-        _tryUpdateOracleRate();
+        _tryUpdateExchangeRate();
 
         //check from whitelist status
         {
@@ -136,7 +136,7 @@ contract SGLLiquidation is SGLCommon {
             revert LengthMismatch();
         }
 
-        _tryUpdateOracleRate();
+        _tryUpdateExchangeRate();
 
         _accrue();
 

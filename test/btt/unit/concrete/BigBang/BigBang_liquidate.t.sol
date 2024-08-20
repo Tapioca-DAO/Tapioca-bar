@@ -226,7 +226,6 @@ contract BigBang_liquidate is BigBang_Unit_Shared {
         // **** Main BB market ****
         _liquidate(collateralAmount, 7e14, maxBorrowAmount, mainBB, MIN_LIQUIDATION_BONUS);
 
-        return;
         // **** Secondary BB market ****
         _liquidate(collateralAmount, 7e14, maxBorrowAmount, secondaryBB, MIN_LIQUIDATION_BONUS);
     }

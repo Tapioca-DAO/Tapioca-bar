@@ -63,7 +63,7 @@ contract BBLiquidation is BBCommon {
             penrose.cluster().hasRole(msg.sender, keccak256("LIQUIDATOR")) || msg.sender == owner(),
             "Market: unauthorized"
         );
-        _tryUpdateOracleRate();
+        _tryUpdateExchangeRate();
 
         //check from whitelist status
         {
@@ -134,7 +134,7 @@ contract BBLiquidation is BBCommon {
             revert LengthMismatch();
         }
 
-        _tryUpdateOracleRate();
+        _tryUpdateExchangeRate();
 
         _accrue();
         penrose.reAccrueBigBangMarkets();
