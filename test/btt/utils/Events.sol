@@ -2,6 +2,12 @@
 pragma solidity 0.8.22;
 
 abstract contract Events {
+    // ************ //
+    // *** USDO *** //
+    // ************ //
+    event SetMinterStatus(address indexed _for, bool _status);
+    event SetBurnerStatus(address indexed _for, bool _status);
+
     // ************** //
     // *** MARKET *** //
     // ************** //
