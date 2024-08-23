@@ -53,6 +53,12 @@ contract MarketLiquidatorReceiver is IMarketLiquidatorReceiver, Ownable, Reentra
         IZeroXSwapper.SZeroXSwapData data;
     }
 
+    /// @notice returns the swapper sell token
+    /// @param marketToken the market's TOFT collateral
+    function querySellToken(address marketToken) external view returns(address) {
+        return ITOFT(marketToken).erc20();
+    }
+
     /// @notice action performed during the liquidation process
     /// @param initiator the address that initiated the liquidation
     /// @param tokenIn received token
