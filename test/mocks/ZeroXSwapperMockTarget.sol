@@ -25,8 +25,9 @@ contract ZeroXSwapperMockTarget {
         payable
     {
         IERC20(tokenIn).safeTransferFrom(msg.sender, address(this), amountIn);
-
         IERC20(tokenOut).safeTransfer(msg.sender, amountOut);
-        IERC20(tokenIn).safeTransfer(msg.sender, amountIn - amountOut);
+        if (amountIn > amountOut) {
+            IERC20(tokenIn).safeTransfer(msg.sender, amountIn - amountOut);
+        }
     }
 }

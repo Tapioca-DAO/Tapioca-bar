@@ -31,6 +31,7 @@ import { buildUsdoHelper } from 'tasks/deployBuilds/buildUsdoHelper';
 import { setupPostLbp1 } from './1-1-setupPostLbp';
 import { DEPLOYMENT_NAMES, DEPLOY_CONFIG } from './DEPLOY_CONFIG';
 import { buildMarketLiquidatorReceiver } from 'tasks/deployBuilds/buildMarketLiquidatorReceiver';
+import { buildsGLPMarketLiquidatorReceiver } from 'tasks/deployBuilds/buildsGLPMarketLiquidatorReceiver';
 
 /**
  * @notice Should be called after TapiocaZ `postLbp` task
@@ -133,6 +134,21 @@ async function tapiocaDeployTask(params: TTapiocaDeployerVmPass<object>) {
     VM.add(
         await buildMarketLiquidatorReceiver(hre, [
             DEPLOY_CONFIG.MISC[hre.SDK.eChainId]!.WETH!,
+            cluster,
+            zeroXSwapper,
+            owner,
+        ]),
+    );
+
+    VM.add(
+        await buildsGLPMarketLiquidatorReceiver(hre, [
+            DEPLOY_CONFIG.MISC[hre.SDK.eChainId]!.WETH!,
+            cluster,
+            zeroXSwapper,
+            DEPLOY_CONFIG.POST_LBP[chainInfo.chainId]!.glpStrat!
+                .glpRewardRouter,
+            DEPLOY_CONFIG.POST_LBP[chainInfo.chainId]!.glpStrat!.glpManager,
+            owner,
         ]),
     );
 
