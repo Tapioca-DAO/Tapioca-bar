@@ -1,3 +1,0 @@
-BigBang_execute.t.sol
-└── when execute is called for registered module
-    └── it should not revert

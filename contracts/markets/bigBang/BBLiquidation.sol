@@ -58,7 +58,11 @@ contract BBLiquidation is BBCommon {
         IMarketLiquidatorReceiver liquidatorReceiver,
         bytes calldata liquidatorReceiverData,
         bool swapCollateral
-    ) external onlyOwner {
+    ) external {
+        require(
+            penrose.cluster().hasRole(msg.sender, keccak256("LIQUIDATOR")) || msg.sender == owner(),
+            "Market: unauthorized"
+        );
         _tryUpdateOracleRate();
 
         //check from whitelist status
@@ -77,7 +81,7 @@ contract BBLiquidation is BBCommon {
         uint256 requiredCollateral =
             yieldBox.toShare(collateralId, (borrowAmountWithBonus * exchangeRate) / EXCHANGE_RATE_PRECISION, false);
 
-        uint256 collateralShare = userCollateralShare[user];
+        uint256 collateralShare = userCollateralShare[user]; 
         if (requiredCollateral < collateralShare) revert ForbiddenAction();
 
         // update totalBorrow
@@ -212,7 +216,6 @@ contract BBLiquidation is BBCommon {
         if (liquidationBonusAmount > 0) {
             borrowPartWithBonus = borrowPartWithBonus + (borrowPartWithBonus * liquidationBonusAmount) / FEE_PRECISION;
         }
-
         if (collateralPartInAsset < borrowPartWithBonus) {
             if (collateralPartInAsset <= userTotalBorrowAmount) {
                 revert BadDebt();

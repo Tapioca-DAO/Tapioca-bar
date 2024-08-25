@@ -1,235 +1,233 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.22;
 
-// external
-import {IERC20} from "@boringcrypto/boring-solidity/contracts/ERC20.sol";
-
-// dependencies
+// Tapioca
 import {Module} from "tapioca-periph/interfaces/bar/IMarket.sol";
 import {BigBang} from "contracts/markets/bigBang/BigBang.sol";
-import {MarketLiquidatorReceiverMock_test} from "../../../mocks/MarketLiquidatorReceiverMock_test.sol";
-import {IMarketLiquidatorReceiver} from "tapioca-periph/interfaces/bar/IMarketLiquidatorReceiver.sol";
-import {BigBang_Unit_Shared} from "../../shared/BigBang_Unit_Shared.t.sol";
-import {ICluster} from "tapioca-periph/interfaces/periph/ICluster.sol";
-
 import {Market} from "contracts/markets/Market.sol";
 
+import {IMarketLiquidatorReceiver} from "tapioca-periph/interfaces/bar/IMarketLiquidatorReceiver.sol";
+import {IMarket} from "tapioca-periph/interfaces/bar/ISingularity.sol";
+import {IPearlmit} from "tapioca-periph/pearlmit/Pearlmit.sol";
+
+import {ZeroXSwapperMockTarget_test} from "../../../mocks/ZeroXSwapperMockTarget_test.sol";
+import {TOFTMock_test} from "../../../mocks/TOFTMock_test.sol";
+
+// tests
+import {BigBang_Unit_Shared} from "../../shared/BigBang_Unit_Shared.t.sol";
+
 contract BigBang_liquidate is BigBang_Unit_Shared {
-    MarketLiquidatorReceiverMock_test liquidatorMock;
-
-    function setUp() public override {
-        super.setUp();
-        liquidatorMock = new MarketLiquidatorReceiverMock_test(IERC20(address(usdo)));
-    }
-
-    function test_RevertWhen_LiquidateIsCalledForPausedContract() external {
-        BigBang bb = BigBang(payable(_registerDefaultBigBang()));
-
-        ICluster _cl = penrose.cluster();
-        _cl.setRoleForContract(address(this), keccak256("PAUSABLE"), true);
-        bb.updatePause(Market.PauseType.Liquidation, true);
-
-        address[] memory users = new address[](1);
-        users[0] = address(this);
-
-        uint256[] memory borrowParts = new uint256[](1);
-        borrowParts[0] = 0;
-
-        uint256[] memory minLiquidationBonuses = new uint256[](1);
-        minLiquidationBonuses[0] = 1e4;
-
-        IMarketLiquidatorReceiver[] memory receivers = new IMarketLiquidatorReceiver[](1);
-        receivers[0] = IMarketLiquidatorReceiver(address(liquidatorMock));
-
-        bytes[] memory receiverData = new bytes[](1);
-        receiverData[0] = abi.encode(0);
-
-        (Module[] memory modules, bytes[] memory calls) =
-            marketHelper.liquidate(users, borrowParts, minLiquidationBonuses, receivers, receiverData);
+    function test_liquidate_WhenContractIsPaused() external whenContractIsPaused {
+        (Module[] memory modules, bytes[] memory calls) = _getLiquidationData(address(this), "", SMALL_AMOUNT, MIN_LIQUIDATION_BONUS);
+        // **** Main BB market ****
+        // it should revert with 'Market: paused'
         vm.expectRevert("Market: paused");
-        bb.execute(modules, calls, true);
+        mainBB.execute(modules, calls, true);
+
+        // **** Secondary BB market ****
+        // it should revert with 'Market: paused'
+        vm.expectRevert("Market: paused");
+        secondaryBB.execute(modules, calls, true);
     }
 
-    function test_RevertWhen_LiquidateIsCalledForNoUsers() external {
-        BigBang bb = BigBang(payable(_registerDefaultBigBang()));
-
+    function test_RevertWhen_LiquidateIsCalledForNoUsers()
+        external
+        whenContractIsNotPaused
+    {
         address[] memory users = new address[](0);
         uint256[] memory borrowParts = new uint256[](0);
         uint256[] memory minLiquidationBonuses = new uint256[](0);
         IMarketLiquidatorReceiver[] memory receivers = new IMarketLiquidatorReceiver[](0);
         bytes[] memory receiverData = new bytes[](0);
 
-        (Module[] memory modules, bytes[] memory calls) =
+        (Module[] memory modules, bytes[] memory calls) = 
             marketHelper.liquidate(users, borrowParts, minLiquidationBonuses, receivers, receiverData);
 
-        // NothingToLiquidate
+        // **** Main BB market ****
+        //         │   │   │   └─ ← [Revert] NothingToLiquidate()
+        // │   │   └─ ← [Revert] EvmError: Revert
+        // │   └─ ← [Revert] EvmError: Revert
         vm.expectRevert();
-        bb.execute(modules, calls, true);
+        mainBB.execute(modules, calls, true);
+
+        // **** Secondary BB market ****
+        //         │   │   │   └─ ← [Revert] NothingToLiquidate()
+        // │   │   └─ ← [Revert] EvmError: Revert
+        // │   └─ ← [Revert] EvmError: Revert
+        vm.expectRevert();
+        secondaryBB.execute(modules, calls, true);
     }
 
-    function test_RevertWhen_LiquidateIsCalledForDifferentArrays() external {
-        BigBang bb = BigBang(payable(_registerDefaultBigBang()));
-
+    function test_RevertWhen_LiquidateIsCalledForDifferentArrays()
+        external
+        whenContractIsNotPaused
+    {
         address[] memory users = new address[](1);
         users[0] = address(this);
         uint256[] memory borrowParts = new uint256[](0);
         uint256[] memory minLiquidationBonuses = new uint256[](0);
         IMarketLiquidatorReceiver[] memory receivers = new IMarketLiquidatorReceiver[](0);
         bytes[] memory receiverData = new bytes[](0);
-
-        (Module[] memory modules, bytes[] memory calls) =
+        
+        (Module[] memory modules, bytes[] memory calls) = 
             marketHelper.liquidate(users, borrowParts, minLiquidationBonuses, receivers, receiverData);
 
-        // LengthMismatch
+        //         │   │   │   └─ ← [Revert] LengthMismatch()
+        // │   │   └─ ← [Revert] EvmError: Revert
+        // │   └─ ← [Revert] EvmError: Revert
         vm.expectRevert();
-        bb.execute(modules, calls, true);
+        mainBB.execute(modules, calls, true);
+
+        //    if (users.length != maxBorrowParts.length) revert LengthMismatch();
+        // if (users.length != liquidatorReceivers.length) revert LengthMismatch();
+        // if (liquidatorReceiverDatas.length != liquidatorReceivers.length) {
+        borrowParts = new uint256[](1);
+        borrowParts[0] = SMALL_AMOUNT;
+        (modules, calls) = 
+            marketHelper.liquidate(users, borrowParts, minLiquidationBonuses, receivers, receiverData);
+        //         │   │   │   └─ ← [Revert] LengthMismatch()
+        // │   │   └─ ← [Revert] EvmError: Revert
+        // │   └─ ← [Revert] EvmError: Revert
+        vm.expectRevert();
+        mainBB.execute(modules, calls, true);
+
+        minLiquidationBonuses = new uint256[](1);
+        minLiquidationBonuses[0] = MIN_LIQUIDATION_BONUS;
+        (modules, calls) = 
+            marketHelper.liquidate(users, borrowParts, minLiquidationBonuses, receivers, receiverData);
+        //         │   │   │   └─ ← [Revert] LengthMismatch()
+        // │   │   └─ ← [Revert] EvmError: Revert
+        // │   └─ ← [Revert] EvmError: Revert
+        vm.expectRevert();
+        mainBB.execute(modules, calls, true);
+
+        receivers = new IMarketLiquidatorReceiver[](1);
+        receivers[0] = IMarketLiquidatorReceiver(address(liquidatorReceiver));
+        (modules, calls) = 
+            marketHelper.liquidate(users, borrowParts, minLiquidationBonuses, receivers, receiverData);
+        //         │   │   │   └─ ← [Revert] LengthMismatch()
+        // │   │   └─ ← [Revert] EvmError: Revert
+        // │   └─ ← [Revert] EvmError: Revert
+        vm.expectRevert();
+        mainBB.execute(modules, calls, true);
+
+
     }
 
-    function test_RevertWhen_LiquidateIsCalledForSolventUsers() external {
-        BigBang bb = BigBang(payable(_registerDefaultBigBang()));
-        _setPenroseBigBangDefaults(address(bb));
+    function test_RevertWhen_LiquidateIsCalledForSolventUsers(
+        uint256 collateralAmount,
+        uint256 borrowAmount
+    )
+        external
+        whenContractIsNotPaused
+        whenOracleRateIsEth
+        whenAssetOracleRateIsBelowMin
+        whenCollateralAmountIsValid(collateralAmount)
+        givenBorrowCapIsNotReachedYet
+    {
+        // **** Add collateral ****
+        _addCollateral(collateralAmount, mainBB, address(this), address(this), address(this), address(this), false);
 
-        _addCollateral(bb);
+        // **** Borrow ****
+        borrowAmount = _boundBorrowAmount(borrowAmount, collateralAmount);
+        _borrow(borrowAmount, mainBB, address(this), address(this), address(this));
 
-        _borrow(bb);
-
-        uint256 amount = 0.25 ether;
-
-        deal(address(bb._asset()), address(liquidatorMock), amount);
-
-        address[] memory users = new address[](1);
-        users[0] = address(this);
-
-        uint256[] memory borrowParts = new uint256[](1);
-        borrowParts[0] = amount;
-
-        uint256[] memory minLiquidationBonuses = new uint256[](1);
-        minLiquidationBonuses[0] = 1e4;
-
-        IMarketLiquidatorReceiver[] memory receivers = new IMarketLiquidatorReceiver[](1);
-        receivers[0] = IMarketLiquidatorReceiver(address(liquidatorMock));
-
-        bytes[] memory receiverData = new bytes[](1);
-        receiverData[0] = abi.encode(amount);
-
-        (Module[] memory modules, bytes[] memory calls) =
-            marketHelper.liquidate(users, borrowParts, minLiquidationBonuses, receivers, receiverData);
-
-        // LengthMismatch
+        (Module[] memory modules, bytes[] memory calls) = _getLiquidationData(address(this), "", SMALL_AMOUNT, MIN_LIQUIDATION_BONUS);
+        // it should revert
         vm.expectRevert("BB: no users found");
-        bb.execute(modules, calls, true);
+        mainBB.execute(modules, calls, true);
     }
 
-    function test_RevertWhen_LiquidateIsCalledAndReturnedShareIsLessThanBorrowShare() external {
-        BigBang bb = BigBang(payable(_registerDefaultBigBang()));
-        _setPenroseBigBangDefaults(address(bb));
+    function test_RevertWhen_LiquidateIsCalledAndReturnedShareIsLessThanBorrowShare(
+        uint256 collateralAmount
+    )
+        external
+        whenContractIsNotPaused
+        whenOracleRateIsEth
+        whenAssetOracleRateIsBelowMin
+        whenCollateralAmountIsValid(collateralAmount)
+        givenBorrowCapIsNotReachedYet
+        whenWhitelisted(address(this)) 
+        whenWhitelisted(address(mainBB)) 
+        whenWhitelisted(address(secondaryBB)) 
+        whenWhitelisted(address(liquidatorReceiver)) 
+    {
+        uint256 maxBorrowAmount = _computeMaxBorrowAmount(collateralAmount, IMarket(address(mainBB)));
+        maxBorrowAmount = maxBorrowAmount - (maxBorrowAmount * 6e4 / 1e5);
+        // **** Main BB market ****
+        _liquidate(collateralAmount, 7e14, maxBorrowAmount, mainBB, MIN_LIQUIDATION_BONUS);
 
-        _addCollateral(bb);
+        // **** Secondary BB market ****
+        _liquidate(collateralAmount, 7e14, maxBorrowAmount, secondaryBB, MIN_LIQUIDATION_BONUS);
+    }
 
-        _borrow(bb);
+    function test_whenParametersAreValid_WhenCollateralDoesNotCoverBorrowAmount(
+        uint256 collateralAmount
+    )
+        external
+        whenContractIsNotPaused
+        whenOracleRateIsEth
+        whenAssetOracleRateIsBelowMin
+        whenCollateralAmountIsValid(collateralAmount)
+        givenBorrowCapIsNotReachedYet
+    {
+        // **** Add collateral ****
+        _addCollateral(collateralAmount, mainBB, address(this), address(this), address(this), address(this), false);
+
+        // **** Borrow ****
+        uint256 maxBorrowAmount = _computeMaxBorrowAmount(collateralAmount, IMarket(address(mainBB)));
+        maxBorrowAmount = maxBorrowAmount - (maxBorrowAmount * 2e4 / 1e5);
+        _borrow(maxBorrowAmount, mainBB, address(this), address(this), address(this));
 
         uint256 oracleRate = oracle.rate();
         oracle.set(oracleRate * 2);
 
-        uint256 amount = 0.4 ether;
+        // compute asset amount
+        SZeroXSwapData memory szeroXSwapData = SZeroXSwapData({
+            sellToken: TOFTMock_test(payable(mainBB._collateral())).erc20(),
+            buyToken: mainBB._asset(),
+            swapTarget: payable(swapperTarget),
+            swapCallData: abi.encodeWithSelector(
+                ZeroXSwapperMockTarget_test.transferTokens.selector, mainBB._asset(), maxBorrowAmount / 2
+            )
+        });
+        SSwapData memory sswapData = SSwapData({
+            minAmountOut: 0,
+            data: szeroXSwapData
+        });
+        bytes memory swapData = abi.encode(sswapData);
 
-        deal(address(bb._asset()), address(liquidatorMock), 0.00005 ether);
-
-        address[] memory users = new address[](1);
-        users[0] = address(this);
-
-        uint256[] memory borrowParts = new uint256[](1);
-        borrowParts[0] = amount;
-
-        uint256[] memory minLiquidationBonuses = new uint256[](1);
-        minLiquidationBonuses[0] = 1e4;
-
-        IMarketLiquidatorReceiver[] memory receivers = new IMarketLiquidatorReceiver[](1);
-        receivers[0] = IMarketLiquidatorReceiver(address(liquidatorMock));
-
-        bytes[] memory receiverData = new bytes[](1);
-        receiverData[0] = abi.encode(0.00005 ether);
-
-        (Module[] memory modules, bytes[] memory calls) =
-            marketHelper.liquidate(users, borrowParts, minLiquidationBonuses, receivers, receiverData);
-
-        // OnCollateralReceiverFailed
+        (Module[] memory modules, bytes[] memory calls) = _getLiquidationData(address(this), swapData, maxBorrowAmount, MIN_LIQUIDATION_BONUS);
+        //         │   │   │   └─ ← [Revert] BadDebt()
+        // │   │   └─ ← [Revert] EvmError: Revert
+        // │   └─ ← [Revert] EvmError: Revert
+        // └─ ← [Revert] EvmError: Revert
         vm.expectRevert();
-        bb.execute(modules, calls, true);
+        mainBB.execute(modules, calls, true);
     }
 
-    function test_WhenLiquidateIsCalledWithValidParameters() external {
-        BigBang bb = BigBang(payable(_registerDefaultBigBang()));
-        _setPenroseBigBangDefaults(address(bb));
 
-        _addCollateral(bb);
+    function test_whenParametersAreValid_whenClosingFactorIsLessThanCurrentCollateral_WhenMinLiquidationBonusIsMet(
+        uint256 collateralAmount
+    )
+        external
+        whenContractIsNotPaused
+        whenOracleRateIsEth
+        whenAssetOracleRateIsBelowMin
+        whenCollateralAmountIsValid(collateralAmount)
+        givenBorrowCapIsNotReachedYet
+        whenWhitelisted(address(this)) 
+        whenWhitelisted(address(mainBB)) 
+        whenWhitelisted(address(secondaryBB)) 
+        whenWhitelisted(address(liquidatorReceiver)) 
+    {
+        uint256 maxBorrowAmount = _computeMaxBorrowAmount(collateralAmount, IMarket(address(mainBB)));
+        
+        // **** Main BB market ****
+        _liquidate(collateralAmount, 7e14, maxBorrowAmount, mainBB, MIN_LIQUIDATION_BONUS);
 
-        _borrow(bb);
-
-        uint256 oracleRate = oracle.rate();
-        oracle.set(oracleRate * 2);
-
-        uint256 amount = 0.4 ether;
-
-        deal(address(bb._asset()), address(liquidatorMock), amount);
-
-        address[] memory users = new address[](1);
-        users[0] = address(this);
-
-        uint256[] memory borrowParts = new uint256[](1);
-        borrowParts[0] = amount;
-
-        uint256[] memory minLiquidationBonuses = new uint256[](1);
-        minLiquidationBonuses[0] = 1e4;
-
-        IMarketLiquidatorReceiver[] memory receivers = new IMarketLiquidatorReceiver[](1);
-        receivers[0] = IMarketLiquidatorReceiver(address(liquidatorMock));
-
-        bytes[] memory receiverData = new bytes[](1);
-        receiverData[0] = abi.encode(amount);
-
-        uint256 userBorrowPartBefore = bb._userBorrowPart(address(this));
-        uint256 userCollateralShareBefore = bb._userCollateralShare(address(this));
-        (Module[] memory modules, bytes[] memory calls) =
-            marketHelper.liquidate(users, borrowParts, minLiquidationBonuses, receivers, receiverData);
-
-        bb.execute(modules, calls, true);
-
-        uint256 userBorrowPartAfter = bb._userBorrowPart(address(this));
-        uint256 userCollateralShareAfter = bb._userCollateralShare(address(this));
-
-        assertGt(userBorrowPartBefore, userBorrowPartAfter);
-        assertGt(userCollateralShareBefore, userCollateralShareAfter);
-    }
-
-    function _addCollateral(BigBang bb) private {
-        // vars
-        IERC20 collateral = IERC20(bb._collateral());
-        uint256 collateralId = bb._collateralId();
-
-        // deal amounts
-        uint256 amount = 1 ether;
-        deal(address(collateral), address(this), amount);
-
-        // approvals
-        collateral.approve(address(yieldBox), type(uint256).max);
-        collateral.approve(address(pearlmit), type(uint256).max);
-        yieldBox.setApprovalForAll(address(bb), true);
-        yieldBox.setApprovalForAll(address(pearlmit), true);
-        pearlmit.approve(1155, address(yieldBox), collateralId, address(bb), type(uint200).max, uint48(block.timestamp));
-
-        uint256 share = yieldBox.toShare(collateralId, amount, false);
-        yieldBox.depositAsset(collateralId, address(this), address(this), 0, share);
-
-        (Module[] memory modules, bytes[] memory calls) =
-            marketHelper.addCollateral(address(this), address(this), false, 0, share);
-        bb.execute(modules, calls, true);
-    }
-
-    function _borrow(BigBang bb) private {
-        uint256 borrowAmount = 0.4 ether;
-        (Module[] memory modules, bytes[] memory calls) =
-            marketHelper.borrow(address(this), address(this), borrowAmount);
-        bb.execute(modules, calls, true);
+        return;
+        // **** Secondary BB market ****
+        _liquidate(collateralAmount, 7e14, maxBorrowAmount, secondaryBB, MIN_LIQUIDATION_BONUS);
     }
 }

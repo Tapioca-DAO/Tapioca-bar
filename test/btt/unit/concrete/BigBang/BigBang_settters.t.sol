@@ -1,391 +1,377 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.22;
 
-// dependencies
-import {ILeverageExecutor} from "tapioca-periph/interfaces/bar/ILeverageExecutor.sol";
-import {ITapiocaOracle} from "tapioca-periph/interfaces/periph/ITapiocaOracle.sol";
-import {BBDebtRateHelper} from "contracts/markets/bigBang/BBDebtRateHelper.sol";
-import {ICluster} from "tapioca-periph/interfaces/periph/ICluster.sol";
+// Tapioca
 import {BigBang} from "contracts/markets/bigBang/BigBang.sol";
 import {Market} from "contracts/markets/Market.sol";
 
+import {ILeverageExecutor} from "tapioca-periph/interfaces/bar/ILeverageExecutor.sol";
+import {ITapiocaOracle} from "tapioca-periph/interfaces/periph/ITapiocaOracle.sol";
+import {ICluster} from "tapioca-periph/interfaces/periph/ICluster.sol";
+
+// tests
 import {BigBang_Unit_Shared} from "../../shared/BigBang_Unit_Shared.t.sol";
 
 contract BigBang_setters is BigBang_Unit_Shared {
-    function test_RevertWhen_SetLeverageExecutorIsCalledFromNon_owner() external {
-        BigBang bb = BigBang(payable(_registerDefaultBigBang()));
-        address rndAddr = makeAddr("rndAddress");
 
-        vm.expectRevert();
-        bb.setLeverageExecutor(ILeverageExecutor(rndAddr));
+    function test_RevertWhen_SetLeverageExecutorIsCalledFromNon_owner() external {
+        address rndAddr = makeAddr("rndAddress");
+        // it should revert
+        vm.expectRevert("Ownable: caller is not the owner");
+        mainBB.setLeverageExecutor(ILeverageExecutor(rndAddr));
     }
 
     function test_WhenSetLeverageExecutorIsCalledFromOwner() external {
-        BigBang bb = BigBang(payable(_registerDefaultBigBang()));
         address rndAddr = makeAddr("rndAddress");
 
-        address[] memory mc = new address[](1);
-        bytes[] memory data = new bytes[](1);
+        // **** Main BB market ****
+        // it should not revert
+        _executeFromPenrose(
+            address(mainBB), abi.encodeWithSelector(Market.setLeverageExecutor.selector, ILeverageExecutor(rndAddr))
+        );
+        assertEq(address(mainBB._leverageExecutor()), rndAddr);
 
-        mc[0] = address(bb);
-        data[0] = abi.encodeWithSelector(Market.setLeverageExecutor.selector, ILeverageExecutor(rndAddr));
-        (bool[] memory success,) = penrose.executeMarketFn(mc, data, true);
-        assertTrue(success[0]);
-
-        assertEq(address(bb._leverageExecutor()), rndAddr);
+        // **** Secondary BB market ****
+        // it should not revert
+        _executeFromPenrose(
+            address(secondaryBB), abi.encodeWithSelector(Market.setLeverageExecutor.selector, ILeverageExecutor(rndAddr))
+        );
+        assertEq(address(secondaryBB._leverageExecutor()), rndAddr);
     }
 
     function test_RevertWhen_SetLiquidationMaxSlippageIsCalledFromNon_owner() external {
-        BigBang bb = BigBang(payable(_registerDefaultBigBang()));
-
-        vm.expectRevert();
-        bb.setLiquidationMaxSlippage(1000);
+        // it should revert
+        vm.expectRevert("Ownable: caller is not the owner");
+        mainBB.setLiquidationMaxSlippage(MAX_MINT_FEE);
     }
 
     function test_WhenSetLiquidationMaxSlippageIsCalledFromOwner() external {
-        BigBang bb = BigBang(payable(_registerDefaultBigBang()));
+        // **** Main BB market ****
+        // it should not revert
+        _executeFromPenrose(address(mainBB), abi.encodeWithSelector(Market.setLiquidationMaxSlippage.selector, MAX_MINT_FEE));
+        assertEq(mainBB._maxLiquidationSlippage(), MAX_MINT_FEE);
 
-        address[] memory mc = new address[](1);
-        bytes[] memory data = new bytes[](1);
-
-        mc[0] = address(bb);
-        data[0] = abi.encodeWithSelector(Market.setLiquidationMaxSlippage.selector, 1000);
-        (bool[] memory success,) = penrose.executeMarketFn(mc, data, true);
-        assertTrue(success[0]);
-
-        assertEq(bb._maxLiquidationSlippage(), 1000);
+        // **** Secondary BB market ****
+        // it should not revert
+        _executeFromPenrose(
+            address(secondaryBB), abi.encodeWithSelector(Market.setLiquidationMaxSlippage.selector, MAX_MINT_FEE)
+        );
+        assertEq(secondaryBB._maxLiquidationSlippage(), MAX_MINT_FEE);
     }
 
     function test_RevertWhen_SetMarketConfigIsCalledFromNon_owner() external {
-        BigBang bb = BigBang(payable(_registerDefaultBigBang()));
         address rndAddr = makeAddr("rndAddress");
-
-        vm.expectRevert();
-        bb.setMarketConfig(ITapiocaOracle(rndAddr), "0x", 0, 0, 0, 0, 0, 0, 0, 0, 0);
+        // it should revert
+        vm.expectRevert("Ownable: caller is not the owner");
+        mainBB.setMarketConfig(ITapiocaOracle(rndAddr), "0x", 0, 0, 0, 0, 0, 0, 0, 0, 0);
     }
 
     function test_WhenSetMarketConfigIsCalledFromOwner() external {
-        BigBang bb = BigBang(payable(_registerDefaultBigBang()));
         address rndAddr = makeAddr("rndAddress");
 
-        address[] memory mc = new address[](1);
-        bytes[] memory data = new bytes[](1);
-
-        mc[0] = address(bb);
-        data[0] = abi.encodeWithSelector(
-            Market.setMarketConfig.selector,
-            ITapiocaOracle(rndAddr),
-            "0x",
-            100, //protocol fee
-            101, //_liquidationBonusAmount
-            102, //_minLiquidatorReward
-            103, //_maxLiquidatorReward
-            104, //_totalBorrowCap
-            105, //_collateralizationRate
-            106, //_liquidationCollateralizationRate
-            107, //_minBorrowAmount
-            108 //_minCollateralAmount
+        // **** Main BB market ****
+        // it should not revert
+        _executeFromPenrose(
+            address(mainBB),
+            abi.encodeWithSelector(
+                Market.setMarketConfig.selector,
+                ITapiocaOracle(rndAddr),
+                "0x",
+                100, //protocol fee
+                101, //_liquidationBonusAmount
+                102, //_minLiquidatorReward
+                103, //_maxLiquidatorReward
+                104, //_totalBorrowCap
+                105, //_collateralizationRate
+                106, //_liquidationCollateralizationRate
+                107, //_minBorrowAmount
+                108 //_minCollateralAmount
+            )
         );
-        (bool[] memory success,) = penrose.executeMarketFn(mc, data, true);
-        assertTrue(success[0]);
+        assertEq(mainBB._protocolFee(), 100);
+        assertEq(mainBB._liquidationBonusAmount(), 101);
+        assertEq(mainBB._minLiquidatorReward(), 102);
+        assertEq(mainBB._maxLiquidatorReward(), 103);
+        assertEq(mainBB._totalBorrowCap(), 104);
+        assertEq(mainBB._collateralizationRate(), 105);
+        assertEq(mainBB._liquidationCollateralizationRate(), 106);
+        assertEq(mainBB._minBorrowAmount(), 107);
+        assertEq(mainBB._minCollateralAmount(), 108);
 
-        assertEq(bb._protocolFee(), 100);
-        assertEq(bb._liquidationBonusAmount(), 101);
-        assertEq(bb._minLiquidatorReward(), 102);
-        assertEq(bb._maxLiquidatorReward(), 103);
-        assertEq(bb._totalBorrowCap(), 104);
-        assertEq(bb._collateralizationRate(), 105);
-        assertEq(bb._liquidationCollateralizationRate(), 106);
-        assertEq(bb._minBorrowAmount(), 107);
-        assertEq(bb._minCollateralAmount(), 108);
+        // **** Secondary BB market ****
+        // it should not revert
+        _executeFromPenrose(
+            address(secondaryBB),
+            abi.encodeWithSelector(
+                Market.setMarketConfig.selector,
+                ITapiocaOracle(rndAddr),
+                "0x",
+                100, //protocol fee
+                101, //_liquidationBonusAmount
+                102, //_minLiquidatorReward
+                103, //_maxLiquidatorReward
+                104, //_totalBorrowCap
+                105, //_collateralizationRate
+                106, //_liquidationCollateralizationRate
+                107, //_minBorrowAmount
+                108 //_minCollateralAmount
+            )
+        );
+        assertEq(secondaryBB._protocolFee(), 100);
+        assertEq(secondaryBB._liquidationBonusAmount(), 101);
+        assertEq(secondaryBB._minLiquidatorReward(), 102);
+        assertEq(secondaryBB._maxLiquidatorReward(), 103);
+        assertEq(secondaryBB._totalBorrowCap(), 104);
+        assertEq(secondaryBB._collateralizationRate(), 105);
+        assertEq(secondaryBB._liquidationCollateralizationRate(), 106);
+        assertEq(secondaryBB._minBorrowAmount(), 107);
+        assertEq(secondaryBB._minCollateralAmount(), 108);
     }
 
     function test_RevertWhen_SetDebtRateHelperIsCalledFromNon_owner() external {
-        BigBang bb = BigBang(payable(_registerDefaultBigBang()));
         address rndAddr = makeAddr("rndAddress");
-
-        vm.expectRevert();
-        bb.setDebtRateHelper(rndAddr);
+        // it should revert
+        vm.expectRevert("Ownable: caller is not the owner");
+        mainBB.setDebtRateHelper(rndAddr);
     }
 
     function test_WhenSetDebtRateHelperIsCalledFromOwner() external {
-        BigBang bb = BigBang(payable(_registerDefaultBigBang()));
         address rndAddr = makeAddr("rndAddress");
 
-        address[] memory mc = new address[](1);
-        bytes[] memory data = new bytes[](1);
+        // **** Main BB market ****
+        // it should not revert
+        _executeFromPenrose(address(mainBB), abi.encodeWithSelector(BigBang.setDebtRateHelper.selector, rndAddr));
+        assertEq(mainBB.debtRateHelper(), rndAddr);
 
-        mc[0] = address(bb);
-        data[0] = abi.encodeWithSelector(BigBang.setDebtRateHelper.selector, address(0));
-        vm.expectRevert();
-        (bool[] memory success,) = penrose.executeMarketFn(mc, data, true);
-
-        data[0] = abi.encodeWithSelector(BigBang.setDebtRateHelper.selector, rndAddr);
-        (success,) = penrose.executeMarketFn(mc, data, true);
-        assertTrue(success[0]);
-
-        assertEq(bb.debtRateHelper(), rndAddr);
+        // **** Secondary BB market ****
+        // it should not revert
+        _executeFromPenrose(
+            address(secondaryBB), abi.encodeWithSelector(BigBang.setDebtRateHelper.selector, rndAddr)
+        );
+        assertEq(secondaryBB.debtRateHelper(), rndAddr);
     }
 
     function test_RevertWhen_ConsumeMintableOpenInterestDebtIsCalledFromNon_owner() external {
-        BigBang bb = BigBang(payable(_registerDefaultBigBang()));
-
-        vm.expectRevert();
-        bb.consumeMintableOpenInterestDebt();
+        // it should revert
+        vm.expectRevert("Ownable: caller is not the owner");
+        mainBB.consumeMintableOpenInterestDebt();
     }
 
     function test_WhenConsumeMintableOpenInterestDebtIsCalledFromOwner() external {
-        BigBang bb = BigBang(payable(_registerDefaultBigBang()));
+        // **** Main BB market ****
+        // it should not revert
+        _executeFromPenrose(address(mainBB), abi.encodeWithSelector(BigBang.consumeMintableOpenInterestDebt.selector));
+        assertEq(mainBB.openInterestDebt(), 0);
 
-        address[] memory mc = new address[](1);
-        bytes[] memory data = new bytes[](1);
-
-        mc[0] = address(bb);
-        data[0] = abi.encodeWithSelector(BigBang.consumeMintableOpenInterestDebt.selector);
-        (bool[] memory success,) = penrose.executeMarketFn(mc, data, true);
-        assertTrue(success[0]);
-
-        assertEq(bb.openInterestDebt(), 0);
+        // **** Secondary BB market ****
+        // it should not revert
+        _executeFromPenrose(
+            address(secondaryBB), abi.encodeWithSelector(BigBang.consumeMintableOpenInterestDebt.selector)
+        );
+        assertEq(secondaryBB.openInterestDebt(), 0);
     }
 
     function test_RevertWhen_SetMinAndMaxMintRangeIsCalledFromNon_owner() external {
-        BigBang bb = BigBang(payable(_registerDefaultBigBang()));
-
-        vm.expectRevert();
-        bb.setMinAndMaxMintRange(0, 1);
+        // it should revert
+        vm.expectRevert("Ownable: caller is not the owner");
+        mainBB.setMinAndMaxMintRange(LARGE_AMOUNT, SMALL_AMOUNT);
     }
 
     function test_WhenSetMinAndMaxMintRangeIsCalledFromOwner() external {
-        BigBang bb = BigBang(payable(_registerDefaultBigBang()));
+        // **** Main BB market ****
+        // it should not revert
+        _executeFromPenrose(address(mainBB), abi.encodeWithSelector(BigBang.setMinAndMaxMintRange.selector, LARGE_AMOUNT, SMALL_AMOUNT));
+        assertEq(mainBB.minMintFeeStart(), LARGE_AMOUNT);
+        assertEq(mainBB.maxMintFeeStart(), SMALL_AMOUNT);
 
-        address[] memory mc = new address[](1);
-        bytes[] memory data = new bytes[](1);
-
-        mc[0] = address(bb);
-
-        // min > max
-        data[0] = abi.encodeWithSelector(BigBang.setMinAndMaxMintRange.selector, 1, 100);
-        vm.expectRevert();
-        (bool[] memory success,) = penrose.executeMarketFn(mc, data, true);
-
-        data[0] = abi.encodeWithSelector(BigBang.setMinAndMaxMintRange.selector, 2, 1);
-        (success,) = penrose.executeMarketFn(mc, data, true);
-        assertTrue(success[0]);
-
-        assertEq(bb.minMintFeeStart(), 2);
-        assertEq(bb.maxMintFeeStart(), 1);
+        // **** Secondary BB market ****
+        // it should not revert
+        _executeFromPenrose(
+            address(secondaryBB), abi.encodeWithSelector(BigBang.setMinAndMaxMintRange.selector, LARGE_AMOUNT, SMALL_AMOUNT)
+        );
+        assertEq(secondaryBB.minMintFeeStart(), LARGE_AMOUNT);
+        assertEq(secondaryBB.maxMintFeeStart(), SMALL_AMOUNT);
     }
 
     function test_RevertWhen_SetMinAndMaxMintFeeIsCalledFromNon_owner() external {
-        BigBang bb = BigBang(payable(_registerDefaultBigBang()));
-
-        vm.expectRevert();
-        bb.setMinAndMaxMintFee(0, 1);
+        // it should revert
+        vm.expectRevert("Ownable: caller is not the owner");
+        mainBB.setMinAndMaxMintFee(SMALL_AMOUNT, LARGE_AMOUNT);
     }
 
     function test_WhenSetMinAndMaxMintFeeIsCalledFromOwner() external {
-        BigBang bb = BigBang(payable(_registerDefaultBigBang()));
+        // **** Main BB market ****
+        // it should not revert
+        _executeFromPenrose(address(mainBB), abi.encodeWithSelector(BigBang.setMinAndMaxMintFee.selector, SMALL_AMOUNT, LARGE_AMOUNT));
+        assertEq(mainBB.minMintFee(), SMALL_AMOUNT);
+        assertEq(mainBB.maxMintFee(), LARGE_AMOUNT);
 
-        address[] memory mc = new address[](1);
-        bytes[] memory data = new bytes[](1);
-
-        mc[0] = address(bb);
-
-        data[0] = abi.encodeWithSelector(BigBang.setMinAndMaxMintFee.selector, 2, 1);
-        vm.expectRevert();
-        (bool[] memory success,) = penrose.executeMarketFn(mc, data, true);
-
-        data[0] = abi.encodeWithSelector(BigBang.setMinAndMaxMintFee.selector, 1, 2);
-        (success,) = penrose.executeMarketFn(mc, data, true);
-        assertTrue(success[0]);
-
-        assertEq(bb.minMintFee(), 1);
-        assertEq(bb.maxMintFee(), 2);
+        // **** Secondary BB market ****
+        // it should not revert
+        _executeFromPenrose(
+            address(secondaryBB), abi.encodeWithSelector(BigBang.setMinAndMaxMintFee.selector, SMALL_AMOUNT, LARGE_AMOUNT)
+        );
+        assertEq(secondaryBB.minMintFee(), SMALL_AMOUNT);
+        assertEq(secondaryBB.maxMintFee(), LARGE_AMOUNT);
     }
 
     function test_RevertWhen_SetAssetOracleIsCalledFromNon_owner() external {
-        BigBang bb = BigBang(payable(_registerDefaultBigBang()));
-
-        vm.expectRevert();
-        bb.setAssetOracle(address(0), "0x");
+        address rndAddr = makeAddr("rndAddress");
+        // it should revert
+        vm.expectRevert("Ownable: caller is not the owner");
+        mainBB.setAssetOracle(rndAddr, "");
     }
 
     function test_WhenSetAssetOracleIsCalledFromOwner() external {
-        BigBang bb = BigBang(payable(_registerDefaultBigBang()));
-
-        address[] memory mc = new address[](1);
-        bytes[] memory data = new bytes[](1);
-
-        mc[0] = address(bb);
-
         address rndAddr = makeAddr("rndAddress");
 
-        data[0] = abi.encodeWithSelector(BigBang.setAssetOracle.selector, rndAddr, "0x");
-        (bool[] memory success,) = penrose.executeMarketFn(mc, data, true);
-        assertTrue(success[0]);
+        // **** Main BB market ****
+        // it should not revert
+        _executeFromPenrose(address(mainBB), abi.encodeWithSelector(BigBang.setAssetOracle.selector, rndAddr, ""));
+        assertEq(address(mainBB.assetOracle()), rndAddr);
 
-        assertEq(address(bb.assetOracle()), rndAddr);
+        // **** Secondary BB market ****
+        // it should not revert
+        _executeFromPenrose(
+            address(secondaryBB), abi.encodeWithSelector(BigBang.setAssetOracle.selector, rndAddr, "")
+        );
+        assertEq(address(secondaryBB.assetOracle()), rndAddr);
     }
 
     function test_RevertWhen_RescueEthIsCalledFromNon_owner() external {
-        BigBang bb = BigBang(payable(_registerDefaultBigBang()));
-
-        vm.expectRevert();
-        bb.rescueEth(1 ether, address(this));
+        // it should revert
+        vm.expectRevert("Ownable: caller is not the owner");
+        mainBB.rescueEth(SMALL_AMOUNT, address(this));
     }
 
     function test_WhenRescueEthIsCalledFromOwner() external {
-        BigBang bb = BigBang(payable(_registerDefaultBigBang()));
-        vm.deal(address(bb), 1 ether);
-
-        address[] memory mc = new address[](1);
-        bytes[] memory data = new bytes[](1);
-
-        mc[0] = address(bb);
-
         address rndAddr = makeAddr("rndAddress");
 
-        data[0] = abi.encodeWithSelector(BigBang.rescueEth.selector, 1 ether, rndAddr);
-        (bool[] memory success,) = penrose.executeMarketFn(mc, data, true);
-        assertTrue(success[0]);
+        // **** Main BB market ****
+        vm.deal(address(mainBB), SMALL_AMOUNT);
+        // it should not revert
+        _executeFromPenrose(address(mainBB), abi.encodeWithSelector(BigBang.rescueEth.selector, SMALL_AMOUNT, rndAddr));
+        assertEq(rndAddr.balance, SMALL_AMOUNT);
 
-        assertEq(rndAddr.balance, 1 ether);
+        // **** Secondary BB market ****
+        vm.deal(address(secondaryBB), SMALL_AMOUNT);
+        // it should not revert
+        _executeFromPenrose(
+            address(secondaryBB), abi.encodeWithSelector(BigBang.rescueEth.selector, SMALL_AMOUNT, rndAddr)
+        );
+        assertEq(rndAddr.balance, SMALL_AMOUNT * 2);
     }
 
     function test_RevertWhen_RefreshPenroseFeesIsCalledFromNon_owner() external {
-        BigBang bb = BigBang(payable(_registerDefaultBigBang()));
-
-        vm.expectRevert();
-        bb.refreshPenroseFees();
+        // it should revert
+        vm.expectRevert("Ownable: caller is not the owner");
+        mainBB.refreshPenroseFees();
     }
 
     function test_WhenRefreshPenroseFeesIsCalledFromOwner() external {
-        BigBang bb = BigBang(payable(_registerDefaultBigBang()));
-        vm.deal(address(bb), 1 ether);
+        // **** Main BB market ****
+        // it should not revert
+        _executeFromPenrose(address(mainBB), abi.encodeWithSelector(BigBang.refreshPenroseFees.selector));
 
-        address[] memory mc = new address[](1);
-        bytes[] memory data = new bytes[](1);
-
-        mc[0] = address(bb);
-        data[0] = abi.encodeWithSelector(BigBang.refreshPenroseFees.selector);
-        (bool[] memory success,) = penrose.executeMarketFn(mc, data, true);
-        assertTrue(success[0]);
+        // **** Secondary BB market ****
+        // it should not revert
+        _executeFromPenrose(
+            address(secondaryBB), abi.encodeWithSelector(BigBang.refreshPenroseFees.selector)
+        );
     }
 
     function test_RevertWhen_SetBigBangConfigIsCalledFromNon_owner() external {
-        BigBang bb = BigBang(payable(_registerDefaultBigBang()));
-
-        vm.expectRevert();
-        bb.setBigBangConfig(0, 0, 0, 0);
+        // it should revert
+        vm.expectRevert("Ownable: caller is not the owner");
+        mainBB.setBigBangConfig(VALUE_ZERO, VALUE_ZERO, VALUE_ZERO, VALUE_ZERO);
     }
 
     function test_WhenSetBigBangConfigIsCalledFromOwner() external {
-        BigBang bb = BigBang(payable(_registerDefaultBigBang()));
-
-        address[] memory mc = new address[](1);
-        bytes[] memory data = new bytes[](1);
-
-        mc[0] = address(bb);
-        data[0] = abi.encodeWithSelector(BigBang.setBigBangConfig.selector, 0, 0, 0, 100);
-        (bool[] memory success,) = penrose.executeMarketFn(mc, data, true);
-        assertTrue(success[0]);
-
-        assertEq(bb._liquidationMultiplier(), 100);
+        // **** Main BB market ****
+        // it should not revert
+        _executeFromPenrose(address(mainBB), abi.encodeWithSelector(BigBang.setBigBangConfig.selector, 0, 0, 0, FEE_PRECISION - 1));
+        assertEq(mainBB._liquidationMultiplier(), FEE_PRECISION - 1);
     }
 
     function test_WhenSetBigBangConfigIsCalledFromOwnerForNonMainMarket() external {
-        BigBang bb = BigBang(payable(_registerDefaultBigBang()));
-        BBDebtRateHelper debtHelper = new BBDebtRateHelper();
-        penrose.setBigBangEthMarket(address(bb));
-
-        address[] memory mc = new address[](1);
-        bytes[] memory data = new bytes[](1);
-        mc[0] = address(bb);
-        data[0] = abi.encodeWithSelector(BigBang.setDebtRateHelper.selector, address(debtHelper));
-        (bool[] memory success,) = penrose.executeMarketFn(mc, data, true);
-        assertTrue(success[0]);
-
-        BigBang secondaryBB = BigBang(payable(_registerSecondaryDefaultBigBang()));
-        mc[0] = address(secondaryBB);
-        data[0] = abi.encodeWithSelector(BigBang.setDebtRateHelper.selector, address(debtHelper));
-        (success,) = penrose.executeMarketFn(mc, data, true);
-        assertTrue(success[0]);
-
-        mc[0] = address(secondaryBB);
-        // slightly bigger than the default values
-        data[0] = abi.encodeWithSelector(BigBang.setBigBangConfig.selector, 0.006 ether, 0.06 ether, 0.3 ether, 100);
-        (success,) = penrose.executeMarketFn(mc, data, true);
-        assertTrue(success[0]);
-
-        assertEq(secondaryBB._liquidationMultiplier(), 100);
-        assertEq(secondaryBB.minDebtRate(), 0.006 ether);
-        assertEq(secondaryBB.maxDebtRate(), 0.06 ether);
-        assertEq(secondaryBB.debtRateAgainstEthMarket(), 0.3 ether);
+        // **** Secondary BB market ****
+        // it should not revert
+        _executeFromPenrose(
+            address(secondaryBB), abi.encodeWithSelector(BigBang.setBigBangConfig.selector, BB_MIN_DEBT_RATE + 1, BB_MAX_DEBT_RATE + 1, BB_DEBT_RATE_AGAINST_MAIN_MARKET + 1, FEE_PRECISION - 1)
+        );
+        assertEq(secondaryBB._liquidationMultiplier(), FEE_PRECISION - 1);
+        assertEq(secondaryBB.minDebtRate(), BB_MIN_DEBT_RATE + 1);
+        assertEq(secondaryBB.maxDebtRate(), BB_MAX_DEBT_RATE + 1);
+        assertEq(secondaryBB.debtRateAgainstEthMarket(), BB_DEBT_RATE_AGAINST_MAIN_MARKET + 1);
     }
 
     function test_RevertWhen_UpdatePauseAllIsCalledFromNon_owner() external {
-        BigBang bb = BigBang(payable(_registerDefaultBigBang()));
-
-        vm.expectRevert();
-        bb.updatePauseAll(true);
+        // it should revert
+        vm.expectRevert("Market: unauthorized");
+        mainBB.updatePauseAll(true);
     }
 
     function test_WhenUpdatePauseAllIsCalledFromPauser() external {
-        BigBang bb = BigBang(payable(_registerDefaultBigBang()));
-
         ICluster _cl = penrose.cluster();
         _cl.setRoleForContract(address(this), keccak256("PAUSABLE"), true);
 
-        assertFalse(bb._pauseOptions(Market.PauseType.AddCollateral));
-        bb.updatePauseAll(true);
-        assertTrue(bb._pauseOptions(Market.PauseType.AddCollateral));
+        // **** Main BB market ****
+        // it should not revert
+        mainBB.updatePauseAll(true);
+        assertTrue(mainBB._pauseOptions(Market.PauseType.AddCollateral));
+
+        // **** Secondary BB market ****
+        // it should not revert
+        secondaryBB.updatePauseAll(true);
+        assertTrue(secondaryBB._pauseOptions(Market.PauseType.AddCollateral));
     }
 
     function test_WhenUpdatePauseAllIsCalledFromOwner() external {
-        BigBang bb = BigBang(payable(_registerDefaultBigBang()));
+        // **** Main BB market ****
+        // it should not revert
+        _executeFromPenrose(address(mainBB), abi.encodeWithSelector(BigBang.updatePauseAll.selector, true));
+        assertTrue(mainBB._pauseOptions(Market.PauseType.AddCollateral));
 
-        assertFalse(bb._pauseOptions(Market.PauseType.AddCollateral));
-
-        address[] memory mc = new address[](1);
-        bytes[] memory data = new bytes[](1);
-        mc[0] = address(bb);
-        data[0] = abi.encodeWithSelector(BigBang.updatePauseAll.selector, true);
-        (bool[] memory success,) = penrose.executeMarketFn(mc, data, true);
-        assertTrue(success[0]);
-
-        assertTrue(bb._pauseOptions(Market.PauseType.AddCollateral));
+        // **** Secondary BB market ****
+        // it should not revert
+        _executeFromPenrose(
+            address(secondaryBB), abi.encodeWithSelector(BigBang.updatePauseAll.selector, true)
+        );
+        assertTrue(secondaryBB._pauseOptions(Market.PauseType.AddCollateral));
     }
 
     function test_RevertWhen_UpdatePauseIsCalledFromNon_ownerAndNon_pauser() external {
-        BigBang bb = BigBang(payable(_registerDefaultBigBang()));
-
-        vm.expectRevert();
-        bb.updatePause(Market.PauseType.Borrow, true);
+        // it should revert
+        vm.expectRevert("Market: unauthorized");
+        mainBB.updatePause(Market.PauseType.Borrow, true);
     }
 
     function test_WhenUpdatePauseIsCalledFromPauser() external {
-        BigBang bb = BigBang(payable(_registerDefaultBigBang()));
-
         ICluster _cl = penrose.cluster();
         _cl.setRoleForContract(address(this), keccak256("PAUSABLE"), true);
 
-        assertFalse(bb._pauseOptions(Market.PauseType.AddCollateral));
-        bb.updatePause(Market.PauseType.AddCollateral, true);
-        assertTrue(bb._pauseOptions(Market.PauseType.AddCollateral));
+        // **** Main BB market ****
+        // it should not revert
+        mainBB.updatePause(Market.PauseType.Borrow, true);
+        assertTrue(mainBB._pauseOptions(Market.PauseType.Borrow));
+
+        // **** Secondary BB market ****
+        // it should not revert
+        secondaryBB.updatePause(Market.PauseType.Borrow, true);
+        assertTrue(secondaryBB._pauseOptions(Market.PauseType.Borrow));
     }
 
     function test_WhenUpdatePauseIsCalledFromOwner() external {
-        BigBang bb = BigBang(payable(_registerDefaultBigBang()));
+        // **** Main BB market ****
+        // it should not revert
+        _executeFromPenrose(address(mainBB), abi.encodeWithSelector(BigBang.updatePause.selector, Market.PauseType.Borrow, true));
+        assertTrue(mainBB._pauseOptions(Market.PauseType.Borrow));
 
-        assertFalse(bb._pauseOptions(Market.PauseType.AddCollateral));
-
-        address[] memory mc = new address[](1);
-        bytes[] memory data = new bytes[](1);
-        mc[0] = address(bb);
-        data[0] = abi.encodeWithSelector(BigBang.updatePause.selector, Market.PauseType.AddCollateral, true);
-        (bool[] memory success,) = penrose.executeMarketFn(mc, data, true);
-        assertTrue(success[0]);
-
-        assertTrue(bb._pauseOptions(Market.PauseType.AddCollateral));
+        // **** Secondary BB market ****
+        // it should not revert
+        _executeFromPenrose(
+            address(secondaryBB), abi.encodeWithSelector(BigBang.updatePause.selector, Market.PauseType.Borrow, true)
+        );
+        assertTrue(secondaryBB._pauseOptions(Market.PauseType.Borrow));
     }
 }

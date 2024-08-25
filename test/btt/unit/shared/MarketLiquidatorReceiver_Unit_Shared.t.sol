@@ -9,11 +9,8 @@ import {GmxMarketMock_test} from "../../mocks/GmxMarketMock_test.sol";
 import {ERC20Mock_test} from "../../mocks/ERC20Mock_test.sol";
 import {TOFTMock_test} from "../../mocks/TOFTMock_test.sol";
 
-// utils
-import {YieldBoxTestUtils} from "../../utils/YieldBoxTestUtils.sol";
-
 // contracts
-// import {SGlpMarketLiquidatorReceiver} from "contracts/liquidators/sGlpMarketLiquidatorReceiver.sol";
+import {SGlpMarketLiquidatorReceiver} from "contracts/liquidators/sGlpMarketLiquidatorReceiver.sol";
 import {IGmxRewardRouterV2} from "tapioca-periph/interfaces/external/gmx/IGmxRewardRouterV2.sol";
 import {MarketLiquidatorReceiver} from "contracts/liquidators/MarketLiquidatorReceiver.sol";
 import {IGmxGlpManager} from "tapioca-periph/interfaces/external/gmx/IGmxGlpManager.sol";
@@ -29,22 +26,18 @@ import {Cluster} from "tapioca-periph/Cluster/Cluster.sol";
 
 abstract contract MarketLiquidatorReceiver_Unit_Shared is Base_Test {
     ERC20Mock_test sGlp;
-    ERC20Mock_test usdo;
     ERC20Mock_test weth;
     TOFTMock_test tWeth;
     TOFTMock_test tSglp;
     uint256 wethYieldBoxId;
-    Cluster cluster;
     ZeroXSwapper swapper;
     ZeroXSwapperMockTarget_test swapperTarget;
     MarketLiquidatorReceiver receiver;
-    //SGlpMarketLiquidatorReceiver sGlpReceiver;
+    SGlpMarketLiquidatorReceiver sGlpReceiver;
     GmxMarketMock_test gmxMock;
 
     function setUp() public virtual override {
         super.setUp();
-
-        YieldBoxTestUtils ybUtils = new YieldBoxTestUtils();
 
         sGlp = new ERC20Mock_test("sGlp", "sGlp");
         vm.label(address(sGlp), "sGlp Mock");
@@ -58,19 +51,13 @@ abstract contract MarketLiquidatorReceiver_Unit_Shared is Base_Test {
         tWeth = new TOFTMock_test(address(weth), IPearlmit(address(pearlmit)));
         vm.label(address(tWeth), "tWETH Mock");
 
-        usdo = new ERC20Mock_test("Usdo", "Usdo");
-        vm.label(address(usdo), "Usdo Mock");
-
-        cluster = new Cluster(0, address(this));
-        vm.label(address(cluster), "Cluster Test");
-
         swapperTarget = new ZeroXSwapperMockTarget_test();
         vm.label(address(swapperTarget), "ZeroXSwapperTarget Test");
 
         swapper = new ZeroXSwapper(address(swapperTarget), ICluster(address(cluster)), address(this));
         vm.label(address(swapper), "ZeroXSwapper Test");
 
-        ERC20WithoutStrategy wethStrategy = ybUtils.createEmptyStrategy(address(yieldBox), address(weth));
+        ERC20WithoutStrategy wethStrategy = _createEmptyStrategy(address(yieldBox), address(weth));
         wethYieldBoxId = yieldBox.registerAsset(TokenType.ERC20, address(weth), IStrategy(address(wethStrategy)), 0);
 
         gmxMock = new GmxMarketMock_test(address(0), address(0), address(0));
@@ -78,6 +65,6 @@ abstract contract MarketLiquidatorReceiver_Unit_Shared is Base_Test {
 
         receiver =
             new MarketLiquidatorReceiver(address(weth), ICluster(address(cluster)), address(swapper), address(this));
-        // sGlpReceiver= new SGlpMarketLiquidatorReceiver(address(weth), ICluster(address(cluster)), address(swapper), IGmxRewardRouterV2(address(gmxMock)), IGmxGlpManager(address(gmxMock)), address(this));
+        sGlpReceiver= new SGlpMarketLiquidatorReceiver(address(weth), ICluster(address(cluster)), address(swapper), IGmxRewardRouterV2(address(gmxMock)), IGmxGlpManager(address(gmxMock)), address(this));
     }
 }

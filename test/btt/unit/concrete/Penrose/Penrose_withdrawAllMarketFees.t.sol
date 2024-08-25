@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.22;
 
-import {Markets_Unit_Shared} from "../../shared/Markets_Unit_Shared.t.sol";
+import {BigBang_Unit_Shared} from "../../shared/BigBang_Unit_Shared.t.sol";
 
 // external
 import {BigBang} from "contracts/markets/bigBang/BigBang.sol";
@@ -14,7 +14,7 @@ import {ITwTap} from "tapioca-periph/interfaces/tap-token/ITwTap.sol";
 
 import {IPenrose} from "tapioca-periph/interfaces/bar/IPenrose.sol";
 
-contract Penrose_withdrawAllMarketFees is Markets_Unit_Shared {
+contract Penrose_withdrawAllMarketFees is BigBang_Unit_Shared {
     function test_RevertWhen_WithdrawAllMarketFeesIsCalledFromNon_owner() external {
         address rndAddr = makeAddr("rndAddress");
         IMarket[] memory markets = new IMarket[](1);
@@ -58,7 +58,7 @@ contract Penrose_withdrawAllMarketFees is Markets_Unit_Shared {
             BigBang._InitMemoryDebtData memory initDebtData,
             BigBang._InitMemoryData memory initMemoryData
         ) = _getBigBangInitData(
-            TestBigBangData(
+            BigBangInitData(
                 address(penrose),
                 address(mainToken), //asset
                 mainTokenId,

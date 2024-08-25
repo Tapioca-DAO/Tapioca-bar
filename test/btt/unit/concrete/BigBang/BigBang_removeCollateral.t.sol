@@ -1,172 +1,254 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.22;
 
-// dependencies
+// Tapioca
 import {Module} from "tapioca-periph/interfaces/bar/IMarket.sol";
-import {ICluster} from "tapioca-periph/interfaces/periph/ICluster.sol";
 import {BigBang} from "contracts/markets/bigBang/BigBang.sol";
 import {Market} from "contracts/markets/Market.sol";
 
-import {IERC20} from "@boringcrypto/boring-solidity/contracts/ERC20.sol";
+import {IPearlmit} from "tapioca-periph/pearlmit/Pearlmit.sol";
 
+// tests
 import {BigBang_Unit_Shared} from "../../shared/BigBang_Unit_Shared.t.sol";
 
 contract BigBang_removeCollateral is BigBang_Unit_Shared {
-    function test_RevertWhen_RemoveCollateralIsCalledAndContractIsPaused() external {
-        BigBang bb = BigBang(payable(_registerDefaultBigBang()));
-
-        ICluster _cl = penrose.cluster();
-        _cl.setRoleForContract(address(this), keccak256("PAUSABLE"), true);
-        bb.updatePause(Market.PauseType.RemoveCollateral, true);
-
+    function test_removeCollateral_WhenContractIsPaused(uint256 collateralAmount)
+        external
+        whenContractIsPaused
+        whenCollateralAmountIsValid(collateralAmount)
+    {
         (Module[] memory modules, bytes[] memory calls) =
-            marketHelper.removeCollateral(address(this), address(this), 1 ether);
+            _getRemoveCollateralData(collateralAmount, address(this), address(this));
 
+        // **** Main BB market ****
+        // it should revert with 'Market: paused'
         vm.expectRevert("Market: paused");
-        bb.execute(modules, calls, true);
+        mainBB.execute(modules, calls, true);
+
+        // **** Secondary BB market ****
+        vm.expectRevert("Market: paused");
+        secondaryBB.execute(modules, calls, true);
     }
 
-    function test_RevertWhen_RemoveCollateralIsCalledForTheContractItself() external {
-        BigBang bb = BigBang(payable(_registerDefaultBigBang()));
-        _setPenroseBigBangDefaults(address(bb));
-
+    function test_removeCollateral_WhenCalledForItself(uint256 collateralAmount)
+        external
+        whenContractIsNotPaused
+        whenCollateralAmountIsValid(collateralAmount)
+    {
         (Module[] memory modules, bytes[] memory calls) =
-            marketHelper.removeCollateral(address(bb), address(bb), 1 ether);
+            _getRemoveCollateralData(collateralAmount, address(this), address(mainBB));
 
+        // **** Main BB market ****
+        // it should revert with 'Market: cannot execute on itself'
         vm.expectRevert("Market: cannot execute on itself");
-        bb.execute(modules, calls, true);
+        mainBB.execute(modules, calls, true);
+
+        // **** Secondary BB market ****
+        (modules, calls) = _getRemoveCollateralData(collateralAmount, address(this), address(secondaryBB));
+        // it should revert with 'Market: cannot execute on itself'
+        vm.expectRevert("Market: cannot execute on itself");
+        secondaryBB.execute(modules, calls, true);
     }
 
-    function test_RevertWhen_RemoveCollateralIsCalledAndUserIsNotSolvent() external {
-        BigBang bb = BigBang(payable(_registerDefaultBigBang()));
-        _setPenroseBigBangDefaults(address(bb));
-
-        _addCollateral(bb);
-
-        _borrow(bb);
-
-        uint256 amount = 0.5 ether;
-        uint256 share = yieldBox.toShare(bb._collateralId(), amount, false);
+    function test_givenCalledForAValidSenderByItself_whenContractIsNotPaused_RevertWhen_ItsCalledWithoutAPosition(
+        uint256 collateralAmount
+    ) external whenContractIsNotPaused whenCollateralAmountIsValid(collateralAmount) {
         (Module[] memory modules, bytes[] memory calls) =
-            marketHelper.removeCollateral(address(this), address(this), share);
+            _getRemoveCollateralData(collateralAmount, address(this), address(this));
+
+        // it should revert
+        // **** Main BB market ****
+        vm.expectRevert();
+        mainBB.execute(modules, calls, true);
+
+        // **** Secondary BB market ****
+        vm.expectRevert();
+        secondaryBB.execute(modules, calls, true);
+    }
+
+    function test_givenCalledForAValidSenderByItself_whenUserHasBorrowed_RevertWhen_NotSolvent(
+        uint256 addAmount,
+        uint256 borrowAmount
+    )
+        external
+        whenContractIsNotPaused
+        whenOracleRateIsEth
+        whenAssetOracleRateIsBelowMin
+        whenCollateralAmountIsValid(addAmount)
+        givenBorrowCapIsNotReachedYet
+    {
+        // **** Add collateral ****
+        _addCollateral(addAmount, mainBB, address(this), address(this), address(this), address(this), false);
+
+        // **** Borrow ****
+        borrowAmount = _boundBorrowAmount(borrowAmount, addAmount);
+        _borrow(borrowAmount, mainBB, address(this), address(this), address(this));
+
+        // **** Remove collateral ****
+        uint256 removeShare = mainBB._userCollateralShare(address(this));
+        (Module[] memory modules, bytes[] memory calls) =
+            _getRemoveCollateralData(removeShare, address(this), address(this));
+
         vm.expectRevert("Market: insolvent");
-        bb.execute(modules, calls, true);
+        mainBB.execute(modules, calls, true);
     }
 
-    function test_WhenRemoveCollateralIsCalledForSender() external {
-        BigBang bb = BigBang(payable(_registerDefaultBigBang()));
-        _setPenroseBigBangDefaults(address(bb));
+    function test_givenCalledForAValidSenderByItself_whenUserHasBorrowed_whenSolvent_WhenCollateralIsRemovable(
+        uint256 addAmount,
+        uint256 borrowAmount,
+        uint256 removeShare
+    )
+        external
+        whenContractIsNotPaused
+        whenOracleRateIsEth
+        whenAssetOracleRateIsBelowMin
+        whenCollateralAmountIsValid(addAmount)
+        givenBorrowCapIsNotReachedYet
+    {
+        borrowAmount = _boundBorrowAmount(borrowAmount, addAmount);
 
-        _addCollateral(bb);
+        // **** Main BB market ****
+        _removeCollateral(addAmount, removeShare, borrowAmount, mainBB, address(this), address(this), address(this));
 
-        // remove when there is no borrow position
-        uint256 amount = 0.05 ether;
-        uint256 share = yieldBox.toShare(bb._collateralId(), amount, false);
-
-        (Module[] memory modules, bytes[] memory calls) =
-            marketHelper.removeCollateral(address(this), address(this), share);
-
-        uint256 userCollateralShareBefore = bb._userCollateralShare(address(this));
-        uint256 totalCollateralShareBefore = bb._totalCollateralShare();
-        uint256 ybBalanceOfMarketBefore = yieldBox.balanceOf(address(bb), bb._collateralId());
-        bb.execute(modules, calls, true);
-        uint256 userCollateralShareAfter = bb._userCollateralShare(address(this));
-        uint256 totalCollateralShareAfter = bb._totalCollateralShare();
-        uint256 ybBalanceOfMarketAfter = yieldBox.balanceOf(address(bb), bb._collateralId());
-
-        assertGt(userCollateralShareBefore, userCollateralShareAfter);
-        assertGt(totalCollateralShareBefore, totalCollateralShareAfter);
-        assertGt(ybBalanceOfMarketBefore, ybBalanceOfMarketAfter);
-
-        // remove when there is a borrow position
-        _borrow(bb);
-
-        (modules, calls) = marketHelper.removeCollateral(address(this), address(this), share);
-
-        userCollateralShareBefore = bb._userCollateralShare(address(this));
-        totalCollateralShareBefore = bb._totalCollateralShare();
-        ybBalanceOfMarketBefore = yieldBox.balanceOf(address(bb), bb._collateralId());
-        bb.execute(modules, calls, true);
-        userCollateralShareAfter = bb._userCollateralShare(address(this));
-        totalCollateralShareAfter = bb._totalCollateralShare();
-        ybBalanceOfMarketAfter = yieldBox.balanceOf(address(bb), bb._collateralId());
-
-        assertGt(userCollateralShareBefore, userCollateralShareAfter);
-        assertGt(totalCollateralShareBefore, totalCollateralShareAfter);
-        assertGt(ybBalanceOfMarketBefore, ybBalanceOfMarketAfter);
+        // **** Secondary BB market ****
+        _removeCollateral(
+            addAmount, removeShare, borrowAmount, secondaryBB, address(this), address(this), address(this)
+        );
     }
 
-    function test_RevertWhen_RemoveCollateralIsCalledForAnotherUserWithoutAllowedBorrowed() external {
-        BigBang bb = BigBang(payable(_registerDefaultBigBang()));
-        _setPenroseBigBangDefaults(address(bb));
+    function test_givenCalledForAValidSenderByItself_whenUserDoesNotHaveABorrowedPosition_WhenCollateralCanBeRemoved(
+        uint256 addAmount,
+        uint256 removeShare
+    )
+        external
+        whenContractIsNotPaused
+        whenOracleRateIsEth
+        whenAssetOracleRateIsBelowMin
+        whenCollateralAmountIsValid(addAmount)
+        givenBorrowCapIsNotReachedYet
+    {
+        uint256 borrowAmount = 0;
 
-        _addCollateral(bb);
+        // **** Main BB market ****
+        _removeCollateral(addAmount, removeShare, borrowAmount, mainBB, address(this), address(this), address(this));
 
-        uint256 amount = 0.05 ether;
-        uint256 share = yieldBox.toShare(bb._collateralId(), amount, false);
+        // **** Secondary BB market ****
+        _removeCollateral(
+            addAmount, removeShare, borrowAmount, secondaryBB, address(this), address(this), address(this)
+        );
+    }
+
+    function test_whenItsCalledFromAnotherUser_WhenUserDoesNotHaveEnoughAllowance(uint256 addAmount)
+        external
+        whenContractIsNotPaused
+        whenOracleRateIsEth
+        whenAssetOracleRateIsBelowMin
+        whenCollateralAmountIsValid(addAmount)
+        givenBorrowCapIsNotReachedYet
+    {
+        // **** Add collateral ****
+        _addCollateral(addAmount, mainBB, address(this), address(this), address(this), address(this), false);
+
+        // **** Remove collateral ****
+        uint256 removeShare = mainBB._userCollateralShare(address(this));
         (Module[] memory modules, bytes[] memory calls) =
-            marketHelper.removeCollateral(address(this), address(this), share);
-        vm.startPrank(userA);
+            _getRemoveCollateralData(removeShare, address(this), address(this));
+
+        _resetPrank(userA);
         vm.expectRevert("Market: not approved");
-        bb.execute(modules, calls, true);
-        vm.stopPrank();
+        mainBB.execute(modules, calls, true);
+
+        // it should revert with 'Market: not approved'
     }
 
-    function test_WhenRemoveCollateralIsCalledForAnotherUserWithAllowedBorrowed() external {
-        BigBang bb = BigBang(payable(_registerDefaultBigBang()));
-        _setPenroseBigBangDefaults(address(bb));
+    function test_whenItsCalledFromAnotherUser_whenUserHasBorrowed_whenUserHasBeenGivenAllowance_RevertWhen_NotSolventPosition(
+        uint256 addAmount,
+        uint256 borrowAmount
+    )
+        external
+        whenContractIsNotPaused
+        whenOracleRateIsEth
+        whenAssetOracleRateIsBelowMin
+        whenCollateralAmountIsValid(addAmount)
+        givenBorrowCapIsNotReachedYet
+    {
+        // add collateral
+        _addCollateral(addAmount, mainBB, address(this), address(this), address(this), address(this), false);
 
-        _addCollateral(bb);
+        // borrow
+        borrowAmount = _boundBorrowAmount(borrowAmount, addAmount);
+        _borrow(borrowAmount, mainBB, address(this), address(this), address(this));
 
-        uint256 amount = 0.05 ether;
-        uint256 share = yieldBox.toShare(bb._collateralId(), amount, false);
+        uint256 removeShare = mainBB._userCollateralShare(address(this));
         (Module[] memory modules, bytes[] memory calls) =
-            marketHelper.removeCollateral(address(this), address(this), share);
+            _getRemoveCollateralData(removeShare, address(this), address(this));
 
-        bb.approveBorrow(address(userA), share);
-
-        uint256 userCollateralShareBefore = bb._userCollateralShare(address(this));
-        uint256 totalCollateralShareBefore = bb._totalCollateralShare();
-        uint256 ybBalanceOfMarketBefore = yieldBox.balanceOf(address(bb), bb._collateralId());
-        vm.prank(userA);
-        bb.execute(modules, calls, true);
-        uint256 userCollateralShareAfter = bb._userCollateralShare(address(this));
-        uint256 totalCollateralShareAfter = bb._totalCollateralShare();
-        uint256 ybBalanceOfMarketAfter = yieldBox.balanceOf(address(bb), bb._collateralId());
-
-        assertGt(userCollateralShareBefore, userCollateralShareAfter);
-        assertGt(totalCollateralShareBefore, totalCollateralShareAfter);
-        assertGt(ybBalanceOfMarketBefore, ybBalanceOfMarketAfter);
+        mainBB.approveBorrow(userA, type(uint256).max);
+        _resetPrank(userA);
+        vm.expectRevert("Market: insolvent");
+        mainBB.execute(modules, calls, true);
     }
 
-    function _addCollateral(BigBang bb) private {
-        // vars
-        IERC20 collateral = IERC20(bb._collateral());
-        uint256 collateralId = bb._collateralId();
+    function test_whenItsCalledFromAnotherUser_whenUserHasBorrowed_whenUserHasBeenGivenAllowance_whenSolvent_WhenCollateralRemoved(
+        uint256 addAmount,
+        uint256 borrowAmount,
+        uint256 removeShare
+    )
+        external
+        whenContractIsNotPaused
+        whenOracleRateIsEth
+        whenAssetOracleRateIsBelowMin
+        whenCollateralAmountIsValid(addAmount)
+        givenBorrowCapIsNotReachedYet
+    {
+        borrowAmount = _boundBorrowAmount(borrowAmount, addAmount);
 
-        // deal amounts
-        uint256 amount = 1 ether;
-        deal(address(collateral), address(this), amount);
+        // **** Main BB market ****
+        mainBB.approveBorrow(userA, type(uint256).max);
+        _removeCollateral(addAmount, removeShare, borrowAmount, mainBB, userA, address(this), address(this));
 
-        // approvals
-        collateral.approve(address(yieldBox), type(uint256).max);
-        collateral.approve(address(pearlmit), type(uint256).max);
-        yieldBox.setApprovalForAll(address(bb), true);
-        yieldBox.setApprovalForAll(address(pearlmit), true);
-        pearlmit.approve(1155, address(yieldBox), collateralId, address(bb), type(uint200).max, uint48(block.timestamp));
-
-        uint256 share = yieldBox.toShare(collateralId, amount, false);
-        yieldBox.depositAsset(collateralId, address(this), address(this), 0, share);
-
-        (Module[] memory modules, bytes[] memory calls) =
-            marketHelper.addCollateral(address(this), address(this), false, 0, share);
-        bb.execute(modules, calls, true);
+        // **** Secondary BB market ****
+        _approveViaPearlmit(
+            TOKEN_TYPE_ERC1155,
+            address(yieldBox),
+            IPearlmit(address(pearlmit)),
+            address(this),
+            address(secondaryBB),
+            type(uint200).max,
+            uint48(block.timestamp),
+            secondaryBB._collateralId()
+        );
+        secondaryBB.approveBorrow(userA, type(uint256).max);
+        _removeCollateral(addAmount, removeShare, borrowAmount, secondaryBB, userA, address(this), address(this));
     }
 
-    function _borrow(BigBang bb) private {
-        uint256 borrowAmount = 0.5 ether;
-        (Module[] memory modules, bytes[] memory calls) =
-            marketHelper.borrow(address(this), address(this), borrowAmount);
-        bb.execute(modules, calls, true);
+    function test_whenItsCalledFromAnotherUser_whenUserHasBeenGivenAllowance_whenSolvent_WhenCollateralIsRemoved(
+        uint256 addAmount,
+        uint256 removeShare
+    )
+        external
+        whenContractIsNotPaused
+        whenOracleRateIsEth
+        whenAssetOracleRateIsBelowMin
+        whenCollateralAmountIsValid(addAmount)
+        givenBorrowCapIsNotReachedYet
+    {
+        // **** Main BB market ****
+        mainBB.approveBorrow(userA, type(uint256).max);
+        _removeCollateral(addAmount, removeShare, 0, mainBB, userA, address(this), address(this));
+
+        // **** Secondary BB market ****
+        _approveViaPearlmit(
+            TOKEN_TYPE_ERC1155,
+            address(yieldBox),
+            IPearlmit(address(pearlmit)),
+            address(this),
+            address(secondaryBB),
+            type(uint200).max,
+            uint48(block.timestamp),
+            secondaryBB._collateralId()
+        );
+        secondaryBB.approveBorrow(userA, type(uint256).max);
+        _removeCollateral(addAmount, removeShare, 0, secondaryBB, userA, address(this), address(this));
     }
 }

@@ -1,197 +1,223 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.22;
 
-// external
-import {Rebase} from "@boringcrypto/boring-solidity/contracts/libraries/BoringRebase.sol";
-
-// dependencies
+// Tapioca
 import {Module} from "tapioca-periph/interfaces/bar/IMarket.sol";
-import {ICluster} from "tapioca-periph/interfaces/periph/ICluster.sol";
 import {BigBang} from "contracts/markets/bigBang/BigBang.sol";
 import {Market} from "contracts/markets/Market.sol";
 
-import {IERC20} from "@boringcrypto/boring-solidity/contracts/ERC20.sol";
+import {IPearlmit} from "tapioca-periph/pearlmit/Pearlmit.sol";
 
+// tests
 import {BigBang_Unit_Shared} from "../../shared/BigBang_Unit_Shared.t.sol";
 
-import "forge-std/console.sol";
-
 contract BigBang_repay is BigBang_Unit_Shared {
-    function test_RevertWhen_RepayIsCalledAndContractIsPaused() external {
-        BigBang bb = BigBang(payable(_registerDefaultBigBang()));
+    function test_repay_WhenContractIsPaused(uint256 repayPart) external whenContractIsPaused {
+        (Module[] memory modules, bytes[] memory calls) = _getRepayData(repayPart, address(this), address(this));
 
-        ICluster _cl = penrose.cluster();
-        _cl.setRoleForContract(address(this), keccak256("PAUSABLE"), true);
-        bb.updatePause(Market.PauseType.Repay, true);
-
-        (Module[] memory modules, bytes[] memory calls) =
-            marketHelper.repay(address(this), address(this), false, 1 ether);
-
+        // **** Main BB market ****
+        // it should revert with 'Market: paused'
         vm.expectRevert("Market: paused");
-        bb.execute(modules, calls, true);
+        mainBB.execute(modules, calls, true);
+
+        // **** Secondary BB market ****
+        vm.expectRevert("Market: paused");
+        secondaryBB.execute(modules, calls, true);
     }
 
-    function test_RevertWhen_RepayIsCalledForTheContractItself() external {
-        BigBang bb = BigBang(payable(_registerDefaultBigBang()));
+    function test_repay_WhenCalledForItself(uint256 repayPart) external whenContractIsNotPaused {
+        // it should revert with 'Market: cannot execute on itself'
 
-        (Module[] memory modules, bytes[] memory calls) = marketHelper.repay(address(bb), address(bb), false, 1 ether);
+        (Module[] memory modules, bytes[] memory calls) = _getRepayData(repayPart, address(mainBB), address(mainBB));
+
+        // **** Main BB market ****
         vm.expectRevert("Market: cannot execute on itself");
-        bb.execute(modules, calls, true);
+        mainBB.execute(modules, calls, true);
+
+        // **** Secondary BB market ****
+        (modules, calls) = _getRepayData(repayPart, address(secondaryBB), address(secondaryBB));
+        vm.expectRevert("Market: cannot execute on itself");
+        secondaryBB.execute(modules, calls, true);
     }
 
-    function test_RevertWhen_RepayIsCalledForNoPosition() external {
-        BigBang bb = BigBang(payable(_registerDefaultBigBang()));
-        _setPenroseBigBangDefaults(address(bb));
+    function test_repay_givenCalledForAValidSenderByItself_RevertWhen_CalledWithoutAPosition(uint256 repayPart)
+        external
+        whenContractIsNotPaused
+    {
+        vm.assume(repayPart > 0 && repayPart < SMALL_AMOUNT);
 
-        (Module[] memory modules, bytes[] memory calls) =
-            marketHelper.repay(address(this), address(this), false, 1 ether);
-
+        (Module[] memory modules, bytes[] memory calls) = _getRepayData(repayPart, address(this), address(this));
+        //             │   │   │   └─ ← [Revert] NothingToRepay()
+        // │   │   └─ ← [Revert] EvmError: Revert
+        // │   └─ ← [Revert] EvmError: Revert
+        // it should revert
         vm.expectRevert();
-        bb.execute(modules, calls, true);
+        mainBB.execute(modules, calls, true);
     }
 
-    function test_WhenRepayIsCalledForSender() external {
-        BigBang bb = BigBang(payable(_registerDefaultBigBang()));
-        _setPenroseBigBangDefaults(address(bb));
+    function test_repay_givenCalledForAValidSenderByItself_whenUserHasABorrowedPosition_WhenOracleFailsToFetchTheLatestPrices(
+        uint256 collateralAmount,
+        uint256 borrowAmount,
+        uint256 repayPart
+    )
+        external
+        whenContractIsNotPaused
+        whenOracleRateIsEth
+        whenAssetOracleRateIsBelowMin
+        whenCollateralAmountIsValid(collateralAmount)
+        givenBorrowCapIsNotReachedYet
+        whenApprovedViaPearlmit(
+            TOKEN_TYPE_ERC1155,
+            address(yieldBox),
+            mainBB._assetId(),
+            address(this),
+            address(mainBB),
+            type(uint200).max,
+            uint48(block.timestamp)
+        )
+    {
+        // **** Add collateral ****
+        _addCollateral(collateralAmount, mainBB, address(this), address(this), address(this), address(this), false);
 
-        _addCollateral(bb);
+        // **** Borrow ****
+        borrowAmount = _boundBorrowAmount(borrowAmount, collateralAmount);
+        _borrow(borrowAmount, mainBB, address(this), address(this), address(this));
 
-        _borrow(bb);
+        // **** Borrow ****
+        repayPart = _boundRepayAmount(repayPart, mainBB);
+        (Module[] memory modules, bytes[] memory calls) = _getRepayData(repayPart, address(this), address(this));
 
-        (Module[] memory modules, bytes[] memory calls) =
-            marketHelper.repay(address(this), address(this), false, 1 ether);
+        oracle.setSuccess(false);
 
-        vm.expectRevert(); //no approvals
-        bb.execute(modules, calls, true);
+        uint256 userBorrowPartBefore = mainBB._userBorrowPart(address(this));
+        // it should use the cached rates
+        // it should continue with the repayment
+        mainBB.execute(modules, calls, true);
 
-        pearlmit.approve(
-            1155, address(yieldBox), bb._assetId(), address(bb), type(uint200).max, uint48(block.timestamp)
-        );
-
-        vm.expectRevert(); //no funds for repayment
-        bb.execute(modules, calls, true);
-
-        vm.roll(10000);
-        skip(86400 * 10);
-
-        // prepare for repay by depositing into YieldBox
-        uint256 amount = 0.5 ether;
-
-        _addToYieldBox(address(bb), bb._asset(), bb._assetId(), amount);
-
-        uint256 usdoSupplyBefore = usdo.totalSupply();
-        uint256 userBorrowPartBefore = bb._userBorrowPart(address(this));
-        Rebase memory totalBorrowBefore = bb._totalBorrow();
-        (modules, calls) = marketHelper.repay(address(this), address(this), false, amount);
-        bb.execute(modules, calls, true);
-        uint256 userBorrowPartAfter = bb._userBorrowPart(address(this));
-        uint256 usdoSupplyAfter = usdo.totalSupply();
-        Rebase memory totalBorrowAfter = bb._totalBorrow();
+        uint256 userBorrowPartAfter = mainBB._userBorrowPart(address(this));
 
         assertGt(userBorrowPartBefore, userBorrowPartAfter);
-        assertGt(usdoSupplyBefore, usdoSupplyAfter);
-        assertGt(totalBorrowBefore.base, totalBorrowAfter.base);
-        assertGt(totalBorrowBefore.elastic, totalBorrowAfter.elastic);
     }
 
-    function test_RevertWhen_RepayIsCalledForAnotherUserWithoutAllowedLend() external {
-        BigBang bb = BigBang(payable(_registerDefaultBigBang()));
-        _setPenroseBigBangDefaults(address(bb));
+    function test_repay_givenCalledForAValidSenderByItself_whenUserHasABorrowedPosition_RevertWhen_UserDoesntHaveEnoughAssetsInYieldBox(
+        uint256 collateralAmount,
+        uint256 borrowAmount
+    )
+        external
+        whenContractIsNotPaused
+        whenOracleRateIsEth
+        whenAssetOracleRateIsBelowMin
+        whenCollateralAmountIsValid(collateralAmount)
+        givenBorrowCapIsNotReachedYet
+        whenApprovedViaPearlmit(
+            TOKEN_TYPE_ERC1155,
+            address(yieldBox),
+            mainBB._assetId(),
+            address(this),
+            address(mainBB),
+            type(uint200).max,
+            uint48(block.timestamp)
+        )
+    {
+        // **** Add collateral ****
+        _addCollateral(collateralAmount, mainBB, address(this), address(this), address(this), address(this), false);
 
-        _addCollateral(bb);
+        // **** Borrow ****
+        borrowAmount = _boundBorrowAmount(borrowAmount, collateralAmount);
+        _borrow(borrowAmount, mainBB, address(this), address(this), address(this));
 
-        _borrow(bb);
+        uint256 repayPart = mainBB._userBorrowPart(address(this));
+        (Module[] memory modules, bytes[] memory calls) = _getRepayData(repayPart, address(this), address(this));
+        // it should revert
+        //         │   │   │   └─ ← [Revert] TransferFailed()
+        // │   │   └─ ← [Revert] EvmError: Revert
+        // │   └─ ← [Revert] EvmError: Revert
+        vm.expectRevert();
+        mainBB.execute(modules, calls, true);
+    }
 
-        pearlmit.approve(
-            1155, address(yieldBox), bb._assetId(), address(bb), type(uint200).max, uint48(block.timestamp)
-        );
+    function test_repay_givenCalledForAValidSenderByItself_whenUserHasABorrowedPosition_WhenUserDepositedAssetsIntoYieldBoxForRepayment(
+        uint256 collateralAmount,
+        uint256 borrowAmount,
+        uint256 repayPart
+    )
+        external
+        whenContractIsNotPaused
+        whenOracleRateIsEth
+        whenAssetOracleRateIsBelowMin
+        whenCollateralAmountIsValid(collateralAmount)
+        givenBorrowCapIsNotReachedYet
+    {
+        // **** Main BB ****
+        _repay(collateralAmount, borrowAmount, repayPart, mainBB, address(this), address(this), address(this));
 
-        vm.roll(10000);
-        skip(86400 * 10);
+        // **** Secondary BB ****
+        _repay(collateralAmount, borrowAmount, repayPart, secondaryBB, address(this), address(this), address(this));
 
-        // prepare for repay by depositing into YieldBox
-        uint256 amount = 0.5 ether;
+        // it should emit 'ReaccruedMarkets'
+        // it should emit 'LogAccrue'
+        // it should decrease 'userBorrowPart'
+        // it should decrease 'totalBorrow.base'
+        // it should decrease 'totalBorrow.elastic'
+        // it should burn asset's supply
+        // it should emit 'LogRepay'
+    }
 
-        _addToYieldBox(address(bb), bb._asset(), bb._assetId(), amount);
+    function test_repay_whenCalledFromAnotherUser_WhenUserDoesNotHaveEnoughAllowance(
+        uint256 collateralAmount,
+        uint256 borrowAmount,
+        uint256 repayPart
+    )
+        external
+        whenContractIsNotPaused
+        whenOracleRateIsEth
+        whenAssetOracleRateIsBelowMin
+        whenCollateralAmountIsValid(collateralAmount)
+        givenBorrowCapIsNotReachedYet
+    {
+        // **** Add collateral ****
+        _addCollateral(collateralAmount, mainBB, address(this), address(this), address(this), address(this), false);
 
-        (Module[] memory modules, bytes[] memory calls) =
-            marketHelper.repay(address(this), address(this), false, amount);
-        vm.startPrank(userA);
+        // **** Borrow ****
+        borrowAmount = _boundBorrowAmount(borrowAmount, collateralAmount);
+        _borrow(borrowAmount, mainBB, address(this), address(this), address(this));
+
+        // it should revert with 'Market: not approved'
+        repayPart = _boundRepayAmount(repayPart, mainBB);
+        (Module[] memory modules, bytes[] memory calls) = _getRepayData(repayPart, address(this), address(this));
+        _resetPrank(userA);
         vm.expectRevert("Market: not approved");
-        bb.execute(modules, calls, true);
-        vm.stopPrank();
+        mainBB.execute(modules, calls, true);
     }
 
-    function test_WhenRepayIsCalledForAnotherUserWithAllowedLend() external {
-        BigBang bb = BigBang(payable(_registerDefaultBigBang()));
-        _setPenroseBigBangDefaults(address(bb));
+    function test_repay_whenCalledFromAnotherUser_WhenUserHasAllowance(
+        uint256 collateralAmount,
+        uint256 borrowAmount,
+        uint256 repayPart
+    )
+        external
+        whenContractIsNotPaused
+        whenOracleRateIsEth
+        whenAssetOracleRateIsBelowMin
+        whenCollateralAmountIsValid(collateralAmount)
+        givenBorrowCapIsNotReachedYet
+    {
+        // **** Main BB ****
+        mainBB.approve(userA, type(uint256).max);
+        _repay(collateralAmount, borrowAmount, repayPart, mainBB, userA, address(this), address(this));
 
-        _addCollateral(bb);
-
-        _borrow(bb);
-
-        pearlmit.approve(
-            1155, address(yieldBox), bb._assetId(), address(bb), type(uint200).max, uint48(block.timestamp)
+        // **** Secondary BB ****
+        _approveViaPearlmit(
+            TOKEN_TYPE_ERC1155,
+            address(yieldBox),
+            IPearlmit(address(pearlmit)),
+            address(this),
+            address(secondaryBB),
+            type(uint200).max,
+            uint48(block.timestamp),
+            secondaryBB._assetId()
         );
-
-        vm.roll(10000);
-        skip(86400 * 10);
-
-        // prepare for repay by depositing into YieldBox
-        uint256 amount = 0.5 ether;
-
-        _addToYieldBox(address(bb), bb._asset(), bb._assetId(), amount);
-
-        (Module[] memory modules, bytes[] memory calls) =
-            marketHelper.repay(address(this), address(this), false, amount);
-
-        bb.approve(address(userA), type(uint256).max);
-        vm.prank(userA);
-        bb.execute(modules, calls, true);
-    }
-
-    function _addToYieldBox(address _bb, address _asset, uint256 _assetId, uint256 _amount) private {
-        deal(_asset, address(this), _amount);
-
-        usdo.approve(address(yieldBox), type(uint256).max);
-        usdo.approve(address(pearlmit), type(uint256).max);
-        yieldBox.setApprovalForAll(_bb, true);
-        yieldBox.setApprovalForAll(address(pearlmit), true);
-        pearlmit.approve(1155, address(yieldBox), _assetId, _bb, type(uint200).max, uint48(block.timestamp));
-        yieldBox.depositAsset(_assetId, address(this), address(this), _amount, 0);
-
-        usdo.setMinterStatus(address(this), true);
-        usdo.mint(address(this), _amount);
-    }
-
-    function _addCollateral(BigBang bb) private {
-        // vars
-        IERC20 collateral = IERC20(bb._collateral());
-        uint256 collateralId = bb._collateralId();
-
-        // deal amounts
-        uint256 amount = 1 ether;
-        deal(address(collateral), address(this), amount);
-
-        // approvals
-        collateral.approve(address(yieldBox), type(uint256).max);
-        collateral.approve(address(pearlmit), type(uint256).max);
-        yieldBox.setApprovalForAll(address(bb), true);
-        yieldBox.setApprovalForAll(address(pearlmit), true);
-        pearlmit.approve(1155, address(yieldBox), collateralId, address(bb), type(uint200).max, uint48(block.timestamp));
-
-        uint256 share = yieldBox.toShare(collateralId, amount, false);
-        yieldBox.depositAsset(collateralId, address(this), address(this), 0, share);
-
-        (Module[] memory modules, bytes[] memory calls) =
-            marketHelper.addCollateral(address(this), address(this), false, 0, share);
-        bb.execute(modules, calls, true);
-    }
-
-    function _borrow(BigBang bb) private {
-        uint256 borrowAmount = 0.5 ether;
-        (Module[] memory modules, bytes[] memory calls) =
-            marketHelper.borrow(address(this), address(this), borrowAmount);
-        bb.execute(modules, calls, true);
+        secondaryBB.approve(userA, type(uint256).max);
+        _repay(collateralAmount, borrowAmount, repayPart, secondaryBB, userA, address(this), address(this));
     }
 }

@@ -1,15 +1,44 @@
 BigBang_buyCollateral.t.sol
-├── when buyCollateral is called and contract is paused
-│   └── it should revert
-├── when buyCollateral is called for the contract itself
-│   └── it should revert
-├── when buyCollateral is called and leverageExecutor is address0
-│   └── it should revert
-├── when buyCollateral is called for sender
-│   └── it should not revert
-├── when buyCollateral is called for another user without allowed borrowed
-│   └── it should revert
-├── when buyCollateral is called and user is not solvent at the end
-│   └── it should revert
-└── when buyCollateral is called for another user with allowed borrowed
-    └── it should not revert
+├── when contract is paused
+│   └── it should revert with 'Market: paused'
+└── when contract is not paused
+    ├── when it's called with wrong parameters
+    │   ├── when called for itself
+    │   │   └── it should revert with 'Market: cannot execute on itself'
+    │   ├── when buyCollateral is called and leverageExecutor is address0
+    │   │   └── it should revert
+    │   └── when position is not solvent
+    │       └── it should revert
+    ├── when it's called for a valid sender by itself
+    │   ├── when leverage executor returns amount zero
+    │   │   └── it should revert
+    │   ├── when borrow cap is not reached
+    │   │   ├── it should increase asset supply
+    │   │   ├── it should increase 'totalBorrow.base'
+    │   │   ├── it should increase 'totalBorrow.elastic'
+    │   │   ├── it should increase 'userBorrowPart'
+    │   │   ├── it should increase 'userCollateralShare'
+    │   │   ├── it should increase 'totalCollateralShare'
+    │   │   ├── it should increase market's YieldBox balance
+    │   │   └── when supply share is not zero
+    │   │       └── it should withdraw from user's YieldBox balance
+    │   └── when borrow cap is reached
+    │       └── it should revert
+    └── when it's called from another user
+        ├── when user does not have enough allowance
+        │   └── it should revert with 'Market: not approved'
+        └── when user has been given allowance
+            ├── when leverage executor returns amount0
+            │   └── it should revert
+            ├── when borrow cap is not met
+            │   ├── it should increase asset supply
+            │   ├── it should increase 'totalBorrow.base'
+            │   ├── it should increase 'totalBorrow.elastic'
+            │   ├── it should increase 'userBorrowPart'
+            │   ├── it should increase 'userCollateralShare'
+            │   ├── it should increase 'totalCollateralShare'
+            │   ├── it should increase market's YieldBox balance
+            │   └── when supply share is non-zero
+            │       └── it should withdraw from user's YieldBox balance
+            └── when borrow cap is met
+                └── it should revert

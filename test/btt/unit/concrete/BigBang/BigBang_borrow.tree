@@ -1,13 +1,54 @@
 BigBang_borrow.t.sol
-├── when borrow is called and contract is paused
-│   └── it should revert
-├── when borrow is called for the contract itself
-│   └── it should revert
-├── when borrow is called with amount smaller than minBorrowAmount
-│   └── it should revert
-├── when borrow is called for sender
-│   └── it should not revert
-├── when borrow is called for another user without allowed borrowed
-│   └── it should revert
-└── when borrow is called for another user with allowed borrowed
-    └── it should not revert
+├── when contract is paused
+│   └── it should revert with 'Market: paused'
+└── when contract is not puased
+    ├── when called for itself
+    │   └── it should revert with 'Market: cannot execute on itself'
+    ├── given amount is too low
+    │   └── it should revert
+    ├── when called for a valid sender by itself
+    │   ├── when position is solvent
+    │   │   ├── given borrow cap is not reached yet
+    │   │   │   ├── when opening fee is not 0
+    │   │   │   │   ├── it should emit LogBorrow
+    │   │   │   │   ├── it should increase asset supply
+    │   │   │   │   ├── it should increase 'totalBorrow.base'
+    │   │   │   │   ├── it should increase 'totalBorrow.elastic'
+    │   │   │   │   ├── it should increase 'userBorrowPart'
+    │   │   │   │   ├── it should increase user's YieldBox position
+    │   │   │   │   └── it should have a 'userBorrowPart' equal to amount + fee
+    │   │   │   └── when opening fee is 0
+    │   │   │       ├── it should emit LogBorrow
+    │   │   │       ├── it should increase asset supply
+    │   │   │       ├── it should increase 'totalBorrow.base'
+    │   │   │       ├── it should increase 'totalBorrow.elastic'
+    │   │   │       ├── it should increase 'userBorrowPart'
+    │   │   │       ├── it should increase user's YieldBox position
+    │   │   │       └── it should have a 'userBorrowPart' equal to the borrowed amount
+    │   │   └── when borrow cap is fully reached
+    │   │       └── it should revert
+    │   └── when position is not solvent
+    │       └── it should revert with 'Market: insolvent'
+    └── when called from another user
+        ├── given user does not have enough allowance
+        │   └── it should revert with 'Market: not approved'
+        └── given user has allowance
+            ├── given borrow cap is not reached
+            │   ├── when opening fee is not zero
+            │   │   ├── it should emit LogBorrow
+            │   │   ├── it should increase asset supply
+            │   │   ├── it should increase 'totalBorrow.base'
+            │   │   ├── it should increase 'totalBorrow.elastic'
+            │   │   ├── it should increase 'userBorrowPart'
+            │   │   ├── it should increase user's YieldBox position
+            │   │   └── it should have a 'userBorrowPart' equal to amount + fee
+            │   └── when opening fee is zero
+            │       ├── it should emit LogBorrow
+            │       ├── it should increase asset supply
+            │       ├── it should increase 'totalBorrow.base'
+            │       ├── it should increase 'totalBorrow.elastic'
+            │       ├── it should increase 'userBorrowPart'
+            │       ├── it should increase user's YieldBox position
+            │       └── it should have a 'userBorrowPart' equal to the borrowed amount
+            └── when borrow cap is reached
+                └── it should revert

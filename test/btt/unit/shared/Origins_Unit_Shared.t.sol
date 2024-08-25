@@ -13,11 +13,8 @@ import {Origins} from "contracts/markets/Origins/Origins.sol";
 import {Markets_Unit_Shared} from "./Markets_Unit_Shared.t.sol";
 
 abstract contract Origins_Unit_Shared is Markets_Unit_Shared {
-    MarketHelper public marketHelper;
-
     function setUp() public virtual override {
         super.setUp();
-        marketHelper = new MarketHelper();
     }
 
     function _registerDefaultOrigins() internal returns (address) {

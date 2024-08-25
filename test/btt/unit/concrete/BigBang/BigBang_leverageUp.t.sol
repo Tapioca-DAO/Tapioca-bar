@@ -1,252 +1,410 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.22;
 
-import {LeverageExecutorMock_test} from "../../../mocks/LeverageExecutorMock_test.sol";
-
-// dependencies
-import {ICluster} from "tapioca-periph/interfaces/periph/ICluster.sol";
+// Tapioca
 import {Module} from "tapioca-periph/interfaces/bar/IMarket.sol";
 import {BigBang} from "contracts/markets/bigBang/BigBang.sol";
 import {Market} from "contracts/markets/Market.sol";
 
-import {ILeverageExecutor} from "tapioca-periph/interfaces/bar/ILeverageExecutor.sol";
-import {IERC20} from "@boringcrypto/boring-solidity/contracts/ERC20.sol";
+import {IPearlmit} from "tapioca-periph/pearlmit/Pearlmit.sol";
+import {IMarket} from "tapioca-periph/interfaces/bar/ISingularity.sol";
 
+// tests
 import {BigBang_Unit_Shared} from "../../shared/BigBang_Unit_Shared.t.sol";
 
 contract BigBang_buyCollateral is BigBang_Unit_Shared {
-    LeverageExecutorMock_test public leverageExecutor;
-
-    function setUp() public override {
-        super.setUp();
-
-        leverageExecutor = new LeverageExecutorMock_test();
-    }
-
-    function test_RevertWhen_BuyCollateralIsCalledAndContractIsPaused() external {
-        BigBang bb = BigBang(payable(_registerDefaultBigBang()));
-
-        ICluster _cl = penrose.cluster();
-        _cl.setRoleForContract(address(this), keccak256("PAUSABLE"), true);
-        bb.updatePause(Market.PauseType.LeverageBuy, true);
-
-        bytes memory leverageData = abi.encode(1000, "");
-        (Module[] memory modules, bytes[] memory calls) =
-            marketHelper.buyCollateral(address(this), 1 ether, 0, leverageData);
-
+    function test_buyCollateral_RevertWhen_WhenContractIsPaused(uint256 leverageAmount) external whenContractIsPaused {
+        (Module[] memory modules, bytes[] memory calls) = _getLeverageUpData(leverageAmount, 0, address(this));
+        // **** Main BB market ****
+        // it should revert with 'Market: paused'
         vm.expectRevert("Market: paused");
-        bb.execute(modules, calls, true);
+        mainBB.execute(modules, calls, true);
+
+        // **** Secondary BB market ****
+        // it should revert with 'Market: paused'
+        vm.expectRevert("Market: paused");
+        secondaryBB.execute(modules, calls, true);
     }
 
-    function test_RevertWhen_BuyCollateralIsCalledForTheContractItself() external {
-        BigBang bb = BigBang(payable(_registerDefaultBigBang()));
-        _setPenroseBigBangDefaults(address(bb));
+    function test_buyCollateral_RevertWhen_WhenCalledForItself(uint256 leverageAmount)
+        external
+        whenContractIsNotPaused
+    {
+        (Module[] memory modules, bytes[] memory calls) = _getLeverageUpData(leverageAmount, 0, address(mainBB));
 
-        bytes memory leverageData = abi.encode(1000, "");
-        (Module[] memory modules, bytes[] memory calls) =
-            marketHelper.buyCollateral(address(bb), 1 ether, 0, leverageData);
-
+        // **** Main BB market ****
+        // it should revert with 'Market: cannot execute on itself'
         vm.expectRevert("Market: cannot execute on itself");
-        bb.execute(modules, calls, true);
+        mainBB.execute(modules, calls, true);
+
+        // **** Secondary BB market ****
+        (modules, calls) = _getLeverageUpData(leverageAmount, 0, address(secondaryBB));
+        // it should revert with 'Market: cannot execute on itself'
+        vm.expectRevert("Market: cannot execute on itself");
+        secondaryBB.execute(modules, calls, true);
     }
 
-    function test_RevertWhen_BuyCollateralIsCalledAndLeverageExecutorIsAddress0() external {
-        BigBang bb = BigBang(payable(_registerDefaultBigBang()));
-        _setPenroseBigBangDefaults(address(bb));
-
-        bytes memory leverageData = abi.encode(1000, "");
-        (Module[] memory modules, bytes[] memory calls) =
-            marketHelper.buyCollateral(address(this), 1 ether, 0, leverageData);
-
-        address[] memory mc = new address[](1);
-        bytes[] memory data = new bytes[](1);
-
-        mc[0] = address(bb);
-        data[0] = abi.encodeWithSelector(Market.setLeverageExecutor.selector, ILeverageExecutor(address(0)));
-        (bool[] memory success,) = penrose.executeMarketFn(mc, data, true);
-        assertTrue(success[0]);
-
-        // LeverageExecutorNotValid
+    function test_buyCollateral_RevertWhen_BuyCollateralIsCalledAndLeverageExecutorIsAddressZero(uint256 leverageAmount)
+        external
+        whenContractIsNotPaused
+    {
+        // **** Main BB market ****
+        _setLeverageExecutor(address(0), mainBB);
+        (Module[] memory modules, bytes[] memory calls) = _getLeverageUpData(leverageAmount, 0, address(this));
+        // it should revert
+        //      │   │   │   └─ ← [Revert] LeverageExecutorNotValid()
+        // │   │   └─ ← [Revert] EvmError: Revert
+        // │   └─ ← [Revert] EvmError: Revert
         vm.expectRevert();
-        bb.execute(modules, calls, true);
+        mainBB.execute(modules, calls, true);
+
+        // **** Secondary BB market ****
+        _setLeverageExecutor(address(0), secondaryBB);
+        (modules, calls) = _getLeverageUpData(leverageAmount, 0, address(this));
+        // it should revert
+        //      │   │   │   └─ ← [Revert] LeverageExecutorNotValid()
+        // │   │   └─ ← [Revert] EvmError: Revert
+        // │   └─ ← [Revert] EvmError: Revert
+        vm.expectRevert();
+        secondaryBB.execute(modules, calls, true);
     }
 
-    function test_WhenBuyCollateralIsCalledForSender() external {
-        BigBang bb = BigBang(payable(_registerDefaultBigBang()));
-        _setPenroseBigBangDefaults(address(bb));
+    function test_buyCollateral_RevertWhen_PositionIsNotSolvent(
+        uint256 leverageAmount,
+        uint256 collateralAmount,
+        uint256 borrowAmount
+    )
+        external
+        whenContractIsNotPaused
+        whenOracleRateIsEth
+        whenAssetOracleRateIsAfterMin
+        whenCollateralAmountIsValid(collateralAmount)
+    {
+        borrowAmount = _boundBorrowAmount(borrowAmount, collateralAmount);
 
-        _addCollateral(bb);
+        // add collateral
+        _addCollateral(collateralAmount, mainBB, address(this), address(this), address(this), address(this), false);
 
-        _borrow(bb);
+        // borrow
+        _borrow(borrowAmount, mainBB, address(this), address(this), address(this));
 
-        _setLeverageExecutor(bb);
+        // assure insolvency
+        uint256 maxBorrowAmount = _computeMaxBorrowAmount(collateralAmount, IMarket(address(mainBB)));
+        leverageAmount = maxBorrowAmount * 2; //_boundLeverageUpAmount(leverageAmount, mainBB);
+        uint256 supplyAmount = 0;
+        oracle.set(1e18);
 
-        // fill leverage executor
-        uint256 amount = 0.5 ether;
-        deal(address(bb._collateral()), address(leverageExecutor), amount);
-
-        _addToYieldBox(address(bb), bb._asset(), bb._assetId(), amount);
-
-        bytes memory leverageData = abi.encode(amount);
         (Module[] memory modules, bytes[] memory calls) =
-            marketHelper.buyCollateral(address(this), amount, 0, leverageData);
-
-        uint256 userBorrowPartBefore = bb._userBorrowPart(address(this));
-        uint256 userCollateralBefore = bb._userCollateralShare(address(this));
-        bb.execute(modules, calls, true);
-        uint256 userBorrowPartAfter = bb._userBorrowPart(address(this));
-        uint256 userCollateralAfter = bb._userCollateralShare(address(this));
-
-        assertGt(userBorrowPartAfter, userBorrowPartBefore);
-        assertGt(userCollateralAfter, userCollateralBefore);
-    }
-
-    function test_RevertWhen_BuyCollateralIsCalledForAnotherUserWithoutAllowedBorrowed() external {
-        BigBang bb = BigBang(payable(_registerDefaultBigBang()));
-        _setPenroseBigBangDefaults(address(bb));
-
-        _addCollateral(bb);
-
-        _borrow(bb);
-
-        _setLeverageExecutor(bb);
-
-        // fill leverage executor
-        uint256 amount = 0.5 ether;
-        deal(address(bb._collateral()), address(leverageExecutor), amount);
-
-        _addToYieldBox(address(bb), bb._asset(), bb._assetId(), amount);
-
-        bytes memory leverageData = abi.encode(amount);
-        (Module[] memory modules, bytes[] memory calls) =
-            marketHelper.buyCollateral(address(this), amount, 0, leverageData);
-
-        vm.startPrank(userA);
-        vm.expectRevert("Market: not approved");
-        bb.execute(modules, calls, true);
-        vm.stopPrank();
-    }
-
-    function test_WhenBuyCollateralIsCalledForAnotherUserWithAllowedBorrowed() external {
-        BigBang bb = BigBang(payable(_registerDefaultBigBang()));
-        _setPenroseBigBangDefaults(address(bb));
-
-        uint256 amount = 0.5 ether;
-        {
-            _addCollateral(bb);
-
-            _borrow(bb);
-
-            _setLeverageExecutor(bb);
-
-            // fill leverage executor
-            deal(address(bb._collateral()), address(leverageExecutor), amount);
-
-            _addToYieldBox(address(bb), bb._asset(), bb._assetId(), amount);
-        }
-
-        bytes memory leverageData = abi.encode(amount);
-        (Module[] memory modules, bytes[] memory calls) =
-            marketHelper.buyCollateral(address(this), amount, 0, leverageData);
-
-        bb.approveBorrow(address(userA), type(uint256).max);
-
-        uint256 userBorrowPartBefore = bb._userBorrowPart(address(this));
-        uint256 userCollateralBefore = bb._userCollateralShare(address(this));
-        uint256 marketYbBalanceBefore = yieldBox.balanceOf(address(bb), bb._collateralId());
-        uint256 userYbBalanceBefore = yieldBox.balanceOf(address(this), bb._collateralId());
-
-        vm.prank(userA);
-        bb.execute(modules, calls, true);
-
-        uint256 userBorrowPartAfter = bb._userBorrowPart(address(this));
-        uint256 userCollateralAfter = bb._userCollateralShare(address(this));
-        uint256 marketYbBalanceAfter = yieldBox.balanceOf(address(bb), bb._collateralId());
-        uint256 userYbBalanceAfter = yieldBox.balanceOf(address(this), bb._collateralId());
-
-        assertGt(userBorrowPartAfter, userBorrowPartBefore);
-        assertGt(userCollateralAfter, userCollateralBefore);
-        assertGt(marketYbBalanceAfter, marketYbBalanceBefore);
-        assertEq(userYbBalanceAfter, userYbBalanceBefore);
-    }
-
-    function test_RevertWhen_BuyCollateralIsCalledAndUserIsNotSolventAtTheEnd() external {
-        BigBang bb = BigBang(payable(_registerDefaultBigBang()));
-        _setPenroseBigBangDefaults(address(bb));
-
-        _addCollateral(bb);
-
-        _borrow(bb);
-
-        _setLeverageExecutor(bb);
-
-        // fill leverage executor
-        uint256 amount = 100 ether;
-        deal(address(bb._collateral()), address(leverageExecutor), amount);
-
-        _addToYieldBox(address(bb), bb._asset(), bb._assetId(), amount);
-
-        bytes memory leverageData = abi.encode(amount);
-        (Module[] memory modules, bytes[] memory calls) =
-            marketHelper.buyCollateral(address(this), amount, 0, leverageData);
-
+            _getLeverageUpData(leverageAmount, supplyAmount, address(this));
         vm.expectRevert("Market: insolvent");
-        bb.execute(modules, calls, true);
+        mainBB.execute(modules, calls, true);
     }
 
-    function _setLeverageExecutor(BigBang bb) private {
-        address[] memory mc = new address[](1);
-        bytes[] memory data = new bytes[](1);
+    function test_buyCollateral_RevertWhen_LeverageExecutorReturnsAmountZero(
+        uint256 collateralAmount,
+        uint256 borrowAmount,
+        uint256 leverageAmount
+    )
+        external
+        whenContractIsNotPaused
+        whenOracleRateIsEth
+        whenAssetOracleRateIsAfterMin
+        whenCollateralAmountIsValid(collateralAmount)
+    {
+        leverageExecutor.setReturnZero(true);
 
-        mc[0] = address(bb);
-        data[0] =
-            abi.encodeWithSelector(Market.setLeverageExecutor.selector, ILeverageExecutor(address(leverageExecutor)));
-        (bool[] memory success,) = penrose.executeMarketFn(mc, data, true);
-        assertTrue(success[0]);
+        borrowAmount = _boundBorrowAmount(borrowAmount, collateralAmount);
+
+        // add collateral
+        _addCollateral(collateralAmount, mainBB, address(this), address(this), address(this), address(this), false);
+
+        // borrow
+        _borrow(borrowAmount, mainBB, address(this), address(this), address(this));
+
+        leverageAmount = _boundLeverageUpAmount(leverageAmount, mainBB);
+
+        (Module[] memory modules, bytes[] memory calls) = _getLeverageUpData(leverageAmount, 0, address(this));
+        //         │   │   │   └─ ← [Revert] CollateralShareNotValid()
+        // │   │   └─ ← [Revert] EvmError: Revert
+        // │   └─ ← [Revert] EvmError: Revert
+        vm.expectRevert();
+        mainBB.execute(modules, calls, true);
     }
 
-    function _addCollateral(BigBang bb) private {
-        // vars
-        IERC20 collateral = IERC20(bb._collateral());
-        uint256 collateralId = bb._collateralId();
+    function test_buyCollateral_WhenBorrowCapIsNotReached(
+        uint256 collateralAmount,
+        uint256 borrowAmount,
+        uint256 leverageAmount
+    )
+        external
+        whenContractIsNotPaused
+        givenBorrowCapIsNotReachedYet
+        whenOracleRateIsEth
+        whenAssetOracleRateIsAfterMin
+        whenCollateralAmountIsValid(collateralAmount)
+    {
+        borrowAmount = _boundBorrowAmount(borrowAmount, collateralAmount);
 
-        // deal amounts
-        uint256 amount = 1 ether;
-        deal(address(collateral), address(this), amount);
+        // **** Main BB market ****
+        _leverageUp(
+            collateralAmount, borrowAmount, leverageAmount, 0, mainBB, address(this), address(this), address(this)
+        );
 
-        // approvals
-        collateral.approve(address(yieldBox), type(uint256).max);
-        collateral.approve(address(pearlmit), type(uint256).max);
-        yieldBox.setApprovalForAll(address(bb), true);
-        yieldBox.setApprovalForAll(address(pearlmit), true);
-        pearlmit.approve(1155, address(yieldBox), collateralId, address(bb), type(uint200).max, uint48(block.timestamp));
+        // **** Secondary BB market ****
+        _leverageUp(
+            collateralAmount, borrowAmount, leverageAmount, 0, secondaryBB, address(this), address(this), address(this)
+        );
+    }
 
-        uint256 share = yieldBox.toShare(collateralId, amount, false);
-        yieldBox.depositAsset(collateralId, address(this), address(this), 0, share);
+    function test_buyCollateral_WhenSupplyShareIsNotZero(
+        uint256 collateralAmount,
+        uint256 borrowAmount,
+        uint256 leverageAmount,
+        uint256 supplyAmount
+    )
+        external
+        whenContractIsNotPaused
+        givenBorrowCapIsNotReachedYet
+        whenOracleRateIsEth
+        whenAssetOracleRateIsAfterMin
+        whenCollateralAmountIsValid(collateralAmount)
+    {
+        borrowAmount = _boundBorrowAmount(borrowAmount, collateralAmount);
+
+        vm.assume(supplyAmount > 0 && supplyAmount < SMALL_AMOUNT);
+
+        // **** Main BB market ****
+        _spawnAsset(supplyAmount, address(this));
+        uint256 share = yieldBox.toShare(mainBB._assetId(), supplyAmount, false);
+        _depositToYieldBox(mainBB._asset(), mainBB._assetId(), share, address(this), address(this));
+        _leverageUp(
+            collateralAmount,
+            borrowAmount,
+            leverageAmount,
+            supplyAmount,
+            mainBB,
+            address(this),
+            address(this),
+            address(this)
+        );
+
+        // // **** Secondary BB market ****
+        _spawnAsset(supplyAmount, address(this));
+        share = yieldBox.toShare(secondaryBB._assetId(), supplyAmount, false);
+        _depositToYieldBox(secondaryBB._asset(), secondaryBB._assetId(), share, address(this), address(this));
+        _leverageUp(
+            collateralAmount,
+            borrowAmount,
+            leverageAmount,
+            supplyAmount,
+            secondaryBB,
+            address(this),
+            address(this),
+            address(this)
+        );
+    }
+
+    function test_buyCollateral_RevertWhen_BorrowCapIsReached(
+        uint256 collateralAmount,
+        uint256 borrowAmount,
+        uint256 leverageAmount
+    )
+        external
+        whenContractIsNotPaused
+        whenOracleRateIsEth
+        whenAssetOracleRateIsAfterMin
+        whenCollateralAmountIsValid(collateralAmount)
+    {
+        borrowAmount = _boundBorrowAmount(borrowAmount, collateralAmount);
+        uint256 supplyAmount = 0;
+
+        // add collateral
+        _addCollateral(collateralAmount, mainBB, address(this), address(this), address(this), address(this), false);
+
+        // borrow
+        _borrow(borrowAmount, mainBB, address(this), address(this), address(this));
+
+        leverageAmount = _boundLeverageUpAmount(leverageAmount, mainBB);
+        _setBorrowCap(100, mainBB);
+        (Module[] memory modules, bytes[] memory calls) =
+            _getLeverageUpData(leverageAmount, supplyAmount, address(this));
+        //         │   │   │   └─ ← [Revert] BorrowCapReached()
+        // │   │   └─ ← [Revert] EvmError: Revert
+        // │   └─ ← [Revert] EvmError: Revert
+        vm.expectRevert();
+        mainBB.execute(modules, calls, true);
+    }
+
+    function test_buyCollateral_whenItsCalledFromAnotherUser_WhenUserDoesNotHaveEnoughAllowance(
+        uint256 collateralAmount,
+        uint256 borrowAmount,
+        uint256 leverageAmount
+    )
+        external
+        whenContractIsNotPaused
+        givenBorrowCapIsNotReachedYet
+        whenOracleRateIsEth
+        whenAssetOracleRateIsAfterMin
+        whenCollateralAmountIsValid(collateralAmount)
+    {
+        // it should revert with 'Market: not approved'
+        borrowAmount = _boundBorrowAmount(borrowAmount, collateralAmount);
+        uint256 supplyAmount = 0;
+
+        // add collateral
+        _addCollateral(collateralAmount, mainBB, address(this), address(this), address(this), address(this), false);
+
+        // borrow
+        _borrow(borrowAmount, mainBB, address(this), address(this), address(this));
+
+        leverageAmount = _boundLeverageUpAmount(leverageAmount, mainBB);
 
         (Module[] memory modules, bytes[] memory calls) =
-            marketHelper.addCollateral(address(this), address(this), false, 0, share);
-        bb.execute(modules, calls, true);
+            _getLeverageUpData(leverageAmount, supplyAmount, address(this));
+
+        _resetPrank(userA);
+        //         │   │   │   └─ ← [Revert] revert: Market: not approved
+        // │   │   └─ ← [Revert] revert: Market: not approved
+        // │   └─ ← [Revert] revert: Market: not approved
+        vm.expectRevert();
+        mainBB.execute(modules, calls, true);
     }
 
-    function _borrow(BigBang bb) private {
-        uint256 borrowAmount = 0.5 ether;
+    function test_buyCollateral_whenItsCalledFromAnotherUser_whenUserHasBeenGivenAllowance_RevertWhen_LeverageExecutorReturnsAmountZero(
+        uint256 collateralAmount,
+        uint256 borrowAmount,
+        uint256 leverageAmount
+    )
+        external
+        whenContractIsNotPaused
+        givenBorrowCapIsNotReachedYet
+        whenOracleRateIsEth
+        whenAssetOracleRateIsAfterMin
+        whenCollateralAmountIsValid(collateralAmount)
+    {
+        // it should revert
+        leverageExecutor.setReturnZero(true);
+        borrowAmount = _boundBorrowAmount(borrowAmount, collateralAmount);
+        uint256 supplyAmount = 0;
+
+        // add collateral
+        _addCollateral(collateralAmount, mainBB, address(this), address(this), address(this), address(this), false);
+
+        // borrow
+        _borrow(borrowAmount, mainBB, address(this), address(this), address(this));
+
+        leverageAmount = _boundLeverageUpAmount(leverageAmount, mainBB);
+
         (Module[] memory modules, bytes[] memory calls) =
-            marketHelper.borrow(address(this), address(this), borrowAmount);
-        bb.execute(modules, calls, true);
+            _getLeverageUpData(leverageAmount, supplyAmount, address(this));
+
+        mainBB.approveBorrow(address(userA), type(uint256).max);
+        _resetPrank(userA);
+        //         │   │   │   └─ ← [Revert] CollateralShareNotValid()
+        // │   │   └─ ← [Revert] EvmError: Revert
+        // │   └─ ← [Revert] EvmError: Revert
+        vm.expectRevert();
+        mainBB.execute(modules, calls, true);
     }
 
-    function _addToYieldBox(address _bb, address _asset, uint256 _assetId, uint256 _amount) private {
-        deal(_asset, address(this), _amount);
+    function test_buyCollateral_whenItsCalledFromAnotherUser_whenUserHasBeenGivenAllowance_WhenBorrowCapIsNotMet(
+        uint256 collateralAmount,
+        uint256 borrowAmount,
+        uint256 leverageAmount
+    )
+        external
+        whenContractIsNotPaused
+        givenBorrowCapIsNotReachedYet
+        whenOracleRateIsEth
+        whenAssetOracleRateIsAfterMin
+        whenCollateralAmountIsValid(collateralAmount)
+    {
+        borrowAmount = _boundBorrowAmount(borrowAmount, collateralAmount);
 
-        usdo.approve(address(yieldBox), type(uint256).max);
-        usdo.approve(address(pearlmit), type(uint256).max);
-        yieldBox.setApprovalForAll(_bb, true);
-        yieldBox.setApprovalForAll(address(pearlmit), true);
-        pearlmit.approve(1155, address(yieldBox), _assetId, _bb, type(uint200).max, uint48(block.timestamp));
-        yieldBox.depositAsset(_assetId, address(this), address(this), _amount, 0);
+        // **** Main BB market ****
+        mainBB.approveBorrow(address(userA), type(uint256).max);
+        _leverageUp(collateralAmount, borrowAmount, leverageAmount, 0, mainBB, userA, address(this), address(this));
 
-        usdo.setMinterStatus(address(this), true);
-        usdo.mint(address(this), _amount);
+        // **** Secondary BB market ****
+        _resetPrank(address(this));
+        secondaryBB.approveBorrow(address(userA), type(uint256).max);
+        _leverageUp(collateralAmount, borrowAmount, leverageAmount, 0, secondaryBB, userA, address(this), address(this));
+    }
+
+    function test_buyCollateral_whenItsCalledFromAnotherUser_whenUserHasBeenGivenAllowance_WhenSupplyShareIsNon_zero(
+        uint256 collateralAmount,
+        uint256 borrowAmount,
+        uint256 leverageAmount,
+        uint256 supplyAmount
+    )
+        external
+        whenContractIsNotPaused
+        givenBorrowCapIsNotReachedYet
+        whenOracleRateIsEth
+        whenAssetOracleRateIsAfterMin
+        whenCollateralAmountIsValid(collateralAmount)
+    {
+        borrowAmount = _boundBorrowAmount(borrowAmount, collateralAmount);
+        vm.assume(supplyAmount > 0 && supplyAmount < SMALL_AMOUNT);
+
+        // **** Main BB market ****
+        _spawnAsset(supplyAmount, address(this));
+        uint256 share = yieldBox.toShare(mainBB._assetId(), supplyAmount, false);
+        _depositToYieldBox(mainBB._asset(), mainBB._assetId(), share, address(this), address(this));
+        mainBB.approveBorrow(address(userA), type(uint256).max);
+        _leverageUp(
+            collateralAmount, borrowAmount, leverageAmount, supplyAmount, mainBB, userA, address(this), address(this)
+        );
+
+        // **** Secondary BB market ****
+        _resetPrank(address(this));
+        _spawnAsset(supplyAmount, address(this));
+        share = yieldBox.toShare(secondaryBB._assetId(), supplyAmount, false);
+        _depositToYieldBox(secondaryBB._asset(), secondaryBB._assetId(), share, address(this), address(this));
+        secondaryBB.approveBorrow(address(userA), type(uint256).max);
+        _leverageUp(
+            collateralAmount,
+            borrowAmount,
+            leverageAmount,
+            supplyAmount,
+            secondaryBB,
+            userA,
+            address(this),
+            address(this)
+        );
+    }
+
+    function test_buyCollateral_whenItsCalledFromAnotherUser_whenUserHasBeenGivenAllowance_RevertWhen_BorrowCapIsMet(
+        uint256 collateralAmount,
+        uint256 borrowAmount,
+        uint256 leverageAmount,
+        uint256 supplyAmount
+    )
+        external
+        whenContractIsNotPaused
+        givenBorrowCapIsNotReachedYet
+        whenOracleRateIsEth
+        whenAssetOracleRateIsAfterMin
+        whenCollateralAmountIsValid(collateralAmount)
+    {
+        borrowAmount = _boundBorrowAmount(borrowAmount, collateralAmount);
+        vm.assume(supplyAmount > 0 && supplyAmount < SMALL_AMOUNT);
+
+        // add collateral
+        _addCollateral(collateralAmount, mainBB, address(this), address(this), address(this), address(this), false);
+
+        // borrow
+        _borrow(borrowAmount, mainBB, address(this), address(this), address(this));
+
+        leverageAmount = _boundLeverageUpAmount(leverageAmount, mainBB);
+        _setBorrowCap(100, mainBB);
+        (Module[] memory modules, bytes[] memory calls) =
+            _getLeverageUpData(leverageAmount, supplyAmount, address(this));
+        //         │   │   │   └─ ← [Revert] BorrowCapReached()
+        // │   │   └─ ← [Revert] EvmError: Revert
+        // │   └─ ← [Revert] EvmError: Revert
+        _resetPrank(userA);
+        vm.expectRevert();
+        mainBB.execute(modules, calls, true);
     }
 }

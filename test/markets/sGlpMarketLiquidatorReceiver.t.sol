@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.22;
 
-import {sGlpMarketLiquidatorReceiver} from "contracts/liquidators/sGlpMarketLiquidatorReceiver.sol";
+import {SGlpMarketLiquidatorReceiver} from "contracts/liquidators/SGlpMarketLiquidatorReceiver.sol";
 import {SToftInfo, SLeverageSwapData} from "contracts/markets/leverage/BaseLeverageExecutor.sol";
 // import {IERC20} from "@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -37,7 +37,7 @@ contract sGlpMarketLiquidatorReceiverTest is BaseLiquidatorReceiverTest {
     ERC20Mock usdo;
     ERC20Mock sGlp;
     TOFTMock collateral;
-    sGlpMarketLiquidatorReceiver receiver;
+    SGlpMarketLiquidatorReceiver receiver;
     YieldBox yieldBox;
     Cluster cluster;
     Pearlmit pearlmit;
@@ -96,7 +96,7 @@ contract sGlpMarketLiquidatorReceiverTest is BaseLiquidatorReceiverTest {
             swapperTarget = new ZeroXSwapperMockTarget();
             swapper = new ZeroXSwapper(address(swapperTarget), ICluster(address(cluster)), address(this));
 
-            receiver = new sGlpMarketLiquidatorReceiver(address(weth), ICluster(address(cluster)), address(swapper), IGmxRewardRouterV2(address(gmxMock)), IGmxGlpManager(address(gmxMock)));
+            receiver = new SGlpMarketLiquidatorReceiver(address(weth), ICluster(address(cluster)), address(swapper), IGmxRewardRouterV2(address(gmxMock)), IGmxGlpManager(address(gmxMock)), address(this));
         }
 
         {
@@ -152,10 +152,10 @@ contract sGlpMarketLiquidatorReceiverTest is BaseLiquidatorReceiverTest {
             )
         });
 
-        sGlpMarketLiquidatorReceiver.SGlpSwapData memory data = sGlpMarketLiquidatorReceiver.SGlpSwapData({
+        SGlpMarketLiquidatorReceiver.SGlpSwapData memory data = SGlpMarketLiquidatorReceiver.SGlpSwapData({
             token: address(usdc),
             minAmountOut: 0,
-            zeroXswapData: sGlpMarketLiquidatorReceiver.SSwapData({
+            zeroXswapData: SGlpMarketLiquidatorReceiver.SSwapData({
                 minAmountOut: minAmountOut,
                 data: zeroXSwapData
             })
@@ -187,10 +187,10 @@ contract sGlpMarketLiquidatorReceiverTest is BaseLiquidatorReceiverTest {
             )
         });
 
-        sGlpMarketLiquidatorReceiver.SGlpSwapData memory data = sGlpMarketLiquidatorReceiver.SGlpSwapData({
+        SGlpMarketLiquidatorReceiver.SGlpSwapData memory data = SGlpMarketLiquidatorReceiver.SGlpSwapData({
             token: address(usdc),
             minAmountOut: 0,
-            zeroXswapData: sGlpMarketLiquidatorReceiver.SSwapData({
+            zeroXswapData: SGlpMarketLiquidatorReceiver.SSwapData({
                 minAmountOut: minAmountOut,
                 data: zeroXSwapData
             })

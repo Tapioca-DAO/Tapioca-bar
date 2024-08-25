@@ -29,7 +29,7 @@ contract Origins_removeCollateral is Origins_Unit_Shared {
 
         uint256 borrowAmount = 9e17;
         _addCollateral(org);
-        org.borrow(9e17);
+        org.borrow(borrowAmount);
 
         vm.expectRevert("Market: insolvent");
         org.removeCollateral(0.1 ether);
