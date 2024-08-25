@@ -1,0 +1,13 @@
+BigBang_liquidate.t.sol
+├── when liquidate is called for paused contract
+│   └── it should revert
+├── when liquidate is called for no users
+│   └── it should revert
+├── when liquidate is called for different arrays
+│   └── it should revert
+├── when liquidate is called for solvent users
+│   └── it should revert
+├── when liquidate is called and returnedShare is less than borrowShare
+│   └── it should revert
+└── when liquidate is called with valid parameters
+    └── it should not revert
