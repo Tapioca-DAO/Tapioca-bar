@@ -6,7 +6,7 @@ import {TOFTMock_test} from "../../../mocks/TOFTMock_test.sol";
 
 // contracts
 import {MarketLiquidatorReceiver_Unit_Shared} from "../../shared/MarketLiquidatorReceiver_Unit_Shared.t.sol";
-import {Pearlmit, IPearlmit} from "tapioca-periph/pearlmit/Pearlmit.sol";
+import {Pearlmit, IPearlmit} from "tap-utils/pearlmit/Pearlmit.sol";
 
 contract MarketLiquidatorReceiver_querySellToken is MarketLiquidatorReceiver_Unit_Shared {
     TOFTMock_test toft;

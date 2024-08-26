@@ -11,15 +11,15 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {
     ERC20WithoutStrategy, IStrategy, IYieldBox as IBoringYieldBox
 } from "yieldbox/strategies/ERC20WithoutStrategy.sol";
-import {PearlmitHandler, IPearlmit} from "tapioca-periph/pearlmit/PearlmitHandler.sol";
+import {PearlmitHandler, IPearlmit} from "tap-utils/pearlmit/PearlmitHandler.sol";
 import {RevertMsgDecoder} from "./usdo/libraries/RevertMsgDecoder.sol";
-import {ICluster} from "tapioca-periph/interfaces/periph/ICluster.sol";
-import {IMarket} from "tapioca-periph/interfaces/bar/ISingularity.sol";
-import {ITwTap} from "tapioca-periph/interfaces/tap-token/ITwTap.sol";
-import {IPenrose} from "tapioca-periph/interfaces/bar/IPenrose.sol";
-import {IBigBang} from "tapioca-periph/interfaces/bar/IBigBang.sol";
+import {ICluster} from "tap-utils/interfaces/periph/ICluster.sol";
+import {IMarket} from "tap-utils/interfaces/bar/ISingularity.sol";
+import {ITwTap} from "tap-utils/interfaces/tap-token/ITwTap.sol";
+import {IPenrose} from "tap-utils/interfaces/bar/IPenrose.sol";
+import {IBigBang} from "tap-utils/interfaces/bar/IBigBang.sol";
 import {TokenType} from "yieldbox/enums/YieldBoxTokenType.sol";
-import {IUsdo} from "tapioca-periph/interfaces/oft/IUsdo.sol";
+import {IUsdo} from "tap-utils/interfaces/oft/IUsdo.sol";
 import {IYieldBox} from "yieldbox/interfaces/IYieldBox.sol";
 import {SafeApprove} from "./libraries/SafeApprove.sol";
 

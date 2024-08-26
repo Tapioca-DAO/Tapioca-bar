@@ -7,8 +7,8 @@ import {IERC20} from "@boringcrypto/boring-solidity/contracts/ERC20.sol";
 import {BigBang} from "contracts/markets/bigBang/BigBang.sol";
 
 // dependencies
-import {ILeverageExecutor} from "tapioca-periph/interfaces/bar/ILeverageExecutor.sol";
-import {ITapiocaOracle} from "tapioca-periph/interfaces/periph/ITapiocaOracle.sol";
+import {ILeverageExecutor} from "tap-utils/interfaces/bar/ILeverageExecutor.sol";
+import {ITapiocaOracle} from "tap-utils/interfaces/periph/ITapiocaOracle.sol";
 
 import {BigBang_Unit_Shared} from "../../shared/BigBang_Unit_Shared.t.sol";
 

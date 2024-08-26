@@ -14,7 +14,7 @@ import {
     ExerciseOptionsMsg,
     MarketRemoveAssetMsg,
     MarketLendOrRepayMsg
-} from "tapioca-periph/interfaces/oft/IUsdo.sol";
+} from "tap-utils/interfaces/oft/IUsdo.sol";
 
 /*
 

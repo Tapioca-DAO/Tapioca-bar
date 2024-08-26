@@ -2,9 +2,9 @@
 pragma solidity 0.8.22;
 
 // Tapioca
-import {IBigBangDebtRateHelper} from "tapioca-periph/interfaces/bar/IBigBangDebtRateHelper.sol";
-import {IPenrose} from "tapioca-periph/interfaces/bar/IPenrose.sol";
-import {IBigBang} from "tapioca-periph/interfaces/bar/IBigBang.sol";
+import {IBigBangDebtRateHelper} from "tap-utils/interfaces/bar/IBigBangDebtRateHelper.sol";
+import {IPenrose} from "tap-utils/interfaces/bar/IPenrose.sol";
+import {IBigBang} from "tap-utils/interfaces/bar/IBigBang.sol";
 
 
 /*

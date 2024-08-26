@@ -7,9 +7,9 @@ import {BoringERC20, IERC20} from "@boringcrypto/boring-solidity/contracts/libra
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 // Tapioca
-import {IMarketLiquidatorReceiver} from "tapioca-periph/interfaces/bar/IMarketLiquidatorReceiver.sol";
-import {IYieldBox} from "tapioca-periph/interfaces/yieldbox/IYieldBox.sol";
-import {ICluster} from "tapioca-periph/interfaces/periph/ICluster.sol";
+import {IMarketLiquidatorReceiver} from "tap-utils/interfaces/bar/IMarketLiquidatorReceiver.sol";
+import {IYieldBox} from "tap-utils/interfaces/yieldbox/IYieldBox.sol";
+import {ICluster} from "tap-utils/interfaces/periph/ICluster.sol";
 import {SafeApprove} from "../../libraries/SafeApprove.sol";
 import {SGLCommon} from "./SGLCommon.sol";
 

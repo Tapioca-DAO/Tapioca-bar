@@ -10,27 +10,27 @@ import {IERC20} from "@boringcrypto/boring-solidity/contracts/libraries/BoringER
 
 // Tapioca
 import {SimpleLeverageExecutor} from "contracts/markets/leverage/SimpleLeverageExecutor.sol";
-import {ILeverageExecutor} from "tapioca-periph/interfaces/bar/ILeverageExecutor.sol";
+import {ILeverageExecutor} from "tap-utils/interfaces/bar/ILeverageExecutor.sol";
 import {SGLInterestHelper} from "contracts/markets/singularity/SGLInterestHelper.sol";
-import {ITapiocaOracle} from "tapioca-periph/interfaces/periph/ITapiocaOracle.sol";
+import {ITapiocaOracle} from "tap-utils/interfaces/periph/ITapiocaOracle.sol";
 import {ERC20WithoutStrategy} from "yieldbox/strategies/ERC20WithoutStrategy.sol";
-import {IZeroXSwapper} from "tapioca-periph/interfaces/periph/IZeroXSwapper.sol";
+import {IZeroXSwapper} from "tap-utils/interfaces/periph/IZeroXSwapper.sol";
 import {SGLLiquidation} from "contracts/markets/singularity/SGLLiquidation.sol";
 import {SGLCollateral} from "contracts/markets/singularity/SGLCollateral.sol";
 import {SGLLeverage} from "contracts/markets/singularity/SGLLeverage.sol";
 import {Singularity} from "contracts/markets/singularity/Singularity.sol";
-import {Pearlmit, IPearlmit} from "tapioca-periph/pearlmit/Pearlmit.sol";
-import {ICluster} from "tapioca-periph/interfaces/periph/ICluster.sol";
+import {Pearlmit, IPearlmit} from "tap-utils/pearlmit/Pearlmit.sol";
+import {ICluster} from "tap-utils/interfaces/periph/ICluster.sol";
 import {SGLBorrow} from "contracts/markets/singularity/SGLBorrow.sol";
 import {IWrappedNative} from "yieldbox/interfaces/IWrappedNative.sol";
-import {IOracle} from "tapioca-periph/oracle/interfaces/IOracle.sol";
-import {IPenrose} from "tapioca-periph/interfaces/bar/IPenrose.sol";
+import {IOracle} from "tap-utils/oracle/interfaces/IOracle.sol";
+import {IPenrose} from "tap-utils/interfaces/bar/IPenrose.sol";
 import {YieldBoxURIBuilder} from "yieldbox/YieldBoxURIBuilder.sol";
 import {SGLInit} from "contracts/markets/singularity/SGLInit.sol";
 import {TokenType} from "yieldbox/enums/YieldBoxTokenType.sol";
 import {IYieldBox} from "yieldbox/interfaces/IYieldBox.sol";
 import {IStrategy} from "yieldbox/interfaces/IStrategy.sol";
-import {Cluster} from "tapioca-periph/Cluster/Cluster.sol";
+import {Cluster} from "tap-utils/Cluster/Cluster.sol";
 import {MagnetarMock} from "../mocks/MagnetarMock.sol";
 import {YieldBox} from "yieldbox/YieldBox.sol";
 import {Penrose} from "contracts/Penrose.sol";

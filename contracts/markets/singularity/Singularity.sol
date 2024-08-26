@@ -7,10 +7,10 @@ import {IERC20} from "@boringcrypto/boring-solidity/contracts/libraries/BoringER
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 // Tapioca
-import {ILeverageExecutor} from "tapioca-periph/interfaces/bar/ILeverageExecutor.sol";
-import {ITapiocaOracle} from "tapioca-periph/interfaces/periph/ITapiocaOracle.sol";
-import {IPenrose} from "tapioca-periph/interfaces/bar/IPenrose.sol";
-import {Module} from "tapioca-periph/interfaces/bar/IMarket.sol";
+import {ILeverageExecutor} from "tap-utils/interfaces/bar/ILeverageExecutor.sol";
+import {ITapiocaOracle} from "tap-utils/interfaces/periph/ITapiocaOracle.sol";
+import {IPenrose} from "tap-utils/interfaces/bar/IPenrose.sol";
+import {Module} from "tap-utils/interfaces/bar/IMarket.sol";
 import {MarketStateView} from "../MarketStateView.sol";
 import {SGLLiquidation} from "./SGLLiquidation.sol";
 import {SGLCollateral} from "./SGLCollateral.sol";

@@ -19,15 +19,15 @@ import {BBBorrow} from "contracts/markets/bigBang/BBBorrow.sol";
 import {BigBang} from "contracts/markets/bigBang/BigBang.sol";
 import {Market} from "contracts/markets/Market.sol";
 
-import {Module} from "tapioca-periph/interfaces/bar/IMarket.sol";
+import {Module} from "tap-utils/interfaces/bar/IMarket.sol";
 
-import {IMarketLiquidatorReceiver} from "tapioca-periph/interfaces/bar/IMarketLiquidatorReceiver.sol";
-import {ILeverageExecutor} from "tapioca-periph/interfaces/bar/ILeverageExecutor.sol";
-import {ITapiocaOracle} from "tapioca-periph/interfaces/periph/ITapiocaOracle.sol";
-import {ICluster} from "tapioca-periph/interfaces/periph/ICluster.sol";
-import {IMarket} from "tapioca-periph/interfaces/bar/ISingularity.sol";
-import {IPenrose} from "tapioca-periph/interfaces/bar/IPenrose.sol";
-import {IPearlmit} from "tapioca-periph/pearlmit/Pearlmit.sol";
+import {IMarketLiquidatorReceiver} from "tap-utils/interfaces/bar/IMarketLiquidatorReceiver.sol";
+import {ILeverageExecutor} from "tap-utils/interfaces/bar/ILeverageExecutor.sol";
+import {ITapiocaOracle} from "tap-utils/interfaces/periph/ITapiocaOracle.sol";
+import {ICluster} from "tap-utils/interfaces/periph/ICluster.sol";
+import {IMarket} from "tap-utils/interfaces/bar/ISingularity.sol";
+import {IPenrose} from "tap-utils/interfaces/bar/IPenrose.sol";
+import {IPearlmit} from "tap-utils/pearlmit/Pearlmit.sol";
 
 import {TOFTMock_test} from "../../mocks/TOFTMock_test.sol";
 

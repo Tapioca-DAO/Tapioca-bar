@@ -2,7 +2,7 @@
 pragma solidity 0.8.22;
 
 // Tapioca
-import {UsdoInitStruct, UsdoModulesInitStruct} from "tapioca-periph/interfaces/oft/IUsdo.sol";
+import {UsdoInitStruct, UsdoModulesInitStruct} from "tap-utils/interfaces/oft/IUsdo.sol";
 import {Usdo} from "contracts/usdo/Usdo.sol";
 
 /*

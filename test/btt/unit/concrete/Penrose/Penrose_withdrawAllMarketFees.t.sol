@@ -7,12 +7,12 @@ import {BigBang_Unit_Shared} from "../../shared/BigBang_Unit_Shared.t.sol";
 import {BigBang} from "contracts/markets/bigBang/BigBang.sol";
 
 // dependencies
-import {ILeverageExecutor} from "tapioca-periph/interfaces/bar/ILeverageExecutor.sol";
-import {ITapiocaOracle} from "tapioca-periph/interfaces/periph/ITapiocaOracle.sol";
-import {IMarket} from "tapioca-periph/interfaces/bar/ISingularity.sol";
-import {ITwTap} from "tapioca-periph/interfaces/tap-token/ITwTap.sol";
+import {ILeverageExecutor} from "tap-utils/interfaces/bar/ILeverageExecutor.sol";
+import {ITapiocaOracle} from "tap-utils/interfaces/periph/ITapiocaOracle.sol";
+import {IMarket} from "tap-utils/interfaces/bar/ISingularity.sol";
+import {ITwTap} from "tap-utils/interfaces/tap-token/ITwTap.sol";
 
-import {IPenrose} from "tapioca-periph/interfaces/bar/IPenrose.sol";
+import {IPenrose} from "tap-utils/interfaces/bar/IPenrose.sol";
 
 contract Penrose_withdrawAllMarketFees is BigBang_Unit_Shared {
     function test_RevertWhen_WithdrawAllMarketFeesIsCalledFromNon_owner() external {

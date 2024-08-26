@@ -2,8 +2,8 @@
 pragma solidity 0.8.22;
 
 // dependencies
-import {ITapiocaOracle} from "tapioca-periph/interfaces/periph/ITapiocaOracle.sol";
-import {ICluster} from "tapioca-periph/interfaces/periph/ICluster.sol";
+import {ITapiocaOracle} from "tap-utils/interfaces/periph/ITapiocaOracle.sol";
+import {ICluster} from "tap-utils/interfaces/periph/ICluster.sol";
 import {Origins} from "contracts/markets/Origins/Origins.sol";
 import {Market} from "contracts/markets/Market.sol";
 

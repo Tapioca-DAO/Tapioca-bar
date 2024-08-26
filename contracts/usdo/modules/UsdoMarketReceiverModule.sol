@@ -7,8 +7,8 @@ import {BytesLib} from "solidity-bytes-utils/contracts/BytesLib.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 // Tapioca
-import {UsdoInitStruct, MarketRemoveAssetMsg, MarketLendOrRepayMsg} from "tapioca-periph/interfaces/oft/IUsdo.sol";
-import {IDepositData, ICommonExternalContracts} from "tapioca-periph/interfaces/common/ICommonData.sol";
+import {UsdoInitStruct, MarketRemoveAssetMsg, MarketLendOrRepayMsg} from "tap-utils/interfaces/oft/IUsdo.sol";
+import {IDepositData, ICommonExternalContracts} from "tap-utils/interfaces/common/ICommonData.sol";
 import {
     IMagnetar,
     MagnetarCall,
@@ -16,13 +16,12 @@ import {
     DepositRepayAndRemoveCollateralFromMarketData,
     MintFromBBAndLendOnSGLData,
     ExitPositionAndRemoveCollateralData
-} from "tapioca-periph/interfaces/periph/IMagnetar.sol";
-import {MagnetarCollateralModule} from "tapioca-periph/Magnetar/modules/MagnetarCollateralModule.sol";
-import {MagnetarOptionModule} from "tapioca-periph/Magnetar/modules/MagnetarOptionModule.sol";
-import {MagnetarMintModule} from "tapioca-periph/Magnetar/modules/MagnetarMintModule.sol";
-import {IMagnetarHelper} from "tapioca-periph/interfaces/periph/IMagnetarHelper.sol";
-import {IMintData} from "tapioca-periph/interfaces/oft/IUsdo.sol";
-import {IMarket} from "tapioca-periph/interfaces/bar/IMarket.sol";
+} from "tap-utils/interfaces/periph/IMagnetar.sol";
+import {IMagnetarCollateralModule, IMagnetarOptionModule,IMagnetarMintModule} from "tap-utils/interfaces/periph/IMagnetar.sol";
+
+import {IMagnetarHelper} from "tap-utils/interfaces/periph/IMagnetarHelper.sol";
+import {IMintData} from "tap-utils/interfaces/oft/IUsdo.sol";
+import {IMarket} from "tap-utils/interfaces/bar/IMarket.sol";
 import {SafeApprove} from "../../libraries/SafeApprove.sol";
 import {UsdoMsgCodec} from "../libraries/UsdoMsgCodec.sol";
 import {BaseUsdo} from "../BaseUsdo.sol";
@@ -174,7 +173,7 @@ contract UsdoMarketReceiverModule is BaseUsdo {
         }
 
         bytes memory call = abi.encodeWithSelector(
-            MagnetarCollateralModule.depositRepayAndRemoveCollateralFromMarket.selector,
+            IMagnetarCollateralModule.depositRepayAndRemoveCollateralFromMarket.selector,
             DepositRepayAndRemoveCollateralFromMarketData({
                 market: msg_.lendParams.market,
                 marketHelper: msg_.lendParams.marketHelper,
@@ -219,7 +218,7 @@ contract UsdoMarketReceiverModule is BaseUsdo {
                 marketHelper: msg_.lendParams.marketHelper
             })
         });
-        bytes memory call = abi.encodeWithSelector(MagnetarMintModule.mintBBLendSGLLockTOLP.selector, _lendData);
+        bytes memory call = abi.encodeWithSelector(IMagnetarMintModule.mintBBLendSGLLockTOLP.selector, _lendData);
         MagnetarCall[] memory magnetarCall = new MagnetarCall[](1);
         magnetarCall[0] = MagnetarCall({
             id: uint8(MagnetarAction.MintModule),
@@ -251,7 +250,7 @@ contract UsdoMarketReceiverModule is BaseUsdo {
 
     function _removeAsset(MarketRemoveAssetMsg memory msg_) private {
         bytes memory call = abi.encodeWithSelector(
-            MagnetarOptionModule.exitPositionAndRemoveCollateral.selector,
+            IMagnetarOptionModule.exitPositionAndRemoveCollateral.selector,
             ExitPositionAndRemoveCollateralData({
                 user: msg_.user,
                 externalData: msg_.externalData,

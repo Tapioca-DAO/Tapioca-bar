@@ -5,11 +5,11 @@ pragma solidity 0.8.22;
 import {BigBang} from "contracts/markets/bigBang/BigBang.sol";
 
 // dependencies
-import {ILeverageExecutor} from "tapioca-periph/interfaces/bar/ILeverageExecutor.sol";
-import {ITapiocaOracle} from "tapioca-periph/interfaces/periph/ITapiocaOracle.sol";
+import {ILeverageExecutor} from "tap-utils/interfaces/bar/ILeverageExecutor.sol";
+import {ITapiocaOracle} from "tap-utils/interfaces/periph/ITapiocaOracle.sol";
 
 import {BigBang_Unit_Shared} from "../../shared/BigBang_Unit_Shared.t.sol";
-import {IPenrose} from "tapioca-periph/interfaces/bar/IPenrose.sol";
+import {IPenrose} from "tap-utils/interfaces/bar/IPenrose.sol";
 
 contract Penrose_bigBang is BigBang_Unit_Shared {
     function test_RevertWhen_RegisterBigBangIsCalledFromNon_owner() external {

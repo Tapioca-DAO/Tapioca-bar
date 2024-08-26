@@ -8,10 +8,10 @@ import {BigBang} from "contracts/markets/bigBang/BigBang.sol";
 import {Market} from "contracts/markets/Market.sol";
 
 
-import {IBigBangDebtRateHelper} from "tapioca-periph/interfaces/bar/IBigBangDebtRateHelper.sol";
-import {ILeverageExecutor} from "tapioca-periph/interfaces/bar/ILeverageExecutor.sol";
-import {ITapiocaOracle} from "tapioca-periph/interfaces/periph/ITapiocaOracle.sol";
-import {IPenrose} from "tapioca-periph/interfaces/bar/IPenrose.sol";
+import {IBigBangDebtRateHelper} from "tap-utils/interfaces/bar/IBigBangDebtRateHelper.sol";
+import {ILeverageExecutor} from "tap-utils/interfaces/bar/ILeverageExecutor.sol";
+import {ITapiocaOracle} from "tap-utils/interfaces/periph/ITapiocaOracle.sol";
+import {IPenrose} from "tap-utils/interfaces/bar/IPenrose.sol";
 
 // tests
 import {BigBang_Unit_Shared} from "../../shared/BigBang_Unit_Shared.t.sol";

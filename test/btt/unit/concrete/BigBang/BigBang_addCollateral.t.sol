@@ -2,7 +2,7 @@
 pragma solidity 0.8.22;
 
 // Tapioca
-import {Module} from "tapioca-periph/interfaces/bar/IMarket.sol";
+import {Module} from "tap-utils/interfaces/bar/IMarket.sol";
 import {BigBang} from "contracts/markets/bigBang/BigBang.sol";
 import {Market} from "contracts/markets/Market.sol";
 

@@ -11,18 +11,18 @@ import {TOFTMock_test} from "../../mocks/TOFTMock_test.sol";
 
 // contracts
 import {SGlpMarketLiquidatorReceiver} from "contracts/liquidators/sGlpMarketLiquidatorReceiver.sol";
-import {IGmxRewardRouterV2} from "tapioca-periph/interfaces/external/gmx/IGmxRewardRouterV2.sol";
+import {IGmxRewardRouterV2} from "tap-utils/interfaces/external/gmx/IGmxRewardRouterV2.sol";
 import {MarketLiquidatorReceiver} from "contracts/liquidators/MarketLiquidatorReceiver.sol";
-import {IGmxGlpManager} from "tapioca-periph/interfaces/external/gmx/IGmxGlpManager.sol";
+import {IGmxGlpManager} from "tap-utils/interfaces/external/gmx/IGmxGlpManager.sol";
 import {ERC20WithoutStrategy} from "yieldbox/strategies/ERC20WithoutStrategy.sol";
 import {TokenType} from "yieldbox/enums/YieldBoxTokenType.sol";
-import {IPearlmit} from "tapioca-periph/pearlmit/Pearlmit.sol";
+import {IPearlmit} from "tap-utils/pearlmit/Pearlmit.sol";
 import {IStrategy} from "yieldbox/interfaces/IStrategy.sol";
 
 // dependencies
-import {ICluster} from "tapioca-periph/interfaces/periph/ICluster.sol";
-import {ZeroXSwapper} from "tapioca-periph/Swapper/ZeroXSwapper.sol";
-import {Cluster} from "tapioca-periph/Cluster/Cluster.sol";
+import {ICluster} from "tap-utils/interfaces/periph/ICluster.sol";
+import {ZeroXSwapper} from "tap-utils/Swapper/ZeroXSwapper.sol";
+import {Cluster} from "tap-utils/Cluster/Cluster.sol";
 
 abstract contract MarketLiquidatorReceiver_Unit_Shared is Base_Test {
     ERC20Mock_test sGlp;

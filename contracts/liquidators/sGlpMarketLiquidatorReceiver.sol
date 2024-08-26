@@ -7,13 +7,13 @@ import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 // Tapioca
-import {IMarketLiquidatorReceiver} from "tapioca-periph/interfaces/bar/IMarketLiquidatorReceiver.sol";
-import {IGmxRewardRouterV2} from "tapioca-periph/interfaces/external/gmx/IGmxRewardRouterV2.sol";
-import {IGmxGlpManager} from "tapioca-periph/interfaces/external/gmx/IGmxGlpManager.sol";
-import {IZeroXSwapper} from "tapioca-periph/interfaces/periph/IZeroXSwapper.sol";
-import {IWeth9} from "tapioca-periph/interfaces/external/weth/IWeth9.sol";
-import {ICluster} from "tapioca-periph/interfaces/periph/ICluster.sol";
-import {ITOFT} from "tapioca-periph/interfaces/oft/ITOFT.sol";
+import {IMarketLiquidatorReceiver} from "tap-utils/interfaces/bar/IMarketLiquidatorReceiver.sol";
+import {IGmxRewardRouterV2} from "tap-utils/interfaces/external/gmx/IGmxRewardRouterV2.sol";
+import {IGmxGlpManager} from "tap-utils/interfaces/external/gmx/IGmxGlpManager.sol";
+import {IZeroXSwapper} from "tap-utils/interfaces/periph/IZeroXSwapper.sol";
+import {IWeth9} from "tap-utils/interfaces/external/weth/IWeth9.sol";
+import {ICluster} from "tap-utils/interfaces/periph/ICluster.sol";
+import {ITOFT} from "tap-utils/interfaces/oft/ITOFT.sol";
 
 /*
 

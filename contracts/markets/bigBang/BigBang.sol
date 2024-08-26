@@ -7,13 +7,13 @@ import {BoringERC20} from "@boringcrypto/boring-solidity/contracts/libraries/Bor
 import {IERC20} from "@boringcrypto/boring-solidity/contracts/ERC20.sol";
 
 // Tapioca
-import {ILeverageExecutor} from "tapioca-periph/interfaces/bar/ILeverageExecutor.sol";
-import {ITapiocaOracle} from "tapioca-periph/interfaces/periph/ITapiocaOracle.sol";
-import {IYieldBox} from "tapioca-periph/interfaces/yieldbox/IYieldBox.sol";
-import {IPearlmit} from "tapioca-periph/interfaces/periph/IPearlmit.sol";
-import {IPenrose} from "tapioca-periph/interfaces/bar/IPenrose.sol";
-import {Module} from "tapioca-periph/interfaces/bar/IMarket.sol";
-import {IUsdo} from "tapioca-periph/interfaces/oft/IUsdo.sol";
+import {ILeverageExecutor} from "tap-utils/interfaces/bar/ILeverageExecutor.sol";
+import {ITapiocaOracle} from "tap-utils/interfaces/periph/ITapiocaOracle.sol";
+import {IYieldBox} from "tap-utils/interfaces/yieldbox/IYieldBox.sol";
+import {IPearlmit} from "tap-utils/interfaces/periph/IPearlmit.sol";
+import {IPenrose} from "tap-utils/interfaces/bar/IPenrose.sol";
+import {Module} from "tap-utils/interfaces/bar/IMarket.sol";
+import {IUsdo} from "tap-utils/interfaces/oft/IUsdo.sol";
 import {SafeApprove} from "../../libraries/SafeApprove.sol";
 import {MarketStateView} from "../MarketStateView.sol";
 import {BBLiquidation} from "./BBLiquidation.sol";
