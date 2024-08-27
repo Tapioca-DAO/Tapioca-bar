@@ -1,0 +1,15 @@
+Usdo_OptionReceiverModule.t.sol
+└── when exerciseOptionsReceiver is called
+    ├── when exerciseOptionsReceiver is called with wrong parameters
+    │   └── given optionsData target is not whitelisted
+    │       └── it should revert
+    └── when exerciseOptionsReceiver is called with right parameters
+        ├── given exercise option caller is not oTapOwner
+        │   └── it should revert
+        ├── given oTapOwner did not approve the module
+        │   └── it should revert
+        └── given called from owner and approved module
+            ├── it should excecise
+            ├── it should refund leftovers
+            └── when asked to withdraw 
+                └── it should receive tapBalance

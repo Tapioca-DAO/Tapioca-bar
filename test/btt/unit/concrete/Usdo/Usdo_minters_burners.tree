@@ -1,0 +1,21 @@
+Usdo_minters_buners.t.sol
+├── when paused
+│   ├── when mint is called and paused
+│   │   └── it should revert
+│   └── when burn is called and paused
+│       └── it should revert
+└── when not paused
+    ├── given sender is not allowed
+    │   ├── when mint is called and sender not allowed
+    │   │   └── it should revert
+    │   └── when burn is called and sender not allowed
+    │       └── it should revert
+    └── given sender is allowed
+        ├── when mint is called
+        │   ├── it should increase total supply
+        │   └── it should increase balance for to
+        ├── when burn is called
+        │   ├── it should decrease total supply
+        │   └── it should decrease balance for to
+        └── when burn is called from an amount too big
+            └── it should revert
