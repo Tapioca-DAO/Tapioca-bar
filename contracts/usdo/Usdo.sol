@@ -24,10 +24,10 @@ import {
     UsdoModulesInitStruct,
     LZSendParam,
     ERC20PermitStruct
-} from "tapioca-periph/interfaces/oft/IUsdo.sol";
-import {BaseTapiocaOmnichainEngine} from "tapioca-periph/tapiocaOmnichainEngine/BaseTapiocaOmnichainEngine.sol";
-import {TapiocaOmnichainSender} from "tapioca-periph/tapiocaOmnichainEngine/TapiocaOmnichainSender.sol";
-import {ICluster} from "tapioca-periph/interfaces/periph/ICluster.sol";
+} from "tap-utils/interfaces/oft/IUsdo.sol";
+import {BaseTapiocaOmnichainEngine} from "tap-utils/tapiocaOmnichainEngine/BaseTapiocaOmnichainEngine.sol";
+import {TapiocaOmnichainSender} from "tap-utils/tapiocaOmnichainEngine/TapiocaOmnichainSender.sol";
+import {ICluster} from "tap-utils/interfaces/periph/ICluster.sol";
 import {UsdoReceiver} from "./modules/UsdoReceiver.sol";
 import {UsdoSender} from "./modules/UsdoSender.sol";
 import {BaseUsdo} from "./BaseUsdo.sol";

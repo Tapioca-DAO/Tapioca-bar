@@ -5,8 +5,8 @@ pragma solidity 0.8.22;
 import {IERC20} from "@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol";
 
 // dependencies
-import {ITapiocaOracle} from "tapioca-periph/interfaces/periph/ITapiocaOracle.sol";
-import {IPenrose} from "tapioca-periph/interfaces/bar/IPenrose.sol";
+import {ITapiocaOracle} from "tap-utils/interfaces/periph/ITapiocaOracle.sol";
+import {IPenrose} from "tap-utils/interfaces/bar/IPenrose.sol";
 import {MarketHelper} from "contracts/markets/MarketHelper.sol";
 import {Origins} from "contracts/markets/Origins/Origins.sol";
 

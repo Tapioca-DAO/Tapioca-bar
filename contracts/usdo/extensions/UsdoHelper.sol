@@ -10,9 +10,9 @@ import {
     ExerciseOptionsMsg,
     MarketRemoveAssetMsg,
     MarketLendOrRepayMsg
-} from "tapioca-periph/interfaces/oft/IUsdo.sol";
+} from "tap-utils/interfaces/oft/IUsdo.sol";
 import {TapiocaOmnichainEngineHelper} from
-    "tapioca-periph/tapiocaOmnichainEngine/extension/TapiocaOmnichainEngineHelper.sol";
+    "tap-utils/tapiocaOmnichainEngine/extension/TapiocaOmnichainEngineHelper.sol";
 import {BaseUsdoTokenMsgType} from "../BaseUsdoTokenMsgType.sol";
 import {UsdoMsgCodec} from "../libraries/UsdoMsgCodec.sol";
 

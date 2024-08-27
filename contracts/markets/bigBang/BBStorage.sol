@@ -10,8 +10,8 @@ import {IERC20} from "@boringcrypto/boring-solidity/contracts/ERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 // Tapioca
-import {ITapiocaOracle} from "tapioca-periph/interfaces/periph/ITapiocaOracle.sol";
-import {IBigBang} from "tapioca-periph/interfaces/bar/IBigBang.sol";
+import {ITapiocaOracle} from "tap-utils/interfaces/periph/ITapiocaOracle.sol";
+import {IBigBang} from "tap-utils/interfaces/bar/IBigBang.sol";
 import {MarketERC20, Market} from "../Market.sol";
 
 // solhint-disable max-line-length

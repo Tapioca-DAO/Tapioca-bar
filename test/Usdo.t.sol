@@ -22,12 +22,12 @@ import {
     ExitPositionAndRemoveCollateralData,
     DepositAddCollateralAndBorrowFromMarketData,
     MagnetarWithdrawData
-} from "tapioca-periph/interfaces/periph/IMagnetar.sol";
+} from "tap-utils/interfaces/periph/IMagnetar.sol";
 import {
     ITapiocaOptionBroker,
     IExerciseOptionsData,
     IOptionsParticipateData
-} from "tapioca-periph/interfaces/tap-token/ITapiocaOptionBroker.sol";
+} from "tap-utils/interfaces/tap-token/ITapiocaOptionBroker.sol";
 import {
     TapiocaOmnichainEngineHelper,
     PrepareLzCallData,
@@ -35,7 +35,7 @@ import {
     ComposeMsgData,
     LZSendParam,
     RemoteTransferMsg
-} from "tapioca-periph/tapiocaOmnichainEngine/extension/TapiocaOmnichainEngineHelper.sol";
+} from "tap-utils/tapiocaOmnichainEngine/extension/TapiocaOmnichainEngineHelper.sol";
 import {
     IUsdo,
     UsdoInitStruct,
@@ -49,31 +49,31 @@ import {
     MarketLendOrRepayMsg,
     IRemoveAndRepay,
     ILendOrRepayParams
-} from "tapioca-periph/interfaces/oft/IUsdo.sol";
+} from "tap-utils/interfaces/oft/IUsdo.sol";
 import {
     ITapiocaOptionLiquidityProvision,
     IOptionsLockData,
     IOptionsUnlockData
-} from "tapioca-periph/interfaces/tap-token/ITapiocaOptionLiquidityProvision.sol";
-import {ERC20PermitStruct, ERC20PermitApprovalMsg} from "tapioca-periph/interfaces/periph/ITapiocaOmnichainEngine.sol";
-import {TapiocaOmnichainExtExec} from "tapioca-periph/tapiocaOmnichainEngine/extension/TapiocaOmnichainExtExec.sol";
-import {IOptionsExitData} from "tapioca-periph/interfaces/tap-token/ITapiocaOptionBroker.sol";
+} from "tap-utils/interfaces/tap-token/ITapiocaOptionLiquidityProvision.sol";
+import {ERC20PermitStruct, ERC20PermitApprovalMsg} from "tap-utils/interfaces/periph/ITapiocaOmnichainEngine.sol";
+import {TapiocaOmnichainExtExec} from "tap-utils/tapiocaOmnichainEngine/extension/TapiocaOmnichainExtExec.sol";
+import {IOptionsExitData} from "tap-utils/interfaces/tap-token/ITapiocaOptionBroker.sol";
 import {UsdoMarketReceiverModule} from "contracts/usdo/modules/UsdoMarketReceiverModule.sol";
 import {UsdoOptionReceiverModule} from "contracts/usdo/modules/UsdoOptionReceiverModule.sol";
 import {SimpleLeverageExecutor} from "contracts/markets/leverage/SimpleLeverageExecutor.sol";
-import {ICommonExternalContracts} from "tapioca-periph/interfaces/common/ICommonData.sol";
-import {ILeverageExecutor} from "tapioca-periph/interfaces/bar/ILeverageExecutor.sol";
+import {ICommonExternalContracts} from "tap-utils/interfaces/common/ICommonData.sol";
+import {ILeverageExecutor} from "tap-utils/interfaces/bar/ILeverageExecutor.sol";
 import {ERC20WithoutStrategy} from "yieldbox/strategies/ERC20WithoutStrategy.sol";
-import {ICommonData} from "tapioca-periph/interfaces/common/ICommonData.sol";
+import {ICommonData} from "tap-utils/interfaces/common/ICommonData.sol";
 import {Singularity} from "contracts/markets/singularity/Singularity.sol";
-import {Pearlmit, IPearlmit} from "tapioca-periph/pearlmit/Pearlmit.sol";
+import {Pearlmit, IPearlmit} from "tap-utils/pearlmit/Pearlmit.sol";
 import {UsdoReceiver} from "contracts/usdo/modules/UsdoReceiver.sol";
-import {IOracle} from "tapioca-periph/oracle/interfaces/IOracle.sol";
+import {IOracle} from "tap-utils/oracle/interfaces/IOracle.sol";
 import {UsdoHelper} from "contracts/usdo/extensions/UsdoHelper.sol";
 import {UsdoSender} from "contracts/usdo/modules/UsdoSender.sol";
-import {Module} from "tapioca-periph/interfaces/bar/IMarket.sol";
+import {Module} from "tap-utils/interfaces/bar/IMarket.sol";
 import {MarketHelper} from "contracts/markets/MarketHelper.sol";
-import {Cluster} from "tapioca-periph/Cluster/Cluster.sol";
+import {Cluster} from "tap-utils/Cluster/Cluster.sol";
 import {YieldBox} from "yieldbox/YieldBox.sol";
 import {Penrose} from "contracts/Penrose.sol";
 
@@ -86,7 +86,7 @@ import {OracleMock} from "./mocks/OracleMock.sol";
 import {ERC20Mock} from "./mocks/ERC20Mock.sol";
 import {UsdoMock} from "./mocks/UsdoMock.sol";
 
-import {TapiocaOmnichainEngineCodec} from "tapioca-periph/tapiocaOmnichainEngine/TapiocaOmnichainEngineCodec.sol";
+import {TapiocaOmnichainEngineCodec} from "tap-utils/tapiocaOmnichainEngine/TapiocaOmnichainEngineCodec.sol";
 
 import "forge-std/Test.sol";
 
@@ -1239,7 +1239,15 @@ contract UsdoTest is UsdoTestHelper {
                 market: address(singularity),
                 removeCollateral: false,
                 removeCollateralAmount: 0,
-                lockData: IOptionsLockData({lock: false, target: address(0), tAsset:address(0), lockDuration: 0, amount: 0, fraction: 0, minDiscountOut: 0}),
+                lockData: IOptionsLockData({
+                    lock: false,
+                    target: address(0),
+                    tAsset: address(0),
+                    lockDuration: 0,
+                    amount: 0,
+                    fraction: 0,
+                    minDiscountOut: 0
+                }),
                 participateData: IOptionsParticipateData({participate: false, target: address(0), tOLPTokenId: 0})
             }),
             withdrawParams: MagnetarWithdrawData({
@@ -1412,7 +1420,15 @@ contract UsdoTest is UsdoTestHelper {
                 market: address(singularity),
                 removeCollateral: true,
                 removeCollateralAmount: tokenAmountSD,
-                lockData: IOptionsLockData({lock: false, target: address(0), tAsset:address(0), lockDuration: 0, amount: 0, fraction: 0, minDiscountOut: 0}),
+                lockData: IOptionsLockData({
+                    lock: false,
+                    target: address(0),
+                    tAsset: address(0),
+                    lockDuration: 0,
+                    amount: 0,
+                    fraction: 0,
+                    minDiscountOut: 0
+                }),
                 participateData: IOptionsParticipateData({participate: false, target: address(0), tOLPTokenId: 0})
             }),
             withdrawParams: MagnetarWithdrawData({

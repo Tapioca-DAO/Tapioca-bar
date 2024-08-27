@@ -4,7 +4,7 @@ pragma solidity 0.8.22;
 import {Markets_Unit_Shared} from "../../shared/Markets_Unit_Shared.t.sol";
 
 import {Penrose} from "contracts/Penrose.sol";
-import {IPenrose} from "tapioca-periph/interfaces/bar/IPenrose.sol";
+import {IPenrose} from "tap-utils/interfaces/bar/IPenrose.sol";
 
 contract Penrose_masterContracts is Markets_Unit_Shared {
     // function registerBigBangMasterContract(address mcAddress, IPenrose.ContractType contractType_) external onlyOwner {
