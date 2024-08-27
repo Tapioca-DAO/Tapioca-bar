@@ -86,8 +86,7 @@ contract SGlpMarketLiquidatorReceiver is IMarketLiquidatorReceiver, Ownable, Ree
     }
 
     /// @notice returns the swapper sell token
-    /// @param marketToken the market's TOFT collateral
-    function querySellToken(address marketToken) external pure returns (address) {
+    function querySellToken(address) external pure returns (address) {
         return USDC;
     }
 

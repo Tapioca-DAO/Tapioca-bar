@@ -57,6 +57,11 @@ abstract contract Base_Test is TestHelper, Utils, Types, Events {
     Usdo usdo;
     uint256 usdoId;
 
+    UsdoSender usdoSender;
+    UsdoReceiver usdoReceiver;
+    UsdoMarketReceiverModule usdoMarketReceiverModule;
+    UsdoOptionReceiverModule usdoOptionsReceiverModule;
+
     // ************* //
     // *** SETUP *** //
     // ************* //
@@ -123,10 +128,10 @@ abstract contract Base_Test is TestHelper, Utils, Types, Events {
             extExec: address(extExec),
             pearlmit: IPearlmit(address(pearlmit))
         });
-        UsdoSender usdoSender = new UsdoSender(usdoInitStruct);
-        UsdoReceiver usdoReceiver = new UsdoReceiver(usdoInitStruct);
-        UsdoMarketReceiverModule usdoMarketReceiverModule = new UsdoMarketReceiverModule(usdoInitStruct);
-        UsdoOptionReceiverModule usdoOptionsReceiverModule = new UsdoOptionReceiverModule(usdoInitStruct);
+        usdoSender = new UsdoSender(usdoInitStruct);
+        usdoReceiver = new UsdoReceiver(usdoInitStruct);
+        usdoMarketReceiverModule = new UsdoMarketReceiverModule(usdoInitStruct);
+        usdoOptionsReceiverModule = new UsdoOptionReceiverModule(usdoInitStruct);
         vm.label(address(usdoSender), "Usdo Sender");
         vm.label(address(usdoReceiver), "Usdo Receiver");
         vm.label(address(usdoMarketReceiverModule), "Usdo Market Receiver Module");
