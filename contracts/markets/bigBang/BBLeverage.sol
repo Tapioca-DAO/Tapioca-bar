@@ -106,12 +106,12 @@ contract BBLeverage is BBLendingCommon {
             );
         }
         uint256 collateralShare = yieldBox.toShare(collateralId, amountOut, false);
+        if (collateralShare == 0) revert CollateralShareNotValid();
 
         address(collateral).safeApprove(address(yieldBox), type(uint256).max);
-        yieldBox.depositAsset(collateralId, address(this), calldata_.from, 0, collateralShare);
+        yieldBox.depositAsset(collateralId, address(this), address(this), 0, collateralShare);
         address(collateral).safeApprove(address(yieldBox), 0);
 
-        if (collateralShare == 0) revert CollateralShareNotValid();
         _addCollateral(calldata_.from, calldata_.from, false, 0, collateralShare, false);
         if (amountOut == 0) revert AmountNotValid();
     }
@@ -141,7 +141,6 @@ contract BBLeverage is BBLendingCommon {
             revert LeverageExecutorNotValid();
         }
         penrose.reAccrueBigBangMarkets();
-
         _allowedBorrow(from, share);
         _removeCollateral(from, address(this), share);
 

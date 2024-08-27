@@ -134,23 +134,26 @@ contract BBCommon is BBStorage {
     function _computeVariableOpeningFeeView(uint256 amount, uint256 _exchangeRate) internal view returns (uint256) {
         if (amount == 0) return 0;
 
+        uint256 fee;
         if (_exchangeRate >= minMintFeeStart) {
-            return (amount * minMintFee) / FEE_PRECISION;
-        }
-        if (_exchangeRate <= maxMintFeeStart) {
-            return (amount * maxMintFee) / FEE_PRECISION;
-        }
-
-        uint256 fee = maxMintFee
+            fee = minMintFee;
+        } else if (_exchangeRate <= maxMintFeeStart) {
+            fee = maxMintFee;
+        } else {
+            // @dev default value for `maxMintFee` is > 0
+            fee = maxMintFee
             - (((_exchangeRate - maxMintFeeStart) * (maxMintFee - minMintFee)) / (minMintFeeStart - maxMintFeeStart));
 
-        if (fee > maxMintFee) return (amount * maxMintFee) / FEE_PRECISION;
-        if (fee < minMintFee) return (amount * minMintFee) / FEE_PRECISION;
+            if (fee > maxMintFee) {
+                fee = maxMintFee;
+            } else if (fee < minMintFee) {
+                fee = minMintFee;
+            }
 
-        if (fee > 0) {
-            return (amount * fee) / FEE_PRECISION;
         }
-        return 0;
+
+        // @dev if > 0, compute the fee
+        return fee == 0 ? 0 : (amount * fee) / FEE_PRECISION;
     }
 
     /// @dev Helper function to move tokens.xc

@@ -1,0 +1,18 @@
+BigBang_liquidateBadDebt.t.sol
+├── when liquidateBadDebt is called from non-owner
+│   └── it should revert
+└── when owner is calling
+    ├── when parameters are not valid
+    │   ├── when from is not whitelisted
+    │   │   └── it should revert
+    │   └── when requiredCollateral is less than collateralShare
+    │       └── it should revert
+    └── when bad liquidation is executed
+        ├── it should set 'userBorrowPart' to 0
+        ├── it should set 'userCollateralShare' to 0
+        ├── it should decrease 'totalCollateralShare'
+        ├── it should decrease 'totalBorrow.base'
+        ├── it should decrease 'totalBorrow.elastic'
+        ├── it should burn asset from 'from'
+        └── when swapCollateral is required
+            └── it should transfer assets to the receiver

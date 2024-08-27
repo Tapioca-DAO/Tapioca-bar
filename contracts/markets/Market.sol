@@ -435,11 +435,12 @@ abstract contract Market is MarketERC20, Ownable {
         }
     }
 
-    function _tryUpdateOracleRate() internal {
+    function _tryUpdateExchangeRate() internal {
         try oracle.get(oracleData) returns (bool _updated, uint256 _exchangeRate) {
             if (_updated && _exchangeRate > 0) {
                 exchangeRate = _exchangeRate; //update cached rate
                 rateTimestamp = block.timestamp;
+                emit LogExchangeRate(exchangeRate);
             } else {
                 _exchangeRate = exchangeRate; //use stored rate
                 if (_exchangeRate == 0) revert ExchangeRateNotValid();
@@ -450,9 +451,9 @@ abstract contract Market is MarketERC20, Ownable {
     }
 
     function _getRevertMsg(bytes memory _returnData) internal pure returns (bytes memory) {
-        if (_returnData.length > 1000) return "Market: reason too long";
-        // If the _res length is less than 68, then the transaction failed silently (without a revert message)
-        if (_returnData.length < 68) return "Market: no return data";
+        if (_returnData.length < 4) return abi.encode("Market: no return data");
+        if (_returnData.length > 1000) return abi.encode("Market: reason too long");
+    
         // solhint-disable-next-line no-inline-assembly
         assembly {
             // Slice the sighash.

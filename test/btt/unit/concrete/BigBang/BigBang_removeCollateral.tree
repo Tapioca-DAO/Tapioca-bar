@@ -1,0 +1,49 @@
+BigBang_removeCollateral.t.sol
+├── when contract is paused
+│   └── it should revert with 'Market: paused'
+└── when contract is not paused
+    ├── when called for itself
+    │   └── it should revert with 'Market: cannot execute on itself'
+    ├── when it's called for a valid sender by itself
+    │   ├── when it's called without a position
+    │   │   └── it should revert
+    │   ├── when user has borrowed
+    │   │   ├── when not solvent
+    │   │   │   └── it should revert
+    │   │   └── when solvent
+    │   │       └── when collateral is removable
+    │   │           ├── it should emit 'LogRemoveCollateral'
+    │   │           ├── it should decrease 'userCollateralShare'
+    │   │           ├── it should decrease 'totalCollateralShare'
+    │   │           ├── it should decrease market's YieldBox balance
+    │   │           └── it should increase user's YieldBox balance
+    │   └── when user does not have a borrowed position
+    │       └── when solvency
+    │           └── when collateral can be removed
+    │               ├── it should emit 'LogRemoveCollateral'
+    │               ├── it should decrease 'userCollateralShare'
+    │               ├── it should decrease 'totalCollateralShare'
+    │               ├── it should decrease market's YieldBox balance
+    │               └── it should increase user's YieldBox balance
+    └── when it's called from another user
+        ├── when user does not have enough allowance
+        │   └── it should revert with 'Market: not approved'
+        └── when user has been given allowance
+            ├── when user has a borrowed position
+            │   ├── when not solvent position
+            │   │   └── it should revert
+            │   └── when solvent position
+            │       └── when collateral removed
+            │          ├── it should emit 'LogRemoveCollateral'
+            │          ├── it should decrease 'userCollateralShare'
+            │          ├── it should decrease 'totalCollateralShare'
+            │          ├── it should decrease market's YieldBox balance
+            │          └── it should increase user's YieldBox balance
+            └── when user does not borrowed
+                └── when solvency position
+                    └── when collateral is removed
+                       ├── it should emit 'LogRemoveCollateral'
+                       ├── it should decrease 'userCollateralShare'
+                       ├── it should decrease 'totalCollateralShare'
+                       ├── it should decrease market's YieldBox balance
+                       └── it should increase user's YieldBox balance

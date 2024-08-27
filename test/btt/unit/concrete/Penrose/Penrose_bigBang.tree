@@ -1,0 +1,21 @@
+Penrose_bigBang.t.sol
+├── when registerBigBang is called from non-owner
+│   └── it should revert
+├── when registerBigBang is called from owner for non-registered master contract
+│   └── it should revert
+├── when registerBigBang is called from owner for address0
+│   └── it should revert
+├── when registerBigBang is called from owner for new contract
+│   ├── it should not revert
+│   ├── it should increase length of allBigBangMarkets
+│   └── it should emit RegisterBigBang event
+├── when addBigBang is called from non-owner
+│   └── it should revert
+├── when addBigBang is called from owner for non-registered master contract
+│   └── it should revert
+├── when addBigBang is called from owner for already registered contract
+│   └── it should revert
+└── when addBigBang is called from owner for new contract
+    ├── it should not revert
+    ├── it should increase length of allBigBangMarkets
+    └── it should emit RegisterBigBang event
