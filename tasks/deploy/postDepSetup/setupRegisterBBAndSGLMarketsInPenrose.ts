@@ -52,6 +52,9 @@ export async function setupRegisterBBAndSGLMarketsInPenrose(
         const bbtTwstethMarket = deployed.find(
             (e) => e.name === DEPLOYMENT_NAMES.BB_T_WST_ETH_MARKET,
         )!;
+        const bbtUsdcMock = deployed.find(
+            (e) => e.name === DEPLOYMENT_NAMES.BB_T_USDC_MOCK_MARKET,
+        )!;
 
         await registerMarket(
             'BB',
@@ -71,6 +74,12 @@ export async function setupRegisterBBAndSGLMarketsInPenrose(
             bbtTwstethMarket.address,
             DEPLOYMENT_NAMES.BB_T_WST_ETH_MARKET,
         );
+        await registerMarket(
+            'BB',
+            bbMediumRiskMC.address,
+            bbtUsdcMock.address,
+            DEPLOYMENT_NAMES.BB_T_USDC_MOCK_MARKET,
+        );
 
         /**
          * Singularity markets
@@ -83,12 +92,21 @@ export async function setupRegisterBBAndSGLMarketsInPenrose(
         const sglSglpMarket = deployed.find(
             (e) => e.name === DEPLOYMENT_NAMES.SGL_S_GLP_MARKET,
         )!;
+        const tUsdcMockMarket = deployed.find(
+            (e) => e.name === DEPLOYMENT_NAMES.SGL_USDC_MOCK_MARKET,
+        )!;
 
         await registerMarket(
             'SGL',
             sglMediumRiskMC.address,
             sglSglpMarket.address,
             DEPLOYMENT_NAMES.SGL_S_GLP_MARKET,
+        );
+        await registerMarket(
+            'SGL',
+            sglMediumRiskMC.address,
+            tUsdcMockMarket.address,
+            DEPLOYMENT_NAMES.SGL_USDC_MOCK_MARKET,
         );
     }
 
