@@ -171,18 +171,6 @@ async function tapiocaDeployTask(params: TTapiocaDeployerVmPass<object>) {
             }),
         )
         .add(
-            await buildSglGlpLeverageExecutor(hre, {
-                cluster,
-                zeroXSwapper,
-                glpRewardRouter:
-                    DEPLOY_CONFIG.POST_LBP[chainInfo.chainId]!.glpStrat!
-                        .glpRewardRouter,
-                weth: DEPLOY_CONFIG.MISC[hre.SDK.eChainId]!.WETH!,
-                pearlmit,
-                tag,
-            }),
-        )
-        .add(
             await buildUSDO(
                 hre,
                 {
@@ -240,6 +228,21 @@ async function tapiocaDeployTask(params: TTapiocaDeployerVmPass<object>) {
                 },
             ]),
         );
+
+    if (!isTestnet) {
+        VM.add(
+            await buildSglGlpLeverageExecutor(hre, {
+                cluster,
+                zeroXSwapper,
+                glpRewardRouter:
+                    DEPLOY_CONFIG.POST_LBP[chainInfo.chainId]!.glpStrat!
+                        .glpRewardRouter,
+                weth: DEPLOY_CONFIG.MISC[hre.SDK.eChainId]!.WETH!,
+                pearlmit,
+                tag,
+            }),
+        );
+    }
 
     // @ts-ignore
     (await buildSGLModules(hre)).forEach((module) => VM.add(module));
@@ -338,6 +341,15 @@ async function tapiocaDeployTask(params: TTapiocaDeployerVmPass<object>) {
                 ),
             );
 
+        if (isTestnet) {
+            VM.add(
+                await buildBBMediumRiskMC(
+                    hre,
+                    DEPLOYMENT_NAMES.BB_T_USDC_MOCK_MARKET,
+                ),
+            );
+        }
+
         // SGL asset strategies
         if (isTestnet) {
             VM.add(
@@ -345,6 +357,14 @@ async function tapiocaDeployTask(params: TTapiocaDeployerVmPass<object>) {
                     deploymentName:
                         DEPLOYMENT_NAMES.YB_SGLP_ASSET_WITHOUT_STRATEGY,
                     token: tSGLP,
+                    yieldBox,
+                }),
+            );
+            VM.add(
+                await buildERC20WithoutStrategy(hre, {
+                    deploymentName:
+                        DEPLOYMENT_NAMES.YB_T_USDC_MOCK_ASSET_WITHOUT_STRATEGY,
+                    token: '0xB97f3fda040662B44055BdcBEc2BaB7CAA70839c',
                     yieldBox,
                 }),
             );
@@ -367,6 +387,15 @@ async function tapiocaDeployTask(params: TTapiocaDeployerVmPass<object>) {
         VM.add(
             await buildSGLMediumRiskMC(hre, DEPLOYMENT_NAMES.SGL_S_GLP_MARKET),
         );
+
+        if (isTestnet) {
+            VM.add(
+                await buildSGLMediumRiskMC(
+                    hre,
+                    DEPLOYMENT_NAMES.SGL_USDC_MOCK_MARKET,
+                ),
+            );
+        }
     }
 
     /**

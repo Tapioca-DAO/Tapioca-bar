@@ -5,7 +5,7 @@ import {
     deploy__LoadDeployments_Generic,
 } from '../1-1-deployPostLbp';
 import { TPostDeployParams } from '../1-1-setupPostLbp';
-import { DEPLOYMENT_NAMES } from '../DEPLOY_CONFIG';
+import { DEPLOY_CONFIG, DEPLOYMENT_NAMES } from '../DEPLOY_CONFIG';
 
 /**
  * @notice - Register sDAI and sGLP as YB assets for SGL.
@@ -62,6 +62,14 @@ export async function setupCreateYBAssets(params: TPostDeployParams) {
                 ? DEPLOYMENT_NAMES.YB_SGLP_ASSET_WITHOUT_STRATEGY
                 : DEPLOYMENT_NAMES.YB_SGLP_ASSET_WITH_STRATEGY,
             assetName: 'tsGLP',
+            yieldBox,
+        });
+        await setupCreateYBAssets__addNewAsset({
+            ...params,
+            assetAddress: DEPLOY_CONFIG.POST_LBP[hre.SDK.eChainId]!.usdcMock!,
+            strategyDepName:
+                DEPLOYMENT_NAMES.YB_T_USDC_MOCK_ASSET_WITHOUT_STRATEGY,
+            assetName: 'tUsdcMock',
             yieldBox,
         });
 
