@@ -11,15 +11,15 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {
     ERC20WithoutStrategy, IStrategy, IYieldBox as IBoringYieldBox
 } from "yieldbox/strategies/ERC20WithoutStrategy.sol";
-import {PearlmitHandler, IPearlmit} from "tapioca-periph/pearlmit/PearlmitHandler.sol";
+import {PearlmitHandler, IPearlmit} from "tap-utils/pearlmit/PearlmitHandler.sol";
 import {RevertMsgDecoder} from "./usdo/libraries/RevertMsgDecoder.sol";
-import {ICluster} from "tapioca-periph/interfaces/periph/ICluster.sol";
-import {IMarket} from "tapioca-periph/interfaces/bar/ISingularity.sol";
-import {ITwTap} from "tapioca-periph/interfaces/tap-token/ITwTap.sol";
-import {IPenrose} from "tapioca-periph/interfaces/bar/IPenrose.sol";
-import {IBigBang} from "tapioca-periph/interfaces/bar/IBigBang.sol";
+import {ICluster} from "tap-utils/interfaces/periph/ICluster.sol";
+import {IMarket} from "tap-utils/interfaces/bar/ISingularity.sol";
+import {ITwTap} from "tap-utils/interfaces/tap-token/ITwTap.sol";
+import {IPenrose} from "tap-utils/interfaces/bar/IPenrose.sol";
+import {IBigBang} from "tap-utils/interfaces/bar/IBigBang.sol";
 import {TokenType} from "yieldbox/enums/YieldBoxTokenType.sol";
-import {IUsdo} from "tapioca-periph/interfaces/oft/IUsdo.sol";
+import {IUsdo} from "tap-utils/interfaces/oft/IUsdo.sol";
 import {IYieldBox} from "yieldbox/interfaces/IYieldBox.sol";
 import {SafeApprove} from "./libraries/SafeApprove.sol";
 
@@ -475,12 +475,16 @@ contract Penrose is Ownable, Pausable, PearlmitHandler {
             index = _findBigBangIndex(allOriginsMarkets, mkt);
             allOriginsMarkets[index] = allOriginsMarkets[allOriginsMarkets.length - 1];
             allOriginsMarkets.pop();
+
+            isOriginRegistered[mkt] = false;
         }
 
-        // remove it from clonesOf
-        index = _findBigBangIndex(clonesOf[_mc], mkt);
-        clonesOf[_mc][index] = clonesOf[_mc][clonesOf[_mc].length - 1];
-        clonesOf[_mc].pop();
+        if (marketType != 2) {
+            // remove it from clonesOf
+            index = _findBigBangIndex(clonesOf[_mc], mkt);
+            clonesOf[_mc][index] = clonesOf[_mc][clonesOf[_mc].length - 1];
+            clonesOf[_mc].pop();
+        }
 
         emit UnregisterContract(mkt);
     }

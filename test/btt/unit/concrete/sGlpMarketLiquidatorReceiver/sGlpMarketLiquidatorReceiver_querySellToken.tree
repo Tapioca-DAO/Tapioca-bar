@@ -1,0 +1,5 @@
+sGlpMarketLiquidatorReceiver_querySellToken.t.sol
+├── when querySellToken is called
+│   └── it should return a valid address
+└── when sGlpMarketLiquidatorReceiver was created
+   └── it should return the constructor setters

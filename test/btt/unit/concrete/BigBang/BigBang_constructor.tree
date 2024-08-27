@@ -1,0 +1,37 @@
+BigBang_constructor.t.sol
+├── when BigBang is created with the right parameters
+│   ├── it should have asset as Usdo
+│   ├── it should have collateral as the main token
+│   ├── it should have oracle as shared one
+│   ├── it should have assetId as the Usdo id registered in YieldBox
+│   ├── it should have collateralId as the main token id registered in YieldBox
+│   ├── it should have protocolFee as the default one of 10000 
+│   ├── it should have collateralizationRate as the default one of 75000
+│   ├── it should have liquidationCollateralizationRate as the default one of 80000
+│   ├── it should have exchangeRatePrecision as the default one of 1e18
+│   ├── it should have minLiquidatorReward as the default one of 88e3
+│   ├── it should have maxLiquidatorReward as the default one of 925e2
+│   ├── it should have liquidationBonusAmount as the default one of 3e3
+│   ├── it should have liquidationMultiplier as the default one of 12000
+│   ├── it should have rateValidDuration as the default one of 24 hours
+│   ├── it should have minMintFee as the default one of 0
+│   ├── it should have maxMintFee as the default one of 1000
+│   ├── it should have maxMintFeeStart as the default one of 980000000000000000
+│   ├── it should have minMintFeeStart as the default one of 1000000000000000000
+│   ├── it should have minBorrowAmount as the default one of 1e15
+│   ├── it should have minCollateralAmount as the default one of 1e15
+│   └── it should transfer ownership to 'Penrose'
+└── when parameters are wrong
+    ├── when empty address is used
+    │   ├── it should revert for collateral
+    │   └── it should revert for oracle
+    ├── when CR is over 'FEE_PRECISION'
+    │   └── it should revert
+    ├── when LCR is over 'FEE_PRECISION'
+    │   ├── it should revert
+    │   └── when LCR is less than CR
+    │       └── it should revert
+    └── when debtRateMax is over 1e18
+        ├── it should revert
+        └── when debtRateMax is less than debtRateMin
+            └── it should revert

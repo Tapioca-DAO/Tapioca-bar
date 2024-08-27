@@ -1,0 +1,35 @@
+Usdo_MarketReceiverModule.t.sol
+├── when lendOrRepayReceiver is called
+│   ├── when lendOrRepayReceiver is called with wrong parameters
+│   │   ├── given magnetar not whitelisted
+│   │   │   └── it should revert
+│   │   ├── given marketHelper not whitelisted
+│   │   │   └── it should revert
+│   │   ├── given market is not whitelisted
+│   │   │   └── it should revert
+│   │   ├── given lockData target is not whitelisted
+│   │   │   └── it should revert
+│   │   └── given participateData target is not whitelisted
+│   │       └── it should revert
+│   └── when lendOrRepayReceiver is called with right parameters
+│       ├── when repaying
+│       │   ├── given repay amount is 0
+│       │   │   └── it should use depositAmount
+│       │   └── given removeCollateralAmount is greater than zero
+│       │       ├── it should spend allowance
+│       │       └── it should call Magnetar
+│       └── when lending 
+│           ├── it should spend allowance
+│           └── it should call Magnetar
+└── when removeAssetReceiver is called
+    ├── when removeAssetReceiver is called with wrong parameters
+    │   ├── given magnetar is not whitelisted
+    │   │   └── it should revert
+    │   ├── given marketHelper is not whitelisted
+    │   │   └── it should revert
+    │   ├── given bigBang is not whitelisted
+    │   │   └── it should revert
+    │   └── given singularity is not whitelisted
+    │       └── it should revert
+    └── when removeAssetReceiver is called with right parameters
+        └── it should call Magnetar

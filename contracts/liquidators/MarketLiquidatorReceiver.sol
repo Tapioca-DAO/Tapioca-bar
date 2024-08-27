@@ -4,13 +4,14 @@ pragma solidity 0.8.22;
 // External
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import {ICluster} from "tap-utils/interfaces/periph/ICluster.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 // Tapioca
-import {IMarketLiquidatorReceiver} from "tapioca-periph/interfaces/bar/IMarketLiquidatorReceiver.sol";
-import {IZeroXSwapper} from "tapioca-periph/interfaces/periph/IZeroXSwapper.sol";
-import {IWeth9} from "tapioca-periph/interfaces/external/weth/IWeth9.sol";
-import {ITOFT} from "tapioca-periph/interfaces/oft/ITOFT.sol";
+import {IMarketLiquidatorReceiver} from "tap-utils/interfaces/bar/IMarketLiquidatorReceiver.sol";
+import {IZeroXSwapper} from "tap-utils/interfaces/periph/IZeroXSwapper.sol";
+import {IWeth9} from "tap-utils/interfaces/external/weth/IWeth9.sol";
+import {ITOFT} from "tap-utils/interfaces/oft/ITOFT.sol";
 
 /*
 
@@ -23,34 +24,45 @@ import {ITOFT} from "tapioca-periph/interfaces/oft/ITOFT.sol";
    
 */
 
-/// @title ExampleMarketLiquidatorReceiver.
-/// @notice Example of a liquidator receiver contract.
-/// @dev This contract uses ZeroXSwapper to swap tokens.
 contract MarketLiquidatorReceiver is IMarketLiquidatorReceiver, Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
+    address public swapper;
     address public immutable weth;
+    mapping(address => bool) public allowedParticipants;
+    ICluster public immutable cluster;
 
-    mapping(address tokenIn => address swapper) public swappers;
-    mapping(address market => bool whitelisted) public allowedCallers;
-
-    event SwapperAssigned(address indexed tokenIn, address indexed swapper);
-    event AllowedCallerSet(address indexed market, bool allowed);
+    event SwapperAssigned(address indexed oldSwapper, address indexed swapper);
+    event AllowedParticipantAssigned(address indexed participant, bool status);
 
     error NotAuthorized();
+    error WhitelistError();
     error NotEnough();
-    error NoSwapperAssigned();
     error SwapFailed();
     error NotValid();
 
-    constructor(address _weth) {
+    constructor(address _weth, ICluster _cluster, address _swapper, address _owner) {
         if (_weth == address(0)) revert NotValid();
+        if (_swapper == address(0)) revert NotValid();
+        if (address(_cluster) == address(0)) revert NotValid();
+
         weth = _weth;
+        emit SwapperAssigned(swapper, _swapper);
+        swapper = _swapper;
+        cluster = _cluster;
+
+        transferOwnership(_owner);
     }
 
     struct SSwapData {
         uint256 minAmountOut;
         IZeroXSwapper.SZeroXSwapData data;
+    }
+
+    /// @notice returns the swapper sell token
+    /// @param marketToken the market's TOFT collateral
+    function querySellToken(address marketToken) external view returns (address) {
+        return ITOFT(marketToken).erc20();
     }
 
     /// @notice action performed during the liquidation process
@@ -67,15 +79,9 @@ contract MarketLiquidatorReceiver is IMarketLiquidatorReceiver, Ownable, Reentra
         bytes calldata data
     ) external nonReentrant returns (bool) {
         // Check caller
-        if (!allowedCallers[msg.sender]) revert NotAuthorized();
-
-        // Check if the initiator is the owner
-        if (initiator != owner()) revert NotAuthorized();
-
-        // retrieve swapper
-        address assignedSwapper = swappers[tokenIn];
-        if (assignedSwapper == address(0)) revert NoSwapperAssigned();
-
+        if (!allowedParticipants[initiator]) revert NotAuthorized();
+        if (!cluster.isWhitelisted(0, msg.sender)) revert WhitelistError();
+        if (!cluster.isWhitelisted(0, address(this))) revert WhitelistError();
         // check if contract received enough collateral
         uint256 collateralBalance = IERC20(tokenIn).balanceOf(address(this));
         if (collateralBalance < collateralAmount) revert NotEnough();
@@ -99,9 +105,9 @@ contract MarketLiquidatorReceiver is IMarketLiquidatorReceiver, Ownable, Reentra
         if (address(swapData.data.buyToken) != tokenOut) revert NotAuthorized();
 
         // swap TOFT.erc20() with `tokenOut`
-        IERC20(erc20).safeApprove(assignedSwapper, unwrapped);
-        uint256 amountOut = IZeroXSwapper(assignedSwapper).swap(swapData.data, unwrapped, swapData.minAmountOut);
-        IERC20(erc20).safeApprove(assignedSwapper, 0);
+        IERC20(erc20).safeApprove(swapper, unwrapped);
+        uint256 amountOut = IZeroXSwapper(swapper).swap(swapData.data, unwrapped, swapData.minAmountOut);
+        IERC20(erc20).safeApprove(swapper, 0);
         if (amountOut < swapData.minAmountOut) revert SwapFailed();
 
         // tokenOut should be USDO
@@ -110,22 +116,19 @@ contract MarketLiquidatorReceiver is IMarketLiquidatorReceiver, Ownable, Reentra
         return true;
     }
 
-    /**
-     * @notice Set an allowed caller for a market
-     * @param _market the market address
-     * @param _allowed the allowed status
-     */
-    function setAllowedCaller(address _market, bool _allowed) external onlyOwner {
-        allowedCallers[_market] = _allowed;
-        emit AllowedCallerSet(_market, _allowed);
+    /// @notice assigns swapper for token
+    /// @param _swapper the swapper address
+    function setSwapper(address _swapper) external onlyOwner {
+        emit SwapperAssigned(swapper, _swapper);
+        swapper = _swapper;
     }
 
-    /// @notice assigns swapper for token
-    /// @param _tokenIn token to assign the swapper for
-    /// @param _swapper the swapper address
-    function assignSwapper(address _tokenIn, address _swapper) external onlyOwner {
-        swappers[_tokenIn] = _swapper;
-        emit SwapperAssigned(_tokenIn, _swapper);
+    /// @notice assigns participant status
+    /// @param _participant the EOA/contract address
+    /// @param _val the status
+    function setAllowedParticipant(address _participant, bool _val) external onlyOwner {
+        allowedParticipants[_participant] = _val;
+        emit AllowedParticipantAssigned(_participant, _val);
     }
 
     receive() external payable {}

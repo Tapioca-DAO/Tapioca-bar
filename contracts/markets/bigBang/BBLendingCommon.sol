@@ -7,7 +7,7 @@ import {BoringERC20} from "@boringcrypto/boring-solidity/contracts/libraries/Bor
 import {IERC20} from "@boringcrypto/boring-solidity/contracts/ERC20.sol";
 
 // Tapioca
-import {IUsdo} from "tapioca-periph/interfaces/oft/IUsdo.sol";
+import {IUsdo} from "tap-utils/interfaces/oft/IUsdo.sol";
 import {BBCommon} from "./BBCommon.sol";
 
 /*

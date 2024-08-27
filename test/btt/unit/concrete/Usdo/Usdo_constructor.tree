@@ -1,0 +1,18 @@
+Usdo_constructor.t.sol
+├── when Usdo is created with the right parameters
+│   ├── it should set the delegate parameter as the owner
+│   ├── it should set UsdoSender module
+│   ├── it should set UsdoReceiver module
+│   ├── it should set UsdoMarketReceiver module
+│   ├── it should set UsdoOptionReceiver module
+│   ├── it should set Pearlmit
+│   ├── it should set YieldBox
+│   ├── it should set the name to 'USDO Stablecoin'
+│   ├── it should set the symbol to 'USDO'
+|   └── it should be able to receive native gas
+└── when Usdo is created with the wrong parameters
+    └── when empty address is used
+        ├── it should revert for UsdoSender module
+        ├── it should revert for UsdoReceiver module
+        ├── it should revert for UsdoMarketReceiver module
+        └── it should revert for UsdoOptionReceiver module

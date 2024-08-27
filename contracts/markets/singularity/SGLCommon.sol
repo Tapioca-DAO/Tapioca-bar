@@ -6,8 +6,8 @@ import {RebaseLibrary, Rebase} from "@boringcrypto/boring-solidity/contracts/lib
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 // Tapioca
-import {ISGLInterestHelper} from "tapioca-periph/interfaces/bar/ISGLInterestHelper.sol";
-import {ISingularity} from "tapioca-periph/interfaces/bar/ISingularity.sol";
+import {ISGLInterestHelper} from "tap-utils/interfaces/bar/ISGLInterestHelper.sol";
+import {ISingularity} from "tap-utils/interfaces/bar/ISingularity.sol";
 import {SGLStorage} from "./SGLStorage.sol";
 
 /*

@@ -8,23 +8,23 @@ import "forge-std/Test.sol";
 import {IERC20} from "@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol";
 
 // Tapioca
-import {Pearlmit} from "tapioca-periph/pearlmit/Pearlmit.sol";
-import {Cluster} from "tapioca-periph/Cluster/Cluster.sol";
+import {Pearlmit} from "tap-utils/pearlmit/Pearlmit.sol";
+import {Cluster} from "tap-utils/Cluster/Cluster.sol";
 import {YieldBox} from "yieldbox/YieldBox.sol";
 import {Penrose} from "contracts/Penrose.sol";
 
 // Tapioca Tests
 import {SimpleLeverageExecutor} from "contracts/markets/leverage/SimpleLeverageExecutor.sol";
 import {UsdoTestHelper, TestPenroseData, TestSingularityData} from "./helpers/UsdoTestHelper.t.sol";
-import {ILeverageExecutor} from "tapioca-periph/interfaces/bar/ILeverageExecutor.sol";
+import {ILeverageExecutor} from "tap-utils/interfaces/bar/ILeverageExecutor.sol";
 import {ERC20WithoutStrategy} from "yieldbox/strategies/ERC20WithoutStrategy.sol";
 import {Singularity} from "contracts/markets/singularity/Singularity.sol";
-import {Pearlmit, IPearlmit} from "tapioca-periph/pearlmit/Pearlmit.sol";
+import {Pearlmit, IPearlmit} from "tap-utils/pearlmit/Pearlmit.sol";
 import {TapiocaOptionsBrokerMock} from "./mocks/TapiocaOptionsBrokerMock.sol";
-import {IMarket} from "tapioca-periph/interfaces/bar/ISingularity.sol";
-import {ITwTap} from "tapioca-periph/interfaces/tap-token/ITwTap.sol";
-import {IOracle} from "tapioca-periph/oracle/interfaces/IOracle.sol";
-import {IPenrose} from "tapioca-periph/interfaces/bar/IPenrose.sol";
+import {IMarket} from "tap-utils/interfaces/bar/ISingularity.sol";
+import {ITwTap} from "tap-utils/interfaces/tap-token/ITwTap.sol";
+import {IOracle} from "tap-utils/oracle/interfaces/IOracle.sol";
+import {IPenrose} from "tap-utils/interfaces/bar/IPenrose.sol";
 import {MagnetarMock} from "./mocks/MagnetarMock.sol";
 import {SwapperMock} from "./mocks/SwapperMock.sol";
 import {OracleMock} from "./mocks/OracleMock.sol";

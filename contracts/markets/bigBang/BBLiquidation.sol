@@ -8,9 +8,9 @@ import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {IERC20} from "@boringcrypto/boring-solidity/contracts/ERC20.sol";
 
 // Tapioca
-import {IMarketLiquidatorReceiver} from "tapioca-periph/interfaces/bar/IMarketLiquidatorReceiver.sol";
-import {ICluster} from "tapioca-periph/interfaces/periph/ICluster.sol";
-import {IUsdo} from "tapioca-periph/interfaces/oft/IUsdo.sol";
+import {IMarketLiquidatorReceiver} from "tap-utils/interfaces/bar/IMarketLiquidatorReceiver.sol";
+import {ICluster} from "tap-utils/interfaces/periph/ICluster.sol";
+import {IUsdo} from "tap-utils/interfaces/oft/IUsdo.sol";
 import {SafeApprove} from "../../libraries/SafeApprove.sol";
 import {BBCommon} from "./BBCommon.sol";
 
@@ -58,8 +58,12 @@ contract BBLiquidation is BBCommon {
         IMarketLiquidatorReceiver liquidatorReceiver,
         bytes calldata liquidatorReceiverData,
         bool swapCollateral
-    ) external onlyOwner {
-        _tryUpdateOracleRate();
+    ) external {
+        require(
+            penrose.cluster().hasRole(msg.sender, keccak256("LIQUIDATOR")) || msg.sender == owner(),
+            "Market: unauthorized"
+        );
+        _tryUpdateExchangeRate();
 
         //check from whitelist status
         {
@@ -77,7 +81,7 @@ contract BBLiquidation is BBCommon {
         uint256 requiredCollateral =
             yieldBox.toShare(collateralId, (borrowAmountWithBonus * exchangeRate) / EXCHANGE_RATE_PRECISION, false);
 
-        uint256 collateralShare = userCollateralShare[user];
+        uint256 collateralShare = userCollateralShare[user]; 
         if (requiredCollateral < collateralShare) revert ForbiddenAction();
 
         // update totalBorrow
@@ -130,7 +134,7 @@ contract BBLiquidation is BBCommon {
             revert LengthMismatch();
         }
 
-        _tryUpdateOracleRate();
+        _tryUpdateExchangeRate();
 
         _accrue();
         penrose.reAccrueBigBangMarkets();
@@ -212,7 +216,6 @@ contract BBLiquidation is BBCommon {
         if (liquidationBonusAmount > 0) {
             borrowPartWithBonus = borrowPartWithBonus + (borrowPartWithBonus * liquidationBonusAmount) / FEE_PRECISION;
         }
-
         if (collateralPartInAsset < borrowPartWithBonus) {
             if (collateralPartInAsset <= userTotalBorrowAmount) {
                 revert BadDebt();

@@ -13,16 +13,17 @@ import {
     SGLCommon,
     SGLBorrow
 } from "./singularity/Singularity.sol";
-import {IMarketLiquidatorReceiver} from "tapioca-periph/interfaces/bar/IMarketLiquidatorReceiver.sol";
-import {ITapiocaOracle} from "tapioca-periph/interfaces/periph/ITapiocaOracle.sol";
-import {ISingularity} from "tapioca-periph/interfaces/bar/ISingularity.sol";
-import {IYieldBox} from "tapioca-periph/interfaces/yieldbox/IYieldBox.sol";
-import {IMarket, Module} from "tapioca-periph/interfaces/bar/IMarket.sol";
+import {IMarketLiquidatorReceiver} from "tap-utils/interfaces/bar/IMarketLiquidatorReceiver.sol";
+import {ITapiocaOracle} from "tap-utils/interfaces/periph/ITapiocaOracle.sol";
+import {ISingularity} from "tap-utils/interfaces/bar/ISingularity.sol";
+import {IYieldBox} from "tap-utils/interfaces/yieldbox/IYieldBox.sol";
+import {IMarket, Module} from "tap-utils/interfaces/bar/IMarket.sol";
 
 contract MarketHelper {
     using RebaseLibrary for Rebase;
 
     uint256 internal constant FEE_PRECISION = 1e5;
+    uint256 internal constant FEE_PRECISION_DECIMALS = 5;
 
     error ExchangeRateNotValid();
     error Solvent();
@@ -44,7 +45,7 @@ contract MarketHelper {
         return _computeClosingFactor(
             borrowPart,
             collateralPartInAsset,
-            FEE_PRECISION,
+            FEE_PRECISION_DECIMALS,
             market._liquidationCollateralizationRate(),
             market._liquidationMultiplier(),
             _totalBorrow
