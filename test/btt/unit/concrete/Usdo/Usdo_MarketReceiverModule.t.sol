@@ -3,7 +3,7 @@ pragma solidity 0.8.22;
 
 // Tapioca
 import {UsdoMarketReceiverModule} from "contracts/usdo/modules/UsdoMarketReceiverModule.sol";
-import {MarketLendOrRepayMsg, MarketRemoveAssetMsg} from "tapioca-periph/interfaces/oft/IUsdo.sol";
+import {MarketLendOrRepayMsg, MarketRemoveAssetMsg} from "tap-utils/interfaces/oft/IUsdo.sol";
 import {MarketHelper} from "contracts/markets/MarketHelper.sol";
 import {BigBang} from "contracts/markets/bigBang/BigBang.sol";
 
