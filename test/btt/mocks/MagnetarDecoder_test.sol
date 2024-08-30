@@ -12,7 +12,7 @@ import {
     MagnetarCall,
     MagnetarModule,
     MagnetarAction
-} from "tapioca-periph/interfaces/periph/IMagnetar.sol";
+} from "tap-utils/interfaces/periph/IMagnetar.sol";
 
 contract MagnetarDecoder_test {
     error MagnetarDecoder_test_Fail();

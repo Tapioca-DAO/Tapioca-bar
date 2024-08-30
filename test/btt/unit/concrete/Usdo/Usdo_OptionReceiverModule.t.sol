@@ -15,14 +15,14 @@ import {OFTMsgCodec} from "@layerzerolabs/lz-evm-oapp-v2/contracts/oft/libs/OFTM
 import {UsdoOptionReceiverModule} from "contracts/usdo/modules/UsdoOptionReceiverModule.sol";
 import {
     IExerciseOptionsData
-} from "tapioca-periph/interfaces/tap-token/ITapiocaOptionBroker.sol";
+} from "tap-utils/interfaces/tap-token/ITapiocaOptionBroker.sol";
 import {
     ExerciseOptionsMsg
-} from "tapioca-periph/interfaces/oft/IUsdo.sol";
+} from "tap-utils/interfaces/oft/IUsdo.sol";
 import {
     LZSendParam
-} from "tapioca-periph/tapiocaOmnichainEngine/extension/TapiocaOmnichainEngineHelper.sol";
-import {IPearlmit} from "tapioca-periph/pearlmit/Pearlmit.sol";
+} from "tap-utils/tapiocaOmnichainEngine/extension/TapiocaOmnichainEngineHelper.sol";
+import {IPearlmit} from "tap-utils/pearlmit/Pearlmit.sol";
 
 // tests
 import {Usdo_Unit_Shared} from "../../shared/Usdo_Unit_Shared.t.sol";

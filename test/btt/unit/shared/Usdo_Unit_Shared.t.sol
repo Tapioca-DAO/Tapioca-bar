@@ -14,25 +14,25 @@ import {OFTMsgCodec} from "@layerzerolabs/lz-evm-oapp-v2/contracts/oft/libs/OFTM
 
 // Tapioca
 import {UsdoInitStruct, UsdoModulesInitStruct, MarketLendOrRepayMsg, MarketRemoveAssetMsg, IRemoveAndRepay,
-    ILendOrRepayParams} from "tapioca-periph/interfaces/oft/IUsdo.sol";
-import {TapiocaOmnichainExtExec} from "tapioca-periph/tapiocaOmnichainEngine/extension/TapiocaOmnichainExtExec.sol";
+    ILendOrRepayParams} from "tap-utils/interfaces/oft/IUsdo.sol";
+import {TapiocaOmnichainExtExec} from "tap-utils/tapiocaOmnichainEngine/extension/TapiocaOmnichainExtExec.sol";
 import {UsdoHelper} from "contracts/usdo/extensions/UsdoHelper.sol";
 import {Usdo} from "contracts/usdo/Usdo.sol";
 
-import {IOptionsExitData} from "tapioca-periph/interfaces/tap-token/ITapiocaOptionBroker.sol";
-import {ICommonExternalContracts} from "tapioca-periph/interfaces/common/ICommonData.sol";
+import {IOptionsExitData} from "tap-utils/interfaces/tap-token/ITapiocaOptionBroker.sol";
+import {ICommonExternalContracts} from "tap-utils/interfaces/common/ICommonData.sol";
 import {
     ITapiocaOptionLiquidityProvision,
     IOptionsLockData,
     IOptionsUnlockData
-} from "tapioca-periph/interfaces/tap-token/ITapiocaOptionLiquidityProvision.sol";
+} from "tap-utils/interfaces/tap-token/ITapiocaOptionLiquidityProvision.sol";
 import {
     ITapiocaOptionBroker,
     IExerciseOptionsData,
     IOptionsParticipateData
-} from "tapioca-periph/interfaces/tap-token/ITapiocaOptionBroker.sol";
-import {MagnetarWithdrawData} from "tapioca-periph/interfaces/periph/IMagnetar.sol";
-import {IPearlmit} from "tapioca-periph/pearlmit/Pearlmit.sol";
+} from "tap-utils/interfaces/tap-token/ITapiocaOptionBroker.sol";
+import {MagnetarWithdrawData} from "tap-utils/interfaces/periph/IMagnetar.sol";
+import {IPearlmit} from "tap-utils/pearlmit/Pearlmit.sol";
 
 // tests
 import {Base_Test} from "../../Base_Test.t.sol";
