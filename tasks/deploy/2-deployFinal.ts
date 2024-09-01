@@ -238,7 +238,7 @@ async function tapiocaPostDeployTask(
         }
 
         // Deposit SglSdai & SglSglp assets in yieldbox
-        {
+        if (!isTestnet) {
             await depositUsdoYbAndAddSgl({
                 hre,
                 marketName: DEPLOYMENT_NAMES.SGL_S_GLP_MARKET,
