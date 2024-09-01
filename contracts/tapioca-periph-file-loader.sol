@@ -6,4 +6,10 @@ pragma solidity 0.8.22;
 
 import {Pearlmit} from "tap-utils/pearlmit/Pearlmit.sol";
 import {MagnetarHelper} from "tap-utils/Magnetar/MagnetarHelper.sol";
-import {IMagnetarCollateralModule, IMagnetarMintModule, IMagnetarOptionModule, IMagnetarYieldBoxModule} from "tap-utils/interfaces/periph/IMagnetar.sol";
+import {
+    IMagnetarCollateralModule,
+    IMagnetarMintModule,
+    IMagnetarOptionModule,
+    IMagnetarYieldBoxModule
+} from "tap-utils/interfaces/periph/IMagnetar.sol";
+import {IYieldBox} from "tapioca-periph/interfaces/yieldbox/IYieldBox.sol";
