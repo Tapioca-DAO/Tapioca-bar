@@ -28,6 +28,8 @@ export const DEPLOYMENT_NAMES = {
         'YB_T_SGL_SDAI_ASSET_WITHOUT_STRATEGY',
     YB_T_SGL_SGLP_ASSET_WITHOUT_STRATEGY:
         'YB_T_SGL_SGLP_ASSET_WITHOUT_STRATEGY',
+    YB_T_SGL_USDC_MOCK_ASSET_WITHOUT_STRATEGY:
+        'YB_T_SGL_USDC_MOCK_ASSET_WITHOUT_STRATEGY',
     // ORIGINS
     ORIGINS_T_ETH_MARKET: 'ORIGINS_T_ETH_MARKET',
     // SGL
@@ -173,6 +175,10 @@ const POST_LBP: TPostLbp = {
         sDAI: '0xed18DBCb2810E4178c23668794198C81B0668b23',
         ...marketConfigMainnet,
     },
+    [EChainID.BASE_SEPOLIA]: {
+        sDAI: '0x9384B3c4700f4B82e5961d98BE215A6eF2FAEeA5',
+        ...marketConfigMainnet,
+    },
 };
 
 POST_LBP['31337' as EChainID] = POST_LBP[EChainID.ARBITRUM]; // Copy from Arbitrum
@@ -200,6 +206,9 @@ const MISC: TMisc = {
     },
     [EChainID.FUJI_AVALANCHE]: {
         WETH: '0x4404EF158716dfad1c2BEffE9c7c8Fa261684544',
+    },
+    [EChainID.BASE_SEPOLIA]: {
+        WETH: '0x4aF9F18Eb6e595D7f876E71BBF6ac95EA99cF140',
     },
 };
 

@@ -216,6 +216,25 @@ async function tapiocaPostDeployTask(
             //     },
             //     hre,
             // );
+
+            if (isTestnet) {
+                const tSglUsdcMock = loadGlobalContract(
+                    hre,
+                    TAPIOCA_PROJECTS_NAME.TapiocaZ,
+                    hre.SDK.chainInfo.chainId,
+                    TAPIOCA_Z_CONFIG.DEPLOYMENT_NAMES.T_SGL_USDC_MOCK_MARKET,
+                    tag,
+                );
+                await createEmptyStratYbAsset__task(
+                    {
+                        deploymentName:
+                            DEPLOYMENT_NAMES.YB_T_SGL_USDC_MOCK_ASSET_WITHOUT_STRATEGY,
+                        tag,
+                        token: tSglUsdcMock.address,
+                    },
+                    hre,
+                );
+            }
         }
 
         // Deposit SglSdai & SglSglp assets in yieldbox

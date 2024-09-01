@@ -44,7 +44,7 @@ export async function setupDepositYbAssets(
     };
 
     // Deposit SglSdai & SglSglp assets in yieldbox
-    if (isSideChain) {
+    if (isSideChain && !isTestnet) {
         const { tSdai } = deploy__LoadDeployments_Eth({ hre, tag, isTestnet });
 
         await wrapToft({
@@ -63,7 +63,7 @@ export async function setupDepositYbAssets(
         });
     }
 
-    if (isHostChain) {
+    if (isHostChain && !isTestnet) {
         const { mtETH, tETH, tReth, tWSTETH, tSGLP } =
             deploy__LoadDeployments_Arb({
                 hre,
