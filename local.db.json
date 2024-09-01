@@ -2573,11 +2573,11 @@
                     }
                 },
                 {
-                    "address": "0x380d8219d55b5c6193Ec01669b0d1E39E8f2e2F0",
+                    "address": "0x589a5b163a8D01A47aa5069833bB08A968810b23",
                     "name": "YB_T_SGL_SGLP_ASSET_WITHOUT_STRATEGY",
                     "meta": {
                         "token": "0x2e1b3D43Efdf9497361C3f8b29E484d0800f4dde",
-                        "ybAssetId": 16
+                        "ybAssetId": 12
                     }
                 },
                 {
