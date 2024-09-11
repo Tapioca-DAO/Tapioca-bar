@@ -48,14 +48,13 @@ contract Penrose_singularity is Singularity_Unit_Shared {
         ) = _getSingularityInitData(
             SingularityInitData(
                 address(penrose),
-                IERC20(address(mainToken)), //asset
+                address(mainToken), //asset
                 mainTokenId,
-                IERC20(address(usdo)), //collateral
+                address(usdo), //collateral
                 usdoId,
                 ITapiocaOracle(address(rndAddr)),
                 ILeverageExecutor(address(rndAddr))
-            ),
-            address(penrose)
+            )
         );
         address _contract = penrose.registerSingularity(rndAddr, abi.encode(modulesData, tokensData, data), true);
         assertTrue(penrose.isMarketRegistered(_contract));

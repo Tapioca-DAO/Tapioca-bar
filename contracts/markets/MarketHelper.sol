@@ -31,6 +31,36 @@ contract MarketHelper {
     error InsufficientLiquidationBonus();
     error NotEnoughCollateral();
 
+    /// @notice checks if a liquidatable position is in bad debt state
+    /// @param market the SGL/BB address
+    function isPositionInBadDebt(IMarket market, uint256 _exchangeRate, address _user) external view returns (bool) {
+        uint256 borrowPart = market._userBorrowPart(_user);
+        if (borrowPart == 0) return false;
+        uint256 collateralShare = market._userCollateralShare(_user);
+        if (collateralShare == 0) return false;
+
+        IYieldBox yieldBox = IYieldBox(market._yieldBox());
+
+        uint256 collateralId = market._collateralId();
+        uint256 exchangeRatePrecision = market._exchangeRatePrecision();
+
+        // get collateral amount for total share
+        uint256 collateralPartInAsset = (
+                yieldBox.toAmount(collateralId, collateralShare, false) * exchangeRatePrecision
+            ) / _exchangeRate;
+
+        // get closing factor
+        uint256 borrowPartWithBonus = computeClosingFactor(market, borrowPart, collateralPartInAsset);
+
+        // limit liquidable amount before bonus to the current debt
+        (uint128 totalBorrowElastic, uint128 totalBorrowBase) = market._totalBorrow();
+        Rebase memory _totalBorrow = Rebase({elastic: totalBorrowElastic, base: totalBorrowBase});
+        uint256 userTotalBorrowAmount = _totalBorrow.toElastic(borrowPart, true);
+        borrowPartWithBonus = borrowPartWithBonus > userTotalBorrowAmount ? userTotalBorrowAmount : borrowPartWithBonus;
+
+        return collateralPartInAsset < borrowPartWithBonus;
+    }
+
     /// @notice returns the maximum liquidatable amount for user
     /// @param market the SGL/BB address
     /// @param borrowPart amount borrowed

@@ -112,7 +112,10 @@ contract Usdo_MarketReceiverModule is Usdo_Unit_Shared, BigBang_Unit_Shared {
             magnetar: _magnetar,
             marketHelper: _marketHelper,
             market: _market,
-            removeAmount: _removeAmount
+            removeAmount: _removeAmount,
+            repayAmount: 0,
+            removeCollateralAmount: 0,
+            bb: address(0)
         });
 
         MarketRemoveAssetMsg memory _msg = _createMinimalRemoveAssetMsg(_removeAssetData);
@@ -129,7 +132,10 @@ contract Usdo_MarketReceiverModule is Usdo_Unit_Shared, BigBang_Unit_Shared {
             magnetar: _magnetar,
             marketHelper: _marketHelper,
             market: _market,
-            removeAmount: _removeAmount
+            removeAmount: _removeAmount,
+            repayAmount: 0,
+            removeCollateralAmount: 0,
+            bb: address(0)
         });
         MarketRemoveAssetMsg memory _msg = _createMinimalRemoveAssetMsg(_removeAssetData);
         usdoMarketReceiverModule.removeAssetReceiver(address(this), abi.encode(_msg));

@@ -12,6 +12,7 @@ abstract contract Constants {
 
     uint256 public constant USER_A_PKEY = 0x1;
     uint256 public constant USER_B_PKEY = 0x2;
+    uint256 public constant USER_C_PKEY = 0x3;
 
     address public constant ADDRESS_ZERO = address(0);
     uint256 public constant VALUE_ZERO = 0;
@@ -60,4 +61,22 @@ abstract contract Constants {
     uint256 public constant MIN_COLLATERAL_AMOUNT = 1e15;
     uint256 public constant FEE_PRECISION = 1e5;
     uint256 public constant MIN_LIQUIDATION_BONUS = 1e5;
+
+    // SGL default values
+    uint256 public constant CR_RATE = 75000;
+    uint256 public constant LQ_CR_RATE = 80000;
+
+
+    // ************ //
+    // *** USDO *** //
+    // ************ //
+    uint16 public constant SEND = 1; // Send LZ message type
+    uint16 public constant PT_APPROVALS = 500; // Use for ERC20Permit approvals
+    uint16 public constant PT_YB_APPROVE_ASSET = 503; // Use for YieldBox 'setApprovalForAsset(true)' operation
+    uint16 public constant PT_YB_APPROVE_ALL = 504; // Use for YieldBox 'setApprovalForAll(true)' operation
+    uint16 public constant PT_MARKET_PERMIT = 505; // Use for market.permitLend() operation
+    uint16 public constant PT_REMOTE_TRANSFER = 700; // Use for transferring tokens from the contract from another chain
+    uint16 public constant PT_MARKET_REMOVE_ASSET = 900; // Use for remove asset from a market available on another chain
+    uint16 public constant PT_YB_SEND_SGL_LEND_OR_REPAY = 901; // Use to YB deposit, lend/repay on a market available on another chain
+    uint16 public constant PT_TAP_EXERCISE = 902; // Use for exercise options on tOB available on another chain
 }

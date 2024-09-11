@@ -18,6 +18,8 @@ import {Cluster} from "tap-utils/Cluster/Cluster.sol";
 import {YieldBox} from "yieldbox/YieldBox.sol";
 import {Penrose} from "contracts/Penrose.sol";
 
+import {ERC20PermitStruct, ERC20PermitApprovalMsg} from "tap-utils/interfaces/periph/ITapiocaOmnichainEngine.sol";
+
 // tests
 import {OracleMock_test} from "../mocks/OracleMock_test.sol";
 import {ERC20Mock_test} from "../mocks/ERC20Mock_test.sol";
@@ -145,5 +147,30 @@ abstract contract Utils is Test, Constants {
     function _approveYieldBoxForAll(YieldBox yieldBox, address from, address operator) internal {
         _resetPrank({msgSender: from});
         yieldBox.setApprovalForAll(operator, true);
+    }
+
+    // ******************** //
+    // *** DATA HELPERS *** //
+    // ******************** //
+    function _createErc20PermitStruct(address user, address spender, uint256 amount, uint256 nonce) internal pure returns (ERC20PermitStruct memory permit_) {
+        permit_ = ERC20PermitStruct({owner: user, spender: spender, value: amount, nonce: nonce, deadline: 1 days});
+    }
+    function __getERC20PermitData(ERC20PermitStruct memory _permit, bytes32 _digest, address _token, uint256 _pkSigner)
+        internal
+        pure
+        returns (ERC20PermitApprovalMsg memory permitApproval_)
+    {
+        (uint8 v_, bytes32 r_, bytes32 s_) = vm.sign(_pkSigner, _digest);
+
+        permitApproval_ = ERC20PermitApprovalMsg({
+            token: _token,
+            owner: _permit.owner,
+            spender: _permit.spender,
+            value: _permit.value,
+            deadline: _permit.deadline,
+            v: v_,
+            r: r_,
+            s: s_
+        });
     }
 }

@@ -13,8 +13,7 @@ import {OFTMsgCodec} from "@layerzerolabs/lz-evm-oapp-v2/contracts/oft/libs/OFTM
 
 
 // Tapioca
-import {UsdoInitStruct, UsdoModulesInitStruct, MarketLendOrRepayMsg, MarketRemoveAssetMsg, IRemoveAndRepay,
-    ILendOrRepayParams} from "tap-utils/interfaces/oft/IUsdo.sol";
+import {UsdoInitStruct, UsdoModulesInitStruct, MarketLendOrRepayMsg, MarketRemoveAssetMsg, IRemoveAndRepay, ILendOrRepayParams, YieldBoxApproveAllMsg, YieldBoxApproveAssetMsg, MarketPermitActionMsg, IUsdo} from "tap-utils/interfaces/oft/IUsdo.sol";
 import {TapiocaOmnichainExtExec} from "tap-utils/tapiocaOmnichainEngine/extension/TapiocaOmnichainExtExec.sol";
 import {UsdoHelper} from "contracts/usdo/extensions/UsdoHelper.sol";
 import {Usdo} from "contracts/usdo/Usdo.sol";
@@ -34,14 +33,37 @@ import {
 import {MagnetarWithdrawData} from "tap-utils/interfaces/periph/IMagnetar.sol";
 import {IPearlmit} from "tap-utils/pearlmit/Pearlmit.sol";
 
+import {
+    TapiocaOmnichainEngineHelper,
+    PrepareLzCallData,
+    PrepareLzCallReturn,
+    ComposeMsgData,
+    LZSendParam,
+    RemoteTransferMsg
+} from "tap-utils/tapiocaOmnichainEngine/extension/TapiocaOmnichainEngineHelper.sol";
+import {ERC20PermitStruct, ERC20PermitApprovalMsg} from "tap-utils/interfaces/periph/ITapiocaOmnichainEngine.sol";
+
 // tests
 import {Base_Test} from "../../Base_Test.t.sol";
+
+import "forge-std/console.sol";
 
 abstract contract Usdo_Unit_Shared is Base_Test {
     // ************ //
     // *** VARS *** //
     // ************ //
     UsdoHelper usdoHelper;
+
+    struct LzOFTComposedData {
+        uint16 msgType;
+        bytes32 guid;
+        bytes composeMsg;
+        uint32 dstEid;
+        address from;
+        address to;
+        address srcMsgSender;
+        bytes extraOptions;
+    }
 
     // ************* //
     // *** SETUP *** //
@@ -131,26 +153,34 @@ abstract contract Usdo_Unit_Shared is Base_Test {
         address magnetar;
         address marketHelper;
         address market;
+        address bb;
         uint256 removeAmount;
+        uint256 repayAmount;
+        uint256 removeCollateralAmount;
     }
     function _createMinimalRemoveAssetMsg(_RemoveAssetInternal memory data) internal view returns (MarketRemoveAssetMsg memory marketMsg) {
         uint256 _removeAmountSD = usdoHelper.toSD(data.removeAmount, usdo.decimalConversionRate());
+        uint256 _repayAmountSD = usdoHelper.toSD(data.repayAmount, usdo.decimalConversionRate());
+        uint256 _removeCollateralAmountSD = usdoHelper.toSD(data.removeCollateralAmount, usdo.decimalConversionRate());
 
+        console.log("-------- _removeAmountSD            %s", _removeAmountSD);
+        console.log("-------- _repayAmountSD             %s", _repayAmountSD);
+        console.log("-------- _removeCollateralAmountSD  %s", _removeCollateralAmountSD);
         marketMsg = MarketRemoveAssetMsg({
             user: address(this),
             externalData: ICommonExternalContracts({
                 magnetar: data.magnetar,
                 singularity: data.market,
-                bigBang: address(0),
+                bigBang: data.bb,
                 marketHelper: data.marketHelper
             }),
             removeAndRepayData: IRemoveAndRepay({
                 removeAssetFromSGL: true,
                 removeAmount: _removeAmountSD,
-                repayAssetOnBB: false,
-                repayAmount: 0,
-                removeCollateralFromBB: false,
-                collateralAmount: 0,
+                repayAssetOnBB: data.repayAmount > 0,
+                repayAmount: _repayAmountSD,
+                removeCollateralFromBB: data.removeCollateralAmount > 0,
+                collateralAmount: _removeCollateralAmountSD,
                 exitData: IOptionsExitData({exit: false, target: address(0), oTAPTokenID: 0}),
                 unlockData: IOptionsUnlockData({unlock: false, target: address(0), tokenId: 0}),
                 assetWithdrawData: MagnetarWithdrawData({
@@ -175,135 +205,224 @@ abstract contract Usdo_Unit_Shared is Base_Test {
             value: 0
         });
     }
-    // function _prepareLendOrRepayMsg() internal {
-    //     // pearlmit.approve(20, address(bUsdo), 0, address(magnetar), uint200(tokenAmount_), uint48(block.timestamp)); // Atomic approval
-    //     // bUsdo.approve(address(pearlmit), tokenAmount_);
 
-    //     uint256 erc20Amount_ = 1 ether;
-    //     uint256 tokenAmount_ = 0.5 ether;
+    function _getYieldBoxPermitAssetTypedDataHash(ERC20PermitStruct memory _permitData, bool permit)
+        internal
+        view
+        returns (bytes32)
+    {
+        bytes32 permitTypeHash_ = permit
+            ? keccak256("Permit(address owner,address spender,uint256 assetId,uint256 nonce,uint256 deadline)")
+            : keccak256("Revoke(address owner,address spender,uint256 assetId,uint256 nonce,uint256 deadline)");
 
-    //     LZSendParam memory withdrawLzSendParam_;
-    //     MessagingFee memory withdrawMsgFee_; // Will be used as value for the composed msg
+        bytes32 structHash_ = keccak256(
+            abi.encode(
+                permitTypeHash_,
+                _permitData.owner,
+                _permitData.spender,
+                _permitData.value, // @dev this is the assetId
+                _permitData.nonce,
+                _permitData.deadline
+            )
+        );
 
-    //     {
-    //         // @dev `withdrawMsgFee_` is to be airdropped on dst to pay for the send to source operation (B->A).
-    //         PrepareLzCallReturn memory prepareLzCallReturn1_ = usdoHelper.prepareLzCall( // B->A data
-    //             IUsdo(address(bUsdo)),
-    //             PrepareLzCallData({
-    //                 dstEid: aEid,
-    //                 recipient: OFTMsgCodec.addressToBytes32(address(this)),
-    //                 amountToSendLD: 0,
-    //                 minAmountToCreditLD: 0,
-    //                 msgType: SEND,
-    //                 composeMsgData: ComposeMsgData({
-    //                     index: 0,
-    //                     gas: 0,
-    //                     value: 0,
-    //                     data: bytes(""),
-    //                     prevData: bytes(""),
-    //                     prevOptionsData: bytes("")
-    //                 }),
-    //                 lzReceiveGas: 5_000_000,
-    //                 lzReceiveValue: 0,
-    //                 refundAddress: address(this)
-    //             })
-    //         );
-    //         withdrawLzSendParam_ = prepareLzCallReturn1_.lzSendParam;
-    //         withdrawMsgFee_ = prepareLzCallReturn1_.msgFee;
-    //     }
+        return keccak256(abi.encodePacked("\x19\x01", _getYieldBoxDomainSeparator(), structHash_));
+    }
 
-    //     /**
-    //      * Actions
-    //      */
-    //     singularity.approve(address(magnetar), type(uint256).max);
+    function _getYieldBoxPermitAllTypedDataHash(ERC20PermitStruct memory _permitData, bool permit)
+        internal
+        view
+        returns (bytes32)
+    {
+        bytes32 permitTypeHash_ = permit
+            ? keccak256("PermitAll(address owner,address spender,uint256 nonce,uint256 deadline)")
+            : keccak256("RevokeAll(address owner,address spender,uint256 nonce,uint256 deadline)");
 
-    //     uint256 sh = yieldBox.toShare(bUsdoYieldBoxId, tokenAmount_, false);
-    //     pearlmit.approve(
-    //         1155, address(yieldBox), bUsdoYieldBoxId, address(singularity), uint200(sh), uint48(block.timestamp)
-    //     ); // Atomic approval
-    //     yieldBox.setApprovalForAll(address(pearlmit), true);
+        bytes32 structHash_ = keccak256(
+            abi.encode(permitTypeHash_, _permitData.owner, _permitData.spender, _permitData.nonce, _permitData.deadline)
+        );
 
-    //     uint256 tokenAmountSD = usdoHelper.toSD(tokenAmount_, aUsdo.decimalConversionRate());
-    //     MarketLendOrRepayMsg memory marketMsg = MarketLendOrRepayMsg({
-    //         user: address(this),
-    //         lendParams: ILendOrRepayParams({
-    //             repay: false,
-    //             depositAmount: tokenAmountSD,
-    //             repayAmount: 0,
-    //             magnetar: address(magnetar),
-    //             marketHelper: address(marketHelper),
-    //             market: address(singularity),
-    //             removeCollateral: false,
-    //             removeCollateralAmount: 0,
-    //             lockData: IOptionsLockData({lock: false, target: address(0), tAsset:address(0), lockDuration: 0, amount: 0, fraction: 0, minDiscountOut: 0}),
-    //             participateData: IOptionsParticipateData({participate: false, target: address(0), tOLPTokenId: 0})
-    //         }),
-    //         withdrawParams: MagnetarWithdrawData({
-    //             yieldBox: address(0),
-    //             assetId: 0,
-    //             unwrap: false,
-    //             amount: 0,
-    //             withdraw: false,
-    //             receiver: address(this),
-    //             extractFromSender: false
-    //         }),
-    //         value: 0
-    //     });
+        return keccak256(abi.encodePacked("\x19\x01", _getYieldBoxDomainSeparator(), structHash_));
+    }
+    function __getYieldBoxPermitAssetData(
+        ERC20PermitStruct memory _permit,
+        address _target,
+        bool _isPermit,
+        bytes32 _digest,
+        uint256 _pkSigner
+    ) internal pure returns (YieldBoxApproveAssetMsg memory permitApproval_) {
+        (uint8 v_, bytes32 r_, bytes32 s_) = vm.sign(_pkSigner, _digest);
 
-    //     bytes memory marketMsg_ = usdoHelper.buildMarketLendOrRepayMsg(marketMsg);
+        permitApproval_ = YieldBoxApproveAssetMsg({
+            target: _target,
+            owner: _permit.owner,
+            spender: _permit.spender,
+            assetId: _permit.value,
+            deadline: _permit.deadline,
+            v: v_,
+            r: r_,
+            s: s_,
+            permit: _isPermit
+        });
+    }
+    function __getYieldBoxPermitAllData(
+        ERC20PermitStruct memory _permit,
+        address _target,
+        bool _isPermit,
+        bytes32 _digest,
+        uint256 _pkSigner
+    ) internal pure returns (YieldBoxApproveAllMsg memory permitApproval_) {
+        (uint8 v_, bytes32 r_, bytes32 s_) = vm.sign(_pkSigner, _digest);
 
-    //     PrepareLzCallReturn memory prepareLzCallReturn2_ = usdoHelper.prepareLzCall(
-    //         IUsdo(address(aUsdo)),
-    //         PrepareLzCallData({
-    //             dstEid: bEid,
-    //             recipient: OFTMsgCodec.addressToBytes32(address(this)),
-    //             amountToSendLD: 0,
-    //             minAmountToCreditLD: 0,
-    //             msgType: PT_YB_SEND_SGL_LEND_OR_REPAY,
-    //             composeMsgData: ComposeMsgData({
-    //                 index: 0,
-    //                 gas: 5_000_000,
-    //                 value: uint128(withdrawMsgFee_.nativeFee),
-    //                 data: marketMsg_,
-    //                 prevData: bytes(""),
-    //                 prevOptionsData: bytes("")
-    //             }),
-    //             lzReceiveGas: 5_000_000,
-    //             lzReceiveValue: 0,
-    //             refundAddress: address(this)
-    //         })
-    //     );
-    //     bytes memory oftMsgOptions_ = prepareLzCallReturn2_.oftMsgOptions;
-    //     MessagingReceipt memory msgReceipt_;
-    //     bytes memory sentMsg;
+        permitApproval_ = YieldBoxApproveAllMsg({
+            target: _target,
+            owner: _permit.owner,
+            spender: _permit.spender,
+            deadline: _permit.deadline,
+            v: v_,
+            r: r_,
+            s: s_,
+            permit: _isPermit
+        });
+    }
 
-    //     {
-    //         bytes memory composeMsg_ = prepareLzCallReturn2_.composeMsg;
-    //         MessagingFee memory msgFee_ = prepareLzCallReturn2_.msgFee;
-    //         LZSendParam memory lzSendParam_ = prepareLzCallReturn2_.lzSendParam;
-    //         (msgReceipt_,, sentMsg,) = aUsdo.sendPacket{value: msgFee_.nativeFee}(lzSendParam_, composeMsg_);
-    //     }
+    function _getMarketPermitTypedDataHash(
+        bool permitAsset,
+        address owner_,
+        address spender_,
+        uint256 value_,
+        uint256 deadline_,
+        uint256 nonce_,
+        bytes32 domainSeparator_
+    ) internal pure returns (bytes32) {
+        bytes32 permitTypeHash_ = permitAsset
+            ? bytes32(0x6e71edae12b1b97f4d1f60370fef10105fa2faae0126114a169c64845d6126c9)
+            : bytes32(0xe9685ff6d48c617fe4f692c50e602cce27cbad0290beb93cfa77eac43968d58c);
 
-    //     {
-    //         verifyPackets(uint32(bEid), address(bUsdo));
+        bytes32 structHash_ = keccak256(abi.encode(permitTypeHash_, owner_, spender_, value_, nonce_++, deadline_));
 
-    //         __callLzCompose(
-    //             LzOFTComposedData(
-    //                 PT_YB_SEND_SGL_LEND_OR_REPAY,
-    //                 msgReceipt_.guid,
-    //                 sentMsg,
-    //                 bEid,
-    //                 address(bUsdo), // Compose creator (at lzReceive)
-    //                 address(bUsdo), // Compose receiver (at lzCompose)
-    //                 address(this),
-    //                 oftMsgOptions_
-    //             )
-    //         );
-    //     }
+        return keccak256(abi.encodePacked("\x19\x01", domainSeparator_, structHash_));
+    }
+    function __getMarketPermitData(MarketPermitActionMsg memory _permit, bytes32 _digest, uint256 _pkSigner)
+        internal
+        pure
+        returns (MarketPermitActionMsg memory permitApproval_)
+    {
+        (uint8 v_, bytes32 r_, bytes32 s_) = vm.sign(_pkSigner, _digest);
 
-    //     // Check execution
-    //     {
-    //         assertLt(bUsdo.balanceOf(address(this)), erc20Amount_);
-    //     }
-    // }
+        permitApproval_ = MarketPermitActionMsg({
+            target: _permit.target,
+            owner: _permit.owner,
+            spender: _permit.spender,
+            value: _permit.value,
+            deadline: _permit.deadline,
+            v: v_,
+            r: r_,
+            s: s_,
+            permitAsset: _permit.permitAsset
+        });
+    }
+
+    // *** Crosschain helpers *** //
+    function __callLzCompose(LzOFTComposedData memory _lzOFTComposedData) internal {
+        vm.expectEmit(true, true, true, false);
+        emit ComposeReceived(_lzOFTComposedData.msgType, _lzOFTComposedData.guid, _lzOFTComposedData.composeMsg);
+
+        this.lzCompose(
+            _lzOFTComposedData.dstEid,
+            _lzOFTComposedData.from,
+            _lzOFTComposedData.extraOptions,
+            _lzOFTComposedData.guid,
+            _lzOFTComposedData.to,
+            _lzOFTComposedData.composeMsg
+        );
+    }
+
+    function _prepareLzCall(address _token, uint32 _dstEid, address _recipient, uint256 _amount, uint16 _msgType, bytes memory _composeData, uint256 _composeValue) internal view returns (PrepareLzCallReturn memory prepareLzCallReturn_) {
+        uint256 minAmount = _amount - _amount * 1e4/1e5; 
+        return usdoHelper.prepareLzCall(
+            IUsdo(_token),
+            PrepareLzCallData({
+                dstEid: _dstEid,
+                recipient: OFTMsgCodec.addressToBytes32(_recipient),
+                amountToSendLD: _amount,
+                minAmountToCreditLD: minAmount,
+                msgType: _msgType,
+                composeMsgData: ComposeMsgData({
+                    index: 0,
+                    gas: 1_000_000,
+                    value: uint128(_composeValue),
+                    data: _composeData,
+                    prevData: bytes(""),
+                    prevOptionsData: bytes("")
+                }),
+                lzReceiveGas: 1_000_000,
+                lzReceiveValue: 0,
+                refundAddress: address(this)
+            })
+        );
+    }
+    function _prepareAndExecuteCrossChainPackets(address _token, address _receivingToken, uint32 _dstEid, address _recipient, uint256 _amount, uint16 _msgType, bytes memory _composeData) internal {
+        PrepareLzCallReturn memory _lzCallReturn = _prepareLzCall(_token, _dstEid, _recipient, _amount, _msgType, _composeData, 0);
+
+        bytes memory composeMsg_ = _lzCallReturn.composeMsg;
+        bytes memory oftMsgOptions_ = _lzCallReturn.oftMsgOptions;
+        MessagingFee memory msgFee_ = _lzCallReturn.msgFee;
+        LZSendParam memory lzSendParam_ = _lzCallReturn.lzSendParam;
+
+        (MessagingReceipt memory msgReceipt_,, bytes memory sentMsg,) =
+            Usdo(payable(_token)).sendPacket{value: msgFee_.nativeFee}(lzSendParam_, composeMsg_);
+
+        verifyPackets(_dstEid, _receivingToken);
+
+        __callLzCompose(
+            LzOFTComposedData(
+                _msgType,
+                msgReceipt_.guid,
+                sentMsg,
+                _dstEid,
+                _receivingToken, // Compose creator (at lzReceive)
+                _receivingToken, // Compose receiver (at lzCompose)
+                address(this),
+                oftMsgOptions_
+            )
+        );
+    }
+
+    function _prepareAndExecuteComposedCrossChainPackets(address _token, address _receivingToken, uint32 _srcEid, uint32 _dstEid, address _recipient, uint256 _amount, uint16 _msgType, bytes memory _composeData) internal {
+        // usually for withdrawal
+        PrepareLzCallReturn memory prepareLzCallReturn1_ = _prepareLzCall(_receivingToken, _srcEid, _recipient, _amount, SEND, "", 0);
+        PrepareLzCallReturn memory prepareLzCallReturn2_ = _prepareLzCall(_token, _dstEid, _recipient, 0, _msgType, _composeData, prepareLzCallReturn1_.msgFee.nativeFee);
+
+        (MessagingReceipt memory msgReceipt_,, bytes memory sentMsg,) =
+            Usdo(payable(_token)).sendPacket{value: prepareLzCallReturn2_.msgFee.nativeFee}(prepareLzCallReturn2_.lzSendParam, prepareLzCallReturn2_.composeMsg);
+
+        verifyPackets(_dstEid, _receivingToken); 
+
+        __callLzCompose(
+            LzOFTComposedData(
+                _msgType,
+                msgReceipt_.guid,
+                sentMsg,
+                bEid,
+                _receivingToken, // Compose creator (at lzReceive)
+                _receivingToken, // Compose receiver (at lzCompose)
+                _recipient,
+                prepareLzCallReturn2_.oftMsgOptions
+            )
+        );
+    }
+
+    // *************** //
+    // *** PRIVATE *** //
+    // *************** //
+    function _getYieldBoxDomainSeparator() private view returns (bytes32) {
+        bytes32 typeHash =
+            keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
+        bytes32 hashedName = keccak256(bytes("YieldBox"));
+        bytes32 hashedVersion = keccak256(bytes("1"));
+        bytes32 domainSeparator =
+            keccak256(abi.encode(typeHash, hashedName, hashedVersion, block.chainid, address(yieldBox)));
+        return domainSeparator;
+    }
 }
