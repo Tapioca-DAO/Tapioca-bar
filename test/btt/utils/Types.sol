@@ -13,11 +13,11 @@ abstract contract Types {
         // penrose address
         address penrose;
         // borrow asset
-        IERC20 asset;
+        address asset;
         // borrow asset YieldBox id
         uint256 assetId;
         // collateral token
-        IERC20 collateral;
+        address collateral;
         // collateral token YieldBox id
         uint256 collateralId;
         // default market's oracle for collateral <> asset

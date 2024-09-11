@@ -24,6 +24,7 @@ import {Events} from "./utils/Events.sol";
 import {Utils} from "./utils/Utils.sol";
 import {Types} from "./utils/Types.sol";
 
+import {MagnetarMock_test} from "./mocks/MagnetarMock_test.sol";
 import {ERC20Mock_test} from "./mocks/ERC20Mock_test.sol";
 import {TOFTMock_test} from "./mocks/TOFTMock_test.sol";
 
@@ -38,6 +39,7 @@ abstract contract Base_Test is TestHelper, Utils, Types, Events {
     // users
     address public userA;
     address public userB;
+    address public userC;
     uint256 public initialBalance = LARGE_AMOUNT;
 
     // common general storage
@@ -45,6 +47,7 @@ abstract contract Base_Test is TestHelper, Utils, Types, Events {
     Pearlmit pearlmit;
     Cluster cluster;
     Penrose penrose;
+    MagnetarMock_test magnetar; // same as the original; avoids a new foundry reference
 
     // tokens
     ERC20Mock_test mainTokenErc20; // used as the main token underlying erc20
@@ -62,6 +65,9 @@ abstract contract Base_Test is TestHelper, Utils, Types, Events {
     UsdoMarketReceiverModule usdoMarketReceiverModule;
     UsdoOptionReceiverModule usdoOptionsReceiverModule;
 
+    Usdo secondaryUsdo;
+    uint256 secondaryUsdoId;
+
     // ************* //
     // *** SETUP *** //
     // ************* //
@@ -69,6 +75,7 @@ abstract contract Base_Test is TestHelper, Utils, Types, Events {
         // ***  *** //
         userA = _createUser(USER_A_PKEY, "User A");
         userB = _createUser(USER_B_PKEY, "User B");
+        userC = _createUser(USER_C_PKEY, "User C");
 
         // setup 3 LZ endpoints
         setUpEndpoints(3, LibraryType.UltraLightNode);
@@ -87,6 +94,9 @@ abstract contract Base_Test is TestHelper, Utils, Types, Events {
 
         mainToken = new TOFTMock_test(address(mainTokenErc20), IPearlmit(address(pearlmit)));
         vm.label(address(mainToken), "MainToken TOFT");
+
+        magnetar = new MagnetarMock_test(address(cluster), IPearlmit(address(pearlmit)));
+        vm.label(address(magnetar), "MagnetarMock_test");
 
         // create YieldBox id for main token mock
         mainTokenId = yieldBox.registerAsset(
@@ -154,7 +164,48 @@ abstract contract Base_Test is TestHelper, Utils, Types, Events {
             0
         );
 
+        // create secondary real Usdo
+        usdoInitStruct = UsdoInitStruct({
+            endpoint: address(endpoints[bEid]),
+            delegate: address(this),
+            yieldBox: address(yieldBox),
+            cluster: address(cluster),
+            extExec: address(extExec),
+            pearlmit: IPearlmit(address(pearlmit))
+        });
+        UsdoSender secondaryUsdoSender = new UsdoSender(usdoInitStruct);
+        UsdoReceiver secondaryUsdoReceiver = new UsdoReceiver(usdoInitStruct);
+        UsdoMarketReceiverModule secondaryUsdoMarketReceiverModule = new UsdoMarketReceiverModule(usdoInitStruct);
+        UsdoOptionReceiverModule secondaryUsdoOptionsReceiverModule = new UsdoOptionReceiverModule(usdoInitStruct);
+        vm.label(address(secondaryUsdoSender), "Secondary Usdo Sender");
+        vm.label(address(secondaryUsdoReceiver), "Secondary Usdo Receiver");
+        vm.label(address(secondaryUsdoMarketReceiverModule), "Secondary Usdo Market Receiver");
+        vm.label(address(secondaryUsdoOptionsReceiverModule), "Secondary Usdo Options Receiver");
+        usdoModulesInitStruct = UsdoModulesInitStruct({
+            usdoSenderModule: address(secondaryUsdoSender),
+            usdoReceiverModule: address(secondaryUsdoReceiver),
+            marketReceiverModule: address(secondaryUsdoMarketReceiverModule),
+            optionReceiverModule: address(secondaryUsdoOptionsReceiverModule)
+        });
+        secondaryUsdo = Usdo(payable(_deployOApp(type(Usdo).creationCode, abi.encode(usdoInitStruct, usdoModulesInitStruct))));
+        vm.label(address(secondaryUsdo), "Secondary Usdo");
+
+        // create YieldBox id for the secondary Usdo
+        secondaryUsdoId = yieldBox.registerAsset(
+            TokenType.ERC20,
+            address(secondaryUsdo),
+            IStrategy(address(_createEmptyStrategy(address(yieldBox), address(secondaryUsdo)))),
+            0
+        );
+
+
         // *** AFTER DEPLOYMENT *** //
+
+        // config and wire the ofts
+        address[] memory ofts = new address[](2);
+        ofts[0] = address(usdo);
+        ofts[1] = address(secondaryUsdo);
+        this.wireOApps(ofts);
 
         // set Usdo token on Penrose
         penrose.setUsdoToken(address(usdo), usdoId);

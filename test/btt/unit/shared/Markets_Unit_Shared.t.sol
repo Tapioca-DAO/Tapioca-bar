@@ -3,6 +3,7 @@ pragma solidity 0.8.22;
 
 // mocks
 import {ZeroXSwapperMockTarget_test} from "../../mocks/ZeroXSwapperMockTarget_test.sol";
+import {LeverageExecutorMock_test} from "../../mocks/LeverageExecutorMock_test.sol";
 import {OracleMock_test} from "../../mocks/OracleMock_test.sol";
 import {ERC20Mock_test} from "../../mocks/ERC20Mock_test.sol";
 import {TOFTMock_test} from "../../mocks/TOFTMock_test.sol";
@@ -13,6 +14,7 @@ import {ZeroXSwapper} from "tap-utils/Swapper/ZeroXSwapper.sol";
 import {MarketHelper} from "contracts/markets/MarketHelper.sol";
 import {TokenType} from "yieldbox/enums/YieldBoxTokenType.sol";
 
+import {ITapiocaOracle} from "tap-utils/interfaces/periph/ITapiocaOracle.sol";
 import {ICluster} from "tap-utils/interfaces/periph/ICluster.sol";
 import {IMarket} from "tap-utils/interfaces/bar/ISingularity.sol";
 import {IPearlmit} from "tap-utils/pearlmit/Pearlmit.sol";
@@ -37,6 +39,8 @@ abstract contract Markets_Unit_Shared is Base_Test {
     ZeroXSwapperMockTarget_test swapperTarget;
     MarketLiquidatorReceiver liquidatorReceiver;
 
+    LeverageExecutorMock_test leverageExecutor;
+
     // ************* //
     // *** SETUP *** //
     // ************* //
@@ -47,6 +51,11 @@ abstract contract Markets_Unit_Shared is Base_Test {
 
         // create default markets oracle
         oracle = _createOracle("Default oracle");
+
+        // create leverage executor
+        // mock to allow return value customization
+        leverageExecutor = new LeverageExecutorMock_test();
+        leverageExecutor.setOracle(ITapiocaOracle(address(oracle)));
 
         // create random collateral token
         randomCollateralErc20 = _createToken("RandomCollateral");
