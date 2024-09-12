@@ -42,7 +42,7 @@ contract MagnetarMock_test is PearlmitHandler {
     using SafeCast for uint256;
     using SafeERC20 for IERC20;
 
-    error MagnetarMock_NotAuthorized();
+    error MagnetarMock_NotAuthorized(bytes role);
     error MagnetarMock_Failed();
     error MagnetarMock_TargetNotWhitelisted(address target);
     error MagnetarMock_GasMismatch(uint256 expected, uint256 received);
@@ -148,8 +148,9 @@ contract MagnetarMock_test is PearlmitHandler {
         public
         payable
     {
-        if (!cluster.isWhitelisted(cluster.lzChainId(), address(_data.market))) {
-            revert MagnetarMock_NotAuthorized();
+        // if (!cluster.isWhitelisted(cluster.lzChainId(), address(_data.market))) {
+        if (!cluster.hasRole(address(_data.market), keccak256("MAGNETAR_MARKET_CALLEE"))) {
+            revert MagnetarMock_NotAuthorized("MAGNETAR_MARKET_CALLEE");
         }
 
         IYieldBox yieldBox = IYieldBox(IMarket(_data.market)._yieldBox());
@@ -196,13 +197,15 @@ contract MagnetarMock_test is PearlmitHandler {
     function mintBBLendSGLLockTOLP(MintFromBBAndLendOnSGLData memory _data) external payable {
         // Check targets
         if (_data.externalContracts.bigBang != address(0)) {
-            if (!cluster.isWhitelisted(cluster.lzChainId(), _data.externalContracts.bigBang)) {
-                revert MagnetarMock_NotAuthorized();
+            // if (!cluster.isWhitelisted(cluster.lzChainId(), _data.externalContracts.bigBang)) {
+            if (!cluster.hasRole(address(_data.externalContracts.bigBang), "MAGNETAR_MARKET_CALLEE")) {
+                revert MagnetarMock_NotAuthorized("MAGNETAR_MARKET_CALLEE");
             }
         }
         if (_data.externalContracts.singularity != address(0)) {
-            if (!cluster.isWhitelisted(cluster.lzChainId(), _data.externalContracts.singularity)) {
-                revert MagnetarMock_NotAuthorized();
+            // if (!cluster.isWhitelisted(cluster.lzChainId(), _data.externalContracts.singularity)) {
+            if (!cluster.hasRole(address(_data.externalContracts.singularity), "MAGNETAR_MARKET_CALLEE")) {
+                revert MagnetarMock_NotAuthorized("MAGNETAR_MARKET_CALLEE");
             }
         }
 
@@ -249,15 +252,19 @@ contract MagnetarMock_test is PearlmitHandler {
     }
 
     function exitPositionAndRemoveCollateral(ExitPositionAndRemoveCollateralData memory _data) external payable {
+
+        console.log("------------- cluster %s", address(cluster));
         // Check whitelisted
         if (_data.externalData.bigBang != address(0)) {
-            if (!cluster.isWhitelisted(cluster.lzChainId(), _data.externalData.bigBang)) {
-                revert MagnetarMock_NotAuthorized();
+            // if (!cluster.isWhitelisted(cluster.lzChainId(), _data.externalData.bigBang)) {
+            if (!cluster.hasRole(address(_data.externalData.bigBang), keccak256("MAGNETAR_MARKET_CALLEE"))) {
+                revert MagnetarMock_NotAuthorized("MAGNETAR_MARKET_CALLEE");
             }
         }
         if (_data.externalData.singularity != address(0)) {
-            if (!cluster.isWhitelisted(cluster.lzChainId(), _data.externalData.singularity)) {
-                revert MagnetarMock_NotAuthorized();
+            // if (!cluster.isWhitelisted(cluster.lzChainId(), _data.externalData.singularity)) {
+            if (!cluster.hasRole(address(_data.externalData.singularity), keccak256("MAGNETAR_MARKET_CALLEE"))) {
+                revert MagnetarMock_NotAuthorized("MAGNETAR_MARKET_CALLEE");
             }
         }
 
@@ -316,7 +323,8 @@ contract MagnetarMock_test is PearlmitHandler {
         external
         payable
     {
-        if (!cluster.isWhitelisted(cluster.lzChainId(), address(_data.market))) revert MagnetarMock_NotAuthorized();
+        // if (!cluster.isWhitelisted(cluster.lzChainId(), address(_data.market))) revert MagnetarMock_NotAuthorized();
+        if (!cluster.hasRole(address(_data.market), keccak256("MAGNETAR_MARKET_CALLEE"))) revert MagnetarMock_NotAuthorized("MAGNETAR_MARKET_CALLEE");
 
         IYieldBox yieldBox = IYieldBox(IMarket(_data.market)._yieldBox());
 
@@ -386,13 +394,15 @@ contract MagnetarMock_test is PearlmitHandler {
     }
 
     function _checkSender(address _from) internal view {
-        if (_from != msg.sender && !cluster.isWhitelisted(0, msg.sender)) {
-            revert MagnetarMock_NotAuthorized();
+        // if (_from != msg.sender && !cluster.isWhitelisted(0, msg.sender)) {
+        if (_from != msg.sender && !cluster.hasRole(msg.sender, keccak256(abi.encodePacked("CALLER_ALLOWED_FOR_", _from)))) {
+            revert MagnetarMock_NotAuthorized(abi.encodePacked("CALLER_ALLOWED_FOR_", _from));
         }
     }
 
     function _withdrawToChain(MagnetarWithdrawData memory data) private {
-        if (!cluster.isWhitelisted(0, address(data.yieldBox))) {
+        // if (!cluster.isWhitelisted(0, address(data.yieldBox))) {
+        if (!cluster.hasRole(address(data.yieldBox), "YIELDBOX_WITHDRAW")) {
             revert MagnetarMock_TargetNotWhitelisted(address(data.yieldBox));
         }
         IYieldBox _yieldBox = IYieldBox(data.yieldBox);
@@ -404,7 +414,7 @@ contract MagnetarMock_test is PearlmitHandler {
         uint256 balanceBefore = IERC20(_token).balanceOf(address(this));
         // IERC20(_token).safeTransferFrom(_from, address(this), _amount);
         bool isErr = pearlmit.transferFromERC20(_from, address(this), _token, _amount);
-        if (isErr) revert MagnetarMock_NotAuthorized();
+        if (isErr) revert MagnetarMock_NotAuthorized("");
         uint256 balanceAfter = IERC20(_token).balanceOf(address(this));
         if (balanceAfter <= balanceBefore) revert MagnetarMock_Failed();
         return balanceAfter - balanceBefore;

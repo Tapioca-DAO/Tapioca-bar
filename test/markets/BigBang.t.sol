@@ -202,6 +202,10 @@ contract BigBangTest is UsdoTestHelper {
         BBDebtRateHelper bbRateHelper = new BBDebtRateHelper();
         marketsData[0] = abi.encodeWithSelector(BigBang.setDebtRateHelper.selector, address(bbRateHelper));
         penrose.executeMarketFn(markets, marketsData, true);
+
+
+        ICluster _cl = penrose.cluster();
+        _cl.setRoleForContract(address(this), keccak256("BAD_LIQUIDATION_CALLER"), true);
     }
 
     function depositAsset(uint256 amount) public {

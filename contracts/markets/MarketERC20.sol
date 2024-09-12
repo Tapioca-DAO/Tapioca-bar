@@ -215,8 +215,7 @@ contract MarketERC20 is IERC20, IERC20Permit, IERC1155Receiver, EIP712 {
     ) internal {
         require(block.timestamp <= deadline, "ERC20Permit: expired deadline");
 
-        if (!ICluster(penrose.cluster()).isWhitelisted(0, msg.sender)) require (owner == msg.sender, "MarketERC20: not authorized");
-
+        if (!ICluster(penrose.cluster()).hasRole(msg.sender, keccak256("MARKET_PERMIT"))) require (owner == msg.sender, "MarketERC20: not authorized");
         bytes32 structHash;
 
         structHash = keccak256(

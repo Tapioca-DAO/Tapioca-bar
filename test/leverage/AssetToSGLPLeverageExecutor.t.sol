@@ -105,6 +105,9 @@ contract AssetToSGLPLeverageExecutorTest is BaseLeverageExecutorTest {
         }
 
         {
+            cluster.setRoleForContract(address(executor),  keccak256("SWAP_EXECUTOR"), true);
+            cluster.setRoleForContract(address(this),  keccak256("sGLP_MARKET_LEVERAGE_CALLER"), true);
+
             cluster.updateContract(0, address(this), true);
             cluster.updateContract(0, address(executor), true);
             cluster.updateContract(0, address(swapper), true);

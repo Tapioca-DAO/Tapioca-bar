@@ -40,7 +40,7 @@ contract AssetTotsDaiLeverageExecutor is BaseLeverageExecutor, Pausable {
      * @notice Un/Pauses this contract.
      */
     function setPause(bool _pauseState) external {
-        if (!cluster.hasRole(msg.sender, keccak256("PAUSABLE")) && msg.sender != owner()) revert NotAuthorized();
+        if (!cluster.hasRole(msg.sender, keccak256("PAUSABLE")) && msg.sender != owner()) revert NotAuthorized("PAUSABLE");
         if (_pauseState) {
             _pause();
         } else {
@@ -68,7 +68,8 @@ contract AssetTotsDaiLeverageExecutor is BaseLeverageExecutor, Pausable {
         if (msg.value > 0) revert NativeNotSupported();
 
         // Should be called only by approved SGL/BB markets.
-        if (!cluster.isWhitelisted(0, msg.sender)) revert SenderNotValid();
+        // if (!cluster.isWhitelisted(0, msg.sender)) revert SenderNotValid();
+        if (!cluster.hasRole(msg.sender, keccak256("tsDai_MARKET_LEVERAGE_CALLER"))) revert SenderNotValid("tsDai_MARKET_LEVERAGE_CALLER");
 
         //retrieve addresses
         (address sDaiAddress, address daiAddress) = _getAddresses(collateralAddress);
@@ -111,7 +112,8 @@ contract AssetTotsDaiLeverageExecutor is BaseLeverageExecutor, Pausable {
         bytes calldata data
     ) external override whenNotPaused returns (uint256 assetAmountOut) {
         // Should be called only by approved SGL/BB markets.
-        if (!cluster.isWhitelisted(0, msg.sender)) revert SenderNotValid();
+        // if (!cluster.isWhitelisted(0, msg.sender)) revert SenderNotValid();
+        if (!cluster.hasRole(msg.sender, keccak256("tsDai_MARKET_LEVERAGE_CALLER"))) revert SenderNotValid("tsDai_MARKET_LEVERAGE_CALLER");
 
         //retrieve addresses
         (address sDaiAddress, address daiAddress) = _getAddresses(collateralAddress);

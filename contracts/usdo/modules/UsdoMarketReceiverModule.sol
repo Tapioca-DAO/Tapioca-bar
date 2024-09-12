@@ -48,7 +48,7 @@ contract UsdoMarketReceiverModule is BaseUsdo {
     using SafeApprove for address;
     using SafeCast for uint256;
 
-    error UsdoMarketReceiverModule_NotAuthorized(address invalidAddress);
+    error UsdoMarketReceiverModule_NotAuthorized(address invalidAddress, bytes reason);
 
     event LendOrRepayReceived(address indexed user, address indexed srcChainSender, bool repay, address indexed market);
     event RemoveAssetReceived(address indexed user, address indexed srcChainSender, address indexed magnetar);
@@ -131,11 +131,11 @@ contract UsdoMarketReceiverModule is BaseUsdo {
         view
         returns (MarketLendOrRepayMsg memory)
     {
-        _checkWhitelistStatus(msg_.lendParams.magnetar);
-        _checkWhitelistStatus(msg_.lendParams.marketHelper);
-        _checkWhitelistStatus(msg_.lendParams.market);
-        _checkWhitelistStatus(msg_.lendParams.lockData.target);
-        _checkWhitelistStatus(msg_.lendParams.participateData.target);
+        _checkWhitelistStatus(msg_.lendParams.magnetar, "USDO_MAGNETAR_CALLEE");
+        _checkWhitelistStatus(msg_.lendParams.marketHelper, "USDO_HELPER_CALLEE");
+        _checkWhitelistStatus(msg_.lendParams.market, "USDO_MARKET_CALLEE");
+        _checkWhitelistStatus(msg_.lendParams.lockData.target, "USDO_TAP_CALLEE");
+        _checkWhitelistStatus(msg_.lendParams.participateData.target, "USDO_TAP_CALLEE");
 
         {
             if (msg_.lendParams.depositAmount > 0) {
@@ -234,10 +234,10 @@ contract UsdoMarketReceiverModule is BaseUsdo {
         private
         returns (MarketRemoveAssetMsg memory)
     {
-        _checkWhitelistStatus(msg_.externalData.magnetar);
-        _checkWhitelistStatus(msg_.externalData.singularity);
-        _checkWhitelistStatus(msg_.externalData.bigBang);
-        _checkWhitelistStatus(msg_.externalData.marketHelper);
+        _checkWhitelistStatus(msg_.externalData.magnetar, "USDO_MAGNETAR_CALLEE");
+        _checkWhitelistStatus(msg_.externalData.singularity, "USDO_MARKET_CALLEE");
+        _checkWhitelistStatus(msg_.externalData.bigBang, "USDO_MARKET_CALLEE");
+        _checkWhitelistStatus(msg_.externalData.marketHelper, "USDO_HELPER_CALLEE");
 
         msg_.removeAndRepayData.removeAmount = _toLD(msg_.removeAndRepayData.removeAmount.toUint64());
         msg_.removeAndRepayData.repayAmount = _toLD(msg_.removeAndRepayData.repayAmount.toUint64());
@@ -267,10 +267,11 @@ contract UsdoMarketReceiverModule is BaseUsdo {
         IMagnetar(payable(msg_.externalData.magnetar)).burst{value: msg_.value}(magnetarCall);
     }
 
-    function _checkWhitelistStatus(address _addr) private view {
+    function _checkWhitelistStatus(address _addr, bytes memory role) private view {
         if (_addr != address(0)) {
-            if (!getCluster().isWhitelisted(0, _addr)) {
-                revert UsdoMarketReceiverModule_NotAuthorized(_addr);
+            // if (!getCluster().isWhitelisted(0, _addr)) {
+            if (!getCluster().hasRole(_addr, keccak256(role))) {
+                revert UsdoMarketReceiverModule_NotAuthorized(_addr, role);
             }
         }
     }

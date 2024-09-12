@@ -147,10 +147,10 @@ contract BigBang_liquidate is BigBang_Unit_Shared {
         whenAssetOracleRateIsBelowMin
         whenCollateralAmountIsValid(collateralAmount)
         givenBorrowCapIsNotReachedYet
-        whenWhitelisted(address(this)) 
-        whenWhitelisted(address(mainBB)) 
-        whenWhitelisted(address(secondaryBB)) 
-        whenWhitelisted(address(liquidatorReceiver)) 
+        whenWhitelisted(address(this), "MARKET_ALLOWANCE_CHECKER") 
+        whenWhitelisted(address(liquidatorReceiver), "MARKET_LIQUIDATOR_RECEIVER") 
+        whenWhitelisted(address(mainBB), "MARKET_LIQUIDATOR_RECEIVER_CALLER") 
+        whenWhitelisted(address(secondaryBB), "MARKET_LIQUIDATOR_RECEIVER_CALLER") 
     {
         uint256 maxBorrowAmount = _computeMaxBorrowAmount(collateralAmount, IMarket(address(mainBB)));
         maxBorrowAmount = maxBorrowAmount - (maxBorrowAmount * 6e4 / 1e5);
@@ -216,10 +216,10 @@ contract BigBang_liquidate is BigBang_Unit_Shared {
         whenAssetOracleRateIsBelowMin
         whenCollateralAmountIsValid(collateralAmount)
         givenBorrowCapIsNotReachedYet
-        whenWhitelisted(address(this)) 
-        whenWhitelisted(address(mainBB)) 
-        whenWhitelisted(address(secondaryBB)) 
-        whenWhitelisted(address(liquidatorReceiver)) 
+        whenWhitelisted(address(this), "MARKET_ALLOWANCE_CHECKER") 
+        whenWhitelisted(address(liquidatorReceiver), "MARKET_LIQUIDATOR_RECEIVER") 
+        whenWhitelisted(address(mainBB), "MARKET_LIQUIDATOR_RECEIVER_CALLER") 
+        whenWhitelisted(address(secondaryBB), "MARKET_LIQUIDATOR_RECEIVER_CALLER") 
     {
         uint256 maxBorrowAmount = _computeMaxBorrowAmount(collateralAmount, IMarket(address(mainBB)));
         

@@ -23,6 +23,7 @@ contract Penrose_executeTarget is Markets_Unit_Shared {
     function test_WhenExecuteTargetIsCalledFromOwner() external {
         address rndAddr = makeAddr("rndAddress");
         cluster.updateContract(0, rndAddr, true);
+        cluster.setRoleForContract(rndAddr,  keccak256("PENROSE_TARGET"), true);
         penrose.executeTargetFn(rndAddr, "0x");
     }
 }

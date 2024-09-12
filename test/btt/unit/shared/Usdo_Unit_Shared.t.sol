@@ -73,6 +73,13 @@ abstract contract Usdo_Unit_Shared is Base_Test {
 
         usdoHelper = new UsdoHelper();
         vm.label(address(usdoHelper), "usdoHelper");
+
+        {
+            cluster.setRoleForContract(address(magnetar),  keccak256("USDO_MAGNETAR_CALLEE"), true);
+            cluster.setRoleForContract(address(magnetar),  keccak256("MAGNETAR_CALLEE"), true);
+
+            cluster.setRoleForContract(address(magnetar),  keccak256("MARKET_ALLOWANCE_CHECKER"), true);
+        }
     }
 
     // **************** //

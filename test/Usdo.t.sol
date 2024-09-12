@@ -292,6 +292,20 @@ contract UsdoTest is UsdoTestHelper {
         );
         vm.label(address(singularity), "Singularity");
 
+        cluster.setRoleForContract(address(yieldBox), keccak256("YIELDBOX_WITHDRAW"), true);
+        cluster.setRoleForContract(address(magnetar), keccak256("USDO_MAGNETAR_CALLEE"), true);
+        cluster.setRoleForContract(address(singularity), keccak256("USDO_MARKET_CALLEE"), true);
+        cluster.setRoleForContract(address(marketHelper), keccak256("USDO_HELPER_CALLEE"), true);
+        cluster.setRoleForContract(address(tOB), keccak256("USDO_TAP_CALLEE"), true);
+        cluster.setRoleForContract(address(swapper), keccak256("SWAP_EXECUTOR"), true);
+        cluster.setRoleForContract(address(singularity), keccak256("SWAP_EXECUTOR"), true);
+
+        cluster.setRoleForContract(address(singularity), keccak256("MAGNETAR_MARKET_CALLEE"), true);
+        cluster.setRoleForContract(address(marketHelper), keccak256("MAGNETAR_HELPER_CALLEE"), true);
+        cluster.setRoleForContract(address(tOB), keccak256("MAGNETAR_TAP_CALLEE"), true);
+        cluster.setRoleForContract(address(magnetar), keccak256("MAGNETAR_CALLEE"), true);
+
+
         cluster.updateContract(aEid, address(yieldBox), true);
         cluster.updateContract(aEid, address(magnetar), true);
         cluster.updateContract(aEid, address(tOB), true);
@@ -399,7 +413,8 @@ contract UsdoTest is UsdoTestHelper {
     function test_usdo_erc20_approvals() public {
         address userC_ = vm.addr(0x3);
 
-        cluster.updateContract(0, address(bUsdo), true);
+        // cluster.updateContract(0, address(bUsdo), true);
+        cluster.setRoleForContract(address(bUsdo),  keccak256("PERMIT_ERC20_CALLEE"), true);
 
         ERC20PermitApprovalMsg memory permitApprovalB_;
         ERC20PermitApprovalMsg memory permitApprovalC_;
@@ -726,6 +741,8 @@ contract UsdoTest is UsdoTestHelper {
     }
 
     function test_usdo_yb_permit_all() public {
+        cluster.setRoleForContract(address(yieldBox), keccak256("PERMIT_YIELDBOX_CALLEE"), true);
+
         bytes memory approvalMsg_;
         {
             ERC20PermitStruct memory approvalUserB_ =
@@ -789,6 +806,8 @@ contract UsdoTest is UsdoTestHelper {
     }
 
     function test_usdo_yb_revoke_all() public {
+        cluster.setRoleForContract(address(yieldBox), keccak256("PERMIT_YIELDBOX_CALLEE"), true);
+
         bytes memory approvalMsg_;
         {
             ERC20PermitStruct memory approvalUserB_ =
@@ -853,6 +872,8 @@ contract UsdoTest is UsdoTestHelper {
     }
 
     function test_usdo_yb_permit_asset() public {
+        cluster.setRoleForContract(address(yieldBox), keccak256("PERMIT_YIELDBOX_CALLEE"), true);
+
         YieldBoxApproveAssetMsg memory permitApprovalB_;
         YieldBoxApproveAssetMsg memory permitApprovalC_;
         bytes memory approvalsMsg_;
@@ -943,6 +964,8 @@ contract UsdoTest is UsdoTestHelper {
     }
 
     function test_usdo_yb_revoke_asset() public {
+        cluster.setRoleForContract(address(yieldBox), keccak256("PERMIT_YIELDBOX_CALLEE"), true);
+
         YieldBoxApproveAssetMsg memory permitApprovalB_;
         YieldBoxApproveAssetMsg memory permitApprovalC_;
         bytes memory approvalsMsg_;
@@ -1037,6 +1060,9 @@ contract UsdoTest is UsdoTestHelper {
     }
 
     function test_usdo_market_permit_asset() public {
+        cluster.setRoleForContract(address(singularity),  keccak256("PERMIT_MARKET_CALLEE"), true);
+        cluster.setRoleForContract(address(bUsdo),  keccak256("MARKET_PERMIT"), true);
+
         bytes memory approvalMsg_;
         {
             // @dev v,r,s will be completed on `__getMarketPermitData`
@@ -1108,6 +1134,9 @@ contract UsdoTest is UsdoTestHelper {
     }
 
     function test_usdo_market_permit_collateral() public {
+        cluster.setRoleForContract(address(singularity),  keccak256("PERMIT_MARKET_CALLEE"), true);
+        cluster.setRoleForContract(address(bUsdo),  keccak256("MARKET_PERMIT"), true);
+
         bytes memory approvalMsg_;
         {
             // @dev v,r,s will be completed on `__getMarketPermitData`

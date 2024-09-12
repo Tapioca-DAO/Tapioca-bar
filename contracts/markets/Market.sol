@@ -403,7 +403,8 @@ abstract contract Market is MarketERC20, Ownable {
 
             uint256 pearlmitAllowed;
             // Here we approve the market token, because it is unique to the market
-            if (penrose.cluster().isWhitelisted(0, msg.sender)) {
+            // if (penrose.cluster().isWhitelisted(0, msg.sender)) {
+            if (penrose.cluster().hasRole(msg.sender, keccak256("MARKET_ALLOWANCE_CHECKER"))) {
                 (pearlmitAllowed,) = penrose.pearlmit().allowance(from, msg.sender, 20, address(this), 0);
             }
             require(allowance[from][msg.sender] >= share || pearlmitAllowed >= share, "Market: not approved");
@@ -423,7 +424,8 @@ abstract contract Market is MarketERC20, Ownable {
 
             uint256 pearlmitAllowed;
             // Here we approve the YB collateral token, because market token is already used in `_allowedLend`
-            if (penrose.cluster().isWhitelisted(0, msg.sender)) {
+            // if (penrose.cluster().isWhitelisted(0, msg.sender)) {
+            if (penrose.cluster().hasRole(msg.sender, keccak256("MARKET_ALLOWANCE_CHECKER"))) {
                 (pearlmitAllowed,) =
                     penrose.pearlmit().allowance(from, msg.sender, 1155, address(yieldBox), collateralId);
             }

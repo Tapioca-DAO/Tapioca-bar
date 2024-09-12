@@ -178,6 +178,9 @@ contract SingularityTest is UsdoTestHelper {
             address(masterContract)
         );
         vm.label(address(singularity), "Singularity");
+
+        ICluster _cl = penrose.cluster();
+        _cl.setRoleForContract(address(this), keccak256("BAD_LIQUIDATION_CALLER"), true);
     }
 
     function depositAsset(uint256 amount) public {

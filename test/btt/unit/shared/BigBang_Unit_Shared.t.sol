@@ -72,6 +72,11 @@ abstract contract BigBang_Unit_Shared is Markets_Unit_Shared {
         // create another BB market
         // it handles after deployment set-up
         secondaryBB = BigBang(payable(_registerBBMarket(address(randomCollateral), randomCollateralId, false)));
+
+        cluster.setRoleForContract(address(mainBB),  keccak256("USDO_MARKET_CALLEE"), true);
+        cluster.setRoleForContract(address(mainBB),  keccak256("MAGNETAR_MARKET_CALLEE"), true);
+        cluster.setRoleForContract(address(secondaryBB),  keccak256("USDO_MARKET_CALLEE"), true);
+        cluster.setRoleForContract(address(secondaryBB),  keccak256("MAGNETAR_MARKET_CALLEE"), true);
     }
 
     // ***************** //

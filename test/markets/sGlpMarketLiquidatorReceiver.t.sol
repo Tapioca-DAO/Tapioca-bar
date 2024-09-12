@@ -100,6 +100,10 @@ contract sGlpMarketLiquidatorReceiverTest is BaseLiquidatorReceiverTest {
         }
 
         {
+            cluster.setRoleForContract(address(receiver),  keccak256("SWAP_EXECUTOR"), true);
+            cluster.setRoleForContract(address(receiver),  keccak256("sGLPMARKET_LIQUIDATOR_RECEIVER"), true);
+            cluster.setRoleForContract(address(this),  keccak256("sGLPMARKET_LIQUIDATOR_RECEIVER_CALLER"), true);
+
             cluster.updateContract(0, address(this), true);
             cluster.updateContract(0, address(receiver), true);
             cluster.updateContract(0, address(swapper), true);
@@ -136,7 +140,6 @@ contract sGlpMarketLiquidatorReceiverTest is BaseLiquidatorReceiverTest {
         //     uint256 minAmountOut;
         // }
 
-    
         deal(address(collateral), address(receiver), testAmount); // for unwrap
         deal(address(sGlp), address(collateral), testAmount); // for unwrap
         deal(address(usdo), address(swapperTarget), testAmount); // for usdc <> usdo swap

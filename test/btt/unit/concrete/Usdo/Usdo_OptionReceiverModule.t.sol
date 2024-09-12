@@ -45,7 +45,10 @@ contract Usdo_OptionReceiverModule is Usdo_Unit_Shared, BigBang_Unit_Shared {
 
         _magnetar = address(new MagnetarDecoder_test()); 
         tOB = new TapiocaOptionsBrokerMock_test(address(tapToken), IPearlmit(address(pearlmit)));
+
         cluster.updateContract(0, address(tOB), true);
+        cluster.setRoleForContract(address(tOB),  keccak256("USDO_TAP_CALLEE"), true);
+
     }
 
     function _createMinimalExerciseOptionsMsg(uint256 amount) private view returns (ExerciseOptionsMsg memory) {
@@ -79,12 +82,15 @@ contract Usdo_OptionReceiverModule is Usdo_Unit_Shared, BigBang_Unit_Shared {
         external
     {
         cluster.updateContract(0, address(tOB), false);
+        cluster.setRoleForContract(address(tOB),  keccak256("USDO_TAP_CALLEE"), false);
+
         ExerciseOptionsMsg memory _msg = _createMinimalExerciseOptionsMsg(0);
 
         // it should revert
         vm.expectRevert(abi.encodeWithSelector(
             UsdoOptionReceiverModule.UsdoOptionReceiverModule_NotAuthorized.selector,
-            address(tOB)
+            address(tOB),
+            "USDO_TAP_CALLEE"
         ));
         usdoOptionsReceiverModule.exerciseOptionsReceiver(address(this), abi.encode(_msg));
     }
@@ -100,7 +106,8 @@ contract Usdo_OptionReceiverModule is Usdo_Unit_Shared, BigBang_Unit_Shared {
         // it should revert
         vm.expectRevert(abi.encodeWithSelector(
             UsdoOptionReceiverModule.UsdoOptionReceiverModule_NotAuthorized.selector,
-            address(this)
+            address(this),
+            ""
         ));
         usdoOptionsReceiverModule.exerciseOptionsReceiver(address(this), abi.encode(_msg));
     }
@@ -116,7 +123,8 @@ contract Usdo_OptionReceiverModule is Usdo_Unit_Shared, BigBang_Unit_Shared {
         // it should revert
         vm.expectRevert(abi.encodeWithSelector(
             UsdoOptionReceiverModule.UsdoOptionReceiverModule_NotAuthorized.selector,
-            address(this)
+            address(this),
+            ""
         ));
         usdoOptionsReceiverModule.exerciseOptionsReceiver(address(this), abi.encode(_msg));
     }

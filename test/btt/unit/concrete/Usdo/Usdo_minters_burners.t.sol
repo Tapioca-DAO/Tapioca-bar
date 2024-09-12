@@ -45,14 +45,14 @@ contract Usdo_minters_buners is Usdo_Unit_Shared {
     function test_RevertWhen_MintIsCalledAndSenderNotAllowed(uint256 amount) external whenNotPaused givenSenderIsNotAllowed {
         vm.assume(amount > 0 && amount < LARGE_AMOUNT);
         // it should revert
-        vm.expectRevert(Usdo.Usdo_NotAuthorized.selector);
+        vm.expectRevert(abi.encodeWithSelector(Usdo.Usdo_NotAuthorized.selector,""));
         usdo.mint(address(this), amount);
     }
 
     function test_RevertWhen_BurnIsCalledAndSenderNotAllowed(uint256 amount) external whenNotPaused givenSenderIsNotAllowed {
         vm.assume(amount > 0 && amount < LARGE_AMOUNT);
         // it should revert
-        vm.expectRevert(Usdo.Usdo_NotAuthorized.selector);
+        vm.expectRevert(abi.encodeWithSelector(Usdo.Usdo_NotAuthorized.selector,""));
         usdo.burn(address(this), amount);
     }
 
