@@ -146,7 +146,6 @@ contract AssetToSGLPLeverageExecutor is BaseLeverageExecutor, Pausable {
         bytes calldata data
     ) external override whenNotPaused returns (uint256 assetAmountOut) {
         // Should be called only by approved SGL/BB markets.
-        // if (!cluster.isWhitelisted(0, msg.sender)) revert SenderNotValid();
         if (!cluster.hasRole(msg.sender, keccak256("sGLP_MARKET_LEVERAGE_CALLER"))) revert SenderNotValid("sGLP_MARKET_LEVERAGE_CALLER");
 
         // Decode data

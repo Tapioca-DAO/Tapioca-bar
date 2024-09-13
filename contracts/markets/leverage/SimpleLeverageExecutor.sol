@@ -64,7 +64,6 @@ contract SimpleLeverageExecutor is BaseLeverageExecutor, Pausable {
         bytes calldata swapperData
     ) external payable override whenNotPaused returns (uint256 collateralAmountOut) {
         // Should be called only by approved SGL/BB markets.
-        // if (!cluster.isWhitelisted(0, msg.sender)) revert SenderNotValid();
         if (!cluster.hasRole(msg.sender, keccak256("SIMPLE_MARKET_LEVERAGE_CALLER"))) revert SenderNotValid("SIMPLE_MARKET_LEVERAGE_CALLER");
 
         return _swapAndTransferToSender(
@@ -83,7 +82,6 @@ contract SimpleLeverageExecutor is BaseLeverageExecutor, Pausable {
         bytes calldata swapperData
     ) external override whenNotPaused returns (uint256 assetAmountOut) {
         // Should be called only by approved SGL/BB markets.
-        // if (!cluster.isWhitelisted(0, msg.sender)) revert SenderNotValid();
         if (!cluster.hasRole(msg.sender, keccak256("SIMPLE_MARKET_LEVERAGE_CALLER"))) revert SenderNotValid("SIMPLE_MARKET_LEVERAGE_CALLER");
 
         return _swapAndTransferToSender(

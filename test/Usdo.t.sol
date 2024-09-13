@@ -304,27 +304,6 @@ contract UsdoTest is UsdoTestHelper {
         cluster.setRoleForContract(address(marketHelper), keccak256("MAGNETAR_HELPER_CALLEE"), true);
         cluster.setRoleForContract(address(tOB), keccak256("MAGNETAR_TAP_CALLEE"), true);
         cluster.setRoleForContract(address(magnetar), keccak256("MAGNETAR_CALLEE"), true);
-
-
-        cluster.updateContract(aEid, address(yieldBox), true);
-        cluster.updateContract(aEid, address(magnetar), true);
-        cluster.updateContract(aEid, address(tOB), true);
-        cluster.updateContract(aEid, address(swapper), true);
-        cluster.updateContract(aEid, address(penrose), true);
-        cluster.updateContract(aEid, address(masterContract), true);
-        cluster.updateContract(aEid, address(oracle), true);
-        cluster.updateContract(aEid, address(singularity), true);
-        cluster.updateContract(aEid, address(marketHelper), true);
-
-        cluster.updateContract(bEid, address(yieldBox), true);
-        cluster.updateContract(bEid, address(magnetar), true);
-        cluster.updateContract(bEid, address(tOB), true);
-        cluster.updateContract(bEid, address(swapper), true);
-        cluster.updateContract(bEid, address(penrose), true);
-        cluster.updateContract(bEid, address(masterContract), true);
-        cluster.updateContract(bEid, address(oracle), true);
-        cluster.updateContract(bEid, address(singularity), true);
-        cluster.updateContract(bEid, address(marketHelper), true);
     }
 
     /**
@@ -413,7 +392,6 @@ contract UsdoTest is UsdoTestHelper {
     function test_usdo_erc20_approvals() public {
         address userC_ = vm.addr(0x3);
 
-        // cluster.updateContract(0, address(bUsdo), true);
         cluster.setRoleForContract(address(bUsdo),  keccak256("PERMIT_ERC20_CALLEE"), true);
 
         ERC20PermitApprovalMsg memory permitApprovalB_;
@@ -1084,8 +1062,6 @@ contract UsdoTest is UsdoTestHelper {
             approvalMsg_ = usdoHelper.buildMarketPermitApprovalMsg(permitApproval_);
         }
 
-        cluster.updateContract(0, address(bUsdo), true);
-
         PrepareLzCallReturn memory prepareLzCallReturn_ = usdoHelper.prepareLzCall(
             IUsdo(address(aUsdo)),
             PrepareLzCallData({
@@ -1157,8 +1133,6 @@ contract UsdoTest is UsdoTestHelper {
 
             approvalMsg_ = usdoHelper.buildMarketPermitApprovalMsg(permitApproval_);
         }
-
-        cluster.updateContract(0, address(bUsdo), true);
 
         PrepareLzCallReturn memory prepareLzCallReturn_ = usdoHelper.prepareLzCall(
             IUsdo(address(aUsdo)),

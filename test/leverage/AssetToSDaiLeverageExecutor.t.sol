@@ -86,13 +86,6 @@ contract AssetToSDaiLeverageExecutorTest is BaseLeverageExecutorTest {
             cluster.setRoleForContract(address(executor),  keccak256("SWAP_EXECUTOR"), true);
             cluster.setRoleForContract(address(this),  keccak256("tsDai_MARKET_LEVERAGE_CALLER"), true);
 
-            cluster.updateContract(0, address(this), true);
-            cluster.updateContract(0, address(executor), true);
-            cluster.updateContract(0, address(swapper), true);
-            cluster.updateContract(0, address(swapperTarget), true);
-            cluster.updateContract(0, address(yieldBox), true);
-            cluster.updateContract(0, address(asset), true);
-            cluster.updateContract(0, address(toft), true);
             vm.label(address(cluster), "cluster");
             vm.label(address(executor), "executor");
             vm.label(address(swapper), "swapper");

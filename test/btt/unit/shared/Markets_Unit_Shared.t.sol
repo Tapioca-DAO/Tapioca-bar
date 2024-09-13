@@ -83,7 +83,6 @@ abstract contract Markets_Unit_Shared is Base_Test {
 
         // *** AFTER DEPLOYMENT *** //
         liquidatorReceiver.setAllowedParticipant(address(this), true);
-        cluster.updateContract(0, address(this), true);
         cluster.setRoleForContract(address(liquidatorReceiver),  keccak256("SWAP_EXECUTOR"), true);
 
         deal(address(mainTokenErc20), address(swapperTarget), type(uint128).max); // for liquidations

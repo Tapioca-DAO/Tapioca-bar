@@ -68,7 +68,6 @@ contract AssetTotsDaiLeverageExecutor is BaseLeverageExecutor, Pausable {
         if (msg.value > 0) revert NativeNotSupported();
 
         // Should be called only by approved SGL/BB markets.
-        // if (!cluster.isWhitelisted(0, msg.sender)) revert SenderNotValid();
         if (!cluster.hasRole(msg.sender, keccak256("tsDai_MARKET_LEVERAGE_CALLER"))) revert SenderNotValid("tsDai_MARKET_LEVERAGE_CALLER");
 
         //retrieve addresses
@@ -112,7 +111,6 @@ contract AssetTotsDaiLeverageExecutor is BaseLeverageExecutor, Pausable {
         bytes calldata data
     ) external override whenNotPaused returns (uint256 assetAmountOut) {
         // Should be called only by approved SGL/BB markets.
-        // if (!cluster.isWhitelisted(0, msg.sender)) revert SenderNotValid();
         if (!cluster.hasRole(msg.sender, keccak256("tsDai_MARKET_LEVERAGE_CALLER"))) revert SenderNotValid("tsDai_MARKET_LEVERAGE_CALLER");
 
         //retrieve addresses

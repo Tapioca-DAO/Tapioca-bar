@@ -44,7 +44,6 @@ contract BigBang_liquidateBadDebt is BigBang_Unit_Shared {
         // │   │   └─ ← [Revert] EvmError: Revert
         // │   └─ ← [Revert] revert: RevertMsgDecoder: no data
         // └─ ← [Revert] revert: RevertMsgDecoder: no data
-        cluster.updateContract(0, address(this), false);
         vm.expectRevert();
         mainBB.execute(modules, calls, true);
     }
@@ -150,13 +149,9 @@ contract BigBang_liquidateBadDebt is BigBang_Unit_Shared {
 
         // it should transfer assets to the receiver
         // **** Main BB market ****
-        cluster.updateContract(0, address(mainBB), true);
-        cluster.updateContract(0, address(liquidatorReceiver), true);
         _liquidateBadDebt(collateralAmount, borrowAmount, mainBB, address(this), rndAddr, true);
 
          // **** Secondary BB market ****
-        cluster.updateContract(0, address(secondaryBB), true);
-        cluster.updateContract(0, address(liquidatorReceiver), true);
         _liquidateBadDebt(collateralAmount, borrowAmount, secondaryBB, address(this), rndAddr, true);
     }
 

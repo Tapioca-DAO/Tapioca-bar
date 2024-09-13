@@ -496,7 +496,6 @@ contract SingularityTest is UsdoTestHelper {
                 false
             );
 
-            cluster.updateContract(0, address(this), true);
             deal(address(asset), address(this), borrowAmount * 2);
             asset.approve(address(singularity), type(uint256).max);
             bytes memory badDebtCall = abi.encodeWithSelector(Singularity.execute.selector, modules, calls, true);

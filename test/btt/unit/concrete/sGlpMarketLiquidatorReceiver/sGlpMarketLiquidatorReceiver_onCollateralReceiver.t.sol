@@ -34,7 +34,6 @@ contract sGlpMarketLiquidatorReceiver_onCollateralReceiver is MarketLiquidatorRe
     {
         address rndAddr = makeAddr("rndAddress");
         sGlpReceiver.setAllowedParticipant(rndAddr, true);
-        // cluster.updateContract(0, address(this), true);
         cluster.setRoleForContract(address(this), keccak256("sGLPMARKET_LIQUIDATOR_RECEIVER_CALLER"), false);
         vm.expectRevert(abi.encodeWithSelector(SGlpMarketLiquidatorReceiver.WhitelistError.selector, "sGLPMARKET_LIQUIDATOR_RECEIVER_CALLER"));
         sGlpReceiver.onCollateralReceiver(rndAddr, address(0), address(0), 0, "0x");
@@ -43,8 +42,6 @@ contract sGlpMarketLiquidatorReceiver_onCollateralReceiver is MarketLiquidatorRe
     function test_RevertWhen_SGlpMarketLiquidatorReceiverOnCollateralReceiverIsCalledAndBalanceIsLess() external {
         address rndAddr = makeAddr("rndAddress");
         sGlpReceiver.setAllowedParticipant(rndAddr, true);
-        cluster.updateContract(0, address(this), true);
-        cluster.updateContract(0, address(sGlpReceiver), true);
         vm.expectRevert(SGlpMarketLiquidatorReceiver.NotEnough.selector);
         sGlpReceiver.onCollateralReceiver(rndAddr, address(tWeth), address(usdo), 1 ether, "0x");
     }
@@ -52,8 +49,6 @@ contract sGlpMarketLiquidatorReceiver_onCollateralReceiver is MarketLiquidatorRe
     function test_WhenSGlpMarketLiquidatorReceiverOnCollateralReceiverIsCalledCorrectly() external {
         address rndAddr = makeAddr("rndAddress");
         sGlpReceiver.setAllowedParticipant(rndAddr, true);
-        cluster.updateContract(0, address(this), true);
-        cluster.updateContract(0, address(sGlpReceiver), true);
 
         uint256 amount = 1 ether;
 

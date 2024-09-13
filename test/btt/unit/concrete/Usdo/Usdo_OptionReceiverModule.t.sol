@@ -8,8 +8,6 @@ import {
     MessagingReceipt,
     OFTReceipt
 } from "@layerzerolabs/lz-evm-oapp-v2/contracts/oft/interfaces/IOFT.sol";
-import {OptionsBuilder} from "@layerzerolabs/lz-evm-oapp-v2/contracts/oapp/libs/OptionsBuilder.sol";
-import {OFTMsgCodec} from "@layerzerolabs/lz-evm-oapp-v2/contracts/oft/libs/OFTMsgCodec.sol";
 
 // Tapioca
 import {UsdoOptionReceiverModule} from "contracts/usdo/modules/UsdoOptionReceiverModule.sol";
@@ -46,7 +44,6 @@ contract Usdo_OptionReceiverModule is Usdo_Unit_Shared, BigBang_Unit_Shared {
         _magnetar = address(new MagnetarDecoder_test()); 
         tOB = new TapiocaOptionsBrokerMock_test(address(tapToken), IPearlmit(address(pearlmit)));
 
-        cluster.updateContract(0, address(tOB), true);
         cluster.setRoleForContract(address(tOB),  keccak256("USDO_TAP_CALLEE"), true);
 
     }
@@ -81,7 +78,6 @@ contract Usdo_OptionReceiverModule is Usdo_Unit_Shared, BigBang_Unit_Shared {
     function test_whenExerciseOptionsReceiverIsCalled_RevertGiven_OptionsDataTargetIsNotWhitelisted()
         external
     {
-        cluster.updateContract(0, address(tOB), false);
         cluster.setRoleForContract(address(tOB),  keccak256("USDO_TAP_CALLEE"), false);
 
         ExerciseOptionsMsg memory _msg = _createMinimalExerciseOptionsMsg(0);
@@ -115,7 +111,6 @@ contract Usdo_OptionReceiverModule is Usdo_Unit_Shared, BigBang_Unit_Shared {
     function test_whenExerciseOptionsReceiverIsCalled_RevertGiven_OTapOwnerDidNotApproveTheModule()
         external
     {
-        address _owner = makeAddr("_owner");
         address oTapMock = tOB.oTapMock();
         OTapMock_test(oTapMock).setOwner(address(this));
         ExerciseOptionsMsg memory _msg = _createMinimalExerciseOptionsMsg(0);

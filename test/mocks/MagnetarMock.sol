@@ -151,7 +151,6 @@ contract MagnetarMock is PearlmitHandler {
         public
         payable
     {
-        // if (!cluster.isWhitelisted(cluster.lzChainId(), address(_data.market))) {
         if (!cluster.hasRole(address(_data.market), keccak256("MAGNETAR_MARKET_CALLEE"))) {
             revert MagnetarMock_NotAuthorized();
         }
@@ -198,13 +197,11 @@ contract MagnetarMock is PearlmitHandler {
     function mintBBLendSGLLockTOLP(MintFromBBAndLendOnSGLData memory _data) external payable {
         // Check targets
         if (_data.externalContracts.bigBang != address(0)) {
-            // if (!cluster.isWhitelisted(cluster.lzChainId(), _data.externalContracts.bigBang)) {
             if (!cluster.hasRole(address(_data.externalContracts.bigBang), keccak256("MAGNETAR_MARKET_CALLEE"))) {
                 revert MagnetarMock_NotAuthorized();
             }
         }
         if (_data.externalContracts.singularity != address(0)) {
-            // if (!cluster.isWhitelisted(cluster.lzChainId(), _data.externalContracts.singularity)) {
             if (!cluster.hasRole(address(_data.externalContracts.singularity), keccak256("MAGNETAR_MARKET_CALLEE"))) {
                 revert MagnetarMock_NotAuthorized();
             }
@@ -255,13 +252,11 @@ contract MagnetarMock is PearlmitHandler {
     function exitPositionAndRemoveCollateral(ExitPositionAndRemoveCollateralData memory _data) external payable {
         // Check whitelisted
         if (_data.externalData.bigBang != address(0)) {
-            // if (!cluster.isWhitelisted(cluster.lzChainId(), _data.externalData.bigBang)) {
             if (!cluster.hasRole(address(_data.externalData.bigBang), keccak256("MAGNETAR_MARKET_CALLEE"))) {
                 revert MagnetarMock_NotAuthorized();
             }
         }
         if (_data.externalData.singularity != address(0)) {
-            // if (!cluster.isWhitelisted(cluster.lzChainId(), _data.externalData.singularity)) {
             if (!cluster.hasRole(address(_data.externalData.singularity), keccak256("MAGNETAR_MARKET_CALLEE"))) {
                 revert MagnetarMock_NotAuthorized();
             }
@@ -300,7 +295,6 @@ contract MagnetarMock is PearlmitHandler {
         external
         payable
     {
-        // if (!cluster.isWhitelisted(cluster.lzChainId(), address(_data.market))) revert MagnetarMock_NotAuthorized();
         if (!cluster.hasRole(address(_data.market), keccak256("MAGNETAR_MARKET_CALLEE"))) revert MagnetarMock_NotAuthorized();
 
         IYieldBox yieldBox = IYieldBox(IMarket(_data.market)._yieldBox());
@@ -371,14 +365,12 @@ contract MagnetarMock is PearlmitHandler {
     }
 
     function _checkSender(address _from) internal view {
-        // if (_from != msg.sender && !cluster.isWhitelisted(0, msg.sender)) {
         if (_from != msg.sender && !cluster.hasRole(msg.sender, keccak256(abi.encodePacked("CALLER_ALLOWED_FOR_", _from)))) {
             revert MagnetarMock_NotAuthorized();
         }
     }
 
     function _withdrawToChain(MagnetarWithdrawData memory data) private {
-        // if (!cluster.isWhitelisted(0, address(data.yieldBox))) {
         if (!cluster.hasRole(address(data.yieldBox), keccak256("YIELDBOX_WITHDRAW"))) {
             revert MagnetarMock_TargetNotWhitelisted(address(data.yieldBox));
         }

@@ -33,12 +33,6 @@ contract Usdo_MarketReceiverModule is Usdo_Unit_Shared, BigBang_Unit_Shared {
         _lockDataTarget = makeAddr("_lockDataTarget");
         _participateDataTarget = makeAddr("_participateDataTarget");
 
-        cluster.updateContract(0, _magnetar, true);
-        cluster.updateContract(0, _marketHelper, true);
-        cluster.updateContract(0, _market, true);
-        cluster.updateContract(0, _lockDataTarget, true);
-        cluster.updateContract(0, _participateDataTarget, true);
-
         cluster.setRoleForContract(address(_magnetar),  keccak256("USDO_MAGNETAR_CALLEE"), true);
         cluster.setRoleForContract(address(_marketHelper),  keccak256("USDO_HELPER_CALLEE"), true);
         cluster.setRoleForContract(address(_market),  keccak256("USDO_MARKET_CALLEE"), true);
@@ -64,7 +58,6 @@ contract Usdo_MarketReceiverModule is Usdo_Unit_Shared, BigBang_Unit_Shared {
         private 
         whenAmountsAreValid(_repayAmount, _depositAmount, _removeCollateralAmount)
     {
-        cluster.updateContract(0, _for, false);
         cluster.setRoleForContract(_for,  keccak256(role), false);
 
         _LendOrRepayInternal memory _lendOrRepayInternal = _LendOrRepayInternal({
@@ -116,7 +109,6 @@ contract Usdo_MarketReceiverModule is Usdo_Unit_Shared, BigBang_Unit_Shared {
     function _expectRemoveAssetToRevertFor(address _for, uint256 _removeAmount, bytes memory role) private 
     {
         vm.assume(_removeAmount > SMALL_AMOUNT && _removeAmount < LARGE_AMOUNT);
-        cluster.updateContract(0, _for, false);
         cluster.setRoleForContract(_for,  keccak256(role), false);
 
         _RemoveAssetInternal memory _removeAssetData = _RemoveAssetInternal({

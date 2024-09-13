@@ -664,7 +664,6 @@ contract BigBangTest is UsdoTestHelper {
                 false
             );
 
-            cluster.updateContract(0, address(this), true);
             deal(address(asset), address(this), borrowAmount * 2);
             asset.approve(address(bigBang), type(uint256).max);
             bytes memory badDebtCall = abi.encodeWithSelector(BigBang.execute.selector, modules, calls, true);

@@ -104,16 +104,6 @@ contract sGlpMarketLiquidatorReceiverTest is BaseLiquidatorReceiverTest {
             cluster.setRoleForContract(address(receiver),  keccak256("sGLPMARKET_LIQUIDATOR_RECEIVER"), true);
             cluster.setRoleForContract(address(this),  keccak256("sGLPMARKET_LIQUIDATOR_RECEIVER_CALLER"), true);
 
-            cluster.updateContract(0, address(this), true);
-            cluster.updateContract(0, address(receiver), true);
-            cluster.updateContract(0, address(swapper), true);
-            cluster.updateContract(0, address(swapperTarget), true);
-            cluster.updateContract(0, address(yieldBox), true);
-            cluster.updateContract(0, address(collateral), true);
-            cluster.updateContract(0, address(sGlp), true);
-            cluster.updateContract(0, address(usdc), true);
-            cluster.updateContract(0, address(weth), true);
-            cluster.updateContract(0, address(gmxMock), true);
             receiver.setAllowedParticipant(address(this), true);
             vm.label(address(cluster), "cluster");
             vm.label(address(receiver), "receiver");

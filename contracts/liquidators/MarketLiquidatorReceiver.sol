@@ -80,8 +80,6 @@ contract MarketLiquidatorReceiver is IMarketLiquidatorReceiver, Ownable, Reentra
     ) external nonReentrant returns (bool) {
         // Check caller
         if (!allowedParticipants[initiator]) revert NotAuthorized();
-        // if (!cluster.isWhitelisted(0, msg.sender)) revert WhitelistError();
-        // if (!cluster.isWhitelisted(0, address(this))) revert WhitelistError();
         if (!cluster.hasRole(msg.sender, keccak256("MARKET_LIQUIDATOR_RECEIVER_CALLER"))) revert WhitelistError("MARKET_LIQUIDATOR_RECEIVER_CALLER");
         if (!cluster.hasRole(address(this), keccak256("MARKET_LIQUIDATOR_RECEIVER"))) revert WhitelistError("MARKET_LIQUIDATOR_RECEIVER");
 

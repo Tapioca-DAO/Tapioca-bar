@@ -21,8 +21,6 @@ import {BBCommon} from "./BBCommon.sol";
    
 */
 
-import "forge-std/console.sol";
-
 contract BBLendingCommon is BBCommon {
     using RebaseLibrary for Rebase;
     using BoringERC20 for IERC20;
@@ -52,8 +50,6 @@ contract BBLendingCommon is BBCommon {
 
     /// @dev Concrete implementation of `removeCollateral`.
     function _removeCollateral(address from, address to, uint256 share) internal {
-        console.log("------------------ userCollateralShare[from] %s", userCollateralShare[from]);
-        console.log("------------------ share                     %s", share);
         userCollateralShare[from] -= share;
         totalCollateralShare -= share;
         emit LogRemoveCollateral(from, to, share);

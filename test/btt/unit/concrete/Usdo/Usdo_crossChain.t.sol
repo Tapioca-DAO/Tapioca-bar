@@ -32,9 +32,6 @@ import {Singularity_Unit_Shared} from "../../shared/Singularity_Unit_Shared.t.so
 import {BigBang_Unit_Shared} from "../../shared/BigBang_Unit_Shared.t.sol";
 import {Usdo_Unit_Shared} from "../../shared/Usdo_Unit_Shared.t.sol";
 
-
-import "forge-std/console.sol";
-
 contract Usdo_crossChain is Usdo_Unit_Shared, BigBang_Unit_Shared, Singularity_Unit_Shared {
     // ************* //
     // *** SETUP *** //
@@ -100,7 +97,6 @@ contract Usdo_crossChain is Usdo_Unit_Shared, BigBang_Unit_Shared, Singularity_U
     }
 
     function test_WhenErc20ApprovalIsPerformedOnCrossChainLevel(uint256 amount) external assumeRange(amount, SMALL_AMOUNT, LARGE_AMOUNT) {
-        // cluster.updateContract(0, address(secondaryUsdo), true);
         cluster.setRoleForContract(address(secondaryUsdo),  keccak256("PERMIT_ERC20_CALLEE"), true);
 
         // create permit messages
@@ -345,11 +341,6 @@ contract Usdo_crossChain is Usdo_Unit_Shared, BigBang_Unit_Shared, Singularity_U
         whenWhitelisted(address(randomSgl), "USDO_MARKET_CALLEE") 
         whenWhitelisted(address(randomSgl), "MAGNETAR_MARKET_CALLEE") 
     {
-
-        console.log("---------------- cluster %s", address(cluster));
-        console.log("---------------- mainBB %s", address(mainBB));
-        console.log("---------------- magnetar %s", address(magnetar));
-
         uint256 repayPart;
         uint256 removeCollateralAmount = collateralAmount * 1e4/1e5; //remove 10%
         // BigBang section - to obtain Usdo
