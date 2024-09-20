@@ -45,31 +45,38 @@ export async function setupDepositYbAssets(
 
     // Deposit SglSdai & SglSglp assets in yieldbox
     if (isSideChain && !isTestnet) {
-        const { tSdai } = deploy__LoadDeployments_Eth({ hre, tag, isTestnet });
-
-        await wrapToft({
-            calls,
-            tapTakParams: taskParams,
-            toftAddr: tSdai,
-            wrapAmount: hre.ethers.utils.parseEther('0.1'),
-        });
-
-        await depositAsset({
-            tokenAddr: tSdai,
-            stratName: isTestnet
-                ? DEPLOYMENT_NAMES.YB_SDAI_ASSET_WITHOUT_STRATEGY
-                : DEPLOYMENT_NAMES.YB_SDAI_ASSET_WITH_STRATEGY,
-            amount: hre.ethers.utils.parseEther('0.1'),
-        });
+        // const {
+        //     // tSdai
+        // } = deploy__LoadDeployments_Eth({ hre, tag, isTestnet });
+        // await wrapToft({
+        //     calls,
+        //     tapTakParams: taskParams,
+        //     toftAddr: tSdai,
+        //     wrapAmount: hre.ethers.utils.parseEther('0.1'),
+        // });
+        // await depositAsset({
+        //     tokenAddr: tSdai,
+        //     stratName: isTestnet
+        //         ? DEPLOYMENT_NAMES.YB_SDAI_ASSET_WITHOUT_STRATEGY
+        //         : DEPLOYMENT_NAMES.YB_SDAI_ASSET_WITH_STRATEGY,
+        //     amount: hre.ethers.utils.parseEther('0.1'),
+        // });
     }
 
     if (isHostChain && !isTestnet) {
-        const { mtETH, tETH, tReth, tWSTETH, tSGLP } =
-            deploy__LoadDeployments_Arb({
-                hre,
-                tag,
-                isTestnet,
-            });
+        const {
+            mtETH,
+            tETH,
+            tReth,
+            tWSTETH,
+            tZro,
+            tStgUsdcV2,
+            // tSGLP
+        } = deploy__LoadDeployments_Arb({
+            hre,
+            tag,
+            isTestnet,
+        });
 
         // tsGLP
         await wrapToft({

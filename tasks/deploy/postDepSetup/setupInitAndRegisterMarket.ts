@@ -60,6 +60,8 @@ export async function setupInitAndRegisterMarket(params: TPostDeployParams) {
             tRethMarketOracle,
             tWSTETH,
             tWstEthMarketOracle,
+            tZro,
+            tZroMarketOracle,
         } = deploy__LoadDeployments_Arb({
             hre,
             tag,
@@ -142,6 +144,31 @@ export async function setupInitAndRegisterMarket(params: TPostDeployParams) {
                 yieldBox,
             });
         }
+        // T_ZRO
+        {
+            const tZroDeployConf =
+                DEPLOY_CONFIG.POST_LBP[hre.SDK.eChainId]!.tZroMarketConfig!;
+            await initBBMarket({
+                ...params,
+                factory: await hre.ethers.getContractFactory('BigBang'),
+                marketName: DEPLOYMENT_NAMES.BB_T_ZRO_MARKET,
+                collateralAddr: tZro,
+                strategyDepName:
+                    DEPLOYMENT_NAMES.YB_T_ZRO_ASSET_WITHOUT_STRATEGY,
+                oracleAddr: tZroMarketOracle,
+                debtRateAgainstEth: tZroDeployConf.debtRateAgainstEth,
+                debtRateMin: tZroDeployConf.debtRateMin,
+                debtRateMax: tZroDeployConf.debtRateMax,
+                collateralizationRate: tZroDeployConf.collateralizationRate,
+                liquidationCollateralizationRate:
+                    tZroDeployConf.liquidationCollateralizationRate,
+                exchangeRatePrecision: (1e18).toString(),
+                totalBorrowCap: tZroDeployConf.totalBorrowCap,
+                leverageExecutorAddr,
+                penroseAddr,
+                yieldBox,
+            });
+        }
         // T_USDC_MOCK
         {
             const tWSTETHDeployConf =
@@ -176,43 +203,47 @@ export async function setupInitAndRegisterMarket(params: TPostDeployParams) {
 
     // SDAI
     if (isSideChain) {
-        const { tSdaiMarketOracle, tSdai } = deploy__LoadDeployments_Eth({
-            hre,
-            tag,
-            isTestnet,
-        });
-        {
-            const tSdaiDeployConf =
-                DEPLOY_CONFIG.POST_LBP[hre.SDK.eChainId]!.tSdaiMarketConfig!;
-            await initSGLMarket({
-                ...params,
-                factory: await hre.ethers.getContractFactory('Singularity'),
-                marketName: DEPLOYMENT_NAMES.SGL_S_DAI_MARKET,
-                collateralAddr: tSdai,
-                oracleAddr: tSdaiMarketOracle,
-                strategyDepName: isTestnet
-                    ? DEPLOYMENT_NAMES.YB_SDAI_ASSET_WITHOUT_STRATEGY
-                    : DEPLOYMENT_NAMES.YB_SDAI_ASSET_WITH_STRATEGY,
-                usdoStrategy: usdoStrategy.address,
-                usdoAddr: usdo,
-                collateralizationRate: tSdaiDeployConf.collateralizationRate,
-                liquidationCollateralizationRate:
-                    tSdaiDeployConf.liquidationCollateralizationRate,
-                exchangeRatePrecision: (1e18).toString(),
-                minimumInterestPerSecond:
-                    tSdaiDeployConf.minimumInterestPerSecond,
-                maximumInterestPerSecond:
-                    tSdaiDeployConf.maximumInterestPerSecond,
-                leverageExecutorAddr,
-                penroseAddr,
-                yieldBox,
-                interestHelper,
-            });
-        }
+        // const { tSdaiMarketOracle, tSdai } = deploy__LoadDeployments_Eth({
+        //     hre,
+        //     tag,
+        //     isTestnet,
+        // });
+        // {
+        //     const tSdaiDeployConf =
+        //         DEPLOY_CONFIG.POST_LBP[hre.SDK.eChainId]!.tSdaiMarketConfig!;
+        //     await initSGLMarket({
+        //         ...params,
+        //         factory: await hre.ethers.getContractFactory('Singularity'),
+        //         marketName: DEPLOYMENT_NAMES.SGL_S_DAI_MARKET,
+        //         collateralAddr: tSdai,
+        //         oracleAddr: tSdaiMarketOracle,
+        //         strategyDepName: isTestnet
+        //             ? DEPLOYMENT_NAMES.YB_SDAI_ASSET_WITHOUT_STRATEGY
+        //             : DEPLOYMENT_NAMES.YB_SDAI_ASSET_WITH_STRATEGY,
+        //         usdoStrategy: usdoStrategy.address,
+        //         usdoAddr: usdo,
+        //         collateralizationRate: tSdaiDeployConf.collateralizationRate,
+        //         liquidationCollateralizationRate:
+        //             tSdaiDeployConf.liquidationCollateralizationRate,
+        //         exchangeRatePrecision: (1e18).toString(),
+        //         minimumInterestPerSecond:
+        //             tSdaiDeployConf.minimumInterestPerSecond,
+        //         maximumInterestPerSecond:
+        //             tSdaiDeployConf.maximumInterestPerSecond,
+        //         leverageExecutorAddr,
+        //         penroseAddr,
+        //         yieldBox,
+        //         interestHelper,
+        //     });
+        // }
     }
 
     if (isHostChain) {
-        const { tSGLPMarketOracle, tSGLP } = deploy__LoadDeployments_Arb({
+        const {
+            //  tSGLPMarketOracle, tSGLP
+            tStgUsdcV2,
+            tStgUsdcV2MarketOracle,
+        } = deploy__LoadDeployments_Arb({
             hre,
             tag,
             isTestnet,
@@ -227,30 +258,60 @@ export async function setupInitAndRegisterMarket(params: TPostDeployParams) {
         );
 
         // SGLP
+        // {
+        //     const tSglpDeployConf =
+        //         DEPLOY_CONFIG.POST_LBP[hre.SDK.eChainId]!.tSGlpMarketConfig!;
+
+        //     await initSGLMarket({
+        //         ...params,
+        //         factory: await hre.ethers.getContractFactory('Singularity'),
+        //         marketName: DEPLOYMENT_NAMES.SGL_S_GLP_MARKET,
+        //         collateralAddr: tSGLP,
+        //         oracleAddr: tSGLPMarketOracle,
+        //         strategyDepName: isTestnet
+        //             ? DEPLOYMENT_NAMES.YB_SGLP_ASSET_WITHOUT_STRATEGY
+        //             : DEPLOYMENT_NAMES.YB_SGLP_ASSET_WITH_STRATEGY,
+        //         usdoStrategy: usdoStrategy.address,
+        //         usdoAddr: usdo,
+        //         collateralizationRate: tSglpDeployConf.collateralizationRate,
+        //         liquidationCollateralizationRate:
+        //             tSglpDeployConf.liquidationCollateralizationRate,
+        //         exchangeRatePrecision: (1e18).toString(),
+        //         leverageExecutorAddr: glpLeverageExecutor.address,
+        //         minimumInterestPerSecond:
+        //             tSglpDeployConf.minimumInterestPerSecond,
+        //         maximumInterestPerSecond:
+        //             tSglpDeployConf.maximumInterestPerSecond,
+        //         penroseAddr,
+        //         yieldBox,
+        //         interestHelper,
+        //     });
+        // }
         {
-            const tSglpDeployConf =
-                DEPLOY_CONFIG.POST_LBP[hre.SDK.eChainId]!.tSGlpMarketConfig!;
+            const tStgUsdcV2DeployConf =
+                DEPLOY_CONFIG.POST_LBP[hre.SDK.eChainId]!
+                    .tStgUsdcV2MarketConfig!;
 
             await initSGLMarket({
                 ...params,
                 factory: await hre.ethers.getContractFactory('Singularity'),
                 marketName: DEPLOYMENT_NAMES.SGL_S_GLP_MARKET,
-                collateralAddr: tSGLP,
-                oracleAddr: tSGLPMarketOracle,
-                strategyDepName: isTestnet
-                    ? DEPLOYMENT_NAMES.YB_SGLP_ASSET_WITHOUT_STRATEGY
-                    : DEPLOYMENT_NAMES.YB_SGLP_ASSET_WITH_STRATEGY,
+                collateralAddr: tStgUsdcV2,
+                oracleAddr: tStgUsdcV2MarketOracle,
+                strategyDepName:
+                    DEPLOYMENT_NAMES.YB_STG_USDC_V2_ASSET_WITHOUT_STRATEGY,
                 usdoStrategy: usdoStrategy.address,
                 usdoAddr: usdo,
-                collateralizationRate: tSglpDeployConf.collateralizationRate,
+                collateralizationRate:
+                    tStgUsdcV2DeployConf.collateralizationRate,
                 liquidationCollateralizationRate:
-                    tSglpDeployConf.liquidationCollateralizationRate,
+                    tStgUsdcV2DeployConf.liquidationCollateralizationRate,
                 exchangeRatePrecision: (1e18).toString(),
                 leverageExecutorAddr: glpLeverageExecutor.address,
                 minimumInterestPerSecond:
-                    tSglpDeployConf.minimumInterestPerSecond,
+                    tStgUsdcV2DeployConf.minimumInterestPerSecond,
                 maximumInterestPerSecond:
-                    tSglpDeployConf.maximumInterestPerSecond,
+                    tStgUsdcV2DeployConf.maximumInterestPerSecond,
                 penroseAddr,
                 yieldBox,
                 interestHelper,
@@ -268,7 +329,7 @@ export async function setupInitAndRegisterMarket(params: TPostDeployParams) {
                 marketName: DEPLOYMENT_NAMES.SGL_USDC_MOCK_MARKET,
                 collateralAddr:
                     DEPLOY_CONFIG.POST_LBP[hre.SDK.eChainId]!.usdcMock!,
-                oracleAddr: tSGLPMarketOracle,
+                oracleAddr: tStgUsdcV2MarketOracle,
                 strategyDepName:
                     DEPLOYMENT_NAMES.YB_T_USDC_MOCK_ASSET_WITHOUT_STRATEGY,
                 usdoStrategy: usdoStrategy.address,

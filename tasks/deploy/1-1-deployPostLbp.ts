@@ -275,12 +275,20 @@ async function tapiocaDeployTask(params: TTapiocaDeployerVmPass<object>) {
      */
     VM.add(await buildMarketHelper(hre));
     if (isHostChain) {
-        const { yieldBox, mtETH, tETH, tReth, tWSTETH, tSGLP, wethGlpOracle } =
-            deploy__LoadDeployments_Arb({
-                hre,
-                tag,
-                isTestnet,
-            });
+        const {
+            yieldBox,
+            mtETH,
+            tETH,
+            tReth,
+            tWSTETH,
+            //  tSGLP,
+            wethGlpOracle,
+            tZro,
+        } = deploy__LoadDeployments_Arb({
+            hre,
+            tag,
+            isTestnet,
+        });
 
         // @ts-ignore
         (await buildBBModules(hre)).forEach((module) => VM.add(module));
@@ -318,6 +326,14 @@ async function tapiocaDeployTask(params: TTapiocaDeployerVmPass<object>) {
                     token: tWSTETH,
                     yieldBox,
                 }),
+            )
+            .add(
+                await buildERC20WithoutStrategy(hre, {
+                    deploymentName:
+                        DEPLOYMENT_NAMES.YB_T_ZRO_ASSET_WITHOUT_STRATEGY,
+                    token: tZro,
+                    yieldBox,
+                }),
             );
 
         // BB Markets
@@ -341,6 +357,12 @@ async function tapiocaDeployTask(params: TTapiocaDeployerVmPass<object>) {
                     hre,
                     DEPLOYMENT_NAMES.BB_T_WST_ETH_MARKET,
                 ),
+            )
+            .add(
+                await buildBBMediumRiskMC(
+                    hre,
+                    DEPLOYMENT_NAMES.BB_T_ZRO_MARKET,
+                ),
             );
 
         if (isTestnet) {
@@ -354,11 +376,19 @@ async function tapiocaDeployTask(params: TTapiocaDeployerVmPass<object>) {
 
         // SGL asset strategies
         if (isTestnet) {
+            // VM.add(
+            //     await buildERC20WithoutStrategy(hre, {
+            //         deploymentName:
+            //             DEPLOYMENT_NAMES.YB_SGLP_ASSET_WITHOUT_STRATEGY,
+            //         token: tSGLP,
+            //         yieldBox,
+            //     }),
+            // );
             VM.add(
                 await buildERC20WithoutStrategy(hre, {
                     deploymentName:
-                        DEPLOYMENT_NAMES.YB_SGLP_ASSET_WITHOUT_STRATEGY,
-                    token: tSGLP,
+                        DEPLOYMENT_NAMES.YB_STG_USDC_V2_ASSET_WITHOUT_STRATEGY,
+                    token: tZro,
                     yieldBox,
                 }),
             );
@@ -371,23 +401,29 @@ async function tapiocaDeployTask(params: TTapiocaDeployerVmPass<object>) {
                 }),
             );
         } else {
-            VM.add(
-                await buildGlpStrategy(hre, [
-                    yieldBox,
-                    DEPLOY_CONFIG.POST_LBP[chainInfo.chainId]!.glpStrat!
-                        .gmxRewardRouter,
-                    DEPLOY_CONFIG.POST_LBP[chainInfo.chainId]!.glpStrat!
-                        .glpRewardRouter,
-                    tSGLP,
-                    wethGlpOracle,
-                    '0x',
-                    owner,
-                ]),
-            );
+            // VM.add(
+            //     await buildGlpStrategy(hre, [
+            //         yieldBox,
+            //         DEPLOY_CONFIG.POST_LBP[chainInfo.chainId]!.glpStrat!
+            //             .gmxRewardRouter,
+            //         DEPLOY_CONFIG.POST_LBP[chainInfo.chainId]!.glpStrat!
+            //             .glpRewardRouter,
+            //         tSGLP,
+            //         wethGlpOracle,
+            //         '0x',
+            //         owner,
+            //     ]),
+            // );
         }
         // SGL markets
+        // VM.add(
+        //     await buildSGLMediumRiskMC(hre, DEPLOYMENT_NAMES.SGL_S_GLP_MARKET),
+        // );
         VM.add(
-            await buildSGLMediumRiskMC(hre, DEPLOYMENT_NAMES.SGL_S_GLP_MARKET),
+            await buildSGLMediumRiskMC(
+                hre,
+                DEPLOYMENT_NAMES.SGL_STG_USDC_V2_MARKET,
+            ),
         );
 
         if (isTestnet) {
@@ -405,32 +441,31 @@ async function tapiocaDeployTask(params: TTapiocaDeployerVmPass<object>) {
      * SGL Markets: sDAI
      */
     if (isSideChain) {
-        const { tSdai } = deploy__LoadDeployments_Eth({ hre, tag, isTestnet });
-        // SGL asset strategies
-        if (isTestnet) {
-            VM.add(
-                await buildERC20WithoutStrategy(hre, {
-                    deploymentName:
-                        DEPLOYMENT_NAMES.YB_SDAI_ASSET_WITHOUT_STRATEGY,
-                    token: tSdai,
-                    yieldBox,
-                }),
-            );
-        } else {
-            VM.add(
-                await buildSdaiStrategy(hre, [
-                    yieldBox,
-                    tSdai,
-                    DEPLOY_CONFIG.POST_LBP[chainInfo.chainId]!.sDAI!,
-                    owner,
-                ]),
-            );
-        }
-
-        // SGL markets
-        VM.add(
-            await buildSGLMediumRiskMC(hre, DEPLOYMENT_NAMES.SGL_S_DAI_MARKET),
-        );
+        // const { tSdai } = deploy__LoadDeployments_Eth({ hre, tag, isTestnet });
+        // // SGL asset strategies
+        // if (isTestnet) {
+        //     VM.add(
+        //         await buildERC20WithoutStrategy(hre, {
+        //             deploymentName:
+        //                 DEPLOYMENT_NAMES.YB_SDAI_ASSET_WITHOUT_STRATEGY,
+        //             token: tSdai,
+        //             yieldBox,
+        //         }),
+        //     );
+        // } else {
+        //     VM.add(
+        //         await buildSdaiStrategy(hre, [
+        //             yieldBox,
+        //             tSdai,
+        //             DEPLOY_CONFIG.POST_LBP[chainInfo.chainId]!.sDAI!,
+        //             owner,
+        //         ]),
+        //     );
+        // }
+        // // SGL markets
+        // VM.add(
+        //     await buildSGLMediumRiskMC(hre, DEPLOYMENT_NAMES.SGL_S_DAI_MARKET),
+        // );
     }
 }
 
@@ -521,18 +556,18 @@ export function deploy__LoadDeployments_Eth(params: {
         tag,
     ).address;
 
-    const tSdai = loadGlobalContract(
-        hre,
-        TAPIOCA_PROJECTS_NAME.TapiocaZ,
-        hre.SDK.eChainId,
-        TAPIOCA_Z_CONFIG.DEPLOYMENT_NAMES.tsDAI,
-        tag,
-    ).address;
+    // const tSdai = loadGlobalContract(
+    //     hre,
+    //     TAPIOCA_PROJECTS_NAME.TapiocaZ,
+    //     hre.SDK.eChainId,
+    //     TAPIOCA_Z_CONFIG.DEPLOYMENT_NAMES.tsDAI,
+    //     tag,
+    // ).address;
 
     return {
         ...deploy__LoadDeployments_Generic({ hre, tag, isTestnet }),
         tSdaiMarketOracle,
-        tSdai,
+        // tSdai,
     };
 }
 
@@ -575,6 +610,14 @@ export function deploy__LoadDeployments_Arb(params: {
         tag,
     ).address;
 
+    const tZro = loadGlobalContract(
+        hre,
+        TAPIOCA_PROJECTS_NAME.TapiocaZ,
+        hre.SDK.eChainId,
+        TAPIOCA_Z_CONFIG.DEPLOYMENT_NAMES.tZRO,
+        tag,
+    ).address;
+
     const ethMarketOracle = loadGlobalContract(
         hre,
         TAPIOCA_PROJECTS_NAME.TapiocaPeriph,
@@ -599,11 +642,26 @@ export function deploy__LoadDeployments_Arb(params: {
         tag,
     ).address;
 
-    const tSGLPMarketOracle = loadGlobalContract(
+    const tZroMarketOracle = loadGlobalContract(
         hre,
         TAPIOCA_PROJECTS_NAME.TapiocaPeriph,
         hre.SDK.eChainId,
-        TAPIOCA_PERIPH_CONFIG.DEPLOYMENT_NAMES.MARKET_GLP_ORACLE,
+        TAPIOCA_PERIPH_CONFIG.DEPLOYMENT_NAMES.MARKET_ZRO_ORACLE,
+        tag,
+    ).address;
+
+    // const tSGLPMarketOracle = loadGlobalContract(
+    //     hre,
+    //     TAPIOCA_PROJECTS_NAME.TapiocaPeriph,
+    //     hre.SDK.eChainId,
+    //     TAPIOCA_PERIPH_CONFIG.DEPLOYMENT_NAMES.MARKET_GLP_ORACLE,
+    //     tag,
+    // ).address;
+    const tStgUsdcV2MarketOracle = loadGlobalContract(
+        hre,
+        TAPIOCA_PROJECTS_NAME.TapiocaPeriph,
+        hre.SDK.eChainId,
+        TAPIOCA_PERIPH_CONFIG.DEPLOYMENT_NAMES.MARKET_STG_USDC_V2_ORACLE,
         tag,
     ).address;
 
@@ -615,11 +673,19 @@ export function deploy__LoadDeployments_Arb(params: {
         tag,
     ).address;
 
-    const tSGLP = loadGlobalContract(
+    // const tSGLP = loadGlobalContract(
+    //     hre,
+    //     TAPIOCA_PROJECTS_NAME.TapiocaZ,
+    //     hre.SDK.eChainId,
+    //     TAPIOCA_Z_CONFIG.DEPLOYMENT_NAMES.tsGLP,
+    //     tag,
+    // ).address;
+
+    const tStgUsdcV2 = loadGlobalContract(
         hre,
         TAPIOCA_PROJECTS_NAME.TapiocaZ,
         hre.SDK.eChainId,
-        TAPIOCA_Z_CONFIG.DEPLOYMENT_NAMES.tsGLP,
+        TAPIOCA_Z_CONFIG.DEPLOYMENT_NAMES.tStgUsdcV2,
         tag,
     ).address;
 
@@ -629,11 +695,15 @@ export function deploy__LoadDeployments_Arb(params: {
         tETH,
         tReth,
         tWSTETH,
+        tZro,
         ethMarketOracle,
         tRethMarketOracle,
         tWstEthMarketOracle,
-        tSGLPMarketOracle,
-        tSGLP,
+        tStgUsdcV2MarketOracle,
+        tStgUsdcV2,
+        // tSGLPMarketOracle,
+        // tSGLP,
+        tZroMarketOracle,
         wethGlpOracle,
     };
 }

@@ -31,37 +31,52 @@ export async function setupCreateYBAssets(params: TPostDeployParams) {
      * Register sDAI as YB assets
      */
     if (isSideChain) {
-        const { tSdai } = deploy__LoadDeployments_Eth({ hre, tag, isTestnet });
-        await setupCreateYBAssets__addNewAsset({
-            ...params,
-            assetAddress: tSdai,
-            strategyDepName: isTestnet
-                ? DEPLOYMENT_NAMES.YB_SDAI_ASSET_WITHOUT_STRATEGY
-                : DEPLOYMENT_NAMES.YB_SDAI_ASSET_WITH_STRATEGY,
-            assetName: 'tsDAI',
-            yieldBox,
-        });
+        // const { tSdai } = deploy__LoadDeployments_Eth({ hre, tag, isTestnet });
+        // await setupCreateYBAssets__addNewAsset({
+        //     ...params,
+        //     assetAddress: tSdai,
+        //     strategyDepName: isTestnet
+        //         ? DEPLOYMENT_NAMES.YB_SDAI_ASSET_WITHOUT_STRATEGY
+        //         : DEPLOYMENT_NAMES.YB_SDAI_ASSET_WITH_STRATEGY,
+        //     assetName: 'tsDAI',
+        //     yieldBox,
+        // });
     }
 
     if (isHostChain) {
-        const { mtETH, tETH, tReth, tWSTETH, tSGLP } =
-            deploy__LoadDeployments_Arb({
-                hre,
-                tag,
-                isTestnet,
-            });
+        const {
+            mtETH,
+            tETH,
+            tReth,
+            tWSTETH,
+            tStgUsdcV2,
+            tZro,
+            // tSGLP
+        } = deploy__LoadDeployments_Arb({
+            hre,
+            tag,
+            isTestnet,
+        });
 
         /**
          * SGL
          * Register sGLP as YB assets
          */
+        // await setupCreateYBAssets__addNewAsset({
+        //     ...params,
+        //     assetAddress: tSGLP,
+        //     strategyDepName: isTestnet
+        //         ? DEPLOYMENT_NAMES.YB_SGLP_ASSET_WITHOUT_STRATEGY
+        //         : DEPLOYMENT_NAMES.YB_SGLP_ASSET_WITH_STRATEGY,
+        //     assetName: 'tsGLP',
+        //     yieldBox,
+        // });
         await setupCreateYBAssets__addNewAsset({
             ...params,
-            assetAddress: tSGLP,
-            strategyDepName: isTestnet
-                ? DEPLOYMENT_NAMES.YB_SGLP_ASSET_WITHOUT_STRATEGY
-                : DEPLOYMENT_NAMES.YB_SGLP_ASSET_WITH_STRATEGY,
-            assetName: 'tsGLP',
+            assetAddress: tStgUsdcV2,
+            strategyDepName:
+                DEPLOYMENT_NAMES.YB_STG_USDC_V2_ASSET_WITHOUT_STRATEGY,
+            assetName: 'tStgUsdcV2',
             yieldBox,
         });
         await setupCreateYBAssets__addNewAsset({
@@ -111,6 +126,13 @@ export async function setupCreateYBAssets(params: TPostDeployParams) {
             strategyDepName:
                 DEPLOYMENT_NAMES.YB_T_WST_ETH_ASSET_WITHOUT_STRATEGY,
             assetName: 'tWSTETH',
+            yieldBox,
+        });
+        await setupCreateYBAssets__addNewAsset({
+            ...params,
+            assetAddress: tZro,
+            strategyDepName: DEPLOYMENT_NAMES.YB_T_ZRO_ASSET_WITHOUT_STRATEGY,
+            assetName: 'tZro',
             yieldBox,
         });
     }

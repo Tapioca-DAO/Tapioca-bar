@@ -52,6 +52,9 @@ export async function setupRegisterBBAndSGLMarketsInPenrose(
         const bbtTwstethMarket = deployed.find(
             (e) => e.name === DEPLOYMENT_NAMES.BB_T_WST_ETH_MARKET,
         )!;
+        const bbTZroMarket = deployed.find(
+            (e) => e.name === DEPLOYMENT_NAMES.BB_T_ZRO_MARKET,
+        )!;
         const bbtUsdcMock = deployed.find(
             (e) => e.name === DEPLOYMENT_NAMES.BB_T_USDC_MOCK_MARKET,
         )!;
@@ -77,6 +80,12 @@ export async function setupRegisterBBAndSGLMarketsInPenrose(
         await registerMarket(
             'BB',
             bbMediumRiskMC.address,
+            bbTZroMarket.address,
+            DEPLOYMENT_NAMES.BB_T_ZRO_MARKET,
+        );
+        await registerMarket(
+            'BB',
+            bbMediumRiskMC.address,
             bbtUsdcMock.address,
             DEPLOYMENT_NAMES.BB_T_USDC_MOCK_MARKET,
         );
@@ -89,18 +98,27 @@ export async function setupRegisterBBAndSGLMarketsInPenrose(
             (e) => e.name === DEPLOYMENT_NAMES.SGL_MEDIUM_RISK_MC,
         )!;
 
-        const sglSglpMarket = deployed.find(
-            (e) => e.name === DEPLOYMENT_NAMES.SGL_S_GLP_MARKET,
+        // const sglSglpMarket = deployed.find(
+        //     (e) => e.name === DEPLOYMENT_NAMES.SGL_S_GLP_MARKET,
+        // )!;
+        const sglStgUsdcMarket = deployed.find(
+            (e) => e.name === DEPLOYMENT_NAMES.SGL_STG_USDC_V2_MARKET,
         )!;
         const tUsdcMockMarket = deployed.find(
             (e) => e.name === DEPLOYMENT_NAMES.SGL_USDC_MOCK_MARKET,
         )!;
 
+        // await registerMarket(
+        //     'SGL',
+        //     sglMediumRiskMC.address,
+        //     sglSglpMarket.address,
+        //     DEPLOYMENT_NAMES.SGL_S_GLP_MARKET,
+        // );
         await registerMarket(
             'SGL',
             sglMediumRiskMC.address,
-            sglSglpMarket.address,
-            DEPLOYMENT_NAMES.SGL_S_GLP_MARKET,
+            sglStgUsdcMarket.address,
+            DEPLOYMENT_NAMES.SGL_STG_USDC_V2_MARKET,
         );
         await registerMarket(
             'SGL',

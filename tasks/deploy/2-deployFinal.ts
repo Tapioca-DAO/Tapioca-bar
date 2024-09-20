@@ -75,50 +75,46 @@ async function tapiocaPostDeployTask(
 
     // xChain needs to be called first
     if (isSideChain) {
-        const tSglSdai = await hre.ethers.getContractAt(
-            'TOFT',
-            loadGlobalContract(
-                hre,
-                TAPIOCA_PROJECTS_NAME.TapiocaZ,
-                hre.SDK.chainInfo.chainId,
-                TAPIOCA_Z_CONFIG.DEPLOYMENT_NAMES.T_SGL_SDAI_MARKET,
-                tag,
-            ).address,
-        );
-
-        const calls: TapiocaMulticall.CallStruct[] = [];
-        await depositUsdoYbAndAddSgl({
-            hre,
-            marketName: DEPLOYMENT_NAMES.SGL_S_DAI_MARKET,
-            calls,
-            tag,
-            multicallAddr: tapiocaMulticallAddr,
-            isTestnet,
-            amount: hre.ethers.utils.parseEther('0.01'),
-        });
-        await VM.executeMulticall(calls);
-
-        let calls2: TapiocaMulticall.CallValueStruct[] = [];
-        await wrapToft({
-            calls: calls2,
-            tapTakParams: params,
-            toftAddr: tSglSdai.address,
-            wrapAmount: hre.ethers.utils.parseEther('0.01'),
-        });
-
-        calls2 = calls2.map((c) => ({ ...c, value: 0 })); // Value property is not used in wrapToft, we need to set it
-        const callValue = await sendOftToken(
-            params,
-            calls2,
-            tSglSdai.address,
-            hre.ethers.utils.parseEther('0.01'),
-        );
-
-        await VM.executeMulticallValue(calls2, {
-            overrideOptions: {
-                value: callValue,
-            },
-        });
+        // const tSglSdai = await hre.ethers.getContractAt(
+        //     'TOFT',
+        //     loadGlobalContract(
+        //         hre,
+        //         TAPIOCA_PROJECTS_NAME.TapiocaZ,
+        //         hre.SDK.chainInfo.chainId,
+        //         TAPIOCA_Z_CONFIG.DEPLOYMENT_NAMES.T_SGL_SDAI_MARKET,
+        //         tag,
+        //     ).address,
+        // );
+        // const calls: TapiocaMulticall.CallStruct[] = [];
+        // await depositUsdoYbAndAddSgl({
+        //     hre,
+        //     marketName: DEPLOYMENT_NAMES.SGL_S_DAI_MARKET,
+        //     calls,
+        //     tag,
+        //     multicallAddr: tapiocaMulticallAddr,
+        //     isTestnet,
+        //     amount: hre.ethers.utils.parseEther('0.01'),
+        // });
+        // await VM.executeMulticall(calls);
+        // let calls2: TapiocaMulticall.CallValueStruct[] = [];
+        // await wrapToft({
+        //     calls: calls2,
+        //     tapTakParams: params,
+        //     toftAddr: tSglSdai.address,
+        //     wrapAmount: hre.ethers.utils.parseEther('0.01'),
+        // });
+        // calls2 = calls2.map((c) => ({ ...c, value: 0 })); // Value property is not used in wrapToft, we need to set it
+        // const callValue = await sendOftToken(
+        //     params,
+        //     calls2,
+        //     tSglSdai.address,
+        //     hre.ethers.utils.parseEther('0.01'),
+        // );
+        // await VM.executeMulticallValue(calls2, {
+        //     overrideOptions: {
+        //         value: callValue,
+        //     },
+        // });
     }
 
     if (isHostChain) {
@@ -175,6 +171,7 @@ async function tapiocaPostDeployTask(
             await addBBSetConfig(DEPLOYMENT_NAMES.BB_MT_ETH_MARKET);
             await addBBSetConfig(DEPLOYMENT_NAMES.BB_T_RETH_MARKET);
             await addBBSetConfig(DEPLOYMENT_NAMES.BB_T_WST_ETH_MARKET);
+            await addBBSetConfig(DEPLOYMENT_NAMES.BB_T_ZRO_MARKET);
 
             calls.push({
                 target: penrose.address,
@@ -190,19 +187,31 @@ async function tapiocaPostDeployTask(
             });
         }
 
-        const { tSglSglp } = await loadContract__deployFinal__task({
+        const {
+            // tSglSglp
+            tSglStgUsdcV2,
+        } = await loadContract__deployFinal__task({
             hre,
             tag,
         });
 
         // Register deployed tSglSdai & tSglSglp asset in yieldbox
         {
+            // await createEmptyStratYbAsset__task(
+            //     {
+            //         deploymentName:
+            //             DEPLOYMENT_NAMES.YB_T_SGL_SGLP_ASSET_WITHOUT_STRATEGY,
+            //         tag,
+            //         token: tSglSglp.address,
+            //     },
+            //     hre,
+            // );
             await createEmptyStratYbAsset__task(
                 {
                     deploymentName:
-                        DEPLOYMENT_NAMES.YB_T_SGL_SGLP_ASSET_WITHOUT_STRATEGY,
+                        DEPLOYMENT_NAMES.YB_T_SGL_STG_USDC_V2_ASSET_WITHOUT_STRATEGY,
                     tag,
-                    token: tSglSglp.address,
+                    token: tSglStgUsdcV2.address,
                 },
                 hre,
             );
@@ -249,13 +258,13 @@ async function tapiocaPostDeployTask(
                 amount: hre.ethers.utils.parseEther('5'),
             });
 
-            await wrapToft({
-                calls: calls,
-                tapTakParams: params,
-                toftAddr: tSglSglp.address,
-                wrapAmount: hre.ethers.utils.parseEther('1'),
-                noCheckAmount: true,
-            });
+            // await wrapToft({
+            //     calls: calls,
+            //     tapTakParams: params,
+            //     toftAddr: tSglSglp.address,
+            //     wrapAmount: hre.ethers.utils.parseEther('1'),
+            //     noCheckAmount: true,
+            // });
         }
         await VM.executeMulticall(calls);
 
@@ -372,13 +381,20 @@ async function loadContract__deployFinal__task(params: {
     //     TAPIOCA_Z_CONFIG.DEPLOYMENT_NAMES.T_SGL_SDAI_MARKET,
     //     tag,
     // );
-    const tSglSglp = loadGlobalContract(
+    // const tSglSglp = loadGlobalContract(
+    //     hre,
+    //     TAPIOCA_PROJECTS_NAME.TapiocaZ,
+    //     hre.SDK.chainInfo.chainId,
+    //     TAPIOCA_Z_CONFIG.DEPLOYMENT_NAMES.T_SGL_GLP_MARKET,
+    //     tag,
+    // );
+    const tSglStgUsdcV2 = loadGlobalContract(
         hre,
         TAPIOCA_PROJECTS_NAME.TapiocaZ,
         hre.SDK.chainInfo.chainId,
-        TAPIOCA_Z_CONFIG.DEPLOYMENT_NAMES.T_SGL_GLP_MARKET,
+        TAPIOCA_Z_CONFIG.DEPLOYMENT_NAMES.T_SGL_STG_USDC_V2_MARKET,
         tag,
     );
 
-    return { tSglSglp };
+    return { tSglStgUsdcV2 };
 }
