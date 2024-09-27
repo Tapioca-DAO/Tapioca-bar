@@ -269,6 +269,8 @@ contract Usdo_crossChain is Usdo_Unit_Shared, BigBang_Unit_Shared, Singularity_U
         whenWhitelisted(address(marketHelper), "USDO_HELPER_CALLEE") 
         whenWhitelisted(address(mainBB), "USDO_MARKET_CALLEE") 
     {
+        cluster.setRoleForContract(address(secondaryUsdo),  keccak256("MAGNETAR_CALLER"), true);
+
         {
             borrowAmount = _boundBorrowAmount(borrowAmount, collateralAmount);
             // add collateral
@@ -381,6 +383,8 @@ contract Usdo_crossChain is Usdo_Unit_Shared, BigBang_Unit_Shared, Singularity_U
 
             _approveViaPearlmit(TOKEN_TYPE_ERC1155, address(yieldBox), IPearlmit(address(pearlmit)), address(this), address(randomSgl), type(uint200).max, block.timestamp, usdoId);
             _approveViaPearlmit(TOKEN_TYPE_ERC20, address(randomSgl), IPearlmit(address(pearlmit)), address(this), address(magnetar), type(uint200).max, block.timestamp, 0);
+
+            cluster.setRoleForContract(address(secondaryUsdo),  keccak256("MAGNETAR_CALLER"), true);
         }
 
         // add asset

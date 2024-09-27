@@ -365,7 +365,7 @@ contract MagnetarMock is PearlmitHandler {
     }
 
     function _checkSender(address _from) internal view {
-        if (_from != msg.sender && !cluster.hasRole(msg.sender, keccak256(abi.encodePacked("CALLER_ALLOWED_FOR_", _from)))) {
+        if (_from != msg.sender && !cluster.hasRole(msg.sender, keccak256("MAGNETAR_CALLER"))) {
             revert MagnetarMock_NotAuthorized();
         }
     }
