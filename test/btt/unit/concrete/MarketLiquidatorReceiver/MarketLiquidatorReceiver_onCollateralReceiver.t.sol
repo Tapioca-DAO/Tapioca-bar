@@ -24,23 +24,23 @@ contract MarketLiquidatorReceiver_onCollateralReceivertsol is MarketLiquidatorRe
     function test_RevertWhen_MarketLiquidatorReceiverOnCollateralReceiverIsCalledFromNon_whitelisted() external {
         address rndAddr = makeAddr("rndAddress");
         receiver.setAllowedParticipant(rndAddr, true);
-        vm.expectRevert(MarketLiquidatorReceiver.WhitelistError.selector);
+        cluster.setRoleForContract(address(this),  keccak256("MARKET_LIQUIDATOR_RECEIVER_CALLER"), false);
+        vm.expectRevert(abi.encodeWithSelector(MarketLiquidatorReceiver.WhitelistError.selector, "MARKET_LIQUIDATOR_RECEIVER_CALLER"));
         receiver.onCollateralReceiver(rndAddr, address(0), address(0), 0, "0x");
     }
 
     function test_RevertWhen_MarketLiquidatorReceiverOnCollateralReceiverIsCalledAndTargetIsNotWhitelisted() external {
         address rndAddr = makeAddr("rndAddress");
         receiver.setAllowedParticipant(rndAddr, true);
-        cluster.updateContract(0, address(this), true);
-        vm.expectRevert(MarketLiquidatorReceiver.WhitelistError.selector);
+        cluster.setRoleForContract(address(this),  keccak256("MARKET_LIQUIDATOR_RECEIVER_CALLER"), true);
+        cluster.setRoleForContract(address(receiver),  keccak256("MARKET_LIQUIDATOR_RECEIVER"), false);
+        vm.expectRevert(abi.encodeWithSelector(MarketLiquidatorReceiver.WhitelistError.selector, "MARKET_LIQUIDATOR_RECEIVER"));
         receiver.onCollateralReceiver(rndAddr, address(0), address(0), 0, "0x");
     }
 
     function test_RevertWhen_MarketLiquidatorReceiverOnCollateralReceiverIsCalledAndBalanceIsLess() external {
         address rndAddr = makeAddr("rndAddress");
         receiver.setAllowedParticipant(rndAddr, true);
-        cluster.updateContract(0, address(this), true);
-        cluster.updateContract(0, address(receiver), true);
         vm.expectRevert(MarketLiquidatorReceiver.NotEnough.selector);
         receiver.onCollateralReceiver(rndAddr, address(tWeth), address(usdo), 1 ether, "0x");
     }
@@ -48,8 +48,6 @@ contract MarketLiquidatorReceiver_onCollateralReceivertsol is MarketLiquidatorRe
     function test_WhenMarketLiquidatorReceiverOnCollateralReceiverIsCalledCorrectly() external {
         address rndAddr = makeAddr("rndAddress");
         receiver.setAllowedParticipant(rndAddr, true);
-        cluster.updateContract(0, address(this), true);
-        cluster.updateContract(0, address(receiver), true);
 
         uint256 amount = 1 ether;
 

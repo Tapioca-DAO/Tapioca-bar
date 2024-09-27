@@ -81,7 +81,7 @@ contract Singularity is MarketStateView, SGLCommon {
     // ************** //
     error NotValid();
     error ModuleNotSet();
-    error NotAuthorized();
+    error NotAuthorized(bytes reason);
     error SameState();
     error MinLendAmountNotMet();
 
@@ -168,7 +168,7 @@ contract Singularity is MarketStateView, SGLCommon {
     /// @param val the new value
     function updatePause(PauseType _type, bool val, bool resetAccrueTimestmap) external {
         if (!penrose.cluster().hasRole(msg.sender, keccak256("PAUSABLE")) && msg.sender != owner()) {
-            revert NotAuthorized();
+            revert NotAuthorized("PAUSABLE");
         }
         if (val == pauseOptions[_type]) revert SameState();
         emit PausedUpdated(_type, pauseOptions[_type], val);

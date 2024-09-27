@@ -47,8 +47,6 @@ abstract contract BigBang_Unit_Shared is Markets_Unit_Shared {
     BigBang mainBB;
     BigBang secondaryBB;
 
-    LeverageExecutorMock_test leverageExecutor;
-
     error Test_Error_Invalid_Amount();
 
     // ************* //
@@ -67,11 +65,6 @@ abstract contract BigBang_Unit_Shared is Markets_Unit_Shared {
         // create BBDebtRateHelper
         debtHelper = new BBDebtRateHelper();
 
-        // create leverage executor
-        // mock to allow return value customization
-        leverageExecutor = new LeverageExecutorMock_test();
-        leverageExecutor.setOracle(ITapiocaOracle(address(oracle)));
-
         // create main BB market
         // it handles after deployment set-up
         mainBB = BigBang(payable(_registerBBMarket(address(mainToken), mainTokenId, true)));
@@ -79,6 +72,11 @@ abstract contract BigBang_Unit_Shared is Markets_Unit_Shared {
         // create another BB market
         // it handles after deployment set-up
         secondaryBB = BigBang(payable(_registerBBMarket(address(randomCollateral), randomCollateralId, false)));
+
+        cluster.setRoleForContract(address(mainBB),  keccak256("USDO_MARKET_CALLEE"), true);
+        cluster.setRoleForContract(address(mainBB),  keccak256("MAGNETAR_MARKET_CALLEE"), true);
+        cluster.setRoleForContract(address(secondaryBB),  keccak256("USDO_MARKET_CALLEE"), true);
+        cluster.setRoleForContract(address(secondaryBB),  keccak256("MAGNETAR_MARKET_CALLEE"), true);
     }
 
     // ***************** //
@@ -320,7 +318,7 @@ abstract contract BigBang_Unit_Shared is Markets_Unit_Shared {
             marketHelper.liquidate(users, borrowParts, minLiquidationBonuses, receivers, receiverData);
     }
 
-    function _approveForCollateral(address txExecutor) internal override resetPrank(txExecutor) {
+    function _approveForCollateral(address txExecutor) internal virtual override resetPrank(txExecutor) {
         _approveViaERC20(mainBB._collateral(), txExecutor, address(yieldBox), type(uint256).max);
         _approveViaERC20(mainBB._collateral(), txExecutor, address(pearlmit), type(uint256).max);
         _approveYieldBoxForAll(yieldBox, txExecutor, address(mainBB));

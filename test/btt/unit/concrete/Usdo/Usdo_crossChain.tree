@@ -1,0 +1,35 @@
+Usdo_crossChain.t.sol
+├── when erc20 approval is performed on current chain
+│   ├── it should increase allowance of main Usdo
+│   └── it should increase nonce of main Usdo
+├── when erc20 approval is performed on cross chain level
+│   ├── it should increase allowance of secondary Usdo for 2 users
+│   └── it should increase nonce of secondary Usdo
+├── when remote transfer is called from secondary chain
+│   └── it should increase local chain balance
+├── when cross chain permit or revoke is triggered
+│   ├── when permit is called
+│   │   └── it should set approval for the asset on YieldBox
+│   ├── when revoke is called
+│   │   └── it should revoke approval for asset on YieldBox
+│   ├── when permit all is called
+│   │   └── it should set approved for all on YieldBox
+│   └── when revoke all is called
+│       └── it should revert approveall status on YieldBox
+├── when market permit is called
+│   ├── when permit asset
+│   │   └── it should increase market allowance for asset
+│   └── when permit collateral
+│       └── it should increase market allowance for collateral
+├── when repay and remove collateral is performed
+│   ├── it should decrease userBorrowPart
+│   ├── it should decrease userCollateralShare
+│   ├── it should decrease totalBorrow
+│   ├── it should decrease totalCollateralShare
+└── when remove asset is called cross chain
+    ├── when magnetar is not available
+    │   └── it should revert
+    └── when magnetar is available
+        ├── it should remove asset from market
+        ├── it should decrease market supply
+        └── it should transfer asset to user

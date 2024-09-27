@@ -44,7 +44,6 @@ contract BigBang_liquidateBadDebt is BigBang_Unit_Shared {
         // │   │   └─ ← [Revert] EvmError: Revert
         // │   └─ ← [Revert] revert: RevertMsgDecoder: no data
         // └─ ← [Revert] revert: RevertMsgDecoder: no data
-        cluster.updateContract(0, address(this), false);
         vm.expectRevert();
         mainBB.execute(modules, calls, true);
     }
@@ -58,7 +57,8 @@ contract BigBang_liquidateBadDebt is BigBang_Unit_Shared {
         whenAssetOracleRateIsBelowMin
         whenCollateralAmountIsValid(collateralAmount)
         givenBorrowCapIsNotReachedYet
-        whenWhitelisted(address(this))
+        // whenWhitelisted(address(this))
+        whenWhitelisted(address(this), "BAD_LIQUIDATION_CALLER") 
     {
         borrowAmount = _boundBorrowAmount(borrowAmount, collateralAmount);
         (Module[] memory modules, bytes[] memory calls) = _getLiquidateBadDebtData(address(this), address(this), address(this), "", false);
@@ -108,7 +108,8 @@ contract BigBang_liquidateBadDebt is BigBang_Unit_Shared {
         whenAssetOracleRateIsBelowMin
         whenCollateralAmountIsValid(collateralAmount)
         givenBorrowCapIsNotReachedYet
-        whenWhitelisted(address(this))
+        // whenWhitelisted(address(this))
+        whenWhitelisted(address(this), "BAD_LIQUIDATION_CALLER") 
     {
         address rndAddr = makeAddr("rndAddress");
 
@@ -129,7 +130,7 @@ contract BigBang_liquidateBadDebt is BigBang_Unit_Shared {
         _liquidateBadDebt(collateralAmount, borrowAmount, secondaryBB, address(this), rndAddr, false);
     }
 
-    function test_whenOwnerIsCalling_WhenSwapCollateralIsRequired(
+    function test_whenOwnerIsCalling_WhenSwapCollateralIsRequiredX(
         uint256 collateralAmount,
         uint256 borrowAmount
     ) 
@@ -137,20 +138,20 @@ contract BigBang_liquidateBadDebt is BigBang_Unit_Shared {
         whenAssetOracleRateIsBelowMin
         whenCollateralAmountIsValid(collateralAmount)
         givenBorrowCapIsNotReachedYet
-        whenWhitelisted(address(this))
+        // whenWhitelisted(address(this))
+        whenWhitelisted(address(this), "BAD_LIQUIDATION_CALLER") 
+        whenWhitelisted(address(mainBB), "MARKET_LIQUIDATOR_RECEIVER_CALLER") 
+        whenWhitelisted(address(secondaryBB), "MARKET_LIQUIDATOR_RECEIVER_CALLER") 
+        whenWhitelisted(address(liquidatorReceiver), "MARKET_LIQUIDATOR_RECEIVER") 
     {
    
         address rndAddr = makeAddr("rndAddress");
 
         // it should transfer assets to the receiver
         // **** Main BB market ****
-        cluster.updateContract(0, address(mainBB), true);
-        cluster.updateContract(0, address(liquidatorReceiver), true);
         _liquidateBadDebt(collateralAmount, borrowAmount, mainBB, address(this), rndAddr, true);
 
          // **** Secondary BB market ****
-        cluster.updateContract(0, address(secondaryBB), true);
-        cluster.updateContract(0, address(liquidatorReceiver), true);
         _liquidateBadDebt(collateralAmount, borrowAmount, secondaryBB, address(this), rndAddr, true);
     }
 
@@ -162,9 +163,12 @@ contract BigBang_liquidateBadDebt is BigBang_Unit_Shared {
         whenOracleRateIsEth
         whenCollateralAmountIsValid(collateralAmount)
         givenBorrowCapIsNotReachedYet
-        whenWhitelisted(address(this)) 
-        whenWhitelisted(address(mainBB)) 
-        whenWhitelisted(address(liquidatorReceiver)) 
+        // whenWhitelisted(address(this)) 
+        // whenWhitelisted(address(mainBB)) 
+        // whenWhitelisted(address(liquidatorReceiver)) 
+        whenWhitelisted(address(this), "BAD_LIQUIDATION_CALLER") 
+        whenWhitelisted(address(mainBB), "MARKET_LIQUIDATOR_RECEIVER_CALLER") 
+        whenWhitelisted(address(liquidatorReceiver), "MARKET_LIQUIDATOR_RECEIVER") 
     {
         // it should revert
         _addCollateral(collateralAmount, mainBB, address(this), address(this), address(this), address(this), false);

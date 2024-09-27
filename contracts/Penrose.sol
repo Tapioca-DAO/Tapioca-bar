@@ -169,7 +169,7 @@ contract Penrose is Ownable, Pausable, PearlmitHandler {
     // ************** //
     error NotRegistered();
     error NotValid();
-    error NotAuthorized();
+    error NotAuthorized(bytes reason);
     error Registered();
     error ZeroAddress();
     error Failed();
@@ -394,7 +394,7 @@ contract Penrose is Ownable, Pausable, PearlmitHandler {
      * @notice Un/Pauses this contract.
      */
     function setPause(bool _pauseState) external {
-        if (!cluster.hasRole(msg.sender, keccak256("PAUSABLE")) && msg.sender != owner()) revert NotAuthorized();
+        if (!cluster.hasRole(msg.sender, keccak256("PAUSABLE")) && msg.sender != owner()) revert NotAuthorized("PAUSABLE");
         if (_pauseState) {
             _pause();
         } else {
@@ -579,7 +579,7 @@ contract Penrose is Ownable, Pausable, PearlmitHandler {
             if (
                 !isSingularityMasterContractRegistered[masterContractOf[mc[i]]]
                     && !isBigBangMasterContractRegistered[masterContractOf[mc[i]]]
-            ) revert NotAuthorized();
+            ) revert NotAuthorized("");
             if (address(mc[i]).code.length == 0) revert NotValid();
             (success[i], result[i]) = mc[i].call(data[i]);
             if (forceSuccess) {
@@ -595,7 +595,8 @@ contract Penrose is Ownable, Pausable, PearlmitHandler {
         onlyOwner
         returns (bool success, bytes memory returnData)
     {
-        if (!cluster.isWhitelisted(0, target)) revert NotAuthorized();
+        if (!cluster.hasRole(target, keccak256("PENROSE_TARGET"))) revert NotAuthorized("PENROSE_TARGET");
+        
         (success, returnData) = target.delegatecall(data);
     }
 

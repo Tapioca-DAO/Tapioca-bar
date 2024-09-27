@@ -50,7 +50,7 @@ import {BaseUsdo} from "./BaseUsdo.sol";
  */
 contract Usdo is BaseUsdo, Pausable, ReentrancyGuard, ERC20Permit {
     error Usdo_NotValid();
-    error Usdo_NotAuthorized();
+    error Usdo_NotAuthorized(bytes reason);
 
     uint256 private _fees;
 
@@ -275,7 +275,7 @@ contract Usdo is BaseUsdo, Pausable, ReentrancyGuard, ERC20Permit {
      */
     function mint(address _to, uint256 _amount) external whenNotPaused {
         if (!allowedMinter[_getChainId()][msg.sender]) {
-            revert Usdo_NotAuthorized();
+            revert Usdo_NotAuthorized("");
         }
         _mint(_to, _amount);
     }
@@ -287,7 +287,7 @@ contract Usdo is BaseUsdo, Pausable, ReentrancyGuard, ERC20Permit {
      */
     function burn(address _from, uint256 _amount) external whenNotPaused {
         if (!allowedBurner[_getChainId()][msg.sender]) {
-            revert Usdo_NotAuthorized();
+            revert Usdo_NotAuthorized("");
         }
         _burn(_from, _amount);
     }
@@ -298,7 +298,7 @@ contract Usdo is BaseUsdo, Pausable, ReentrancyGuard, ERC20Permit {
      * @param _fee fees amount
      */
     function addFlashloanFee(uint256 _fee) external {
-        if (msg.sender != flashLoanHelper) revert Usdo_NotAuthorized();
+        if (msg.sender != flashLoanHelper) revert Usdo_NotAuthorized("");
         _fees += _fee;
     }
 
@@ -310,7 +310,7 @@ contract Usdo is BaseUsdo, Pausable, ReentrancyGuard, ERC20Permit {
      */
     function setPause(bool _pauseState) external {
         if (!getCluster().hasRole(msg.sender, keccak256("PAUSABLE")) && msg.sender != owner()) {
-            revert Usdo_NotAuthorized();
+            revert Usdo_NotAuthorized("PAUSABLE");
         }
         if (_pauseState) {
             _pause();

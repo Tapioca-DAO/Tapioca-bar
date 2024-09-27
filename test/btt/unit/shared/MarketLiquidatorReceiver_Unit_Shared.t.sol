@@ -66,5 +66,15 @@ abstract contract MarketLiquidatorReceiver_Unit_Shared is Base_Test {
         receiver =
             new MarketLiquidatorReceiver(address(weth), ICluster(address(cluster)), address(swapper), address(this));
         sGlpReceiver= new SGlpMarketLiquidatorReceiver(address(weth), ICluster(address(cluster)), address(swapper), IGmxRewardRouterV2(address(gmxMock)), IGmxGlpManager(address(gmxMock)), address(this));
+
+        cluster.setRoleForContract(address(receiver),  keccak256("SWAP_EXECUTOR"), true);
+        cluster.setRoleForContract(address(receiver),  keccak256("MARKET_LIQUIDATOR_RECEIVER"), true);
+        cluster.setRoleForContract(address(this),  keccak256("MARKET_LIQUIDATOR_RECEIVER_CALLER"), true);
+
+        cluster.setRoleForContract(address(sGlpReceiver),  keccak256("SWAP_EXECUTOR"), true);
+        cluster.setRoleForContract(address(sGlpReceiver),  keccak256("sGLPMARKET_LIQUIDATOR_RECEIVER"), true);
+        cluster.setRoleForContract(address(this),  keccak256("sGLPMARKET_LIQUIDATOR_RECEIVER_CALLER"), true);
+
+        
     }
 }

@@ -7,6 +7,8 @@ abstract contract Events {
     // ************ //
     event SetMinterStatus(address indexed _for, bool _status);
     event SetBurnerStatus(address indexed _for, bool _status);
+    event OFTReceived(bytes32, address, uint256, uint256);
+    event ComposeReceived(uint16 indexed msgType, bytes32 indexed guid, bytes composeMsg);
 
     // ************** //
     // *** MARKET *** //

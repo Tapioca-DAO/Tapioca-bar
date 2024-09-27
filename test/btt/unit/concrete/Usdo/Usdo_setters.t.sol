@@ -109,11 +109,11 @@ contract Usdo_setters is Usdo_Unit_Shared {
 
     function test_RevertWhen_SetPauseIsCalledFromNon_ownerAndNon_pauser() external resetPrank(userA) {
         // it should revert
-        vm.expectRevert(Usdo.Usdo_NotAuthorized.selector);
+        vm.expectRevert(abi.encodeWithSelector(Usdo.Usdo_NotAuthorized.selector, "PAUSABLE"));
         usdo.setPause(true);
 
         // it should revert
-        vm.expectRevert(Usdo.Usdo_NotAuthorized.selector);
+        vm.expectRevert(abi.encodeWithSelector(Usdo.Usdo_NotAuthorized.selector, "PAUSABLE"));
         usdo.setPause(false);
     }
 
@@ -141,7 +141,7 @@ contract Usdo_setters is Usdo_Unit_Shared {
 
     function test_RevertWhen_AddFlashloanFeeIsCalledFromNon_flashLoanHelper() external resetPrank(userA) {
         // it should revert
-        vm.expectRevert(Usdo.Usdo_NotAuthorized.selector);
+        vm.expectRevert(abi.encodeWithSelector(Usdo.Usdo_NotAuthorized.selector,""));
         usdo.addFlashloanFee(SMALL_AMOUNT);
     }
 }

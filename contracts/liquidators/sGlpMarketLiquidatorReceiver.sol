@@ -42,7 +42,7 @@ contract SGlpMarketLiquidatorReceiver is IMarketLiquidatorReceiver, Ownable, Ree
     event AllowedParticipantAssigned(address indexed participant, bool status);
 
     error NotAuthorized();
-    error WhitelistError();
+    error WhitelistError(bytes reason);
     error NotEnough();
     error SwapFailed();
     error SellGlpFailed();
@@ -105,8 +105,8 @@ contract SGlpMarketLiquidatorReceiver is IMarketLiquidatorReceiver, Ownable, Ree
     ) external nonReentrant returns (bool) {
         // Check caller
         if (!allowedParticipants[initiator]) revert NotAuthorized();
-        if (!cluster.isWhitelisted(0, msg.sender)) revert WhitelistError();
-        if (!cluster.isWhitelisted(0, address(this))) revert WhitelistError();
+        if (!cluster.hasRole(msg.sender, keccak256("sGLPMARKET_LIQUIDATOR_RECEIVER_CALLER"))) revert WhitelistError("sGLPMARKET_LIQUIDATOR_RECEIVER_CALLER");
+        if (!cluster.hasRole(address(this), keccak256("sGLPMARKET_LIQUIDATOR_RECEIVER"))) revert WhitelistError("sGLPMARKET_LIQUIDATOR_RECEIVER");
 
         // check if contract received enough collateral
         uint256 collateralBalance = IERC20(tokenIn).balanceOf(address(this));
