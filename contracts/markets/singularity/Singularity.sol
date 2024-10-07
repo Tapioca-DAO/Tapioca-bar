@@ -194,9 +194,13 @@ contract Singularity is MarketStateView, SGLCommon {
     }
 
     /// @notice Transfers fees to penrose
-    /// @dev can only be called by the owner
+    /// @dev can only be called by the owner or FEES_EXTRACTOR role
     /// @return feeShares the amount of fees in shares withdrawn under Penrose
-    function refreshPenroseFees() external onlyOwner returns (uint256 feeShares) {
+    function refreshPenroseFees() external returns (uint256 feeShares) {
+        require(
+            penrose.cluster().hasRole(msg.sender, keccak256("FEES_EXTRACTOR")) || msg.sender == owner(),
+            "Ownable: caller is not the owner"
+        );
         address _feeTo = address(penrose);
         // withdraw the fees accumulated in `accrueInfo.feesEarnedFraction` to the balance of `feeTo`.
         if (accrueInfo.feesEarnedFraction > 0) {
