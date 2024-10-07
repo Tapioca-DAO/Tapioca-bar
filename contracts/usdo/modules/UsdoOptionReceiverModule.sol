@@ -45,7 +45,7 @@ contract UsdoOptionReceiverModule is BaseUsdo {
     using SafeCast for uint256;
     using SafeApprove for address;
 
-    error UsdoOptionReceiverModule_NotAuthorized(address invalidAddress);
+    error UsdoOptionReceiverModule_NotAuthorized(address invalidAddress, bytes reason);
 
     event ExerciseOptionsReceived(
         address indexed user, address indexed target, uint256 indexed oTapTokenId, uint256 paymentTokenAmount
@@ -111,10 +111,10 @@ contract UsdoOptionReceiverModule is BaseUsdo {
         );
     }
 
-    function _checkWhitelistStatus(address _addr) private view {
+    function _checkWhitelistStatus(address _addr, bytes memory role) private view {
         if (_addr != address(0)) {
-            if (!getCluster().isWhitelisted(0, _addr)) {
-                revert UsdoOptionReceiverModule_NotAuthorized(_addr);
+            if (!getCluster().hasRole(_addr, keccak256(role))) {
+                revert UsdoOptionReceiverModule_NotAuthorized(_addr, role);
             }
         }
     }
@@ -126,11 +126,11 @@ contract UsdoOptionReceiverModule is BaseUsdo {
         address oTap = ITapiocaOptionBroker(_options.target).oTAP();
         address oTapOwner = IERC721(oTap).ownerOf(_options.oTAPTokenID);
         if (oTapOwner != _srcChainSender || oTapOwner != _options.from) {
-            revert UsdoOptionReceiverModule_NotAuthorized(_options.from);
+            revert UsdoOptionReceiverModule_NotAuthorized(_options.from, "");
         }
 
         bool isAllowed = isERC721Approved(oTapOwner, address(this), oTap, _options.oTAPTokenID);
-        if (!isAllowed) revert UsdoOptionReceiverModule_NotAuthorized(oTapOwner);
+        if (!isAllowed) revert UsdoOptionReceiverModule_NotAuthorized(oTapOwner, "");
         /// @dev Clear the allowance once it's used
         /// usage being the allowance check
         pearlmit.clearAllowance(oTapOwner, 721, oTap, _options.oTAPTokenID);
@@ -141,7 +141,7 @@ contract UsdoOptionReceiverModule is BaseUsdo {
         view
         returns (ExerciseOptionsMsg memory)
     {
-        _checkWhitelistStatus(msg_.optionsData.target);
+        _checkWhitelistStatus(msg_.optionsData.target, "USDO_TAP_CALLEE");
 
         if (msg_.optionsData.tapAmount > 0) {
             msg_.optionsData.tapAmount = _toLD(msg_.optionsData.tapAmount.toUint64());

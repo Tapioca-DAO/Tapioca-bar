@@ -83,14 +83,15 @@ abstract contract Markets_Unit_Shared is Base_Test {
 
         // *** AFTER DEPLOYMENT *** //
         liquidatorReceiver.setAllowedParticipant(address(this), true);
-        cluster.updateContract(0, address(this), true);
+        cluster.setRoleForContract(address(liquidatorReceiver),  keccak256("SWAP_EXECUTOR"), true);
 
         deal(address(mainTokenErc20), address(swapperTarget), type(uint128).max); // for liquidations
         deal(address(usdo), address(swapperTarget), type(uint128).max); // for liquidations
 
         deal(address(randomCollateralErc20), address(randomCollateral), type(uint128).max);
 
-
+        cluster.setRoleForContract(address(marketHelper),  keccak256("USDO_HELPER_CALLEE"), true);
+        cluster.setRoleForContract(address(marketHelper),  keccak256("MAGNETAR_HELPER_CALLEE"), true);
     }
 
     // **************** //

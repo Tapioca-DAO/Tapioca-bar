@@ -105,16 +105,9 @@ contract AssetToSGLPLeverageExecutorTest is BaseLeverageExecutorTest {
         }
 
         {
-            cluster.updateContract(0, address(this), true);
-            cluster.updateContract(0, address(executor), true);
-            cluster.updateContract(0, address(swapper), true);
-            cluster.updateContract(0, address(swapperTarget), true);
-            cluster.updateContract(0, address(yieldBox), true);
-            cluster.updateContract(0, address(collateral), true);
-            cluster.updateContract(0, address(glp), true);
-            cluster.updateContract(0, address(usdc), true);
-            cluster.updateContract(0, address(weth), true);
-            cluster.updateContract(0, address(gmxMock), true);
+            cluster.setRoleForContract(address(executor),  keccak256("SWAP_EXECUTOR"), true);
+            cluster.setRoleForContract(address(this),  keccak256("sGLP_MARKET_LEVERAGE_CALLER"), true);
+     
             vm.label(address(cluster), "cluster");
             vm.label(address(executor), "executor");
             vm.label(address(swapper), "swapper");

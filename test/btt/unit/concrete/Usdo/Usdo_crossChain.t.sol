@@ -32,9 +32,6 @@ import {Singularity_Unit_Shared} from "../../shared/Singularity_Unit_Shared.t.so
 import {BigBang_Unit_Shared} from "../../shared/BigBang_Unit_Shared.t.sol";
 import {Usdo_Unit_Shared} from "../../shared/Usdo_Unit_Shared.t.sol";
 
-
-import "forge-std/console.sol";
-
 contract Usdo_crossChain is Usdo_Unit_Shared, BigBang_Unit_Shared, Singularity_Unit_Shared {
     // ************* //
     // *** SETUP *** //
@@ -100,7 +97,7 @@ contract Usdo_crossChain is Usdo_Unit_Shared, BigBang_Unit_Shared, Singularity_U
     }
 
     function test_WhenErc20ApprovalIsPerformedOnCrossChainLevel(uint256 amount) external assumeRange(amount, SMALL_AMOUNT, LARGE_AMOUNT) {
-        cluster.updateContract(0, address(secondaryUsdo), true);
+        cluster.setRoleForContract(address(secondaryUsdo),  keccak256("PERMIT_ERC20_CALLEE"), true);
 
         // create permit messages
         ERC20PermitApprovalMsg memory permitApprovalB_;
@@ -181,7 +178,11 @@ contract Usdo_crossChain is Usdo_Unit_Shared, BigBang_Unit_Shared, Singularity_U
         assertApproxEqRel(usdo.balanceOf(address(this)), amount, 0.0001e18); // to pass over the LD to SD and SD to LD conversion
     }
 
-    function test_whenCrossChainPermitOrRevokeIsTriggered_WhenPermitAllIsCalled() external whenWhitelisted(address(yieldBox)) {
+    function test_whenCrossChainPermitOrRevokeIsTriggered_WhenPermitAllIsCalled() 
+        external 
+        // whenWhitelisted(address(yieldBox)) 
+        whenWhitelisted(address(yieldBox), "PERMIT_YIELDBOX_CALLEE") 
+    {
         _resetPrank(address(this));
         _crossChainApproveOrRevokeAll(true);
 
@@ -189,7 +190,12 @@ contract Usdo_crossChain is Usdo_Unit_Shared, BigBang_Unit_Shared, Singularity_U
         assertEq(yieldBox.isApprovedForAll(address(userA), address(userB)), true);
     }
 
-    function test_whenCrossChainPermitOrRevokeIsTriggered_WhenRevokeAllIsCalled() external whenWhitelisted(address(yieldBox)) whenYieldBoxApprovedForAll(userA, userB) {
+    function test_whenCrossChainPermitOrRevokeIsTriggered_WhenRevokeAllIsCalled() 
+        external 
+        // whenWhitelisted(address(yieldBox)) 
+        whenWhitelisted(address(yieldBox), "PERMIT_YIELDBOX_CALLEE") 
+        whenYieldBoxApprovedForAll(userA, userB) 
+    {
         _resetPrank(address(this));
         _crossChainApproveOrRevokeAll(false);
 
@@ -197,14 +203,23 @@ contract Usdo_crossChain is Usdo_Unit_Shared, BigBang_Unit_Shared, Singularity_U
         assertEq(yieldBox.isApprovedForAll(address(userA), address(userB)), false);
     }
 
-    function test_whenCrossChainPermitOrRevokeIsTriggered_WhenPermitIsCalled() external whenWhitelisted(address(yieldBox)) {
+    function test_whenCrossChainPermitOrRevokeIsTriggered_WhenPermitIsCalled() 
+        external 
+        // whenWhitelisted(address(yieldBox)) 
+        whenWhitelisted(address(yieldBox), "PERMIT_YIELDBOX_CALLEE") 
+    {
         _crossChainYieldBoxPermitOrRevokeAsset(true);
 
         // it should set approval for the asset on YieldBox
         assertEq(yieldBox.isApprovedForAsset(address(userA), address(userB), usdoId), true);
     }
 
-    function test_whenCrossChainPermitOrRevokeIsTriggered_WhenRevokeIsCalled() external whenWhitelisted(address(yieldBox)) whenYieldBoxApprovedForAssetID(userA, userB, usdoId) {
+    function test_whenCrossChainPermitOrRevokeIsTriggered_WhenRevokeIsCalled() 
+        external 
+        // whenWhitelisted(address(yieldBox)) 
+        whenWhitelisted(address(yieldBox), "PERMIT_YIELDBOX_CALLEE") 
+        whenYieldBoxApprovedForAssetID(userA, userB, usdoId) 
+    {
         _resetPrank(address(this));
         _crossChainYieldBoxPermitOrRevokeAsset(false);
 
@@ -212,14 +227,28 @@ contract Usdo_crossChain is Usdo_Unit_Shared, BigBang_Unit_Shared, Singularity_U
         assertEq(yieldBox.isApprovedForAsset(address(userA), address(userB), usdoId), false);
     }
 
-    function test_whenMarketPermitIsCalled_WhenPermitAsset(uint256 amount) external assumeRange(amount, SMALL_AMOUNT, LARGE_AMOUNT) whenWhitelisted(address(secondaryUsdo)) whenWhitelisted(address(mainBB)) {
+    function test_whenMarketPermitIsCalled_WhenPermitAsset(uint256 amount) 
+        external 
+        assumeRange(amount, SMALL_AMOUNT, LARGE_AMOUNT) 
+        // whenWhitelisted(address(secondaryUsdo)) 
+        // whenWhitelisted(address(mainBB)) 
+        whenWhitelisted(address(mainBB), "PERMIT_MARKET_CALLEE") 
+        whenWhitelisted(address(mainBB), "USDO_MARKET_CALLEE") 
+    {
         _marketPermit(amount, true);
 
         // it should increase market allowance for asset
         assertEq(mainBB.allowance(userA, userB), amount);
     }
 
-    function test_whenMarketPermitIsCalled_WhenPermitCollateral(uint256 amount) external assumeRange(amount, SMALL_AMOUNT, LARGE_AMOUNT) whenWhitelisted(address(secondaryUsdo)) whenWhitelisted(address(mainBB)) {
+    function test_whenMarketPermitIsCalled_WhenPermitCollateral(uint256 amount) 
+        external 
+        assumeRange(amount, SMALL_AMOUNT, LARGE_AMOUNT) 
+        // whenWhitelisted(address(secondaryUsdo)) 
+        // whenWhitelisted(address(mainBB)) 
+        whenWhitelisted(address(mainBB), "PERMIT_MARKET_CALLEE") 
+        whenWhitelisted(address(mainBB), "USDO_MARKET_CALLEE") 
+    {
         _marketPermit(amount, false);
 
         // it should increase market allowance for collateral
@@ -233,9 +262,12 @@ contract Usdo_crossChain is Usdo_Unit_Shared, BigBang_Unit_Shared, Singularity_U
         whenCollateralAmountIsValid(collateralAmount)
         whenOracleRateIsEth
         whenAssetOracleRateIsBelowMin
-        whenWhitelisted(address(magnetar))
-        whenWhitelisted(address(marketHelper))
-        whenWhitelisted(address(mainBB))
+        // whenWhitelisted(address(magnetar))
+        // whenWhitelisted(address(marketHelper))
+        // whenWhitelisted(address(mainBB))
+        whenWhitelisted(address(magnetar), "USDO_MAGNETAR_CALLEE") 
+        whenWhitelisted(address(marketHelper), "USDO_HELPER_CALLEE") 
+        whenWhitelisted(address(mainBB), "USDO_MARKET_CALLEE") 
     {
         {
             borrowAmount = _boundBorrowAmount(borrowAmount, collateralAmount);
@@ -306,10 +338,8 @@ contract Usdo_crossChain is Usdo_Unit_Shared, BigBang_Unit_Shared, Singularity_U
         whenOracleRateIsEth
         whenAssetOracleRateIsBelowMin
         whenCollateralAmountIsValid(collateralAmount)
-        whenWhitelisted(address(magnetar))
-        whenWhitelisted(address(marketHelper))
-        whenWhitelisted(address(mainBB))
-        whenWhitelisted(address(randomSgl))
+        whenWhitelisted(address(randomSgl), "USDO_MARKET_CALLEE") 
+        whenWhitelisted(address(randomSgl), "MAGNETAR_MARKET_CALLEE") 
     {
         uint256 repayPart;
         uint256 removeCollateralAmount = collateralAmount * 1e4/1e5; //remove 10%
@@ -379,6 +409,9 @@ contract Usdo_crossChain is Usdo_Unit_Shared, BigBang_Unit_Shared, Singularity_U
     // *** PRIVATE *** //
     // *************** //
     function _marketPermit(uint256 amount, bool permit) private {
+        cluster.setRoleForContract(address(mainBB),  keccak256("PERMIT_MARKET_CALLEE"), true);
+        cluster.setRoleForContract(address(secondaryUsdo),  keccak256("MARKET_PERMIT"), true);
+
         bytes memory approvalMsg_;
         {
             MarketPermitActionMsg memory approvalUserB_ = MarketPermitActionMsg({
@@ -402,6 +435,8 @@ contract Usdo_crossChain is Usdo_Unit_Shared, BigBang_Unit_Shared, Singularity_U
     }
 
     function _crossChainApproveOrRevokeAll(bool approve) private {
+        cluster.setRoleForContract(address(yieldBox), keccak256("PERMIT_YIELDBOX_CALLEE"), true);
+
         bytes memory approvalMsg_;
         {
             ERC20PermitStruct memory approvalUserB_ = _createErc20PermitStruct(userA, userB, 0, 0);
@@ -417,6 +452,8 @@ contract Usdo_crossChain is Usdo_Unit_Shared, BigBang_Unit_Shared, Singularity_U
     }
 
     function _crossChainYieldBoxPermitOrRevokeAsset(bool approve) private {
+        cluster.setRoleForContract(address(yieldBox), keccak256("PERMIT_YIELDBOX_CALLEE"), true);
+
         bytes memory approvalMsg_;
         {
             ERC20PermitStruct memory approvalUserB_ = _createErc20PermitStruct(userA, userB, usdoId, 0);

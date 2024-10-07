@@ -60,11 +60,11 @@ abstract contract BaseLeverageExecutor is Ownable {
     error MinAmountNotValid(uint256 expected, uint256 received);
     error SwapperNotAuthorized();
     error SwapperNotValid();
-    error SenderNotValid();
+    error SenderNotValid(bytes reason);
     error TokenNotValid();
     error NativeNotSupported();
     error AddressNotValid();
-    error NotAuthorized();
+    error NotAuthorized(bytes reason);
 
     constructor(IZeroXSwapper _swapper, ICluster _cluster, address _weth, IPearlmit _pearlmit) {
         if (address(_cluster) == address(0)) revert AddressNotValid();

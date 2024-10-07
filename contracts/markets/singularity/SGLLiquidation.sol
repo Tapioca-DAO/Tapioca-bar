@@ -43,7 +43,7 @@ contract SGLLiquidation is SGLCommon {
     error NotEnoughCollateral();
     error Solvent();
     error InsufficientLiquidationBonus();
-    error NotAuthorized();
+    error NotAuthorized(bytes reason);
 
     // *********************** //
     // *** OWNER FUNCTIONS *** //
@@ -65,8 +65,8 @@ contract SGLLiquidation is SGLCommon {
 
         //check from whitelist status
         {
-            bool isWhitelisted = ICluster(penrose.cluster()).isWhitelisted(0, from);
-            if (!isWhitelisted) revert NotAuthorized();
+            bool isWhitelisted = ICluster(penrose.cluster()).hasRole(from, keccak256("BAD_LIQUIDATION_CALLER"));
+            if (!isWhitelisted) revert NotAuthorized("BAD_LIQUIDATION_CALLER");
         }
         // accrue before liquidation
         _accrue();
@@ -79,7 +79,7 @@ contract SGLLiquidation is SGLCommon {
 
         uint256 collateralShare = userCollateralShare[user];
 
-        if (requiredCollateral < collateralShare) revert NotAuthorized();
+        if (requiredCollateral < collateralShare) revert NotAuthorized("");
 
         // update totalBorrow
         uint256 borrowAmount = totalBorrow.toElastic(userBorrowPart[user], true);

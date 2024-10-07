@@ -45,7 +45,7 @@ contract BBLiquidation is BBCommon {
     error Solvent();
     error AmountNotValid();
     error InsufficientLiquidationBonus();
-    error NotAuthorized();
+    error NotAuthorized(bytes reason);
 
     // *********************** //
     // *** OWNER FUNCTIONS *** //
@@ -67,8 +67,8 @@ contract BBLiquidation is BBCommon {
 
         //check from whitelist status
         {
-            bool isWhitelisted = ICluster(penrose.cluster()).isWhitelisted(0, from);
-            if (!isWhitelisted) revert NotAuthorized();
+            bool isWhitelisted = ICluster(penrose.cluster()).hasRole(from, keccak256("BAD_LIQUIDATION_CALLER"));
+            if (!isWhitelisted) revert NotAuthorized("BAD_LIQUIDATION_CALLER");
         }
 
         // accrue before liquidation

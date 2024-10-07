@@ -45,6 +45,9 @@ abstract contract Singularity_Unit_Shared is Markets_Unit_Shared {
         // create main BB market
         // it handles after deployment set-up
         randomSgl = Singularity(payable(_registerSGLMarket(address(mainToken), mainTokenId, address(usdo), usdoId)));
+
+        cluster.setRoleForContract(address(randomSgl),  keccak256("USDO_MARKET_CALLEE"), true);
+        cluster.setRoleForContract(address(randomSgl),  keccak256("MAGNETAR_MARKET_CALLEE"), true);
     }
 
     // **************** //

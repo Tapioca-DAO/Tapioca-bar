@@ -300,8 +300,8 @@ abstract contract Base_Test is TestHelper, Utils, Types, Events {
         _;
     }
 
-    modifier whenWhitelisted(address _addy) {
-        cluster.updateContract(0, _addy, true);
+    modifier whenWhitelisted(address _addy, bytes memory role) {
+        cluster.setRoleForContract(_addy,  keccak256(role), true);
         _;
     }
 }

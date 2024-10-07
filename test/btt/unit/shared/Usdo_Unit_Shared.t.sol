@@ -46,8 +46,6 @@ import {ERC20PermitStruct, ERC20PermitApprovalMsg} from "tap-utils/interfaces/pe
 // tests
 import {Base_Test} from "../../Base_Test.t.sol";
 
-import "forge-std/console.sol";
-
 abstract contract Usdo_Unit_Shared is Base_Test {
     // ************ //
     // *** VARS *** //
@@ -73,6 +71,13 @@ abstract contract Usdo_Unit_Shared is Base_Test {
 
         usdoHelper = new UsdoHelper();
         vm.label(address(usdoHelper), "usdoHelper");
+
+        {
+            cluster.setRoleForContract(address(magnetar),  keccak256("USDO_MAGNETAR_CALLEE"), true);
+            cluster.setRoleForContract(address(magnetar),  keccak256("MAGNETAR_CALLEE"), true);
+
+            cluster.setRoleForContract(address(magnetar),  keccak256("MARKET_ALLOWANCE_CHECKER"), true);
+        }
     }
 
     // **************** //
@@ -163,9 +168,6 @@ abstract contract Usdo_Unit_Shared is Base_Test {
         uint256 _repayAmountSD = usdoHelper.toSD(data.repayAmount, usdo.decimalConversionRate());
         uint256 _removeCollateralAmountSD = usdoHelper.toSD(data.removeCollateralAmount, usdo.decimalConversionRate());
 
-        console.log("-------- _removeAmountSD            %s", _removeAmountSD);
-        console.log("-------- _repayAmountSD             %s", _repayAmountSD);
-        console.log("-------- _removeCollateralAmountSD  %s", _removeCollateralAmountSD);
         marketMsg = MarketRemoveAssetMsg({
             user: address(this),
             externalData: ICommonExternalContracts({

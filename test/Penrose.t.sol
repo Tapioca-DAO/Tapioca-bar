@@ -149,15 +149,6 @@ contract PenroseTest is UsdoTestHelper {
         );
         vm.label(address(singularity), "Singularity");
 
-        cluster.updateContract(0, address(yieldBox), true);
-        cluster.updateContract(0, address(magnetar), true);
-        cluster.updateContract(0, address(swapper), true);
-        cluster.updateContract(0, address(penrose), true);
-        cluster.updateContract(0, address(masterContract), true);
-        cluster.updateContract(0, address(oracle), true);
-        cluster.updateContract(0, address(singularity), true);
-        cluster.updateContract(0, address(asset), true);
-        cluster.updateContract(0, address(collateral), true);
     }
 
     function test_penrose_unregister_singularity() public {

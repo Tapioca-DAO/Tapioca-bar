@@ -178,6 +178,9 @@ contract SingularityTest is UsdoTestHelper {
             address(masterContract)
         );
         vm.label(address(singularity), "Singularity");
+
+        ICluster _cl = penrose.cluster();
+        _cl.setRoleForContract(address(this), keccak256("BAD_LIQUIDATION_CALLER"), true);
     }
 
     function depositAsset(uint256 amount) public {
@@ -493,7 +496,6 @@ contract SingularityTest is UsdoTestHelper {
                 false
             );
 
-            cluster.updateContract(0, address(this), true);
             deal(address(asset), address(this), borrowAmount * 2);
             asset.approve(address(singularity), type(uint256).max);
             bytes memory badDebtCall = abi.encodeWithSelector(Singularity.execute.selector, modules, calls, true);
